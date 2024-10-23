@@ -95,7 +95,6 @@ function git_upload
 	end
 
 	set repository_root $argv[1]
-	notify-send $argv[1]
 
 	set commit_msg (string join " " $argv[2..-1])
 		if test "$commit_msg" = ""
