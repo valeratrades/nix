@@ -403,7 +403,7 @@ in
         # Unassigned
         [
           difftastic
-					flatpak
+          flatpak
           keyd
           libinput-gestures
           sccache
@@ -437,9 +437,9 @@ in
               nil
               nix-diff
               nixpkgs-fmt
-							statix # Lints and suggestions for the nix programming language
-							deadnix # Find and remove unused code in .nix source files
-							alejandra # Nix Code Formatter; not sure how it compares with nixpkgs-fmt
+              statix # Lints and suggestions for the nix programming language
+              deadnix # Find and remove unused code in .nix source files
+              alejandra # Nix Code Formatter; not sure how it compares with nixpkgs-fmt
             ]
             # python
             [
@@ -479,7 +479,7 @@ in
             ]
 
             typst-lsp
-						vscode-langservers-extracted # contains json lsp
+            vscode-langservers-extracted # contains json lsp
             marksman # md lsp
             lean4
           ]
