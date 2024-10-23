@@ -138,6 +138,7 @@ alias where="functions --details"
 # # nix
 alias nix-build="sudo nixos-rebuild switch --show-trace -L -v --impure" #HACK: using impure
 alias flake-build="sudo nixos-rebuild switch --flake .#myhost --show-trace -L -v"
+alias nixup="sudo nixos-rebuild switch --show-trace -L -v --impure --fast && git_upload '/etc/nixos'"
 #
 
 
@@ -149,8 +150,8 @@ alias lkeyd="sudo keyd -m"
 #
 
 # # help_scripts
-alias beep="$HOME/s/help_scripts/beep.sh"
-alias timer="$HOME/s/help_scripts/timer.sh"
+alias beep="sh $HOME/s/help_scripts/beep.sh"
+alias timer="sh $HOME/s/help_scripts/timer.sh"
 #
 
 #TODO!: figure out direnv

@@ -41,8 +41,6 @@ in
         options = "grp:win_space_toggle";
       };
     };
-    #displayManager.enable = lib.mkForce false; # disables lightdm (hopefully)
-    #displayManager.lightdm.enable = false; # disables lightdm (hopefully)
 
     keyd.enable = true;
     #xwayland.enable = true;
@@ -60,7 +58,7 @@ in
 
     printing.enable = true;
     libinput.enable = true;
-    #openssh.enable = true;
+    openssh.enable = true;
     blueman.enable = true;
   };
   programs = {
@@ -173,6 +171,7 @@ in
   fonts.packages = with pkgs; [
     nerdfonts
     font-awesome
+		font-awesome_5
     ocamlPackages.codicons
     corefonts
     noto-fonts

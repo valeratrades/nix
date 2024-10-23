@@ -87,3 +87,22 @@ end
 function mvcd
     mv $argv && cd (basename "$argv[-1]")
 end
+
+function git_upload
+	if test (count $argv) -lt 1
+		echo "Usage: git_upload <repository_root> [commit_message...]"
+		return 1
+	end
+
+	set repository_root $argv[1]
+	notify-send $argv[1]
+
+	set commit_msg (string join " " $argv[2..-1])
+		if test "$commit_msg" = ""
+		set commit_msg "_"
+	end
+
+	git -C "$repository_root" add -A \
+	&& git -C "$repository_root" commit -m "$commit_msg" \
+	&& git -C "$repository_root" push
+end
