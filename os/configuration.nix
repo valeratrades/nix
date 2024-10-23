@@ -437,7 +437,9 @@ in
               nil
               nix-diff
               nixpkgs-fmt
-              alejandra # not sure how it compares with nixfmt
+							statix # Lints and suggestions for the nix programming language
+							deadnix # Find and remove unused code in .nix source files
+							alejandra # Nix Code Formatter; not sure how it compares with nixpkgs-fmt
             ]
             # python
             [
