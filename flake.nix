@@ -49,7 +49,7 @@
 					home-manager.useUserPackages = true;
 					home-manager.backupFileExtension = "hm-backup";
 
-					home-manager.users.v = import ./home.nix;
+					home-manager.users.v = import ./hosts/v_laptop/home.nix;
 				}
 
 				#./fenix.nix

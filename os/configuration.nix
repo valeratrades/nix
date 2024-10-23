@@ -492,6 +492,7 @@ in
       ];
   };
 
+	#TODO!: make specific to the host
   networking = {
     firewall.allowedTCPPorts = [
       57621 # for spotify
