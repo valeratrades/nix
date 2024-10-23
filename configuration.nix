@@ -325,6 +325,7 @@ in
           eza # better ‘ls’
           fd # better `find`
           alacritty
+					tmux
           fzf
           jq
           keyd
