@@ -6,7 +6,7 @@
 	home.homeDirectory = "/home/v";
 
 	imports = [
-		../../config/fish/mod.nix
+		../../home/config/fish/mod.nix
 	];
 
 	# link the configuration file in current directory to the specified location in home directory

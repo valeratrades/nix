@@ -1,6 +1,5 @@
 alias cc="cd && clear"
 
-# cs{} aliases {{{
 function csc
     set _path "$HOME/.config/"
     if test -n "$argv[1]"
@@ -18,7 +17,7 @@ function css
 end
 
 function csh
-    set _path "$HOME/s/help_scripts/"
+    set _path "/etc/nixos/home/scripts/"
     if test -n "$argv[1]"
         set _path "$_path$argv[1]"
     end
