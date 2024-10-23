@@ -429,6 +429,7 @@ in
               nil
               nix-diff
               nixpkgs-fmt
+							alejandra # not sure how it compares with nixfmt
             ]
             # python
             [
@@ -461,8 +462,15 @@ in
               clang-tools
             ]
 
+						# lua
+						[
+							lua
+							lua-language-server
+						]
+
             typst-lsp
             marksman # md lsp
+						lean4
           ]
 
           [
