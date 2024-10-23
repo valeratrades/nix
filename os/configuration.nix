@@ -97,10 +97,10 @@ in
     systemd-boot = {
       enable = true;
     };
-		timeout = 0; # spam `Space` or `Shift` to bring the menu up when needed
+    timeout = 0; # spam `Space` or `Shift` to bring the menu up when needed
     efi.canTouchEfiVariables = true;
 
-		#grub.useOsProber = true; # need to find alternative for systemd-boot
+    #grub.useOsProber = true; # need to find alternative for systemd-boot
   };
 
   # Set your time zone.
@@ -152,7 +152,7 @@ in
 
   systemd = {
     #services = {
-		#TODO!: copy over the previous getty config to log in and immediately execute `sway`
+    #TODO!: copy over the previous getty config to log in and immediately execute `sway`
     #	"getty@tty1".enable = true;
     #	"autovt@tty1".enable = true;
     #};
@@ -171,7 +171,7 @@ in
   fonts.packages = with pkgs; [
     nerdfonts
     font-awesome
-		font-awesome_5
+    font-awesome_5
     ocamlPackages.codicons
     corefonts
     noto-fonts
@@ -323,14 +323,21 @@ in
           cotp
           eza # better ‘ls’
           fd # better `find`
-          alacritty
-					tmux
           fzf
           jq
           keyd
           ripgrep
           tree
           zoxide
+        ]
+
+        # terminals
+        [
+          alacritty
+          tmux
+          tmuxPlugins.resurrect # persist sessions
+          tmuxPlugins.open # open files
+          tmuxPlugins.copycat # enables regex
         ]
 
         # Networking Tools
@@ -396,6 +403,7 @@ in
         # Unassigned
         [
           difftastic
+					flatpak
           keyd
           libinput-gestures
           sccache
@@ -429,7 +437,7 @@ in
               nil
               nix-diff
               nixpkgs-fmt
-							alejandra # not sure how it compares with nixfmt
+              alejandra # not sure how it compares with nixfmt
             ]
             # python
             [
@@ -462,15 +470,16 @@ in
               clang-tools
             ]
 
-						# lua
-						[
-							lua
-							lua-language-server
-						]
+            # lua
+            [
+              lua
+              lua-language-server
+            ]
 
             typst-lsp
+						vscode-langservers-extracted # contains json lsp
             marksman # md lsp
-						lean4
+            lean4
           ]
 
           [

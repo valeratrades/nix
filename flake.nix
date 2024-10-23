@@ -42,7 +42,7 @@
 				#};
 			};
 			modules = [
-				./configuration.nix
+				./os/configuration.nix
 
 				home-manager.nixosModules.home-manager {
 					home-manager.useGlobalPkgs = true;
