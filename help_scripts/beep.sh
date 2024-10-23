@@ -27,7 +27,7 @@ beep() {
 		fi
 	else # normal beep
 		notify-send "beep"
-		mpv ${HOME}/Sounds/Notification.mp3 > /dev/null 2>&1
+		./assets/sounds/Notification.mp3 > /dev/null 2>&1
 		return 0
 	fi
 }	

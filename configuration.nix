@@ -92,13 +92,18 @@ in
 
   imports = [
     ./hardware-configuration.nix
-    #<home-manager/nixos>
   ];
 
   # Bootloader.
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.efi.canTouchEfiVariables = true;
-  #boot.loader.grub.useOsProber = true;
+  boot.loader = {
+    systemd-boot = {
+      enable = true;
+    };
+		timeout = 0; # spam `Space` or `Shift` to bring the menu up when needed
+    efi.canTouchEfiVariables = true;
+
+		#grub.useOsProber = true; # need to find alternative for systemd-boot
+  };
 
   # Set your time zone.
   time.timeZone = "Europe/Paris";
@@ -149,6 +154,7 @@ in
 
   systemd = {
     #services = {
+		#TODO!: copy over the previous getty config to log in and immediately execute `sway`
     #	"getty@tty1".enable = true;
     #	"autovt@tty1".enable = true;
     #};
@@ -468,7 +474,6 @@ in
   };
 
   networking = {
-    # for spotify:
     firewall.allowedTCPPorts = [
       57621 # for spotify
     ];
@@ -476,7 +481,7 @@ in
       5353 # for spotify
     ];
 
-    hostName = "nixos"; # Define your hostname.
+    hostName = "nixos";
     networkmanager.enable = true;
     # networking.proxy.default = "http://user:password@proxy:port/";
     # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
@@ -487,7 +492,6 @@ in
     dates = "weekly";
     options = "--delete-older-than 1w";
   };
-  # https://nixos.org/manual/nix/stable/command-ref/conf-file.html#conf-auto-optimise-store
-  nix.settings.auto-optimise-store = true;
+  nix.settings.auto-optimise-store = true; # https://nixos.org/manual/nix/stable/command-ref/conf-file.html#conf-auto-optimise-store
   system.stateVersion = "24.05"; # NB: changing requires migration
 }

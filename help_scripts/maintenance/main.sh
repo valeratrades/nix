@@ -10,17 +10,10 @@ sync()  {
 	("$HOME/s/help_scripts/maintenance/check_caches.sh" && printf "\033[32mChecked caches\033[0m\n" || printf "\033[31mFailed to check caches\033[0m\n") &
 	PID3=$!
 
-	#(sudo cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.bak && sudo sh -c "rankmirrors -n 10 /etc/pacman.d/mirrorlist.bak > /etc/pacman.d/mirrorlist" && printf "\033[32mupdated mirrors\033[0m\n" || printf "\033[31mupdating mirrors failed\033[0m\n") &
-	#PID4=$!
-
 	wait $PID1 $PID2 $PID3
-	# pacman operations are already parallelized
-	#(sudo pacman -Syu --noconfirm && printf "\033[32mupdated system\033[0m\n") || (printf "\033[31mpacman -Syu failed. FIXME.\033[0m\n" && return 1)
-	#
-	## nix operations are already parallelized
-	#(nix-env --upgrade && printf "\033[32mupdated nix\033[0m\n") || (printf "\033[31mnix-env --upgrade failed. FIXME.\033[0m\n" && return 1)
 
-	sudo nixos-rebuild switch --impure
+	nixos_root="/etc/nixos"
+	sudo nixos-rebuild switch --show-trace -L -v --impure && git -C "$nixos_root" add -A && git -C "$nixos_root" commit -m "_" && git -C "$nixos_root" push  # git commit nix files only on successful build
 	return 0
 }
 
