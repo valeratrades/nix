@@ -1,0 +1,110 @@
+1) What 
+2) H 
+3) A 
+4) P 
+5) P 
+6) E 
+7) N 
+8) E 
+9) D 
+10) [NOT LEGAL ADVICE. NOT FINANCIAL ADVICE. THIS IS ALL AS I REMEMBER IT, BUT MY MEMORY MIGHT BE FAULTY IN PARTS.] 
+11) I'll get to what happened. But for now, let's talk about where we are today. 
+12) To the best of my knowledge, as of post-11/7, with the potential for errors:
+
+a) Alameda had more assets than liabilities M2M (but not liquid!)
+b) Alameda had margin position on FTX Intl
+c) FTX US had enough to repay all customers
+
+Not everyone necessarily agrees with this 
+13) My goal—my one goal—is to do right by customers.
+
+I’m contributing what I can to doing so. I’m meeting in-person with regulators and working with the teams to do what we can for customers.
+
+And after that, investors. But first, customers. 
+14) My goal:
+
+a) Clean up and focus on transparency
+b) Make customers whole 
+15) A few weeks ago, FTX was handling ~$10b/day of volume and billions of transfers.
+
+But there was too much leverage--more than I realized. A run on the bank and market crash exhausted liquidity.
+
+So what can I try to do? Raise liquidity, make customers whole, and restart. 
+16) Maybe I'll fail. Maybe I won't get anything more for customers than what's already there.
+
+I've certainly failed before. You all know that now, all too well.
+
+But all I can do is to try. I've failed enough for the month.
+
+And part of me thinks I might get somewhere. 
+17) I know you've all seen this, but here's where things stand today, roughly speaking. [LOTS OF CAVEATS, ETC.]
+
+Liquid: -$8b
+Semi: +$5.5b
+Illiquid: +$3.5b
+
+And yeah, maybe that $9b illiquid M2M isn't worth $9b (+$1b net).
+
+OTOH--a month ago it was worth $18b; +$10b net.
+
+--- 
+18) Truth and Beauty 
+19) Once upon a time--a month ago--FTX was a valuable enterprise.
+
+FTX had ~$10-15b of daily volume, and roughly $1b of annual revenue. $40b of equity value.
+
+And we were held as paragons of running an effective company. 
+20) I was on the cover of every magazine, and FTX was the darling of Silicon Valley.
+
+We got overconfident and careless. 
+21) And problems were brewing. Larger than I realized.
+
+[AGAIN THESE NUMBERS ARE APPROXIMATE, TO THE BEST OF MY KNOWLEDGE, ETC.]
+
+Leverage built up-- ~$5b of leverage, backed by ~$20b of assets which were....
+
+Well, they had value. FTT had value, in EV! But they had risk. 
+22) And that risk was correlated--with the other collateral, and with the platform.
+
+And then the crash came.
+
+In a few day period, there was a historic crash--over 50% in most correlated assets, with no bid side liquidity.
+
+And at the same time there was a run on the bank. 
+23) Roughly 25% of customer assets were withdrawn each day--$4b.
+
+As it turned out, I was wrong: leverage wasn't ~$5b, it was ~$13b.
+
+$13b leverage, total run on the bank, total collapse in asset value, all at once.
+
+Which is why you don't want that leverage.
+
+--- 
+24) Shrapnel 
+25) Last night I talked to a friend of mine.
+
+They published my messages. Those were not intended to be public, but I guess they are now.
+Image
+26) Well, that gives some color, I guess.
+
+It sucks. I'm really sorry that things ended up as they did. And as I said--I'm going to do everything I can to make it more right. 
+27) A few thoughts:
+
+a) It's *really* hard to be a regulator. They have an impossible job: to regulate entire industries that grow faster than their mandate allows them to.
+
+And so often they end up mostly unable to police as well as they ideally would. 
+28) Even so, there are regulators who have deeply impressed me with their knowledge and thoughtfulness. The CFTC has; the SCB, and VARA, too. And others, scattered.
+
+But most are overwhelmed. 
+29) Which means that interacting with regulatory structures can be really frustrating: a *huge* amount of work--much of it arbitrary--and relatively little customer protection.
+
+Fuck that. You all deserve frameworks that let regulators protect customers while allowing freedom. 
+30) (Some of what I said was thoughtless or overly strong--I was venting and not intending that to be public. I guess at this point what I write leaks anyway.) 
+31) And in the future, I'm going to care less about the dumb, contentless, "good actor" framework.
+
+What matters is what you do--is *actually* doing good or bad, not just *talking* about doing good or *using ESG language*. 
+32) Anyway -- none of that matters now.
+
+What matters is doing the best I can.
+
+And doing everything I can for FTX's customers. 
