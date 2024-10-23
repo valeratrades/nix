@@ -500,7 +500,7 @@ in
       5353 # for spotify
     ];
 
-    hostName = "nixos";
+    hostName = "v_laptop";
     networkmanager.enable = true;
     # networking.proxy.default = "http://user:password@proxy:port/";
     # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
