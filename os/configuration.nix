@@ -279,6 +279,7 @@ in
           which
           wireplumber
           wl-clipboard
+					wl-gammactl
           xorg.xkbcomp
           xz
         ]
