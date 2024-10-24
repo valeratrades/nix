@@ -5,7 +5,7 @@
 		enable = true;
 		package = pkgs.fish;
 		shellInit = ''
-			source /etc/nixos/config/fish/main.fish
+			source /etc/nixos/home/config/fish/main.fish
 		'';
 	};
 }

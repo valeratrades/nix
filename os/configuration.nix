@@ -386,6 +386,8 @@ in
         [
           httpie
           google-chrome
+          chromium
+          firefox
           wget
           aria2
         ]
@@ -492,7 +494,7 @@ in
       ];
   };
 
-	#TODO!: make specific to the host
+  #TODO!: make specific to the host
   networking = {
     firewall.allowedTCPPorts = [
       57621 # for spotify

@@ -19,6 +19,19 @@
 			inputs.nixpkgs.follows = "nixpkgs";
 		};
 
+		lanzaboote = {
+			url = "github:nix-community/lanzaboote/v0.4.1";
+			inputs.nixpkgs.follows = "nixpkgs";
+		};
+
+		impermanence.url = "github:nix-community/impermanence";
+
+		pre-commit-hooks = {
+			url = "github:cachix/pre-commit-hooks.nix";
+			inputs.nixpkgs.follows = "nixpkgs";
+		};
+
+
 		#naersk.url = "https://github.com/nix-community/naersk/master";
 	};
 
@@ -29,7 +42,8 @@
 		#environment.etc."nix/inputs/nixpkgs".source = "${nixpkgs}";
 		#nix.settings.nix-path = nixpkgs.lib.mkForce "nixpkgs=/etc/nix/inputs/nixpkgs";
 
-		nixosConfigurations.nixos = nixpkgs.lib.nixosSystem {
+		#NB: when writing hostname, remove all '_' characters
+		nixosConfigurations.vlaptop = nixpkgs.lib.nixosSystem {
 			system = "x86_64-linux";
 
 			specialArgs = { 
