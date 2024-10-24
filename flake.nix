@@ -67,7 +67,7 @@
 				}
 
 				#./fenix.nix
-				({ pkgs, ... }: import ./other/fenix.nix { inherit pkgs; })
+				({ pkgs, ... }: import ./modules/fenix.nix { inherit pkgs; })
 			];
 		};
 	};
