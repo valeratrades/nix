@@ -1,5 +1,25 @@
 {
   "nodes": {
+    "auto_redshift": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1729811200,
+        "narHash": "sha256-iO95aUS50DUEsCbC/C7p0fV1km8oslKcadc3GSDlcvQ=",
+        "owner": "valeratrades",
+        "repo": "auto_redshift",
+        "rev": "8bd5b4425f80d4fb0cb6c44d74e8b2bd8b76a592",
+        "type": "github"
+      },
+      "original": {
+        "owner": "valeratrades",
+        "repo": "auto_redshift",
+        "type": "github"
+      }
+    },
     "crane": {
       "inputs": {
         "nixpkgs": [
@@ -335,6 +355,7 @@
     },
     "root": {
       "inputs": {
+        "auto_redshift": "auto_redshift",
         "fenix": "fenix",
         "home-manager": "home-manager",
         "impermanence": "impermanence",

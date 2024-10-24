@@ -33,9 +33,18 @@
 
 
 		#naersk.url = "https://github.com/nix-community/naersk/master";
+
+
+		# -----------------------------------------------------------------
+		# My packages
+		# ----------------------------------------------------------------
+		auto_redshift = {
+			url = "github:valeratrades/auto_redshift";
+			inputs.nixpkgs.follows = "nixpkgs";
+		};
 	};
 
-	outputs = inputs@{ self, nixpkgs, nixpkgs-stable, home-manager, ... }: {
+	outputs = inputs@{ self, nixpkgs, nixpkgs-stable, home-manager, auto_redshift, ... }: {
 		# from https://nixos-and-flakes.thiscute.world/nixos-with-flakes/nixos-flake-and-module-system 
 		#nix.registry.nixpkgs.flake = nixpkgs;
 		#nix.channel.enable = false;
@@ -64,10 +73,13 @@
 					home-manager.backupFileExtension = "hm-backup";
 
 					home-manager.users.v = import ./hosts/v_laptop/home.nix;
+
+					#auto_redshift = auto_redshift.packages.${nixpkgs.system}.default;
 				}
 
 				#./fenix.nix
 				({ pkgs, ... }: import ./modules/fenix.nix { inherit pkgs; })
+
 			];
 		};
 	};
