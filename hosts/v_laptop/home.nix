@@ -39,7 +39,7 @@
 		figlet
 		zulip
 		bash-language-server # needs unstable rn (2024/10/21)
-		#inputs.auto_redshift.packages.${pkgs.system}.auto_redshift
+		inputs.auto_redshift.packages.${pkgs.system}.auto_redshift
 	];
 
 	#home.packages = with nixpkgs-stable: [
