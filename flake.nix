@@ -42,6 +42,10 @@
 			url = "github:valeratrades/auto_redshift";
 			inputs.nixpkgs.follows = "nixpkgs";
 		};
+		todo = {
+			url = "github:valeratrades/todo";
+			inputs.nixpkgs.follows = "nixpkgs";
+		};
 	};
 
 	outputs = inputs@{ self, nixpkgs, nixpkgs-stable, home-manager, ... }: {

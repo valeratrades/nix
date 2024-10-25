@@ -254,6 +254,7 @@ in
         libinput-gestures
         sccache
         cachix
+				openssl
 
         # UI/UX Utilities
         [
@@ -332,6 +333,7 @@ in
           cotp
           eza # better ‘ls’
           fd # better `find`
+					bat # better cat
           fzf
           jq
           keyd
