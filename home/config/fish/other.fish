@@ -139,6 +139,7 @@ alias where="functions --details"
 alias nix-build="sudo nixos-rebuild switch --show-trace -L -v --impure" #HACK: using impure
 alias flake-build="sudo nixos-rebuild switch --flake .#myhost --show-trace -L -v"
 alias nixup="git -C '/etc/nixos' add -A && sudo nixos-rebuild switch --show-trace -L -v --impure --fast && git_upload '/etc/nixos'"
+alias nshell="nix-shell --command fish"
 #
 
 
