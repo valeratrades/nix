@@ -370,6 +370,7 @@ in
         # Audio/Video Utilities
         [
           pamixer
+					pulsemixer
           pavucontrol
           mpv
         ]
