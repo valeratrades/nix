@@ -472,6 +472,8 @@ in
             # rust
             [
               # cargo, rustcs, etc are brought in by fenix.nix
+							rustup
+							crate2nix
               cargo-edit
               cargo-sort
               cargo-mutants
