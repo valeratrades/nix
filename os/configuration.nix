@@ -233,7 +233,7 @@ in
       MANPAGER = "less";
       LESSHISTFILE = "-";
       HISTCONTROL = "ignorespace";
-			PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
+			PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig"; # many of my rust scripts require it
     };
 
     shellInit = ''

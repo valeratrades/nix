@@ -20,6 +20,26 @@
         "type": "github"
       }
     },
+    "booktyping": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1729895351,
+        "narHash": "sha256-QWMLHGQ8Mw7AVX3QK6NteT+BVZWJE6tknjWLqUrUwTY=",
+        "owner": "valeratrades",
+        "repo": "booktyping",
+        "rev": "38da98ef7b34a50d2e39f7a23ba802113cb07015",
+        "type": "github"
+      },
+      "original": {
+        "owner": "valeratrades",
+        "repo": "booktyping",
+        "type": "github"
+      }
+    },
     "crane": {
       "inputs": {
         "nixpkgs": [
@@ -303,26 +323,6 @@
         "type": "github"
       }
     },
-    "orderbook_3d": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1729880179,
-        "narHash": "sha256-c8eBaxIh1hC+kjlMQze30KWOIdMXghP+VJbQL5+e4vk=",
-        "owner": "valeratrades",
-        "repo": "todo",
-        "rev": "b44c73a981b52dc28f5c58aa9120bfcfd6b0071a",
-        "type": "github"
-      },
-      "original": {
-        "owner": "valeratrades",
-        "repo": "todo",
-        "type": "github"
-      }
-    },
     "pre-commit-hooks": {
       "inputs": {
         "flake-compat": "flake-compat_2",
@@ -376,13 +376,13 @@
     "root": {
       "inputs": {
         "auto_redshift": "auto_redshift",
+        "booktyping": "booktyping",
         "fenix": "fenix",
         "home-manager": "home-manager",
         "impermanence": "impermanence",
         "lanzaboote": "lanzaboote",
         "nixpkgs": "nixpkgs",
         "nixpkgs-stable": "nixpkgs-stable_2",
-        "orderbook_3d": "orderbook_3d",
         "pre-commit-hooks": "pre-commit-hooks",
         "todo": "todo"
       }
