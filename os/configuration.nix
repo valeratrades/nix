@@ -358,13 +358,13 @@ in
         [
           fd # better `find`
           file
-          gnumake
           gnupg
           gnused
           gnutar
           jq
           unzip
           zip
+					pandoc
         ]
 
         # Audio/Video Utilities
@@ -373,6 +373,8 @@ in
 					pulsemixer
           pavucontrol
           mpv
+					obs-studio
+					obs-cli
         ]
 
         # System Monitoring and Debugging
@@ -396,7 +398,6 @@ in
 
         # Development Tools
         [
-          cmake
           gh
           git
           glib
@@ -474,6 +475,8 @@ in
             [
               clang
               clang-tools
+							cmake
+							gnumake
             ]
 
             # lua
