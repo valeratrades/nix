@@ -175,7 +175,7 @@ in
     ocamlPackages.codicons
     corefonts
     noto-fonts
-    noto-fonts-cjk
+    noto-fonts-cjk-sans
     noto-fonts-emoji
 
     # # copied over for no particular reason:
