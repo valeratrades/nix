@@ -303,6 +303,26 @@
         "type": "github"
       }
     },
+    "orderbook_3d": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1729880179,
+        "narHash": "sha256-c8eBaxIh1hC+kjlMQze30KWOIdMXghP+VJbQL5+e4vk=",
+        "owner": "valeratrades",
+        "repo": "todo",
+        "rev": "b44c73a981b52dc28f5c58aa9120bfcfd6b0071a",
+        "type": "github"
+      },
+      "original": {
+        "owner": "valeratrades",
+        "repo": "todo",
+        "type": "github"
+      }
+    },
     "pre-commit-hooks": {
       "inputs": {
         "flake-compat": "flake-compat_2",
@@ -362,6 +382,7 @@
         "lanzaboote": "lanzaboote",
         "nixpkgs": "nixpkgs",
         "nixpkgs-stable": "nixpkgs-stable_2",
+        "orderbook_3d": "orderbook_3d",
         "pre-commit-hooks": "pre-commit-hooks",
         "todo": "todo"
       }

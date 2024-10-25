@@ -46,6 +46,10 @@
 			url = "github:valeratrades/todo";
 			inputs.nixpkgs.follows = "nixpkgs";
 		};
+		orderbook_3d = {
+			url = "github:valeratrades/todo";
+			inputs.nixpkgs.follows = "nixpkgs";
+		};
 	};
 
 	outputs = inputs@{ self, nixpkgs, nixpkgs-stable, home-manager, ... }: {

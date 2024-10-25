@@ -29,6 +29,7 @@
 		cowsay
 		unimatrix
 		spotify
+		spotube
 		telegram-desktop
 		vesktop
 		rnote
@@ -41,6 +42,7 @@
 		bash-language-server # needs unstable rn (2024/10/21)
 		inputs.auto_redshift.packages.${pkgs.system}.default
 		inputs.todo.packages.${pkgs.system}.default
+		inputs.orderbook_3d.packages.${pkgs.system}.default
 	];
 
 	#home.packages = with nixpkgs-stable: [
