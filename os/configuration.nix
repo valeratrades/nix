@@ -248,6 +248,13 @@ in
     systemPackages =
       with pkgs; # basically `use pkgs::*`
       lib.lists.flatten [
+        difftastic
+        flatpak
+        keyd
+        libinput-gestures
+        sccache
+        cachix
+
         # UI/UX Utilities
         [
           adwaita-qt
@@ -255,6 +262,7 @@ in
           blueman
           eww
           grim
+          slurp
           mako
           networkmanagerapplet
           rofi
@@ -279,7 +287,7 @@ in
           which
           wireplumber
           wl-clipboard
-					wl-gammactl
+          wl-gammactl
           xorg.xkbcomp
           xz
         ]
@@ -364,17 +372,17 @@ in
           jq
           unzip
           zip
-					pandoc
+          pandoc
         ]
 
         # Audio/Video Utilities
         [
           pamixer
-					pulsemixer
+          pulsemixer
           pavucontrol
           mpv
-					obs-studio
-					obs-cli
+          obs-studio
+          obs-cli
         ]
 
         # System Monitoring and Debugging
@@ -405,15 +413,6 @@ in
           tokei
         ]
 
-        # Unassigned
-        [
-          difftastic
-          flatpak
-          keyd
-          libinput-gestures
-          sccache
-        ]
-
         # Coding
         [
           vscode-extensions.github.copilot
@@ -437,14 +436,25 @@ in
 
           # language-specific
           [
+            typst-lsp
+            vscode-langservers-extracted # contains json lsp
+            marksman # md lsp
+            lean4
+
+            # nix
             [
-              nixfmt-rfc-style
-              nil
+              nil # nix lsp
+              niv # nix build dep management
               nix-diff
-              nixpkgs-fmt
               statix # Lints and suggestions for the nix programming language
               deadnix # Find and remove unused code in .nix source files
-              alejandra # Nix Code Formatter; not sure how it compares with nixpkgs-fmt
+
+              # formatters
+              [
+                nixfmt-rfc-style
+                nixpkgs-fmt
+                alejandra # Nix Code Formatter; not sure how it compares with nixpkgs-fmt
+              ]
             ]
             # python
             [
@@ -461,6 +471,7 @@ in
             ]
             # rust
             [
+              # cargo, rustcs, etc are brought in by fenix.nix
               cargo-edit
               cargo-sort
               cargo-mutants
@@ -475,8 +486,8 @@ in
             [
               clang
               clang-tools
-							cmake
-							gnumake
+              cmake
+              gnumake
             ]
 
             # lua
@@ -484,11 +495,6 @@ in
               lua
               lua-language-server
             ]
-
-            typst-lsp
-            vscode-langservers-extracted # contains json lsp
-            marksman # md lsp
-            lean4
           ]
 
           [

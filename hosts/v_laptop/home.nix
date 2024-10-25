@@ -1,4 +1,4 @@
-{ self, config, pkgs, nixpkgs-stable, ... }:
+{ self, config, pkgs, inputs, ... }:
 
 #TODO!: move much of this to shared dirs
 {
@@ -27,6 +27,7 @@
 	# Things that never need to be available with sudo
 	home.packages = with pkgs; [
 		cowsay
+		unimatrix
 		spotify
 		telegram-desktop
 		vesktop
@@ -36,7 +37,9 @@
 		neomutt
 		neofetch
 		figlet
+		zulip
 		bash-language-server # needs unstable rn (2024/10/21)
+		#inputs.auto_redshift.packages.${pkgs.system}.auto_redshift
 	];
 
 	#home.packages = with nixpkgs-stable: [

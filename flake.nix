@@ -44,7 +44,7 @@
 		};
 	};
 
-	outputs = inputs@{ self, nixpkgs, nixpkgs-stable, home-manager, auto_redshift, ... }: {
+	outputs = inputs@{ self, nixpkgs, nixpkgs-stable, home-manager, ... }: {
 		# from https://nixos-and-flakes.thiscute.world/nixos-with-flakes/nixos-flake-and-module-system 
 		#nix.registry.nixpkgs.flake = nixpkgs;
 		#nix.channel.enable = false;
@@ -62,8 +62,9 @@
 				#pkgs-stable = import nixpkgs-stable {
 				#	inherit system;
 				#	config.allowUnfree = true;
-				#};
+				#};ixpkgs.legacyPackages.${system};
 			};
+
 			modules = [
 				./os/configuration.nix
 
@@ -71,10 +72,9 @@
 					home-manager.useGlobalPkgs = true;
 					home-manager.useUserPackages = true;
 					home-manager.backupFileExtension = "hm-backup";
+					home-manager.extraSpecialArgs = { inherit inputs; };
 
 					home-manager.users.v = import ./hosts/v_laptop/home.nix;
-
-					#auto_redshift = auto_redshift.packages.${nixpkgs.system}.default;
 				}
 
 				#./fenix.nix
