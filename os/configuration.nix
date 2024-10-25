@@ -233,6 +233,7 @@ in
       MANPAGER = "less";
       LESSHISTFILE = "-";
       HISTCONTROL = "ignorespace";
+			PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
     };
 
     shellInit = ''
@@ -482,6 +483,7 @@ in
               cargo-update
 							#cargo-binstall
               cargo-machete
+							cargo-release
               cargo-watch
               cargo-nextest
               cargo-limit # brings `lrun` and other `l$command` aliases for cargo, that suppress warnings if any errors are present.
