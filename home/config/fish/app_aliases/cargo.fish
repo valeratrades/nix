@@ -159,6 +159,10 @@ function ct
 	end
 end
 
+function ca
+	cargo add $argv && cargo sort -w
+end
+
 #DEPENDS: [cq]
 function ce
 	set cmd "cq \"nextest run"

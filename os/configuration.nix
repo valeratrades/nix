@@ -478,6 +478,7 @@ in
               cargo-sort
               cargo-mutants
               cargo-update
+							#cargo-binstall
               cargo-machete
               cargo-watch
               cargo-nextest
