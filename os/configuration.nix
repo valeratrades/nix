@@ -411,7 +411,7 @@ in
           gh
           git
           glib
-          pkg-config
+          pkg-config # when used in build scripts, must be included in `nativeBuildInputs`. Only _native_ will work.
           tokei
         ]
 
