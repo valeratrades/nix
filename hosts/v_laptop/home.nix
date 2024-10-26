@@ -44,7 +44,7 @@ in {
 		#
 		#"${self}/home/config/greenclip.toml".source = ./config/greenclip.toml;
 
-		#"${config.home.homeDirectory}/config/tg.toml".source = ../../home/config/tg.toml;
+		"${config.home.homeDirectory}/config/tg.toml".source = ../../home/config/tg.toml;
 		#"${config.home.homeDirectory}/config/tg_admin.toml".source = "${nix_home}/config/tg_admin.toml";
 		#"${config.home.homeDirectory}/config/todo".source = "${nix_home}/config/todo.toml";
 		#"${config.home.homeDirectory}/config/discretionary_engine.toml".source = "${nix_home}/config/discretionary_engine.toml";
