@@ -171,8 +171,12 @@ in
   fonts.packages = with pkgs; [
     nerdfonts
     font-awesome
+		profont
     font-awesome_5
+		font-awesome_4
     ocamlPackages.codicons
+		agave
+		texlivePackages.arimo
     corefonts
     noto-fonts
     noto-fonts-cjk-sans
@@ -191,7 +195,6 @@ in
     ipafont
     kanji-stroke-order-font
     liberation_ttf
-    mplus-outline-fonts.githubRelease
     powerline-fonts
     proggyfonts
     source-code-pro
@@ -256,6 +259,7 @@ in
         sccache
         cachix
 				openssl
+				nerdfix
 
         # UI/UX Utilities
         [
