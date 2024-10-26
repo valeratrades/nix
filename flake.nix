@@ -50,6 +50,13 @@
 			url = "github:valeratrades/booktyping";
 			inputs.nixpkgs.follows = "nixpkgs";
 		};
+		btc_line = {
+			url = "github:valeratrades/btc_line";
+			inputs.nixpkgs.follows = "nixpkgs";
+		};
+
+
+
 		#aggr_orderbook = {
 		#	url = "github:valeratrades/aggr_orderbook";
 		#	inputs.nixpkgs.follows = "nixpkgs";

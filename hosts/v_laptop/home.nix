@@ -25,7 +25,7 @@
 	# '';
 
 	# Things that never need to be available with sudo
-	home.packages = with pkgs; [
+	home.packages = with pkgs; lib.flatten [
 		cowsay
 		unimatrix
 		spotify
@@ -40,11 +40,16 @@
 		figlet
 		zulip
 		bash-language-server # needs unstable rn (2024/10/21)
+
+		# my packages
+		[
 		inputs.auto_redshift.packages.${pkgs.system}.default
 		inputs.todo.packages.${pkgs.system}.default
 		inputs.booktyping.packages.${pkgs.system}.default
+		#inputs.btc_line.packages.${pkgs.system}.default
 		#inputs.aggr_orderbook.packages.${pkgs.system}.default
 		#inputs.orderbook_3d.packages.${pkgs.system}.default
+		]
 	];
 
 	#home.packages = with nixpkgs-stable: [
