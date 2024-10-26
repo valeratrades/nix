@@ -19,11 +19,13 @@
 			inputs.nixpkgs.follows = "nixpkgs";
 		};
 
+		#TODO!: integrate
 		lanzaboote = {
 			url = "github:nix-community/lanzaboote/v0.4.1";
 			inputs.nixpkgs.follows = "nixpkgs";
 		};
 
+		#TODO!: integrate
 		impermanence.url = "github:nix-community/impermanence";
 
 		pre-commit-hooks = {
@@ -33,7 +35,6 @@
 
 
 		#naersk.url = "https://github.com/nix-community/naersk/master";
-
 
 		# -----------------------------------------------------------------
 		# My packages

@@ -171,19 +171,20 @@ in
   fonts.packages = with pkgs; [
     nerdfonts
     font-awesome
-		profont
+    profont
     font-awesome_5
-		font-awesome_4
+    font-awesome_4
     ocamlPackages.codicons
-		texlivePackages.arimo
-		texlivePackages.dejavu
-		agave
+    texlivePackages.arimo
+    texlivePackages.dejavu
+    agave
     corefonts
     noto-fonts
     noto-fonts-cjk-sans
     noto-fonts-emoji
-		dejavu_fonts
-		jetbrains-mono
+    dejavu_fonts
+    jetbrains-mono
+    material-design-icons
 
     # # copied over for no particular reason:
     mplus-outline-fonts.githubRelease
@@ -237,7 +238,7 @@ in
       MANPAGER = "less";
       LESSHISTFILE = "-";
       HISTCONTROL = "ignorespace";
-			PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig"; # many of my rust scripts require it
+      PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig"; # many of my rust scripts require it
     };
 
     shellInit = ''
@@ -259,8 +260,8 @@ in
         libinput-gestures
         sccache
         cachix
-				openssl
-				nerdfix
+        openssl
+        nerdfix
 
         # UI/UX Utilities
         [
@@ -339,7 +340,7 @@ in
           cotp
           eza # better ‘ls’
           fd # better `find`
-					bat # better cat
+          bat # better cat
           fzf
           jq
           keyd
@@ -444,11 +445,16 @@ in
 
           # language-specific
           [
-            typst-lsp
             vscode-langservers-extracted # contains json lsp
             marksman # md lsp
             lean4
 
+            # typst
+            [
+              typst
+              typst-lsp
+              typstyle # formatter
+            ]
             # nix
             [
               nil # nix lsp
@@ -480,15 +486,15 @@ in
             # rust
             [
               # cargo, rustcs, etc are brought in by fenix.nix
-							rustup
-							crate2nix
+              rustup
+              crate2nix
               cargo-edit
               cargo-sort
               cargo-mutants
               cargo-update
-							#cargo-binstall
+              #cargo-binstall
               cargo-machete
-							cargo-release
+              cargo-release
               cargo-watch
               cargo-nextest
               cargo-limit # brings `lrun` and other `l$command` aliases for cargo, that suppress warnings if any errors are present.
