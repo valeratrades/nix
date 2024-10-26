@@ -1,13 +1,57 @@
-{ self, config, pkgs, inputs, ... }:
-
 #TODO!: move much of this to shared dirs
-{
+
+
+#{
+#  self,
+#  ...
+#}: {
+#  config,
+#  pkgs,
+#  lib,
+#  ...
+#}:
+
+{ self, config, pkgs, inputs, ... }:
+let
+	nix_home = "../../home";
+in {
 	home.username = "v";
 	home.homeDirectory = "/home/v";
 
+	#sops = {
+		#defaultSopsFile = /home/v/s/g/private/sops.json;
+		#defaultSopsFormat = "json";
+		#defaultSopsFile = /home/v/s/g/private/sops.yaml;
+		#secrets."github".sopsFile = /home/v/s/g/private/sops.yaml;
+	#};
+
+
 	imports = [
-		../../home/config/fish/mod.nix
+		../../home/config/fish/default.nix
 	];
+
+
+	home.file = {
+		#".config/nix/nix.conf".text = ''
+		#	access-tokens = github.com=${config.sops.secrets.github_token}
+		#'';
+
+		#"${self}/home/config/tg.toml".source = ./config/tg.toml;
+		#"${self}/home/config/tg_admin.toml".source = ./config/tg_admin.toml;
+		#"${self}/home/config/todo".source = ./config/todo.toml;
+		#"${self}/home/config/discretionary_engine.toml".source = ./config/discretionary_engine.toml;
+		#"${self}/home/config/btc_line.toml".source = ./config/btc_line.toml;
+		#
+		#"${self}/home/config/greenclip.toml".source = ./config/greenclip.toml;
+
+		#"${config.home.homeDirectory}/config/tg.toml".source = ../../home/config/tg.toml;
+		#"${config.home.homeDirectory}/config/tg_admin.toml".source = "${nix_home}/config/tg_admin.toml";
+		#"${config.home.homeDirectory}/config/todo".source = "${nix_home}/config/todo.toml";
+		#"${config.home.homeDirectory}/config/discretionary_engine.toml".source = "${nix_home}/config/discretionary_engine.toml";
+		#"${config.home.homeDirectory}/config/btc_line.toml".source = "${nix_home}/config/btc_line.toml";
+		#
+		#"${config.home.homeDirectory}/config/greenclip.toml".source = "${nix_home}/config/greenclip.toml";
+	};
 
 	# link the configuration file in current directory to the specified location in home directory
 	# home.file.".config/i3/wallpaper.jpg".source = ./wallpaper.jpg;

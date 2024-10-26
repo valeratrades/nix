@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule: [cron: "40 1 * * 0"] # run weekly
+
+permissions:
+  contents: read
+
+jobs:
+  tokei:
+    name: Reasonable Amount of Comments
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install tokei
+      run: |
+        cargo install tokei
+
+    - name: Run tokei and save output to json file
+      run: tokei -o json > tokei_output.json
+
+    - name: Install jq
+      run: sudo apt-get install -y jq
+
+    - name: Check Rust comments
+      #TODO!!!!!!: Generalize to other languages. Want to dynamically determinee the most used language in the repo (excluding markdown, jupiter, etc.).
+      run: |
+        comments=$(jq '.Rust.comments' tokei_output.json)
+        code=$(jq '.Rust.code' tokei_output.json)
+        if [ $((comments * 10)) -ge $code ]; then
+          echo "Number of comments should be less than 10% of code"
+          exit 1
+        else
+          echo "Check passed: Number of comments is less than 10% of code"
+        fi

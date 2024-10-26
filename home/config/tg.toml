@@ -1,0 +1,12 @@
+localhost_port = 59753
+
+[channels]
+general = -1002244305221
+making = "-1002244305221/3"
+trading = "-1002244305221/7"
+journal = "-1002244305221/5"
+far-fetched = "2244305221/113"
+tooling = "2244305221/518"
+learning = "2244305221/998"
+
+alerts = -1001800341082

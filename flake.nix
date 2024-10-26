@@ -33,6 +33,8 @@
 			inputs.nixpkgs.follows = "nixpkgs";
 		};
 
+		#inputs.sops-nix.url = "github:Mic92/sops-nix";
+
 
 		#naersk.url = "https://github.com/nix-community/naersk/master";
 
@@ -53,6 +55,10 @@
 		};
 		btc_line = {
 			url = "github:valeratrades/btc_line";
+			inputs.nixpkgs.follows = "nixpkgs";
+		};
+		tg = {
+			url = "github:valeratrades/tg";
 			inputs.nixpkgs.follows = "nixpkgs";
 		};
 
@@ -99,12 +105,14 @@
 					home-manager.backupFileExtension = "hm-backup";
 					home-manager.extraSpecialArgs = { inherit inputs; };
 
+					#home-manager.sharedModules = [
+					#	inputs.sops-nix.homeManagerModules.sops
+					#];
+
 					home-manager.users.v = import ./hosts/v_laptop/home.nix;
 				}
 
-				#./fenix.nix
 				({ pkgs, ... }: import ./modules/fenix.nix { inherit pkgs; })
-
 			];
 		};
 	};

@@ -16,7 +16,7 @@ source (dirname (status --current-filename))/app_aliases/git.fish
 source (dirname (status --current-filename))/app_aliases/go.fish
 source (dirname (status --current-filename))/app_aliases/cargo.fish
 
-source ~/.file_snippets/main.fish
+source /etc/nixos/home/file_snippets/main.fish
 source /etc/nixos/home/scripts/shell_harpoon/main.fish
 alias up="/etc/nixos/home/scripts/maintenance/main.sh"
 

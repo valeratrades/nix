@@ -47,11 +47,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1729954252,
-        "narHash": "sha256-KJqD6jLcju9+lGyxPKbQRvBLWXZGyYhn36ujNOFcV6s=",
+        "lastModified": 1729977927,
+        "narHash": "sha256-V3JSfFqGhXHUK+Yp8P3+Q5/sVTwJBF4eheZqa0ujsCw=",
         "owner": "valeratrades",
         "repo": "btc_line",
-        "rev": "144a0d699b588e8523d735beaaff1fed1d7055c7",
+        "rev": "ca8b8703502468af95d57f6957b32bab8a5d92aa",
         "type": "github"
       },
       "original": {
@@ -405,6 +405,7 @@
         "nixpkgs": "nixpkgs",
         "nixpkgs-stable": "nixpkgs-stable_2",
         "pre-commit-hooks": "pre-commit-hooks",
+        "tg": "tg",
         "todo": "todo"
       }
     },
@@ -462,6 +463,26 @@
       "original": {
         "owner": "nix-systems",
         "repo": "default",
+        "type": "github"
+      }
+    },
+    "tg": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1729956568,
+        "narHash": "sha256-gvBZzISd4rdvG8GiFYZFpp1lgoor4cuWjC0ZFH2BSFQ=",
+        "owner": "valeratrades",
+        "repo": "tg",
+        "rev": "e8607c5b20ea6d249e73a6e7d638c378eaf7bcc4",
+        "type": "github"
+      },
+      "original": {
+        "owner": "valeratrades",
+        "repo": "tg",
         "type": "github"
       }
     },

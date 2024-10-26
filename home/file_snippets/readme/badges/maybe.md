@@ -1,0 +1,1 @@
+[![Help Wanted](https://img.shields.io/github/issues/${GITHUB_NAME}/PROJECT_NAME_PLACEHOLDER/help%20wanted?color=green)](https://github.com/${GITHUB_NAME}/PROJECT_NAME_PLACEHOLDER/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
