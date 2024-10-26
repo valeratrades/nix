@@ -175,18 +175,19 @@ in
     font-awesome_5
 		font-awesome_4
     ocamlPackages.codicons
-		agave
 		texlivePackages.arimo
+		texlivePackages.dejavu
+		agave
     corefonts
     noto-fonts
     noto-fonts-cjk-sans
     noto-fonts-emoji
+		dejavu_fonts
+		jetbrains-mono
 
     # # copied over for no particular reason:
-    dejavu_fonts
     mplus-outline-fonts.githubRelease
     dina-font
-    jetbrains-mono
     emojione
     fira-code
     fira-code-symbols
