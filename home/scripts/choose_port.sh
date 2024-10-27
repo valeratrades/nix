@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
 # Apparently can just specify `port = 0` when openning connection, to have system auto-assign it. So this is useless.
 while true; do

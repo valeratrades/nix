@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
 CURRENT_MODE=$(gsettings get org.gnome.desktop.interface color-scheme)
 #dark_theme_alacritty="rose-pine"
