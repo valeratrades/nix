@@ -4,11 +4,12 @@ source (dirname (status --current-filename))/weird.fish
 source (dirname (status --current-filename))/document_watch.fish
 
 function beep
-    set dir (dirname (status --current-filename))
-    cargo -Zscript $dir/beep.rs $dir/assets/sound/Notification.mp3 #>/dev/null 2>&1
+	set dir (dirname (status --current-filename))
+	cargo -Zscript $dir/beep.rs $dir/assets/sound/Notification.mp3 >/dev/null 2>&1
 end
-
-alias timer="sh $HOME/s/help_scripts/timer.sh"
+function timer
+	cargo -Zscript (dirname (status --current-filename))/timer.rs $argv
+end
 
 alias q="py $HOME/s/help_scripts/ask_gpt.py -s $argv"
 alias f="py $HOME/s/help_scripts/ask_gpt.py -f $argv"
