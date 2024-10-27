@@ -392,6 +392,7 @@ in
           mpv
           obs-studio
           obs-cli
+					ffmpeg
         ]
 
         # System Monitoring and Debugging
