@@ -85,22 +85,18 @@ alias srf="sudo rm -rf"
 alias za="zathura"
 alias zp="zathura --mode presentation"
 alias massren="py $HOME/clone/massren/massren -d '' $argv"
-alias q="py $HOME/s/help_scripts/ask_gpt.py -s $argv"
-alias f="py $HOME/s/help_scripts/ask_gpt.py -f $argv"
 alias jp="jupyter lab -y"
 alias sr="source ~/.config/fish/config.fish" # Fish equivalent for reloading configuration.
 alias tree="tree -I 'target|debug|_*'"
 alias lhost="nohup nyxt http://localhost:8080/ > /dev/null 2>&1 &"
 alias ll="exa -lA"
 alias sound="qpwgraph"
-alias choose_port="$HOME/s/help_scripts/choose_port.sh"
 alias obs="mkdir ~/Videos/obs >/dev/null; sudo modprobe v4l2loopback video_nr=2 card_label=\"OBS Virtual Camera\" && pamixer --default-source --set-volume 70 && obs"
 alias video_cut="video-cut"
 alias ss="sudo systemctl"
 alias cl="wl-copy"
 alias wl_copy="wl-copy"
 alias gz="tar -xvzf -C"
-alias toggle_theme="$HOME/s/help_scripts/theme_toggle.sh"
 alias tokej="tokei -o json | jq . > /tmp/tokei.json"
 alias book="booktyping run --myopia"
 alias tokio-console="tokio-console --lang en_US.UTF-8"
@@ -150,11 +146,6 @@ alias nup="nix flake update"
 # # keyd
 alias rkeyd="sudo keyd reload && sudo journalctl -eu keyd"
 alias lkeyd="sudo keyd -m"
-#
-
-# # help_scripts
-alias beep="sh $HOME/s/help_scripts/beep.sh"
-alias timer="sh $HOME/s/help_scripts/timer.sh"
 #
 
 #TODO!: figure out direnv

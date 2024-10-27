@@ -5,18 +5,9 @@ source (dirname (status --current-filename))/other.fish
 source (dirname (status --current-filename))/cli_translate.fish
 source (dirname (status --current-filename))/cs_nav.fish
 
-source (dirname (dirname (dirname (status --current-filename))))/scripts/videos.fish
-source (dirname (dirname (dirname (status --current-filename))))/scripts/server.fish
-source (dirname (dirname (dirname (status --current-filename))))/scripts/weird.fish
-source (dirname (dirname (dirname (status --current-filename))))/scripts/document_watch.fish
+source (dirname (dirname (dirname (status --current-filename))))/scripts/mod.fish
 
-source (dirname (status --current-filename))/app_aliases/tmux.fish
-source (dirname (status --current-filename))/app_aliases/nvim.fish
-source (dirname (status --current-filename))/app_aliases/git.fish
-source (dirname (status --current-filename))/app_aliases/go.fish
-source (dirname (status --current-filename))/app_aliases/cargo.fish
-source (dirname (status --current-filename))/app_aliases/tg.fish
-source (dirname (status --current-filename))/app_aliases/ffmpeg.fish
+source (dirname (status --current-filename))/app_aliases/mod.fish
 
 source /etc/nixos/home/file_snippets/main.fish
 source /etc/nixos/home/scripts/shell_harpoon/main.fish
