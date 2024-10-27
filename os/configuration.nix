@@ -453,6 +453,7 @@ in
             vscode-langservers-extracted # contains json lsp
             marksman # md lsp
             lean4
+						perl
 
             # typst
             [
