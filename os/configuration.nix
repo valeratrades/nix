@@ -496,6 +496,7 @@ in
               crate2nix
               cargo-edit
               cargo-sort
+							cargo-insta
               cargo-mutants
               cargo-update
               #cargo-binstall
