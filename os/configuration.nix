@@ -238,7 +238,10 @@ in
       MANPAGER = "less";
       LESSHISTFILE = "-";
       HISTCONTROL = "ignorespace";
-      PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig"; # many of my rust scripts require it
+
+			# openssl hurdle
+      PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig:${pkgs.openssl}/lib/pkgconfig"; # many of my rust scripts require it
+			#LD_LIBRARY_PATH = lib.makeLibraryPath [ pkgs.openssl ];
     };
 
     shellInit = ''
