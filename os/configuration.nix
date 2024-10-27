@@ -262,7 +262,7 @@ in
         keyd
         libinput-gestures
         sccache
-				greenclip
+				haskellPackages.greenclip
         cachix
         openssl
         nerdfix
