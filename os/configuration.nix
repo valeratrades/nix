@@ -156,7 +156,7 @@ in
 			#script = ''
 			#	/run/current-system/sw/bin/sway
 			#'';
-			serviceConfig.ExectStart = "${pkgs.sway}/bin/sway";
+			serviceConfig.ExectStart = "sway";
 		};
 
     user.services = {
@@ -350,16 +350,15 @@ in
         # Command Line Enhancements
         [
           atuin
-          babelfish
           cowsay
           cotp
-          eza # better ‘ls’
+          eza # better `ls`
           fd # better `find`
-          bat # better cat
+          bat # better `cat`
+					ripgrep # better `grep`
           fzf
           jq
           keyd
-          ripgrep
           tree
           zoxide
         ]
