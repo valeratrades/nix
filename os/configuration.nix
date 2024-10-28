@@ -239,7 +239,7 @@ in
 
     loginShellInit = ''
       sudo ln -sfT ${pkgs.dash}/bin/dash /bin/sh
-			sway
+			#sway
     '';
 
     #naersk
