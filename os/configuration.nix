@@ -3,7 +3,7 @@
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
 {
-	self,
+  self,
   config,
   pkgs,
   lib,
@@ -151,25 +151,22 @@ in
     #	"autovt@tty1".enable = true;
     #};
 
-		services.startup_sway = {
-			after = [ "network.target" ];
-			wantedBy = [ "default.target" ];
-			#script = ''
-			#	/run/current-system/sw/bin/sway
-			#'';
-			serviceConfig.ExecStart = "${pkgs.sway}/bin/sway";
-		};
+		#services.startup_sway = {
+		#	after = [ "network.target" ];
+		#	wantedBy = [ "default.target" ];
+		#	serviceConfig.ExecStart = "${pkgs.sway}/bin/sway";
+		#};
 
     user.services = {
-			#"start-wayland" = {
-			#	after = [ "network.target" ];
-			#	wantedBy = [ "default.target" ];
-			#	serviceConfig = {
-			#		#Type = "oneshot";
-			#		Type = "simple";
-			#		ExecStart = [ ''sh -c 'sway' '' ];
-			#	};
-			#};
+      #"start-wayland" = {
+      #	after = [ "network.target" ];
+      #	wantedBy = [ "default.target" ];
+      #	serviceConfig = {
+      #		#Type = "oneshot";
+      #		Type = "simple";
+      #		ExecStart = [ ''sh -c 'sway' '' ];
+      #	};
+      #};
       mpris-proxy = {
         description = "Mpris proxy";
         after = [
@@ -182,41 +179,54 @@ in
     };
   };
 
-  fonts.packages = with pkgs; [
-    nerdfonts
-    font-awesome
-    profont
-    font-awesome_5
-    font-awesome_4
-    ocamlPackages.codicons
-    texlivePackages.arimo
-    texlivePackages.dejavu
-    agave
-    corefonts
-    noto-fonts
-    noto-fonts-cjk-sans
-    noto-fonts-emoji
-    dejavu_fonts
-    jetbrains-mono
-    material-design-icons
-
-    # # copied over for no particular reason:
-    mplus-outline-fonts.githubRelease
-    dina-font
-    emojione
-    fira-code
-    fira-code-symbols
-    font-awesome
-    google-fonts
-    ipafont
-    kanji-stroke-order-font
-    liberation_ttf
-    powerline-fonts
-    proggyfonts
-    source-code-pro
-    ubuntu_font_family
-    #
-  ];
+  fonts = {
+    packages = with pkgs; [
+      fira-code
+      fira-code-nerdfont
+      fira-code-symbols
+      agave
+      corefonts
+      dejavu_fonts
+      dina-font
+      emojione
+      font-awesome
+      julia-mono
+      font-awesome_4
+      font-awesome_5 # for some reason doesn't bring all fa5 icons that are accessible under it on the web
+      texlivePackages.fontawesome5
+      texlivePackages.fontawesome
+      google-fonts
+      ipafont
+      jetbrains-mono
+      kanji-stroke-order-font
+      liberation_ttf
+      material-design-icons
+      mplus-outline-fonts.githubRelease
+      #nerdfonts
+      (nerdfonts.override {
+        fonts = [
+          # symbols icon only
+          "NerdFontsSymbolsOnly"
+          # Characters
+          "FiraCode"
+          "JetBrainsMono"
+          "Iosevka"
+        ];
+      })
+      noto-fonts
+      noto-fonts-cjk-sans
+      noto-fonts-emoji
+      ocamlPackages.codicons
+      powerline-fonts
+      profont
+      proggyfonts
+      source-code-pro
+      texlivePackages.arimo
+      texlivePackages.dejavu
+      ubuntu_font_family
+    ];
+    fontconfig.enable = true;
+  };
 
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
@@ -241,7 +251,7 @@ in
       QT_QPA_PLATFORMTHEME = "flatpak";
       GTK_USE_PORTAL = "1";
       GDK_DEBUG = "portals";
-			NIXOS_CONFIG = "/etc/nixos";
+      NIXOS_CONFIG = "/etc/nixos";
 
       # home vars
       MODULAR_HOME = "${modularHome}";
@@ -259,7 +269,7 @@ in
       #LD_LIBRARY_PATH = lib.makeLibraryPath [ pkgs.openssl ]; // taken up by pipewire (need a way to join them)
     };
 
-		binsh = "${pkgs.dash}/bin/dash";
+    binsh = "${pkgs.dash}/bin/dash";
 
     #naersk
     #(naersk.buildPackage {
@@ -352,12 +362,13 @@ in
         # Command Line Enhancements
         [
           atuin
+					tldr
           cowsay
           cotp
           eza # better `ls`
           fd # better `find`
           bat # better `cat`
-					ripgrep # better `grep`
+          ripgrep # better `grep`
           fzf
           jq
           keyd
@@ -430,13 +441,13 @@ in
           aria2
         ]
 
-				# shells
-				[
-					zsh
-					fish
-					fishPlugins.bass
-					dash
-				]
+        # shells
+        [
+          zsh
+          fish
+          fishPlugins.bass
+          dash
+        ]
 
         # Development Tools
         [
@@ -467,11 +478,11 @@ in
             lean4
             perl
 
-						# Js / Ts
-						[
-							nodejs_22
-							deno
-						]
+            # Js / Ts
+            [
+              nodejs_22
+              deno
+            ]
 
             # typst
             [
@@ -540,7 +551,7 @@ in
             ]
           ]
 
-					# Debuggers
+          # Debuggers
           [
             lldb
             vscode-extensions.vadimcn.vscode-lldb
