@@ -1,0 +1,54 @@
+theme = "my_rose_pine"
+
+[editor]
+line-number = "relative"
+rulers = [80]
+shell = ["dash", "-c"]
+
+[editor.cursor-shape]
+insert = "bar"
+normal = "block"
+select = "underline"
+
+[editor.file-picker]
+hidden = true
+
+[keys.normal]
+A-w = ":w!"
+A-q = ":q!"
+A-a = ":qa!"
+A-h = "jump_backward"
+A-s = "jump_forward"
+
+t = "move_line_down"
+n = "move_line_up"
+s = "move_char_right"
+
+";" = "command_mode"
+
+esc = ["collapse_selection", "keep_primary_selection"]
+
+"ret" = "search_next"
+# and search prev is still "N" because fuck me.
+
+[keys.select]
+A-w = ["normal_mode", ":w!"]
+A-q = [":q!"]
+A-a = [":qa!"]
+A-h = "jump_backward"
+A-s = "jump_forward"
+
+t = "move_line_down"
+n = "move_line_up"
+s = "move_char_right"
+
+";" = ["normal_mode", "command_mode"] 
+
+"ret" = "search_next"
+
+[keys.insert]
+A-w = ["normal_mode", ":w!"]
+A-q = [":q!"]
+A-a = [":qa!"]
+A-h = "jump_backward"
+A-s = "jump_forward"

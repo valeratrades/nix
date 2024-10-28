@@ -1,0 +1,19 @@
+(defwidget reveal_on_hover [var varname ?transition ?label_text ?label_class]
+	(eventbox
+		:class "eventbox"
+		:onhover "eww update ${varname}=true"
+		:onhoverlost "eww update ${varname}=false"
+		(box
+			:space-evenly false
+			(revealer
+				:reveal var
+				:transition {transition ?: "slideleft"}
+				:duration "0ms"
+				(box
+				(children)
+				)
+			)
+			(label :class label_class :text label_text) ; also the area over which the hover is detected, as revealer is hiding
+		)
+	)
+)

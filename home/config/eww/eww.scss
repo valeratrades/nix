@@ -1,0 +1,51 @@
+$foreground: #ffffff;
+$grey: #aaaaaa;
+$foreground-alt: #465059;
+$background_legend: #0e1419;
+$shades_of_grey: 75;
+$background: rgba($shades_of_grey, $shades_of_grey, $shades_of_grey, 1.0);
+$black: #000000;
+$red: #ff6565;
+$green: #b8cc52;
+$yellow: #e6c446;
+$blue: #68d4ff;
+$magenta: #ffa3aa;
+$cyan: #36a3d9;
+$white: #ffffff;
+$brown: #ba6e3d;
+
+$test: #ba6e3d;
+
+* {
+  all: unset;
+}
+
+
+window {
+	font-family: "Noto Sans Mono";
+	background: $background;
+	font-size: 12px;
+	color: $black;
+}
+
+.myopia {
+	font-size: 29px;
+}
+
+.bar {
+	.myopia {
+		font-size: 29px;
+	}
+}
+
+.error {
+	color: $red;
+}
+.warn {
+	color: $brown;
+}
+
+.text {
+	margin: 0 3px;
+	color: $black;
+}

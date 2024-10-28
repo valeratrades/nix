@@ -33,25 +33,51 @@ in {
 
 
 	home.file = {
-		#".config/nix/nix.conf".text = ''
-		#	access-tokens = github.com=${config.sops.secrets.github_token}
-		#'';
+		"${config.home.homeDirectory}/.config/tg.toml".source = ../../home/config/tg.toml;
+		"${config.home.homeDirectory}/.config/tg_admin.toml".source = ../../home/config/tg_admin.toml;
+		"${config.home.homeDirectory}/.config/todo.toml".source = ../../home/config/todo.toml;
+		"${config.home.homeDirectory}/.config/discretionary_engine.toml".source = ../../home/config/discretionary_engine.toml;
+		"${config.home.homeDirectory}/.config/btc_line.toml".source = ../../home/config/btc_line.toml;
 
-		#"${self}/home/config/tg.toml".source = ./config/tg.toml;
-		#"${self}/home/config/tg_admin.toml".source = ./config/tg_admin.toml;
-		#"${self}/home/config/todo".source = ./config/todo.toml;
-		#"${self}/home/config/discretionary_engine.toml".source = ./config/discretionary_engine.toml;
-		#"${self}/home/config/btc_line.toml".source = ./config/btc_line.toml;
+		"${config.home.homeDirectory}/.config/greenclip.toml".source = ../../home/config/greenclip.toml;
+
+		"${config.home.homeDirectory}/.config/nvim" = {
+			source = ../../home/config/nvim;
+			recursive = true;
+		};
+		"${config.home.homeDirectory}/.config/eww" = {
+			source = ../../home/config/eww;
+			recursive = true;
+		};
+		"${config.home.homeDirectory}/.config/zathura" = {
+			source = ../../home/config/zathura;
+			recursive = true;
+		};
+		"${config.home.homeDirectory}/.config/sway" = {
+			source = ../../home/config/sway;
+			recursive = true;
+		};
+
+		# # Might be able to join these, syntaxis should be similar
+		"${config.home.homeDirectory}/.config/vesktop" = {
+			source = ../../home/config/vesktop;
+			recursive = true;
+		};
+		"${config.home.homeDirectory}/.config/discord" = {
+			source = ../../home/config/discord;
+			recursive = true;
+		};
 		#
-		#"${self}/home/config/greenclip.toml".source = ./config/greenclip.toml;
 
-		"${config.home.homeDirectory}/config/tg.toml".source = ../../home/config/tg.toml;
-		"${config.home.homeDirectory}/config/tg_admin.toml".source = ../../home/config/tg_admin.toml;
-		"${config.home.homeDirectory}/config/todo".source = ../../home/config/todo.toml;
-		"${config.home.homeDirectory}/config/discretionary_engine.toml".source = ../../home/config/discretionary_engine.toml;
-		"${config.home.homeDirectory}/config/btc_line.toml".source = ../../home/config/btc_line.toml;
 
-		"${config.home.homeDirectory}/config/greenclip.toml".source = ../../home/config/greenclip.toml;
+		"${config.home.homeDirectory}/.config/alacritty" = {
+			source = ../../home/config/alacritty;
+			recursive = true;
+		};
+		"${config.home.homeDirectory}/.config/keyd" = {
+			source = ../../home/config/keyd;
+			recursive = true;
+		};
 	};
 
 	# link the configuration file in current directory to the specified location in home directory

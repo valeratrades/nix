@@ -140,7 +140,7 @@ in
     ];
   };
 
-  services.mingetty.autologinUser = "v";
+  services.getty.autologinUser = "v";
 
   systemd = {
     #services = {
@@ -150,17 +150,25 @@ in
     #	"autovt@tty1".enable = true;
     #};
 
+		services.startup_sway = {
+			after = [ "network.target" ];
+			wantedBy = [ "default.target" ];
+			#script = ''
+			#	/run/current-system/sw/bin/sway
+			#'';
+			serviceConfig.ExectStart = "${pkgs.sway}/bin/sway";
+		};
+
     user.services = {
-			"start-wayland" = {
-				enable = true;
-				after = [ "network.target" ];
-				wantedBy = [ "default.target" ];
-				serviceConfig = {
-					#Type = "oneshot";
-					Type = "simple";
-					ExecStart = [ ''sh -c 'sudo ln -sfT ${pkgs.dash}/bin/dash /bin/sh && sway' '' ];
-				};
-			};
+			#"start-wayland" = {
+			#	after = [ "network.target" ];
+			#	wantedBy = [ "default.target" ];
+			#	serviceConfig = {
+			#		#Type = "oneshot";
+			#		Type = "simple";
+			#		ExecStart = [ ''sh -c 'sway' '' ];
+			#	};
+			#};
       mpris-proxy = {
         description = "Mpris proxy";
         after = [
@@ -249,10 +257,7 @@ in
       #LD_LIBRARY_PATH = lib.makeLibraryPath [ pkgs.openssl ]; // taken up by pipewire (need a way to join them)
     };
 
-    #loginShellInit = ''
-    #        sudo ln -sfT ${pkgs.dash}/bin/dash /bin/sh
-    #  			#sway
-    #'';
+		binsh = "${pkgs.dash}/bin/dash";
 
     #naersk
     #(naersk.buildPackage {
@@ -424,6 +429,14 @@ in
           aria2
         ]
 
+				# shells
+				[
+					zsh
+					fish
+					fishPlugins.bass
+					dash
+				]
+
         # Development Tools
         [
           gh
@@ -446,20 +459,18 @@ in
             vscode
           ]
 
-          # shells
-          [
-            zsh
-            fish
-            fishPlugins.bass
-            dash
-          ]
-
           # language-specific
           [
             vscode-langservers-extracted # contains json lsp
             marksman # md lsp
             lean4
             perl
+
+						# Js / Ts
+						[
+							nodejs_22
+							deno
+						]
 
             # typst
             [
@@ -528,6 +539,7 @@ in
             ]
           ]
 
+					# Debuggers
           [
             lldb
             vscode-extensions.vadimcn.vscode-lldb

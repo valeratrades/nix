@@ -1,0 +1,6 @@
+2024/10/28-09:16:00.560 1031 Reusing MANIFEST /home/v/.config/vesktop/sessionData/Local Storage/leveldb/MANIFEST-000001
+2024/10/28-09:16:00.568 1031 Recovering log #222
+2024/10/28-09:16:00.569 1031 Reusing old log /home/v/.config/vesktop/sessionData/Local Storage/leveldb/000222.log 
+2024/10/28-10:34:15.613 1031 Level-0 table #227: started
+2024/10/28-10:34:15.616 1031 Level-0 table #227: 39574 bytes OK
+2024/10/28-10:34:15.617 1031 Delete type=0 #222
