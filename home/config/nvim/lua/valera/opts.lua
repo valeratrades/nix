@@ -72,7 +72,7 @@ o.spelloptions = "camel"
 o.spellcapcheck =
 [[[.?!]\_[\])'"\t ]\+]] -- default. Can't figure out how to prevent it from forcing capitalization at new line start.
 --o.spellfile = os.getenv("HOME") .. "/.config/nvim/spell/en.utf-8.add"
-o.spellfile = "/etc/nixos/home/config/nvim/spell/en.utf-8.add"
+o.spellfile = os.getenv("NIXOS_CONFIG") .. "/home/config/nvim/spell/en.utf-8.add"
 
 -- o.path = "**"
 

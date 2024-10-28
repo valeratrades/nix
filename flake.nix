@@ -6,7 +6,7 @@
 		nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-24.05";
 
 		home-manager = {
-			url = "github:nix-community/home-manager/release-24.05";
+			url = "github:nix-community/home-manager/master";
 			# The `follows` keyword in inputs is used for inheritance.
 			# Here, `inputs.nixpkgs` of home-manager is kept consistent with
 			# the `inputs.nixpkgs` of the current flake,
@@ -85,6 +85,8 @@
 		#NB: when writing hostname, remove all '_' characters
 		nixosConfigurations.vlaptop = nixpkgs.lib.nixosSystem {
 			system = "x86_64-linux";
+
+			#environment.variables.NIXOS_CONFIG = "something";
 
 			specialArgs = { 
 				inherit inputs;

@@ -3,6 +3,7 @@
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
 {
+	self,
   config,
   pkgs,
   lib,
@@ -156,7 +157,7 @@ in
 			#script = ''
 			#	/run/current-system/sw/bin/sway
 			#'';
-			serviceConfig.ExectStart = "sway";
+			serviceConfig.ExecStart = "${pkgs.sway}/bin/sway";
 		};
 
     user.services = {
@@ -240,6 +241,7 @@ in
       QT_QPA_PLATFORMTHEME = "flatpak";
       GTK_USE_PORTAL = "1";
       GDK_DEBUG = "portals";
+			NIXOS_CONFIG = "/etc/nixos";
 
       # home vars
       MODULAR_HOME = "${modularHome}";
