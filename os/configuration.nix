@@ -62,23 +62,13 @@ in
     blueman.enable = true;
   };
   programs = {
-    bash = {
-      loginShellInit = ''
-        if [ -z $DISPLAY ] && [ "$(tty)" = "/dev/tty4" ]; then
-        	# https://wiki.archlinux.org/title/Sway#Automatically_on_TTY_login
-        	#exec ${systemdCat} --identifier=sway ${sway}
-        	exec /usr/bin/start_sway.sh
-        fi
-      '';
-    };
-
     firefox.enable = true;
     sway = {
       enable = true;
       wrapperFeatures.gtk = true;
     };
     sway.xwayland.enable = true;
-    fish.enable = true;
+		fish.enable = true;
 
     mtr.enable = true;
     gnupg.agent = {
@@ -150,10 +140,13 @@ in
     ];
   };
 
+	services.mingetty.autologinUser = "v";
+	
   systemd = {
     #services = {
-    #TODO!: copy over the previous getty config to log in and immediately execute `sway`
-    #	"getty@tty1".enable = true;
+		##TODO!: copy over the previous getty config to log in and immediately execute `sway`
+    	#"getty@tty1".enable = true;
+			#"getty@tty1".autologinUser = "v";
     #	"autovt@tty1".enable = true;
     #};
 
@@ -244,8 +237,9 @@ in
 			#LD_LIBRARY_PATH = lib.makeLibraryPath [ pkgs.openssl ]; // taken up by pipewire (need a way to join them)
     };
 
-    shellInit = ''
+    loginShellInit = ''
       sudo ln -sfT ${pkgs.dash}/bin/dash /bin/sh
+			sway
     '';
 
     #naersk
