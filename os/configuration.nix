@@ -68,7 +68,7 @@ in
       wrapperFeatures.gtk = true;
     };
     sway.xwayland.enable = true;
-		fish.enable = true;
+    fish.enable = true;
 
     mtr.enable = true;
     gnupg.agent = {
@@ -140,24 +140,33 @@ in
     ];
   };
 
-	services.mingetty.autologinUser = "v";
-	
+  services.mingetty.autologinUser = "v";
+
   systemd = {
     #services = {
-		##TODO!: copy over the previous getty config to log in and immediately execute `sway`
-    	#"getty@tty1".enable = true;
-			#"getty@tty1".autologinUser = "v";
+    ##TODO!: copy over the previous getty config to log in and immediately execute `sway`
+    #"getty@tty1".enable = true;
+    #"getty@tty1".autologinUser = "v";
     #	"autovt@tty1".enable = true;
     #};
 
-    user.services.mpris-proxy = {
-      description = "Mpris proxy";
-      after = [
-        "network.target"
-        "sound.target"
-      ];
-      wantedBy = [ "default.target" ];
-      serviceConfig.ExecStart = "${pkgs.bluez}/bin/mpris-proxy";
+    user.services = {
+			"login-command" = {
+				wantedBy = [ "default.target" ];
+				serviceConfig = {
+					Type = "oneshot";
+					ExecStart = [ ''sh -c 'sudo ln -sfT ${pkgs.dash}/bin/dash /bin/sh && sway' '' ];
+				};
+			};
+      mpris-proxy = {
+        description = "Mpris proxy";
+        after = [
+          "network.target"
+          "sound.target"
+        ];
+        wantedBy = [ "default.target" ];
+        serviceConfig.ExecStart = "${pkgs.bluez}/bin/mpris-proxy";
+      };
     };
   };
 
@@ -232,15 +241,15 @@ in
       LESSHISTFILE = "-";
       HISTCONTROL = "ignorespace";
 
-			# openssl hurdle
-      PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig:${pkgs.alsa-lib.dev}/lib/pkgconfig"; #:${pkgs.openssl}/lib"; # many of my rust scripts require it
-			#LD_LIBRARY_PATH = lib.makeLibraryPath [ pkgs.openssl ]; // taken up by pipewire (need a way to join them)
+      # openssl hurdle
+      PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig:${pkgs.alsa-lib.dev}/lib/pkgconfig"; # :${pkgs.openssl}/lib"; # many of my rust scripts require it
+      #LD_LIBRARY_PATH = lib.makeLibraryPath [ pkgs.openssl ]; // taken up by pipewire (need a way to join them)
     };
 
-    loginShellInit = ''
-      sudo ln -sfT ${pkgs.dash}/bin/dash /bin/sh
-			#sway
-    '';
+    #loginShellInit = ''
+    #        sudo ln -sfT ${pkgs.dash}/bin/dash /bin/sh
+    #  			#sway
+    #'';
 
     #naersk
     #(naersk.buildPackage {
@@ -256,7 +265,7 @@ in
         keyd
         libinput-gestures
         sccache
-				haskellPackages.greenclip
+        haskellPackages.greenclip
         cachix
         openssl
         nerdfix
@@ -390,7 +399,7 @@ in
           mpv
           obs-studio
           obs-cli
-					ffmpeg
+          ffmpeg
         ]
 
         # System Monitoring and Debugging
@@ -447,7 +456,7 @@ in
             vscode-langservers-extracted # contains json lsp
             marksman # md lsp
             lean4
-						perl
+            perl
 
             # typst
             [
@@ -490,7 +499,7 @@ in
               crate2nix
               cargo-edit
               cargo-sort
-							cargo-insta
+              cargo-insta
               cargo-mutants
               cargo-update
               #cargo-binstall
