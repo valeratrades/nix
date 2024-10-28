@@ -144,29 +144,7 @@ in
   services.getty.autologinUser = "v";
 
   systemd = {
-    #services = {
-    ##TODO!: copy over the previous getty config to log in and immediately execute `sway`
-    #"getty@tty1".enable = true;
-    #"getty@tty1".autologinUser = "v";
-    #	"autovt@tty1".enable = true;
-    #};
-
-		#services.startup_sway = {
-		#	after = [ "network.target" ];
-		#	wantedBy = [ "default.target" ];
-		#	serviceConfig.ExecStart = "${pkgs.sway}/bin/sway";
-		#};
-
     user.services = {
-      #"start-wayland" = {
-      #	after = [ "network.target" ];
-      #	wantedBy = [ "default.target" ];
-      #	serviceConfig = {
-      #		#Type = "oneshot";
-      #		Type = "simple";
-      #		ExecStart = [ ''sh -c 'sway' '' ];
-      #	};
-      #};
       mpris-proxy = {
         description = "Mpris proxy";
         after = [
@@ -202,17 +180,7 @@ in
       liberation_ttf
       material-design-icons
       mplus-outline-fonts.githubRelease
-      #nerdfonts
-      (nerdfonts.override {
-        fonts = [
-          # symbols icon only
-          "NerdFontsSymbolsOnly"
-          # Characters
-          "FiraCode"
-          "JetBrainsMono"
-          "Iosevka"
-        ];
-      })
+      nerdfonts
       noto-fonts
       noto-fonts-cjk-sans
       noto-fonts-emoji

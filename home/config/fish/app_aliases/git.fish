@@ -7,12 +7,12 @@ alias g="git"
 
 function gg
 	set prefix ""
-	if test "$argv[1]" = "p" -o "$argv[1]" = "-p" -o "$argv[1]" = "--prefix"
+	if [ "$argv[1]" = "p" ]; or [ "$argv[1]" = "-p" ]; or [ "$argv[1]" = "--prefix" ]
 		set prefix "$argv[2]: "
 		set argv $argv[3..-1]
 	end
 
-	if test "$argv[1]" = "t" -o "$argv[1]" = "-t" -o "$argv[1]" = "--tag"
+	if [ "$argv[1]" = "t" ]; or [ "$argv[1]" = "-t" ]; or [ "$argv[1]" = "--tag" ]
 		git tag -a "$argv[2]" -m "$argv[2]"
 		set argv $argv[3..-1]
 	end
@@ -118,138 +118,138 @@ function gc
 	set filename (string replace -r '\\.git$' '' $filename)
 	if test (count $argv) = 1
 		if test (pwd) = "/tmp/$filename"
-	cd - &>/dev/null
-	end
-	rm -rf /tmp/$filename
-	git clone --depth=1 "$url" "/tmp/$filename" 1>&2
-	and cd "/tmp/$filename"; or return 1
-	pwd
+			cd - &>/dev/null
+		end
+		rm -rf /tmp/$filename
+		git clone --depth=1 "$url" "/tmp/$filename" 1>&2
+		and cd "/tmp/$filename"; or return 1
+		pwd
 	else if test (count $argv) = 2
-	set target $argv[2]
-	if test -d "$argv[2]"
-	set target "$argv[2]/$filename"
+		set target $argv[2]
+		if test -d "$argv[2]"
+			set target "$argv[2]/$filename"
+		end
+		git clone --depth=1 "$url" "$target"; or return 1
 	end
-	git clone --depth=1 "$url" "$target"; or return 1
-	end
-	end
+end
 
-	set gb_readme '''
-	#build from source helper
-	Does git clone into /tmp, and then tries to build until it works.
+set gb_readme '''
+#build from source helper
+Does git clone into /tmp, and then tries to build until it works.
 
-	ex: build neovim/neovim
+ex: build neovim/neovim
 
-	some repositories have shorthands, eg: `build nvim` would work.
-	'''
+some repositories have shorthands, eg: `build nvim` would work.
+'''
 
-	function gb
+function gb
 	if test "$argv[1]" = "nvim"
-	set target "neovim/neovim"
+		set target "neovim/neovim"
 	else if test "$argv[1]" = "eww"
-	set target "elkowar/eww"
+		set target "elkowar/eww"
 	else if test "$argv[1]" = "-h" -o "$argv[1]" = "--help" -o "$argv[1]" = "help"
-	printf $gb_readme
-return 0
-else if test -z "$argv[1]"
-printf $gb_readme
-return 1
-else
-set target "$argv[1]"
-end
+		printf $gb_readme
+		return 0
+	else if test -z "$argv[1]"
+		printf $gb_readme
+		return 1
+	else
+		set target "$argv[1]"
+	end
 
-set initial_dir (pwd)
-set target_dir (gc "$target")
-if test $status -ne 0
-return 1
-end
-cd "$target_dir"; or return 1
+	set initial_dir (pwd)
+	set target_dir (gc "$target")
+	if test $status -ne 0
+		return 1
+	end
+	cd "$target_dir"; or return 1
 
-and command cmake -S . -B ./build; and cd ./build; and sudo make install
-and cd $initial_dir; and rm -rf $target_dir
+	and command cmake -S . -B ./build; and cd ./build; and sudo make install
+	and cd $initial_dir; and rm -rf $target_dir
 end
 
 function protect_branch
-set repo $argv[1]
-set branch $argv[2]
+	set repo $argv[1]
+	set branch $argv[2]
 
-curl -X PUT -H "Authorization: token $GITHUB_KEY" \
--H "Accept: application/vnd.github.v3+json" \
-https://api.github.com/repos/$GITHUB_NAME/$repo/branches/$branch/protection \
--d '{
-"required_status_checks": {
-"strict": true,
-"contexts": []
-},
-"enforce_admins": true,
-"required_pull_request_reviews": null,
-"restrictions": null,
-"allow_auto_merge": true,
-"allow_force_pushes": true,
-"allow_deletions": true
-}'
+	curl -X PUT -H "Authorization: token $GITHUB_KEY" \
+	-H "Accept: application/vnd.github.v3+json" \
+	https://api.github.com/repos/$GITHUB_NAME/$repo/branches/$branch/protection \
+	-d '{
+	"required_status_checks": {
+	"strict": true,
+	"contexts": []
+	},
+	"enforce_admins": true,
+	"required_pull_request_reviews": null,
+	"restrictions": null,
+	"allow_auto_merge": true,
+	"allow_force_pushes": true,
+	"allow_deletions": true
+	}'
 
-curl -L -X PATCH \
--H "Accept: application/vnd.github+json" \
--H "Authorization: Bearer $GITHUB_KEY" \
--H "X-GitHub-Api-Version: 2022-11-28" \
-https://api.github.com/repos/$GITHUB_NAME/$repo \
--d '{"allow_auto_merge":true}'
+	curl -L -X PATCH \
+	-H "Accept: application/vnd.github+json" \
+	-H "Authorization: Bearer $GITHUB_KEY" \
+	-H "X-GitHub-Api-Version: 2022-11-28" \
+	https://api.github.com/repos/$GITHUB_NAME/$repo \
+	-d '{"allow_auto_merge":true}'
 end
 
 function gn
-if test "$argv[1]" = "-h" -o "$argv[1]" = "--help" -o "$argv[1]" = "help"
-printf """\
-#git create new repo
-arg1: repository name
-arg2: --private or --public
+	if [ "$argv[1]" = "-h" ]; or [ "$argv[1]" = "--help" ]; or [ "$argv[1]" = "help" ]
+		printf """\
+		#git create new repo
+		arg1: repository name
+		arg2: --private or --public
 
-ex: gn my_new_repo --private
-"""
-return 0
-end
-set repo_name $argv[1]
-if test "$argv[1]" = "--private" -o "$argv[1]" = "--public"
-set repo_name (basename (pwd))
-else
-set argv $argv[2..-1]
-end
+		ex: gn my_new_repo --private
+		"""
+		return 0
+	end
+	set repo_name $argv[1]
+	if [ "$argv[1]" = "--private"]; or [ "$argv[1]" = "--public" ]
+		set repo_name (basename (pwd))
+	else
+		set argv $argv[2..-1]
+	end
 
-git init
-git add .
-git commit -m "Initial Commit"
-gh repo create $repo_name $argv[1] --source=.
-git remote add origin https://github.com/$GITHUB_NAME/$repo_name.git
-git push -u origin master
+	git init
+	git add .
+	git commit -m "Initial Commit"
+	gh repo create $repo_name $argv[1] --source=.
+	git remote add origin https://github.com/$GITHUB_NAME/$repo_name.git
+	git push -u origin master
 
-gh api repos/$GITHUB_NAME/$repo_name/labels \
--f name="ci" \
--f color="808080" \
--f description="New test or benchmark"
+	gh api repos/$GITHUB_NAME/$repo_name/labels \
+	-f name="ci" \
+	-f color="808080" \
+	-f description="New test or benchmark"
 
-gh api -X DELETE repos/$GITHUB_NAME/$repo_name/labels/enhancement
+	gh api -X DELETE repos/$GITHUB_NAME/$repo_name/labels/enhancement
 
-curl -L -X POST \
--H "Accept: application/vnd.github+json" \
--H "Authorization: token $GITHUB_KEY" \
--H "X-GitHub-Api-Version: 2022-11-28" \
-https://api.github.com/repos/$GITHUB_NAME/$repo_name/milestones \
--d '{
-"title":"1.0",
-"state":"open",
-"description":"Minimum viable product"
-}'
+	curl -L -X POST \
+	-H "Accept: application/vnd.github+json" \
+	-H "Authorization: token $GITHUB_KEY" \
+	-H "X-GitHub-Api-Version: 2022-11-28" \
+	https://api.github.com/repos/$GITHUB_NAME/$repo_name/milestones \
+	-d '{
+	"title":"1.0",
+	"state":"open",
+	"description":"Minimum viable product"
+	}'
 end
 
 function git_add_global_label
-set label_name $argv[1]
-set label_description $argv[2]
-set label_color $argv[3]
+	set label_name $argv[1]
+	set label_description $argv[2]
+	set label_color $argv[3]
 
-gh repo list $GITHUB_NAME --limit 1000 --json nameWithOwner --jq '.[].nameWithOwner' | rg -v '\.github$|'"$GITHUB_NAME"'$' | while read -l repo
-echo "Adding label to $repo"
-gh api repos/$repo/labels \
--f name="$label_name" \
--f color="$label_color" \
--f description="$label_description"
-end
+	gh repo list $GITHUB_NAME --limit 1000 --json nameWithOwner --jq '.[].nameWithOwner' | rg -v '\.github$|'"$GITHUB_NAME"'$' | while read -l repo
+		echo "Adding label to $repo"
+		gh api repos/$repo/labels \
+		-f name="$label_name" \
+		-f color="$label_color" \
+		-f description="$label_description"
+	end
 end
