@@ -151,10 +151,13 @@ in
     #};
 
     user.services = {
-			"login-command" = {
+			"start-wayland" = {
+				enable = true;
+				after = [ "network.target" ];
 				wantedBy = [ "default.target" ];
 				serviceConfig = {
-					Type = "oneshot";
+					#Type = "oneshot";
+					Type = "simple";
 					ExecStart = [ ''sh -c 'sudo ln -sfT ${pkgs.dash}/bin/dash /bin/sh && sway' '' ];
 				};
 			};
