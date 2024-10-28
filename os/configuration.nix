@@ -233,7 +233,7 @@ in
       HISTCONTROL = "ignorespace";
 
       # openssl hurdle
-      PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig:${pkgs.alsa-lib.dev}/lib/pkgconfig"; # :${pkgs.openssl}/lib"; # many of my rust scripts require it
+      PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig:${pkgs.alsa-lib.dev}/lib/pkgconfig:${pkgs.wayland-scanner.bin}/bin"; # :${pkgs.openssl}/lib"; # many of my rust scripts require it
       #LD_LIBRARY_PATH = lib.makeLibraryPath [ pkgs.openssl ]; // taken up by pipewire (need a way to join them)
     };
 
@@ -255,6 +255,7 @@ in
         sccache
         haskellPackages.greenclip
         cachix
+				wayland-scanner
         openssl
         nerdfix
 
