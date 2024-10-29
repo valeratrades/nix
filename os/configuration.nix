@@ -76,8 +76,16 @@ in
       enable = true;
       enableSSHSupport = true;
     };
-		nh.enable = true;
+		nh = {
+			enable = true;
+			clean = {
+				enable = true;
+				dates = "weekly";
+				extraArgs = "--keep-since 7d";
+			};
+		};
   };
+	xdg.portal.enable = true;
   xdg.portal.wlr.enable = true;
 
   imports = [
@@ -252,6 +260,7 @@ in
       lib.lists.flatten [
         difftastic
         flatpak
+				nix-output-monitor
         keyd
         libinput-gestures
         sccache
@@ -553,11 +562,12 @@ in
     # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
   };
 
-  nix.gc = {
-    automatic = true;
-    dates = "weekly";
-    options = "--delete-older-than 1w";
-  };
-  nix.settings.auto-optimise-store = true; # https://nixos.org/manual/nix/stable/command-ref/conf-file.html#conf-auto-optimise-store
+	# replaced by `nh.clean`
+  #nix.gc = {
+  #  automatic = true;
+  #  dates = "weekly";
+  #  options = "--delete-older-than 1w";
+  #};
+  nix.settings.auto-optimise-store = true; #NB: can slow down individual builds; alternative: schedule optimise passes: https://nixos.org/manual/nix/stable/command-ref/conf-file.html#conf-auto-optimise-store
   system.stateVersion = "24.05"; # NB: changing requires migration
 }
