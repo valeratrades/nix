@@ -37,6 +37,13 @@ in
   ];
 
   home.file = {
+		# # fs
+    "${config.home.homeDirectory}/g/README.md".source = ../../home/fs/g/README.md;
+    "${config.home.homeDirectory}/s/g/README.md".source = ../../home/fs/s/g/README.md;
+    "${config.home.homeDirectory}/s/l/README.md".source = ../../home/fs/s/l/README.md;
+    "${config.home.homeDirectory}/t/README.md".source = ../../home/fs/t/README.md;
+		#
+
     "${config.home.homeDirectory}/.config/tg.toml".source = ../../home/config/tg.toml;
     "${config.home.homeDirectory}/.config/tg_admin.toml".source = ../../home/config/tg_admin.toml;
     "${config.home.homeDirectory}/.config/todo.toml".source = ../../home/config/todo.toml;
@@ -83,8 +90,12 @@ in
       source = ../../home/config/keyd;
       recursive = true;
     };
-		"${config.home.homeDirectory}/.cargo/" = {
+		"${config.home.homeDirectory}/.cargo" = {
 			source = ../../home/config/cargo;
+			recursive = true;
+		};
+		"${config.home.homeDirectory}/mako" = {
+			source = ../../home/config/mako;
 			recursive = true;
 		};
     "/usr/share/X11/xkb/symbols" = {
