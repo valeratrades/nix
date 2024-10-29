@@ -330,6 +330,7 @@ in
 
         # Command Line Enhancements
         [
+					dust # `du` in rust
           atuin
 					tldr
           cowsay
