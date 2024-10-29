@@ -216,8 +216,9 @@ in
       XDG_CONFIG_HOME = "${userHome}/.config";
       XDG_CACHE_HOME = "${userHome}/.cache";
       XDG_CURRENT_DESKTOP = "sway";
+			GDK_BACKEND = "wayland";
+			XDG_BACKEND = "wayland";
       QT_WAYLAND_FORCE_DPI = "physical";
-      GDK_BACKEND = "wayland";
       QT_QPA_PLATFORM = "wayland-egl";
       CLUTTER_BACKEND = "wayland";
       SDL_VIDEODRIVER = "wayland";
@@ -244,7 +245,7 @@ in
 
       # openssl hurdle
       PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig:${pkgs.alsa-lib.dev}/lib/pkgconfig:${pkgs.wayland-scanner.bin}/bin"; # :${pkgs.openssl}/lib"; # many of my rust scripts require it
-      #LD_LIBRARY_PATH = lib.makeLibraryPath [ pkgs.openssl ]; // taken up by pipewire (need a way to join them)
+      LD_LIBRARY_PATH = lib.mkDefault (lib.makeLibraryPath [ pkgs.openssl pkgs.pipewire.jack ]);
     };
 
     binsh = "${pkgs.dash}/bin/dash";
@@ -264,6 +265,7 @@ in
         keyd
         libinput-gestures
         sccache
+				fractal # matrix chat protocol adapter
 				nh
         haskellPackages.greenclip
         cachix

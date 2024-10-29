@@ -1,0 +1,55 @@
+# currently must rewrite _all_ the desired rustflags for each target, - they don't stack
+
+[target.x86_64-unknown-linux-gnu]
+linker = "clang"
+#rustflags = ["-C", "link-arg=-fuse-ld=/usr/bin/mold"]
+rustflags = ["-C", "link-arg=-fuse-ld=mold", "--cfg", "tokio_unstable", "-Z", "threads=8", "-Z", "track-diagnostics"]
+
+#[target.'cfg(all(nightly))']
+
+[profile.dev]
+## Disabling debug info speeds up builds a bit.
+#debug = 0
+## However, in many cases useful to get a good trace:
+debug = true
+## Will cost compile time, however
+# supposed to be faster than llvm, following Orion on this blindly
+
+
+[build]
+rustc-wrapper = "sccache"
+
+[alias]
+w = "watch"
+a = "add"
+u = "update"
+m = "machete"
+re = "insta review"
+tr = "insta test --review"
+f = "fmt"
+x = "fix --allow-dirty --allow-no-vcs"
+xc = "clippy --fix --allow-dirty --allow-no-vcs"
+s = "sweep --recursive --installed" # only leave currently active artifacts
+
+# overriding defaults in favor of cargo-limit alternatives
+#b = "lbuild --all-features"
+#c = "lcheck --all-features"
+#t = "ltest --all-features"
+#r = "lrun --all-features"
+b = "lbuild"
+c = "lcheck"
+t = "nextest run"
+r = "lrun"
+
+# Orion says 3 is too much, suggested 2. 2 would lead to rebuild on `release` builds anyways, so going with just default 1.
+# all deps except package
+#[profile.dev.package."*"]
+#opt-level = 3
+
+[profile.dev.package]
+v_utils.opt-level = 1
+bevy.opt-level = 3
+bevy_editor_pls.opt-level = 3
+bevy_panorbit_camera.opt-level = 3
+#insta.opt-level = 3
+#similar.opt-level = 3
