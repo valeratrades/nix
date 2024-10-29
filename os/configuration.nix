@@ -258,6 +258,7 @@ in
 				wayland-scanner
         openssl
         nerdfix
+				poppler_utils
 
         # UI/UX Utilities
         [
