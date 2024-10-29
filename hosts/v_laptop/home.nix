@@ -83,7 +83,10 @@ in
       source = ../../home/config/keyd;
       recursive = true;
     };
-
+		"${config.home.homeDirectory}/.cargo/" = {
+			source = ../../home/config/cargo;
+			recursive = true;
+		};
     "/usr/share/X11/xkb/symbols" = {
       source = ../../home/config/xkb_symbols;
       recursive = true;
