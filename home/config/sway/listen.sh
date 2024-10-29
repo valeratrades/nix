@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env sh
 swaymsg -t subscribe '["workspace"]' | jq -c --unbuffered '
   select(.change == "focus") |
   if .current and .current.name == "3" then

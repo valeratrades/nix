@@ -5,13 +5,13 @@
 
 ## Usage
 To edit binds
-```bash
+```sh
 ,ui
 ```
 
 Execute the bound actions by simply calling the functions.
 Following are my names, but this can be changed in `,ui`
-```bash
+```sh
 ,h
 ,t
 ,n
@@ -19,8 +19,8 @@ Following are my names, but this can be changed in `,ui`
 ```
 
 Connect `,c` to the current dir
-```bash
-,add
+```sh
+,set
 ```
 
 ## Requirements

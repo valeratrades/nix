@@ -158,7 +158,7 @@
 
 ;; Volume ;;
 (defpoll speaker_poll :initial "{}" :interval "1s" "./modules/speaker.sh")
-(defwidget speaker [] "${speaker_poll.icon} ${speaker_poll.content}")
+(defwidget speaker [] "${speaker_poll.icon}${speaker_poll.content}")
 
 (defpoll microphone_poll :initial "{}" :interval "100ms" "./modules/microphone.sh")
 (defwidget microphone []
