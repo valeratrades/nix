@@ -1,7 +1,7 @@
 alias cc="cd && clear"
 
 function csc
-    set _path "$HOME/.config/"
+    set _path "$NIXOS_CONFIG/home/config/"
     if test -n "$argv[1]"
         set _path "$_path$argv[1]"
     end
@@ -24,14 +24,6 @@ function csh
     cs $_path
 end
 
-function csv
-    set _path "$HOME/s/valera/"
-    if test -n "$argv[1]"
-        set _path "$_path$argv[1]"
-    end
-    cs $_path
-end
-
 function csd
     set _path "$HOME/Downloads/"
     if test -n "$argv[1]"
@@ -40,24 +32,8 @@ function csd
     cs $_path
 end
 
-function csa
-    set _path "$HOME/s/ai-news-trade-bot/"
-    if test -n "$argv[1]"
-        set _path "$_path$argv[1]"
-    end
-    cs $_path
-end
-
 function cst
     set _path "$HOME/tmp/"
-    if test -n "$argv[1]"
-        set _path "$_path$argv[1]"
-    end
-    cs $_path
-end
-
-function csl
-    set _path "$HOME/s/l/"
     if test -n "$argv[1]"
         set _path "$_path$argv[1]"
     end

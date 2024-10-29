@@ -25,7 +25,7 @@ function e
     if test -n "$argv[1]"
         if test -d "$argv[1]"
             pushd "$argv[1]" > /dev/null
-            set argv (status --current-args | cut -d' ' -f2-)
+            set argv $argv[2..-1]
             set full_command "$nvim_evocation $argv ."
         else
             set -l could_fix 0
@@ -35,7 +35,7 @@ function e
                 set -l try_path "$argv[1]$ext"
                 if test -f "$try_path"
                     pushd (dirname "$try_path") > /dev/null
-                    set argv (status --current-args | cut -d' ' -f2-)
+                    set argv $argv[2..-1]
                     set full_command "$nvim_evocation (basename "$try_path") $argv $nvim_commands"
                     eval $full_command
                     popd > /dev/null
@@ -52,10 +52,8 @@ function e
     set full_command "$full_command $nvim_commands"
     eval $full_command
 
-    # clean the whole dir stack, which would drop back if `pushd` was executed, and do nothing otherwise.
-    # hopefuly I'm not breaking anything by doing so.
-    while test (count (dirs)) -gt 1
-        popd
+    # clean the whole dir jump stack. (sounds dangerous, but so far nothing seems affected)
+    while popd >/dev/null 2>&1
     end
 
     # if [ "$git_push_after" = "true" ]; then
@@ -69,12 +67,12 @@ end
 function se
     e --use_sudo_env $argv
 end
-alias ec="e ~/.config/nvim"
-alias es="nvim ~/.config/fish/main.fish"
-alias ezt="e ~/.config/zsh/theme.zsh"
+alias ec="e $NIXOS_CONFIG/home/config/nvim"
+alias es="nvim $NIXOS_CONFIG/home/config/fish/main.fish"
 alias epy="e ~/envs/Python/lib/python3.11/site-packages"
 alias et="nvim /tmp/a_temporary_note.md -c 'nnoremap q gg^vG^g_\"+y:qa!<CR>' -c 'startinsert'"
 
 # to simplify pasting stuff
+alias nano="nvim"
 alias vi="nvim"
 alias vim="nvim"

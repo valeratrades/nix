@@ -71,9 +71,8 @@ bindsym $mod+Shift+g exec greenclip clear
 
 input * {
 	xkb_layout "semimak,ru"
-	#,ru"
 	xkb_variant "iso,"
-	#,iso"
+	#ru should be `iso`, but it doesn't work for some reason.
 	xkb_options "grp:win_space_toggle"
 
 	tap enabled
@@ -122,12 +121,12 @@ bindsym $mod+Shift+F7 exec gdbus call -e -d net.zoidplex.wlr_gamma_service -o /n
 # night + no glasses
 bindsym $mod+Ctrl+F6 exec gdbus call -e -d net.zoidplex.wlr_gamma_service -o /net/zoidplex/wlr_gamma_service -m net.zoidplex.wlr_gamma_service.brightness.set 0.15
 exec_always sudo killall auto_redshift
-exec_always sleep 2 && auto_redshift start 7:00 --wallpapers
+exec_always sleep 2 && auto_redshift start 7:00
 #
 
 # # Workspaces
-# was using ~/Wallpapers/AndreySakharov.jpg, but it's too bright to be the default.
-# output * bg ~/Wallpapers/starry_night.jpg fill
+# was using ${NIXOS_CONFIG}/home/config/sway/wallpapers/AndreySakharov.jpg, but it's too bright to be the default.
+# output * bg ${NIXOS_CONFIG}/home/config/sway/wallpapers/starry_night.jpg fill
 workspace 1 output $primary
 workspace 2 output $primary
 workspace 3 output $primary
@@ -234,8 +233,8 @@ output $output_laptop pos 560 1466
 
 exec_always "sh -c -- pkill -f 'todo monitor' && todo monitor || todo monitor"
 
-bindsym $mod+w exec "~/s/help_scripts/circle_wallpapers.sh f"
-bindsym $mod+Shift+w exec "~/s/help_scripts/circle_wallpapers.sh b"
+bindsym $mod+w exec "$NIXOS_CONFIG/home/scripts/circle_wallpapers.sh f"
+bindsym $mod+Shift+w exec "$NIXOS_CONFIG/home/scripts/circle_wallpapers.sh b"
 
 # # Screenshots
 exec mkdir -p ~/tmp/Screenshots >/dev/null

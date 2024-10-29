@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
-wallpaper_dir="${HOME}/Wallpapers"
+wallpaper_dir="${NIXOS_CONFIG}/home/config/sway/wallpapers"
 #------------------------------------------------------------------------------
 
 file_with_current_wallpaper_ordinal="${HOME}/tmp/.current_wallpaper_ordinal"

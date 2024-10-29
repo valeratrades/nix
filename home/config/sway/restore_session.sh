@@ -4,7 +4,7 @@
 #GTK_USE_PORTAL=1
 #export GDK_DEBUG=portals
 
-swaymsg "workspace 3, exec alacritty"
+#swaymsg "workspace 3, exec alacritty"
 swaymsg "workspace 2, exec QT_QPA_PLATFORMTHEME=flatpak google-chrome-stable" #--enable-features=UseOzonePlatform --ozone-platform=wayland"
 #swaymsg "workspace 4, exec QT_QPA_PLATFORMTHEME=flatpak telegram-desktop &"
 # the XDG_CURRENT_DESKTOP makes it try to use `kdialog` app. There is no kdialog app, so it's tricked into executing my script in the $PATH, `~/s/help_scripts/kdialog`. The script then redirects it into the file picker solution in `~/.config/nnn/termfilechooser.sh`

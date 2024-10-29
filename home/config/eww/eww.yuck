@@ -134,7 +134,7 @@
 (defwidget ram []
 	(box
 		:visible {EWW_RAM.used_mem_perc != ""}
-		"${round(EWW_RAM.used_mem_perc, 0)}%"))
+		"${round(EWW_RAM.used_mem_perc, 0)}%"))
 
 ;; Notifications ;;
 (defpoll github_poll :initial "" :interval "1m" "./modules/github.sh")
