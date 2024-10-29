@@ -403,6 +403,7 @@ in
         # Audio/Video Utilities
         [
           pamixer
+					vlc
           pulsemixer
           pavucontrol
           mpv
