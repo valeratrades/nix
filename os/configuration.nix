@@ -245,7 +245,8 @@ in
 
       # openssl hurdle
       PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig:${pkgs.alsa-lib.dev}/lib/pkgconfig:${pkgs.wayland-scanner.bin}/bin"; # :${pkgs.openssl}/lib"; # many of my rust scripts require it
-      LD_LIBRARY_PATH = lib.mkDefault (lib.makeLibraryPath [ pkgs.openssl pkgs.pipewire.jack ]);
+			# dbg
+      #LD_LIBRARY_PATH = lib.mkDefault (lib.makeLibraryPath [ pkgs.openssl pkgs.pipewire.jack ]);
     };
 
     binsh = "${pkgs.dash}/bin/dash";
