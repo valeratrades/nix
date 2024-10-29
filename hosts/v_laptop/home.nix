@@ -173,6 +173,9 @@ in {
 		"/var/lib/flatpak"
 	];
 
+
+	programs.direnv.enable = true;
+
 	# basic configuration of git, please change to your own
 	#programs.git = {
 	#  enable = true;

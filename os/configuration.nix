@@ -76,6 +76,7 @@ in
       enable = true;
       enableSSHSupport = true;
     };
+		nh.enable = true;
   };
   xdg.portal.wlr.enable = true;
 
@@ -158,7 +159,7 @@ in
   };
 
   fonts = {
-		#NB: many of the icons will be overwritten by nerd-fonts. If a character is not rendering properly, use `nerdfix` on the repo, search for correct codepoint in https://www.nerdfonts.com/cheat-sheet
+    #NB: many of the icons will be overwritten by nerd-fonts. If a character is not rendering properly, use `nerdfix` on the repo, search for correct codepoint in https://www.nerdfonts.com/cheat-sheet
     packages = with pkgs; [
       fira-code
       fira-code-nerdfont
@@ -170,7 +171,7 @@ in
       emojione
       font-awesome
       julia-mono
-      font-awesome_4 
+      font-awesome_4
       font-awesome_5
       texlivePackages.fontawesome5
       texlivePackages.fontawesome
@@ -254,12 +255,12 @@ in
         keyd
         libinput-gestures
         sccache
+				nh
         haskellPackages.greenclip
         cachix
-				wayland-scanner
-        openssl
+        wayland-scanner
         nerdfix # fixes illegal font codepoints https://discourse.nixos.org/t/nerd-fonts-only-see-half-the-icon-set/27513
-				poppler_utils
+        poppler_utils
 
         # UI/UX Utilities
         [
@@ -332,9 +333,9 @@ in
 
         # Command Line Enhancements
         [
-					dust # `du` in rust
+          dust # `du` in rust
           atuin
-					tldr
+          tldr
           cowsay
           cotp
           eza # better `ls`
@@ -427,7 +428,9 @@ in
           git
           glib
           pkg-config # when used in build scripts, must be included in `nativeBuildInputs`. Only _native_ will work.
+          openssl
           tokei
+					direnv
         ]
 
         # Coding
@@ -496,9 +499,9 @@ in
               rustup
               crate2nix
               cargo-edit
-							cargo-hack
-							cargo-udeps
-							cargo-outdated
+              cargo-hack
+              cargo-udeps
+              cargo-outdated
               cargo-sort
               cargo-insta
               cargo-mutants
