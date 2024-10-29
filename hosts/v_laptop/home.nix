@@ -39,6 +39,7 @@ in {
 		"${config.home.homeDirectory}/.config/discretionary_engine.toml".source = ../../home/config/discretionary_engine.toml;
 		"${config.home.homeDirectory}/.config/btc_line.toml".source = ../../home/config/btc_line.toml;
 		"${config.home.homeDirectory}/.lesskey".source = ../../home/config/lesskey;
+		"${config.home.homeDirectory}/.config/fish/conf.d/sway.fish".source = ../../home/config/fish/conf.d/sway.fish;
 
 		"${config.home.homeDirectory}/.config/greenclip.toml".source = ../../home/config/greenclip.toml;
 
