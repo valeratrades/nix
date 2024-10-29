@@ -80,7 +80,13 @@ in {
 			source = ../../home/config/keyd;
 			recursive = true;
 		};
+
+		"/usr/share/X11/xkb/symbols" = {
+			source = ../../home/config/xkb_symbols;
+			recursive = true;
+		};
 	};
+
 
 	# link the configuration file in current directory to the specified location in home directory
 	# home.file.".config/i3/wallpaper.jpg".source = ./wallpaper.jpg;
