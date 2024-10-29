@@ -362,6 +362,7 @@ in
 
         # terminals
         [
+					starship
           alacritty
           tmux
           tmuxPlugins.resurrect # persist sessions
