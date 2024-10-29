@@ -81,12 +81,10 @@ alias fd="fd -I --full-path" # Ignores .gitignore, etc.
 alias rg="rg -I --glob '!.git'" # Ignores case sensitivity and .git directories.
 alias ureload="pkill -u (whoami)" # Kill all processes of the current user.
 alias rf="sudo rm -rf"
-alias srf="sudo rm -rf"
 alias za="zathura"
 alias zp="zathura --mode presentation"
-alias massren="py $HOME/clone/massren/massren -d '' $argv"
+#alias massren="py $HOME/clone/massren/massren -d '' $argv"
 alias jp="jupyter lab -y"
-alias sr="source ~/.config/fish/config.fish" # Fish equivalent for reloading configuration.
 alias tree="tree -I 'target|debug|_*'"
 alias lhost="nohup nyxt http://localhost:8080/ > /dev/null 2>&1 &"
 alias ll="exa -lA"
@@ -126,9 +124,17 @@ alias enable_fan="echo 2 | sudo tee /sys/class/hwmon/hwmon6/pwm1"
 alias phone-wifi="sudo nmcli dev wifi connect Valera password 12345678"
 alias phone_wifi="phone-wifi"
 
-
 # # fish
-alias where="functions --details"
+function where
+	set details (functions --details $argv[1])
+	if test "$details" = "-" # can't locate aliases (2024/10/29)
+		rg -H "alias $argv[1]" "$NIXOS_CONFIG/home/config/fish"
+	else
+		echo $details
+	end
+	type $argv[1]
+end
+alias sr="source $NIXOS_CONFIG/home/config/fish/mod.fish" # Fish equivalent for reloading configuration.
 #
 
 # # nix

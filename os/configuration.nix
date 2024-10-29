@@ -496,6 +496,9 @@ in
               rustup
               crate2nix
               cargo-edit
+							cargo-hack
+							cargo-udeps
+							cargo-outdated
               cargo-sort
               cargo-insta
               cargo-mutants
