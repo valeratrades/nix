@@ -1,4 +1,9 @@
-set harpoon_config_path "$HOME/s/help_scripts/shell_harpoon/config.fish"
+set harpoon_config_path "$XDG_DATA_HOME/harpoon/current_functions.fish"
+if not test -e "$harpoon_config_path"
+	mkdir -p (dirname $harpoon_config_path)
+	cp (dirname (status --current-filename))/init_config.fish $harpoon_config_path
+end
+
 
 function mute
     nohup alacritty -e nvim "$harpoon_config_path" \
@@ -21,7 +26,7 @@ function ,set
         set dir "$dir/$argv[1]"
     end
     mkdir -p (dirname "$temp_file")
-    echo "set -x SHELL_HARPOON_CURRENT_DIR_DUMP (pwd)" > "$temp_file"
+    echo "set -x SHELL_HARPOON_CURRENT_DIR_DUMP $(pwd)" > "$temp_file"
     source $temp_file
 end
 
