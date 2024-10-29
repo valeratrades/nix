@@ -158,6 +158,7 @@ in
   };
 
   fonts = {
+		#NB: many of the icons will be overwritten by nerd-fonts. If a character is not rendering properly, use `nerdfix` on the repo, search for correct codepoint in https://www.nerdfonts.com/cheat-sheet
     packages = with pkgs; [
       fira-code
       fira-code-nerdfont
@@ -169,8 +170,8 @@ in
       emojione
       font-awesome
       julia-mono
-      font-awesome_4
-      font-awesome_5 # for some reason doesn't bring all fa5 icons that are accessible under it on the web
+      font-awesome_4 
+      font-awesome_5
       texlivePackages.fontawesome5
       texlivePackages.fontawesome
       google-fonts
