@@ -291,6 +291,7 @@ in
         [
           alsa-utils
           dbus
+					hwinfo
           dconf
           file
           gsettings-desktop-schemas
@@ -544,6 +545,7 @@ in
           # Debuggers
           [
             lldb
+						pkgs.llvmPackages.bintools
             vscode-extensions.vadimcn.vscode-lldb
           ]
         ]
