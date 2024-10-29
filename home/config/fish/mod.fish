@@ -15,7 +15,10 @@ alias up="/etc/nixos/home/scripts/maintenance/main.sh"
 
 # # Init utils
 zoxide init fish | source
-starship init fish | source
+
+# Starship
+#starship init fish | source
+#enable_transience
 
 atuin init fish --disable-up-arrow --disable-ctrl-r | source
 export filter_mode_shell_up_key_binding="directory"
