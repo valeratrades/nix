@@ -223,8 +223,9 @@ in
         gcloud.disabled = true;
         line_break.disabled = true;
 
-        format = "$character";
-        right_format = "$all";
+        #format = "$username$character$\{custom.dbg\}";
+        format = "$username$status$character";
+        right_format = "$custom$all"; # `all` does _not_ duplicate explicitly enabled modules
 
         hostname = {
           style = "white";
@@ -257,7 +258,7 @@ in
           min_time = 2000; # milliseconds; min to display
           show_milliseconds = false;
           min_time_to_notify = 45000; # milliseconds
-          show_notifications = true;
+          #show_notifications = true; # produces noise on exiting `tmux`
         };
         time = {
           format = "[$time]($style)";
@@ -277,11 +278,40 @@ in
           format = "[$symbol]($style)"; # $version - not sure why I'd need it, try excluding
         };
 				directory = {
+					disabled = true;
 					truncation_length = 0; # disables truncation
 				};
 				direnv = {
 					symbol = " ";
 					disabled = false;
+				};
+				status = { #? can I remake the `$character` with this?
+					success_symbol = "> ";
+					disabled = false;
+					pipestatus = true;
+					map_symbol = true;
+				};
+
+				custom = {
+					#shell = ["fish" "-c"]; # must be `fish`, but I didn't figure out how to enforce it yet
+					path = {
+						command = ''printf (prompt_pwd)'';
+						when = ''true'';
+						style = "bold cyan";
+						shell = "fish";
+					};
+					readonly = {
+						command = ''printf "🔒"'';
+						when = ''! [ -w . ]'';
+						style = "bold red";
+					};
+					readonly_else = {
+						command = ''printf " "'';
+						when = ''[ -w . ]''; # to match ident
+					};
+					dbg = {
+						command = ''printf "dbg"'';
+					};
 				};
       };
     };
@@ -293,10 +323,6 @@ in
     #    disabled = false;
     #    symbol = "ﰬ";
     #    style = "bright-red bold";
-    #  };
-    #  username = {
-    #    style_user = "bright-white bold";
-    #    style_root = "bright-red bold";
     #  };
     #  git_branch = {
     #    only_attached = true;
