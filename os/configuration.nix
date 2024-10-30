@@ -63,6 +63,7 @@ in
     blueman.enable = true;
   };
   programs = {
+		nix-ld.enable = true;
     firefox.enable = true;
     sway = {
       enable = true;
@@ -275,6 +276,7 @@ in
         nerdfix # fixes illegal font codepoints https://discourse.nixos.org/t/nerd-fonts-only-see-half-the-icon-set/27513
         poppler_utils
 				manix # grep nixpkgs docs
+				nix-ld # run unpacthed dynamic binaries on NixOS
 
         # UI/UX Utilities
         [
