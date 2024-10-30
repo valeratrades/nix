@@ -257,10 +257,11 @@ in
         };
         nix_shell = {
           symbol = "";
-          format = "[$symbol$name]($style) ";
+          format = "[$symbol]($style) ";
 
           style = "bold blue";
           pure_msg = "";
+					impure_msg = "[impure shell](yellow)";
         };
         git_branch = {
           format = "[$branch(:$remote_branch)]($style) ";

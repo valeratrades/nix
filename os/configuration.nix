@@ -233,8 +233,8 @@ in
 
       # Nix
       NIXOS_CONFIG = "/etc/nixos";
-			#TODO!: figure out how to procedurally disable [vesktop, tg] evokations via rofi, outside of preset times in my calendar
-			DOT_DESKTOP = "${pkgs.home-manager}/share/applications";
+      #TODO!: figure out how to procedurally disable [vesktop, tg] evokations via rofi, outside of preset times in my calendar
+      DOT_DESKTOP = "${pkgs.home-manager}/share/applications";
 
       # home vars
       MODULAR_HOME = "${modularHome}";
@@ -277,13 +277,13 @@ in
         nerdfix # fixes illegal font codepoints https://discourse.nixos.org/t/nerd-fonts-only-see-half-the-icon-set/27513
         poppler_utils
 
-				# Nix
-				[
-					nix-index
-					manix # grep nixpkgs docs
-        nix-output-monitor
-        cachix
-	]
+        # Nix
+        [
+          nix-index
+          manix # grep nixpkgs docs
+          nix-output-monitor
+          cachix
+        ]
 
         # UI/UX Utilities
         [
