@@ -286,6 +286,7 @@ in
           truncation_length = 0; # disables truncation
         };
         direnv = {
+					format = "[$symbol]($style) ";
           symbol = " ";
           disabled = false;
         };
