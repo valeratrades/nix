@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
 mute=$(pamixer --default-source --get-mute)
 

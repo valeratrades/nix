@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 # uninit: placeholder, class error
 # outdated: day_ev, class warn
 # default: day_ev, class info

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
 length=$(pgrep "obs" | wc -l)
 # no clue why it's 2, but it is

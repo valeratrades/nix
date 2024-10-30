@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
 length=$(pgrep "openvpn" | wc -l)
 if [ $length -gt 2 ]; then

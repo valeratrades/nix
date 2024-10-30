@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
 # devices are: (1) headphones: Soundcore Life Tune, (2) headphones: Philips SHB3075
 devices="""

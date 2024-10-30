@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
 mute=$(pamixer --get-mute)
 if [ "$mute" = "true" ]; then

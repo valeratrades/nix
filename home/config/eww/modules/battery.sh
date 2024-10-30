@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
 battery="/sys/class/power_supply/BAT0/"
 percent=$(cat "$battery/capacity")

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
 HOST="8.8.8.8"
 
