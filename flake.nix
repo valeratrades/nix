@@ -120,6 +120,7 @@
 
 			modules = [
 				./os/configuration.nix
+				./machines/modules/default.nix # can't reference the `mod.nix` one level higher, because I don't use `flake-parts.lib.mkFlake` yet
 
 				home-manager.nixosModules.home-manager {
 					home-manager.useGlobalPkgs = true;
