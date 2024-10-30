@@ -266,19 +266,24 @@ in
       lib.lists.flatten [
         difftastic
         flatpak
-        nix-output-monitor
         keyd
         libinput-gestures
         sccache
         fractal # matrix chat protocol adapter
         nh
         haskellPackages.greenclip
-        cachix
         lefthook # git hooks
         wayland-scanner
         nerdfix # fixes illegal font codepoints https://discourse.nixos.org/t/nerd-fonts-only-see-half-the-icon-set/27513
         poppler_utils
-        manix # grep nixpkgs docs
+
+				# Nix
+				[
+					nix-index
+					manix # grep nixpkgs docs
+        nix-output-monitor
+        cachix
+	]
 
         # UI/UX Utilities
         [
