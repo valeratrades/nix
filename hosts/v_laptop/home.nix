@@ -201,100 +201,129 @@ in
     "/var/lib/flatpak"
   ];
 
-  programs.direnv.enable = true;
+  programs = {
+    direnv.enable = true;
 
-  programs.neovim = {
-    viAlias = true;
-    vimAlias = true;
-    vimdiffAlias = true;
-  };
+    neovim = {
+      viAlias = true;
+      vimAlias = true;
+      vimdiffAlias = true;
+    };
 
-  programs.starship = {
-    enable = true;
-    #enableTransience = true;
-    settings = {
-      add_newline = false;
-      aws.disabled = true;
-      gcloud.disabled = true;
-      line_break.disabled = true;
+    eza.enable = true;
 
-      #format = "$shlvl$shell$username$hostname$nix_shell$git_branch$git_commit$git_state$git_status$directory$jobs$cmd_duration$character";
-      format = "$character";
-      right_format = "$all";
+    starship = {
+      enable = true;
+      #enableTransience = true;
+      settings = {
+        # tipbits:
+        # - `symbol` usually has a trailing whitespace
+        add_newline = false;
+        aws.disabled = true;
+        gcloud.disabled = true;
+        line_break.disabled = true;
 
-      hostname = {
-        style = "white";
-        ssh_only = true;
-      };
-      shell = {
-        disabled = false;
-        format = "$indicator";
-        fish_indicator = "";
-        bash_indicator = "[BASH](bright-white) ";
-        zsh_indicator = "[ZSH](bright-white) ";
-      };
-      nix_shell = {
-        symbol = "";
-        format = "[$symbol$name]($style) ";
-        style = "bright-purple bold";
-      };
-      git_status = {
-        style = "dim-green";
-      };
-      time = {
-        format = "[$time]($style)";
-        disabled = false;
-      };
-      rust = {
-        format = "[$version]($style)";
+        format = "$character";
+        right_format = "$all";
+
+        hostname = {
+          style = "white";
+          ssh_only = true;
+        };
+        shell = {
+          disabled = false;
+          format = "$indicator";
+          fish_indicator = "";
+          bash_indicator = "[BASH](bright-white) ";
+          zsh_indicator = "[ZSH](bright-white) ";
+        };
+        nix_shell = {
+          symbol = "";
+          format = "[$symbol$name]($style) ";
+
+          style = "bold blue";
+          pure_msg = "";
+        };
+        #git_status = {
+        #  style = "dim-green";
+        #};
+        cmd_duration = {
+          format = "[$duration]($style) ";
+          style = "white";
+
+          min_time = 2000; # milliseconds; min to display
+          show_milliseconds = false;
+          min_time_to_notify = 45000; # milliseconds
+          show_notifications = true;
+        };
+        time = {
+          format = "[$time]($style)";
+          disabled = false;
+        };
+        python = {
+          format = "[$symbol]($style)";
+          #detect_folders = ["!.rs"];
+        };
+        lua = {
+          format = "[$symbol]($style)";
+        };
+        rust = {
+          format = "[$version]($style) ";
+        };
+        package = {
+          format = "[$symbol]($style)"; # $version - not sure why I'd need it, try excluding
+        };
+				directory = {
+					truncation_length = 0; # disables truncation
+				};
+				direnv = {
+					symbol = " ";
+					disabled = false;
+				};
       };
     };
+    # taken from https://github.com/tejing1/nixos-config/tree/master
+    # programs.starship.settings = {
+    #  add_newline = false;
+    #  format = "$shlvl$shell$username$hostname$nix_shell$git_branch$git_commit$git_state$git_status$directory$jobs$cmd_duration$character";
+    #  shlvl = {
+    #    disabled = false;
+    #    symbol = "ﰬ";
+    #    style = "bright-red bold";
+    #  };
+    #  username = {
+    #    style_user = "bright-white bold";
+    #    style_root = "bright-red bold";
+    #  };
+    #  git_branch = {
+    #    only_attached = true;
+    #    format = "[$symbol$branch]($style) ";
+    #    symbol = "שׂ";
+    #    style = "bright-yellow bold";
+    #  };
+    #  git_commit = {
+    #    only_detached = true;
+    #    format = "[ﰖ$hash]($style) ";
+    #    style = "bright-yellow bold";
+    #  };
+    #  git_state = {
+    #    style = "bright-purple bold";
+    #  };
+    #  directory = {
+    #    read_only = " ";
+    #    truncation_length = 0;
+    #  };
+    #  jobs = {
+    #    style = "bright-green bold";
+    #  };
+    #  character = {
+    #    success_symbol = "[\\$](bright-green bold)";
+    #    error_symbol = "[\\$](bright-red bold)";
+    #  };
+    #};
+    #
+    #
+    home-manager.enable = true; # let it manage itself
   };
-  # taken from https://github.com/tejing1/nixos-config/tree/master
-  # programs.starship.settings = {
-  #  add_newline = false;
-  #  format = "$shlvl$shell$username$hostname$nix_shell$git_branch$git_commit$git_state$git_status$directory$jobs$cmd_duration$character";
-  #  shlvl = {
-  #    disabled = false;
-  #    symbol = "ﰬ";
-  #    style = "bright-red bold";
-  #  };
-  #  username = {
-  #    style_user = "bright-white bold";
-  #    style_root = "bright-red bold";
-  #  };
-  #  git_branch = {
-  #    only_attached = true;
-  #    format = "[$symbol$branch]($style) ";
-  #    symbol = "שׂ";
-  #    style = "bright-yellow bold";
-  #  };
-  #  git_commit = {
-  #    only_detached = true;
-  #    format = "[ﰖ$hash]($style) ";
-  #    style = "bright-yellow bold";
-  #  };
-  #  git_state = {
-  #    style = "bright-purple bold";
-  #  };
-  #  directory = {
-  #    read_only = " ";
-  #    truncation_length = 0;
-  #  };
-  #  cmd_duration = {
-  #    format = "[$duration]($style) ";
-  #    style = "bright-blue";
-  #  };
-  #  jobs = {
-  #    style = "bright-green bold";
-  #  };
-  #  character = {
-  #    success_symbol = "[\\$](bright-green bold)";
-  #    error_symbol = "[\\$](bright-red bold)";
-  #  };
-  #};
-  #
-  #
-  programs.home-manager.enable = true; # let it manage itself
   home.stateVersion = "24.05"; # NB: DO NOT CHANGE, same as `system.stateVersion`
 }
