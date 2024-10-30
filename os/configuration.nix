@@ -63,7 +63,19 @@ in
     blueman.enable = true;
   };
   programs = {
-		nix-ld.enable = true;
+    nix-ld = {
+      enable = true;
+      libraries = with pkgs; [
+        stdenv.cc.cc
+        zlib
+        fuse3
+        icu
+        nss
+        openssl
+        curl
+        expat
+      ];
+    };
     firefox.enable = true;
     sway = {
       enable = true;
@@ -77,16 +89,16 @@ in
       enable = true;
       enableSSHSupport = true;
     };
-		nh = {
-			enable = true;
-			clean = {
-				enable = true;
-				dates = "weekly";
-				extraArgs = "--keep-since 7d";
-			};
-		};
+    nh = {
+      enable = true;
+      clean = {
+        enable = true;
+        dates = "weekly";
+        extraArgs = "--keep-since 7d";
+      };
+    };
   };
-	xdg.portal.enable = true;
+  xdg.portal.enable = true;
   xdg.portal.wlr.enable = true;
 
   imports = [
@@ -217,8 +229,8 @@ in
       XDG_CONFIG_HOME = "${userHome}/.config";
       XDG_CACHE_HOME = "${userHome}/.cache";
       XDG_CURRENT_DESKTOP = "sway";
-			GDK_BACKEND = "wayland";
-			XDG_BACKEND = "wayland";
+      GDK_BACKEND = "wayland";
+      XDG_BACKEND = "wayland";
       QT_WAYLAND_FORCE_DPI = "physical";
       QT_QPA_PLATFORM = "wayland-egl";
       CLUTTER_BACKEND = "wayland";
@@ -231,7 +243,19 @@ in
       QT_QPA_PLATFORMTHEME = "flatpak";
       GTK_USE_PORTAL = "1";
       GDK_DEBUG = "portals";
+
+      # Nix
       NIXOS_CONFIG = "/etc/nixos";
+      # #HACK
+      #NIX_LD_LIBRARY_PATH = with pkgs; lib.makeLibraryPath [
+      #	stdenv.cc.cc
+      #	openssl
+      #	openssl.dev
+      #	# ...
+      #];
+      LD_DEBUG = "libs";
+      #NIX_LD = with pkgs; lib.fileContents "${stdenv.cc}/nix-support/dynamic-linker"; # auto-setup
+      #
 
       # home vars
       MODULAR_HOME = "${modularHome}";
@@ -246,7 +270,7 @@ in
 
       # openssl hurdle
       PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig:${pkgs.alsa-lib.dev}/lib/pkgconfig:${pkgs.wayland-scanner.bin}/bin"; # :${pkgs.openssl}/lib"; # many of my rust scripts require it
-			# dbg
+      # dbg
       #LD_LIBRARY_PATH = lib.mkDefault (lib.makeLibraryPath [ pkgs.openssl pkgs.pipewire.jack ]);
     };
 
@@ -263,20 +287,20 @@ in
       lib.lists.flatten [
         difftastic
         flatpak
-				nix-output-monitor
+        nix-output-monitor
         keyd
         libinput-gestures
         sccache
-				fractal # matrix chat protocol adapter
-				nh
+        fractal # matrix chat protocol adapter
+        nh
         haskellPackages.greenclip
         cachix
-				lefthook # git hooks
+        lefthook # git hooks
         wayland-scanner
         nerdfix # fixes illegal font codepoints https://discourse.nixos.org/t/nerd-fonts-only-see-half-the-icon-set/27513
         poppler_utils
-				manix # grep nixpkgs docs
-				nix-ld # run unpacthed dynamic binaries on NixOS
+        manix # grep nixpkgs docs
+        nix-ld # run unpacthed dynamic binaries on NixOS
 
         # UI/UX Utilities
         [
@@ -296,7 +320,7 @@ in
         [
           alsa-utils
           dbus
-					hwinfo
+          hwinfo
           dconf
           file
           gsettings-desktop-schemas
@@ -368,7 +392,7 @@ in
 
         # terminals
         [
-					starship
+          starship
           alacritty
           tmux
           tmuxPlugins.resurrect # persist sessions
@@ -405,7 +429,7 @@ in
         # Audio/Video Utilities
         [
           pamixer
-					vlc
+          vlc
           pulsemixer
           pavucontrol
           mpv
@@ -449,7 +473,7 @@ in
           pkg-config # when used in build scripts, must be included in `nativeBuildInputs`. Only _native_ will work.
           openssl
           tokei
-					direnv
+          direnv
         ]
 
         # Coding
@@ -551,7 +575,7 @@ in
           # Debuggers
           [
             lldb
-						pkgs.llvmPackages.bintools
+            pkgs.llvmPackages.bintools
             vscode-extensions.vadimcn.vscode-lldb
           ]
         ]
@@ -573,12 +597,12 @@ in
     # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
   };
 
-	# replaced by `nh.clean`
+  # replaced by `nh.clean`
   #nix.gc = {
   #  automatic = true;
   #  dates = "weekly";
   #  options = "--delete-older-than 1w";
   #};
-  nix.settings.auto-optimise-store = true; #NB: can slow down individual builds; alternative: schedule optimise passes: https://nixos.org/manual/nix/stable/command-ref/conf-file.html#conf-auto-optimise-store
+  nix.settings.auto-optimise-store = true; # NB: can slow down individual builds; alternative: schedule optimise passes: https://nixos.org/manual/nix/stable/command-ref/conf-file.html#conf-auto-optimise-store
   system.stateVersion = "24.05"; # NB: changing requires migration
 }

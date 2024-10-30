@@ -285,15 +285,19 @@ in
           disabled = true;
           truncation_length = 0; # disables truncation
         };
-        direnv = {
-					format = "[$symbol]($style) ";
-          symbol = " ";
-          disabled = false;
-        };
         # Only useful for vim-mode, but I prefer to use my global vim keyd layer instead. Rest of this module is reimplemented with `status`.
         character = {
           disabled = true;
         };
+				direnv = {
+					format = "[$symbol]($style)[$allowed]($style) ";
+					symbol = " ";
+
+					denied_msg = "-";
+					not_allowed_msg = "~";
+					allowed_msg = "+";
+          disabled = false;
+				};
         status = {
           # ? can I remake the `$character` with this?
           #success_symbol = "  "; # preserve indent
@@ -335,6 +339,9 @@ in
             when = ''! [ -w . ]'';
             style = "bold red";
           };
+					#TODO: replicate the default one, but so that it changes color if it's disallowed
+					#direnv = {
+					#};
         };
 
         palettes.google_calendar = {
