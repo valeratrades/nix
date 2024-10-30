@@ -38,73 +38,73 @@ in
 
   home.file = {
     # # fs
-    "${config.home.homeDirectory}/g/README.md".source = "${self}/home/fs/g/README.md$";
-    "${config.home.homeDirectory}/s/g/README.md".source = "${self}/home/fs/s/g/README.md";
-    "${config.home.homeDirectory}/s/l/README.md".source = "${self}/home/fs/s/l/README.md";
-    "${config.home.homeDirectory}/t/README.md".source = "${self}/home/fs/t/README.md";
+    "g/README.md".source = "${self}/home/fs/g/README.md$";
+    "s/g/README.md".source = "${self}/home/fs/s/g/README.md";
+    "s/l/README.md".source = "${self}/home/fs/s/l/README.md";
+    "t/README.md".source = "${self}/home/fs/t/README.md";
     #
 
-    "${config.home.homeDirectory}/.config/tg.toml".source = "${self}/home/config/tg.toml";
-    "${config.home.homeDirectory}/.config/tg_admin.toml".source = "${self}/home/config/tg_admin.toml";
-    "${config.home.homeDirectory}/.config/auto_redshift.toml".source = "${self}/home/config/auto_redshift.toml";
-    "${config.home.homeDirectory}/.config/todo.toml".source = "${self}/home/config/todo.toml";
-    "${config.home.homeDirectory}/.config/discretionary_engine.toml".source = "${self}/home/config/discretionary_engine.toml";
-    "${config.home.homeDirectory}/.config/btc_line.toml".source = "${self}/home/config/btc_line.toml";
-    "${config.home.homeDirectory}/.lesskey".source = "${self}/home/config/lesskey";
-    "${config.home.homeDirectory}/.config/fish/conf.d/sway.fish".source = "${self}/home/config/fish/conf.d/sway.fish";
+    ".config/tg.toml".source = "${self}/home/config/tg.toml";
+    ".config/tg_admin.toml".source = "${self}/home/config/tg_admin.toml";
+    ".config/auto_redshift.toml".source = "${self}/home/config/auto_redshift.toml";
+    ".config/todo.toml".source = "${self}/home/config/todo.toml";
+    ".config/discretionary_engine.toml".source = "${self}/home/config/discretionary_engine.toml";
+    ".config/btc_line.toml".source = "${self}/home/config/btc_line.toml";
+    ".lesskey".source = "${self}/home/config/lesskey";
+    ".config/fish/conf.d/sway.fish".source = "${self}/home/config/fish/conf.d/sway.fish";
 
-    "${config.home.homeDirectory}/.config/greenclip.toml".source = "${self}/home/config/greenclip.toml";
+    ".config/greenclip.toml".source = "${self}/home/config/greenclip.toml";
 
-    "${config.home.homeDirectory}/.config/nvim" = {
-      source = config.lib.file.mkOutOfStoreSymlink "${self}/home/config/nvim";
+    ".config/nvim" = {
+      source = "${self}/home/config/nvim";
       recursive = true;
     };
-    "${config.home.homeDirectory}/.config/eww" = {
+    ".config/eww" = {
       source = "${self}/home/config/eww";
       recursive = true;
     };
-    "${config.home.homeDirectory}/.config/zathura" = {
+    ".config/zathura" = {
       source = "${self}/home/config/zathura";
       recursive = true;
     };
-    "${config.home.homeDirectory}/.config/sway" = {
+    ".config/sway" = {
       source = "${self}/home/config/sway";
       recursive = true;
     };
 
     # # Might be able to join these, syntaxis should be similar
-    "${config.home.homeDirectory}/.config/vesktop" = {
+    ".config/vesktop" = {
       source = "${self}/home/config/vesktop";
       recursive = true;
     };
-    "${config.home.homeDirectory}/.config/discord" = {
+    ".config/discord" = {
       source = "${self}/home/config/discord";
       recursive = true;
     };
     #
 
-    "${config.home.homeDirectory}/.config/alacritty" = {
+    ".config/alacritty" = {
       source = "${self}/home/config/alacritty";
       recursive = true;
     };
-    "${config.home.homeDirectory}/.config/keyd" = {
+    ".config/keyd" = {
       source = "${self}/home/config/keyd";
       recursive = true;
     };
-    "${config.home.homeDirectory}/.cargo" = {
+    ".cargo" = {
       source = "${self}/home/config/cargo";
       recursive = true;
     };
-    "${config.home.homeDirectory}/mako" = {
+    "mako" = {
       source = "${self}/home/config/mako";
       recursive = true;
     };
-    "${config.home.homeDirectory}/git" = {
+    "git" = {
       source = "${self}/home/config/git";
       recursive = true;
     };
     # don't use it, here just for completeness
-    "${config.home.homeDirectory}/zsh" = {
+    "zsh" = {
       source = "${self}/home/config/zsh";
       recursive = true;
     };
