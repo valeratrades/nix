@@ -196,6 +196,7 @@ function protect_branch
 	-d '{"allow_auto_merge":true}'
 end
 
+## git new repository
 function gn
 	if [ "$argv[1]" = "-h" ]; or [ "$argv[1]" = "--help" ]; or [ "$argv[1]" = "help" ]
 		printf """\
@@ -213,6 +214,10 @@ function gn
 	else
 		set argv $argv[2..-1]
 	end
+
+	echo $argv
+	echo $repo_name
+	return "dbg"
 
 	git init
 	git add .
