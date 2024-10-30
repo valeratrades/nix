@@ -37,12 +37,12 @@ in
   ];
 
   home.file = {
-		# # fs
+    # # fs
     "${config.home.homeDirectory}/g/README.md".source = "${self}/home/fs/g/README.md$";
     "${config.home.homeDirectory}/s/g/README.md".source = "${self}/home/fs/s/g/README.md";
     "${config.home.homeDirectory}/s/l/README.md".source = "${self}/home/fs/s/l/README.md";
     "${config.home.homeDirectory}/t/README.md".source = "${self}/home/fs/t/README.md";
-		#
+    #
 
     "${config.home.homeDirectory}/.config/tg.toml".source = "${self}/home/config/tg.toml";
     "${config.home.homeDirectory}/.config/tg_admin.toml".source = "${self}/home/config/tg_admin.toml";
@@ -55,7 +55,7 @@ in
     "${config.home.homeDirectory}/.config/greenclip.toml".source = "${self}/home/config/greenclip.toml";
 
     "${config.home.homeDirectory}/.config/nvim" = {
-      source = "${self}/home/config/nvim";
+      source = config.lib.file.mkOutOfStoreSymlink "${self}/home/config/nvim";
       recursive = true;
     };
     "${config.home.homeDirectory}/.config/eww" = {
@@ -90,23 +90,23 @@ in
       source = "${self}/home/config/keyd";
       recursive = true;
     };
-		"${config.home.homeDirectory}/.cargo" = {
-			source = "${self}/home/config/cargo";
-			recursive = true;
-		};
-		"${config.home.homeDirectory}/mako" = {
-			source = "${self}/home/config/mako";
-			recursive = true;
-		};
-		"${config.home.homeDirectory}/git" = {
-			source = "${self}/home/config/git";
-			recursive = true;
-		};
-		# don't use it, here just for completeness
-		"${config.home.homeDirectory}/zsh" = {
-			source = "${self}/home/config/zsh";
-			recursive = true;
-		};
+    "${config.home.homeDirectory}/.cargo" = {
+      source = "${self}/home/config/cargo";
+      recursive = true;
+    };
+    "${config.home.homeDirectory}/mako" = {
+      source = "${self}/home/config/mako";
+      recursive = true;
+    };
+    "${config.home.homeDirectory}/git" = {
+      source = "${self}/home/config/git";
+      recursive = true;
+    };
+    # don't use it, here just for completeness
+    "${config.home.homeDirectory}/zsh" = {
+      source = "${self}/home/config/zsh";
+      recursive = true;
+    };
 
     "/usr/share/X11/xkb/symbols" = {
       source = "${self}/home/config/xkb_symbols";
@@ -132,7 +132,8 @@ in
   # Things that never need to be available with sudo
   home.packages =
     with pkgs;
-    /*lib.flatten*/ [
+    # lib.flatten
+    [
       cowsay
       unimatrix
       spotify
@@ -202,92 +203,98 @@ in
 
   programs.direnv.enable = true;
 
+  programs.neovim = {
+    viAlias = true;
+    vimAlias = true;
+    vimdiffAlias = true;
+  };
+
   programs.starship = {
     enable = true;
-		#enableTransience = true;
+    #enableTransience = true;
     settings = {
       add_newline = false;
       aws.disabled = true;
       gcloud.disabled = true;
       line_break.disabled = true;
 
-			#format = "$shlvl$shell$username$hostname$nix_shell$git_branch$git_commit$git_state$git_status$directory$jobs$cmd_duration$character";
-			format = "$character";
-			right_format = "$all";
+      #format = "$shlvl$shell$username$hostname$nix_shell$git_branch$git_commit$git_state$git_status$directory$jobs$cmd_duration$character";
+      format = "$character";
+      right_format = "$all";
 
-			hostname = {
-				style = "white";
-				ssh_only = true;
-			};
-			shell = {
-				disabled = false;
-				format = "$indicator";
-				fish_indicator = "";
-				bash_indicator = "[BASH](bright-white) ";
-				zsh_indicator = "[ZSH](bright-white) ";
-			};
-			nix_shell = {
-				symbol = "";
-				format = "[$symbol$name]($style) ";
-				style = "bright-purple bold";
-			};
-			git_status = {
-				style = "dim-green";
-			};
-			time = {
-				format = "[$time]($style)";
-				disabled = false;
-			};
-			rust = {
-				format = "[$version]($style)";
-			};
+      hostname = {
+        style = "white";
+        ssh_only = true;
+      };
+      shell = {
+        disabled = false;
+        format = "$indicator";
+        fish_indicator = "";
+        bash_indicator = "[BASH](bright-white) ";
+        zsh_indicator = "[ZSH](bright-white) ";
+      };
+      nix_shell = {
+        symbol = "";
+        format = "[$symbol$name]($style) ";
+        style = "bright-purple bold";
+      };
+      git_status = {
+        style = "dim-green";
+      };
+      time = {
+        format = "[$time]($style)";
+        disabled = false;
+      };
+      rust = {
+        format = "[$version]($style)";
+      };
     };
   };
-	# taken from https://github.com/tejing1/nixos-config/tree/master
-	   # programs.starship.settings = {
-    #  add_newline = false;
-    #  format = "$shlvl$shell$username$hostname$nix_shell$git_branch$git_commit$git_state$git_status$directory$jobs$cmd_duration$character";
-    #  shlvl = {
-    #    disabled = false;
-    #    symbol = "ﰬ";
-    #    style = "bright-red bold";
-    #  };
-    #  username = {
-    #    style_user = "bright-white bold";
-    #    style_root = "bright-red bold";
-    #  };
-    #  git_branch = {
-    #    only_attached = true;
-    #    format = "[$symbol$branch]($style) ";
-    #    symbol = "שׂ";
-    #    style = "bright-yellow bold";
-    #  };
-    #  git_commit = {
-    #    only_detached = true;
-    #    format = "[ﰖ$hash]($style) ";
-    #    style = "bright-yellow bold";
-    #  };
-    #  git_state = {
-    #    style = "bright-purple bold";
-    #  };
-    #  directory = {
-    #    read_only = " ";
-    #    truncation_length = 0;
-    #  };
-    #  cmd_duration = {
-    #    format = "[$duration]($style) ";
-    #    style = "bright-blue";
-    #  };
-    #  jobs = {
-    #    style = "bright-green bold";
-    #  };
-    #  character = {
-    #    success_symbol = "[\\$](bright-green bold)";
-    #    error_symbol = "[\\$](bright-red bold)";
-    #  };
-    #};
-    #
-    #
+  # taken from https://github.com/tejing1/nixos-config/tree/master
+  # programs.starship.settings = {
+  #  add_newline = false;
+  #  format = "$shlvl$shell$username$hostname$nix_shell$git_branch$git_commit$git_state$git_status$directory$jobs$cmd_duration$character";
+  #  shlvl = {
+  #    disabled = false;
+  #    symbol = "ﰬ";
+  #    style = "bright-red bold";
+  #  };
+  #  username = {
+  #    style_user = "bright-white bold";
+  #    style_root = "bright-red bold";
+  #  };
+  #  git_branch = {
+  #    only_attached = true;
+  #    format = "[$symbol$branch]($style) ";
+  #    symbol = "שׂ";
+  #    style = "bright-yellow bold";
+  #  };
+  #  git_commit = {
+  #    only_detached = true;
+  #    format = "[ﰖ$hash]($style) ";
+  #    style = "bright-yellow bold";
+  #  };
+  #  git_state = {
+  #    style = "bright-purple bold";
+  #  };
+  #  directory = {
+  #    read_only = " ";
+  #    truncation_length = 0;
+  #  };
+  #  cmd_duration = {
+  #    format = "[$duration]($style) ";
+  #    style = "bright-blue";
+  #  };
+  #  jobs = {
+  #    style = "bright-green bold";
+  #  };
+  #  character = {
+  #    success_symbol = "[\\$](bright-green bold)";
+  #    error_symbol = "[\\$](bright-red bold)";
+  #  };
+  #};
+  #
+  #
   programs.home-manager.enable = true; # let it manage itself
   home.stateVersion = "24.05"; # NB: DO NOT CHANGE, same as `system.stateVersion`
 }
