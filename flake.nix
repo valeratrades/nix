@@ -125,7 +125,7 @@
 					home-manager.useGlobalPkgs = true;
 					home-manager.useUserPackages = true;
 					home-manager.backupFileExtension = "backup"; # delusional home-manager wants this exact file-extension for when I backup system-level files
-					home-manager.extraSpecialArgs = { inherit inputs; };
+					home-manager.extraSpecialArgs = { inherit inputs; inherit self; };
 
 					#home-manager.sharedModules = [
 					#	inputs.sops-nix.homeManagerModules.sops

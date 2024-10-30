@@ -38,73 +38,78 @@ in
 
   home.file = {
 		# # fs
-    "${config.home.homeDirectory}/g/README.md".source = ../../home/fs/g/README.md;
-    "${config.home.homeDirectory}/s/g/README.md".source = ../../home/fs/s/g/README.md;
-    "${config.home.homeDirectory}/s/l/README.md".source = ../../home/fs/s/l/README.md;
-    "${config.home.homeDirectory}/t/README.md".source = ../../home/fs/t/README.md;
+    "${config.home.homeDirectory}/g/README.md".source = "${self}/home/fs/g/README.md$";
+    "${config.home.homeDirectory}/s/g/README.md".source = "${self}/home/fs/s/g/README.md";
+    "${config.home.homeDirectory}/s/l/README.md".source = "${self}/home/fs/s/l/README.md";
+    "${config.home.homeDirectory}/t/README.md".source = "${self}/home/fs/t/README.md";
 		#
 
-    "${config.home.homeDirectory}/.config/tg.toml".source = ../../home/config/tg.toml;
-    "${config.home.homeDirectory}/.config/tg_admin.toml".source = ../../home/config/tg_admin.toml;
-    "${config.home.homeDirectory}/.config/todo.toml".source = ../../home/config/todo.toml;
-    "${config.home.homeDirectory}/.config/discretionary_engine.toml".source = ../../home/config/discretionary_engine.toml;
-    "${config.home.homeDirectory}/.config/btc_line.toml".source = ../../home/config/btc_line.toml;
-    "${config.home.homeDirectory}/.lesskey".source = ../../home/config/lesskey;
-    "${config.home.homeDirectory}/.config/fish/conf.d/sway.fish".source = ../../home/config/fish/conf.d/sway.fish;
+    "${config.home.homeDirectory}/.config/tg.toml".source = "${self}/home/config/tg.toml";
+    "${config.home.homeDirectory}/.config/tg_admin.toml".source = "${self}/home/config/tg_admin.toml";
+    "${config.home.homeDirectory}/.config/todo.toml".source = "${self}/home/config/todo.toml";
+    "${config.home.homeDirectory}/.config/discretionary_engine.toml".source = "${self}/home/config/discretionary_engine.toml";
+    "${config.home.homeDirectory}/.config/btc_line.toml".source = "${self}/home/config/btc_line.toml";
+    "${config.home.homeDirectory}/.lesskey".source = "${self}/home/config/lesskey";
+    "${config.home.homeDirectory}/.config/fish/conf.d/sway.fish".source = "${self}/home/config/fish/conf.d/sway.fish";
 
-    "${config.home.homeDirectory}/.config/greenclip.toml".source = ../../home/config/greenclip.toml;
+    "${config.home.homeDirectory}/.config/greenclip.toml".source = "${self}/home/config/greenclip.toml";
 
     "${config.home.homeDirectory}/.config/nvim" = {
-      source = ../../home/config/nvim;
+      source = "${self}/home/config/nvim";
       recursive = true;
     };
     "${config.home.homeDirectory}/.config/eww" = {
-      source = ../../home/config/eww;
+      source = "${self}/home/config/eww";
       recursive = true;
     };
     "${config.home.homeDirectory}/.config/zathura" = {
-      source = ../../home/config/zathura;
+      source = "${self}/home/config/zathura";
       recursive = true;
     };
     "${config.home.homeDirectory}/.config/sway" = {
-      source = ../../home/config/sway;
+      source = "${self}/home/config/sway";
       recursive = true;
     };
 
     # # Might be able to join these, syntaxis should be similar
     "${config.home.homeDirectory}/.config/vesktop" = {
-      source = ../../home/config/vesktop;
+      source = "${self}/home/config/vesktop";
       recursive = true;
     };
     "${config.home.homeDirectory}/.config/discord" = {
-      source = ../../home/config/discord;
+      source = "${self}/home/config/discord";
       recursive = true;
     };
     #
 
     "${config.home.homeDirectory}/.config/alacritty" = {
-      source = ../../home/config/alacritty;
+      source = "${self}/home/config/alacritty";
       recursive = true;
     };
     "${config.home.homeDirectory}/.config/keyd" = {
-      source = ../../home/config/keyd;
+      source = "${self}/home/config/keyd";
       recursive = true;
     };
 		"${config.home.homeDirectory}/.cargo" = {
-			source = ../../home/config/cargo;
+			source = "${self}/home/config/cargo";
 			recursive = true;
 		};
 		"${config.home.homeDirectory}/mako" = {
-			source = ../../home/config/mako;
+			source = "${self}/home/config/mako";
 			recursive = true;
 		};
 		"${config.home.homeDirectory}/git" = {
-			source = ../../home/config/git;
+			source = "${self}/home/config/git";
+			recursive = true;
+		};
+		# don't use it, here just for completeness
+		"${config.home.homeDirectory}/zsh" = {
+			source = "${self}/home/config/zsh";
 			recursive = true;
 		};
 
     "/usr/share/X11/xkb/symbols" = {
-      source = ../../home/config/xkb_symbols;
+      source = "${self}/home/config/xkb_symbols";
       recursive = true;
     };
   };
@@ -199,14 +204,17 @@ in
 
   programs.starship = {
     enable = true;
-		enableTransience = true;
+		#enableTransience = true;
     settings = {
       add_newline = false;
       aws.disabled = true;
       gcloud.disabled = true;
       line_break.disabled = true;
+
+			#format = "$shlvl$shell$username$hostname$nix_shell$git_branch$git_commit$git_state$git_status$directory$jobs$cmd_duration$character";
 			format = "$character";
 			right_format = "$all";
+
 			hostname = {
 				style = "white";
 				ssh_only = true;
@@ -218,13 +226,20 @@ in
 				bash_indicator = "[BASH](bright-white) ";
 				zsh_indicator = "[ZSH](bright-white) ";
 			};
-			  nix_shell = {
-			    symbol = "";
-			    format = "[$symbol$name]($style) ";
-			    style = "bright-purple bold";
-			  };
+			nix_shell = {
+				symbol = "";
+				format = "[$symbol$name]($style) ";
+				style = "bright-purple bold";
+			};
 			git_status = {
 				style = "dim-green";
+			};
+			time = {
+				format = "[$time]($style)";
+				disabled = false;
+			};
+			rust = {
+				format = "[$version]($style)";
 			};
     };
   };

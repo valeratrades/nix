@@ -17,6 +17,9 @@ alias up="/etc/nixos/home/scripts/maintenance/main.sh"
 zoxide init fish | source
 
 # Starship
+#function starship_preprompt_user_func
+#	echo "🚀"
+#end
 #starship init fish | source
 #enable_transience
 
