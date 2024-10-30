@@ -247,6 +247,9 @@ in
         #git_status = {
         #  style = "dim-green";
         #};
+				git_branch = {
+					format = "[$branch(:$remote_branch)]($style) ";
+				};
         cmd_duration = {
           format = "[$duration]($style) ";
           style = "white";
