@@ -306,6 +306,7 @@ in
           format = "([$signal_name](bold flamingo) )$int $symbol"; # brackets around `signal_name` to not add whitespace when it's empty
 
           pipestatus = true;
+					pipestatus_format = "\[$pipestatus\] => ([$signal_name](bold flamingo) )$int";
 
           success_symbol = "[❯ ](bold green)";
           symbol = "[❌](bold red)";
