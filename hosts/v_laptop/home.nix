@@ -291,7 +291,7 @@ in
         status = {
           # ? can I remake the `$character` with this?
           #success_symbol = "  "; # preserve indent
-          format = "($signal_name )$int $symbol"; # brackets around `signal_name` to not add whitespace when it's empty
+          format = "([$signal_name](bold flamingo) )$int $symbol"; # brackets around `signal_name` to not add whitespace when it's empty
 
           pipestatus = true;
 
@@ -299,9 +299,11 @@ in
           symbol = "[❌](bold red)";
           not_executable_symbol = "[🚫](bold banana)";
           not_found_symbol = "[🔍](bold tangerine)";
-          sigint_symbol = "[🧱](bright-red)";
-					signal_symbol = "[⚡](bold flamingo)";
           map_symbol = true;
+
+					# we'll get indication from `$signal_name` anyways, this seems like clutter. //DEPRECATED in a month (2024/10/30)
+					sigint_symbol = ""; #"[🧱](bright-red)";
+					signal_symbol = ""; #[⚡](bold flamingo)";
 
           disabled = false;
         };
