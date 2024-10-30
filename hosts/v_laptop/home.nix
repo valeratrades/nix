@@ -46,7 +46,7 @@ in
 
     "${config.home.homeDirectory}/.config/tg.toml".source = "${self}/home/config/tg.toml";
     "${config.home.homeDirectory}/.config/tg_admin.toml".source = "${self}/home/config/tg_admin.toml";
-		"${config.home.homeDirectory}/.config/auto_redshift.toml".source = "${self}/home/config/auto_redshift.toml";
+    "${config.home.homeDirectory}/.config/auto_redshift.toml".source = "${self}/home/config/auto_redshift.toml";
     "${config.home.homeDirectory}/.config/todo.toml".source = "${self}/home/config/todo.toml";
     "${config.home.homeDirectory}/.config/discretionary_engine.toml".source = "${self}/home/config/discretionary_engine.toml";
     "${config.home.homeDirectory}/.config/btc_line.toml".source = "${self}/home/config/btc_line.toml";
@@ -214,6 +214,21 @@ in
     eza.enable = true;
 
     starship = {
+      #presets = [ "no-runtime-versions" ]; # noisy on python, lua, and all the languages I don't care about. Would rather explicitly setup expansions on the important ones.
+      # for some reason doesn't work right now. Thus the manual setup block below. // part of it will persist even after fix, like `rust`
+      settings = {
+        python = {
+          format = "[$symbol]($style)";
+          #detect_folders = ["!.rs"];
+        };
+        lua = {
+          format = "[$symbol]($style)";
+        };
+        rust = {
+          format = "[$version]($style) ";
+        };
+      };
+
       enable = true;
       #enableTransience = true;
       settings = {
@@ -263,16 +278,6 @@ in
           format = "[$time]($style)";
           disabled = false;
         };
-        python = {
-          format = "[$symbol]($style)";
-          #detect_folders = ["!.rs"];
-        };
-        lua = {
-          format = "[$symbol]($style)";
-        };
-        rust = {
-          format = "[$version]($style) ";
-        };
         package = {
           disabled = true;
         };
@@ -301,9 +306,9 @@ in
           not_found_symbol = "[🔍](bold tangerine)";
           map_symbol = true;
 
-					# we'll get indication from `$signal_name` anyways, this seems like clutter. //DEPRECATED in a month (2024/10/30)
-					sigint_symbol = ""; #"[🧱](bright-red)";
-					signal_symbol = ""; #[⚡](bold flamingo)";
+          # we'll get indication from `$signal_name` anyways, this seems like clutter. //DEPRECATED in a month (2024/10/30)
+          sigint_symbol = ""; # "[🧱](bright-red)";
+          signal_symbol = ""; # [⚡](bold flamingo)";
 
           disabled = false;
         };
