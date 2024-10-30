@@ -115,7 +115,7 @@
 				#pkgs-stable = import nixpkgs-stable {
 				#	inherit system;
 				#	config.allowUnfree = true;
-				#};ixpkgs.legacyPackages.${system};
+				#};nixpkgs.legacyPackages.${system};
 			};
 
 			modules = [

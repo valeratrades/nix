@@ -233,16 +233,8 @@ in
 
       # Nix
       NIXOS_CONFIG = "/etc/nixos";
-      # #HACK
-      #NIX_LD_LIBRARY_PATH = with pkgs; lib.makeLibraryPath [
-      #	stdenv.cc.cc
-      #	openssl
-      #	openssl.dev
-      #	# ...
-      #];
-      LD_DEBUG = "libs";
-      #NIX_LD = with pkgs; lib.fileContents "${stdenv.cc}/nix-support/dynamic-linker"; # auto-setup
-      #
+			#TODO!: figure out how to procedurally disable [vesktop, tg] evokations via rofi, outside of preset times in my calendar
+			DOT_DESKTOP = "${pkgs.home-manager}/share/applications";
 
       # home vars
       MODULAR_HOME = "${modularHome}";
