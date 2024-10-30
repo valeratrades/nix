@@ -294,6 +294,7 @@ in
 					format = "[$symbol]($style)[$allowed]($style) ";
 					symbol = " ";
 
+					style = "bold basil";
 					denied_msg = "-";
 					not_allowed_msg = "~";
 					allowed_msg = "+";
