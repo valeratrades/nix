@@ -109,6 +109,7 @@
 
 			specialArgs = { 
 				inherit inputs;
+				inherit self;
 
 				# freaks out on `inherit system`
 				#pkgs-stable = import nixpkgs-stable {

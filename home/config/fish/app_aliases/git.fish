@@ -7,12 +7,12 @@ alias g="git"
 
 function gg
 	set prefix ""
-	if [ "$argv[1]" = "p" ]; or [ "$argv[1]" = "-p" ]; or [ "$argv[1]" = "--prefix" ]
+	if [ "$argv[1]" = "p" ] || [ "$argv[1]" = "-p" ] || [ "$argv[1]" = "--prefix" ]
 		set prefix "$argv[2]: "
 		set argv $argv[3..-1]
 	end
 
-	if [ "$argv[1]" = "t" ]; or [ "$argv[1]" = "-t" ]; or [ "$argv[1]" = "--tag" ]
+	if [ "$argv[1]" = "t" ] || [ "$argv[1]" = "-t" ] || [ "$argv[1]" = "--tag" ]
 		git tag -a "$argv[2]" -m "$argv[2]"
 		set argv $argv[3..-1]
 	end
@@ -28,7 +28,7 @@ function gg
 	# if test (git log -1 --pretty=format:%s) = "$message"
 	#     set squash_if_needed '--squash HEAD~1'
 	# end
-	git add -A; and git commit -m "$message"; and git push --follow-tags
+	git add -A && git commit -m "$message" && git push --follow-tags
 end
 
 alias ggf="gg -p feat"
@@ -50,7 +50,7 @@ function gd
 end
 
 function git_pull_force
-	git fetch --all; and git reset --hard origin/(git branch --show-current)
+	git fetch --all && git reset --hard origin/(git branch --show-current)
 end
 
 # GitHub aliases
@@ -81,7 +81,7 @@ end
 alias gir="gh issue close -r \"not planned\""
 alias gid="gh issue delete --yes"
 
-alias git_zip="rm -f ~/Downloads/last_git_zip.zip; and git ls-files -o -c --exclude-standard | zip ~/Downloads/last_git_zip.zip -@"
+alias git_zip="rm -f ~/Downloads/last_git_zip.zip && git ls-files -o -c --exclude-standard | zip ~/Downloads/last_git_zip.zip -@"
 
 function gco
 	set initial_query ""
@@ -122,51 +122,53 @@ function gc
 		end
 		rm -rf /tmp/$filename
 		git clone --depth=1 "$url" "/tmp/$filename" 1>&2
-		and cd "/tmp/$filename"; or return 1
+		and cd "/tmp/$filename" || return 1
 		pwd
 	else if test (count $argv) = 2
 		set target $argv[2]
 		if test -d "$argv[2]"
 			set target "$argv[2]/$filename"
 		end
-		git clone --depth=1 "$url" "$target"; or return 1
+		git clone --depth=1 "$url" "$target" || return 1
 	end
 end
 
-set gb_readme '''
-#build from source helper
-Does git clone into /tmp, and then tries to build until it works.
 
-ex: build neovim/neovim
-
-some repositories have shorthands, eg: `build nvim` would work.
-'''
-
-function gb
-	if test "$argv[1]" = "nvim"
-		set target "neovim/neovim"
-	else if test "$argv[1]" = "eww"
-		set target "elkowar/eww"
-	else if test "$argv[1]" = "-h" -o "$argv[1]" = "--help" -o "$argv[1]" = "help"
-		printf $gb_readme
-		return 0
-	else if test -z "$argv[1]"
-		printf $gb_readme
-		return 1
-	else
-		set target "$argv[1]"
-	end
-
-	set initial_dir (pwd)
-	set target_dir (gc "$target")
-	if test $status -ne 0
-		return 1
-	end
-	cd "$target_dir"; or return 1
-
-	and command cmake -S . -B ./build; and cd ./build; and sudo make install
-	and cd $initial_dir; and rm -rf $target_dir
-end
+#TODO!: rewrite correctly from .zsh source, this is not at all what it is supposed to be
+# although, do I even need this now that I'm on nix?
+#function gb
+#	set gb_readme '''
+#	#build from source helper
+#	Does git clone into /tmp, and then tries to build until it works.
+#
+#	ex: build neovim/neovim
+#
+#	some repositories have shorthands, eg: `build nvim` would work.
+#	'''
+#	if test "$argv[1]" = "nvim"
+#		set target "neovim/neovim"
+#	else if test "$argv[1]" = "eww"
+#		set target "elkowar/eww"
+#	else if test "$argv[1]" = "-h" -o "$argv[1]" = "--help" -o "$argv[1]" = "help"
+#		printf $gb_readme
+#		return 0
+#	else if test -z "$argv[1]"
+#		printf $gb_readme
+#		return 1
+#	else
+#		set target "$argv[1]"
+#	end
+#
+#	set initial_dir (pwd)
+#	set target_dir (gc "$target")
+#	if test $status -ne 0
+#		return 1
+#	end
+#	cd "$target_dir" || return 1
+#
+#	and command cmake -S . -B ./build && cd ./build && sudo make install
+#	and cd $initial_dir && rm -rf $target_dir
+#end
 
 function protect_branch
 	set repo $argv[1]
@@ -198,7 +200,7 @@ end
 
 ## git new repository
 function gn
-	if [ "$argv[1]" = "-h" ]; or [ "$argv[1]" = "--help" ]; or [ "$argv[1]" = "help" ]
+	if [ "$argv[1]" = "-h" ] || [ "$argv[1]" = "--help" ] || [ "$argv[1]" = "help" ]
 		printf """\
 		#git create new repo
 		arg1: repository name
@@ -209,7 +211,7 @@ function gn
 		return 0
 	end
 	set repo_name $argv[1]
-	if [ "$argv[1]" = "--private"]; or [ "$argv[1]" = "--public" ]
+	if [ "$argv[1]" = "--private" ] || [ "$argv[1]" = "--public" ]
 		set repo_name (basename (pwd))
 	else
 		set argv $argv[2..-1]
@@ -217,7 +219,7 @@ function gn
 
 	echo $argv
 	echo $repo_name
-	return "dbg"
+	return 1
 
 	git init
 	git add .
