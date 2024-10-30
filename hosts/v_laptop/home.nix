@@ -320,6 +320,7 @@ in
           disabled = false;
         };
 
+				#TODO!: sigure out how to quickly estimate the dir size, display here with `(gray)`
         # if ordering is not forced, will be sorted alphabetically
         custom = {
           #shell = ["fish" "-c"]; # must be `fish`, but I didn't figure out how to enforce it yet
