@@ -123,6 +123,7 @@ alias disable_fan="echo 0 | sudo tee /sys/class/hwmon/hwmon6/pwm1"
 alias enable_fan="echo 2 | sudo tee /sys/class/hwmon/hwmon6/pwm1"
 alias phone-wifi="sudo nmcli dev wifi connect Valera password 12345678"
 alias phone_wifi="phone-wifi"
+alias cdd="cd .. && cd -" # effectively just reloads `direnv`
 
 # # fish
 function where
