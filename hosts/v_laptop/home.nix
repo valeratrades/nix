@@ -219,11 +219,14 @@ in
       settings = {
         python = {
           format = "[$symbol]($style)";
-          #detect_folders = ["!.rs"];
         };
         lua = {
           format = "[$symbol]($style)";
         };
+				typst = {
+					format = "[$symbol]($style)";
+				};
+
         rust = {
           format = "[$version]($style) ";
         };

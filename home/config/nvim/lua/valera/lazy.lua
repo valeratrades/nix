@@ -251,6 +251,13 @@ return require('lazy').setup({
 		event = { "VeryLazy" },
 		build = "deno task --quiet build:fast",
 	},
+	-- Not sure if this can work on NixOS
+	--{
+	--	'chomosuke/typst-preview.nvim',
+	--	lazy = false, -- or ft = 'typst'
+	--	version = '1.*',
+	--	build = function() require 'typst-preview'.update() end,
+	--},
 	"nvim-neotest/nvim-nio",
 	'arnamak/stay-centered.nvim',
 	"3rd/image.nvim",

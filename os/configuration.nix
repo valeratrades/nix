@@ -362,6 +362,7 @@ in
           tldr
           cowsay
           cotp
+					as-tree
           eza # better `ls`
           fd # better `find`
           bat # better `cat`

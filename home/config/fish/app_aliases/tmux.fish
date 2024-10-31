@@ -62,6 +62,7 @@ function tn
 	end
 	set -l session_name $session_name_or_err
 
+	#TODO!: make it use `script` to preserve coloring
 	tmux send-keys -t "$session_name:build.2" 'echo """$(gil)\n$(gifm)\n$(gifa)""" | less' Enter # all issues
 	#tmux send-keys -t "$session_name:build.2" 'gifm' Enter # issues of current milestone
 	#tmux send-keys -t "$session_name:build.2" 'gifa' Enter # issues of current milestone that I am working on
