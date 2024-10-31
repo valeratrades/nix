@@ -85,24 +85,13 @@ in
       };
     };
     starship = {
+			# defined here, as `hm` doesn't yet recognize the `presets` option on `starship` (2024/10/31)
       presets = [ "no-runtime-versions" ]; # noisy on python, lua, and all the languages I don't care about. Would rather explicitly setup expansions on the important ones.
-      # presets set in the os-level config (they're not in hm yet) (2024/10/31)
       settings = {
-        #    python = {
-        #      format = "[$symbol]($style)";
-        #    };
-        #    lua = {
-        #      format = "[$symbol]($style)";
-        #    };
-        #typst = {
-        #	format = "[$symbol]($style)";
-        #};
-        #ocaml = {
-        #	format = "[$symbol]($style)";
-        #};
-
         rust = {
           format = "[$version]($style) ";
+					#version_format = "$major.$minor(-$toolchain)"; # $toolchain is not recognized correctly right now (2024/10/31)
+					style = "bold blue";
         };
       };
 
