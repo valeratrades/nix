@@ -477,9 +477,15 @@ in
           [
             vscode-langservers-extracted # contains json lsp
             marksman # md lsp
-            lean4
+
             perl
 
+
+						# Lean
+						[
+							lean4
+							elan # rustup for lean. May or may not be outdated.
+						]
             # Js / Ts
             [
               nodejs_22

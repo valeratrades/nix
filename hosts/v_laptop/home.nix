@@ -87,6 +87,10 @@ in
       source = "${self}/home/config/alacritty";
       recursive = true;
     };
+    ".config/tmux" = {
+      source = "${self}/home/config/tmux";
+      recursive = true;
+    };
     ".config/keyd" = {
       source = "${self}/home/config/keyd";
       recursive = true;
@@ -206,6 +210,7 @@ in
     direnv.enable = true;
 
     neovim = {
+			#? Can I get a nano alias?
       viAlias = true;
       vimAlias = true;
       vimdiffAlias = true;
@@ -224,6 +229,9 @@ in
           format = "[$symbol]($style)";
         };
 				typst = {
+					format = "[$symbol]($style)";
+				};
+				ocaml = {
 					format = "[$symbol]($style)";
 				};
 

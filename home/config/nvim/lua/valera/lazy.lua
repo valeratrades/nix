@@ -128,7 +128,6 @@ return require('lazy').setup({
 	{ -- Math
 		'Julian/lean.nvim',
 		event = { 'BufReadPre *.lean', 'BufNewFile *.lean' },
-
 		dependencies = {
 			'neovim/nvim-lspconfig',
 			'nvim-lua/plenary.nvim',
