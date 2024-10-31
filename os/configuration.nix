@@ -91,7 +91,6 @@ in
         rust = {
           format = "[$version]($style) ";
 					#version_format = "$major.$minor(-$toolchain)"; # $toolchain is not recognized correctly right now (2024/10/31)
-					style = "bold blue";
         };
       };
 
