@@ -309,6 +309,12 @@ in
 					denied_msg = "-";
 					not_allowed_msg = "~";
 					allowed_msg = "+";
+
+					#format = "[$symbol]($allowed) "; # starship is not smart enough. Leaving for if it gets better.
+					#denied_msg = "purple";
+					#not_allowed_msg = "bold red";
+					#allowed_msg = "bold basil";
+
           disabled = false;
 				};
         status = {
@@ -353,9 +359,6 @@ in
             when = ''! [ -w . ]'';
             style = "bold red";
           };
-					#TODO: replicate the default one, but so that it changes color if it's disallowed
-					#direnv = {
-					#};
         };
 
         palettes.google_calendar = {
