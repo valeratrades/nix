@@ -1,1 +1,2 @@
-/nix/store/3svc4cfn35wqqh6wimlq39h92k9x6c8i-home-manager-files/.config/nvim/ftplugin/sh.lua
+-- may have implemented the same in correct lua autocommands in general autocommands.lua file
+--vim.cmd([[ autocmd BufWritePost *.sh silent !chmod +x <afile> ]])

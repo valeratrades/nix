@@ -1,1 +1,3 @@
-/nix/store/3svc4cfn35wqqh6wimlq39h92k9x6c8i-home-manager-files/.config/nvim/after/plugin/undotree.lua
+vim.keymap.set("n", "<leader>ut", vim.cmd.UndotreeToggle, { desc = "undotree: open" })
+G('undotree_SetFocusWhenToggle', 1)
+G('undotree_ShortIndicators', 1)
