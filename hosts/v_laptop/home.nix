@@ -34,8 +34,9 @@
     ../../home/config/fish/default.nix
   ];
 
-	# fuck mkOutOfStoreSymlink and home-manager
+	# fuck mkOutOfStoreSymlink and home-manager. Just link everything except for where apps like to write artifacts to the config dir.
   home.activation = {
+		# dirs
     nvim = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       ln -sf $NIXOS_CONFIG/home/config/nvim $XDG_CONFIG_HOME/nvim
     '';
@@ -63,10 +64,30 @@
     git = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       ln -sf $NIXOS_CONFIG/home/config/git $XDG_CONFIG_HOME/git
     '';
+
+
+		# ind files
+    tg = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      ln -sf $NIXOS_CONFIG/home/config/tg.toml $XDG_CONFIG_HOME/tg.toml
+    '';
+    tg_admin = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      ln -sf $NIXOS_CONFIG/home/config/tg_admin.toml $XDG_CONFIG_HOME/tg_admin.toml
+    '';
+    auto_redshift = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      ln -sf $NIXOS_CONFIG/home/config/auto_redshift.toml $XDG_CONFIG_HOME/auto_redshift.toml
+    '';
+    todo = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      ln -sf $NIXOS_CONFIG/home/config/todo.toml $XDG_CONFIG_HOME/todo.toml
+    '';
+    discretionary_engine = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      ln -sf $NIXOS_CONFIG/home/config/discretionary_engine.toml $XDG_CONFIG_HOME/discretionary_engine.toml
+    '';
+    btc_line = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      ln -sf $NIXOS_CONFIG/home/config/btc_line.toml $XDG_CONFIG_HOME/btc_line.toml
+    '';
   };
 
 
-	#NB: leading dot of `.config` must be escaped, but NO OTHER LEADING DOTS (wtf, hm)
   home.file = {
     # # fs
     "g/README.md".source = "${self}/home/fs/g/README.md$";
@@ -75,29 +96,29 @@
     "t/README.md".source = "${self}/home/fs/t/README.md";
     #
 
-    "\.config/tg.toml".source = "${self}/home/config/tg.toml";
-    "\.config/tg_admin.toml".source = "${self}/home/config/tg_admin.toml";
-    "\.config/auto_redshift.toml".source = "${self}/home/config/auto_redshift.toml";
-    "\.config/todo.toml".source = "${self}/home/config/todo.toml";
-    "\.config/discretionary_engine.toml".source = "${self}/home/config/discretionary_engine.toml";
-    "\.config/btc_line.toml".source = "${self}/home/config/btc_line.toml";
+    ".config/tg.toml".source = "${self}/home/config/tg.toml";
+    ".config/tg_admin.toml".source = "${self}/home/config/tg_admin.toml";
+    ".config/auto_redshift.toml".source = "${self}/home/config/auto_redshift.toml";
+    ".config/todo.toml".source = "${self}/home/config/todo.toml";
+    ".config/discretionary_engine.toml".source = "${self}/home/config/discretionary_engine.toml";
+    ".config/btc_line.toml".source = "${self}/home/config/btc_line.toml";
 
     ".lesskey".source = "${self}/home/config/lesskey";
-    "\.config/fish/conf.d/sway.fish".source = "${self}/home/config/fish/conf.d/sway.fish";
-    "\.config/greenclip.toml".source = "${self}/home/config/greenclip.toml";
+    ".config/fish/conf.d/sway.fish".source = "${self}/home/config/fish/conf.d/sway.fish";
+    ".config/greenclip.toml".source = "${self}/home/config/greenclip.toml";
 
     # # Might be able to join these, syntaxis should be similar
-    "\.config/vesktop" = {
+    ".config/vesktop" = {
       source = "${self}/home/config/vesktop";
       recursive = true;
     };
-    "\.config/discord" = {
+    ".config/discord" = {
       source = "${self}/home/config/discord";
       recursive = true;
     };
     #
     # don't use it, here just for completeness
-    "\.config/zsh" = {
+    ".config/zsh" = {
       source = "${self}/home/config/zsh";
       recursive = true;
     };
