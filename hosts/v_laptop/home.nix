@@ -13,13 +13,11 @@
 {
   self,
   config,
+	lib,
   pkgs,
   inputs,
   ...
 }:
-let
-  nix_home = "../../home";
-in
 {
   home.username = "v";
   home.homeDirectory = "/home/v";
@@ -35,6 +33,12 @@ in
   imports = [
     ../../home/config/fish/default.nix
   ];
+
+  home.activation = {
+    nvim = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      ln -sf $NIXOS_CONFIG/home/config/nvim $XDG_CONFIG_HOME/nvim
+    '';
+  };
 
   home.file = {
     # # fs
@@ -55,11 +59,10 @@ in
 
     ".config/greenclip.toml".source = "${self}/home/config/greenclip.toml";
 
-    ".config/nvim" = {
-      source = config.lib.file.mkOutOfStoreSymlink "${self}/home/config/nvim";
-      recursive = true;
-    };
-
+    #".config/nvim" = {
+    #  source = "${self}/home/config/nvim";
+    #  recursive = true;
+    #};
 
     ".config/eww" = {
       source = "${self}/home/config/eww";
@@ -145,7 +148,7 @@ in
       unimatrix
       spotify
       spotube
-			nyxt
+      nyxt
       telegram-desktop
       vesktop
       rnote
@@ -223,16 +226,16 @@ in
     eza.enable = true;
 
     tmux = {
-			# enable brings in additional configuration state, so don't enable
-			enable = true; #dbg
+      # enable brings in additional configuration state, so don't enable
+      enable = true; # dbg
       package = pkgs.tmux;
-			# don't work without enable. But enable, again, brings a bunch of unrelated shit. So basically no plugins for me.
+      # don't work without enable. But enable, again, brings a bunch of unrelated shit. So basically no plugins for me.
       plugins = with pkgs; [
         tmuxPlugins.resurrect # persist sessions
         tmuxPlugins.open # open files
         tmuxPlugins.copycat # enables regex
       ];
-			extraConfig = "${self}/home/config/tmux/tmux.conf";
+      extraConfig = "${self}/home/config/tmux/tmux.conf";
     };
 
     home-manager.enable = true; # let it manage itself

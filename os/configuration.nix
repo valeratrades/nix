@@ -513,6 +513,7 @@ in
           dust # `du` in rust
           atuin
           tldr
+					comma # auto nix-shell missing commands, so you can just `, cowsay hello`
           cowsay
 					difftastic # better `diff`
           cotp
