@@ -5,7 +5,7 @@ source (dirname (status --current-filename))/document_watch.fish
 
 function beep
 	set dir (dirname (status --current-filename))
-	cargo -Zscript -q $dir/beep.rs $dir/assets/sound/Notification.mp3
+	cargo -Zscript -q $dir/beep.rs $dir/assets/sound/Notification.mp3 $argv
 end
 function timer
 	cargo -Zscript -q (dirname (status --current-filename))/timer.rs $argv

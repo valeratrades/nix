@@ -272,4 +272,5 @@ return require('lazy').setup({
 	"tpope/vim-speeddating",
 	"stevearc/aerial.nvim",
 	"https://codeberg.org/FelipeLema/cmp-async-path",
+	"jbyuki/nabla.nvim",
 })

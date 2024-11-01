@@ -1,4 +1,4 @@
-#!/usr/bin/env cargo
+#!/usr/bin/	env cargo
 #![allow(clippy::len_zero)]
 
 use std::process::Command;
@@ -9,10 +9,8 @@ fn beep(args: &[String]) -> Result<(), String> {
     }
 
     let file_path = &args[0];
-    assert!(args.len() == 1);
-
-    match args[0].as_str() {
-        "-l" | "--loud" => {
+    match args.len() > 1 && ["-l", "--loud"].contains(&args[1].as_str()) {
+        true => {
             // TODO: add sound when I figure out how to control volume of other audio sources + have an absolute sound volume filter
 
             //let mute_status = Command::new("pamixer")
@@ -37,9 +35,7 @@ fn beep(args: &[String]) -> Result<(), String> {
             //}
 
             Command::new("notify-send")
-                .arg("beep")
-                .arg("-t")
-                .arg("600000")
+                .args(["-t", "600000" /*10 min*/, "beep"])
                 .status()
                 .map_err(|e| e.to_string())?;
 
@@ -51,7 +47,7 @@ fn beep(args: &[String]) -> Result<(), String> {
 
             Ok(())
         }
-        _ => {
+        false => {
             Command::new("notify-send")
                 .arg("beep")
                 .status()

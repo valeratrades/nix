@@ -143,6 +143,7 @@ in
       unimatrix
       spotify
       spotube
+			nyxt
       telegram-desktop
       vesktop
       rnote
