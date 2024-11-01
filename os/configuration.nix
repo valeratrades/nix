@@ -88,6 +88,13 @@ in
 			# defined here, as `hm` doesn't yet recognize the `presets` option on `starship` (2024/10/31)
       presets = [ "no-runtime-versions" ]; # noisy on python, lua, and all the languages I don't care about. Would rather explicitly setup expansions on the important ones.
       settings = {
+				# "no-runtime-versions" doesn't get rid of the `via` prefix, which almost makes it useless
+				lua = {
+					format = "[$symbol]($style) ";
+				};
+				python = {
+					format = "[$symbol]($style) ";
+				};
         rust = {
           format = "[$version]($style) ";
 					#version_format = "$major.$minor(-$toolchain)"; # $toolchain is not recognized correctly right now (2024/10/31)
