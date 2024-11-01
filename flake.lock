@@ -20,6 +20,26 @@
         "type": "github"
       }
     },
+    "bbeats": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1730467477,
+        "narHash": "sha256-JTZCtE5lT3x4W4jHX09yika46iLXi1GwNwwRplXZeIg=",
+        "owner": "valeratrades",
+        "repo": "bbeats",
+        "rev": "0207a6bb78fa3af28b138297830c4fc3e1163eff",
+        "type": "github"
+      },
+      "original": {
+        "owner": "valeratrades",
+        "repo": "bbeats",
+        "type": "github"
+      }
+    },
     "booktyping": {
       "inputs": {
         "nixpkgs": [
@@ -461,6 +481,7 @@
     "root": {
       "inputs": {
         "auto_redshift": "auto_redshift",
+        "bbeats": "bbeats",
         "booktyping": "booktyping",
         "btc_line": "btc_line",
         "fenix": "fenix",

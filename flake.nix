@@ -80,6 +80,10 @@
 			url = "github:valeratrades/tg";
 			inputs.nixpkgs.follows = "nixpkgs";
 		};
+		bbeats = {
+			url = "github:valeratrades/bbeats";
+			inputs.nixpkgs.follows = "nixpkgs";
+		};
 
 
 

@@ -166,6 +166,7 @@
       inputs.booktyping.packages.${pkgs.system}.default
       inputs.btc_line.packages.${pkgs.system}.default
       inputs.tg.packages.${pkgs.system}.default
+      inputs.bbeats.packages.${pkgs.system}.default
 
       #inputs.aggr_orderbook.packages.${pkgs.system}.default
       #inputs.orderbook_3d.packages.${pkgs.system}.default
