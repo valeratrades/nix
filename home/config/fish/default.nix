@@ -9,6 +9,7 @@
 			source /etc/nixos/home/config/fish/mod.fish
 			mkdir -p $HOME/tmp # `-p` suppresses the warnings too apparently
 			mkdir -p $HOME/Videos/obs
-		'';
+			sudo chmod +w -R ~/.config/nvim
+    '';
   };
 }

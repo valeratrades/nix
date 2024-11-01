@@ -56,9 +56,11 @@ in
     ".config/greenclip.toml".source = "${self}/home/config/greenclip.toml";
 
     ".config/nvim" = {
-      source = "${self}/home/config/nvim";
+      source = config.lib.file.mkOutOfStoreSymlink "${self}/home/config/nvim";
       recursive = true;
     };
+
+
     ".config/eww" = {
       source = "${self}/home/config/eww";
       recursive = true;

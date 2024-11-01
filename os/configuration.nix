@@ -410,7 +410,7 @@ in
     systemPackages =
       with pkgs; # basically `use pkgs::*`
       lib.lists.flatten [
-        difftastic
+				granted # access cloud
         flatpak
         keyd
         libinput-gestures
@@ -507,6 +507,7 @@ in
           atuin
           tldr
           cowsay
+					difftastic # better `diff`
           cotp
           as-tree
           eza # better `ls`
@@ -515,7 +516,6 @@ in
           ripgrep # better `grep`
           fzf
           jq
-          keyd
           tree
           zoxide
         ]
