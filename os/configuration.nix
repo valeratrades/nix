@@ -524,10 +524,6 @@ in
         [
           starship
           alacritty
-          tmux
-          tmuxPlugins.resurrect # persist sessions
-          tmuxPlugins.open # open files
-          tmuxPlugins.copycat # enables regex
         ]
 
         # Networking Tools

@@ -210,7 +210,7 @@ in
     direnv.enable = true;
 
     neovim = {
-			defaultEditor = true; # sets $EDITOR
+      defaultEditor = true; # sets $EDITOR
       #? Can I get a nano alias?
       viAlias = true;
       vimAlias = true;
@@ -218,6 +218,19 @@ in
     };
 
     eza.enable = true;
+
+    tmux = {
+			# enable brings in additional configuration state, so don't enable
+			enable = true; #dbg
+      package = pkgs.tmux;
+			# don't work without enable. But enable, again, brings a bunch of unrelated shit. So basically no plugins for me.
+      plugins = with pkgs; [
+        tmuxPlugins.resurrect # persist sessions
+        tmuxPlugins.open # open files
+        tmuxPlugins.copycat # enables regex
+      ];
+			extraConfig = "${self}/home/config/tmux/tmux.conf";
+    };
 
     home-manager.enable = true; # let it manage itself
   };

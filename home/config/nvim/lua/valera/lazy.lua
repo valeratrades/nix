@@ -250,6 +250,12 @@ return require('lazy').setup({
 		event = { "VeryLazy" },
 		build = "deno task --quiet build:fast",
 	},
+	{
+		"iamcco/markdown-preview.nvim",
+		cmd = { "MarkdownPreviewToggle", "MarkdownPreview", "MarkdownPreviewStop" },
+		ft = { "markdown" },
+		build = function() vim.fn["mkdp#util#install"]() end,
+	},
 	-- Not sure if this can work on NixOS
 	--{
 	--	'chomosuke/typst-preview.nvim',
