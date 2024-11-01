@@ -24,7 +24,6 @@ local function multiplySidewaysMovements(movement)
 	end
 end
 
-
 K("", "<C-e>", "<nop>") -- used as prefix in my tmux
 K("", "j", "<nop>")
 K("", "k", "<nop>")

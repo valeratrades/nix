@@ -34,12 +34,39 @@
     ../../home/config/fish/default.nix
   ];
 
-  #home.activation = {
-  #  nvim = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-  #    ln -sf $NIXOS_CONFIG/home/config/nvim $XDG_CONFIG_HOME/nvim
-  #  '';
-  #};
+	# fuck mkOutOfStoreSymlink and home-manager
+  home.activation = {
+    nvim = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      ln -sf $NIXOS_CONFIG/home/config/nvim $XDG_CONFIG_HOME/nvim
+    '';
+    eww = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      ln -sf $NIXOS_CONFIG/home/config/eww $XDG_CONFIG_HOME/eww
+    '';
+    zathura = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      ln -sf $NIXOS_CONFIG/home/config/zathura $XDG_CONFIG_HOME/zathura
+    '';
+    sway = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      ln -sf $NIXOS_CONFIG/home/config/sway $XDG_CONFIG_HOME/sway
+    '';
+    alacritty = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      ln -sf $NIXOS_CONFIG/home/config/alacritty $XDG_CONFIG_HOME/alacritty
+    '';
+    tmux = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      ln -sf $NIXOS_CONFIG/home/config/tmux $XDG_CONFIG_HOME/tmux
+    '';
+    keyd = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      ln -sf $NIXOS_CONFIG/home/config/keyd $XDG_CONFIG_HOME/keyd
+    '';
+    mako = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      ln -sf $NIXOS_CONFIG/home/config/mako $XDG_CONFIG_HOME/mako
+    '';
+    git = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      ln -sf $NIXOS_CONFIG/home/config/git $XDG_CONFIG_HOME/git
+    '';
+  };
 
+
+	#NB: leading dot of `.config` must be escaped, but NO OTHER LEADING DOTS (wtf, hm)
   home.file = {
     # # fs
     "g/README.md".source = "${self}/home/fs/g/README.md$";
@@ -48,76 +75,37 @@
     "t/README.md".source = "${self}/home/fs/t/README.md";
     #
 
-    ".config/tg.toml".source = "${self}/home/config/tg.toml";
-    ".config/tg_admin.toml".source = "${self}/home/config/tg_admin.toml";
-    ".config/auto_redshift.toml".source = "${self}/home/config/auto_redshift.toml";
-    ".config/todo.toml".source = "${self}/home/config/todo.toml";
-    ".config/discretionary_engine.toml".source = "${self}/home/config/discretionary_engine.toml";
-    ".config/btc_line.toml".source = "${self}/home/config/btc_line.toml";
+    "\.config/tg.toml".source = "${self}/home/config/tg.toml";
+    "\.config/tg_admin.toml".source = "${self}/home/config/tg_admin.toml";
+    "\.config/auto_redshift.toml".source = "${self}/home/config/auto_redshift.toml";
+    "\.config/todo.toml".source = "${self}/home/config/todo.toml";
+    "\.config/discretionary_engine.toml".source = "${self}/home/config/discretionary_engine.toml";
+    "\.config/btc_line.toml".source = "${self}/home/config/btc_line.toml";
+
     ".lesskey".source = "${self}/home/config/lesskey";
-    ".config/fish/conf.d/sway.fish".source = "${self}/home/config/fish/conf.d/sway.fish";
-
-    ".config/greenclip.toml".source = "${self}/home/config/greenclip.toml";
-
-    ".config/nvim" = {
-      source = config.lib.file.mkOutOfStoreSymlink "${self}/home/config/nvim";
-      recursive = true;
-    };
-
-    ".config/eww" = {
-      source = "${self}/home/config/eww";
-      recursive = true;
-    };
-    ".config/zathura" = {
-      source = "${self}/home/config/zathura";
-      recursive = true;
-    };
-    ".config/sway" = {
-      source = "${self}/home/config/sway";
-      recursive = true;
-    };
+    "\.config/fish/conf.d/sway.fish".source = "${self}/home/config/fish/conf.d/sway.fish";
+    "\.config/greenclip.toml".source = "${self}/home/config/greenclip.toml";
 
     # # Might be able to join these, syntaxis should be similar
-    ".config/vesktop" = {
+    "\.config/vesktop" = {
       source = "${self}/home/config/vesktop";
       recursive = true;
     };
-    ".config/discord" = {
+    "\.config/discord" = {
       source = "${self}/home/config/discord";
       recursive = true;
     };
     #
-
-    ".config/alacritty" = {
-      source = "${self}/home/config/alacritty";
-      recursive = true;
-    };
-    ".config/tmux" = {
-      source = "${self}/home/config/tmux";
-      recursive = true;
-    };
-    ".config/keyd" = {
-      source = "${self}/home/config/keyd";
-      recursive = true;
-    };
-    ".cargo" = {
-      source = "${self}/home/config/cargo";
-      recursive = true;
-    };
-    "mako" = {
-      source = "${self}/home/config/mako";
-      recursive = true;
-    };
-    "git" = {
-      source = "${self}/home/config/git";
-      recursive = true;
-    };
     # don't use it, here just for completeness
-    "zsh" = {
+    "\.config/zsh" = {
       source = "${self}/home/config/zsh";
       recursive = true;
     };
 
+		".cargo" = {
+			source = "${self}/home/config/cargo";
+			recursive = true;
+		};
     "/usr/share/X11/xkb/symbols" = {
       source = "${self}/home/config/xkb_symbols";
       recursive = true;
