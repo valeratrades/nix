@@ -34,11 +34,11 @@
     ../../home/config/fish/default.nix
   ];
 
-  home.activation = {
-    nvim = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      ln -sf $NIXOS_CONFIG/home/config/nvim $XDG_CONFIG_HOME/nvim
-    '';
-  };
+  #home.activation = {
+  #  nvim = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+  #    ln -sf $NIXOS_CONFIG/home/config/nvim $XDG_CONFIG_HOME/nvim
+  #  '';
+  #};
 
   home.file = {
     # # fs
@@ -59,10 +59,10 @@
 
     ".config/greenclip.toml".source = "${self}/home/config/greenclip.toml";
 
-    #".config/nvim" = {
-    #  source = "${self}/home/config/nvim";
-    #  recursive = true;
-    #};
+    ".config/nvim" = {
+      source = config.lib.file.mkOutOfStoreSymlink "${self}/home/config/nvim";
+      recursive = true;
+    };
 
     ".config/eww" = {
       source = "${self}/home/config/eww";

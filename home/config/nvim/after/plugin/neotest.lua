@@ -1,15 +1,1 @@
-----TODO!!!: setup
-require('neotest').setup {
-	-- ...,
-	adapters = {
-		-- ...,
-		require('rustaceanvim.neotest'),
-		--require("neotest-python")({
-		--	dap = { justMyCode = false },
-		--}),
-		--require("neotest-plenary"),
-		--require("neotest-vim-test")({
-		--	ignore_file_types = { "python", "vim", "lua", "rust" },
-		--}),
-	},
-}
+/nix/store/1qs69anaxxlj50nhfmazccb016sv098v-home-manager-files/.config/nvim/after/plugin/neotest.lua
