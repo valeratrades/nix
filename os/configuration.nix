@@ -241,6 +241,7 @@ in
   xdg.portal.enable = true;
   xdg.portal.wlr.enable = true;
 
+	hardware.enableAllFirmware = true;
   imports = [
     ./hardware-configuration.nix
   ];

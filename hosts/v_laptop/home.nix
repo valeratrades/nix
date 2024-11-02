@@ -36,7 +36,7 @@
 
 	# fuck mkOutOfStoreSymlink and home-manager. Just link everything except for where apps like to write artifacts to the config dir.
   home.activation = {
-		# dirs
+		# dirs #? for some reason creates another link inside the source. No clue why, but whatever.
     nvim = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       ln -sf $NIXOS_CONFIG/home/config/nvim $XDG_CONFIG_HOME/nvim
     '';
@@ -51,9 +51,6 @@
     '';
     alacritty = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       ln -sf $NIXOS_CONFIG/home/config/alacritty $XDG_CONFIG_HOME/alacritty
-    '';
-    tmux = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      ln -sf $NIXOS_CONFIG/home/config/tmux $XDG_CONFIG_HOME/tmux
     '';
     keyd = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       ln -sf $NIXOS_CONFIG/home/config/keyd $XDG_CONFIG_HOME/keyd
@@ -122,6 +119,12 @@
       source = "${self}/home/config/zsh";
       recursive = true;
     };
+
+		# configured via home-manager, so mixing it wouldn't work. Might want to just completely ditch hm with it though.
+		".config/tmux" = {
+			source = "${self}/home/config/tmux";
+			recursive = true;
+		};
 
 		".cargo" = {
 			source = "${self}/home/config/cargo";

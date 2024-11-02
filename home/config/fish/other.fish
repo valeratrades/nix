@@ -151,6 +151,10 @@ alias ndevelop="nix develop --command fish"
 alias nup="nix flake update"
 #
 
+# # direnv
+alias dira="git add -A && direnv allow"
+#
+
 
 #gpg id = gpg --list-keys --with-colons | awk -F: '/uid/ && /valeratrades@gmail.com/ {getline; print $5}'
 
