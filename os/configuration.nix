@@ -27,6 +27,12 @@ in
     "flakes"
   ];
 
+	nixpkgs.config.packageOverrides = pkgs: {
+    nur = import (builtins.fetchTarball "https://github.com/nix-community/NUR/archive/master.tar.gz") {
+      inherit pkgs;
+    };
+  };
+
   services = {
     xserver = {
       enable = false;
@@ -430,6 +436,11 @@ in
         wayland-scanner
         nerdfix # fixes illegal font codepoints https://discourse.nixos.org/t/nerd-fonts-only-see-half-the-icon-set/27513
         poppler_utils
+
+				# nur plugs
+				[
+					nur.repos.nltch.spotify-adblock
+				]
 
         # Nix
         [

@@ -83,8 +83,7 @@
 		bbeats = {
 			url = "github:valeratrades/bbeats";
 			inputs.nixpkgs.follows = "nixpkgs";
-		};
-
+		};	
 
 
 		#aggr_orderbook = {
