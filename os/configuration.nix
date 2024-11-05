@@ -438,7 +438,6 @@ in
         granted # access cloud
         flatpak
         keyd
-				bettercap # man in the middle tool
         libinput-gestures
         sccache
         fractal # matrix chat protocol adapter
@@ -513,6 +512,10 @@ in
           mtr # Network diagnostic tool
           nmap # Network discovery/security auditing
           socat # replacement of openbsd-netcat
+					iwd
+					bettercap # man in the middle tool
+					wireshark
+					tshark # wireshark-cli
         ]
 
         # Monitoring and Performance
