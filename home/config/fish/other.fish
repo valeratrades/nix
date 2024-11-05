@@ -87,9 +87,8 @@ alias zp="zathura --mode presentation"
 alias jp="jupyter lab -y"
 alias tree="tree -I 'target|debug|_*'"
 alias lhost="nohup nyxt http://localhost:8080/ > /dev/null 2>&1 &"
-alias ll="exa -lA"
 alias sound="qpwgraph"
-alias obs="mkdir ~/Videos/obs >/dev/null; sudo modprobe v4l2loopback video_nr=2 card_label=\"OBS Virtual Camera\" && pamixer --default-source --set-volume 70 && obs"
+#alias obs="mkdir ~/Videos/obs >/dev/null; sudo modprobe v4l2loopback video_nr=2 card_label=\"OBS Virtual Camera\" && pamixer --default-source --set-volume 70 && obs" // fixed with nixos
 alias video_cut="video-cut"
 alias ss="sudo systemctl"
 alias cl="wl-copy"
@@ -153,6 +152,10 @@ alias nup="nix flake update"
 
 # # direnv
 alias dira="git add -A && direnv allow"
+#
+
+# # exa (for future reference only, as now I have programs.eza.enable in home.nix)
+#alias ll="exa -lA"
 #
 
 
