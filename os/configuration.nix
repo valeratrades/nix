@@ -266,7 +266,7 @@ in
       #grub.useOsProber = true; # need to find alternative for systemd-boot
     };
 
-		# # for obs's Virtual Camera
+    # # for obs's Virtual Camera
     extraModulePackages = with config.boot.kernelPackages; [ v4l2loopback ];
     kernelModules = [
       "v4l2loopback"
@@ -274,7 +274,7 @@ in
     extraModprobeConfig = ''
       options v4l2loopback devices=1 video_nr=1 card_label="OBS Cam" exclusive_caps=1
     '';
-		#
+    #
   };
 
   time.timeZone = "UTC";
@@ -512,10 +512,10 @@ in
           mtr # Network diagnostic tool
           nmap # Network discovery/security auditing
           socat # replacement of openbsd-netcat
-					iwd
-					bettercap # man in the middle tool
-					wireshark
-					tshark # wireshark-cli
+          iwd
+          bettercap # man in the middle tool
+          wireshark
+          tshark # wireshark-cli
         ]
 
         # Monitoring and Performance
@@ -653,7 +653,7 @@ in
           vscode-extensions.github.copilot
           mold
           sccache
-					just
+          just
 
           # editors
           [
@@ -672,7 +672,7 @@ in
             # Lean
             [
               lean4
-							leanblueprint
+              leanblueprint
               elan # rustup for lean. May or may not be outdated.
             ]
             # Js / Ts
@@ -763,12 +763,47 @@ in
 
   #TODO!: make specific to the host
   networking = {
-    firewall.allowedTCPPorts = [
-      57621 # for spotify
-    ];
-    firewall.allowedUDPPorts = [
-      5353 # for spotify
-    ];
+    firewall = {
+      allowedTCPPorts = [
+        80 # HTTP
+        443 # HTTPS
+        53 # DNS (some DNS services use TCP for large responses)
+        22 # SSH (if SSH access is needed)
+        23 # Telnet (legacy, if required)
+        21 # FTP (if needed for legacy protocols)
+        554 # RTSP (for streaming media services)
+        1935 # RTMP (often used for streaming)
+        57621 # for Spotify
+      ];
+      allowedUDPPorts = [
+        53 # DNS
+        67 # DHCP (client)
+        68 # DHCP (server)
+        123 # NTP (for time synchronization)
+        5353 # mDNS (for local network service discovery)
+        3478 # STUN (for NAT traversal, used in VoIP/WebRTC)
+        1935 # RTMP (for streaming if required)
+        57621 # for Spotify
+      ];
+
+      # to transfer files from phone
+      allowedTCPPortRanges = [
+        {
+          from = 1714;
+          to = 1764;
+        }
+      ];
+      allowedUDPPortRanges = [
+        {
+          from = 1714;
+          to = 1764;
+        }
+      ];
+      extraStopCommands = ''
+        iptables -D nixos-fw -p tcp --source 192.0.2.0/24 --dport 1714:1764 -j nixos-fw-accept || true
+        iptables -D nixos-fw -p udp --source 192.0.2.0/24 --dport 1714:1764 -j nixos-fw-accept || true
+      '';
+    };
 
     hostName = "v_laptop";
     networkmanager.enable = true;

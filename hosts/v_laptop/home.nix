@@ -168,7 +168,7 @@
       neofetch
       figlet
       zulip
-      bash-language-server # needs unstable rn (2024/10/21)
+      bash-language-server
     ]
     ++ [
       inputs.auto_redshift.packages.${pkgs.system}.default
@@ -177,7 +177,8 @@
       inputs.btc_line.packages.${pkgs.system}.default
       inputs.tg.packages.${pkgs.system}.default
       inputs.bbeats.packages.${pkgs.system}.default
-      #inputs.prettify_log.packages.${pkgs.system}.default //TODO
+      #inputs.prettify_log.packages.${pkgs.system}.default
+      inputs.distributions.packages.${pkgs.system}.default
 
       #inputs.aggr_orderbook.packages.${pkgs.system}.default
       #inputs.orderbook_3d.packages.${pkgs.system}.default

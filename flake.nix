@@ -88,6 +88,10 @@
 			url = "github:valeratrades/prettify_log";
 			inputs.nixpkgs.follows = "nixpkgs";
 		};	
+		distributions = {
+			url = "github:valeratrades/distributions";
+			inputs.nixpkgs.follows = "nixpkgs";
+		};	
 
 
 		#aggr_orderbook = {
