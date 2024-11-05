@@ -266,6 +266,7 @@ in
       #grub.useOsProber = true; # need to find alternative for systemd-boot
     };
 
+		# # for obs's Virtual Camera
     extraModulePackages = with config.boot.kernelPackages; [ v4l2loopback ];
     kernelModules = [
       "v4l2loopback"
@@ -273,12 +274,10 @@ in
     extraModprobeConfig = ''
       options v4l2loopback devices=1 video_nr=1 card_label="OBS Cam" exclusive_caps=1
     '';
+		#
   };
 
-  # Set your time zone.
   time.timeZone = "UTC";
-
-  # Select internationalisation properties.
   i18n.defaultLocale = "en_US.UTF-8";
   i18n.extraLocaleSettings = {
     LC_ADDRESS = "fr_FR.UTF-8";
