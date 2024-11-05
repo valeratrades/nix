@@ -268,6 +268,7 @@ return require('lazy').setup({
 	"3rd/image.nvim",
 	"DreamMaoMao/yazi.nvim",
 	"norcalli/nvim-colorizer.lua",
+	"hiphish/rainbow-delimiters.nvim", -- alternate bracket colors
 	"Makaze/AnsiEsc",
 	"tpope/vim-speeddating",
 	"stevearc/aerial.nvim",

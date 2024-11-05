@@ -649,6 +649,7 @@ in
           vscode-extensions.github.copilot
           mold
           sccache
+					just
 
           # editors
           [

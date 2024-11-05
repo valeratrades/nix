@@ -166,5 +166,12 @@ alias rkeyd="sudo keyd reload && sudo journalctl -eu keyd"
 alias lkeyd="sudo keyd -m"
 #
 
+# # lean
+function lr
+	#TODO!: inference of binary name
+	lake build && printf '\n' && .lake/build/bin/$argv[1]
+end
+#
+
 #TODO!: figure out direnv
 #direnv hook fish | source

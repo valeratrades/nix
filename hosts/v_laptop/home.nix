@@ -38,7 +38,7 @@
   home.activation = {
 		# dirs #? for some reason creates another link inside the source. No clue why, but whatever.
     nvim = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      ln -sf $NIXOS_CONFIG/home/config/nvim $XDG_CONFIG_HOME/nvim
+			[ -e "$XDG_CONFIG_HOME/nvim" ] || ln -sf "$NIXOS_CONFIG/home/config/nvim" "$XDG_CONFIG_HOME/nvim"
     '';
     eww = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       ln -sf $NIXOS_CONFIG/home/config/eww $XDG_CONFIG_HOME/eww
