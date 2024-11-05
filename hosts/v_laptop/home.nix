@@ -13,7 +13,7 @@
 {
   self,
   config,
-	lib,
+  lib,
   pkgs,
   inputs,
   ...
@@ -34,36 +34,35 @@
     ../../home/config/fish/default.nix
   ];
 
-	# fuck mkOutOfStoreSymlink and home-manager. Just link everything except for where apps like to write artifacts to the config dir.
+  # fuck mkOutOfStoreSymlink and home-manager. Just link everything except for where apps like to write artifacts to the config dir.
   home.activation = {
-		# dirs #? for some reason creates another link inside the source. No clue why, but whatever.
+    # dirs #? for some reason creates another link inside the source. No clue why, but whatever.
     nvim = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-			[ -e "$XDG_CONFIG_HOME/nvim" ] || ln -sf "$NIXOS_CONFIG/home/config/nvim" "$XDG_CONFIG_HOME/nvim"
+      [ -e "$XDG_CONFIG_HOME/nvim" ] || ln -sf "$NIXOS_CONFIG/home/config/nvim" "$XDG_CONFIG_HOME/nvim"
     '';
     eww = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      ln -sf $NIXOS_CONFIG/home/config/eww $XDG_CONFIG_HOME/eww
+      [ -e "$XDG_CONFIG_HOME/eww" ] || ln -sf "$NIXOS_CONFIG/home/config/eww" "$XDG_CONFIG_HOME/eww"
     '';
     zathura = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      ln -sf $NIXOS_CONFIG/home/config/zathura $XDG_CONFIG_HOME/zathura
+      [ -e "$XDG_CONFIG_HOME/zathura" ] || ln -sf "$NIXOS_CONFIG/home/config/zathura" "$XDG_CONFIG_HOME/zathura"
     '';
     sway = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      ln -sf $NIXOS_CONFIG/home/config/sway $XDG_CONFIG_HOME/sway
+      [ -e "$XDG_CONFIG_HOME/sway" ] || ln -sf "$NIXOS_CONFIG/home/config/sway" "$XDG_CONFIG_HOME/sway"
     '';
     alacritty = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      ln -sf $NIXOS_CONFIG/home/config/alacritty $XDG_CONFIG_HOME/alacritty
+      [ -e "$XDG_CONFIG_HOME/alacritty" ] || ln -sf "$NIXOS_CONFIG/home/config/alacritty" "$XDG_CONFIG_HOME/alacritty"
     '';
     keyd = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      ln -sf $NIXOS_CONFIG/home/config/keyd $XDG_CONFIG_HOME/keyd
+      [ -e "$XDG_CONFIG_HOME/keyd" ] || ln -sf "$NIXOS_CONFIG/home/config/keyd" "$XDG_CONFIG_HOME/keyd"
     '';
     mako = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      ln -sf $NIXOS_CONFIG/home/config/mako $XDG_CONFIG_HOME/mako
+      [ -e "$XDG_CONFIG_HOME/mako" ] || ln -sf "$NIXOS_CONFIG/home/config/mako" "$XDG_CONFIG_HOME/mako"
     '';
     git = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      ln -sf $NIXOS_CONFIG/home/config/git $XDG_CONFIG_HOME/git
+      [ -e "$XDG_CONFIG_HOME/git" ] || ln -sf "$NIXOS_CONFIG/home/config/git" "$XDG_CONFIG_HOME/git"
     '';
 
-
-		# ind files
+    # ind files
     tg = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       ln -sf $NIXOS_CONFIG/home/config/tg.toml $XDG_CONFIG_HOME/tg.toml
     '';
@@ -83,7 +82,6 @@
       ln -sf $NIXOS_CONFIG/home/config/btc_line.toml $XDG_CONFIG_HOME/btc_line.toml
     '';
   };
-
 
   home.file = {
     # # fs
@@ -120,16 +118,16 @@
       recursive = true;
     };
 
-		# configured via home-manager, so mixing it wouldn't work. Might want to just completely ditch hm with it though.
-		".config/tmux" = {
-			source = "${self}/home/config/tmux";
-			recursive = true;
-		};
+    # configured via home-manager, so mixing it wouldn't work. Might want to just completely ditch hm with it though.
+    ".config/tmux" = {
+      source = "${self}/home/config/tmux";
+      recursive = true;
+    };
 
-		".cargo" = {
-			source = "${self}/home/config/cargo";
-			recursive = true;
-		};
+    ".cargo" = {
+      source = "${self}/home/config/cargo";
+      recursive = true;
+    };
     "/usr/share/X11/xkb/symbols" = {
       source = "${self}/home/config/xkb_symbols";
       recursive = true;
