@@ -218,9 +218,9 @@ lspconfig.lua_ls.setup(lua_opts)
 --lspconfig.htmx.setup {
 --	on_attach = on_attach,
 --}
-lspconfig.leanls.setup {
-	on_attach = on_attach,
-}
+--lspconfig.leanls.setup { -- set up with [lean.nvim](<https://github.com/Julian/lean.nvim>)
+--	on_attach = on_attach,
+--}
 
 local function codelldb_adapter()
 	local extension_path = vim.env.HOME .. '/.vscode/extensions/vadimcn.vscode-lldb-1.10.0/'

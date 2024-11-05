@@ -438,6 +438,7 @@ in
         granted # access cloud
         flatpak
         keyd
+				bettercap # man in the middle tool
         libinput-gestures
         sccache
         fractal # matrix chat protocol adapter
@@ -668,6 +669,7 @@ in
             # Lean
             [
               lean4
+							leanblueprint
               elan # rustup for lean. May or may not be outdated.
             ]
             # Js / Ts
