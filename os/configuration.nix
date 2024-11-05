@@ -257,22 +257,22 @@ in
 
   # Bootloader.
   boot = {
-		loader = {
-    systemd-boot = {
-      enable = true;
+    loader = {
+      systemd-boot = {
+        enable = true;
+      };
+      timeout = 0; # spam `Space` or `Shift` to bring the menu up when needed
+      efi.canTouchEfiVariables = true;
+      #grub.useOsProber = true; # need to find alternative for systemd-boot
     };
-    timeout = 0; # spam `Space` or `Shift` to bring the menu up when needed
-    efi.canTouchEfiVariables = true;
 
-    #grub.useOsProber = true; # need to find alternative for systemd-boot
-		};
-		extraModulePackages = with config.boot.kernelPackages; [ v4l2loopback ];
-		kernelModules = [
-			"v4l2loopback"
-		];
-		#extraModprobeConfig = ''
-		#  options v4l2loopback devices=1 video_nr=1 card_label="OBS Cam" exclusive_caps=1
-		#'';
+    extraModulePackages = with config.boot.kernelPackages; [ v4l2loopback ];
+    kernelModules = [
+      "v4l2loopback"
+    ];
+    extraModprobeConfig = ''
+      options v4l2loopback devices=1 video_nr=1 card_label="OBS Cam" exclusive_caps=1
+    '';
   };
 
   # Set your time zone.
@@ -442,7 +442,7 @@ in
         libinput-gestures
         sccache
         fractal # matrix chat protocol adapter
-				xdg-desktop-portal-gtk # not sure if I even need it here, it's probably already brought into the scope by `xdg.portal.enable`
+        xdg-desktop-portal-gtk # not sure if I even need it here, it's probably already brought into the scope by `xdg.portal.enable`
         haskellPackages.greenclip
         lefthook # git hooks
         wayland-scanner
@@ -456,7 +456,7 @@ in
 
         # Nix
         [
-					nh
+          nh
           nix-index
           manix # grep nixpkgs docs
           nix-output-monitor
@@ -595,16 +595,16 @@ in
           obs-cli
           ffmpeg
 
-					# OBS
-					[
-					obs-studio
-          (pkgs.wrapOBS {
-            plugins = with pkgs.obs-studio-plugins; [
-              wlrobs
-              obs-backgroundremoval
-            ];
-          })
-					]
+          # OBS
+          [
+            obs-studio
+            (pkgs.wrapOBS {
+              plugins = with pkgs.obs-studio-plugins; [
+                wlrobs
+                obs-backgroundremoval
+              ];
+            })
+          ]
         ]
 
         # System Monitoring and Debugging
