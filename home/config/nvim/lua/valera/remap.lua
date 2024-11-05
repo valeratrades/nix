@@ -67,6 +67,7 @@ K('n', '<C-w>t', '<C-W>l')
 -- -- Consequences
 K("n", "j", "nzzzv")
 K("n", "k", "Nzzzv")
+K("n", "N", "*Ncgn", { noremap = true, silent = true }) -- weird sub of `s` which is not even `s` with semimak.
 
 K("", "L", "<nop>")
 K("", "l", "t")

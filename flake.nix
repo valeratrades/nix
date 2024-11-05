@@ -84,6 +84,10 @@
 			url = "github:valeratrades/bbeats";
 			inputs.nixpkgs.follows = "nixpkgs";
 		};	
+		prettify_log = {
+			url = "github:valeratrades/prettify_log";
+			inputs.nixpkgs.follows = "nixpkgs";
+		};	
 
 
 		#aggr_orderbook = {

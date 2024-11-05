@@ -27,7 +27,7 @@ in
     "flakes"
   ];
 
-	nixpkgs.config.packageOverrides = pkgs: {
+  nixpkgs.config.packageOverrides = pkgs: {
     nur = import (builtins.fetchTarball "https://github.com/nix-community/NUR/archive/master.tar.gz") {
       inherit pkgs;
     };
@@ -91,19 +91,22 @@ in
       };
     };
     starship = {
-			# defined here, as `hm` doesn't yet recognize the `presets` option on `starship` (2024/10/31)
+      # defined here, as `hm` doesn't yet recognize the `presets` option on `starship` (2024/10/31)
       presets = [ "no-runtime-versions" ]; # noisy on python, lua, and all the languages I don't care about. Would rather explicitly setup expansions on the important ones.
       settings = {
-				# "no-runtime-versions" doesn't get rid of the `via` prefix, which almost makes it useless
-				lua = {
-					format = "[$symbol]($style) ";
-				};
-				python = {
-					format = "[$symbol]($style) ";
-				};
+        # "no-runtime-versions" doesn't get rid of the `via` prefix, which almost makes it useless
+        lua = {
+          format = "[$symbol]($style) ";
+        };
+        typst = {
+          format = "[$symbol]($style) ";
+        };
+        python = {
+          format = "[$symbol]($style) ";
+        };
         rust = {
           format = "[$version]($style) ";
-					#version_format = "$major.$minor(-$toolchain)"; # $toolchain is not recognized correctly right now (2024/10/31)
+          #version_format = "$major.$minor(-$toolchain)"; # $toolchain is not recognized correctly right now (2024/10/31)
         };
       };
 
@@ -247,13 +250,14 @@ in
   xdg.portal.enable = true;
   xdg.portal.wlr.enable = true;
 
-	hardware.enableAllFirmware = true;
+  hardware.enableAllFirmware = true;
   imports = [
     ./hardware-configuration.nix
   ];
 
   # Bootloader.
-  boot.loader = {
+  boot = {
+		loader = {
     systemd-boot = {
       enable = true;
     };
@@ -261,6 +265,14 @@ in
     efi.canTouchEfiVariables = true;
 
     #grub.useOsProber = true; # need to find alternative for systemd-boot
+		};
+		extraModulePackages = with config.boot.kernelPackages; [ v4l2loopback ];
+		kernelModules = [
+			"v4l2loopback"
+		];
+		#extraModprobeConfig = ''
+		#  options v4l2loopback devices=1 video_nr=1 card_label="OBS Cam" exclusive_caps=1
+		#'';
   };
 
   # Set your time zone.
@@ -424,26 +436,27 @@ in
     systemPackages =
       with pkgs; # basically `use pkgs::*`
       lib.lists.flatten [
-				granted # access cloud
+        granted # access cloud
         flatpak
         keyd
         libinput-gestures
         sccache
         fractal # matrix chat protocol adapter
-        nh
+				xdg-desktop-portal-gtk # not sure if I even need it here, it's probably already brought into the scope by `xdg.portal.enable`
         haskellPackages.greenclip
         lefthook # git hooks
         wayland-scanner
         nerdfix # fixes illegal font codepoints https://discourse.nixos.org/t/nerd-fonts-only-see-half-the-icon-set/27513
         poppler_utils
 
-				# nur plugs
-				[
-					nur.repos.nltch.spotify-adblock
-				]
+        # nur plugs
+        [
+          nur.repos.nltch.spotify-adblock
+        ]
 
         # Nix
         [
+					nh
           nix-index
           manix # grep nixpkgs docs
           nix-output-monitor
@@ -525,9 +538,9 @@ in
           dust # `du` in rust
           atuin
           tldr
-					comma # auto nix-shell missing commands, so you can just `, cowsay hello`
+          comma # auto nix-shell missing commands, so you can just `, cowsay hello`
           cowsay
-					difftastic # better `diff`
+          difftastic # better `diff`
           cotp
           as-tree
           eza # better `ls`
@@ -579,9 +592,19 @@ in
           pulsemixer
           pavucontrol
           mpv
-          obs-studio
           obs-cli
           ffmpeg
+
+					# OBS
+					[
+					obs-studio
+          (pkgs.wrapOBS {
+            plugins = with pkgs.obs-studio-plugins; [
+              wlrobs
+              obs-backgroundremoval
+            ];
+          })
+					]
         ]
 
         # System Monitoring and Debugging
