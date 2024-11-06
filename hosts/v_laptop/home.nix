@@ -169,6 +169,8 @@
       figlet
       zulip
       bash-language-server
+			typioca # tui monkeytype
+			smassh # tui monkeytype
     ]
     ++ [
       inputs.auto_redshift.packages.${pkgs.system}.default
@@ -177,7 +179,7 @@
       inputs.btc_line.packages.${pkgs.system}.default
       inputs.tg.packages.${pkgs.system}.default
       inputs.bbeats.packages.${pkgs.system}.default
-      #inputs.prettify_log.packages.${pkgs.system}.default
+      inputs.prettify_log.packages.${pkgs.system}.default
       inputs.distributions.packages.${pkgs.system}.default
 
       #inputs.aggr_orderbook.packages.${pkgs.system}.default
