@@ -810,6 +810,7 @@ in
 		# networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
 
 		# to setup network manager with student wifi, you can 1) reference the `edit connection -> advanced options` on the phone (normally androids just work with them, then 2) edit accordingly with `nm-connection-editor`
+		# on update of interface it can hang, btw, so `sudo systemctl restart NetworkManager` if `nmtui` does stops loading all networks
     networkmanager.enable = true;
   };
 
