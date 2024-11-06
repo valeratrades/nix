@@ -806,9 +806,11 @@ in
     };
 
     hostName = "v_laptop";
+		# networking.proxy.default = "http://user:password@proxy:port/";
+		# networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
+
+		# to setup network manager with student wifi, you can 1) reference the `edit connection -> advanced options` on the phone (normally androids just work with them, then 2) edit accordingly with `nm-connection-editor`
     networkmanager.enable = true;
-    # networking.proxy.default = "http://user:password@proxy:port/";
-    # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
   };
 
   # replaced by `nh.clean`
