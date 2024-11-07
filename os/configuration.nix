@@ -36,10 +36,10 @@ in
   services = {
     xserver = {
 			# # somehow this fixed the audio problem. Like huh, what, why???
-			#displayManager.gdm.enable = true;
 			#TODO: figure out if gnome is actually necessary, or `xserver.enable = true` is sufficient
-			#desktopManager.gnome.enable = true;
-			enable = true; #false;
+			desktopManager.gnome.enable = true; # may or may not be fixing souund-driver problems
+			#displayManager.gdm.enable = true; #NB: if you enable `xserver`, _must_ enable this too. Otherwise it will use default `lightdm`, which will log you out.
+			enable = false;
 			#
 
       autorun = false; # no clue if it does anything if `enable = false`, but might as well keep it
@@ -613,6 +613,7 @@ in
           vlc
           pavucontrol
 					pulseaudio
+					pulsemixer
           mpv
           obs-cli
           ffmpeg
