@@ -6,6 +6,7 @@ alias tgl="tg send -c learning >/dev/null"
 alias tgm="tg send -c math >/dev/null"
 alias tgt="tg send -c tooling >/dev/null"
 alias tgr="tg send -c trading >/dev/null"
+alias tgv="tg send -c videos >/dev/null"
 alias tgw="tg send -c work >/dev/null"
 
 alias tgo="tg open"

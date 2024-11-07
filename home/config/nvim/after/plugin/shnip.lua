@@ -73,6 +73,7 @@ shnip.setup({
 		typst = {
 			extra = {
 				["<c-u>"] = "#underscore[]<Esc>hi",
+				--["<c-s>"] = [[ "        " square]], // apparently the correct way is to just put `$square$` on the next line
 			}
 		}
 	},

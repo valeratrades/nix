@@ -224,7 +224,7 @@ bindcode $mod+Shift+34 output $output_laptop dpms off
 set $switch_out swaymsg mode \"default\" && eww update sway_mode=default
 
 # Outputs
-output $output_monitor pos 0 0 scale 0.73684
+output $output_monitor pos 0 0 scale 0.75
 #output $output_laptop pos 277 1080
 # these are scaled by 1/0.73684 (which is the current `scale` on the large monitor screen)
 #output $output_laptop pos 376 1466

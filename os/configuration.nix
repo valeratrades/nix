@@ -686,6 +686,7 @@ in
               typst
               typst-lsp
               typstyle # formatter
+							typstfmt # only formats codeblocks
             ]
             # nix
             [
@@ -724,6 +725,7 @@ in
               cargo-hack
               cargo-udeps
               cargo-outdated
+							cargo-tarpaulin
               cargo-sort
               cargo-insta
               cargo-mutants

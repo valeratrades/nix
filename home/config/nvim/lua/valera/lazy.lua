@@ -265,7 +265,7 @@ return require('lazy').setup({
 	--},
 	"nvim-neotest/nvim-nio",
 	'arnamak/stay-centered.nvim',
-	"3rd/image.nvim",
+	--"3rd/image.nvim", -- want's luarocks, which I haven't yet set up with nix
 	"DreamMaoMao/yazi.nvim",
 	"norcalli/nvim-colorizer.lua",
 	--"hiphish/rainbow-delimiters.nvim", -- alternate bracket colors
@@ -274,4 +274,5 @@ return require('lazy').setup({
 	"stevearc/aerial.nvim",
 	"https://codeberg.org/FelipeLema/cmp-async-path",
 	"jbyuki/nabla.nvim",
+	"NMAC427/guess-indent.nvim",
 })

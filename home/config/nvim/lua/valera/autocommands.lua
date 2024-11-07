@@ -7,6 +7,13 @@ vim.cmd [[
 	autocmd BufRead,BufNewFile *.txt set conceallevel=3
 ]]
 
+-- it seems like it's covered by its `setup` fn already. TODO: remove if that's the case
+vim.api.nvim_create_autocmd({ "FileType" }, {
+	pattern = { "lean", "yaml", "yml", "py", "mojo" }, -- for rust I think it's not worth it, as I'd pay with time for like 0.05% of times that I actuall yneed this in it
+	callback = function()
+		vim.cmd("GuessIndent")
+	end,
+})
 
 vim.api.nvim_create_autocmd({ "FileType" }, {
 	pattern = { "lean", "yaml", "yml" },
