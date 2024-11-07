@@ -35,8 +35,16 @@ in
 
   services = {
     xserver = {
-      enable = false;
+			# # somehow this fixed the audio problem. Like huh, what, why???
+			#displayManager.gdm.enable = true;
+			#TODO: figure out if gnome is actually necessary, or `xserver.enable = true` is sufficient
+			#desktopManager.gnome.enable = true;
+			enable = true; #false;
+			#
+
       autorun = false; # no clue if it does anything if `enable = false`, but might as well keep it
+
+			# doesn't work
       xkb = {
         extraLayouts.semimak = {
           description = "Semimak for both keyboard standards";
@@ -51,6 +59,7 @@ in
 
     keyd.enable = true;
     #xwayland.enable = true;
+
 
     pipewire = {
       enable = true;
@@ -253,7 +262,7 @@ in
   imports = [
     ./hardware-configuration.nix
   ];
-	hardware.enableAllFirmware = true;
+	#hardware.enableAllFirmware = true;
 
   # Bootloader.
   boot = {
@@ -340,23 +349,25 @@ in
   fonts = {
     #NB: many of the icons will be overwritten by nerd-fonts. If a character is not rendering properly, use `nerdfix` on the repo, search for correct codepoint in https://www.nerdfonts.com/cheat-sheet
     packages = with pkgs; [
-      fira-code
-      fira-code-nerdfont
-      fira-code-symbols
+			cantarell-fonts
+			dejavu_fonts
+			source-code-pro # default monospace in GNOME
+			source-sans
       agave
       corefonts
       dejavu_fonts
       dina-font
       emojione
+      fira-code
+      fira-code-nerdfont
+      fira-code-symbols
       font-awesome
-      julia-mono
       font-awesome_4
       font-awesome_5
-      texlivePackages.fontawesome5
-      texlivePackages.fontawesome
       google-fonts
       ipafont
       jetbrains-mono
+      julia-mono
       kanji-stroke-order-font
       liberation_ttf
       material-design-icons
@@ -372,6 +383,8 @@ in
       source-code-pro
       texlivePackages.arimo
       texlivePackages.dejavu
+      texlivePackages.fontawesome
+      texlivePackages.fontawesome5
       ubuntu_font_family
     ];
     fontconfig.enable = true;
@@ -453,6 +466,13 @@ in
           nur.repos.nltch.spotify-adblock
         ]
 
+				# gnome
+				[
+					xdg-user-dirs
+					xdg-user-dirs-gtk
+          glib
+				]
+
         # Nix
         [
           nh
@@ -487,8 +507,6 @@ in
           libnotify
           lm_sensors # for `sensors` command
           lsof
-          pamixer
-          pavucontrol
           pciutils # lspci
           sysstat
           usbutils # lsusb
@@ -594,6 +612,7 @@ in
 					easyeffects
           vlc
           pavucontrol
+					pulseaudio
           mpv
           obs-cli
           ffmpeg
@@ -641,7 +660,6 @@ in
         [
           gh
           git
-          glib
           pkg-config # when used in build scripts, must be included in `nativeBuildInputs`. Only _native_ will work.
           openssl
           tokei
