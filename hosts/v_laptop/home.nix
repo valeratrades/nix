@@ -36,7 +36,6 @@
 
   # fuck mkOutOfStoreSymlink and home-manager. Just link everything except for where apps like to write artifacts to the config dir.
   home.activation = {
-    # dirs #? for some reason creates another link inside the source. No clue why, but whatever.
     nvim = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       [ -e "$XDG_CONFIG_HOME/nvim" ] || ln -sf "$NIXOS_CONFIG/home/config/nvim" "$XDG_CONFIG_HOME/nvim"
     '';

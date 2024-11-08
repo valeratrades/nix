@@ -666,7 +666,13 @@ in
           pkg-config # when used in build scripts, must be included in `nativeBuildInputs`. Only _native_ will work.
           openssl
           tokei
-          direnv
+
+					# env
+					[
+						docker
+						devenv
+						direnv
+					]
         ]
 
         # Coding
