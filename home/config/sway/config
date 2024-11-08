@@ -3,6 +3,7 @@ exec dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DE
 exec /usr/lib/xdg-desktop-portal -r & exec /usr/lib/xdg-desktop-portal-wlr
 exec mkdir -p ~/tmp/Screenshots
 
+set $sway_root ${NIXOS_CONFIG}/home/config/sway
 set $mod Mod4
 # Rofi
 set $wifi ~/.config/rofi/modi/nmcli
@@ -126,7 +127,7 @@ exec_always sleep 2 && auto_redshift start 7:00
 
 # # Workspaces
 # was using ${NIXOS_CONFIG}/home/config/sway/wallpapers/AndreySakharov.jpg, but it's too bright to be the default.
-# output * bg ${NIXOS_CONFIG}/home/config/sway/wallpapers/starry_night.jpg fill
+output * bg $sway_root/wallpapers/333333.png fill
 workspace 1 output $primary
 workspace 2 output $primary
 workspace 3 output $primary

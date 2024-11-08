@@ -614,7 +614,9 @@ in
           pavucontrol
 					pulseaudio
 					pulsemixer
+					#mov-cli // errors
           mpv
+					chafa
           obs-cli
           ffmpeg
 
@@ -744,6 +746,7 @@ in
               cargo-hack
               cargo-udeps
               cargo-outdated
+							cargo-rr
 							cargo-tarpaulin
               cargo-sort
               cargo-insta
