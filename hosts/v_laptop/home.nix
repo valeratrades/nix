@@ -60,6 +60,9 @@
     git = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       [ -e "$XDG_CONFIG_HOME/git" ] || ln -sf "$NIXOS_CONFIG/home/config/git" "$XDG_CONFIG_HOME/git"
     '';
+    direnv = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      [ -e "$XDG_CONFIG_HOME/direnv" ] || ln -sf "$NIXOS_CONFIG/home/config/direnv" "$XDG_CONFIG_HOME/git"
+    '';
 
     # ind files
     tg = lib.hm.dag.entryAfter [ "writeBoundary" ] ''

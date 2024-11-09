@@ -7,7 +7,7 @@ MAX_WITHOUT_UPDATE=1
 DEFAULT_CONTENT="_"
 
 if day_ev=$(todo manual print-ev); then
-	notify-send "$day_ev" "// in eww's day_ev.sh"
+	#notify-send "$day_ev" "// in eww's day_ev.sh" // gets called somehow. 1) What. Where is my display then?
 	content="$day_ev"
 	if last_update=$(todo manual last-ev-update-hours); then
 		if [ "$MAX_WITHOUT_UPDATE" -le "$last_update" ]; then
