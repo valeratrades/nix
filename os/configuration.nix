@@ -419,6 +419,7 @@ in
       NIXOS_CONFIG = "/etc/nixos";
       #TODO!: figure out how to procedurally disable [vesktop, tg] evokations via rofi, outside of preset times in my calendar
       DOT_DESKTOP = "${pkgs.home-manager}/share/applications";
+			DIRENV_WARN_TIMEOUT = "1h";
 
       # home vars
       MODULAR_HOME = "${modularHome}";
@@ -464,6 +465,13 @@ in
         # nur plugs
         [
           nur.repos.nltch.spotify-adblock
+        ]
+
+        # emulators
+        [
+          darling
+          wineWowPackages.wayland
+          waydroid
         ]
 
 				# gnome
