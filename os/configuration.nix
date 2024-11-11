@@ -469,9 +469,13 @@ in
 
         # emulators
         [
-          darling
           wineWowPackages.wayland
           waydroid
+          # MacOS
+          [
+          darling
+          dmg2img
+          ]
         ]
 
 				# gnome
