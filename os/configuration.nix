@@ -472,7 +472,9 @@ in
 					waydroid
 					# Windows
 					[
-          wineWowPackages.wayland
+          #wineWowPackages.wayland
+          wineWowPackages.waylandFull # \`wine-wow-wayland\`
+					wine-staging # nightly wine
 					winetricks # install deps for wine
 					bottles # ... python
 					lutris # supposed to be more modern `playonlinux`. It's in python.
