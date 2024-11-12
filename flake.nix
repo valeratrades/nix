@@ -33,10 +33,11 @@
 			inputs.nixpkgs.follows = "nixpkgs";
 		};
 
-		fenix = {
-			url = "github:nix-community/fenix";
-			inputs.nixpkgs.follows = "nixpkgs";
-		};
+		# doing rustup instead now
+		#fenix = {
+		#	url = "github:nix-community/fenix";
+		#	inputs.nixpkgs.follows = "nixpkgs";
+		#};
 
 		#TODO!: integrate
 		lanzaboote = {
@@ -147,7 +148,7 @@
 					nix.settings.trusted-users = [ "v" ];
 				}
 
-				({ pkgs, ... }: import ./modules/fenix.nix { inherit pkgs; })
+				#({ pkgs, ... }: import ./modules/fenix.nix { inherit pkgs; })
 			];
 		};
 	};
