@@ -173,5 +173,9 @@ function lr
 end
 #
 
+# # spotify
+alias spotify="set -x LD_PRELOAD $SPOTIFY_ADBLOCK_LIB; spotify" 
+#
+
 #TODO!: figure out direnv
 #direnv hook fish | source

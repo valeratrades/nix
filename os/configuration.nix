@@ -113,6 +113,15 @@ in
         python = {
           format = "[$symbol]($style) ";
         };
+        ocaml = {
+          format = "[$symbol]($style) ";
+        };
+        ruby = {
+          format = "[$symbol]($style) ";
+        };
+				nodejs = {
+					format = "[$symbol]($style) ";
+				};
         rust = {
           format = "[$version]($style) ";
           #version_format = "$major.$minor(-$toolchain)"; # $toolchain is not recognized correctly right now (2024/10/31)
@@ -282,7 +291,7 @@ in
     ];
     extraModprobeConfig = ''
       options v4l2loopback devices=1 video_nr=1 card_label="OBS Cam" exclusive_caps=1
-			options kvm_amd nested=1
+			options kvm_amd nested=1 # gnome-boxes require kvm
     '';
     #
   };
@@ -423,10 +432,13 @@ in
 			DIRENV_WARN_TIMEOUT = "1h";
 			# openssl hurdle
 			PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig:${pkgs.alsa-lib.dev}/lib/pkgconfig:${pkgs.wayland-scanner.bin}/bin"; # :${pkgs.openssl}/lib"; # many of my rust scripts require it
-			
+			#LD_PRELOAD = "${inputs.distributions.packages.${pkgs.system}.default}/lib/libspotifyadblock.so"; # really hoping I'm not breaking anything
+      SPOTIFY_ADBLOCK_LIB = "${pkgs.nur.repos.nltch.spotify-adblock}/lib/spotify/libspotifyadblock.so"; # need to add it to `LD_PRELOAD` before starting spotify to get rid of adds
+		
+			# apparently wine works better on 32-bit
+			#NB: when enabling, make sure the main monitor the wine will be displayed on starts at `0 0`
 			WINEPREFIX = "${userHome}/.wine32";
 			WINEARCH = "win32";
-
 
       # home vars
       MODULAR_HOME = "${modularHome}";
@@ -535,7 +547,6 @@ in
           pciutils # lspci
           sysstat
           usbutils # lsusb
-          which
           wireplumber
           wl-clipboard
           wl-gammactl
@@ -584,6 +595,7 @@ in
           dust # `du` in rust
           atuin
           tldr
+					procs # `ps` in rust
           comma # auto nix-shell missing commands, so you can just `, cowsay hello`
           cowsay
 					thefuck # corrects your previous command

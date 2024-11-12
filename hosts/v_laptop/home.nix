@@ -241,6 +241,10 @@
     };
 
     eza.enable = true;
+		thefuck = {
+			enable = true;
+			#alias = "f"; # I guess also not yet implemented in hm
+		};
 
     tmux = {
       # enable brings in additional configuration state, so don't enable
