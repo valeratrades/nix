@@ -224,13 +224,17 @@ bindcode $mod+Shift+34 output $output_laptop dpms off
 # # Modes
 set $switch_out swaymsg mode \"default\" && eww update sway_mode=default
 
-# Outputs
-output $output_monitor pos 0 0 scale 0.75
+# # Outputs
+#output $output_monitor pos 0 0 scale 0.75
+output $output_monitor pos -560 -1466 scale 0.75
 #output $output_laptop pos 277 1080
 # these are scaled by 1/0.73684 (which is the current `scale` on the large monitor screen)
 #output $output_laptop pos 376 1466
 # pretty sure a bug on their side, so need to scale twice or something.
-output $output_laptop pos 560 1466
+#output $output_laptop pos 560 1466
+output $output_laptop pos 0 0
+# anything but `0 0` will break `wine`
+#
 
 exec_always "sh -c -- pkill -f 'todo monitor' && todo monitor || todo monitor"
 

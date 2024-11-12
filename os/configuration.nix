@@ -469,8 +469,15 @@ in
 
         # emulators
         [
+					waydroid
+					# Windows
+					[
           wineWowPackages.wayland
-          waydroid
+					winetricks # install deps for wine
+					bottles # ... python
+					lutris # supposed to be more modern `playonlinux`. It's in python.
+					playonlinux # oh wait, this shit's in python too
+					]
           # MacOS
           [
           darling
