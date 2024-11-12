@@ -282,6 +282,7 @@ in
     ];
     extraModprobeConfig = ''
       options v4l2loopback devices=1 video_nr=1 card_label="OBS Cam" exclusive_caps=1
+			options kvm_amd nested=1
     '';
     #
   };
@@ -420,6 +421,12 @@ in
       #TODO!: figure out how to procedurally disable [vesktop, tg] evokations via rofi, outside of preset times in my calendar
       DOT_DESKTOP = "${pkgs.home-manager}/share/applications";
 			DIRENV_WARN_TIMEOUT = "1h";
+			# openssl hurdle
+			PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig:${pkgs.alsa-lib.dev}/lib/pkgconfig:${pkgs.wayland-scanner.bin}/bin"; # :${pkgs.openssl}/lib"; # many of my rust scripts require it
+			
+			WINEPREFIX = "${userHome}/.wine32";
+			WINEARCH = "win32";
+
 
       # home vars
       MODULAR_HOME = "${modularHome}";
@@ -431,11 +438,6 @@ in
       MANPAGER = "less";
       LESSHISTFILE = "-";
       HISTCONTROL = "ignorespace";
-
-      # openssl hurdle
-      PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig:${pkgs.alsa-lib.dev}/lib/pkgconfig:${pkgs.wayland-scanner.bin}/bin"; # :${pkgs.openssl}/lib"; # many of my rust scripts require it
-      # dbg
-      #LD_LIBRARY_PATH = lib.mkDefault (lib.makeLibraryPath [ pkgs.openssl pkgs.pipewire.jack ]);
     };
 
     binsh = "${pkgs.dash}/bin/dash";
@@ -470,11 +472,13 @@ in
         # emulators
         [
 					waydroid
+					gnome-boxes # vm with linux distros
 					# Windows
 					[
           #wineWowPackages.wayland
           wineWowPackages.waylandFull # \`wine-wow-wayland\`
-					wine-staging # nightly wine
+					winePackages.stagingFull
+					#wine-staging # nightly wine
 					winetricks # install deps for wine
 					bottles # ... python
 					lutris # supposed to be more modern `playonlinux`. It's in python.
@@ -582,6 +586,7 @@ in
           tldr
           comma # auto nix-shell missing commands, so you can just `, cowsay hello`
           cowsay
+					thefuck # corrects your previous command
           difftastic # better `diff`
           cotp
           as-tree
