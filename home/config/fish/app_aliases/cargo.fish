@@ -1,7 +1,7 @@
 alias caclip="cargo clippy --tests -- -Dclippy::all"
 alias ctn="cargo test -- --nocapture"
 alias cpad="cargo publish --allow-dirty"
-alias cflags="RUST_LOG='debug,hyper=info' RUST_BACKTRACE=1 RUST_LIB_BACKTRACE=0"
+alias cflags="set -x RUST_LOG 'debug,hyper=info'; set -x RUST_BACKTRACE 1; set -x RUST_LIB_BACKTRACE 0"
 alias cscript="cargo +nightly -Zscript" # https://doc.rust-lang.org/cargo/reference/unstable.html#script
 #!/usr/bin/env -S cargo +nightly -Zscript
 

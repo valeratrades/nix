@@ -1,8 +1,18 @@
 #alias tmux="TERM='alacritty-direct' tmux"
 alias ta="tmux attach -t"
 alias tl="tmux ls"
-alias tk="tmux kill-session -t"
 alias tks="tmux kill-server"
+
+function tk --description "Kill tmux session + direnv deny its root"
+	if test (count $argv) != 1
+		echo "Usage: tk <session_name>"
+		returnt1
+	end
+	set requested_session $argv[1]
+	set session_path (tmux display-message -p -t "$requested_session" "#{session_path}")
+	tmux kill-session -t "$requested_session"
+	direnv deny "$session_path"
+end
 
 function tmux_new_session_base
 	if test -n "$TMUX"
