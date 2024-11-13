@@ -28,8 +28,8 @@ map <C-\-> zoom out
 map <A-q> quit
 map <A-;> quit
 
-map <A-s> jumplist backward
-map <A-t> jumplist forward
+map <A-o> jumplist backward
+map <A-i> jumplist forward
 
 map j search next
 map k search prev

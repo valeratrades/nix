@@ -45,6 +45,7 @@
 		(cpu)
 		(time)
 		(battery)
+		(battery_saver)
 		;
 	)
 )
@@ -102,6 +103,10 @@
 		" "
 	)
 )
+
+;; Battery-Saver ;;
+(defpoll battery_saver_poll	:initial "" :interval "1s" "./modules/battery_saver.sh")
+(defwidget battery_saver [] "${battery_saver_poll}")
 
 ;; Battery ;;
 (defpoll battery_poll	:initial "{}" :interval "1s" "./modules/battery.sh")

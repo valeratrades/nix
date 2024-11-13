@@ -165,6 +165,7 @@
       vesktop
       rnote
       zathura # read PDFs
+			pdfgrep
 			xournalpp # draw on PDFs
       ncspot
       neomutt
