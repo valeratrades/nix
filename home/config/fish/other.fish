@@ -137,6 +137,18 @@ end
 alias sr="source $NIXOS_CONFIG/home/config/fish/mod.fish" # Fish equivalent for reloading configuration.
 #
 
+# mostly as a reference, as I always forget the name of the program
+function battery_saver
+	set requested_state $argv[1]
+	if test "$requested_state" = "off"
+		powerprofilesctl set balanced
+	else if test "$requested_state" = "on"
+		powerprofilesctl set power-saver
+	else
+		echo "Invalid argument. Use 'on' or 'off'."
+	end
+end
+
 # # nix
 alias nix-build="sudo nixos-rebuild switch --show-trace -L -v --impure" #HACK: using impure
 alias flake-build="sudo nixos-rebuild switch --flake .#myhost --show-trace -L -v"
@@ -177,6 +189,7 @@ end
 # name is play of words on russian; can't use `spotify` because of occuring recursion
 alias spoy="set -x LD_PRELOAD $SPOTIFY_ADBLOCK_LIB; spotify" # the SPOTIFY_ADBLOCK_LIB is set by nixos config
 #
+
 
 #TODO!: figure out direnv
 #direnv hook fish | source

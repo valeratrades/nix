@@ -164,6 +164,7 @@
       telegram-desktop
       vesktop
       rnote
+			xournalpp
       zathura
       ncspot
       neomutt
