@@ -164,8 +164,8 @@
       telegram-desktop
       vesktop
       rnote
-			xournalpp
-      zathura
+      zathura # read PDFs
+			xournalpp # draw on PDFs
       ncspot
       neomutt
       neofetch
