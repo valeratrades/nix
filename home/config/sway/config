@@ -230,8 +230,8 @@ output $output_monitor pos 0 0 scale 0.75
 # these are scaled by 1/0.73684 (which is the current `scale` on the large monitor screen)
 #output $output_laptop pos 376 1466
 # pretty sure a bug on their side, so need to scale twice or something.
-#output $output_laptop pos 560 1466
-output $output_laptop pos 0 0
+output $output_laptop pos 560 1466
+#output $output_laptop pos 0 0
 # anything but `0 0` will break `wine`, so the commented out versions, hence the line above for running it when monitor is unplugged.
 #
 
