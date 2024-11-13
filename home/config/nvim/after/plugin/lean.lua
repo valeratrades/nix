@@ -6,3 +6,5 @@ vim.g.maplocalleader = '<Space>m'
 require('lean').setup {
 	mappings = true,
 }
+
+K("n", "<Space><Space>l", function() vim.cmd("Telescope loogle") end)

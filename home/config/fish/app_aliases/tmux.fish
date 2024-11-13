@@ -11,7 +11,7 @@ function tk --description "Kill tmux session + direnv deny its root"
 	set requested_session $argv[1]
 	set session_path (tmux display-message -p -t "$requested_session" "#{session_path}")
 	tmux kill-session -t "$requested_session"
-	direnv deny "$session_path"
+	direnv deny "$session_path" >/dev/null 2>&1
 end
 
 function tmux_new_session_base

@@ -174,7 +174,8 @@ end
 #
 
 # # spotify
-alias spotify="set -x LD_PRELOAD $SPOTIFY_ADBLOCK_LIB; spotify" # the SPOTIFY_ADBLOCK_LIB is set by nixos config
+# name is play of words on russian; can't use `spotify` because of occuring recursion
+alias spoy="set -x LD_PRELOAD $SPOTIFY_ADBLOCK_LIB; spotify" # the SPOTIFY_ADBLOCK_LIB is set by nixos config
 #
 
 #TODO!: figure out direnv
