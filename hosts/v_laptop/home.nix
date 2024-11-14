@@ -171,6 +171,7 @@
       neomutt
       neofetch
       figlet
+			#flutterPackages-source.stable // errors
       zulip
       bash-language-server
 			typioca # tui monkeytype

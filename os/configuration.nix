@@ -487,8 +487,9 @@ in
 					gnome-boxes # vm with linux distros
 					# Windows
 					[
-          #wineWowPackages.wayland
-          wineWowPackages.waylandFull # \`wine-wow-wayland\`
+          wineWowPackages.wayland
+          #wineWowPackages.waylandFull
+          #wineWowPackages.unstableFull
 					winePackages.stagingFull
 					#wine-staging # nightly wine
 					winetricks # install deps for wine
@@ -736,7 +737,7 @@ in
 
             # Lean
             [
-              lean4
+              #lean4 # want to use elan instead
               leanblueprint
               elan # rustup for lean. May or may not be outdated.
             ]
