@@ -1,3 +1,4 @@
 ## Python
 .upload_py_lib.sh
 **/__pycache__/
+.py-env/

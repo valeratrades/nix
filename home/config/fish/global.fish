@@ -34,7 +34,7 @@ function cs
             set -e VIRTUAL_ENV
         end
 
-        source "venv/bin/activate.fish" > /dev/null 2>&1; or true
+        source ".py-env/bin/activate.fish" > /dev/null 2>&1; or true
         sl
     end
 end

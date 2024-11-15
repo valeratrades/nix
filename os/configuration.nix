@@ -771,6 +771,7 @@ in
             ]
             # python
             [
+							python312Packages.numpy
               python3
               python312Packages.pip
               python312Packages.jedi-language-server
