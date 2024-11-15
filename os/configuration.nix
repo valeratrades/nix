@@ -437,8 +437,8 @@ in
 		
 			# apparently wine works better on 32-bit
 			#NB: when enabling, make sure the main monitor the wine will be displayed on starts at `0 0`
-			WINEPREFIX = "${userHome}/.wine32";
-			WINEARCH = "win32";
+			WINEPREFIX = "${userHome}/.wine";
+			#WINEARCH = "win32";
 
       # home vars
       MODULAR_HOME = "${modularHome}";

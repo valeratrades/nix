@@ -61,10 +61,16 @@
       [ -e "$XDG_CONFIG_HOME/git" ] || ln -sf "$NIXOS_CONFIG/home/config/git" "$XDG_CONFIG_HOME/git"
     '';
     direnv = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      [ -e "$XDG_CONFIG_HOME/direnv" ] || ln -sf "$NIXOS_CONFIG/home/config/direnv" "$XDG_CONFIG_HOME/git"
+      [ -e "$XDG_CONFIG_HOME/direnv" ] || ln -sf "$NIXOS_CONFIG/home/config/direnv" "$XDG_CONFIG_HOME/direnv"
+    '';
+    vesktop_settings_dir = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      [ -e "$XDG_CONFIG_HOME/vesktop/settings" ] || ln -sf "$NIXOS_CONFIG/home/config/vesktop/settings" "$XDG_CONFIG_HOME/vesktop/settings"
     '';
 
     # ind files
+    vesktop_settings_file = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      ln -sf $NIXOS_CONFIG/home/config/vesktop/settings.json $XDG_CONFIG_HOME/vesktop/settings.json
+    '';
     tg = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       ln -sf $NIXOS_CONFIG/home/config/tg.toml $XDG_CONFIG_HOME/tg.toml
     '';
