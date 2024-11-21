@@ -3,7 +3,8 @@
 vim.g.maplocalleader = '<Space>m' -- pretty sure this does not work
 
 require('lean').setup {
-	mappings = true,
+	--TODO: write all keys explicitly
+	mappings = true, --HACK: sets a bunch of stuff over maplocalleader
 }
 
-K("n", "<Space><Space>l", function() vim.cmd("Telescope loogle") end)
+K("n", "<Space>ml", function() vim.cmd("Telescope loogle") end)

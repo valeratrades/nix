@@ -246,7 +246,7 @@ set $throwaway_screenshot slurp | grim -g - ~/tmp/Screenshots/scrn-$(date +"%Y-%
 bindsym Insert exec $throwaway_screenshot
 mode "screenshot" {
 	set $fullscreen_screenshot grim ~/tmp/Screenshots/scrn-$(date +"%Y-%m-%d-%H-%M-%S").png && swappy -f ~/tmp/Screenshots/$(ls -t ~/tmp/Screenshots | awk 'NR==1 {print; exit}')
-	set $delayed_screenshot sleep 3 && slurp | grim -g - ~/tmp/Screenshots/scrn-$(date +"%Y-%m-%d-%H-%M-%S").png && swappy -f ~/tmp/Screenshots/$(ls -t ~/tmp/Screenshots | awk 'NR==1 {print; exit}')
+	set $delayed_screenshot slurp | { sleep 5; grim -g - ~/tmp/Screenshots/scrn-$(date +"%Y-%m-%d-%H-%M-%S").png } && swappy -f ~/tmp/Screenshots/$(ls -t ~/tmp/Screenshots | awk 'NR==1 {print; exit}')
 	set $important_screenshot slurp | grim -g - ~/Images/Screenshots/scrn-$(date +"%Y-%m-%d-%H-%M-%S").png && swappy -f ~/Images/Screenshots/$(ls -t ~/Images/Screenshots | awk 'NR==1 {print; exit}')
 	set $trading_screenshot slurp | grim -g - ~/Images/Trading/PatternScreenshots/scrn-$(date +"%Y-%m-%d-%H-%M-%S").png && swappy -f ~/Images/Trading/PatternScreenshots/$(ls -t ~/Images/Trading/PatternScreenshots | awk 'NR==1 {print; exit}')
 	set $open_last_screenshot swappy -f ~/Images/Screenshots/$(ls -t ~/Images/Screenshots | awk 'NR==1 {print; exit}')

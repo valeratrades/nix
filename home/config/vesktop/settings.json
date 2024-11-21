@@ -1,8 +1,8 @@
 {
     "discordBranch": "stable",
     "arRPC": "on",
-    "splashColor": "oklab(0.899401 -0.00192499 -0.00481987)",
-    "splashBackground": "oklab(0.321088 -0.000220731 -0.00934622)",
+    "splashColor": "oklab(0.89908 -0.00192907 -0.0048306)",
+    "splashBackground": "oklab(0.321044 -0.000249296 -0.00927344)",
     "spellCheckLanguages": [
         "en-US",
         "en"

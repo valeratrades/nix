@@ -167,6 +167,7 @@
       spotify
       spotube
       nyxt
+			en-croissant # chess analysis GUI
       telegram-desktop
       vesktop
       rnote
@@ -177,25 +178,30 @@
       neomutt
       neofetch
       figlet
+			anydesk
+			teamviewer
 			#flutterPackages-source.stable // errors
       zulip
       bash-language-server
 			typioca # tui monkeytype
 			smassh # tui monkeytype
-    ]
-    ++ [
+			yazi
+    ] ++ [
       inputs.auto_redshift.packages.${pkgs.system}.default
       inputs.todo.packages.${pkgs.system}.default
       inputs.booktyping.packages.${pkgs.system}.default
       inputs.btc_line.packages.${pkgs.system}.default
       inputs.tg.packages.${pkgs.system}.default
       inputs.bbeats.packages.${pkgs.system}.default
-      inputs.prettify_log.packages.${pkgs.system}.default
+      #inputs.prettify_log.packages.${pkgs.system}.default // errors for some reason
       inputs.distributions.packages.${pkgs.system}.default
+      inputs.bad_apple_rs.packages.${pkgs.system}.default
 
       #inputs.aggr_orderbook.packages.${pkgs.system}.default
       #inputs.orderbook_3d.packages.${pkgs.system}.default
-    ];
+    ] ++ [
+			#nixpkgs-stable.telegram-desktop
+		];
 
   #home.packages = with nixpkgs-stable: [
   #	google-chrome

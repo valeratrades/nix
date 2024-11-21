@@ -93,6 +93,10 @@
 			url = "github:valeratrades/distributions";
 			inputs.nixpkgs.follows = "nixpkgs";
 		};	
+		bad_apple_rs = {
+			url = "github:valeratrades/bad-apple-rs";
+			inputs.nixpkgs.follows = "nixpkgs";
+		};	
 
 
 		#aggr_orderbook = {
@@ -122,6 +126,7 @@
 			specialArgs = { 
 				inherit inputs;
 				inherit self;
+				inherit nixpkgs-stable;
 
 				# freaks out on `inherit system`
 				#pkgs-stable = import nixpkgs-stable {
@@ -138,7 +143,7 @@
 					home-manager.useGlobalPkgs = true;
 					home-manager.useUserPackages = true;
 					home-manager.backupFileExtension = "backup"; # delusional home-manager wants this exact file-extension for when I backup system-level files
-					home-manager.extraSpecialArgs = { inherit inputs; inherit self; };
+					home-manager.extraSpecialArgs = { inherit inputs; inherit self; inherit nixpkgs-stable; };
 
 					#home-manager.sharedModules = [
 					#	inputs.sops-nix.homeManagerModules.sops

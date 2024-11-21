@@ -20,6 +20,26 @@
         "type": "github"
       }
     },
+    "bad_apple_rs": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1731924045,
+        "narHash": "sha256-6/uiOxcHN3ubTIiWi6pfHVPoS4kWp3Lv7U4AOhoQ0m8=",
+        "owner": "valeratrades",
+        "repo": "bad-apple-rs",
+        "rev": "6027db4987f816932ca8f0726479902c2bf162ea",
+        "type": "github"
+      },
+      "original": {
+        "owner": "valeratrades",
+        "repo": "bad-apple-rs",
+        "type": "github"
+      }
+    },
     "bbeats": {
       "inputs": {
         "nixpkgs": [
@@ -279,11 +299,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1731604581,
-        "narHash": "sha256-Qq2YZZaDTB3FZLWU/Hgh1uuWlUBl3cMLGB99bm7rFUM=",
+        "lastModified": 1731887066,
+        "narHash": "sha256-uw7K/RsYioJicV79Nl39yjtfhdfTDU2aRxnBgvFhkZ8=",
         "owner": "nix-community",
         "repo": "home-manager",
-        "rev": "1d0862ee2d7c6f6cd720d6f32213fa425004be10",
+        "rev": "f3a2ff69586f3a54b461526e5702b1a2f81e740a",
         "type": "github"
       },
       "original": {
@@ -337,11 +357,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1731319897,
-        "narHash": "sha256-PbABj4tnbWFMfBp6OcUK5iGy1QY+/Z96ZcLpooIbuEI=",
+        "lastModified": 1731676054,
+        "narHash": "sha256-OZiZ3m8SCMfh3B6bfGC/Bm4x3qc1m2SVEAlkV6iY7Yg=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "dc460ec76cbff0e66e269457d7b728432263166c",
+        "rev": "5e4fbfb6b3de1aa2872b76d49fafc942626e2add",
         "type": "github"
       },
       "original": {
@@ -381,11 +401,11 @@
     },
     "nixpkgs-stable_2": {
       "locked": {
-        "lastModified": 1731386116,
-        "narHash": "sha256-lKA770aUmjPHdTaJWnP3yQ9OI1TigenUqVC3wweqZuI=",
+        "lastModified": 1731797254,
+        "narHash": "sha256-df3dJApLPhd11AlueuoN0Q4fHo/hagP75LlM5K1sz9g=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "689fed12a013f56d4c4d3f612489634267d86529",
+        "rev": "e8c38b73aeb218e27163376a2d617e61a2ad9b59",
         "type": "github"
       },
       "original": {
@@ -501,11 +521,11 @@
         "rust-overlay": "rust-overlay_2"
       },
       "locked": {
-        "lastModified": 1730913629,
-        "narHash": "sha256-lFTS/I16ivGl4i33URwvMyQ3Z0SCMtdfNxHKcL8Efhc=",
+        "lastModified": 1731937544,
+        "narHash": "sha256-bFb23n2f+N7nlpiaFCGpuoMFL3hNih9OAIzzG8vCJZ8=",
         "owner": "valeratrades",
         "repo": "prettify_log",
-        "rev": "0033dc24da313f496ae5cdfc79d2c66a8acf90ed",
+        "rev": "92828c78bdb0082d5092b165ca3830b4ea080c53",
         "type": "github"
       },
       "original": {
@@ -517,6 +537,7 @@
     "root": {
       "inputs": {
         "auto_redshift": "auto_redshift",
+        "bad_apple_rs": "bad_apple_rs",
         "bbeats": "bbeats",
         "booktyping": "booktyping",
         "btc_line": "btc_line",

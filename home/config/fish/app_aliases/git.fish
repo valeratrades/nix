@@ -96,42 +96,54 @@ function gco
 	git branch | sed 's/^\* //' | fzf --height=20% --reverse --info=inline --query="$initial_query" | xargs git checkout
 end
 
+#function gc
+#	set help_message """\
+#	#git clone on rails.
+#	give repo name, it clones into /tmp or provided directory.
+#
+#	ex: gc neovim/neovim
+#	"""
+#	if string match -q "://" "$argv[1]"
+#		set url "$argv[1]"
+#	else
+#		set url "https://github.com/$argv[1]"
+#	end
+#
+#	if test "$argv[1]" = "-h" -o "$argv[1]" = "--help" -o "$argv[1]" = "help" -o (count $argv) = 0
+#		printf "$help_message"
+#		return 0
+#	end
+#
+#	set filename (string split "/" $url | tail -n 1)
+#	set filename (string replace -r '\\.git$' '' $filename)
+#	if test (count $argv) = 1
+#		if test (pwd) = "/tmp/$filename"
+#			cd - &>/dev/null
+#		end
+#		rm -rf /tmp/$filename
+#		git clone --depth=1 "$url" "/tmp/$filename" 1>&2
+#		and cd "/tmp/$filename" || return 1
+#		pwd
+#	else if test (count $argv) = 2
+#		set target $argv[2]
+#		if test -d "$argv[2]"
+#			set target "$argv[2]/$filename"
+#		end
+#		git clone --depth=1 "$url" "$target" || return 1
+#	end
+#end
+
 function gc
-	set help_message """\
-	#git clone on rails.
-	give repo name, it clones into /tmp or provided directory.
-
-	ex: gc neovim/neovim
-	"""
-	if string match -q "://" "$argv[1]"
-		set url "$argv[1]"
+	set result (cargo -Zscript -q (dirname (status --current-filename))/git_clone.rs $argv)
+	if [ $status = 0 ] && [ (count $argv) = 1 ]
+		cd $result
 	else
-		set url "https://github.com/$argv[1]"
+		echo $result
 	end
-
-	if test "$argv[1]" = "-h" -o "$argv[1]" = "--help" -o "$argv[1]" = "help" -o (count $argv) = 0
-		printf "$help_message"
-		return 0
-	end
-
-	set filename (string split "/" $url | tail -n 1)
-	set filename (string replace -r '\\.git$' '' $filename)
-	if test (count $argv) = 1
-		if test (pwd) = "/tmp/$filename"
-			cd - &>/dev/null
-		end
-		rm -rf /tmp/$filename
-		git clone --depth=1 "$url" "/tmp/$filename" 1>&2
-		and cd "/tmp/$filename" || return 1
-		pwd
-	else if test (count $argv) = 2
-		set target $argv[2]
-		if test -d "$argv[2]"
-			set target "$argv[2]/$filename"
-		end
-		git clone --depth=1 "$url" "$target" || return 1
-	end
+	return $status
 end
+
+
 
 
 #TODO!: rewrite correctly from .zsh source, this is not at all what it is supposed to be

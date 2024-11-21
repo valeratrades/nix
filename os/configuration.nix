@@ -35,16 +35,16 @@ in
 
   services = {
     xserver = {
-			# # somehow this fixed the audio problem. Like huh, what, why???
-			#TODO: figure out if gnome is actually necessary, or `xserver.enable = true` is sufficient
-			desktopManager.gnome.enable = true; # may or may not be fixing souund-driver problems
-			#displayManager.gdm.enable = true; #NB: if you enable `xserver`, _must_ enable this too. Otherwise it will use default `lightdm`, which will log you out.
-			enable = false;
-			#
+      # # somehow this fixed the audio problem. Like huh, what, why???
+      #TODO: figure out if gnome is actually necessary, or `xserver.enable = true` is sufficient
+      desktopManager.gnome.enable = true; # may or may not be fixing souund-driver problems
+      #displayManager.gdm.enable = true; #NB: if you enable `xserver`, _must_ enable this too. Otherwise it will use default `lightdm`, which will log you out.
+      enable = false;
+      #
 
       autorun = false; # no clue if it does anything if `enable = false`, but might as well keep it
 
-			# doesn't work
+      # doesn't work
       xkb = {
         extraLayouts.semimak = {
           description = "Semimak for both keyboard standards";
@@ -59,7 +59,6 @@ in
 
     keyd.enable = true;
     #xwayland.enable = true;
-
 
     pipewire = {
       enable = true;
@@ -111,7 +110,7 @@ in
           format = "[$symbol]($style) ";
         };
         python = {
-          format = "[$symbol]($style) ";
+          format = "[$symbol(\($virtualenv\))]($style) "; # didn't get virtualenv to work yet
         };
         ocaml = {
           format = "[$symbol]($style) ";
@@ -119,9 +118,9 @@ in
         ruby = {
           format = "[$symbol]($style) ";
         };
-				nodejs = {
-					format = "[$symbol]($style) ";
-				};
+        nodejs = {
+          format = "[$symbol]($style) ";
+        };
         rust = {
           format = "[$version]($style) ";
           #version_format = "$major.$minor(-$toolchain)"; # $toolchain is not recognized correctly right now (2024/10/31)
@@ -271,7 +270,7 @@ in
   imports = [
     ./hardware-configuration.nix
   ];
-	#hardware.enableAllFirmware = true;
+  #hardware.enableAllFirmware = true;
 
   # Bootloader.
   boot = {
@@ -290,8 +289,8 @@ in
       "v4l2loopback"
     ];
     extraModprobeConfig = ''
-      options v4l2loopback devices=1 video_nr=1 card_label="OBS Cam" exclusive_caps=1
-			options kvm_amd nested=1 # gnome-boxes require kvm
+            options v4l2loopback devices=1 video_nr=1 card_label="OBS Cam" exclusive_caps=1
+      			options kvm_amd nested=1 # gnome-boxes require kvm
     '';
     #
   };
@@ -353,16 +352,29 @@ in
         wantedBy = [ "default.target" ];
         serviceConfig.ExecStart = "${pkgs.bluez}/bin/mpris-proxy";
       };
+      #start-ssh-port = {
+      #  description = "Start SSH port forwarding on boot";
+      #  wantedBy = [ "multi-user.target" ];
+      #  serviceConfig = {
+      #    ExecStart = ''
+      #      #!/usr/bin/env sh
+      #      [ -e "$XDG_CONFIG_HOME/nvim" ] || "
+      #      PORT=2222 # Change this to your desired port
+      #      ssh -f -N -L "$PORT:localhost:$PORT" user@remote_host
+      #    '';
+      #  };
+      #  script = true;
+      #};
     };
   };
 
   fonts = {
     #NB: many of the icons will be overwritten by nerd-fonts. If a character is not rendering properly, use `nerdfix` on the repo, search for correct codepoint in https://www.nerdfonts.com/cheat-sheet
     packages = with pkgs; [
-			cantarell-fonts
-			dejavu_fonts
-			source-code-pro # default monospace in GNOME
-			source-sans
+      cantarell-fonts
+      dejavu_fonts
+      source-code-pro # default monospace in GNOME
+      source-sans
       agave
       corefonts
       dejavu_fonts
@@ -429,16 +441,16 @@ in
       NIXOS_CONFIG = "/etc/nixos";
       #TODO!: figure out how to procedurally disable [vesktop, tg] evokations via rofi, outside of preset times in my calendar
       DOT_DESKTOP = "${pkgs.home-manager}/share/applications";
-			DIRENV_WARN_TIMEOUT = "1h";
-			# openssl hurdle
-			PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig:${pkgs.alsa-lib.dev}/lib/pkgconfig:${pkgs.wayland-scanner.bin}/bin"; # :${pkgs.openssl}/lib"; # many of my rust scripts require it
-			#LD_PRELOAD = "${inputs.distributions.packages.${pkgs.system}.default}/lib/libspotifyadblock.so"; # really hoping I'm not breaking anything
+      DIRENV_WARN_TIMEOUT = "1h";
+      # openssl hurdle
+      PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig:${pkgs.alsa-lib.dev}/lib/pkgconfig:${pkgs.wayland-scanner.bin}/bin"; # :${pkgs.openssl}/lib"; # many of my rust scripts require it
+      #LD_PRELOAD = "${inputs.distributions.packages.${pkgs.system}.default}/lib/libspotifyadblock.so"; # really hoping I'm not breaking anything
       SPOTIFY_ADBLOCK_LIB = "${pkgs.nur.repos.nltch.spotify-adblock}/lib/spotify/libspotifyadblock.so"; # need to add it to `LD_PRELOAD` before starting spotify to get rid of adds
-		
-			# apparently wine works better on 32-bit
-			#NB: when enabling, make sure the main monitor the wine will be displayed on starts at `0 0`
-			WINEPREFIX = "${userHome}/.wine";
-			#WINEARCH = "win32";
+
+      # apparently wine works better on 32-bit
+      #NB: when enabling, make sure the main monitor the wine will be displayed on starts at `0 0`
+      WINEPREFIX = "${userHome}/.wine";
+      #WINEARCH = "win32";
 
       # home vars
       MODULAR_HOME = "${modularHome}";
@@ -467,7 +479,7 @@ in
         flatpak
         keyd
         libinput-gestures
-        sccache
+        pkgs.qt5.full
         fractal # matrix chat protocol adapter
         xdg-desktop-portal-gtk # not sure if I even need it here, it's probably already brought into the scope by `xdg.portal.enable`
         haskellPackages.greenclip
@@ -483,33 +495,33 @@ in
 
         # emulators
         [
-					waydroid
-					gnome-boxes # vm with linux distros
-					# Windows
-					[
-          wineWowPackages.wayland
-          #wineWowPackages.waylandFull
-          #wineWowPackages.unstableFull
-					winePackages.stagingFull
-					#wine-staging # nightly wine
-					winetricks # install deps for wine
-					bottles # ... python
-					lutris # supposed to be more modern `playonlinux`. It's in python.
-					playonlinux # oh wait, this shit's in python too
-					]
+          waydroid
+          gnome-boxes # vm with linux distros
+          # Windows
+          [
+            wineWowPackages.wayland
+            #wineWowPackages.waylandFull
+            #wineWowPackages.unstableFull
+            winePackages.stagingFull
+            #wine-staging # nightly wine
+            winetricks # install deps for wine
+            bottles # ... python
+            lutris # supposed to be more modern `playonlinux`. It's in python.
+            playonlinux # oh wait, this shit's in python too
+          ]
           # MacOS
           [
-          darling
-          dmg2img
+            darling
+            dmg2img
           ]
         ]
 
-				# gnome
-				[
-					xdg-user-dirs
-					xdg-user-dirs-gtk
+        # gnome
+        [
+          xdg-user-dirs
+          xdg-user-dirs-gtk
           glib
-				]
+        ]
 
         # Nix
         [
@@ -596,10 +608,10 @@ in
           dust # `du` in rust
           atuin
           tldr
-					procs # `ps` in rust
+          procs # `ps` in rust
           comma # auto nix-shell missing commands, so you can just `, cowsay hello`
           cowsay
-					thefuck # corrects your previous command
+          thefuck # corrects your previous command
           difftastic # better `diff`
           cotp
           as-tree
@@ -621,6 +633,7 @@ in
 
         # Networking Tools
         [
+					openssh
           bluez
           dnsutils
           ipcalc
@@ -648,14 +661,14 @@ in
         # Audio/Video Utilities
         [
           pamixer
-					easyeffects
+          easyeffects
           vlc
           pavucontrol
-					pulseaudio
-					pulsemixer
-					#mov-cli // errors
+          pulseaudio
+          pulsemixer
+          #mov-cli // errors
           mpv
-					chafa
+          chafa
           obs-cli
           ffmpeg
 
@@ -706,12 +719,12 @@ in
           openssl
           tokei
 
-					# env
-					[
-						docker
-						devenv
-						direnv
-					]
+          # env
+          [
+            docker
+            devenv
+            direnv
+          ]
         ]
 
         # Coding
@@ -752,7 +765,7 @@ in
               typst
               typst-lsp
               typstyle # formatter
-							typstfmt # only formats codeblocks
+              typstfmt # only formats codeblocks
             ]
             # nix
             [
@@ -771,7 +784,7 @@ in
             ]
             # python
             [
-							python312Packages.numpy
+              python312Packages.numpy
               python3
               python312Packages.pip
               python312Packages.jedi-language-server
@@ -792,13 +805,13 @@ in
               cargo-hack
               cargo-udeps
               cargo-outdated
-							cargo-rr
-							cargo-tarpaulin
+              cargo-rr
+              cargo-tarpaulin
               cargo-sort
               cargo-insta
               cargo-mutants
               cargo-update
-              #cargo-binstall
+              #cargo-binstall # doesn't really work on nixos
               cargo-machete
               cargo-release
               cargo-watch
@@ -809,6 +822,7 @@ in
             # C/C++
             [
               clang
+              libgcc
               clang-tools
               cmake
               gnumake
@@ -828,6 +842,9 @@ in
             vscode-extensions.vadimcn.vscode-lldb
           ]
         ]
+      ]
+      ++ [
+        #nixpkgs-stable.telegram-desktop
       ];
   };
 
@@ -876,11 +893,11 @@ in
     };
 
     hostName = "v_laptop";
-		# networking.proxy.default = "http://user:password@proxy:port/";
-		# networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
+    # networking.proxy.default = "http://user:password@proxy:port/";
+    # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
 
-		# to setup network manager with student wifi, you can 1) reference the `edit connection -> advanced options` on the phone (normally androids just work with them, then 2) edit accordingly with `nm-connection-editor`
-		# on update of interface it can hang, btw, so `sudo systemctl restart NetworkManager` if `nmtui` does stops loading all networks
+    # to setup network manager with student wifi, you can 1) reference the `edit connection -> advanced options` on the phone (normally androids just work with them, then 2) edit accordingly with `nm-connection-editor`
+    # on update of interface it can hang, btw, so `sudo systemctl restart NetworkManager` if `nmtui` does stops loading all networks
     networkmanager.enable = true;
   };
 
