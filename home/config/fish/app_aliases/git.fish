@@ -28,7 +28,7 @@ function gg
 	# if test (git log -1 --pretty=format:%s) = "$message"
 	#     set squash_if_needed '--squash HEAD~1'
 	# end
-	git add -A && git commit -m "$message" && git push --follow-tags
+	git add -A && git commit -m "$message"; git push --follow-tags
 end
 
 alias ggf="gg -p feat"
@@ -228,10 +228,6 @@ function gn
 	else
 		set argv $argv[2..-1]
 	end
-
-	echo $argv
-	echo $repo_name
-	return 1
 
 	git init
 	git add .

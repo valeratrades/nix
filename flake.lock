@@ -534,6 +534,26 @@
         "type": "github"
       }
     },
+    "reasonable_envsubst": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1732221516,
+        "narHash": "sha256-w0sc1rFC2Ru7qJcxMVwMsHWCYzOynLPr+XiSu6z6xNI=",
+        "owner": "valeratrades",
+        "repo": "reasonable_envsubst",
+        "rev": "a8a3504c8681768736fe1cd97d6d24119dbea172",
+        "type": "github"
+      },
+      "original": {
+        "owner": "valeratrades",
+        "repo": "reasonable_envsubst",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "auto_redshift": "auto_redshift",
@@ -549,6 +569,7 @@
         "nixpkgs-stable": "nixpkgs-stable_2",
         "pre-commit-hooks": "pre-commit-hooks",
         "prettify_log": "prettify_log",
+        "reasonable_envsubst": "reasonable_envsubst",
         "tg": "tg",
         "todo": "todo"
       }

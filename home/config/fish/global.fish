@@ -42,7 +42,7 @@ end
 # go
 function go
     todo manual counter-step --dev-runs
-    /usr/bin/go $argv
+    /usr/bin/env go $argv
 end
 
 # python

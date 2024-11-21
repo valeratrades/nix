@@ -28,7 +28,10 @@ in
   ];
 
   nixpkgs.config.packageOverrides = pkgs: {
-    nur = import (builtins.fetchTarball "https://github.com/nix-community/NUR/archive/master.tar.gz") {
+    nur = import (builtins.fetchTarball {
+      url = "https://github.com/nix-community/NUR/archive/master.tar.gz";
+      sha256 = "sha256:0fr8xpyhi79pcp17w3xs05038ammmci9r89hv6z0r8x9j731bbyg";
+    }) {
       inherit pkgs;
     };
   };
@@ -793,6 +796,7 @@ in
             ]
             # golang
             [
+              air # live reload
               go
               gopls
             ]

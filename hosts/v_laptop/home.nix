@@ -196,6 +196,7 @@
       #inputs.prettify_log.packages.${pkgs.system}.default // errors for some reason
       inputs.distributions.packages.${pkgs.system}.default
       inputs.bad_apple_rs.packages.${pkgs.system}.default
+      inputs.reasonable_envsubst.packages.${pkgs.system}.default
 
       #inputs.aggr_orderbook.packages.${pkgs.system}.default
       #inputs.orderbook_3d.packages.${pkgs.system}.default

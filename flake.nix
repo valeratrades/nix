@@ -93,6 +93,10 @@
 			url = "github:valeratrades/distributions";
 			inputs.nixpkgs.follows = "nixpkgs";
 		};	
+		reasonable_envsubst = {
+			url = "github:valeratrades/reasonable_envsubst";
+			inputs.nixpkgs.follows = "nixpkgs";
+		};	
 		bad_apple_rs = {
 			url = "github:valeratrades/bad-apple-rs";
 			inputs.nixpkgs.follows = "nixpkgs";
