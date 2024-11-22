@@ -258,7 +258,14 @@ vim.g.rustaceanvim = {
 		--			or "rust-analyzer"
 		--	return { ra_binary } -- You can add args to the list, such as '--log-file'
 		--end,
-		cmd = function() return { "rust-analyzer" } end,
+		cmd = function()
+			local handle = io.popen("rustup show active-toolchain")
+			local output = handle:read("*a")
+			handle:close()
+			local rust_version = output:match("%S+")
+			io.pope("notify-send 'Rust version: " .. rust_version .. "'")
+			return { "rustup run " .. rust_version .. " rust_analyzer" }
+		end,
 		on_attach = on_attach,
 		default_settings = {
 			['rust-analyzer'] = {
@@ -269,8 +276,8 @@ vim.g.rustaceanvim = {
 					"rustup", "run", "nightly", "rust-analyzer",
 				},
 				rustfmt = {
-					--overrideCommand = { "rustfmt" },
-					overrideCommand = { "cargo", "fmt" },
+					--overrideCommand = { "cargo", "fmt" },
+					overrideCommand = { "rustup", "run", "nightly", "cargo", "fmt" }, -- don't think there is a reason to match versions here
 				},
 				cargo = {
 					BuildScripts = {

@@ -1,32 +1,73 @@
 {
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    flake-parts.url = "github:hercules-ci/flake-parts";
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    fenix.url = "github:nix-community/fenix";
   };
 
-  outputs = { self, nixpkgs }:
-    let
-      supportedSystems = [ "x86_64-linux" ];
-      forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
-      pkgsFor = nixpkgs.legacyPackages;
-    in {
-      packages = forAllSystems (system: let
-        pkgs = pkgsFor.${system};
-        manifest = (pkgs.lib.importTOML ./Cargo.toml).package;
-      in {
-        default = pkgs.rustPlatform.buildRustPackage rec {
-          pname = manifest.name;
-          version = manifest.version;
+  outputs =
+    inputs@{ nixpkgs, flake-parts, ... }:
+    flake-parts.lib.mkFlake { inherit inputs; } {
+      systems = nixpkgs.lib.systems.flakeExposed;
+      perSystem =
+        {
+          lib,
+          pkgs,
+          system,
+          config,
+          ...
+        }:
+        {
+          _module.args.pkgs = import nixpkgs {
+            inherit system;
+            overlays = [
+              (inputs.fenix.overlays.default)
+            ];
+          };
 
-          buildInputs = with pkgs; [
-            openssl
-            openssl.dev
-          ];
-          nativeBuildInputs = with pkgs; [ pkg-config ];
-          env.PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
+          packages =
+            let
+              manifest = (pkgs.lib.importTOML ./Cargo.toml).package;
+            in
+            {
+              default = pkgs.rustPlatform.buildRustPackage rec {
+                pname = manifest.name;
+                version = manifest.version;
 
-          cargoLock.lockFile = ./Cargo.lock;
-          src = pkgs.lib.cleanSource ./.;
+                buildInputs = with pkgs; [
+                  openssl
+                  openssl.dev
+                ];
+                nativeBuildInputs = with pkgs; [ pkg-config ];
+                env.PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
+
+                cargoLock.lockFile = ./Cargo.lock;
+                src = pkgs.lib.cleanSource ./.;
+              };
+            };
+
+          devShells.default =
+            with pkgs;
+            let
+              toolchain = pkgs.fenix.complete.withComponents [
+                "rustc"
+                "cargo"
+                "clippy"
+              ];
+            in
+            mkShell {
+              packages = with pkgs; [
+                openssl
+                rust-analyzer-nightly
+                toolchain
+                pkg-config
+              ];
+              LD_LIBRARY_PATH = lib.makeLibraryPath [ pkgs.openssl ];
+            };
         };
-      });
     };
 }
