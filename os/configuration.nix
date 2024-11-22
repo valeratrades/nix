@@ -28,12 +28,15 @@ in
   ];
 
   nixpkgs.config.packageOverrides = pkgs: {
-    nur = import (builtins.fetchTarball {
-      url = "https://github.com/nix-community/NUR/archive/master.tar.gz";
-      sha256 = "sha256:0fr8xpyhi79pcp17w3xs05038ammmci9r89hv6z0r8x9j731bbyg";
-    }) {
-      inherit pkgs;
-    };
+    nur =
+      import
+        (builtins.fetchTarball {
+          url = "https://github.com/nix-community/NUR/archive/master.tar.gz";
+          sha256 = "sha256:0fr8xpyhi79pcp17w3xs05038ammmci9r89hv6z0r8x9j731bbyg";
+        })
+        {
+          inherit pkgs;
+        };
   };
 
   services = {
@@ -263,6 +266,129 @@ in
           blueberry = "63";
           basil = "64";
           tomato = "160";
+        };
+      };
+    };
+    git = {
+      enable = true;
+      config = {
+        user = {
+          #TODO!!!!: make the name and email dynamic
+          name = "valeratrades";
+          email = "v79166789533@gmail.com";
+          password = "$GITHUB_KEY";
+          token = "$GITHUB_TOKEN";
+        };
+
+        credential.helper = "store";
+
+        pull = {
+          rebase = true;
+        };
+
+        safe = {
+          directory = "*"; # says it's okay to write anywhere
+        };
+
+        help = {
+          autocorrect = 5;
+        };
+
+        core = {
+          excludesfile = "/home/v/.config/git/.gitignore_global"; # converts any large files that were not included into .gitignore into pointers
+        };
+
+        pager = {
+          difftool = true;
+        };
+
+        filter."lfs" = {
+          clean = "git-lfs clean -- %f";
+          smudge = "git-lfs smudge -- %f";
+          process = "git-lfs filter-process";
+          required = true;
+        };
+
+        fetch = {
+          prune = true; # when deleting file locally, delete pointers on the remote
+        };
+
+        diff = {
+          colorMoved = "zebra"; # copy/pastes are colored differently than actual removes/additions
+          colormovedws = "allow-indentation-change";
+          external = "/usr/bin/env difft --color auto --background light --display side-by-side";
+        };
+
+        advice = {
+          detachedHead = true; # warn when pointing to a commit instead of branch
+          addIgnoredFile = false;
+        };
+
+        alias = {
+            # NB: git "aliases" must be self-contained. Say `am = commit -am` won't work.
+            m = "merge";
+            r = "rebase";
+            d = "diff";
+            ds = "diff --staged";
+            s = "diff --stat";
+            sm = "diff --stat master";
+            l = "branch --list";
+            unstage = "reset HEAD --"; # in case you did `git add .` before running `git diff`
+            last = "log -1 HEAD";
+            u = "remote add upstream";
+            b = "branch";
+            c = "checkout";
+            cb = "checkout -b";
+            f = "push --force-with-lease";
+            p = "pull --rebase";
+            blame = "blame -w -C -C -C";
+            ca = "commit -am";
+            ri = "rebase --autosquash -i master";
+            ra = "rebase --abort";
+            rc = "rebase --continue";
+            log = "-c diff.external=difft log -p --ext-diff";
+            stash = "stash --all";
+            hardupdate = "!git fetch && git reset --hard \"origin/$(git rev-parse --abbrev-ref HEAD)\""; # stolen from Orion, but not yet tested
+            noedit = "commit -a --amend --no-edit";
+          };
+
+        url."git@gist.github.com:" = {
+          pushInsteadOf = "https://gist.github.com/";
+        };
+
+        # url."git@github.com:" = {
+        #   pushInsteadOf = "https://github.com/";
+        # };
+
+        url."git@gitlab.com:" = {
+          pushInsteadOf = "https://gitlab.com/";
+        };
+
+        init = {
+          defaultBranch = "master";
+        };
+
+        push = {
+          autoSetupRemote = true;
+          default = "current";
+        };
+
+        rerere = {
+          autoUpdate = true;
+          enabled = true;
+        };
+
+        branch = {
+          sort = "-committerdate";
+          autoSetupMerge = "simple";
+        };
+
+        rebase = {
+          autosquash = true;
+        };
+
+        merge = {
+          conflictStyle = "zdiff3";
         };
       };
     };
@@ -636,7 +762,7 @@ in
 
         # Networking Tools
         [
-					openssh
+          openssh
           bluez
           dnsutils
           ipcalc

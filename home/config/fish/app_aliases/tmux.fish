@@ -46,9 +46,6 @@ function tmux_new_session_base
 	tmux resize-pane -t "$SESSION_NAME:build.2" -D 30
 	tmux select-pane -t "$SESSION_NAME:build.0"
 
-	# Ref window
-	tmux new-window -t "$SESSION_NAME" -n "ref"
-
 	# Tmp window
 	tmux new-window -t "$SESSION_NAME" -n "tmp"
 	tmux send-keys -t "$SESSION_NAME:tmp.0" 'cd tmp; clear' Enter
@@ -58,6 +55,10 @@ function tmux_new_session_base
 	tmux send-keys -t "$SESSION_NAME:tmp.2" 'cd tmp; clear' Enter
 	tmux send-keys -t "$SESSION_NAME:tmp.0" 'nvim .' Enter
 	tmux select-pane -t "$SESSION_NAME:tmp.0"
+
+	# Ref window
+	#// Moved ref to bottom, as I often end up having more than one of these
+	tmux new-window -t "$SESSION_NAME" -n "ref"
 
 	echo $SESSION_NAME
 	return 0

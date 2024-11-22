@@ -2,7 +2,7 @@
 cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
 
 [package.metadata.cargo-machete]
-ignored = ["derive-new", "eyre", "serde", "tokio", "v_utils"]
+ignored = ["derive-new", "color-eyre", "serde", "tokio", "v_utils"]
 
 [lints.clippy]
 float_cmp = "allow" # is bad for `==` direct comparisons, but `<` and `>` should be allowed

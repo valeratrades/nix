@@ -57,9 +57,6 @@
     mako = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       [ -e "$XDG_CONFIG_HOME/mako" ] || ln -sf "$NIXOS_CONFIG/home/config/mako" "$XDG_CONFIG_HOME/mako"
     '';
-    git = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      [ -e "$XDG_CONFIG_HOME/git" ] || ln -sf "$NIXOS_CONFIG/home/config/git" "$XDG_CONFIG_HOME/git"
-    '';
     direnv = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       [ -e "$XDG_CONFIG_HOME/direnv" ] || ln -sf "$NIXOS_CONFIG/home/config/direnv" "$XDG_CONFIG_HOME/direnv"
     '';
@@ -89,6 +86,12 @@
     btc_line = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       ln -sf $NIXOS_CONFIG/home/config/btc_line.toml $XDG_CONFIG_HOME/btc_line.toml
     '';
+
+		#BUG: gets run before we build `reasonable_envsubst`
+		#git = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+		#	mkdir -p "$XDG_CONFIG_HOME/git"
+		#	cat "$NIXOS_CONFIG/home/config/git" | reasonable_envsubst - > "$XDG_CONFIG_HOME/git/config"
+		#'';
   };
 
   home.file = {

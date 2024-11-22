@@ -182,3 +182,7 @@ alias spoy="set -x LD_PRELOAD $SPOTIFY_ADBLOCK_LIB; spotify" # the SPOTIFY_ADBLO
 
 #TODO!: figure out direnv
 #direnv hook fish | source
+
+# # Starship
+starship init fish | source # the .enable in configuration.nix is apparently insufficient for the shells that are spawned by tmux
+#

@@ -251,13 +251,14 @@ vim.g.rustaceanvim = {
 	},
 	server = {
 		status_notify_level = rustaceanvim.disable, -- doesn't work
-		cmd = function()
-			local mason_registry = require('mason-registry')
-			local ra_binary = mason_registry.is_installed('rust-analyzer')
-					and mason_registry.get_package('rust-analyzer'):get_install_path() .. "/rust-analyzer"
-					or "rust-analyzer"
-			return { ra_binary } -- You can add args to the list, such as '--log-file'
-		end,
+		--cmd = function()
+		--	local mason_registry = require('mason-registry')
+		--	local ra_binary = mason_registry.is_installed('rust-analyzer')
+		--			and mason_registry.get_package('rust-analyzer'):get_install_path() .. "/rust-analyzer"
+		--			or "rust-analyzer"
+		--	return { ra_binary } -- You can add args to the list, such as '--log-file'
+		--end,
+		cmd = function() return { "rust-analyzer" } end,
 		on_attach = on_attach,
 		default_settings = {
 			['rust-analyzer'] = {
