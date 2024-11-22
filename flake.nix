@@ -53,6 +53,8 @@
 			inputs.nixpkgs.follows = "nixpkgs";
 		};
 
+		#nltch.url = "github:nt-ltch/nur-packages";
+
 		#inputs.sops-nix.url = "github:Mic92/sops-nix";
 
 

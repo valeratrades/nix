@@ -44,7 +44,7 @@ in
     xserver = {
       # # somehow this fixed the audio problem. Like huh, what, why???
       #TODO: figure out if gnome is actually necessary, or `xserver.enable = true` is sufficient
-      desktopManager.gnome.enable = true; # may or may not be fixing souund-driver problems
+      desktopManager.gnome.enable = true; # may or may not be fixing sound-driver problems
       #displayManager.gdm.enable = true; #NB: if you enable `xserver`, _must_ enable this too. Otherwise it will use default `lightdm`, which will log you out.
       enable = false;
       #
@@ -581,6 +581,7 @@ in
       PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig:${pkgs.alsa-lib.dev}/lib/pkgconfig:${pkgs.wayland-scanner.bin}/bin"; # :${pkgs.openssl}/lib"; # many of my rust scripts require it
       #LD_PRELOAD = "${inputs.distributions.packages.${pkgs.system}.default}/lib/libspotifyadblock.so"; # really hoping I'm not breaking anything
       SPOTIFY_ADBLOCK_LIB = "${pkgs.nur.repos.nltch.spotify-adblock}/lib/spotify/libspotifyadblock.so"; # need to add it to `LD_PRELOAD` before starting spotify to get rid of adds
+      #TODO: SPOTIFY_ADBLOCK_LIB = "${"github:nt-ltch/nur-packages#spotify-adblock"}/lib/spotify/libspotifyadblock.so"; # need to add it to `LD_PRELOAD` before starting spotify to get rid of adds
 
       # apparently wine works better on 32-bit
       #NB: when enabling, make sure the main monitor the wine will be displayed on starts at `0 0`
@@ -978,10 +979,10 @@ in
             vscode-extensions.vadimcn.vscode-lldb
           ]
         ]
-      ]
-      ++ [
+      ] ++ [
         #nixpkgs-stable.telegram-desktop
-      ];
+      ] #++ (inputs.nltch.legacyPackages.${pkgs.system}.spotify-adblock)
+      ;
   };
 
   #TODO!: make specific to the host
