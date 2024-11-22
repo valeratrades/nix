@@ -83,6 +83,10 @@ in
     blueman.enable = true;
   };
   programs = {
+		thefuck = {
+			enable = true;
+			alias = "f"; # not yet implemented in hm (2024/11/22)
+		};
     firefox.enable = true;
     sway = {
       enable = true;
@@ -274,6 +278,7 @@ in
       config = {
         user = {
           #TODO!!!!: make the name and email dynamic
+          #name = builtins.getEnv "GITHUB_USERNAME"; // doesn't work, fills empty
           name = "valeratrades";
           email = "v79166789533@gmail.com";
           password = "$GITHUB_KEY";
