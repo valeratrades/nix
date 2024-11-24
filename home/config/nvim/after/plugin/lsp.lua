@@ -37,13 +37,10 @@ local floatOpts = {
 	format = function(diagnostic)
 		return vim.split(diagnostic.message, "\n")[1]
 	end,
-	-- source = true,
-	-- prefix = "",
-	-- suffix = "",
 	focusable = true,
-	--focusable = false,
 	header = ""
 }
+--TODO!!!!!: remove duplicated lines from the popups
 function JumpToDiagnostic(direction, requestSeverity)
 	pcall(function()
 		local bufnr = vim.api.nvim_get_current_buf()
@@ -263,8 +260,10 @@ vim.g.rustaceanvim = {
 			local output = handle:read("*a")
 			handle:close()
 			local rust_version = output:match("%S+")
-			io.pope("notify-send 'Rust version: " .. rust_version .. "'")
-			return { "rustup run " .. rust_version .. " rust_analyzer" }
+			--io.popen("notify-send 'Rust version: " .. rust_version .. "'") --dbg
+			--return { "rustup run " .. rust_version .. " rust-analyzer" }
+			--return { "~/.rustup/toolchains/" .. rust_version .. "/bin/rust-analyzer" }
+			return { "rust-analyzer" }
 		end,
 		on_attach = on_attach,
 		default_settings = {

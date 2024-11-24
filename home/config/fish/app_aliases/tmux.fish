@@ -58,7 +58,7 @@ function tmux_new_session_base
 
 	# Ref window
 	#// Moved ref to bottom, as I often end up having more than one of these
-	tmux new-window -t "$SESSION_NAME" -n "ref"
+	tmux new-window -t "$SESSION_NAME" -n "r:" # naming convention is "r:<reference-name>"
 
 	echo $SESSION_NAME
 	return 0
