@@ -51,16 +51,16 @@ in
       autorun = false; # no clue if it does anything if `enable = false`, but might as well keep it
 
       # doesn't work
-      xkb = {
-        extraLayouts.semimak = {
-          description = "Semimak for both keyboard standards";
-          languages = [ "eng" ];
-          symbolsFile = /usr/share/X11/xkb/symbols/semimak;
-        };
-        layout = "semimak";
-        variant = "iso";
-        options = "grp:win_space_toggle";
-      };
+      #xkb = {
+      #  extraLayouts.semimak = {
+      #    description = "Semimak for both keyboard standards";
+      #    languages = [ "eng" ];
+      #    symbolsFile = /usr/share/X11/xkb/symbols/semimak;
+      #  };
+      #  layout = "semimak";
+      #  variant = "iso";
+      #  options = "grp:win_space_toggle";
+      #};
     };
 
     keyd.enable = true;
