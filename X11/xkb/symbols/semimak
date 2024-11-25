@@ -1,0 +1,98 @@
+// Semimak for both keyboard standards
+
+default partial
+xkb_symbols "basic" {
+	include "us(basic)"
+	
+		name[Group1] = "Semimak";
+	
+	key <AD01> {[ f,         F         ]};
+	key <AD02> {[ l,         L         ]};
+	key <AD03> {[ h,         H         ]};
+	key <AD04> {[ v,         V         ]};
+	key <AD05> {[ z,         Z         ]};
+	key <AD06> {[ q,         Q         ]};
+	key <AD07> {[ w,         W         ]};
+	key <AD08> {[ u,         U         ]};
+	key <AD09> {[ o,         O         ]};
+	key <AD10> {[ y,         Y         ]};
+
+	key <AC01> {[ s,         S         ]};
+	key <AC02> {[ r,         R         ]};
+	key <AC03> {[ n,         N         ]};
+	key <AC04> {[ t,         T         ]};
+	key <AC05> {[ k,         K         ]};
+	key <AC06> {[ c,         C         ]};
+	key <AC07> {[ d,         D         ]};
+	key <AC08> {[ e,         E         ]};
+	key <AC09> {[ a,         A         ]};
+	key <AC10> {[ i,         I         ]};
+
+	key <AB01> {[ x,         X         ]};
+	key <AB02> {[ apostrophe, quotedbl ]};
+	key <AB03> {[ b,         B         ]};
+	key <AB04> {[ m,         M	       ]};
+	key <AB05> {[ j,         J         ]};
+	key <AB06> {[ p,         P         ]};
+	key <AB07> {[ g,         G         ]};
+	key <AB08> {[ comma,     less      ]};
+	key <AB09> {[ period,    greater   ]};
+	key <AB10> {[ slash,     question  ]};
+	key <AC11> {[ semicolon, colon     ]};
+
+	key <RALT> { type="FOUR_LEVEL", [ BackSpace ] };
+	//HACK: can't make the old place of the key for the following work, and otherwise this conflicts with my iso shift remapping...
+	//key <LSGT> { type="ONE_LEVEL", [ ISO_Level3_Shift ] };
+	// modifier_map Mod1 { Alt_L, Alt_R, Meta_L, Meta_R };
+
+	// // French stuff
+	key <AC08> { [ e, E, eacute, Eacute ] };
+
+	key <AB08> {[ comma, less, egrave, Egrave ]};
+	key <AC09> {[ a, A, agrave, Agrave ]};
+	key <AD07> {[ w, W, ugrave, Ugrave ]};
+
+
+	key <AB09> {[ period, greater, acircumflex, Acircumflex ]};
+	key <AC07> {[ d, D, ecircumflex, Ecircumflex ]};
+	key <AC10> {[ i, I, icircumflex, Icircumflex ]};
+	key <AD08> {[ u, U, ucircumflex, Ucircumflex ]};
+	key <AD09> {[ o, O, ocircumflex, Ocircumflex]};
+
+	key <AC06> {[ c, C, ccedilla, Ccedilla ]};
+
+	key <AD06> {[ q, Q, udiaeresis, Udiaeresis ]};
+	//
+	
+	// // sign placement I'm used to from dvorak
+	key <AE11>	{[ bracketleft,  braceleft  ]};
+	key <AE12>	{[bracketright,  braceright,    dead_tilde]};
+	key <AD11>	{[     slash,    question   ]};
+	key <AB10>	{[ semicolon,    colon,         dead_ogonek,  dead_doubleacute ]};
+	key <AD12>	{[     equal,    plus       ]};
+	key <AC11>	{[     minus,    underscore ]};
+	//
+};
+
+partial
+xkb_symbols "ansi" {
+	include "semimak(basic)"
+	
+		name[Group1] = "Semimak ANSI";
+};
+
+partial
+xkb_symbols "iso" {
+	include "semimak(basic)"
+	
+		name[Group1] = "Semimak ISO";
+
+	// Swap Enter and backslash/bar
+	key <RTRN> { [ backslash, bar ] };
+	key <BKSL> { [ Return, Return ] };
+
+	// Swap Shift_L and <LSGT> keys
+	//FIX: currently impossible, as I think dell sends 50 for _both_ shifts at the firmware level. (theoretically fixable though).
+	//key <LFSH> { [ less, greater, NoSymbol, NoSymbol ] };
+	//HACK: LSGT is currently swapped via keyd
+};
