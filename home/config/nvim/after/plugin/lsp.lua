@@ -4,8 +4,6 @@ local rustaceanvim = require("rustaceanvim")
 local utils = require("valera.utils")
 local actions = require("telescope.actions")
 
---TODO!!!: remove all breakpoints
-
 vim.diagnostic.config({
 	virtual_text = false,
 	-- if line has say both a .HINT and .WARNING, the "worst" will be shown (as a sign on the left)
@@ -264,6 +262,7 @@ vim.g.rustaceanvim = {
 			--return { "rustup run " .. rust_version .. " rust-analyzer" }
 			--return { "~/.rustup/toolchains/" .. rust_version .. "/bin/rust-analyzer" }
 			return { "rust-analyzer" }
+			--return { "rustup", "run", "nightly", "rust-analyzer" }
 		end,
 		on_attach = on_attach,
 		default_settings = {

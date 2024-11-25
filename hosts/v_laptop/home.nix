@@ -87,11 +87,11 @@
       ln -sf $NIXOS_CONFIG/home/config/btc_line.toml $XDG_CONFIG_HOME/btc_line.toml
     '';
 
-		#BUG: gets run before we build `reasonable_envsubst`
-		#git = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-		#	mkdir -p "$XDG_CONFIG_HOME/git"
-		#	cat "$NIXOS_CONFIG/home/config/git" | reasonable_envsubst - > "$XDG_CONFIG_HOME/git/config"
-		#'';
+    #BUG: gets run before we build `reasonable_envsubst`
+    #git = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    #	mkdir -p "$XDG_CONFIG_HOME/git"
+    #	cat "$NIXOS_CONFIG/home/config/git" | reasonable_envsubst - > "$XDG_CONFIG_HOME/git/config"
+    #'';
   };
 
   home.file = {
@@ -170,26 +170,27 @@
       spotify
       spotube
       nyxt
-			en-croissant # chess analysis GUI
+      en-croissant # chess analysis GUI
       telegram-desktop
       vesktop
       rnote
       zathura # read PDFs
-			pdfgrep
-			xournalpp # draw on PDFs
+      pdfgrep
+      xournalpp # draw on PDFs
       ncspot
       neomutt
       neofetch
       figlet
-			anydesk
-			teamviewer
-			#flutterPackages-source.stable // errors
+      anydesk
+      teamviewer
+      #flutterPackages-source.stable // errors
       zulip
       bash-language-server
-			typioca # tui monkeytype
-			smassh # tui monkeytype
-			yazi
-    ] ++ [
+      typioca # tui monkeytype
+      smassh # tui monkeytype
+      yazi
+    ]
+    ++ [
       inputs.auto_redshift.packages.${pkgs.system}.default
       inputs.todo.packages.${pkgs.system}.default
       inputs.booktyping.packages.${pkgs.system}.default
@@ -203,11 +204,12 @@
 
       #inputs.aggr_orderbook.packages.${pkgs.system}.default
       #inputs.orderbook_3d.packages.${pkgs.system}.default
-    ] ++ [
-			#nixpkgs-stable.telegram-desktop
-			#inputs.nltch.spotify-adblock
-			#inputs.nltch.ciscoPacketTracer8
-		];
+    ]
+    ++ [
+      #nixpkgs-stable.telegram-desktop
+      #inputs.nltch.spotify-adblock
+      #inputs.nltch.ciscoPacketTracer8
+    ];
 
   #home.packages = with nixpkgs-stable: [
   #	google-chrome
