@@ -124,6 +124,7 @@ alias phone-wifi="sudo nmcli dev wifi connect Valera password 12345678"
 alias phone_wifi="phone-wifi"
 alias cdd="cd .. && cd -" # effectively just reloads `direnv`
 alias monkey="smassh"
+alias bbeats="sudo -Es nice -n -20 /etc/profiles/per-user/v/bin/bbeats" # otherwise any demanding process will produce bad breaks in sound
 
 # # fish
 function where

@@ -1,7 +1,18 @@
 # Installation
-Before building, from the directory to which it is cloned:
+NB: set the `INSTALL_PATH` before running
 ```sh
-sudo mkdir -p /usr/share/X11/xkb/symbols && sudo cp -r ./home/config/xkb_symbols/* /usr/share/X11/xkb/symbols/
+sh << 'EOF'
+INSTALL_PATH="..."
+if [ "$INSTALL_PATH" = "..." ]; then
+    echo "set the INSTALL_PATH to the target installation path, then rerun the command"
+    return 1
+fi
+mkdir -p "$(dirname "$INSTALL_PATH")" && \
+git clone --depth=1 https://github.com/valeratrades/nix "$INSTALL_PATH" && \
+cd "$INSTALL_PATH" && \
+sudo mkdir -p /usr/share/X11/xkb/symbols && \
+sudo cp -r ./home/config/xkb_symbols/* /usr/share/X11/xkb/symbols/
+EOF
 ```
 
 # Reqs

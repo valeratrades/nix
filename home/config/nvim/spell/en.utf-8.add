@@ -439,3 +439,8 @@ bak
 mkdir
 mul
 equiprobably
+calc
+lte
+equiprobable
+majorant
+minorant
