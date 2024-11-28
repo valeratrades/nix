@@ -168,7 +168,7 @@
       cowsay
       unimatrix
       spotify
-      spotube
+      #spotube // spotify-adblock is perfectly sufficient
       nyxt
       en-croissant # chess analysis GUI
       telegram-desktop
@@ -182,7 +182,7 @@
       neofetch
       figlet
       anydesk
-      teamviewer
+      #teamviewer // doesn't work
       #flutterPackages-source.stable // errors
       zulip
       bash-language-server

@@ -38,6 +38,7 @@ for_window [app_id="org.telegram.desktop"] focus=off
 focus_follows_mouse yes
 mouse_warping container
 default_border pixel 1
+default_floating_border pixel 1
 smart_gaps off
 gaps inner 0
 xwayland enable
