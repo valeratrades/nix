@@ -8,7 +8,6 @@
   pkgs,
   lib,
   inputs,
-	#wlr-gamma-service,
   ...
 }:
 
@@ -623,7 +622,7 @@ in
         granted # access cloud
         flatpak
         keyd
-				#self.packages.x86_64-linux.wlr-gamma-service
+				self.packages.x86_64-linux.wlr-gamma-service
         libinput-gestures
         pkgs.qt5.full
         fractal # matrix chat protocol adapter

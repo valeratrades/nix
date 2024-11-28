@@ -132,7 +132,13 @@
 		#nix.settings.nix-path = nixpkgs.lib.mkForce "nixpkgs=/etc/nix/inputs/nixpkgs";
 
 		#NB: when writing hostname, remove all '_' characters
-		packages.x86_64-linux.wlr-gamma-service = nixpkgs-stable.legacyPackages.x86_64-linux.callPackage ./modules/wlr-brightness {};
+		#packages.x86_64-linux.wlr-gamma-service = nixpkgs-stable.legacyPackages.x86_64-linux.callPackage ./modules/wlr-brightness {};
+		packages.x86_64-linux.wlr-gamma-service = nixpkgs-stable.legacyPackages.x86_64-linux.callPackage (nixpkgs-stable.legacyPackages.x86_64-linux.fetchFromGitHub {
+			owner = "nobbz";
+			repo = "wlr-brightness";
+			rev = "1985062bf08086e6145db4ef1a292b535fd9f1a1";
+			sha256 = "sha256-QZhtI10qKu6qUePZ1rKaH3SBoUZ30+w8xcc5bBRYbGw=";
+		}) {};
 
 		nixosConfigurations.vlaptop = nixpkgs.lib.nixosSystem {
 			system = "x86_64-linux";
