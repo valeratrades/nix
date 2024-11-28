@@ -132,16 +132,16 @@
 		#nix.settings.nix-path = nixpkgs.lib.mkForce "nixpkgs=/etc/nix/inputs/nixpkgs";
 
 		#NB: when writing hostname, remove all '_' characters
+		packages.x86_64-linux.wlr-gamma-service = nixpkgs-stable.legacyPackages.x86_64-linux.callPackage ./modules/wlr-brightness {};
+
 		nixosConfigurations.vlaptop = nixpkgs.lib.nixosSystem {
 			system = "x86_64-linux";
-			#packages.x86_64-linux.wlr-gamma-service = wlr-gamma-service.packages.x86_64-linux.default;
 
 			#environment.variables.NIXOS_CONFIG = "something";
 
 			specialArgs = { 
-				inherit inputs;
-				inherit self;
-				inherit nixpkgs-stable;
+				inherit inputs self nixpkgs-stable;
+				#wlr-gamma-service = self.packages.x86_64-linux.wlr-gamma-service;
 
 				# freaks out on `inherit system`
 				#pkgs-stable = import nixpkgs-stable {
@@ -153,7 +153,7 @@
 			modules = [
 				./os/configuration.nix
 				./machines/modules/default.nix # can't reference the `mod.nix` one level higher, because I don't use `flake-parts.lib.mkFlake` yet
-				./modules/wlr-brightness/default.nix
+				#./modules/wlr-brightness/default.nix
 
 				home-manager.nixosModules.home-manager {
 					home-manager.useGlobalPkgs = true;
@@ -170,7 +170,6 @@
 				}
 
 				#({ pkgs, ... }: import ./modules/fenix.nix { inherit pkgs; })
-				#({ nixpkgs-stable }: import ./modules/wlr-brightness.nix { inherit nixpkgs-stable; })
 			];
 		};
 	};

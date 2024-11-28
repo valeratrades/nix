@@ -139,10 +139,6 @@
       source = "${self}/home/config/cargo";
       recursive = true;
     };
-    "/usr/share/X11/xkb/symbols" = {
-      source = "${self}/home/config/xkb_symbols";
-      recursive = true;
-    };
   };
 
   # link the configuration file in current directory to the specified location in home directory
@@ -203,7 +199,6 @@
       inputs.reasonable_envsubst.packages.${pkgs.system}.default
 			#inputs.wlr-brightness.default
 
-
       #inputs.aggr_orderbook.packages.${pkgs.system}.default
       #inputs.orderbook_3d.packages.${pkgs.system}.default
     ]
@@ -211,6 +206,7 @@
       #nixpkgs-stable.telegram-desktop
       #inputs.nltch.spotify-adblock
       #inputs.nltch.ciscoPacketTracer8
+			#self.packages.x86_64-linux.wlr-gamma-service
     ];
 
   #home.packages = with nixpkgs-stable: [

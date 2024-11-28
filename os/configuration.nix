@@ -8,6 +8,7 @@
   pkgs,
   lib,
   inputs,
+	#wlr-gamma-service,
   ...
 }:
 
@@ -40,6 +41,16 @@ in
         };
   };
 
+	#environment.etc."systemd/system/wlr-gamma-service.service" = {
+	#	source = ../modules/wlr-brightness/res/wlr-gamma-service.service;
+	#	mode = "0644";
+	#};
+	#systemd.services.wlr-gamma-service = {
+ #   description = "WLR Gamma Service";
+ #   wantedBy = [ "multi-user.target" ];
+ #   serviceConfig.ExecStart = "${pkgs.wlr-gamma-service}/bin/wlr-gamma-service";  # Adjust if the binary path differs
+ # };
+
   services = {
     xserver = {
       # # somehow this fixed the audio problem. Like huh, what, why???
@@ -57,8 +68,7 @@ in
         extraLayouts.semimak = {
           description = "Semimak for both keyboard standards";
           languages = [ "eng" ];
-          symbolsFile = /usr/share/X11/xkb/symbols/semimak;
-          #symbolsFile = "/etc/nixos/xkb/symbols/semimak";
+          symbolsFile = ../xkb/symbols/semimak;
         };
         layout = "semimak";
         variant = "iso";
@@ -613,6 +623,7 @@ in
         granted # access cloud
         flatpak
         keyd
+				#self.packages.x86_64-linux.wlr-gamma-service
         libinput-gestures
         pkgs.qt5.full
         fractal # matrix chat protocol adapter
