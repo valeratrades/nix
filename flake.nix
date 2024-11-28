@@ -103,7 +103,14 @@
 			url = "github:valeratrades/bad-apple-rs";
 			inputs.nixpkgs.follows = "nixpkgs";
 		};	
-		wlr-brightness.url = "https://github.com/nobbz/wlr-brightness";
+		#wlr-brightness = {
+		#	url = "https://github.com/nobbz/wlr-brightness";
+		#	inputs.nixpkgs.follows = "nixpkgs-stable";
+		#};
+		#wlr-gamma-service = {
+  #    url = "path:modules/wlr-brightness";
+			#inputs.nixpkgs.follows = "nixpkgs-stable";
+    #};
 
 
 		#aggr_orderbook = {
@@ -127,6 +134,7 @@
 		#NB: when writing hostname, remove all '_' characters
 		nixosConfigurations.vlaptop = nixpkgs.lib.nixosSystem {
 			system = "x86_64-linux";
+			#packages.x86_64-linux.wlr-gamma-service = wlr-gamma-service.packages.x86_64-linux.default;
 
 			#environment.variables.NIXOS_CONFIG = "something";
 
@@ -145,6 +153,7 @@
 			modules = [
 				./os/configuration.nix
 				./machines/modules/default.nix # can't reference the `mod.nix` one level higher, because I don't use `flake-parts.lib.mkFlake` yet
+				./modules/wlr-brightness/default.nix
 
 				home-manager.nixosModules.home-manager {
 					home-manager.useGlobalPkgs = true;
@@ -161,6 +170,7 @@
 				}
 
 				#({ pkgs, ... }: import ./modules/fenix.nix { inherit pkgs; })
+				#({ nixpkgs-stable }: import ./modules/wlr-brightness.nix { inherit nixpkgs-stable; })
 			];
 		};
 	};
