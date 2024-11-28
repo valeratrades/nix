@@ -201,6 +201,8 @@
       inputs.distributions.packages.${pkgs.system}.default
       inputs.bad_apple_rs.packages.${pkgs.system}.default
       inputs.reasonable_envsubst.packages.${pkgs.system}.default
+			#inputs.wlr-brightness.default
+
 
       #inputs.aggr_orderbook.packages.${pkgs.system}.default
       #inputs.orderbook_3d.packages.${pkgs.system}.default
@@ -238,6 +240,8 @@
       defaultCursor = "Adwaita";
     };
   };
+
+	home.keyboard = null; # otherwise it overwrites my semimak
 
   home.sessionPath = [
     "${pkgs.lib.makeBinPath [ ]}"

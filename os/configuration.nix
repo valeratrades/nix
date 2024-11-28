@@ -43,8 +43,7 @@ in
   services = {
     xserver = {
       # # somehow this fixed the audio problem. Like huh, what, why???
-      #TODO: figure out if gnome is actually necessary, or `xserver.enable = true` is sufficient
-      desktopManager.gnome.enable = true; # may or may not be fixing sound-driver problems
+      desktopManager.gnome.enable = true;
       #displayManager.gdm.enable = true; #NB: if you enable `xserver`, _must_ enable this too. Otherwise it will use default `lightdm`, which will log you out.
       enable = false;
       #
@@ -59,15 +58,13 @@ in
           description = "Semimak for both keyboard standards";
           languages = [ "eng" ];
           symbolsFile = /usr/share/X11/xkb/symbols/semimak;
+          #symbolsFile = "/etc/nixos/xkb/symbols/semimak";
         };
         layout = "semimak";
         variant = "iso";
         #
       };
     };
-
-    keyd.enable = true;
-    #xwayland.enable = true;
 
     pipewire = {
       enable = true;
@@ -80,16 +77,13 @@ in
       wireplumber.enable = true;
     };
 
+    keyd.enable = true;
     printing.enable = true;
     libinput.enable = true;
     openssh.enable = true;
     blueman.enable = true;
   };
   programs = {
-    thefuck = {
-      enable = true;
-      alias = "f"; # not yet implemented in hm (2024/11/22)
-    };
     firefox.enable = true;
     sway = {
       enable = true;
@@ -480,6 +474,7 @@ in
 
   systemd = {
     user.services = {
+      # not sure why I have this
       mpris-proxy = {
         description = "Mpris proxy";
         after = [
@@ -751,7 +746,6 @@ in
           procs # `ps` in rust
           comma # auto nix-shell missing commands, so you can just `, cowsay hello`
           cowsay
-          thefuck # corrects your previous command
           difftastic # better `diff`
           cotp
           as-tree
@@ -987,7 +981,6 @@ in
         ]
       ]
       ++ [
-        #nixpkgs-stable.telegram-desktop
       ] # ++ (inputs.nltch.legacyPackages.${pkgs.system}.spotify-adblock)
     ;
   };
@@ -1036,11 +1029,11 @@ in
       '';
     };
 
-    hostName = "v_laptop";
+    hostName = "v_laptop"; # should be set with home-manager
     # networking.proxy.default = "http://user:password@proxy:port/";
     # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
 
-    # to setup network manager with student wifi, you can 1) reference the `edit connection -> advanced options` on the phone (normally androids just work with them, then 2) edit accordingly with `nm-connection-editor`
+    # to setup network manager with uni wifi, you can 1) reference the `edit connection -> advanced options` on the phone (normally androids just work with them, then 2) edit accordingly with `nm-connection-editor`
     # on update of interface it can hang, btw, so `sudo systemctl restart NetworkManager` if `nmtui` does stops loading all networks
     networkmanager.enable = true;
   };

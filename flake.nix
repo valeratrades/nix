@@ -103,6 +103,7 @@
 			url = "github:valeratrades/bad-apple-rs";
 			inputs.nixpkgs.follows = "nixpkgs";
 		};	
+		wlr-brightness.url = "https://github.com/nobbz/wlr-brightness";
 
 
 		#aggr_orderbook = {
