@@ -64,9 +64,9 @@
   };
 	#
 
-  imports = [
-    ../../home/config/fish/default.nix
-  ];
+  #imports = [
+  #  ../../home/config/fish/default.nix
+  #];
 
   # fuck mkOutOfStoreSymlink and home-manager. Just link everything except for where apps like to write artifacts to the config dir.
   home.activation = {
@@ -278,5 +278,5 @@
 
     home-manager.enable = true; # let it manage itself
   };
-  home.stateVersion = "24.05"; # NB: DO NOT CHANGE, same as `system.stateVersion`
+  #home.stateVersion = "24.05"; # NB: DO NOT CHANGE, same as `system.stateVersion`
 }

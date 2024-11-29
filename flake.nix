@@ -13,16 +13,22 @@
 
 			"https://cache.nixos.org"
 			"https://nix-community.cachix.org" # nix community's cache server
+
+			"https://anyrun.cachix.org"
 		];
 		extra-trusted-public-keys = [
 			"nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=" # nix community's cache server public key
+			"anyrun.cachix.org-1:pqBobmOjI7nKlsUMV25u9QHa9btJK65/C8vnO3p346s="
 		];
 	};
 
 
 	inputs = {
 		nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-		nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-24.05";
+		nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
+		nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-24.11";
+		nixpkgs-2405.url = "github:nixos/nixpkgs/nixos-24.05";
+
 
 		home-manager = {
 			url = "github:nix-community/home-manager/master";
@@ -45,15 +51,23 @@
 			inputs.nixpkgs.follows = "nixpkgs";
 		};
 
-		#TODO!: integrate
 		impermanence.url = "github:nix-community/impermanence";
 
 		pre-commit-hooks = {
 			url = "github:cachix/pre-commit-hooks.nix";
 			inputs.nixpkgs.follows = "nixpkgs";
 		};
+		neovim-nightly-overlay.url = "github:nix-community/neovim-nightly-overlay";
 
-		#nltch.url = "github:nt-ltch/nur-packages";
+		disko = {
+			url = "github:nix-community/disko/v1.9.0";
+			inputs.nixpkgs.follows = "nixpkgs";
+		};
+
+    haumea = {
+      url = "github:nix-community/haumea/v0.2.2";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
 		#inputs.sops-nix.url = "github:Mic92/sops-nix";
 
@@ -103,8 +117,6 @@
 			url = "github:valeratrades/bad-apple-rs";
 			inputs.nixpkgs.follows = "nixpkgs";
 		};	
-		neovim-nightly-overlay.url = "github:nix-community/neovim-nightly-overlay";
-
 
 		#aggr_orderbook = {
 		#	url = "github:valeratrades/aggr_orderbook";
@@ -134,7 +146,7 @@
 		#	submodules = true;
 		#}) {};
 		
-		packages.x86_64-linux.wlr-gamma-service = nixpkgs-stable.legacyPackages.x86_64-linux.callPackage (builtins.fetchGit {
+		packages.x86_64-linux.wlr-gamma-service = inputs.nixpkgs-2405.legacyPackages.x86_64-linux.callPackage (builtins.fetchGit {
 			url = "https://github.com/nobbz/wlr-brightness";
 			rev = "1985062bf08086e6145db4ef1a292b535fd9f1a1";
 			#sha256 = "sha256-QZhtI10qKu6qUePZ1rKaH3SBoUZ30+w8xcc5bBRYbGw=";
@@ -172,8 +184,8 @@
 					#	inputs.sops-nix.homeManagerModules.sops
 					#];
 
-					home-manager.users.v = import ./hosts/v_laptop/home.nix;
-					#home-manager.users.v = import ./hosts/v_laptop/default.nix;
+					#home-manager.users.v = import ./hosts/v_laptop/home.nix;
+					home-manager.users.v = import ./hosts/v_laptop/default.nix;
 					nix.settings.trusted-users = [ "v" ];
 				}
 
