@@ -34,6 +34,7 @@ f = "fmt"
 x = "fix --allow-dirty --allow-no-vcs"
 xc = "clippy --fix --allow-dirty --allow-no-vcs"
 s = "sweep --recursive --installed" # only leave currently active artifacts
+rel = "release --no-confirm --execute"
 
 # overriding defaults in favor of cargo-limit alternatives
 #b = "lbuild --all-features"
