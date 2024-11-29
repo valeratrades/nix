@@ -15,7 +15,7 @@
 
 let
   userHome = config.users.users.v.home;
-  configRoot = "/etc/nixos"; # TODO!!!!!: have this be dynamic
+  configRoot = "~/nix"; # TODO!!!!!: have this be dynamic
 
   modularHome = "${userHome}/.modular";
 
@@ -560,8 +560,10 @@ in
     # XDG directories and Wayland environment variables setup
     variables = {
       XDG_DATA_HOME = "${userHome}/.local/share";
+      XDG_STATE_HOME = "${userHome}/.local/state";
       XDG_CONFIG_HOME = "${userHome}/.config";
       XDG_CACHE_HOME = "${userHome}/.cache";
+			#XDG_RUNTIME_DIR is set by nix to /run/user/1000
       XDG_CURRENT_DESKTOP = "sway";
       GDK_BACKEND = "wayland";
       XDG_BACKEND = "wayland";
@@ -580,8 +582,7 @@ in
 
       # Nix
       TEST = "${configRoot}"; # dbg
-      #NIXOS_CONFIG = "${configRoot}";
-      NIXOS_CONFIG = "/etc/nixos";
+      NIXOS_CONFIG = "${configRoot}";
       #TODO!: figure out how to procedurally disable [vesktop, tg] evokations via rofi, outside of preset times in my calendar
       DOT_DESKTOP = "${pkgs.home-manager}/share/applications";
       DIRENV_WARN_TIMEOUT = "1h";

@@ -17,7 +17,7 @@ function css
 end
 
 function csh
-    set _path "/etc/nixos/home/scripts/"
+    set _path "$NIXOS_CONFIG/home/scripts/"
     if test -n "$argv[1]"
         set _path "$_path$argv[1]"
     end
@@ -78,7 +78,7 @@ function csp
 end
 
 function csn
-    set _path "$HOME/Documents/SheetMusic/"
+    set _path "$HOME/nix/"
     if test -n "$argv[1]"
         set _path "$_path$argv[1]"
     end
