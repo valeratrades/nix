@@ -1,7 +1,6 @@
 # Edit this configuration file to define what should be installed on
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
-
 {
   self,
   config,
@@ -10,19 +9,16 @@
   inputs,
   ...
 }:
-
 #TODO: add build script that cds in $XDG_DATA_HOME/nvim/lazy-telescope-fzf-native.nvim and runs `make`
-
 let
-  userHome = config.users.users.v.home; #TODO: also should be dynamic
-  configRoot = "/home/v/nix"; #TODO!!!!!: have this be dynamic
+  userHome = config.users.users.v.home; # TODO: also should be dynamic
+  configRoot = "/home/v/nix"; # TODO!!!!!: have this be dynamic
 
   modularHome = "${userHome}/.modular";
 
   systemdCat = "${pkgs.systemd}/bin/systemd-cat";
   sway = "${config.programs.sway.package}/bin/sway";
-in
-{
+in {
   nix.settings.experimental-features = [
     "nix-command"
     "flakes"
@@ -31,24 +27,24 @@ in
   nixpkgs.config.packageOverrides = pkgs: {
     nur =
       import
-        (builtins.fetchTarball {
-          url = "https://github.com/nix-community/NUR/archive/master.tar.gz";
-          #sha256 = "sha256:0766s5dr3cfcyf31krr3mc6sllb2a7qkv2gn78b6s5v4v2bs545l";
-        })
-        {
-          inherit pkgs;
-        };
+      (builtins.fetchTarball {
+        url = "https://github.com/nix-community/NUR/archive/master.tar.gz";
+        #sha256 = "sha256:0766s5dr3cfcyf31krr3mc6sllb2a7qkv2gn78b6s5v4v2bs545l";
+      })
+      {
+        inherit pkgs;
+      };
   };
 
-	#environment.etc."systemd/system/wlr-gamma-service.service" = {
-	#	source = ../modules/wlr-brightness/res/wlr-gamma-service.service;
-	#	mode = "0644";
-	#};
-	#systemd.services.wlr-gamma-service = {
- #   description = "WLR Gamma Service";
- #   wantedBy = [ "multi-user.target" ];
- #   serviceConfig.ExecStart = "${pkgs.wlr-gamma-service}/bin/wlr-gamma-service";  # Adjust if the binary path differs
- # };
+  #environment.etc."systemd/system/wlr-gamma-service.service" = {
+  #	source = ../modules/wlr-brightness/res/wlr-gamma-service.service;
+  #	mode = "0644";
+  #};
+  #systemd.services.wlr-gamma-service = {
+  #   description = "WLR Gamma Service";
+  #   wantedBy = [ "multi-user.target" ];
+  #   serviceConfig.ExecStart = "${pkgs.wlr-gamma-service}/bin/wlr-gamma-service";  # Adjust if the binary path differs
+  # };
 
   services = {
     xserver = {
@@ -66,8 +62,8 @@ in
         # # selecting the following doesn't change anything though, must be configured through sway (or so I think now)
         extraLayouts.semimak = {
           description = "Semimak for both keyboard standards";
-          languages = [ "eng" ];
-          symbolsFile = ../xkb/symbols/semimak;
+          languages = ["eng"];
+          symbolsFile = ../../xkb/symbols/semimak;
         };
         layout = "semimak";
         variant = "iso";
@@ -116,7 +112,7 @@ in
     };
     starship = {
       # defined here, as `hm` doesn't yet recognize the `presets` option on `starship` (2024/10/31)
-      presets = [ "no-runtime-versions" ]; # noisy on python, lua, and all the languages I don't care about. Would rather explicitly setup expansions on the important ones.
+      presets = ["no-runtime-versions"]; # noisy on python, lua, and all the languages I don't care about. Would rather explicitly setup expansions on the important ones.
       settings = {
         # "no-runtime-versions" doesn't get rid of the `via` prefix, which almost makes it useless
         lua = {
@@ -284,7 +280,7 @@ in
       config = {
         user = {
           #TODO!!!!: make the name and email dynamic
-          #name = builtins.getEnv "GITHUB_USERNAME"; // doesn't work, fills empty
+          #name = builtins.getEnv "GITHUB_USERNAME"; // doesn't work, fills empty. Should work though, albeit being an impurity
           name = "valeratrades";
           email = "v79166789533@gmail.com";
           password = "$GITHUB_KEY";
@@ -424,13 +420,13 @@ in
     };
 
     # # for obs's Virtual Camera
-    extraModulePackages = with config.boot.kernelPackages; [ v4l2loopback ];
+    extraModulePackages = with config.boot.kernelPackages; [v4l2loopback];
     kernelModules = [
       "v4l2loopback"
     ];
     extraModprobeConfig = ''
-      				options v4l2loopback devices=1 video_nr=1 card_label="OBS Cam" exclusive_caps=1
-      				options kvm_amd nested=1 # gnome-boxes require kvm
+      options v4l2loopback devices=1 video_nr=1 card_label="OBS Cam" exclusive_caps=1
+      options kvm_amd nested=1 # gnome-boxes require kvm
     '';
     #
   };
@@ -459,7 +455,7 @@ in
     sudo = {
       enable = true;
       extraConfig = ''
-        	%wheel ALL=(ALL) NOPASSWD: ALL
+        %wheel ALL=(ALL) NOPASSWD: ALL
       '';
     };
     rtkit.enable = true;
@@ -490,7 +486,7 @@ in
           "network.target"
           "sound.target"
         ];
-        wantedBy = [ "default.target" ];
+        wantedBy = ["default.target"];
         serviceConfig.ExecStart = "${pkgs.bluez}/bin/mpris-proxy";
       };
       #start-ssh-port = {
@@ -563,7 +559,7 @@ in
       XDG_STATE_HOME = "${userHome}/.local/state";
       XDG_CONFIG_HOME = "${userHome}/.config";
       XDG_CACHE_HOME = "${userHome}/.cache";
-			#XDG_RUNTIME_DIR is set by nix to /run/user/1000
+      #XDG_RUNTIME_DIR is set by nix to /run/user/1000
       XDG_CURRENT_DESKTOP = "sway";
       GDK_BACKEND = "wayland";
       XDG_BACKEND = "wayland";
@@ -619,381 +615,384 @@ in
     #TODO!: make structure modular, using [flatten](<https://noogle.dev/f/lib/flatten>)
     systemPackages =
       with pkgs; # basically `use pkgs::*`
-      lib.lists.flatten [
-        granted # access cloud
-        flatpak
-        keyd
-				self.packages.x86_64-linux.wlr-gamma-service
-        libinput-gestures
-        pkgs.qt5.full
-        fractal # matrix chat protocol adapter
-        xdg-desktop-portal-gtk # not sure if I even need it here, it's probably already brought into the scope by `xdg.portal.enable`
-        haskellPackages.greenclip
-        lefthook # git hooks
-        wayland-scanner
-        nerdfix # fixes illegal font codepoints https://discourse.nixos.org/t/nerd-fonts-only-see-half-the-icon-set/27513
-        poppler_utils
+      
+        lib.lists.flatten [
+          granted # access cloud
+          flatpak
+          keyd
+          self.packages.x86_64-linux.wlr-gamma-service
+          libinput-gestures
+          pkgs.qt5.full
+          fractal # matrix chat protocol adapter
+          xdg-desktop-portal-gtk # not sure if I even need it here, it's probably already brought into the scope by `xdg.portal.enable`
+          haskellPackages.greenclip
+          lefthook # git hooks
+          wayland-scanner
+          nerdfix # fixes illegal font codepoints https://discourse.nixos.org/t/nerd-fonts-only-see-half-the-icon-set/27513
+          poppler_utils
 
-        # nur plugs
-        [
-          nur.repos.nltch.spotify-adblock
-        ]
-
-        # emulators
-        [
-          waydroid
-          gnome-boxes # vm with linux distros
-          # Windows
+          # nur plugs
           [
-            wineWowPackages.wayland
-            #wineWowPackages.waylandFull
-            #wineWowPackages.unstableFull
-            winePackages.stagingFull
-            #wine-staging # nightly wine
-            winetricks # install deps for wine
-            bottles # ... python
-            lutris # supposed to be more modern `playonlinux`. It's in python.
-            playonlinux # oh wait, this shit's in python too
-          ]
-          # MacOS
-          [
-            darling
-            dmg2img
-          ]
-        ]
-
-        # gnome
-        [
-          xdg-user-dirs
-          xdg-user-dirs-gtk
-          glib
-        ]
-
-        # Nix
-        [
-          nh
-          nix-index
-          manix # grep nixpkgs docs
-          nix-output-monitor
-          cachix
-        ]
-
-        # UI/UX Utilities
-        [
-          adwaita-qt
-          bemenu
-          blueman
-          eww
-          grim
-          slurp
-          mako
-          networkmanagerapplet
-          rofi
-          swappy
-        ]
-
-        # System Utilities
-        [
-          alsa-utils
-          dbus
-          hwinfo
-          dconf
-          file
-          gsettings-desktop-schemas
-          libnotify
-          lm_sensors # for `sensors` command
-          lsof
-          pciutils # lspci
-          sysstat
-          usbutils # lsusb
-          wireplumber
-          wl-clipboard
-          wl-gammactl
-          xorg.xkbcomp
-          xz
-        ]
-
-        # Network Tools
-        [
-          aria2 # better wget
-          dnsutils # `dig` + `nslookup`
-          ethtool
-          iftop # network monitoring
-          iotop # io monitoring
-          ipcalc # IPv4/v6 address calculator
-          iperf3
-          mtr # Network diagnostic tool
-          nmap # Network discovery/security auditing
-          socat # replacement of openbsd-netcat
-          iwd
-          bettercap # man in the middle tool
-          wireshark
-          tshark # wireshark-cli
-        ]
-
-        # Monitoring and Performance
-        [
-          bottom
-          lm_sensors # System sensor monitoring
-          ltrace # Library call monitoring
-          strace # System call monitoring
-        ]
-
-        # Compression and Archiving
-        [
-          atool
-          p7zip
-          unzip
-          zip
-          xz
-          zstd
-        ]
-
-        # Command Line Enhancements
-        [
-          dust # `du` in rust
-          atuin
-          tldr
-          procs # `ps` in rust
-          comma # auto nix-shell missing commands, so you can just `, cowsay hello`
-          cowsay
-          difftastic # better `diff`
-          cotp
-          as-tree
-          eza # better `ls`
-          fd # better `find`
-          bat # better `cat`
-          ripgrep # better `grep`
-          fzf
-          jq
-          tree
-          zoxide
-        ]
-
-        # terminals
-        [
-          starship
-          alacritty
-        ]
-
-        # Networking Tools
-        [
-          openssh
-          bluez
-          dnsutils
-          ipcalc
-          iperf3
-          mtr
-          nmap
-          pciutils # lspci
-          usbutils # lsusb
-          wireplumber
-        ]
-
-        # File Utilities
-        [
-          fd # better `find`
-          file
-          gnupg
-          gnused
-          gnutar
-          jq
-          unzip
-          zip
-          pandoc
-        ]
-
-        # Audio/Video Utilities
-        [
-          pamixer
-          easyeffects
-          vlc
-          pavucontrol
-          pulseaudio
-          pulsemixer
-          #mov-cli // errors
-          mpv
-          chafa
-          obs-cli
-          ffmpeg
-
-          # OBS
-          [
-            obs-studio
-            (pkgs.wrapOBS {
-              plugins = with pkgs.obs-studio-plugins; [
-                wlrobs
-                obs-backgroundremoval
-              ];
-            })
-          ]
-        ]
-
-        # System Monitoring and Debugging
-        [
-          iftop # network monitoring
-          iotop # io monitoring
-          sysstat
-          ltrace
-          strace
-        ]
-
-        # Web/Network Interaction
-        [
-          httpie
-          google-chrome
-          chromium
-          firefox
-          wget
-          aria2
-        ]
-
-        # shells
-        [
-          zsh
-          fish
-          fishPlugins.bass
-          dash
-        ]
-
-        # Development Tools
-        [
-          gh
-          git
-          pkg-config # when used in build scripts, must be included in `nativeBuildInputs`. Only _native_ will work.
-          openssl
-          tokei
-
-          # env
-          [
-            docker
-            devenv
-            direnv
-          ]
-        ]
-
-        # Coding
-        [
-          vscode-extensions.github.copilot
-          mold
-          sccache
-          just
-          bash-language-server
-
-          # editors
-          [
-            neovim
-            vim
-            vscode
+            nur.repos.nltch.spotify-adblock
           ]
 
-          # language-specific
+          # emulators
           [
-            vscode-langservers-extracted # contains json lsp
-            marksman # md lsp
-
-            perl
-
-            # Lean
+            waydroid
+            gnome-boxes # vm with linux distros
+            # Windows
             [
-              #lean4 # want to use elan instead
-              leanblueprint
-              elan # rustup for lean. May or may not be outdated.
+              wineWowPackages.wayland
+              #wineWowPackages.waylandFull
+              #wineWowPackages.unstableFull
+              winePackages.stagingFull
+              #wine-staging # nightly wine
+              winetricks # install deps for wine
+              bottles # ... python
+              lutris # supposed to be more modern `playonlinux`. It's in python.
+              playonlinux # oh wait, this shit's in python too
             ]
-            # Js / Ts
+            # MacOS
             [
-              nodejs_22
-              deno
+              darling
+              dmg2img
+            ]
+          ]
+
+          # gnome
+          [
+            xdg-user-dirs
+            xdg-user-dirs-gtk
+            glib
+          ]
+
+          # Nix
+          [
+            nh
+            nix-index
+            manix # grep nixpkgs docs
+            nix-output-monitor
+            cachix
+          ]
+
+          # UI/UX Utilities
+          [
+            adwaita-qt
+            bemenu
+            blueman
+            eww
+            grim
+            slurp
+            mako
+            networkmanagerapplet
+            rofi
+            swappy
+          ]
+
+          # System Utilities
+          [
+            alsa-utils
+            dbus
+            hwinfo
+            #dconf
+            file
+            gsettings-desktop-schemas
+            libnotify
+            lm_sensors # for `sensors` command
+            lsof
+            pciutils # lspci
+            sysstat
+            usbutils # lsusb
+            wireplumber
+            wl-clipboard
+            wl-gammactl
+            xorg.xkbcomp
+            xz
+          ]
+
+          # Network Tools
+          [
+            aria2 # better wget
+            dnsutils # `dig` + `nslookup`
+            ethtool
+            iftop # network monitoring
+            iotop # io monitoring
+            ipcalc # IPv4/v6 address calculator
+            iperf3
+            mtr # Network diagnostic tool
+            nmap # Network discovery/security auditing
+            socat # replacement of openbsd-netcat
+            iwd
+            bettercap # man in the middle tool
+            wireshark
+            tshark # wireshark-cli
+          ]
+
+          # Monitoring and Performance
+          [
+            bottom
+            lm_sensors # System sensor monitoring
+            ltrace # Library call monitoring
+            strace # System call monitoring
+          ]
+
+          # Compression and Archiving
+          [
+            atool
+            p7zip
+            unzip
+            zip
+            xz
+            zstd
+          ]
+
+          # Command Line Enhancements
+          [
+            dust # `du` in rust
+            atuin
+            tldr
+            procs # `ps` in rust
+            comma # auto nix-shell missing commands, so you can just `, cowsay hello`
+            cowsay
+            difftastic # better `diff`
+            cotp
+            as-tree
+            eza # better `ls`
+            fd # better `find`
+            bat # better `cat`
+            ripgrep # better `grep`
+            fzf
+            jq
+            tree
+            zoxide
+            yazi
+          ]
+
+          # terminals
+          [
+            starship
+            alacritty
+          ]
+
+          # Networking Tools
+          [
+            openssh
+            bluez
+            dnsutils
+            ipcalc
+            iperf3
+            mtr
+            nmap
+            pciutils # lspci
+            usbutils # lsusb
+            wireplumber
+          ]
+
+          # File Utilities
+          [
+            fd # better `find`
+            file
+            gnupg
+            gnused
+            gnutar
+            jq
+            unzip
+            zip
+            pandoc
+          ]
+
+          # Audio/Video Utilities
+          [
+            pamixer
+            easyeffects
+            vlc
+            pavucontrol
+            pulseaudio
+            pulsemixer
+            #mov-cli // errors
+            mpv
+            chafa
+            obs-cli
+            ffmpeg
+
+            # OBS
+            [
+              obs-studio
+              (pkgs.wrapOBS {
+                plugins = with pkgs.obs-studio-plugins; [
+                  wlrobs
+                  obs-backgroundremoval
+                ];
+              })
+            ]
+          ]
+
+          # System Monitoring and Debugging
+          [
+            iftop # network monitoring
+            iotop # io monitoring
+            sysstat
+            ltrace
+            strace
+          ]
+
+          # Web/Network Interaction
+          [
+            httpie
+            google-chrome
+            chromium
+            firefox
+            wget
+            aria2
+          ]
+
+          # shells
+          [
+            zsh
+            fish
+            fishPlugins.bass
+            dash
+          ]
+
+          # Development Tools
+          [
+            gh
+            git
+            pkg-config # when used in build scripts, must be included in `nativeBuildInputs`. Only _native_ will work.
+            openssl
+            tokei
+
+            # env
+            [
+              docker
+              devenv
+              direnv
+            ]
+          ]
+
+          # Coding
+          [
+            vscode-extensions.github.copilot
+            mold
+            sccache
+            just
+            bash-language-server
+
+            # editors
+            [
+              neovim
+              vim
+              vscode
             ]
 
-            # typst
+            # language-specific
             [
-              typst
-              typst-lsp
-              typstyle # formatter
-              typstfmt # only formats codeblocks
-            ]
-            # nix
-            [
-              nil # nix lsp
-              niv # nix build dep management
-              nix-diff
-              statix # Lints and suggestions for the nix programming language
-              deadnix # Find and remove unused code in .nix source files
+              vscode-langservers-extracted # contains json lsp
+              marksman # md lsp
 
-              # formatters
+              perl
+
+              # Lean
               [
-                nixfmt-rfc-style
-                nixpkgs-fmt
-                alejandra # Nix Code Formatter; not sure how it compares with nixpkgs-fmt
+                #lean4 # want to use elan instead
+                leanblueprint
+                elan # rustup for lean. May or may not be outdated.
+              ]
+              # Js / Ts
+              [
+                nodejs_22
+                deno
+              ]
+
+              # typst
+              [
+                typst
+                typst-lsp
+                typstyle # formatter
+                typstfmt # only formats codeblocks
+              ]
+              # nix
+              [
+                nil # nix lsp
+                niv # nix build dep management
+                nix-diff
+                statix # Lints and suggestions for the nix programming language
+                deadnix # Find and remove unused code in .nix source files
+
+                # formatters
+                [
+                  nixfmt-rfc-style
+                  nixpkgs-fmt
+                  alejandra # Nix Code Formatter; not sure how it compares with nixpkgs-fmt
+                ]
+              ]
+              # python
+              [
+                python312Packages.numpy
+                python3
+                python312Packages.pip
+                python312Packages.jedi-language-server
+                ruff
+                ruff-lsp
+              ]
+              # golang
+              [
+                air # live reload
+                go
+                gopls
+              ]
+              # rust
+              [
+                # cargo, rustcs, etc are brought in by fenix.nix
+                rustup
+                crate2nix
+                cargo-edit # cargo add command
+                cargo-expand # expand macros
+                cargo-hack
+                cargo-udeps
+                cargo-outdated
+                cargo-rr
+                cargo-tarpaulin
+                cargo-sort # format Cargo.toml
+                cargo-insta # snapshot tests
+                cargo-mutants # fuzzy finding
+                cargo-update
+                #cargo-binstall # doesn't really work on nixos
+                cargo-machete # detect unused
+                cargo-release # automate release (has annoying req of having to commit _before_ this runs instead of my preffered way of pushing on success of release
+                cargo-watch # auto-rerun `build` or `run` command on changes
+                cargo-nextest # better tests
+                cargo-limit # brings `lrun` and other `l$command` aliases for cargo, that suppress warnings if any errors are present.
+              ]
+
+              # C/C++
+              [
+                clang
+                libgcc
+                clang-tools
+                cmake
+                gnumake
+              ]
+
+              # lua
+              [
+                lua
+                lua-language-server
               ]
             ]
-            # python
-            [
-              python312Packages.numpy
-              python3
-              python312Packages.pip
-              python312Packages.jedi-language-server
-              ruff
-              ruff-lsp
-            ]
-            # golang
-            [
-              air # live reload
-              go
-              gopls
-            ]
-            # rust
-            [
-              # cargo, rustcs, etc are brought in by fenix.nix
-              rustup
-              crate2nix
-              cargo-edit # cargo add command
-              cargo-expand # expand macros
-              cargo-hack
-              cargo-udeps
-              cargo-outdated
-              cargo-rr
-              cargo-tarpaulin
-              cargo-sort # format Cargo.toml
-              cargo-insta # snapshot tests
-              cargo-mutants # fuzzy finding
-              cargo-update
-              #cargo-binstall # doesn't really work on nixos
-              cargo-machete # detect unused
-              cargo-release # automate release (has annoying req of having to commit _before_ this runs instead of my preffered way of pushing on success of release
-              cargo-watch # auto-rerun `build` or `run` command on changes
-              cargo-nextest # better tests
-              cargo-limit # brings `lrun` and other `l$command` aliases for cargo, that suppress warnings if any errors are present.
-            ]
 
-            # C/C++
+            # Debuggers
             [
-              clang
-              libgcc
-              clang-tools
-              cmake
-              gnumake
+              lldb
+              pkgs.llvmPackages.bintools
+              vscode-extensions.vadimcn.vscode-lldb
             ]
-
-            # lua
-            [
-              lua
-              lua-language-server
-            ]
-          ]
-
-          # Debuggers
-          [
-            lldb
-            pkgs.llvmPackages.bintools
-            vscode-extensions.vadimcn.vscode-lldb
           ]
         ]
-      ]
-      ++ [
-      ] # ++ (inputs.nltch.legacyPackages.${pkgs.system}.spotify-adblock)
-    ;
+        ++ [
+        ]
+      # ++ (inputs.nltch.legacyPackages.${pkgs.system}.spotify-adblock)
+      ;
   };
 
   #TODO!: make specific to the host

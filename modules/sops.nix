@@ -7,7 +7,7 @@
     nixosConfigurations.vlaptop = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
       modules = [
-        ./configuration.nix
+        ./os/nixos/configuration.nix
         sops-nix.nixosModules.sops
       ];
     };

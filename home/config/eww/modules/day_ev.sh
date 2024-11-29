@@ -32,7 +32,6 @@ if [ "$(find "$healthcheck_status_file" -mmin +120)" ]; then
 fi
 if [ -f "$healthcheck_status_file" ]; then
 	status=$(cat "$healthcheck_status_file")
-	#notify-send "$status"
 	if [ "$status" != "OK" ]; then
 		class="error"
 	fi

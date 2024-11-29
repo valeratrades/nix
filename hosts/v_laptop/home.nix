@@ -141,25 +141,10 @@
     };
   };
 
-  # link the configuration file in current directory to the specified location in home directory
-  # home.file.".config/i3/wallpaper.jpg".source = ./wallpaper.jpg;
-
-  # link all files in `./scripts` to `~/.config/i3/scripts`
-  # home.file.".config/i3/scripts" = {
-  #   source = ./scripts;
-  #   recursive = true;   # link recursively
-  #   executable = true;  # make all files executable
-  # };
-
-  # encode the file content in nix configuration file directly
-  # home.file.".xxx".text = ''
-  #     xxx
-  # '';
-
   # Things that never need to be available with sudo
   home.packages =
     with pkgs;
-    # lib.flatten
+    lib.lists.flatten
     [
       cowsay
       unimatrix
@@ -178,14 +163,17 @@
       neomutt
       neofetch
       figlet
-      anydesk
-      #teamviewer // doesn't work
+			[
+				# RDP clients
+				remmina
+				anydesk # works to manage windows/linux+X11, but obviously can't RDP linux running wayland
+				freerdp
+			]
       #flutterPackages-source.stable // errors
       zulip
       bash-language-server
       typioca # tui monkeytype
       smassh # tui monkeytype
-      yazi
     ]
     ++ [
       inputs.auto_redshift.packages.${pkgs.system}.default
@@ -222,8 +210,9 @@
     };
   };
 
-  dconf.settings = {
-    "org/gnome/desktop/interface" = {
+  dconf = {
+		enable = true;
+		settings."org/gnome/desktop/interface" = {
       color-scheme = "prefer-dark";
     };
   };
@@ -240,6 +229,7 @@
 
 	home.keyboard = null; # otherwise it overwrites my semimak
 
+	#MOVE: to system-level
   home.sessionPath = [
     "${pkgs.lib.makeBinPath [ ]}"
     "${config.home.homeDirectory}/s/evdev/"
@@ -254,8 +244,10 @@
   ];
 
   programs = {
+		#MOVE: to system-level or shared
     direnv.enable = true;
 
+		#MOVE: to shared
     neovim = {
       defaultEditor = true; # sets $EDITOR
       #? Can I get a nano alias?
@@ -264,6 +256,7 @@
       vimdiffAlias = true;
     };
 
+		#MOVE: to shared
     eza.enable = true;
 
     tmux = {

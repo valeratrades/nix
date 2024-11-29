@@ -166,7 +166,7 @@
 			};
 
 			modules = [
-				./os/configuration.nix
+				./os/nixos/configuration.nix
 				./machines/modules/default.nix # can't reference the `mod.nix` one level higher, because I don't use `flake-parts.lib.mkFlake` yet
 				#./modules/wlr-brightness/default.nix
 
