@@ -22,6 +22,7 @@
   home.username = "v";
   home.homeDirectory = "/home/v";
 
+
   #nix.extraOptions = "include ${config.home.homeDirectory}/s/g/private/sops.conf";
   #sops = {
   #	defaultSopsFile = "${config.home.homeDirectory}/s/g/private/sops.yaml";
@@ -32,6 +33,7 @@
 
   imports = [
     ../../home/config/fish/default.nix
+		../shared/mod.nix
   ];
 
   # fuck mkOutOfStoreSymlink and home-manager. Just link everything except for where apps like to write artifacts to the config dir.
@@ -64,6 +66,13 @@
       [ -e "$XDG_CONFIG_HOME/vesktop/settings" ] || ln -sf "$NIXOS_CONFIG/home/config/vesktop/settings" "$XDG_CONFIG_HOME/vesktop/settings"
     '';
 
+		# # my file arch consequences
+		mkdir = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+			mkdir -p $HOME/tmp
+			mkdir -p $HOME/Videos/obs
+		'';
+		#
+
     # ind files
     vesktop_settings_file = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       ln -sf $NIXOS_CONFIG/home/config/vesktop/settings.json $XDG_CONFIG_HOME/vesktop/settings.json
@@ -86,12 +95,6 @@
     btc_line = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       ln -sf $NIXOS_CONFIG/home/config/btc_line.toml $XDG_CONFIG_HOME/btc_line.toml
     '';
-
-    #BUG: gets run before we build `reasonable_envsubst`
-    #git = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    #	mkdir -p "$XDG_CONFIG_HOME/git"
-    #	cat "$NIXOS_CONFIG/home/config/git" | reasonable_envsubst - > "$XDG_CONFIG_HOME/git/config"
-    #'';
   };
 
   home.file = {
@@ -152,15 +155,20 @@
       #spotube // spotify-adblock is perfectly sufficient
       nyxt
       en-croissant # chess analysis GUI
+			[
+				# messengers
       telegram-desktop
       vesktop
 			discord # for when vesktop breaks, otherwise vesktop is a superset
+      zulip
+			]
       rnote
       zathura # read PDFs
       pdfgrep
       xournalpp # draw on PDFs
       ncspot
       neomutt
+			anyrun # wayland-native rust alternative to rofi
       neofetch
       figlet
 			[
@@ -170,8 +178,6 @@
 				freerdp
 			]
       #flutterPackages-source.stable // errors
-      zulip
-      bash-language-server
       typioca # tui monkeytype
       smassh # tui monkeytype
     ]
@@ -210,6 +216,7 @@
     };
   };
 
+	#TODO: move to shared
   dconf = {
 		enable = true;
 		settings."org/gnome/desktop/interface" = {
@@ -258,6 +265,8 @@
 
 		#MOVE: to shared
     eza.enable = true;
+
+		yazi.enable = true;
 
     tmux = {
       # enable brings in additional configuration state, so don't enable

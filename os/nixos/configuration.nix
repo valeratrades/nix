@@ -27,6 +27,7 @@ in {
   nixpkgs.config.packageOverrides = pkgs: {
     nur =
       import
+			#IMPURE
       (builtins.fetchTarball {
         url = "https://github.com/nix-community/NUR/archive/master.tar.gz";
         #sha256 = "sha256:0766s5dr3cfcyf31krr3mc6sllb2a7qkv2gn78b6s5v4v2bs545l";
@@ -47,6 +48,7 @@ in {
   # };
 
   services = {
+		getty.autologinUser = "v"; #MOVE: to vlaptop
     xserver = {
       # # somehow this fixed the audio problem. Like huh, what, why???
       desktopManager.gnome.enable = true;
@@ -87,6 +89,8 @@ in {
     libinput.enable = true;
     openssh.enable = true;
     blueman.enable = true;
+    gvfs.enable = true; # Mount, trash, and other functionalities
+    tumbler.enable = true; # Thumbnail support for images
   };
   programs = {
     firefox.enable = true;
@@ -96,6 +100,9 @@ in {
     };
     sway.xwayland.enable = true;
     fish.enable = true;
+
+		# conflicts with gnupg agent on which I have ssh support. TODO: figure out which one I want
+		#ssh.startAgent = true; # openssh remembers private keys; `ssh-add` adds a key to the agent
 
     mtr.enable = true;
     gnupg.agent = {
@@ -338,10 +345,10 @@ in {
           # NB: git "aliases" must be self-contained. Say `am = commit -am` won't work.
           m = "merge";
           r = "rebase";
-          d = "diff ${diff_ignore}";
-          ds = "diff --staged ${diff_ignore}";
-          s = "diff --stat ${diff_ignore}";
-          sm = "diff --stat master ${diff_ignore}";
+          d = "diff -- ${diff_ignore}";
+          ds = "diff --staged -- ${diff_ignore}";
+          s = "diff --stat -- ${diff_ignore}";
+          sm = "diff --stat master -- ${diff_ignore}";
           l = "branch --list";
           unstage = "reset HEAD --"; # in case you did `git add .` before running `git diff`
           last = "log -1 HEAD";
@@ -478,8 +485,6 @@ in {
       "video"
     ];
   };
-
-  services.getty.autologinUser = "v";
 
   systemd = {
     user.services = {
@@ -698,7 +703,6 @@ in {
             alsa-utils
             dbus
             hwinfo
-            #dconf
             file
             gsettings-desktop-schemas
             libnotify
