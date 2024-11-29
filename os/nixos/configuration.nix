@@ -84,13 +84,14 @@ in {
       wireplumber.enable = true;
     };
 
-    keyd.enable = true;
-    printing.enable = true;
+    keyd.enable = true; #? but does it make the config itself?
     libinput.enable = true;
     openssh.enable = true;
     blueman.enable = true;
     gvfs.enable = true; # Mount, trash, and other functionalities
     tumbler.enable = true; # Thumbnail support for images
+    geoclue2.enable = true; # Enable geolocation services.
+		printing.enable = true; # Enable CUPS to print documents.
   };
   programs = {
     firefox.enable = true;
@@ -414,10 +415,11 @@ in {
   xdg.portal.enable = true;
   xdg.portal.wlr.enable = true;
 
+	#MOVE: make specific to each host
   imports = [
-    ./hardware-configuration.nix
+    ../../hosts/v_laptop/hardware-configuration.nix
   ];
-  #hardware.enableAllFirmware = true;
+	##hardware.enableAllFirmware = true;
 
   # Bootloader.
   boot = {
@@ -965,7 +967,7 @@ in {
                 cargo-insta # snapshot tests
                 cargo-mutants # fuzzy finding
                 cargo-update
-                #cargo-binstall # doesn't really work on nixos
+                cargo-binstall # doesn't really work on nixos #? but could it work with fhs-compat layer?
                 cargo-machete # detect unused
                 cargo-release # automate release (has annoying req of having to commit _before_ this runs instead of my preffered way of pushing on success of release
                 cargo-watch # auto-rerun `build` or `run` command on changes

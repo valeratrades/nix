@@ -173,6 +173,7 @@
 					#];
 
 					home-manager.users.v = import ./hosts/v_laptop/home.nix;
+					#home-manager.users.v = import ./hosts/v_laptop/default.nix;
 					nix.settings.trusted-users = [ "v" ];
 				}
 

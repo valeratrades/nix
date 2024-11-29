@@ -58,6 +58,7 @@ function tmux_new_session_base
 
 	# Ref window
 	#// Moved ref to bottom, as I often end up having more than one of these
+	#TODO: add a small bottom pane under ref for pulls and test runs
 	tmux new-window -t "$SESSION_NAME" -n "r:" # naming convention is "r:<reference-name>"
 
 	echo $SESSION_NAME

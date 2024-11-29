@@ -7,6 +7,7 @@
   ...
 }:
 {
+	#XXX: currently not sourced
 	programs = {
     neovim = {
       defaultEditor = true; # sets $EDITOR

@@ -48,6 +48,7 @@ in
       freetype
       fuse3
       icu
+			libclang
       libnotify
       libsodium
       libssh
