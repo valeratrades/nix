@@ -11,13 +11,32 @@ let
   ) { };
 in
 {
+
 	environment.systemPackages = with nix-alien-pkgs; [
 		nix-alien
+
+		# # This is stolen from https://github.com/ryan4yin/nix-config
+		# create a fhs environment by command `fhs`, so we can run non-nixos packages in nixos!
+		(
+			let
+				base = pkgs.appimageTools.defaultFhsEnvArgs;
+			in
+				pkgs.buildFHSUserEnv (base
+					// {
+						name = "fhs";
+						targetPkgs = pkgs: (base.targetPkgs pkgs) ++ [pkgs.pkg-config];
+						profile = "export FHS=1";
+						runScript = "fish"; #"bash";
+						extraOutputsToInstall = ["dev"];
+					})
+		)
+		#
 	];
   services.envfs.enable = lib.mkDefault true;
 
-  programs.nix-ld.enable = lib.mkDefault true;
-  programs.nix-ld.libraries =
+  programs.nix-ld = {
+		enable = lib.mkDefault true;
+		libraries =
     with pkgs;
     [
       acl
@@ -77,4 +96,5 @@ in
       xorg.libxkbfile
       xorg.libxshmfence
     ];
+	};
 }

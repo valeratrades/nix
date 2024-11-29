@@ -103,14 +103,7 @@
 			url = "github:valeratrades/bad-apple-rs";
 			inputs.nixpkgs.follows = "nixpkgs";
 		};	
-		#wlr-brightness = {
-		#	url = "https://github.com/nobbz/wlr-brightness";
-		#	inputs.nixpkgs.follows = "nixpkgs-stable";
-		#};
-		#wlr-gamma-service = {
-  #    url = "path:modules/wlr-brightness";
-			#inputs.nixpkgs.follows = "nixpkgs-stable";
-    #};
+		neovim-nightly-overlay.url = "github:nix-community/neovim-nightly-overlay";
 
 
 		#aggr_orderbook = {
@@ -168,7 +161,6 @@
 			modules = [
 				./os/nixos/configuration.nix
 				./machines/modules/default.nix # can't reference the `mod.nix` one level higher, because I don't use `flake-parts.lib.mkFlake` yet
-				#./modules/wlr-brightness/default.nix
 
 				home-manager.nixosModules.home-manager {
 					home-manager.useGlobalPkgs = true;

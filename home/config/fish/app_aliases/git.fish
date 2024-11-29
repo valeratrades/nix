@@ -61,6 +61,8 @@ alias gia="gh issue edit --add-assignee"
 alias giam="gh issue edit --add-assignee @me"
 alias gila="gh issue edit --add-label"
 
+alias git_rate_limit 'curl -L -X GET -H "Accept: application/vnd.github+json" -H "Authorization: token $GITHUB_KEY" https://api.github.com/rate_limit'
+
 function gifm
 	set milestone $argv[1]
 	if test -z "$milestone"
@@ -240,6 +242,11 @@ function gn
 	-f name="ci" \
 	-f color="808080" \
 	-f description="New test or benchmark"
+
+	gh api repos/$GITHUB_NAME/$repo_name/labels \
+	-f name="chore" \
+	-f color="0052CC" \
+	-f description="Small non-imaginative task"
 
 	gh api -X DELETE repos/$GITHUB_NAME/$repo_name/labels/enhancement
 

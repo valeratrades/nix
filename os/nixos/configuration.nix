@@ -888,8 +888,8 @@ in {
 
             # editors
             [
-              neovim
-              vim
+              #neovim
+							inputs.neovim-nightly-overlay.packages.${pkgs.system}.default
               vscode
             ]
 

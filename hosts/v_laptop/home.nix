@@ -216,14 +216,6 @@
     };
   };
 
-	#TODO: move to shared
-  dconf = {
-		enable = true;
-		settings."org/gnome/desktop/interface" = {
-      color-scheme = "prefer-dark";
-    };
-  };
-
   home.pointerCursor = {
     name = "Adwaita";
     package = pkgs.adwaita-icon-theme;
@@ -236,36 +228,7 @@
 
 	home.keyboard = null; # otherwise it overwrites my semimak
 
-	#MOVE: to system-level
-  home.sessionPath = [
-    "${pkgs.lib.makeBinPath [ ]}"
-    "${config.home.homeDirectory}/s/evdev/"
-    "${config.home.homeDirectory}/.cargo/bin/"
-    "${config.home.homeDirectory}/go/bin/"
-    "/usr/lib/rustup/bin/"
-    "${config.home.homeDirectory}/.local/bin/"
-    "${config.home.homeDirectory}/pkg/packages.modular.com_mojo/bin"
-    "${config.home.homeDirectory}/.local/share/flatpak"
-    "/usr/bin"
-    "/var/lib/flatpak"
-  ];
-
   programs = {
-		#MOVE: to system-level or shared
-    direnv.enable = true;
-
-		#MOVE: to shared
-    neovim = {
-      defaultEditor = true; # sets $EDITOR
-      #? Can I get a nano alias?
-      viAlias = true;
-      vimAlias = true;
-      vimdiffAlias = true;
-    };
-
-		#MOVE: to shared
-    eza.enable = true;
-
 		yazi.enable = true;
 
     tmux = {
