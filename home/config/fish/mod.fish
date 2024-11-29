@@ -9,9 +9,9 @@ source (dirname (dirname (dirname (status --current-filename))))/scripts/mod.fis
 
 source (dirname (status --current-filename))/app_aliases/mod.fish
 
-source /etc/nixos/home/file_snippets/main.fish
-source /etc/nixos/home/scripts/shell_harpoon/main.fish
-alias up="/etc/nixos/home/scripts/maintenance/main.sh"
+source "$NIXOS_CONFIG/home/file_snippets/main.fish"
+source "$NIXOS_CONFIG/home/scripts/shell_harpoon/main.fish"
+alias up="$NIXOS_CONFIG/home/scripts/maintenance/main.sh"
 
 # # Init utils
 zoxide init fish | source

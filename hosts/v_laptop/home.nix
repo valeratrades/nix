@@ -169,6 +169,7 @@
       en-croissant # chess analysis GUI
       telegram-desktop
       vesktop
+			discord # for when vesktop breaks, otherwise vesktop is a superset
       rnote
       zathura # read PDFs
       pdfgrep

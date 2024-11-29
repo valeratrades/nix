@@ -1,7 +1,6 @@
 #!/bin/sh
 
 dot="$(dirname "$0")"
-nixos_root="/etc/nixos"
 
 sync()  {
 	#("$HOME/.dots/main.sh" sync "$@" && printf "\033[32msynced dots\033[0m\n" || printf "\033[34mremote repository is up to date\033[0m\n") &
@@ -15,7 +14,7 @@ sync()  {
 
 	wait $PID2 $PID3 #$PID1
 
-	sudo nixos-rebuild switch --show-trace -L -v --impure && git -C "$nixos_root" add -A && git -C "$nixos_root" commit -m "_" && git -C "$nixos_root" push  # git commit nix files only on successful build
+	sudo nixos-rebuild switch --show-trace -L -v --impure && git -C "$NIXOS_CONFIG" add -A && git -C "$NIXOS_CONFIG" commit -m "_" && git -C "$NIXOS_CONFIG" push  # git commit nix files only on successful build
 	return 0
 }
 

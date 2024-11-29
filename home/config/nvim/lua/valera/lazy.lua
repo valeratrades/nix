@@ -275,4 +275,5 @@ return require('lazy').setup({
 	"https://codeberg.org/FelipeLema/cmp-async-path",
 	"jbyuki/nabla.nvim",
 	"NMAC427/guess-indent.nvim",
+	{ 'wakatime/vim-wakatime', lazy = false },
 })
