@@ -14,8 +14,8 @@
 #TODO: add build script that cds in $XDG_DATA_HOME/nvim/lazy-telescope-fzf-native.nvim and runs `make`
 
 let
-  userHome = config.users.users.v.home;
-  configRoot = "~/nix"; # TODO!!!!!: have this be dynamic
+  userHome = config.users.users.v.home; #TODO: also should be dynamic
+  configRoot = "/home/v/nix"; #TODO!!!!!: have this be dynamic
 
   modularHome = "${userHome}/.modular";
 
