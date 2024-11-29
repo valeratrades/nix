@@ -280,7 +280,7 @@ in {
       config = {
         user = {
           #TODO!!!!: make the name and email dynamic
-          #name = builtins.getEnv "GITHUB_USERNAME"; // doesn't work, fills empty. Should work though, albeit being an impurity
+          #name = builtins.getEnv "GITHUB_USERNAME"; #IMPURE # fills empty, probably because the associated var is only set later on by fish in home-manager config
           name = "valeratrades";
           email = "v79166789533@gmail.com";
           password = "$GITHUB_KEY";
@@ -331,18 +331,22 @@ in {
           addIgnoredFile = false;
         };
 
-        alias = {
+        alias = 
+					let
+						diff_ignore = ":!package-lock.json :!yarn.lock :!Cargo.lock :!flake.lock";
+					in {
           # NB: git "aliases" must be self-contained. Say `am = commit -am` won't work.
           m = "merge";
           r = "rebase";
-          d = "diff";
-          ds = "diff --staged";
-          s = "diff --stat";
-          sm = "diff --stat master";
+          d = "diff ${diff_ignore}";
+          ds = "diff --staged ${diff_ignore}";
+          s = "diff --stat ${diff_ignore}";
+          sm = "diff --stat master ${diff_ignore}";
           l = "branch --list";
           unstage = "reset HEAD --"; # in case you did `git add .` before running `git diff`
           last = "log -1 HEAD";
-          u = "remote add upstream";
+          au = "remote add upstream";
+          su = "remote set-url";
           b = "branch";
           c = "checkout";
           cb = "checkout -b";

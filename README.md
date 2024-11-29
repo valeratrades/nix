@@ -21,5 +21,8 @@ EOF
 $GITHUB_KEY
 ```
 
+# Dev
+Currently config is impure. For possibility of reversion, all known places that introduce impurities are marked with `#IMPURE`
+
 # Manual adjustments
 git config in ./os/configuration.nix must be adjusted for the correct username and email
