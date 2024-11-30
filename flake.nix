@@ -29,7 +29,6 @@
 		nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-24.11";
 		nixpkgs-2405.url = "github:nixos/nixpkgs/nixos-24.05";
 
-
 		home-manager = {
 			url = "github:nix-community/home-manager/master";
 			# The `follows` keyword in inputs is used for inheritance.

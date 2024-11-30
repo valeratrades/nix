@@ -668,7 +668,7 @@ in {
       MODULAR_HOME = "${modularHome}";
       #PATH = "${pkgs.lib.makeBinPath [ ]}:${userHome}/s/evdev/:${userHome}/.cargo/bin/:${userHome}/go/bin/:/usr/lib/rustup/bin/:${userHome}/.local/bin/:${modularHome}/pkg/packages.modular.com_mojo/bin:${userHome}/.local/share/flatpak:/var/lib/flatpak";
       EDITOR = "nvim";
-      WAKETIME = "5:00";
+      WAKETIME = "6:00";
       DAY_SECTION_BORDERS = "2.5:10.5:16";
       PAGER = "less";
       MANPAGER = "less";
