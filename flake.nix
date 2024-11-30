@@ -103,7 +103,7 @@
 		};	
 		prettify_log = {
 			url = "github:valeratrades/prettify_log";
-			inputs.nixpkgs.follows = "nixpkgs";
+			#inputs.nixpkgs.follows = "nixpkgs";
 		};	
 		distributions = {
 			url = "github:valeratrades/distributions";

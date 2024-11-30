@@ -220,11 +220,10 @@
       inputs.btc_line.packages.${pkgs.system}.default
       inputs.tg.packages.${pkgs.system}.default
       inputs.bbeats.packages.${pkgs.system}.default
-      #inputs.prettify_log.packages.${pkgs.system}.default // errors for some reason
+      inputs.prettify_log.packages.${pkgs.system}.default
       inputs.distributions.packages.${pkgs.system}.default
       inputs.bad_apple_rs.packages.${pkgs.system}.default
       inputs.reasonable_envsubst.packages.${pkgs.system}.default
-			#inputs.wlr-brightness.default
 
       #inputs.aggr_orderbook.packages.${pkgs.system}.default
       #inputs.orderbook_3d.packages.${pkgs.system}.default
