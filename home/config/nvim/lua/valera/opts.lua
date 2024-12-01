@@ -17,12 +17,13 @@ o.tabstop = 2
 o.softtabstop = 0
 o.shiftwidth = 2
 o.expandtab = false
-
 o.smartindent = true
-o.wrap = true
-o.showtabline = 2 -- tabline shown even if only 1 file is open // reason: consistency
+o.rust_recommended_style = false -- otherwise goes forces 4 spaces
 
+o.wrap = true
 o.splitright = true
+
+o.showtabline = 2 -- tabline shown even if only 1 file is open // reason: consistency
 
 o.swapfile = false
 o.backup = false

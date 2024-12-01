@@ -1,5 +1,5 @@
 local cmp = require('cmp')
-local _ = { behavior = cmp.SelectBehavior.Select } -- makes cmp not force feed me completeions on 'Enter'
+local _ = { behavior = cmp.SelectBehavior.Select } -- prevent nvim-cmp from force-feeding completeions on 'Enter'
 local cmp_action = require('lsp-zero').cmp_action()
 local ts_utils = require('nvim-treesitter.ts_utils')
 local lspkind = require('lspkind')
@@ -37,7 +37,7 @@ local mappings = {
 
 
 -- max_item_count doesn't seem to work
-vim.opt.completeopt = { "menu", "menuone", "noselect" }
+vim.opt.completeopt = { "menu", "menuone" } --db: trying without , "noselect" }
 cmp.setup({
 	sources = cmp.config.sources({
 		{

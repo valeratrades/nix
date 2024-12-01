@@ -69,8 +69,6 @@
     };
 
 		#inputs.sops-nix.url = "github:Mic92/sops-nix";
-
-
 		#naersk.url = "https://github.com/nix-community/naersk/master";
 
 		# -----------------------------------------------------------------
@@ -110,7 +108,8 @@
 			inputs.nixpkgs.follows = "nixpkgs";
 		};	
 		bad_apple_rs = {
-			url = "github:valeratrades/bad-apple-rs";
+			#url = "github:valeratrades/bad-apple-rs";
+			url = "github:lomirus/bad-apple-rs"; # merged my nix-integration pull
 			inputs.nixpkgs.follows = "nixpkgs";
 		};	
 

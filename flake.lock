@@ -27,15 +27,15 @@
         ]
       },
       "locked": {
-        "lastModified": 1731924045,
-        "narHash": "sha256-6/uiOxcHN3ubTIiWi6pfHVPoS4kWp3Lv7U4AOhoQ0m8=",
-        "owner": "valeratrades",
+        "lastModified": 1733048124,
+        "narHash": "sha256-juyGEL/s7FnAXuOpmjcTLKL44j9Q1iJp+2I3nzHNTFA=",
+        "owner": "lomirus",
         "repo": "bad-apple-rs",
-        "rev": "6027db4987f816932ca8f0726479902c2bf162ea",
+        "rev": "10a70a512a997b3df864ae49bffd1d6073d0706e",
         "type": "github"
       },
       "original": {
-        "owner": "valeratrades",
+        "owner": "lomirus",
         "repo": "bad-apple-rs",
         "type": "github"
       }

@@ -276,4 +276,5 @@ return require('lazy').setup({
 	"jbyuki/nabla.nvim",
 	"NMAC427/guess-indent.nvim",
 	{ 'wakatime/vim-wakatime', lazy = false },
+	{ "tjdevries/ocaml.nvim",  build = "make" }, -- requires 3.17 dune, but my nix only has 3.16
 })

@@ -685,13 +685,23 @@ in {
     #inputs.helix.packages."${pkgs.system}".helix
     #TODO!: make structure modular, using [flatten](<https://noogle.dev/f/lib/flatten>)
     systemPackages =
+			let
+				dunePkg = (import ../../modules/dune.nix {
+					lib = lib;
+					stdenv = pkgs.stdenv;
+					fetchurl = pkgs.fetchurl;
+					ocaml = pkgs.ocaml;
+					findlib = pkgs.ocamlPackages.findlib;
+					ocaml-lsp = pkgs.ocaml-lsp;
+					dune-release = pkgs.dune-release;
+				});
+			in
       with pkgs; # basically `use pkgs::*`
-      
         lib.lists.flatten [
           granted # access cloud
           flatpak
           keyd
-          self.packages.x86_64-linux.wlr-gamma-service
+          self.packages.${pkgs.system}.wlr-gamma-service
           libinput-gestures
           pkgs.qt5.full
           fractal # matrix chat protocol adapter
@@ -959,9 +969,19 @@ in {
             [
               vscode-langservers-extracted # contains json lsp
               marksman # md lsp
-
               perl
 
+						# Ocaml
+						[
+							ocaml
+							ocamlPackages.ocaml-lsp
+							ocamlPackages.findlib
+							ocamlformat_0_22_4
+							dune_3 # build system
+							#dunePkg # doesn't work
+							opam # package manager for ocaml
+							opam-publish
+						]
               # Lean
               [
                 #lean4 # want to use elan instead
@@ -1039,6 +1059,7 @@ in {
               [
                 clang
                 libgcc
+								gccgo14
                 clang-tools
                 cmake
                 gnumake
