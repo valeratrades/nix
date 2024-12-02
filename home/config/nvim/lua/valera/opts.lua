@@ -18,7 +18,6 @@ o.softtabstop = 0
 o.shiftwidth = 2
 o.expandtab = false
 o.smartindent = true
-o.rust_recommended_style = false -- otherwise goes forces 4 spaces
 
 o.wrap = true
 o.splitright = true
