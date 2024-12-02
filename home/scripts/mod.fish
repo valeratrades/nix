@@ -15,6 +15,5 @@ end
 alias q="py $pwd/ask_gpt.py -s $argv"
 alias f="py $pwd/ask_gpt.py -f $argv"
 
-alias toggle_theme="$pwd/theme_toggle.sh"
-
+alias theme_toggle="$pwd/theme_toggle.sh"
 alias choose_port="$pwd/choose_port.sh"
