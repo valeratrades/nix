@@ -200,7 +200,7 @@ lsp_zero.on_attach(on_attach)
 
 
 -- Language setup //? Do I still need this? Maybe it's possible to get rid of `lsp_zero` altogether
-local lspconfig_servers = { 'ruff', 'typst_lsp', 'lua_ls', 'gopls', 'bashls', 'clangd', 'jedi_language_server',
+local lspconfig_servers = { 'ruff', 'tinymist', 'lua_ls', 'gopls', 'bashls', 'clangd', 'jedi_language_server',
 	'jsonls', 'marksman', 'nil_ls', 'ocamllsp' }
 lsp_zero.setup_servers(lspconfig_servers)
 lsp_zero.setup()
@@ -352,7 +352,7 @@ lspconfig.ruff.setup({
 	root_dir = lspconfig.util.find_git_ancestor,
 })
 
-lspconfig.typst_lsp.setup({
+lspconfig.tinymist.setup({
 	on_attach = lsp_zero.default_setup,
 	settings = {
 		exportPdf = "onType",

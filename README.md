@@ -9,9 +9,7 @@ if [ "$INSTALL_PATH" = "..." ]; then
 fi
 mkdir -p "$(dirname "$INSTALL_PATH")" && \
 git clone --depth=1 https://github.com/valeratrades/nix "$INSTALL_PATH" && \
-cd "$INSTALL_PATH" && \
-sudo mkdir -p /usr/share/X11/xkb/symbols && \
-sudo cp -r ./home/config/xkb_symbols/* /usr/share/X11/xkb/symbols/
+cd "$INSTALL_PATH"
 EOF
 ```
 
@@ -23,7 +21,8 @@ $GITHUB_KEY
 ```
 
 ## Manual adjustments
-git config in ./os/configuration.nix must be adjusted for the correct username and email
+Currently:
+- git config in ./os/configuration.nix must be adjusted for the correct username and email
 
 # Usage
 ```sh

@@ -1,5 +1,6 @@
 # copied from [ryan](<https://github.com/ryan4yin/nix-config/blob/main/hosts/idols-ai/impermanence.nix>), check if he has a newer version when you do get around to implementing this
-#TODO: put it online. Currently have defined the outline, but not sure about the logistics as a) /persistent takes up 300GB b) how would it interact with my adding tens of gigabytes of build artifacts to my rust projects which are then persisted there.
+#TODO: put it online. Currently have defined the outline, but not sure about the logistics as a) /persist takes up 300GB b) how would it interact with my adding tens of gigabytes of build artifacts to my rust projects which are then persisted there.
+#TODO: spilt to /persist and /cache, latter for things that are easy to recover, like `XDG_STATE` or `XDG_SHARE` and backup only the former.
 {
   impermanence,
   pkgs,
@@ -27,10 +28,10 @@
   #
   #  See also https://grahamc.com/blog/erase-your-darlings/
 
-  #NOTE: impermanence only mounts the directory/file list below to /persistent
+  #NOTE: impermanence only mounts the directory/file list below to /persist
   # If the directory/file already exists in the root filesystem, you should
-  # move those files/directories to /persistent first!
-  environment.persistence."/persistent" = {
+  # move those files/directories to /persist first!
+  environment.persistence."/persist" = {
     # sets the mount option x-gvfs-hide on all the bind mounts
     # to hide them from the file manager
     hideMounts = true;
@@ -53,7 +54,7 @@
       "/etc/machine-id"
     ];
 
-    # the following directories will be passed to /persistent/home/$USER
+    # the following directories will be passed to /persist/home/$USER
     users.v = {
       directories = lib.lists.flatten [
         "s"

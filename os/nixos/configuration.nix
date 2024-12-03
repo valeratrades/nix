@@ -18,7 +18,8 @@ let
 
   systemdCat = "${pkgs.systemd}/bin/systemd-cat";
   sway = "${config.programs.sway.package}/bin/sway";
-in {
+in
+{
   nix.settings.experimental-features = [
     "nix-command"
     "flakes"
@@ -27,14 +28,14 @@ in {
   nixpkgs.config.packageOverrides = pkgs: {
     nur =
       import
-			#IMPURE
-      (builtins.fetchTarball {
-        url = "https://github.com/nix-community/NUR/archive/master.tar.gz";
-        #sha256 = "sha256:0766s5dr3cfcyf31krr3mc6sllb2a7qkv2gn78b6s5v4v2bs545l";
-      })
-      {
-        inherit pkgs;
-      };
+        #IMPURE
+        (builtins.fetchTarball {
+          url = "https://github.com/nix-community/NUR/archive/master.tar.gz";
+          #sha256 = "sha256:0766s5dr3cfcyf31krr3mc6sllb2a7qkv2gn78b6s5v4v2bs545l";
+        })
+        {
+          inherit pkgs;
+        };
   };
 
   #environment.etc."systemd/system/wlr-gamma-service.service" = {
@@ -48,7 +49,7 @@ in {
   # };
 
   services = {
-		getty.autologinUser = "v"; #MOVE: to vlaptop
+    getty.autologinUser = "v"; # MOVE: to vlaptop
     xserver = {
       # # somehow this fixed the audio problem. Like huh, what, why???
       desktopManager.gnome.enable = true;
@@ -64,7 +65,7 @@ in {
         # # selecting the following doesn't change anything though, must be configured through sway (or so I think now)
         extraLayouts.semimak = {
           description = "Semimak for both keyboard standards";
-          languages = ["eng"];
+          languages = [ "eng" ];
           symbolsFile = ../../xkb/symbols/semimak;
         };
         layout = "semimak";
@@ -85,73 +86,73 @@ in {
     };
 
     keyd = {
-			enable = true;
-			# keyd expects qwerty keypresses and receives exact keycodes, so since I use semimak, here are defined the qwerty names of the keys I'm actually pressing (enormously confusing all the way)
-			keyboards = {
-				default = {
-					ids = [ "*" ];
-					settings = {
-						global = {
-							macro_timeout = 200;
-							oneshot_timeout = 120;
-						};
-						main = {
-							leftcontrol = "capslock";
-							capslock = "overload(ctrl_vim, esc)";
-							shift = "oneshot(shift)";
-							alt = "oneshot(alt)";
-							"102nd" = "oneshot(shift)";
-						};
-						"ctrl_vim:C" = {
-							space = "swap(vim_mode)";
-							x = "cut";
-							c = "copy";
-							v = "paste";
-							delete = "C-delete";
-							backspace = "C-backspace";
-						};
-						# easier to reach then ones in ctrl_vim, but can't add full functionality here. So movement keys are accessible both ways.
-						alt = {
-							a = "left";
-							s = "down";
-							d = "up";
-							f = "right";
-						};
-						"vim_mode:C" = {
-							space = "swap(ctrl_vim)";
-							a = "left";
-							s = "down";
-							d = "up";
-							f = "right";
-							c = "C-left";
-							k = "C-right";
-							u = "macro(C-right right)";
-							x = "cut";
-							# copy is overwritten by now 'b' (on semimak), so you'd switch back or use the actual 'c' on semimak for this
-							v = "paste";
-							delete = "C-delete";
-							backspace = "C-backspace";
-							# `C-{arrow}` couldn't care less for the start of the line; and just goes right past it. Although is useful for quick nav across long lines in the terminal.
-							l = "macro(C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right)";
-							";" = "macro(C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left)";
-						};
-						shift = {
-							backspace = "C-backspace";
-							#NOTE: assumes backspace is on AltGr. Will lead to unintended consiquences if not!
-							rightalt = "C-backspace";
-							delete = "C-delete";
-						};
-					};
-				};
-			};
-		};
+      enable = true;
+      # keyd expects qwerty keypresses and receives exact keycodes, so since I use semimak, here are defined the qwerty names of the keys I'm actually pressing (enormously confusing all the way)
+      keyboards = {
+        default = {
+          ids = [ "*" ];
+          settings = {
+            global = {
+              macro_timeout = 200;
+              oneshot_timeout = 120;
+            };
+            main = {
+              leftcontrol = "capslock";
+              capslock = "overload(ctrl_vim, esc)";
+              shift = "oneshot(shift)";
+              alt = "oneshot(alt)";
+              "102nd" = "oneshot(shift)";
+            };
+            "ctrl_vim:C" = {
+              space = "swap(vim_mode)";
+              x = "cut";
+              c = "copy";
+              v = "paste";
+              delete = "C-delete";
+              backspace = "C-backspace";
+            };
+            # easier to reach then ones in ctrl_vim, but can't add full functionality here. So movement keys are accessible both ways.
+            alt = {
+              a = "left";
+              s = "down";
+              d = "up";
+              f = "right";
+            };
+            "vim_mode:C" = {
+              space = "swap(ctrl_vim)";
+              a = "left";
+              s = "down";
+              d = "up";
+              f = "right";
+              c = "C-left";
+              k = "C-right";
+              u = "macro(C-right right)";
+              x = "cut";
+              # copy is overwritten by now 'b' (on semimak), so you'd switch back or use the actual 'c' on semimak for this
+              v = "paste";
+              delete = "C-delete";
+              backspace = "C-backspace";
+              # `C-{arrow}` couldn't care less for the start of the line; and just goes right past it. Although is useful for quick nav across long lines in the terminal.
+              l = "macro(C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right)";
+              ";" = "macro(C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left)";
+            };
+            shift = {
+              backspace = "C-backspace";
+              #NOTE: assumes backspace is on AltGr. Will lead to unintended consiquences if not!
+              rightalt = "C-backspace";
+              delete = "C-delete";
+            };
+          };
+        };
+      };
+    };
     libinput.enable = true;
     openssh.enable = true;
     blueman.enable = true;
     gvfs.enable = true; # Mount, trash, and other functionalities
     tumbler.enable = true; # Thumbnail support for images
     geoclue2.enable = true; # Enable geolocation services.
-		printing.enable = true; # Enable CUPS to print documents.
+    printing.enable = true; # Enable CUPS to print documents.
   };
   programs = {
     firefox.enable = true;
@@ -162,8 +163,8 @@ in {
     sway.xwayland.enable = true;
     fish.enable = true;
 
-		# conflicts with gnupg agent on which I have ssh support. TODO: figure out which one I want
-		#ssh.startAgent = true; # openssh remembers private keys; `ssh-add` adds a key to the agent
+    # conflicts with gnupg agent on which I have ssh support. TODO: figure out which one I want
+    #ssh.startAgent = true; # openssh remembers private keys; `ssh-add` adds a key to the agent
 
     mtr.enable = true;
     gnupg.agent = {
@@ -180,7 +181,7 @@ in {
     };
     starship = {
       # defined here, as `hm` doesn't yet recognize the `presets` option on `starship` (2024/10/31)
-      presets = ["no-runtime-versions"]; # noisy on python, lua, and all the languages I don't care about. Would rather explicitly setup expansions on the important ones.
+      presets = [ "no-runtime-versions" ]; # noisy on python, lua, and all the languages I don't care about. Would rather explicitly setup expansions on the important ones.
       settings = {
         # "no-runtime-versions" doesn't get rid of the `via` prefix, which almost makes it useless
         lua = {
@@ -351,8 +352,7 @@ in {
           #name = builtins.getEnv "GITHUB_USERNAME"; #IMPURE # fills empty, probably because the associated var is only set later on by fish in home-manager config
           name = "valeratrades";
           email = "v79166789533@gmail.com";
-          password = "$GITHUB_KEY";
-          token = "$GITHUB_TOKEN";
+          token = "$GITHUB_KEY"; # can't name `GITHUB_TOKEN`, as `gh` gets confused
         };
 
         credential.helper = "store";
@@ -399,37 +399,38 @@ in {
           addIgnoredFile = false;
         };
 
-        alias = 
-					let
-						diff_ignore = ":!package-lock.json :!yarn.lock :!Cargo.lock :!flake.lock";
-					in {
-          # NB: git "aliases" must be self-contained. Say `am = commit -am` won't work.
-          m = "merge";
-          r = "rebase";
-          d = "diff -- ${diff_ignore}";
-          ds = "diff --staged -- ${diff_ignore}";
-          s = "diff --stat -- ${diff_ignore}";
-          sm = "diff --stat master -- ${diff_ignore}";
-          l = "branch --list";
-          unstage = "reset HEAD --"; # in case you did `git add .` before running `git diff`
-          last = "log -1 HEAD";
-          au = "remote add upstream";
-          su = "remote set-url";
-          b = "branch";
-          c = "checkout";
-          cb = "checkout -b";
-          f = "push --force-with-lease";
-          p = "pull --rebase";
-          blame = "blame -w -C -C -C";
-          ca = "commit -am";
-          ri = "rebase --autosquash -i master";
-          ra = "rebase --abort";
-          rc = "rebase --continue";
-          log = "-c diff.external=difft log -p --ext-diff";
-          stash = "stash --all";
-          hardupdate = "!git fetch && git reset --hard \"origin/$(git rev-parse --abbrev-ref HEAD)\""; # stolen from Orion, but not yet tested
-          noedit = "commit -a --amend --no-edit";
-        };
+        alias =
+          let
+            diff_ignore = ":!package-lock.json :!yarn.lock :!Cargo.lock :!flake.lock";
+          in
+          {
+            # NB: git "aliases" must be self-contained. Say `am = commit -am` won't work.
+            m = "merge";
+            r = "rebase";
+            d = "diff -- ${diff_ignore}";
+            ds = "diff --staged -- ${diff_ignore}";
+            s = "diff --stat -- ${diff_ignore}";
+            sm = "diff --stat master -- ${diff_ignore}";
+            l = "branch --list";
+            unstage = "reset HEAD --"; # in case you did `git add .` before running `git diff`
+            last = "log -1 HEAD";
+            au = "remote add upstream";
+            su = "remote set-url";
+            b = "branch";
+            c = "checkout";
+            cb = "checkout -b";
+            f = "push --force-with-lease";
+            p = "pull --rebase";
+            blame = "blame -w -C -C -C";
+            ca = "commit -am";
+            ri = "rebase --autosquash -i master";
+            ra = "rebase --abort";
+            rc = "rebase --continue";
+            log = "-c diff.external=difft log -p --ext-diff";
+            stash = "stash --all";
+            hardupdate = "!git fetch && git reset --hard \"origin/$(git rev-parse --abbrev-ref HEAD)\""; # stolen from Orion, but not yet tested
+            noedit = "commit -a --amend --no-edit";
+          };
 
         url."git@gist.github.com:" = {
           pushInsteadOf = "https://gist.github.com/";
@@ -475,11 +476,11 @@ in {
   xdg.portal.enable = true;
   xdg.portal.wlr.enable = true;
 
-	#MOVE: make specific to each host
+  #MOVE: make specific to each host
   imports = [
     ../../hosts/v_laptop/hardware-configuration.nix
   ];
-	##hardware.enableAllFirmware = true;
+  ##hardware.enableAllFirmware = true;
 
   # Bootloader.
   boot = {
@@ -493,7 +494,7 @@ in {
     };
 
     # # for obs's Virtual Camera
-    extraModulePackages = with config.boot.kernelPackages; [v4l2loopback];
+    extraModulePackages = with config.boot.kernelPackages; [ v4l2loopback ];
     kernelModules = [
       "v4l2loopback"
     ];
@@ -557,7 +558,7 @@ in {
           "network.target"
           "sound.target"
         ];
-        wantedBy = ["default.target"];
+        wantedBy = [ "default.target" ];
         serviceConfig.ExecStart = "${pkgs.bluez}/bin/mpris-proxy";
       };
       #start-ssh-port = {
@@ -578,45 +579,59 @@ in {
 
   fonts = {
     #NB: many of the icons will be overwritten by nerd-fonts. If a character is not rendering properly, use `nerdfix` on the repo, search for correct codepoint in https://www.nerdfonts.com/cheat-sheet
-    packages = with pkgs; [
-      cantarell-fonts
-      dejavu_fonts
-      source-code-pro # default monospace in GNOME
-      source-sans
-      agave
-      corefonts
-      dejavu_fonts
-      dina-font
-      emojione
-      fira-code
-      fira-code-nerdfont
-      fira-code-symbols
-      font-awesome
-      font-awesome_4
-      font-awesome_5
-      google-fonts
-      ipafont
-      jetbrains-mono
-      julia-mono
-      kanji-stroke-order-font
-      liberation_ttf
-      material-design-icons
-      mplus-outline-fonts.githubRelease
-      nerdfonts
-      noto-fonts
-      noto-fonts-cjk-sans
-      noto-fonts-emoji
-      ocamlPackages.codicons
-      powerline-fonts
-      profont
-      proggyfonts
-      source-code-pro
-      texlivePackages.arimo
-      texlivePackages.dejavu
-      texlivePackages.fontawesome
-      texlivePackages.fontawesome5
-      ubuntu_font_family
-    ];
+    packages =
+      with pkgs;
+      lib.lists.flatten [
+        cantarell-fonts
+        dejavu_fonts
+        source-code-pro # default monospace in GNOME
+        source-sans
+        agave
+        corefonts
+        dejavu_fonts
+        dina-font
+        emojione
+        fira-code
+        fira-code-symbols
+        [
+          # awesome
+          font-awesome
+          font-awesome_4
+          font-awesome_5
+        ]
+        google-fonts
+        ipafont
+        [
+          # nerd
+          nerd-fonts.fira-code
+          nerd-fonts.symbols-only
+        ]
+        jetbrains-mono
+        julia-mono
+        kanji-stroke-order-font
+        liberation_ttf
+        material-design-icons
+        mplus-outline-fonts.githubRelease
+        [
+          # noto
+          noto-fonts
+          noto-fonts-cjk-sans
+          noto-fonts-emoji
+        ]
+        ocamlPackages.codicons
+        powerline-fonts
+        profont
+        proggyfonts
+        source-code-pro
+        [
+          # texlive
+          texlivePackages.arimo
+          texlivePackages.dejavu
+          texlivePackages.fontawesome
+          texlivePackages.fontawesome5
+        ]
+        ubuntu_font_family
+      ]; # ++ (inputs.nixpkgs-2405.legacyPackages.${pkgs.system}.nerdfonts);
     fontconfig.enable = true;
   };
 
@@ -685,405 +700,407 @@ in {
     #inputs.helix.packages."${pkgs.system}".helix
     #TODO!: make structure modular, using [flatten](<https://noogle.dev/f/lib/flatten>)
     systemPackages =
-			let
-				dunePkg = (import ../../modules/dune.nix {
-					lib = lib;
-					stdenv = pkgs.stdenv;
-					fetchurl = pkgs.fetchurl;
-					ocaml = pkgs.ocaml;
-					findlib = pkgs.ocamlPackages.findlib;
-					ocaml-lsp = pkgs.ocaml-lsp;
-					dune-release = pkgs.dune-release;
-				});
-			in
+      let
+        dunePkg = (
+          import ../../modules/dune.nix {
+            lib = lib;
+            stdenv = pkgs.stdenv;
+            fetchurl = pkgs.fetchurl;
+            ocaml = pkgs.ocaml;
+            findlib = pkgs.ocamlPackages.findlib;
+            ocaml-lsp = pkgs.ocaml-lsp;
+            dune-release = pkgs.dune-release;
+          }
+        );
+      in
       with pkgs; # basically `use pkgs::*`
-        lib.lists.flatten [
-          granted # access cloud
-          flatpak
-          keyd
-          self.packages.${pkgs.system}.wlr-gamma-service
-          libinput-gestures
-          pkgs.qt5.full
-          fractal # matrix chat protocol adapter
-          xdg-desktop-portal-gtk # not sure if I even need it here, it's probably already brought into the scope by `xdg.portal.enable`
-          haskellPackages.greenclip
-          lefthook # git hooks
-          wayland-scanner
-          nerdfix # fixes illegal font codepoints https://discourse.nixos.org/t/nerd-fonts-only-see-half-the-icon-set/27513
-          poppler_utils
+      lib.lists.flatten [
+        granted # access cloud
+        flatpak
+        keyd
+        self.packages.${pkgs.system}.wlr-gamma-service
+        libinput-gestures
+        pkgs.qt5.full
+        fractal # matrix chat protocol adapter
+        xdg-desktop-portal-gtk # not sure if I even need it here, it's probably already brought into the scope by `xdg.portal.enable`
+        haskellPackages.greenclip
+        lefthook # git hooks
+        wayland-scanner
+        nerdfix # fixes illegal font codepoints https://discourse.nixos.org/t/nerd-fonts-only-see-half-the-icon-set/27513
+        poppler_utils
 
-          # nur plugs
+        # nur plugs
+        [
+          nur.repos.nltch.spotify-adblock
+        ]
+
+        # emulators
+        [
+          waydroid
+          gnome-boxes # vm with linux distros
+          # Windows
           [
-            nur.repos.nltch.spotify-adblock
+            wineWowPackages.wayland
+            #wineWowPackages.waylandFull
+            #wineWowPackages.unstableFull
+            winePackages.stagingFull
+            #wine-staging # nightly wine
+            winetricks # install deps for wine
+            bottles # ... python
+            lutris # supposed to be more modern `playonlinux`. It's in python.
+            playonlinux # oh wait, this shit's in python too
           ]
-
-          # emulators
+          # MacOS
           [
-            waydroid
-            gnome-boxes # vm with linux distros
-            # Windows
-            [
-              wineWowPackages.wayland
-              #wineWowPackages.waylandFull
-              #wineWowPackages.unstableFull
-              winePackages.stagingFull
-              #wine-staging # nightly wine
-              winetricks # install deps for wine
-              bottles # ... python
-              lutris # supposed to be more modern `playonlinux`. It's in python.
-              playonlinux # oh wait, this shit's in python too
-            ]
-            # MacOS
-            [
-              darling
-              dmg2img
-            ]
-          ]
-
-          # gnome
-          [
-            xdg-user-dirs
-            xdg-user-dirs-gtk
-            glib
-          ]
-
-          # Nix
-          [
-            nh
-            nix-index
-            manix # grep nixpkgs docs
-            nix-output-monitor
-            cachix
-          ]
-
-          # UI/UX Utilities
-          [
-            adwaita-qt
-            bemenu
-            blueman
-            eww
-            grim
-            slurp
-            mako
-            networkmanagerapplet
-            rofi
-            swappy
-          ]
-
-          # System Utilities
-          [
-            alsa-utils
-            dbus
-            hwinfo
-            file
-            gsettings-desktop-schemas
-            libnotify
-            lm_sensors # for `sensors` command
-            lsof
-            pciutils # lspci
-            sysstat
-            usbutils # lsusb
-            wireplumber
-            wl-clipboard
-            wl-gammactl
-            xorg.xkbcomp
-            xz
-          ]
-
-          # Network Tools
-          [
-            aria2 # better wget
-            dnsutils # `dig` + `nslookup`
-            ethtool
-            iftop # network monitoring
-            iotop # io monitoring
-            ipcalc # IPv4/v6 address calculator
-            iperf3
-            mtr # Network diagnostic tool
-            nmap # Network discovery/security auditing
-            socat # replacement of openbsd-netcat
-            iwd
-            bettercap # man in the middle tool
-            wireshark
-            tshark # wireshark-cli
-          ]
-
-          # Monitoring and Performance
-          [
-            bottom
-            lm_sensors # System sensor monitoring
-            ltrace # Library call monitoring
-            strace # System call monitoring
-          ]
-
-          # Compression and Archiving
-          [
-            atool
-            p7zip
-            unzip
-            zip
-            xz
-            zstd
-          ]
-
-          # Command Line Enhancements
-          [
-            dust # `du` in rust
-            atuin
-            tldr
-            procs # `ps` in rust
-            comma # auto nix-shell missing commands, so you can just `, cowsay hello`
-            cowsay
-            difftastic # better `diff`
-            cotp
-            as-tree
-            eza # better `ls`
-            fd # better `find`
-            bat # better `cat`
-            ripgrep # better `grep`
-            fzf
-            jq
-            tree
-            zoxide
-            yazi
-          ]
-
-          # terminals
-          [
-            starship
-            alacritty
-          ]
-
-          # Networking Tools
-          [
-            openssh
-            bluez
-            dnsutils
-            ipcalc
-            iperf3
-            mtr
-            nmap
-            pciutils # lspci
-            usbutils # lsusb
-            wireplumber
-          ]
-
-          # File Utilities
-          [
-            fd # better `find`
-            file
-            gnupg
-            gnused
-            gnutar
-            jq
-            unzip
-            zip
-            pandoc
-          ]
-
-          # Audio/Video Utilities
-          [
-            pamixer
-            easyeffects
-            vlc
-            pavucontrol
-            pulseaudio
-            pulsemixer
-            #mov-cli // errors
-            mpv
-            chafa
-            obs-cli
-            ffmpeg
-
-            # OBS
-            [
-              obs-studio
-              (pkgs.wrapOBS {
-                plugins = with pkgs.obs-studio-plugins; [
-                  wlrobs
-                  obs-backgroundremoval
-                ];
-              })
-            ]
-          ]
-
-          # System Monitoring and Debugging
-          [
-            iftop # network monitoring
-            iotop # io monitoring
-            sysstat
-            ltrace
-            strace
-          ]
-
-          # Web/Network Interaction
-          [
-            httpie
-            google-chrome
-            chromium
-            firefox
-            wget
-            aria2
-          ]
-
-          # shells
-          [
-            zsh
-            fish
-            fishPlugins.bass
-            dash
-          ]
-
-          # Development Tools
-          [
-            gh
-            git
-            pkg-config # when used in build scripts, must be included in `nativeBuildInputs`. Only _native_ will work.
-            openssl
-            tokei
-
-            # env
-            [
-              docker
-              devenv
-              direnv
-            ]
-          ]
-
-          # Coding
-          [
-            vscode-extensions.github.copilot
-            mold
-            sccache
-            just
-            bash-language-server
-
-            # editors
-            [
-              #neovim
-							inputs.neovim-nightly-overlay.packages.${pkgs.system}.default
-              vscode
-            ]
-
-            # language-specific
-            [
-              vscode-langservers-extracted # contains json lsp
-              marksman # md lsp
-              perl
-
-						# Ocaml
-						[
-							ocaml
-							ocamlPackages.ocaml-lsp
-							ocamlPackages.findlib
-							ocamlformat_0_22_4
-							dune_3 # build system
-							#dunePkg # doesn't work
-							opam # package manager for ocaml
-							opam-publish
-						]
-              # Lean
-              [
-                #lean4 # want to use elan instead
-                leanblueprint
-                elan # rustup for lean. May or may not be outdated.
-              ]
-              # Js / Ts
-              [
-                nodejs_22
-                deno
-              ]
-
-              # typst
-              [
-                typst
-                typst-lsp
-                typstyle # formatter
-                typstfmt # only formats codeblocks
-              ]
-              # nix
-              [
-                nil # nix lsp
-                niv # nix build dep management
-                nix-diff
-                statix # Lints and suggestions for the nix programming language
-                deadnix # Find and remove unused code in .nix source files
-
-                # formatters
-                [
-                  nixfmt-rfc-style
-                  nixpkgs-fmt
-                  alejandra # Nix Code Formatter; not sure how it compares with nixpkgs-fmt
-                ]
-              ]
-              # python
-              [
-                python312Packages.numpy
-                python3
-                python312Packages.pip
-                python312Packages.jedi-language-server
-                ruff
-                ruff-lsp
-              ]
-              # golang
-              [
-                air # live reload
-                go
-                gopls
-              ]
-              # rust
-              [
-                # cargo, rustcs, etc are brought in by fenix.nix
-                rustup
-                crate2nix
-                cargo-edit # cargo add command
-                cargo-expand # expand macros
-                cargo-hack
-                cargo-udeps
-                cargo-outdated
-                cargo-rr
-                cargo-tarpaulin
-                cargo-sort # format Cargo.toml
-                cargo-insta # snapshot tests
-                cargo-mutants # fuzzy finding
-                cargo-update
-                cargo-binstall # doesn't really work on nixos #? but could it work with fhs-compat layer?
-                cargo-machete # detect unused
-                cargo-release # automate release (has annoying req of having to commit _before_ this runs instead of my preffered way of pushing on success of release
-                cargo-watch # auto-rerun `build` or `run` command on changes
-                cargo-nextest # better tests
-                cargo-limit # brings `lrun` and other `l$command` aliases for cargo, that suppress warnings if any errors are present.
-              ]
-
-              # C/C++
-              [
-                clang
-                libgcc
-								gccgo14
-                clang-tools
-                cmake
-                gnumake
-              ]
-
-              # lua
-              [
-                lua
-                lua-language-server
-              ]
-            ]
-
-            # Debuggers
-            [
-              lldb
-              pkgs.llvmPackages.bintools
-              vscode-extensions.vadimcn.vscode-lldb
-            ]
+            darling
+            dmg2img
           ]
         ]
-        ++ [
+
+        # gnome
+        [
+          xdg-user-dirs
+          xdg-user-dirs-gtk
+          glib
         ]
-      # ++ (inputs.nltch.legacyPackages.${pkgs.system}.spotify-adblock)
-      ;
+
+        # Nix
+        [
+          nh
+          nix-index
+          manix # grep nixpkgs docs
+          nix-output-monitor
+          cachix
+        ]
+
+        # UI/UX Utilities
+        [
+          adwaita-qt
+          bemenu
+          blueman
+          eww
+          grim
+          slurp
+          mako
+          networkmanagerapplet
+          rofi
+          swappy
+        ]
+
+        # System Utilities
+        [
+          alsa-utils
+          dbus
+          hwinfo
+          file
+          gsettings-desktop-schemas
+          libnotify
+          lm_sensors # for `sensors` command
+          lsof
+          pciutils # lspci
+          sysstat
+          usbutils # lsusb
+          wireplumber
+          wl-clipboard
+          wl-gammactl
+          xorg.xkbcomp
+          xz
+        ]
+
+        # Network Tools
+        [
+          aria2 # better wget
+          dnsutils # `dig` + `nslookup`
+          ethtool
+          iftop # network monitoring
+          iotop # io monitoring
+          ipcalc # IPv4/v6 address calculator
+          iperf3
+          mtr # Network diagnostic tool
+          nmap # Network discovery/security auditing
+          socat # replacement of openbsd-netcat
+          iwd
+          bettercap # man in the middle tool
+          wireshark
+          tshark # wireshark-cli
+        ]
+
+        # Monitoring and Performance
+        [
+          bottom
+          lm_sensors # System sensor monitoring
+          ltrace # Library call monitoring
+          strace # System call monitoring
+        ]
+
+        # Compression and Archiving
+        [
+          atool
+          p7zip
+          unzip
+          zip
+          xz
+          zstd
+        ]
+
+        # Command Line Enhancements
+        [
+          dust # `du` in rust
+          atuin
+          tldr
+          procs # `ps` in rust
+          comma # auto nix-shell missing commands, so you can just `, cowsay hello`
+          cowsay
+          difftastic # better `diff`
+          cotp
+          as-tree
+          eza # better `ls`
+          fd # better `find`
+          bat # better `cat`
+          ripgrep # better `grep`
+          fzf
+          jq
+          tree
+          zoxide
+          yazi
+        ]
+
+        # terminals
+        [
+          starship
+          alacritty
+        ]
+
+        # Networking Tools
+        [
+          openssh
+          bluez
+          dnsutils
+          ipcalc
+          iperf3
+          mtr
+          nmap
+          pciutils # lspci
+          usbutils # lsusb
+          wireplumber
+        ]
+
+        # File Utilities
+        [
+          fd # better `find`
+          file
+          gnupg
+          gnused
+          gnutar
+          jq
+          unzip
+          zip
+          pandoc
+        ]
+
+        # Audio/Video Utilities
+        [
+          pamixer
+          easyeffects
+          vlc
+          pavucontrol
+          pulseaudio
+          pulsemixer
+          #mov-cli // errors
+          mpv
+          chafa
+          obs-cli
+          ffmpeg
+
+          # OBS
+          [
+            obs-studio
+            (pkgs.wrapOBS {
+              plugins = with pkgs.obs-studio-plugins; [
+                wlrobs
+                obs-backgroundremoval
+              ];
+            })
+          ]
+        ]
+
+        # System Monitoring and Debugging
+        [
+          iftop # network monitoring
+          iotop # io monitoring
+          sysstat
+          ltrace
+          strace
+        ]
+
+        # Web/Network Interaction
+        [
+          httpie
+          google-chrome
+          chromium
+          firefox
+          wget
+          aria2
+        ]
+
+        # shells
+        [
+          zsh
+          fish
+          fishPlugins.bass
+          dash
+        ]
+
+        # Development Tools
+        [
+          gh
+          git
+          pkg-config # when used in build scripts, must be included in `nativeBuildInputs`. Only _native_ will work.
+          openssl
+          tokei
+
+          # env
+          [
+            docker
+            devenv
+            direnv
+          ]
+        ]
+
+        # Coding
+        [
+          vscode-extensions.github.copilot
+          mold
+          sccache
+          just
+          bash-language-server
+
+          # editors
+          [
+            #neovim
+            inputs.neovim-nightly-overlay.packages.${pkgs.system}.default
+            vscode
+          ]
+
+          # language-specific
+          [
+            vscode-langservers-extracted # contains json lsp
+            marksman # md lsp
+            perl
+
+            # Ocaml
+            [
+              ocaml
+              ocamlPackages.ocaml-lsp
+              ocamlPackages.findlib
+              ocamlformat_0_22_4
+              dune_3 # build system
+              #dunePkg # doesn't work
+              opam # package manager for ocaml
+              opam-publish
+            ]
+            # Lean
+            [
+              #lean4 # want to use elan instead
+              leanblueprint
+              elan # rustup for lean. May or may not be outdated.
+            ]
+            # Js / Ts
+            [
+              nodejs_22
+              deno
+            ]
+
+            # typst
+            [
+              typst
+              typst-lsp
+              typstyle # formatter
+              typstfmt # only formats codeblocks
+            ]
+            # nix
+            [
+              nil # nix lsp
+              niv # nix build dep management
+              nix-diff
+              statix # Lints and suggestions for the nix programming language
+              deadnix # Find and remove unused code in .nix source files
+
+              # formatters
+              [
+                nixfmt-rfc-style
+                nixpkgs-fmt
+                alejandra # Nix Code Formatter; not sure how it compares with nixpkgs-fmt
+              ]
+            ]
+            # python
+            [
+              python312Packages.numpy
+              python3
+              python312Packages.pip
+              python312Packages.jedi-language-server
+              ruff
+              ruff-lsp
+            ]
+            # golang
+            [
+              air # live reload
+              go
+              gopls
+            ]
+            # rust
+            [
+              # cargo, rustcs, etc are brought in by fenix.nix
+              rustup
+              crate2nix
+              cargo-edit # cargo add command
+              cargo-expand # expand macros
+              cargo-hack
+              cargo-udeps
+              cargo-outdated
+              cargo-rr
+              cargo-tarpaulin
+              cargo-sort # format Cargo.toml
+              cargo-insta # snapshot tests
+              cargo-mutants # fuzzy finding
+              cargo-update
+              cargo-binstall # doesn't really work on nixos #? but could it work with fhs-compat layer?
+              cargo-machete # detect unused
+              cargo-release # automate release (has annoying req of having to commit _before_ this runs instead of my preffered way of pushing on success of release
+              cargo-watch # auto-rerun `build` or `run` command on changes
+              cargo-nextest # better tests
+              cargo-limit # brings `lrun` and other `l$command` aliases for cargo, that suppress warnings if any errors are present.
+            ]
+
+            # C/C++
+            [
+              clang
+              libgcc
+              gccgo14
+              clang-tools
+              cmake
+              gnumake
+            ]
+
+            # lua
+            [
+              lua
+              lua-language-server
+            ]
+          ]
+
+          # Debuggers
+          [
+            lldb
+            pkgs.llvmPackages.bintools
+            vscode-extensions.vadimcn.vscode-lldb
+          ]
+        ]
+      ]
+      ++ [
+      ]
+    # ++ (inputs.nltch.legacyPackages.${pkgs.system}.spotify-adblock)
+    ;
   };
 
   #TODO!: make specific to the host
