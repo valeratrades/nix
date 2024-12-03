@@ -349,8 +349,8 @@ in {
         user = {
           #TODO!!!!: make the name and email dynamic
           #name = builtins.getEnv "GITHUB_USERNAME"; #IMPURE # fills empty, probably because the associated var is only set later on by fish in home-manager config
-          name = "valeratrades";
-          email = "v79166789533@gmail.com";
+          name = "chaesgfnd";
+          email = "m79160164445@gmail.com";
           password = "$GITHUB_KEY";
           token = "$GITHUB_TOKEN";
         };
@@ -477,7 +477,7 @@ in {
 
 	#MOVE: make specific to each host
   imports = [
-    ../../hosts/v_laptop/hardware-configuration.nix
+    ../../hosts/m_laptop/hardware-configuration.nix
   ];
 	##hardware.enableAllFirmware = true;
 
