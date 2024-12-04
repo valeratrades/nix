@@ -82,15 +82,17 @@ in
 	};
 
 	#TODO!!!: \
-	#checks = forAllSystems (
-	#	system: {
+	checks = forAllSystems (
+		system: {
 	#		# eval-tests per system
 	#		eval-tests = allSystems.${system}.evalTests == {};
 	#
-	#		pre-commit-check = pre-commit-hooks.lib.${system}.run {
-	#			src = mylib.relativeToRoot ".";
-	#			hooks = {
-	#				alejandra.enable = true; # formatter
+			pre-commit-check = pre-commit-hooks.lib.${system}.run {
+				src = "../.";
+				#TODO: automate with \
+				#src = mylib.relativeToRoot ".";
+				hooks = {
+					alejandra.enable = true; # formatter
 	#				# Source code spell checker
 	#				typos = {
 	#					enable = true;
@@ -99,19 +101,47 @@ in
 	#						configPath = "./.typos.toml"; # relative to the flake root
 	#					};
 	#				};
-	#				prettier = {
-	#					enable = true;
-	#					settings = {
-	#						write = true; # Automatically format files
-	#						configPath = "./.prettierrc.yaml"; # relative to the flake root
-	#					};
-	#				};
+					#prettier = {
+					#	enable = true;
+					#	settings = {
+					#		write = true; # Automatically format files
+					#		configPath = "./.prettierrc.yaml"; # relative to the flake root
+					#	};
+					#};
 	#				# deadnix.enable = true; # detect unused variable bindings in `*.nix`
 	#				# statix.enable = true; # lints and suggestions for Nix code(auto suggestions)
-	#			};
-	#		};
-	#	}
-	#);
+				};
+			};
+		}
+	);
+
+	# Development Shells
+	devShells = forAllSystems (
+		system: let
+			pkgs = nixpkgs.legacyPackages.${system};
+		in {
+			default = pkgs.mkShell {
+				packages = with pkgs; lib.lists.flatten [
+					fish
+					# fix `cc` replaced by clang, which causes nvim-treesitter compilation error
+					gcc
+					[
+					# Nix-related
+					alejandra
+					deadnix
+					statix
+					]
+					typos # spell checker
+					nodePackages.prettier # code formatter
+				];
+				name = "dots";
+				shellHook = ''
+					${self.checks.${system}.pre-commit-check.shellHook}
+				'';
+			};
+		}
+	);
+
 
 
 	formatter = forAllSystems (
