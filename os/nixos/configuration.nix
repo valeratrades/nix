@@ -604,7 +604,14 @@ in
         [
           # nerd
           nerd-fonts.fira-code
+          nerd-fonts.fira-mono
+          nerd-fonts.hack
+          nerd-fonts.noto
+          nerd-fonts.ubuntu
+          nerd-fonts.iosevka
           nerd-fonts.symbols-only
+					nerd-fonts.jetbrains-mono
+					nerd-fonts.code-new-roman
         ]
         jetbrains-mono
         julia-mono

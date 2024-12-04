@@ -54,7 +54,7 @@ fn timer(args: &[String]) -> Result<(), String> {
 
     if beep {
         Command::new("fish")
-            .args(["-c", "beep --loud"])
+            .args(["-c", "beep --loud time"])
             .status()
             .map_err(|e| e.to_string())?;
     } else {
