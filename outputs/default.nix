@@ -106,8 +106,8 @@ in
 					#		configPath = "./.prettierrc.yaml"; # relative to the flake root
 					#	};
 					#};
-	#				# deadnix.enable = true; # detect unused variable bindings in `*.nix`
-	#				# statix.enable = true; # lints and suggestions for Nix code(auto suggestions)
+					deadnix.enable = true; # detect unused variable bindings in `*.nix`
+					statix.enable = true; # lints and suggestions for Nix code(auto suggestions)
 				};
 			};
 		}
@@ -132,14 +132,13 @@ in
 					typos # spell checker
 					nodePackages.prettier # code formatter
 				];
-				name = "dots";
+				name = "dots"; #TODO: figure out
 				shellHook = ''
 					${self.checks.${system}.pre-commit-check.shellHook}
 				'';
 			};
 		}
 	);
-
 
 
 	formatter = forAllSystems (

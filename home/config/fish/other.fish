@@ -141,7 +141,6 @@ alias sr="source $NIXOS_CONFIG/home/config/fish/mod.fish" # Fish equivalent for 
 #
 
 # # nix
-alias nix-build="sudo nixos-rebuild switch --show-trace -L -v --impure" #HACK: using impure
 alias flake-build="sudo nixos-rebuild switch --flake .#myhost --show-trace -L -v"
 #TODO!: make into a function and git-commit with $argv concatenation for message
 alias nixup="git -C '$NIXOS_CONFIG' add -A && nix flake update --flake '$NIXOS_CONFIG' && sudo nixos-rebuild switch --show-trace -v --impure --fast && git_upload '$NIXOS_CONFIG'"
@@ -151,7 +150,8 @@ alias nshell="nix-shell --command fish"
 alias ndevelop="nix develop --command fish"
 #alias nupdate="nix flake lock --update-input nixpkgs --update-input"
 alias nup="nix flake update"
-alias nb="""sudo nixos-rebuild switch --impure --fast --flake ~/nix#vlaptop && beep "nix rb 0" || beep "nix rb 1"""" #TODO: add some git add -A on $NIXOS_CONFIG and maybe make this into the main way of running this
+alias up="$NIXOS_CONFIG/home/scripts/maintenance/main.sh"
+alias nb='sudo nixos-rebuild switch --impure --fast --flake ~/nix#vlaptop && beep "nix rb 0" || beep "nix rb 1"' #TODO: add some git add -A on $NIXOS_CONFIG and maybe make this into the main way of running this
 #
 
 # # direnv

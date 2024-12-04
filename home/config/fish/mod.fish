@@ -1,17 +1,19 @@
+#NB: don't make aliases with """,""" - as they are incorrectly interpreted
+set pdir (dirname (status --current-filename))
+
 source /home/v/s/g/private/credentials.fish
-source (dirname (status --current-filename))/global.fish #NB: other things can rely on functions in it
-source (dirname (status --current-filename))/other.fish
+source $pdir/global.fish #NB: other things can rely on functions in it
+source $pdir/other.fish
 
-source (dirname (status --current-filename))/cli_translate.fish
-source (dirname (status --current-filename))/cs_nav.fish
+source $pdir/cli_translate.fish
+source $pdir/cs_nav.fish
 
-source (dirname (dirname (dirname (status --current-filename))))/scripts/mod.fish
+source (dirname (dirname $pdir))/scripts/mod.fish
 
-source (dirname (status --current-filename))/app_aliases/mod.fish
+source $pdir/app_aliases/mod.fish
 
 source "$NIXOS_CONFIG/home/file_snippets/main.fish"
 source "$NIXOS_CONFIG/home/scripts/shell_harpoon/main.fish"
-alias up="$NIXOS_CONFIG/home/scripts/maintenance/main.sh"
 
 # # Init utils
 zoxide init fish | source
