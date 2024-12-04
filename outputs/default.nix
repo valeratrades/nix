@@ -2,7 +2,7 @@ inputs@{ self, nixpkgs, home-manager, pre-commit-hooks, ... }:
 let
 	inherit (inputs.nixpkgs) lib;
 	#TODO!!: integrate ryan's myLib and myVars into my setup
-	#mylib = import ../lib {inherit lib;};
+	mylib = import ../lib {inherit lib;};
 	#myvars = import ../vars {inherit lib;};
 
 	# Add my custom lib, vars, nixpkgs instance, and all the inputs to specialArgs,
@@ -10,7 +10,7 @@ let
 	genSpecialArgs = system:
 		inputs
 		// {
-			#inherit mylib myvars;
+			inherit mylib /*myvars*/;
 
 			# use unstable branch for some packages to get the latest updates
 			#HACK: stone from ryan (as everything here), and currently are not used.
@@ -25,7 +25,7 @@ let
 				config.allowUnfree = true;
 			};
 		};
-	args = {inherit inputs lib /*mylib myvars*/ genSpecialArgs;};
+	args = {inherit inputs lib mylib /*myvars*/ genSpecialArgs;};
 
 	nixosSystems = {
 		x86_64-linux = import ./x86_64-linux (args // {system = "x86_64-linux";});
@@ -88,9 +88,7 @@ in
 	#		eval-tests = allSystems.${system}.evalTests == {};
 	#
 			pre-commit-check = pre-commit-hooks.lib.${system}.run {
-				src = "../.";
-				#TODO: automate with \
-				#src = mylib.relativeToRoot ".";
+				src = mylib.relativeToRoot ".";
 				hooks = {
 					alejandra.enable = true; # formatter
 	#				# Source code spell checker
@@ -101,7 +99,7 @@ in
 	#						configPath = "./.typos.toml"; # relative to the flake root
 	#					};
 	#				};
-					#prettier = {
+					#prettier = 
 					#	enable = true;
 					#	settings = {
 					#		write = true; # Automatically format files
