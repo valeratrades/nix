@@ -1,18 +1,20 @@
-inputs @ {
+inputs@{
   self,
   nixpkgs,
   home-manager,
   pre-commit-hooks,
   ...
-}: let
+}:
+let
   inherit (inputs.nixpkgs) lib;
   #TODO!!: integrate ryan's myLib and myVars into my setup
-  mylib = import ../lib {inherit lib;};
-  myvars = import ../vars {inherit lib;};
+  mylib = import ../lib { inherit lib; };
+  myvars = import ../vars { inherit lib; };
 
   # Add my custom lib, vars, nixpkgs instance, and all the inputs to specialArgs,
   # so that I can use them in all my nixos/home-manager/darwin modules.
-  genSpecialArgs = system:
+  genSpecialArgs =
+    system:
     inputs
     // {
       inherit mylib myvars;
@@ -30,10 +32,18 @@ inputs @ {
         config.allowUnfree = true;
       };
     };
-  args = {inherit inputs lib mylib myvars genSpecialArgs;};
+  args = {
+    inherit
+      inputs
+      lib
+      mylib
+      myvars
+      genSpecialArgs
+      ;
+  };
 
   nixosSystems = {
-    x86_64-linux = import ./x86_64-linux (args // {system = "x86_64-linux";});
+    x86_64-linux = import ./x86_64-linux (args // { system = "x86_64-linux"; });
     # aarch64-linux = import ./aarch64-linux (args // {system = "aarch64-linux";});
     # riscv64-linux = import ./riscv64-linux (args // {system = "riscv64-linux";});
   };
@@ -44,23 +54,27 @@ inputs @ {
   allSystems = nixosSystems // darwinSystems;
   allSystemNames = builtins.attrNames allSystems;
 
-  forAllSystems = func: (nixpkgs.lib.genAttrs allSystemNames func); #NB: stolen from ryan, it's likely I'm misusing some part of this.
-in {
+  forAllSystems = func: (nixpkgs.lib.genAttrs allSystemNames func); # NB: stolen from ryan, it's likely I'm misusing some part of this.
+in
+{
   #NB: when writing hostname, remove all '_' characters
-  packages.x86_64-linux.wlr-gamma-service = inputs.nixpkgs-2405.legacyPackages.x86_64-linux.callPackage (builtins.fetchGit {
-    url = "https://github.com/nobbz/wlr-brightness";
-    rev = "1985062bf08086e6145db4ef1a292b535fd9f1a1";
-    #sha256 = "sha256-QZhtI10qKu6qUePZ1rKaH3SBoUZ30+w8xcc5bBRYbGw=";
-    #fetchSubmodules = true;
-    submodules = true;
-  }) {};
+  packages.x86_64-linux.wlr-gamma-service =
+    inputs.nixpkgs-2405.legacyPackages.x86_64-linux.callPackage
+      (builtins.fetchGit {
+        url = "https://github.com/nobbz/wlr-brightness";
+        rev = "1985062bf08086e6145db4ef1a292b535fd9f1a1";
+        #sha256 = "sha256-QZhtI10qKu6qUePZ1rKaH3SBoUZ30+w8xcc5bBRYbGw=";
+        #fetchSubmodules = true;
+        submodules = true;
+      })
+      { };
 
   nixosConfigurations.vlaptop = nixpkgs.lib.nixosSystem {
     system = "x86_64-linux";
 
     specialArgs = {
       inherit inputs self;
-      inherit mylib myvars; #HACK
+      inherit mylib myvars; # HACK
     };
 
     modules = [
@@ -74,7 +88,7 @@ in {
         home-manager.backupFileExtension = "backup"; # delusional home-manager wants this exact file-extension for when I backup system-level files
         home-manager.extraSpecialArgs = {
           inherit inputs self;
-          inherit mylib myvars; #HACK
+          inherit mylib myvars; # HACK
         };
 
         #home-manager.sharedModules = [
@@ -82,8 +96,8 @@ in {
         #];
 
         #home-manager.users.v = import ./hosts/v_laptop/home.nix;
-        home-manager.users.v = import ../hosts/v_laptop/default.nix; #MOVE: probably to something like ryan's revolver thing in outputs
-        nix.settings.trusted-users = [myvars.username]; # all systems assume single-user configurations
+        home-manager.users.v = import ../hosts/v_laptop/default.nix; # MOVE: probably to something like ryan's revolver thing in outputs
+        nix.settings.trusted-users = [ myvars.username ]; # all systems assume single-user configurations
       }
 
       #({ pkgs, ... }: import ./modules/fenix.nix { inherit pkgs; })
@@ -91,46 +105,48 @@ in {
   };
 
   #TODO!!!: \
-  checks = forAllSystems (
-    system: {
-      #		# eval-tests per system
-      #		eval-tests = allSystems.${system}.evalTests == {};
-      #
-      pre-commit-check = pre-commit-hooks.lib.${system}.run {
-        src = mylib.relativeToRoot ".";
-        hooks = {
-          #alejandra.enable = true; # formatter
-          nixfmt-rfc-style.enable = true; # formatter
-          #				# Source code spell checker
-          #				typos = {
-          #					enable = true;
-          #					settings = {
-          #						write = true; # Automatically fix typos
-          #						configPath = "./.typos.toml"; # relative to the flake root
-          #					};
-          #				};
-          #prettier =
-          #	enable = true;
-          #	settings = {
-          #		write = true; # Automatically format files
-          #		configPath = "./.prettierrc.yaml"; # relative to the flake root
-          #	};
-          #};
-          #dbg: temporarily disabled
-          #deadnix.enable = true; # detect unused variable bindings in `*.nix`
-          statix.enable = true; # lints and suggestions for Nix code(auto suggestions)
-        };
+  checks = forAllSystems (system: {
+    #		# eval-tests per system
+    #		eval-tests = allSystems.${system}.evalTests == {};
+    #
+    pre-commit-check = pre-commit-hooks.lib.${system}.run {
+      src = mylib.relativeToRoot ".";
+      hooks = {
+        #alejandra.enable = true; # formatter
+        nixfmt-rfc-style.enable = true; # formatter
+
+        #				# Source code spell checker
+        #				typos = {
+        #					enable = true;
+        #					settings = {
+        #						write = true; # Automatically fix typos
+        #						configPath = "./.typos.toml"; # relative to the flake root
+        #					};
+        #				};
+        #prettier =
+        #	enable = true;
+        #	settings = {
+        #		write = true; # Automatically format files
+        #		configPath = "./.prettierrc.yaml"; # relative to the flake root
+        #	};
+        #};
+        #dbg: temporarily disabled
+        #deadnix.enable = true; # detect unused variable bindings in `*.nix`
+        statix.enable = true; # lints and suggestions for Nix code(auto suggestions)
       };
-    }
-  );
+    };
+  });
 
   # Development Shells
   devShells = forAllSystems (
-    system: let
+    system:
+    let
       pkgs = nixpkgs.legacyPackages.${system};
-    in {
+    in
+    {
       default = pkgs.mkShell {
-        packages = with pkgs;
+        packages =
+          with pkgs;
           lib.lists.flatten [
             fish
             # fix `cc` replaced by clang, which causes nvim-treesitter compilation error
@@ -145,7 +161,7 @@ in {
             typos # spell checker
             nodePackages.prettier # code formatter
           ];
-        name = "dots"; #TODO: figure out what this `name` means
+        name = "dots"; # TODO: figure out what this `name` means
         shellHook = ''
           ${self.checks.${system}.pre-commit-check.shellHook}
         '';
@@ -153,9 +169,7 @@ in {
     }
   );
 
-  formatter = forAllSystems (
-    system: nixpkgs.legacyPackages.${system}.alejandra
-  );
+  formatter = forAllSystems (system: nixpkgs.legacyPackages.${system}.alejandra);
 }
 ## Ex of building for different users:
 #inherit (self) outputs;
@@ -210,4 +224,3 @@ in {
 #    };
 #  };
 #}
-
