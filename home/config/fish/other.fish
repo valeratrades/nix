@@ -156,10 +156,45 @@ alias nb='sudo nixos-rebuild switch --impure --fast --flake ~/nix#vlaptop && bee
 
 # # direnv
 alias dira="git add -A && direnv allow"
+function dwrap
+	direnv allow && \
+	$argv && \
+	direnv deny
+end
 #
 
 # # exa (for future reference only, as now I have programs.eza.enable in home.nix)
 #alias ll="exa -lA"
+#
+
+# # auth
+function 2fa
+	if [ (count $argv) != 1 ] && [ (count $argv) != 2 ]
+		echo "Usage: 2fa <app_name> [base]"
+		return
+	end
+
+	set pass_var (string upper "$argv[1]")_TOTP
+	if set 2fa_pass (eval echo $$pass_var)
+		:
+	else
+		echo "Variable $pass_var is not set."
+		return 1
+	end
+
+	set base 6
+	if [ (count $argv) = 2 ]
+		set base $argv[2]
+	end
+
+	oathtool --base32 --totp "$2fa_pass" -d $base
+end
+function 2fac
+	set r (2fa $argv)
+	echo $r | wl-copy
+	echo """$r
+Copied to clipboard."""
+end
 #
 
 
@@ -182,9 +217,6 @@ end
 alias spoy="set -x LD_PRELOAD $SPOTIFY_ADBLOCK_LIB; spotify" # the SPOTIFY_ADBLOCK_LIB is set by nixos config
 #
 
-
-#TODO!: figure out direnv
-#direnv hook fish | source
 
 # # Starship
 starship init fish | source # the .enable in configuration.nix is apparently insufficient for the shells that are spawned by tmux

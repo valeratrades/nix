@@ -122,7 +122,6 @@ function pyn
 	cp "$FILE_SNIPPETS_PATH/$lang/presets/main" ./src/main.$lang
 	chmod u+x ./src/main.$lang
 
-
 	shared_after $argv[1] $lang
 end
 

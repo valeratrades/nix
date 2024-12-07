@@ -1,5 +1,4 @@
 #TODO!: move much of this to shared dirs
-
 #{
 #  self,
 #  ...
@@ -9,19 +8,18 @@
 #  lib,
 #  ...
 #}:
-
 {
   self,
   config,
   lib,
   pkgs,
   inputs,
+  mylib,
+  myvars,
   ...
-}:
-{
-  home.username = "v";
-  home.homeDirectory = "/home/v";
-
+}: {
+  home.username = myvars.username;
+  home.homeDirectory = "/home/${myvars.username}";
 
   #nix.extraOptions = "include ${config.home.homeDirectory}/s/g/private/sops.conf";
   #sops = {
@@ -31,8 +29,8 @@
   #defaultSopsFile = /home/v/s/g/private/sops.json;
   #defaultSopsFormat = "json";
 
-	# # to be moved to shared (once I figure out how to source it)
-		programs = {
+  # # to be moved to shared (once I figure out how to source it)
+  programs = {
     neovim = {
       defaultEditor = true; # sets $EDITOR
       #? Can I get a nano alias?
@@ -41,10 +39,10 @@
       vimdiffAlias = true;
     };
     direnv.enable = true;
-		eza.enable = true;
-	};
+    eza.enable = true;
+  };
   home.sessionPath = [
-    "${pkgs.lib.makeBinPath [ ]}"
+    "${pkgs.lib.makeBinPath []}"
     "${config.home.homeDirectory}/s/evdev/"
     "${config.home.homeDirectory}/.cargo/bin/"
     "${config.home.homeDirectory}/go/bin/"
@@ -57,12 +55,12 @@
   ];
 
   dconf = {
-		enable = true;
-		settings."org/gnome/desktop/interface" = {
+    enable = true;
+    settings."org/gnome/desktop/interface" = {
       color-scheme = "prefer-dark";
     };
   };
-	#
+  #
 
   #imports = [
   #  ../../home/config/fish/default.nix
@@ -70,61 +68,61 @@
 
   # fuck mkOutOfStoreSymlink and home-manager. Just link everything except for where apps like to write artifacts to the config dir.
   home.activation = {
-    nvim = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    nvim = lib.hm.dag.entryAfter ["writeBoundary"] ''
       [ -e "$XDG_CONFIG_HOME/nvim" ] || ln -sf "$NIXOS_CONFIG/home/config/nvim" "$XDG_CONFIG_HOME/nvim"
     '';
-    eww = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    eww = lib.hm.dag.entryAfter ["writeBoundary"] ''
       [ -e "$XDG_CONFIG_HOME/eww" ] || ln -sf "$NIXOS_CONFIG/home/config/eww" "$XDG_CONFIG_HOME/eww"
     '';
-    zathura = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    zathura = lib.hm.dag.entryAfter ["writeBoundary"] ''
       [ -e "$XDG_CONFIG_HOME/zathura" ] || ln -sf "$NIXOS_CONFIG/home/config/zathura" "$XDG_CONFIG_HOME/zathura"
     '';
-    sway = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    sway = lib.hm.dag.entryAfter ["writeBoundary"] ''
       [ -e "$XDG_CONFIG_HOME/sway" ] || ln -sf "$NIXOS_CONFIG/home/config/sway" "$XDG_CONFIG_HOME/sway"
     '';
-    alacritty = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    alacritty = lib.hm.dag.entryAfter ["writeBoundary"] ''
       [ -e "$XDG_CONFIG_HOME/alacritty" ] || ln -sf "$NIXOS_CONFIG/home/config/alacritty" "$XDG_CONFIG_HOME/alacritty"
     '';
-    keyd = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    keyd = lib.hm.dag.entryAfter ["writeBoundary"] ''
       [ -e "$XDG_CONFIG_HOME/keyd" ] || ln -sf "$NIXOS_CONFIG/home/config/keyd" "$XDG_CONFIG_HOME/keyd"
     '';
-    mako = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    mako = lib.hm.dag.entryAfter ["writeBoundary"] ''
       [ -e "$XDG_CONFIG_HOME/mako" ] || ln -sf "$NIXOS_CONFIG/home/config/mako" "$XDG_CONFIG_HOME/mako"
     '';
-    direnv = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    direnv = lib.hm.dag.entryAfter ["writeBoundary"] ''
       [ -e "$XDG_CONFIG_HOME/direnv" ] || ln -sf "$NIXOS_CONFIG/home/config/direnv" "$XDG_CONFIG_HOME/direnv"
     '';
-    vesktop_settings_dir = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    vesktop_settings_dir = lib.hm.dag.entryAfter ["writeBoundary"] ''
       [ -e "$XDG_CONFIG_HOME/vesktop/settings" ] || ln -sf "$NIXOS_CONFIG/home/config/vesktop/settings" "$XDG_CONFIG_HOME/vesktop/settings"
     '';
 
-		# # my file arch consequences
-		mkdir = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-			mkdir -p $HOME/tmp
-			mkdir -p $HOME/Videos/obs
-		'';
-		#
+    # # my file arch consequences
+    mkdir = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      mkdir -p $HOME/tmp
+      mkdir -p $HOME/Videos/obs
+    '';
+    #
 
     # ind files
-    vesktop_settings_file = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    vesktop_settings_file = lib.hm.dag.entryAfter ["writeBoundary"] ''
       ln -sf $NIXOS_CONFIG/home/config/vesktop/settings.json $XDG_CONFIG_HOME/vesktop/settings.json
     '';
-    tg = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    tg = lib.hm.dag.entryAfter ["writeBoundary"] ''
       ln -sf $NIXOS_CONFIG/home/config/tg.toml $XDG_CONFIG_HOME/tg.toml
     '';
-    tg_admin = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    tg_admin = lib.hm.dag.entryAfter ["writeBoundary"] ''
       ln -sf $NIXOS_CONFIG/home/config/tg_admin.toml $XDG_CONFIG_HOME/tg_admin.toml
     '';
-    auto_redshift = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    auto_redshift = lib.hm.dag.entryAfter ["writeBoundary"] ''
       ln -sf $NIXOS_CONFIG/home/config/auto_redshift.toml $XDG_CONFIG_HOME/auto_redshift.toml
     '';
-    todo = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    todo = lib.hm.dag.entryAfter ["writeBoundary"] ''
       ln -sf $NIXOS_CONFIG/home/config/todo.toml $XDG_CONFIG_HOME/todo.toml
     '';
-    discretionary_engine = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    discretionary_engine = lib.hm.dag.entryAfter ["writeBoundary"] ''
       ln -sf $NIXOS_CONFIG/home/config/discretionary_engine.toml $XDG_CONFIG_HOME/discretionary_engine.toml
     '';
-    btc_line = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    btc_line = lib.hm.dag.entryAfter ["writeBoundary"] ''
       ln -sf $NIXOS_CONFIG/home/config/btc_line.toml $XDG_CONFIG_HOME/btc_line.toml
     '';
   };
@@ -177,8 +175,7 @@
   };
 
   # Things that never need to be available with sudo
-  home.packages =
-    with pkgs;
+  home.packages = with pkgs;
     lib.lists.flatten
     [
       cowsay
@@ -187,28 +184,39 @@
       #spotube // spotify-adblock is perfectly sufficient
       nyxt
       en-croissant # chess analysis GUI
-			[
-				# messengers
-      telegram-desktop
-      vesktop
-			discord # for when vesktop breaks, otherwise vesktop is a superset
-      zulip
-			]
+      [
+        # messengers
+        telegram-desktop
+        vesktop
+        discord # for when vesktop breaks, otherwise vesktop is a superset
+        zulip
+      ]
       rnote
       zathura # read PDFs
       pdfgrep
       xournalpp # draw on PDFs
       ncspot
       neomutt
-			anyrun # wayland-native rust alternative to rofi
+      anyrun # wayland-native rust alternative to rofi
       neofetch
       figlet
-			[
-				# RDP clients
-				remmina
-				anydesk # works to manage windows/linux+X11, but obviously can't RDP linux running wayland
-				freerdp
-			]
+      [
+        # auth
+        oath-toolkit # https://askubuntu.com/questions/1460640/generating-totp-for-2fa-directly-from-the-computer-no-mobile-device
+        bitwarden-desktop # seems like bitwarden is lacking TOTP on free plans
+        bitwarden-cli
+        keepassxc
+        #TODO: attempt to maybe start using it. Or just go agenix/sops. Current system is rather fragile. Priority is low because currently there isn't much to protect.
+        pass # linux password manager
+        prs # some password manager in rust
+        passh # non-interactive SSH auth
+      ]
+      [
+        # RDP clients
+        remmina
+        anydesk # works to manage windows/linux+X11, but obviously can't RDP linux running wayland
+        freerdp
+      ]
       #flutterPackages-source.stable // errors
       typioca # tui monkeytype
       smassh # tui monkeytype
@@ -232,7 +240,7 @@
       #nixpkgs-stable.telegram-desktop
       #inputs.nltch.spotify-adblock
       #inputs.nltch.ciscoPacketTracer8
-			#self.packages.x86_64-linux.wlr-gamma-service
+      #self.packages.x86_64-linux.wlr-gamma-service
     ];
 
   #home.packages = with nixpkgs-stable: [
@@ -257,10 +265,10 @@
     };
   };
 
-	home.keyboard = null; # otherwise it overwrites my semimak
+  home.keyboard = null; # otherwise it overwrites my semimak
 
   programs = {
-		yazi.enable = true;
+    yazi.enable = true;
 
     tmux = {
       # enable brings in additional configuration state, so don't enable
