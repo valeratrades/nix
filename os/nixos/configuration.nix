@@ -347,8 +347,6 @@ in {
       enable = true;
       config = {
         user = {
-          #TODO!!!!: make the name and email dynamic
-          #name = builtins.getEnv "GITHUB_USERNAME"; #IMPURE # fills empty, probably because the associated var is only set later on by fish in home-manager config
           name = myvars.defaultUsername;
           email = myvars.userEmail;
           token = "$GITHUB_KEY"; # can't name `GITHUB_TOKEN`, as `gh` gets confused

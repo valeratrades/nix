@@ -98,8 +98,9 @@
 
     # # my file arch consequences
     mkdir = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      mkdir -p $HOME/tmp
-      mkdir -p $HOME/Videos/obs
+      mkdir -p $HOME/tmp/
+      mkdir -p $HOME/Videos/obs/
+      mkdir -p $HOME/tmp/Screenshots/
     '';
     #
 
