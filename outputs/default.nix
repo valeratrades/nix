@@ -57,7 +57,20 @@ let
   forAllSystems = func: (nixpkgs.lib.genAttrs allSystemNames func); # NB: stolen from ryan, it's likely I'm misusing some part of this.
 in
 {
-  #NB: when writing hostname, remove all '_' characters
+  # Add attribute sets into outputs, for debugging
+  debugAttrs = {
+    inherit
+      nixosSystems
+      darwinSystems
+      allSystems
+      allSystemNames
+      ;
+  };
+
+  # NixOS Hosts
+  #nixosConfigurations =
+  #  lib.attrsets.mergeAttrsList (map (it: it.nixosConfigurations or {}) nixosSystemValues);
+
   packages.x86_64-linux.wlr-gamma-service =
     inputs.nixpkgs-2405.legacyPackages.x86_64-linux.callPackage
       (builtins.fetchGit {
@@ -68,7 +81,11 @@ in
         submodules = true;
       })
       { };
+  #packages = forAllSystems (
+  #   system: allSystems.${system}.packages or {}
+  # );
 
+  #NB: when writing hostname, remove all '_' characters
   nixosConfigurations.vlaptop = nixpkgs.lib.nixosSystem {
     system = "x86_64-linux";
 
@@ -104,8 +121,8 @@ in
     ];
   };
 
-  #TODO!!!: \
   checks = forAllSystems (system: {
+    #TODO!!: \
     #		# eval-tests per system
     #		eval-tests = allSystems.${system}.evalTests == {};
     #

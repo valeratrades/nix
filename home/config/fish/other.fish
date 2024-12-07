@@ -156,7 +156,8 @@ alias nb='sudo nixos-rebuild switch --impure --fast --flake ~/nix#vlaptop && bee
 
 # # direnv
 alias dira="git add -A && direnv allow"
-function dwrap
+function de
+	# direnv wrap
 	direnv allow && \
 	$argv && \
 	direnv deny
