@@ -137,7 +137,8 @@ in {
             gcc
             [
               # Nix-related
-              alejandra
+              #alejandra
+              nixfmt-rfc-style
               deadnix
               statix
             ]
