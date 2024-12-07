@@ -109,6 +109,7 @@ in
     #		# eval-tests per system
     #		eval-tests = allSystems.${system}.evalTests == {};
     #
+    #TODO!: figure out how to make it continue after formatting something
     pre-commit-check = pre-commit-hooks.lib.${system}.run {
       src = mylib.relativeToRoot ".";
       hooks = {

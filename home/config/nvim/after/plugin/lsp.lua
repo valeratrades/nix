@@ -362,7 +362,7 @@ lspconfig.tinymist.setup({
 lspconfig.nil_ls.setup({
 	on_attach = lsp_zero.default_setup,
 	settings = {
-		formatter = { command = { "nixpkgs-fmt" } },
+		formatter = { command = { "nixfmt-rfc-style" } },
 	},
 })
 
