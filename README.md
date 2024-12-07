@@ -1,5 +1,7 @@
 # Installation
-NB: set the `INSTALL_PATH` before running
+NB: should have your correct `hardware-configuration.nix` at `/etc/nixos/hardware-configuration.nix`. In my setup hosts normally include their associated `hardware-configuration.nix` files, but they are used as a backup in case `/etc/nixos/hardware-configuration.nix` is not found.
+
+Set the `INSTALL_PATH`, then run
 ```sh
 sh << 'EOF'
 INSTALL_PATH="..."

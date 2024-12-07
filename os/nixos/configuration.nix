@@ -473,8 +473,15 @@ in {
 
   #MOVE: make specific to each host
   imports = [
-    ../../hosts/v_laptop/hardware-configuration.nix
+    (
+      if builtins.pathExists "/etc/nixos/hardware-configuration.nix"
+      then /etc/nixos/hardware-configuration.nix
+      else
+        builtins.trace "WARNING: Falling back to ./hosts/v_laptop/hardware-configuration.nix as /etc/nixos/hardware-configuration.nix does not exist. Likely to cause problems."
+        mylib.relativeToRoot "./hosts/v_laptop/hardware-configuration.nix"
+    )
   ];
+
   ##hardware.enableAllFirmware = true;
 
   # Bootloader.
