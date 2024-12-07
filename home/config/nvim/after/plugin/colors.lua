@@ -1,8 +1,6 @@
 function Dark()
 	vim.cmd.colorscheme("default")
-	--vim.cmd.colorscheme("rose-pine")
 	vim.cmd.colorscheme("github_dark")
-
 
 	vim.api.nvim_set_hl(0, "Normal", { bg = "#000000" })
 	local normal = vim.api.nvim_get_hl(0, { name = "Normal" })
@@ -29,8 +27,7 @@ function SetSystemTheme()
 	local result = handle:read("*a")
 	handle:close()
 
-	--if string.match(string.lower(result), "dark") then
-	if true then --dbg
+	if string.match(string.lower(result), "dark") then
 		Dark()
 	else
 		Light()
