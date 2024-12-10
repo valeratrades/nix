@@ -257,7 +257,7 @@ return require('lazy').setup({
 	--	build = function() vim.fn["mkdp#util#install"]() end,
 	--},
 
-	--"echasnovski/mini.ai",
+	"echasnovski/mini.ai",
 
 	"nvim-neotest/nvim-nio",
 	'arnamak/stay-centered.nvim',
@@ -273,5 +273,5 @@ return require('lazy').setup({
 	"NMAC427/guess-indent.nvim",
 	{ 'wakatime/vim-wakatime', lazy = false },
 	--{ "tjdevries/ocaml.nvim",  build = "make" }, -- requires 3.17 dune, but my nix only has 3.16
-	--"folke/which-key.nvim", --TODO: setup
+	"folke/which-key.nvim", --TODO: setup
 })
