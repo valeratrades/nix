@@ -250,19 +250,15 @@ return require('lazy').setup({
 		event = { "VeryLazy" },
 		build = "deno task --quiet build:fast",
 	},
-	{
-		"iamcco/markdown-preview.nvim",
-		cmd = { "MarkdownPreviewToggle", "MarkdownPreview", "MarkdownPreviewStop" },
-		ft = { "markdown" },
-		build = function() vim.fn["mkdp#util#install"]() end,
-	},
-	-- Not sure if this can work on NixOS
 	--{
-	--	'chomosuke/typst-preview.nvim',
-	--	lazy = false, -- or ft = 'typst'
-	--	version = '1.*',
-	--	build = function() require 'typst-preview'.update() end,
+	--	"iamcco/markdown-preview.nvim",
+	--	cmd = { "MarkdownPreviewToggle", "MarkdownPreview", "MarkdownPreviewStop" },
+	--	ft = { "markdown" },
+	--	build = function() vim.fn["mkdp#util#install"]() end,
 	--},
+
+	--"echasnovski/mini.ai",
+
 	"nvim-neotest/nvim-nio",
 	'arnamak/stay-centered.nvim',
 	--"3rd/image.nvim", -- want's luarocks, which I haven't yet set up with nix
@@ -276,5 +272,6 @@ return require('lazy').setup({
 	"jbyuki/nabla.nvim",
 	"NMAC427/guess-indent.nvim",
 	{ 'wakatime/vim-wakatime', lazy = false },
-	{ "tjdevries/ocaml.nvim",  build = "make" }, -- requires 3.17 dune, but my nix only has 3.16
+	--{ "tjdevries/ocaml.nvim",  build = "make" }, -- requires 3.17 dune, but my nix only has 3.16
+	--"folke/which-key.nvim", --TODO: setup
 })

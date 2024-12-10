@@ -22,6 +22,7 @@ vim.keymap.set('n', '<space>si', "<cmd>Telescope media_files<cr>", { desc = "Med
 vim.keymap.set("n", "<C-f>", "<cmd>Telescope current_buffer_fuzzy_find<cr>", { desc = "Effectively Ctrl+f" })
 
 local telescope = require("telescope")
+--TODO!!!!: package it properly for nix, then provide to the nvim wrapper
 --FUCK: requires to explicitly:
 --```sh
 --cd $XDG_DATA_HOME/nvim/lazy/telescope-fzf-native.nvim

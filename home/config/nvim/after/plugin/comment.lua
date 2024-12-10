@@ -149,6 +149,7 @@ end
 --- The main keymap is in telescope.lua (`<space>st`)
 --- for navigation I'm just typing `:cp` and `:cn`. Can't do much better than that.
 --- To jump back, I do `T
+--TODO!!!!: fix \
 function FindTodo()
 	local regex = vim.fn.shellescape(Cs() .. "TODO")
 	local results = vim.fn.systemlist(

@@ -14,7 +14,7 @@ sync()  {
 
 	wait $PID2 $PID3 #$PID1
 
-	sudo nixos-rebuild switch --show-trace -L -v --impure && git -C "$NIXOS_CONFIG" add -A && git -C "$NIXOS_CONFIG" commit -m "_" && git -C "$NIXOS_CONFIG" push  # git commit nix files only on successful build
+	sudo nixos-rebuild switch --show-trace -v --impure && git -C "$NIXOS_CONFIG" add -A && git -C "$NIXOS_CONFIG" commit -m "_" && git -C "$NIXOS_CONFIG" push  # git commit nix files only on successful build
 	return 0
 }
 

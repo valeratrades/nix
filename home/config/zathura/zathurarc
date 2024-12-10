@@ -9,6 +9,7 @@
 
 # F5 for presentation-mode
 
+
 map s scroll left
 map r scroll down
 map n scroll up
@@ -34,6 +35,7 @@ map <A-i> jumplist forward
 map j search next
 map k search prev
 
+#TODO: make into a macro, following this with few `+`es. Then have another shortcut for `f` with `-`es, for when it's being opened in vertical split (zathura is not smart enough)
 map f zoom width
 
 # General

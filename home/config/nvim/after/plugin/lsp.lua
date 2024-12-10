@@ -14,8 +14,11 @@ function ToggleDiagnostics()
 	local state = vim.diagnostic.is_enabled()
 	if state then
 		vim.diagnostic.enable(false)
+		-- I think it is semantically similar
+		vim.opt.spell = false
 	else
 		vim.diagnostic.enable(true)
+		vim.opt.spell = true
 	end
 end
 

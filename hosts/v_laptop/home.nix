@@ -33,6 +33,9 @@
   # # to be moved to shared (once I figure out how to source it)
   programs = {
     neovim = {
+      plugins = [
+        pkgs.vimPlugins.nvim-treesitter.withAllGrammars # can also choose specific ones with `.withPlugins (p: [ p.c p.java /*etc*/ ]))`
+      ];
       defaultEditor = true; # sets $EDITOR
       #? Can I get a nano alias?
       viAlias = true;
@@ -92,9 +95,6 @@
     '';
     direnv = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       [ -e "$XDG_CONFIG_HOME/direnv" ] || ln -sf "$NIXOS_CONFIG/home/config/direnv" "$XDG_CONFIG_HOME/direnv"
-    '';
-    vesktop_settings_dir = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      [ -e "$XDG_CONFIG_HOME/vesktop/settings" ] || ln -sf "$NIXOS_CONFIG/home/config/vesktop/settings" "$XDG_CONFIG_HOME/vesktop/settings"
     '';
 
     # # my file arch consequences
@@ -159,10 +159,10 @@
     };
     #
     # don't use it, here just for completeness
-    ".config/zsh" = {
-      source = "${self}/home/config/zsh";
-      recursive = true;
-    };
+    #".config/zsh" = {
+    #	source = "${self}/home/config/zsh";
+    #	recursive = true;
+    #};
 
     # configured via home-manager, so mixing it wouldn't work. Might want to just completely ditch hm with it though.
     ".config/tmux" = {
@@ -241,17 +241,7 @@
 
       #inputs.aggr_orderbook.packages.${pkgs.system}.default
       #inputs.orderbook_3d.packages.${pkgs.system}.default
-    ]
-    ++ [
-      #nixpkgs-stable.telegram-desktop
-      #inputs.nltch.spotify-adblock
-      #inputs.nltch.ciscoPacketTracer8
-      #self.packages.x86_64-linux.wlr-gamma-service
     ];
-
-  #home.packages = with nixpkgs-stable: [
-  #	google-chrome
-  #];
 
   gtk = {
     enable = true;
