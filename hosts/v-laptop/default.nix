@@ -5,7 +5,7 @@
 #
 #############################################################
 let
-  hostName = "v_laptop";
+  hostName = "v-laptop";
 in
 {
   imports = [

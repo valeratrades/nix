@@ -86,7 +86,7 @@ in
   # );
 
   #NB: when writing hostname, remove all '_' characters
-  nixosConfigurations.vlaptop = nixpkgs.lib.nixosSystem {
+  nixosConfigurations."v-laptop" = nixpkgs.lib.nixosSystem {
     system = "x86_64-linux";
 
     specialArgs = {
@@ -112,8 +112,7 @@ in
         #	inputs.sops-nix.homeManagerModules.sops
         #];
 
-        #home-manager.users.v = import ./hosts/v_laptop/home.nix;
-        home-manager.users.v = import ../hosts/v_laptop/default.nix; # MOVE: probably to something like ryan's revolver thing in outputs
+        home-manager.users.v = import ../hosts/v-laptop/default.nix; # MOVE: probably to something like ryan's revolver thing in outputs
         nix.settings.trusted-users = [ myvars.username ]; # all systems assume single-user configurations
       }
 

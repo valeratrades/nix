@@ -151,7 +151,7 @@ alias ndevelop="nix develop --command fish"
 #alias nupdate="nix flake lock --update-input nixpkgs --update-input"
 alias nup="nix flake update"
 alias up="$NIXOS_CONFIG/home/scripts/maintenance/main.sh"
-alias nb='sudo nixos-rebuild switch --impure --fast --flake ~/nix#vlaptop && beep "nix rb 0" || beep "nix rb 1"' #TODO: add some git add -A on $NIXOS_CONFIG and maybe make this into the main way of running this
+alias nb="sudo nixos-rebuild switch --impure --fast --flake ~/nix#$(whoami)-laptop && beep 'nix rb 0' || beep 'nix rb 1'" #TODO: add some git add -A on $NIXOS_CONFIG and maybe make this into the main way of running this
 #
 
 # # direnv

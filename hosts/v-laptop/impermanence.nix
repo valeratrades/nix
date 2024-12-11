@@ -6,7 +6,8 @@
   pkgs,
   lib,
   ...
-}: {
+}:
+{
   imports = [
     impermanence.nixosModules.impermanence
   ];
