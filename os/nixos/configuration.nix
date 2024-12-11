@@ -811,6 +811,7 @@ in
         [
           aria2 # better wget
           wireguard-tools
+          ngrok
           dnsutils # `dig` + `nslookup`
           ethtool
           iftop # network monitoring
