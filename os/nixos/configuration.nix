@@ -66,7 +66,6 @@ in
           description = "Semimak for both keyboard standards";
           languages = [ "eng" ];
           symbolsFile = mylib.relativeToRoot "./xkb/symbols/semimak";
-          #symbolsFile = .../../xkb/symbols/semimak;
         };
         layout = "semimak";
         variant = "iso";
