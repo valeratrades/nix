@@ -1,19 +1,18 @@
-set pwd (dirname (status --current-filename))
-source $pwd/videos.fish
-source $pwd/server.fish
-source $pwd/weird.fish
-source $pwd/document_watch.fish
+set pdir (dirname (status --current-filename))
+source $pdir/videos.fish
+source $pdir/server.fish
+source $pdir/weird.fish
+source $pdir/document_watch.fish
 
 function beep
-	set dir (dirname (status --current-filename))
-	cargo -Zscript -q $dir/beep.rs $dir/assets/sound/Notification.mp3 $argv
+	cargo -Zscript -q $pdir/beep.rs $pdir/assets/sound/Notification.mp3 $argv
 end
 function timer
-	cargo -Zscript -q (dirname (status --current-filename))/timer.rs $argv
+	cargo -Zscript -q $pdir/timer.rs $argv
 end
 
-alias q="py $pwd/ask_gpt.py -s $argv"
-alias f="py $pwd/ask_gpt.py -f $argv"
+alias q="py $pdir/ask_gpt.py -s $argv"
+alias f="py $pdir/ask_gpt.py -f $argv"
 
-alias theme_toggle="$pwd/theme_toggle.sh"
-alias choose_port="$pwd/choose_port.sh"
+alias theme_toggle="$pdir/theme_toggle.sh"
+alias choose_port="$pdir/choose_port.sh"
