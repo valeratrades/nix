@@ -810,6 +810,7 @@ in
         # Network Tools
         [
           aria2 # better wget
+          wireguard-tools
           dnsutils # `dig` + `nslookup`
           ethtool
           iftop # network monitoring
