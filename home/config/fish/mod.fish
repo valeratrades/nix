@@ -1,16 +1,18 @@
 #NB: don't make aliases with """,""" - as they are incorrectly interpreted
-set pdir (dirname (status --current-filename))
+#NB: local vars are shared between all things you source. So setting an abbreviation to say `(dirname(status -- curent-filename))` to something simple like `pdir` could overwrite pdir of something else and wreck havoc.
 
-source /home/v/s/g/private/credentials.fish
-source $pdir/global.fish #NB: other things can rely on functions in it
-source $pdir/other.fish
+set main_config_pdir (dirname (status --current-filename))
 
-source $pdir/cli_translate.fish
-source $pdir/cs_nav.fish
+source $HOME/s/g/private/credentials.fish
+source $main_config_pdir/global.fish #NB: other things can rely on functions in it
+source $main_config_pdir/other.fish
 
-source (dirname (dirname $pdir))/scripts/mod.fish
+source $main_config_pdir/cli_translate.fish
+source $main_config_pdir/cs_nav.fish
 
-source $pdir/app_aliases/mod.fish
+source (dirname (dirname $main_config_pdir))/scripts/mod.fish
+
+source $main_config_pdir/app_aliases/mod.fish
 
 source "$NIXOS_CONFIG/home/file_snippets/main.fish"
 source "$NIXOS_CONFIG/home/scripts/shell_harpoon/main.fish"

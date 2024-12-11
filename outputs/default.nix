@@ -122,7 +122,8 @@ in
           #];
 
           home-manager.users."${user.username}" = import (
-            mylib.relativeToRoot "hosts/${user.desktopHostName}/default.nix"
+            #mylib.relativeToRoot "hosts/${user.desktopHostName}/default.nix"
+            mylib.relativeToRoot "hosts/v-laptop/default.nix" # HACK: hardcoded, but currently only one host actually has proper routing
           );
           nix.settings.trusted-users = [ user.username ]; # all systems assume single-user configurations
         }

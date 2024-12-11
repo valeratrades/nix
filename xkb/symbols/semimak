@@ -41,15 +41,16 @@ xkb_symbols "basic" {
 	key <AC11> {[ semicolon, colon     ]};
 
 	key <RALT> { type="FOUR_LEVEL", [ BackSpace ] };
-	//HACK: can't make the old place of the key for the following work, and otherwise this conflicts with my iso shift remapping...
-	//key <LSGT> { type="ONE_LEVEL", [ ISO_Level3_Shift ] };
-	// modifier_map Mod1 { Alt_L, Alt_R, Meta_L, Meta_R };
 
-	// doesn't work on my current keyboard, but may be useful again in the future. At least it does not to seem to break anything by its presence anyways.
-	key <RCTL> { type="ONE_LEVEL", [ ISO_Level3_Shift ] };
-	modifier_map Mod1 { Alt_L, Alt_R, Meta_L, Meta_R };
+	//key <LSGT> { type="ONE_LEVEL", [ ISO_Level3_Shift ] };
+
 
 	// // French stuff
+	// Setup
+	//key <BKSP> { type="ONE_LEVEL", [ ISO_Level3_Shift ] }; // don't think it's worth it, but certainly does work.
+	key <RCTL> { type="ONE_LEVEL", [ ISO_Level3_Shift ] }; // doesn't work on my current keyboard, but may be useful again in the future. At least it does not to seem to break anything by its presence anyways.
+	modifier_map Mod1 { Alt_L, Alt_R, Meta_L, Meta_R };
+
 	key <AC08> { [ e, E, eacute, Eacute ] };
 
 	key <AB08> {[ comma, less, egrave, Egrave ]};
