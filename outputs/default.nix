@@ -58,7 +58,7 @@ let
   user-vars = [
     myvars.valera
     myvars.timur
-    myvars.masha
+    myvars.maria
   ];
   user = myvars.valera; # dbg
 in
@@ -92,41 +92,45 @@ in
   # );
 
   #NB: when writing hostname, remove all '_' characters
-  nixosConfigurations."${user.desktopHostName}" = nixpkgs.lib.nixosSystem {
-    system = "x86_64-linux";
+  #nixosConfigurations."${user.desktopHostName}" = nixpkgs.lib.nixosSystem {
+  nixosConfigurations = lib.genAttrs (map (user: user.desktopHostName) user-vars) (
+    desktopHostName:
+    nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
 
-    specialArgs = {
-      inherit inputs self;
-      inherit mylib user; # HACK
-    };
+      specialArgs = {
+        inherit inputs self;
+        inherit mylib user; # HACK
+      };
 
-    modules = [
-      (mylib.relativeToRoot "os/nixos/configuration.nix")
-      (mylib.relativeToRoot "machines/modules/default.nix")
+      modules = [
+        (mylib.relativeToRoot "os/nixos/configuration.nix")
+        (mylib.relativeToRoot "machines/modules/default.nix")
 
-      home-manager.nixosModules.home-manager
-      {
-        home-manager.useGlobalPkgs = true;
-        home-manager.useUserPackages = true;
-        home-manager.backupFileExtension = "backup"; # delusional home-manager wants this exact file-extension for when I backup system-level files
-        home-manager.extraSpecialArgs = {
-          inherit inputs self;
-          inherit mylib user; # HACK
-        };
+        home-manager.nixosModules.home-manager
+        {
+          home-manager.useGlobalPkgs = true;
+          home-manager.useUserPackages = true;
+          home-manager.backupFileExtension = "backup"; # delusional home-manager wants this exact file-extension for when I backup system-level files
+          home-manager.extraSpecialArgs = {
+            inherit inputs self;
+            inherit mylib user; # HACK
+          };
 
-        #home-manager.sharedModules = [
-        #	inputs.sops-nix.homeManagerModules.sops
-        #];
+          #home-manager.sharedModules = [
+          #	inputs.sops-nix.homeManagerModules.sops
+          #];
 
-        home-manager.users."${user.username}" = import (
-          mylib.relativeToRoot "hosts/${user.desktopHostName}/default.nix"
-        );
-        nix.settings.trusted-users = [ user.username ]; # all systems assume single-user configurations
-      }
+          home-manager.users."${user.username}" = import (
+            mylib.relativeToRoot "hosts/${user.desktopHostName}/default.nix"
+          );
+          nix.settings.trusted-users = [ user.username ]; # all systems assume single-user configurations
+        }
 
-      #({ pkgs, ... }: import ./modules/fenix.nix { inherit pkgs; })
-    ];
-  };
+        #({ pkgs, ... }: import ./modules/fenix.nix { inherit pkgs; })
+      ];
+    }
+  );
 
   checks = forAllSystems (system: {
     #TODO!!: \
