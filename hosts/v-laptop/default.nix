@@ -1,11 +1,11 @@
-{ myvars, mylib, ... }:
+{ user, mylib, ... }:
 #############################################################
 #
 # My main workspace, AMD Ryzen 7 8840U, 16Gb ddr5, 1Tb nvme ssid
 #
 #############################################################
 let
-  hostName = "v-laptop";
+  hostName = user.desktopHostName; # could be different for servers, which would prompt the need for manual setting of it right here.
 in
 {
   imports = [

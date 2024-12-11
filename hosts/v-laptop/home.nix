@@ -15,12 +15,12 @@
   pkgs,
   inputs,
   mylib,
-  myvars,
+  user,
   ...
 }:
 {
-  home.username = myvars.username;
-  home.homeDirectory = "/home/${myvars.username}";
+  #home.username = user.username;
+  #home.homeDirectory = "/home/${user.username}";
 
   #nix.extraOptions = "include ${config.home.homeDirectory}/s/g/private/sops.conf";
   #sops = {

@@ -55,6 +55,12 @@ let
   allSystemNames = builtins.attrNames allSystems;
 
   forAllSystems = func: (nixpkgs.lib.genAttrs allSystemNames func); # NB: stolen from ryan, it's likely I'm misusing some part of this.
+  user-vars = [
+    myvars.valera
+    myvars.timur
+    myvars.masha
+  ];
+  user = myvars.valera; # dbg
 in
 {
   # Add attribute sets into outputs, for debugging
@@ -86,15 +92,16 @@ in
   # );
 
   #NB: when writing hostname, remove all '_' characters
-  nixosConfigurations."v-laptop" = nixpkgs.lib.nixosSystem {
+  nixosConfigurations."${user.desktopHostName}" = nixpkgs.lib.nixosSystem {
     system = "x86_64-linux";
 
     specialArgs = {
       inherit inputs self;
-      inherit mylib myvars; # HACK
+      inherit mylib user; # HACK
     };
 
     modules = [
+      #TODO: define these relative to root
       ../os/nixos/configuration.nix
       ../machines/modules/default.nix # can't reference the `mod.nix` one level higher, because I don't use `flake-parts.lib.mkFlake` yet
 
@@ -105,15 +112,18 @@ in
         home-manager.backupFileExtension = "backup"; # delusional home-manager wants this exact file-extension for when I backup system-level files
         home-manager.extraSpecialArgs = {
           inherit inputs self;
-          inherit mylib myvars; # HACK
+          inherit mylib user; # HACK
         };
 
         #home-manager.sharedModules = [
         #	inputs.sops-nix.homeManagerModules.sops
         #];
 
-        home-manager.users.v = import ../hosts/v-laptop/default.nix; # MOVE: probably to something like ryan's revolver thing in outputs
-        nix.settings.trusted-users = [ myvars.username ]; # all systems assume single-user configurations
+        #home-manager.users."${user.username}" = import "../hosts/${user.desktopHostName}/default.nix"; # MOVE: probably to something like ryan's revolver thing in outputs
+        home-manager.users."${user.username}" = import (
+          mylib.relativeToRoot "hosts/${user.desktopHostName}/default.nix"
+        );
+        nix.settings.trusted-users = [ user.username ]; # all systems assume single-user configurations
       }
 
       #({ pkgs, ... }: import ./modules/fenix.nix { inherit pkgs; })

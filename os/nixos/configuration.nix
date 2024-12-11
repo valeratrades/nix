@@ -7,14 +7,14 @@
   pkgs,
   lib,
   inputs,
-  myvars,
+  user,
   mylib,
   ...
 }:
 #TODO: add build script that cds in $XDG_DATA_HOME/nvim/lazy-telescope-fzf-native.nvim and runs `make`
 let
-  userHome = config.users.users."${myvars.username}".home; # TODO: also should be dynamic
-  configRoot = "/home/${myvars.username}/nix"; # TODO!!!!!: have this be dynamic based on the actual dir where this config is currently located.
+  userHome = config.users.users."${user.username}".home; # TODO: also should be dynamic
+  configRoot = "/home/${user.username}/nix"; # TODO!!!!!: have this be dynamic based on the actual dir where this config is currently located.
 
   modularHome = "${userHome}/.modular";
 in
@@ -48,7 +48,7 @@ in
   # };
 
   services = {
-    getty.autologinUser = myvars.username; # MOVE: to vlaptop
+    getty.autologinUser = user.username; # MOVE: to vlaptop
     xserver = {
       # # somehow this fixed the audio problem. Like huh, what, why???
       desktopManager.gnome.enable = true;
@@ -348,8 +348,8 @@ in
       enable = true;
       config = {
         user = {
-          name = myvars.defaultUsername;
-          email = myvars.userEmail;
+          name = user.defaultUsername;
+          email = user.defaultUserEmail;
           token = "$GITHUB_KEY"; # can't name `GITHUB_TOKEN`, as `gh` gets confused
         };
 
@@ -481,9 +481,9 @@ in
         /etc/nixos/hardware-configuration.nix
       else
         builtins.trace
-          "WARNING: Falling back to ./hosts/v-laptop/hardware-configuration.nix as /etc/nixos/hardware-configuration.nix does not exist. Likely to cause problems."
+          "WARNING: Falling back to ./hosts/${user.desktopHostName}/hardware-configuration.nix as /etc/nixos/hardware-configuration.nix does not exist. Likely to cause problems."
           mylib.relativeToRoot
-          "./hosts/v-laptop/hardware-configuration.nix"
+          "./hosts/${user.desktopHostName}/hardware-configuration.nix"
     )
   ];
 
@@ -544,9 +544,9 @@ in
     polkit.enable = true;
   };
 
-  users.users."${myvars.username}" = {
+  users.users."${user.username}" = {
     isNormalUser = true;
-    description = "${myvars.userFullName}";
+    description = "${user.userFullName}";
     shell = pkgs.fish;
     extraGroups = [
       "networkmanager"
@@ -1148,7 +1148,7 @@ in
       '';
     };
 
-    hostName = "v-laptop"; # should be set with home-manager
+    hostName = user.desktopHostName; # HACK: would not be for servers
     # networking.proxy.default = "http://user:password@proxy:port/";
     # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
 
