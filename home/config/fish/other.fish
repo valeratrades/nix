@@ -152,6 +152,13 @@ alias ndevelop="nix develop --command fish"
 alias nup="nix flake update"
 alias up="$NIXOS_CONFIG/home/scripts/maintenance/main.sh"
 alias nb="sudo nixos-rebuild switch --impure --fast --flake ~/nix#$(hostname) && beep 'nix rb 0' || beep 'nix rb 1'" #TODO: add some git add -A on $NIXOS_CONFIG and maybe make this into the main way of running this
+function nbg
+	set hostName (hostname)
+	if [ (count $argv) = 1 ]
+		set hostName $argv[1]
+	end
+	sudo nixos-rebuild switch --flake "github:valeratrades/nix#$hostName" --impure --fast
+end
 #
 
 # # direnv
