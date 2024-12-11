@@ -45,6 +45,10 @@ xkb_symbols "basic" {
 	//key <LSGT> { type="ONE_LEVEL", [ ISO_Level3_Shift ] };
 	// modifier_map Mod1 { Alt_L, Alt_R, Meta_L, Meta_R };
 
+	// doesn't work on my current keyboard, but may be useful again in the future. At least it does not to seem to break anything by its presence anyways.
+	key <RCTL> { type="ONE_LEVEL", [ ISO_Level3_Shift ] };
+	modifier_map Mod1 { Alt_L, Alt_R, Meta_L, Meta_R };
+
 	// // French stuff
 	key <AC08> { [ e, E, eacute, Eacute ] };
 
