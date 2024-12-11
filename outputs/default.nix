@@ -101,9 +101,8 @@ in
     };
 
     modules = [
-      #TODO: define these relative to root
       (mylib.relativeToRoot "os/nixos/configuration.nix")
-      (mylib.relativeToRoot "machines/modules/default.nix") # can't reference the `mod.nix` one level higher, because I don't use `flake-parts.lib.mkFlake` yet
+      (mylib.relativeToRoot "machines/modules/default.nix")
 
       home-manager.nixosModules.home-manager
       {
@@ -119,7 +118,6 @@ in
         #	inputs.sops-nix.homeManagerModules.sops
         #];
 
-        #home-manager.users."${user.username}" = import "../hosts/${user.desktopHostName}/default.nix"; # MOVE: probably to something like ryan's revolver thing in outputs
         home-manager.users."${user.username}" = import (
           mylib.relativeToRoot "hosts/${user.desktopHostName}/default.nix"
         );
