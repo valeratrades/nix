@@ -127,6 +127,28 @@ alias cdd="cd .. && cd -" # effectively just reloads `direnv`
 alias monkey="smassh"
 alias bbeats="sudo -Es nice -n -20 /etc/profiles/per-user/v/bin/bbeats" # otherwise any demanding process will produce bad breaks in sound
 
+function selfie
+	fswebcam /tmp/selfie.jpg
+	if [ $status != 0 ]
+		return $status
+	end
+
+	set args $argv
+	if [ (count $args) > 0 ]
+		if [ $args[1] = "-c" ] || [ $args[1] = "--copy" ] || [ $args[1] = "c" ]
+			wl-copy --type image/jpeg < /tmp/selfie.jp
+			set args $args[2..-1]
+		end
+	end
+	if [ (count $args) > 0 ]
+		if [ $args[1] = "-q" ] || [ $args[1] = "--quiet" ] || [ $args[1] = "q" ]
+			:
+		else
+			chafa /tmp/selfie.jpg
+		end
+	end
+end
+
 # # fish
 function where
 	set details (functions --details $argv[1])
