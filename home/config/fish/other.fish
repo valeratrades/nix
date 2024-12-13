@@ -136,7 +136,7 @@ function selfie
 	set args $argv
 	if [ (count $args) > 0 ]
 		if [ $args[1] = "-c" ] || [ $args[1] = "--copy" ] || [ $args[1] = "c" ]
-			wl-copy --type image/jpeg < /tmp/selfie.jp
+			wl-copy --type image/jpeg < /tmp/selfie.jpg
 			set args $args[2..-1]
 		end
 	end
