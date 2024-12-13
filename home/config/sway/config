@@ -9,14 +9,6 @@ set $mod Mod4
 set $wifi ~/.config/rofi/modi/nmcli
 set $menu rofi -m 0 -show drun -sorting-method fzf -sort -run-command 'swaymsg exec -- {cmd}'
 #
-set $output_laptop "eDP-1"
-
-set $output_monitor "DP-1"
-# HDMI-A-1 is monitor when connected directly, DP-1 is monitor when connected through dock.
-set $output_monitor "DP-1"
-# "HDMI-A-1" # can't have a list here, because sway. Need to update manually when switching connection method.
-# sway circles through this space-delimited list when the first element is not found.
-set $primary "DP-1" "HDMI-A-1" "eDP-1"
 
 #dbg
 #set $output_laptop "DP-1"
@@ -128,6 +120,27 @@ exec_always sleep 2 && auto_redshift start 7:00
 #
 
 # # Workspaces
+set $output_laptop "eDP-1"
+set $output_monitor "DP-1"
+# "HDMI-A-1" # can't have a list here, because sway. Need to update manually when switching connection method.
+# sway circles through this space-delimited list when the first element is not found.
+set $primary "DP-1" "HDMI-A-1" "eDP-1"
+mode "monitors" {
+# not sure if any of this works
+	bindsym a exec $switch_out && 'set $primary "DP-1" "HDMI-A-1" "eDP-1"'
+	bindsym s exec $switch_out && 'set $primary "eDP-1"'
+	bindsym l exec $switch_out && 'set $primary "HDMI-A-1" "eDP-1"'
+
+	bindsym $mod+k exec $switch_out
+	bindsym $mod+c exec $switch_out
+	bindsym $mod+q exec $switch_out
+	bindsym Ctrl+c exec $switch_out
+	bindsym Escape exec $switch_out
+	bindsym q exec $switch_out
+
+}
+bindsym $mod+Period exec "swaymsg mode monitors && eww update sway_mode=monitors"
+
 # was using ${NIXOS_CONFIG}/home/config/sway/wallpapers/AndreySakharov.jpg, but it's too bright to be the default.
 output * bg $sway_root/wallpapers/333333.png fill
 workspace 1 output $primary

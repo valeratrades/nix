@@ -5,7 +5,7 @@ source $fish_scripts_pdir/weird.fish
 source $fish_scripts_pdir/document_watch.fish
 
 function beep
-	cargo -Zscript -q $fish_scripts_pdir/beep.rs $pdir/assets/sound/Notification.mp3 $argv
+	cargo -Zscript -q $fish_scripts_pdir/beep.rs $fish_scripts_pdir/assets/sound/Notification.mp3 $argv
 end
 function timer
 	cargo -Zscript -q $fish_scripts_pdir/timer.rs $argv

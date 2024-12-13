@@ -202,6 +202,7 @@
       pdfgrep
       xournalpp # draw on PDFs
       ncspot
+      songrec # shazam in rust. Might come with some crazy mic patches, as running it may have just fixed my laptop's built-in mic.
       neomutt
       anyrun # wayland-native rust alternative to rofi
       neofetch
