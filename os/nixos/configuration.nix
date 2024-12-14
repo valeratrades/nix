@@ -99,6 +99,7 @@ in
               leftcontrol = "capslock";
               capslock = "overload(ctrl_vim, esc)";
               shift = "oneshot(shift)";
+              rightcontrol = "oneshot(rightcontrol)";
               alt = "oneshot(alt)";
               "102nd" = "oneshot(shift)";
             };
