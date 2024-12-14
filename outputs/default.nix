@@ -60,7 +60,7 @@ let
     myvars.timur
     myvars.maria
   ];
-  user = myvars.valera; # dbg
+  dbg_user = myvars.valera; # dbg
 in
 {
   # Add attribute sets into outputs, for debugging
@@ -92,45 +92,45 @@ in
   # );
 
   #NB: when writing hostname, remove all '_' characters
-  #nixosConfigurations."${user.desktopHostName}" = nixpkgs.lib.nixosSystem {
-  nixosConfigurations = lib.genAttrs (map (user: user.desktopHostName) user-vars) (
-    desktopHostName:
-    nixpkgs.lib.nixosSystem {
-      system = "x86_64-linux";
+  nixosConfigurations = lib.listToAttrs (
+    map (user: {
+      #"${user.desktopHostName}" = nixpkgs.lib.nixosSystem {
+      name = user.desktopHostName;
+      value = nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
 
-      specialArgs = {
-        inherit inputs self;
-        inherit mylib user; # HACK
+        specialArgs = {
+          inherit inputs self;
+          inherit mylib user;
+        };
+
+        modules = [
+          (mylib.relativeToRoot "os/nixos/configuration.nix")
+          (mylib.relativeToRoot "machines/modules/default.nix")
+
+          home-manager.nixosModules.home-manager
+          {
+            home-manager.useGlobalPkgs = true;
+            home-manager.useUserPackages = true;
+            home-manager.backupFileExtension = "backup"; # delusional home-manager wants this exact file-extension for when I backup system-level files
+            home-manager.extraSpecialArgs = {
+              inherit inputs self;
+              inherit mylib user;
+            };
+
+            #home-manager.sharedModules = [
+            #	inputs.sops-nix.homeManagerModules.sops
+            #];
+
+            home-manager.users."${user.username}" = import (
+              #mylib.relativeToRoot "hosts/${user.desktopHostName}/default.nix"
+              mylib.relativeToRoot "hosts/v-laptop/default.nix" # HACK: hardcoded, but currently only one host actually has proper routing
+            );
+            nix.settings.trusted-users = [ user.username ]; # all systems assume single-user configurations
+          }
+        ];
       };
-
-      modules = [
-        (mylib.relativeToRoot "os/nixos/configuration.nix")
-        (mylib.relativeToRoot "machines/modules/default.nix")
-
-        home-manager.nixosModules.home-manager
-        {
-          home-manager.useGlobalPkgs = true;
-          home-manager.useUserPackages = true;
-          home-manager.backupFileExtension = "backup"; # delusional home-manager wants this exact file-extension for when I backup system-level files
-          home-manager.extraSpecialArgs = {
-            inherit inputs self;
-            inherit mylib user; # HACK
-          };
-
-          #home-manager.sharedModules = [
-          #	inputs.sops-nix.homeManagerModules.sops
-          #];
-
-          home-manager.users."${user.username}" = import (
-            #mylib.relativeToRoot "hosts/${user.desktopHostName}/default.nix"
-            mylib.relativeToRoot "hosts/v-laptop/default.nix" # HACK: hardcoded, but currently only one host actually has proper routing
-          );
-          nix.settings.trusted-users = [ user.username ]; # all systems assume single-user configurations
-        }
-
-        #({ pkgs, ... }: import ./modules/fenix.nix { inherit pkgs; })
-      ];
-    }
+    }) user-vars
   );
 
   checks = forAllSystems (system: {
