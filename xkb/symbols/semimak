@@ -48,6 +48,7 @@ xkb_symbols "basic" {
 	// // French stuff
 	// Setup
 	//key <BKSP> { type="ONE_LEVEL", [ ISO_Level3_Shift ] }; // don't think it's worth it, but certainly does work.
+	key <FK04> { type="ONE_LEVEL", [ ISO_Level3_Shift ] }; //dbg
 	key <RCTL> { type="ONE_LEVEL", [ ISO_Level3_Shift ] }; // doesn't work on my current keyboard, but may be useful again in the future. At least it does not to seem to break anything by its presence anyways.
 	modifier_map Mod1 { Alt_L, Alt_R, Meta_L, Meta_R };
 

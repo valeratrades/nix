@@ -48,7 +48,7 @@ in
   # };
 
   services = {
-    getty.autologinUser = user.username; # MOVE: to vlaptop
+    getty.autologinUser = user.username;
     xserver = {
       # # somehow this fixed the audio problem. Like huh, what, why???
       desktopManager.gnome.enable = true;
@@ -222,7 +222,7 @@ in
         };
       };
 
-      enable = true;
+      enable = false; # enabled from mod.fish, using --print-full-init to fix `psub` issue. TODO: submit a pr to enable such option in the nix starship module.
       settings = {
         # tipbits:
         # - `symbol` usually has a trailing whitespace
@@ -232,7 +232,6 @@ in
         line_break.disabled = true;
         palette = "google_calendar";
 
-        #format = "$username$character$\{custom.dbg\}";
         format = "$username$status$character";
         right_format = "$custom$all"; # `all` does _not_ duplicate explicitly enabled modules
 
@@ -487,7 +486,6 @@ in
   xdg.portal.enable = true;
   xdg.portal.wlr.enable = true;
 
-  #MOVE: make specific to each host
   imports = [
     ./desktop
     (
@@ -695,7 +693,6 @@ in
       GDK_DEBUG = "portals";
 
       # Nix
-      TEST = "${configRoot}"; # dbg
       NIXOS_CONFIG = "${configRoot}";
       #TODO!: figure out how to procedurally disable [vesktop, tg] evokations via rofi, outside of preset times in my calendar
       DOT_DESKTOP = "${pkgs.home-manager}/share/applications";
