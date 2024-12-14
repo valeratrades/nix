@@ -152,6 +152,7 @@ in
       settings = {
         KbdInteractiveAuthentication = true;
         UseDns = true; # allows for using hostnames in authorized_keys
+        X11Forwarding = true; # theoretically allows for use of graphical applications
       };
     };
     blueman.enable = true;
