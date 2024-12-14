@@ -249,6 +249,5 @@ alias spoy="set -x LD_PRELOAD $SPOTIFY_ADBLOCK_LIB; spotify" # the SPOTIFY_ADBLO
 
 
 # # Starship
-#starship init fish | source # the .enable in configuration.nix is apparently insufficient for the shells that are spawned by tmux
-starship init fish --print-full-init | source # test if this fixes the `psub` issue
+starship init fish --print-full-init | source # somehow fixes the psub bug that happens when using tmux with my config, initiated via standard nixos's `enable`
 #
