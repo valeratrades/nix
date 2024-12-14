@@ -147,7 +147,12 @@ in
       };
     };
     libinput.enable = true;
-    openssh.enable = true;
+    openssh = {
+      enable = true;
+      settings = {
+        KbdInteractiveAuthentication = true;
+      };
+    };
     blueman.enable = true;
     gvfs.enable = true; # Mount, trash, and other functionalities
     tumbler.enable = true; # Thumbnail support for images
@@ -164,12 +169,18 @@ in
     fish.enable = true;
 
     # conflicts with gnupg agent on which I have ssh support. TODO: figure out which one I want
-    #ssh.startAgent = true; # openssh remembers private keys; `ssh-add` adds a key to the agent
-
+    ssh = {
+      startAgent = true; # openssh remembers private keys; `ssh-add` adds a key to the agent
+      enableAskPassword = true;
+      extraConfig = ''
+        PasswordAuthentication = yes
+      '';
+    };
+    rust-motd.enableMotdInSSHD = true; # better ssh greeter
     mtr.enable = true;
     gnupg.agent = {
       enable = true;
-      enableSSHSupport = true;
+      enableSSHSupport = false; # dbg
     };
     nh = {
       enable = true;
@@ -559,6 +570,7 @@ in
       "audio"
       "video"
     ];
+    openssh.authorizedKeys.keys = user.sshAuthorizedKeys;
   };
 
   systemd = {
@@ -782,6 +794,7 @@ in
           adwaita-qt
           bemenu
           blueman
+          rust-motd
           eww
           grim
           slurp
