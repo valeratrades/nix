@@ -1,13 +1,4 @@
 #TODO!: move much of this to shared dirs
-#{
-#  self,
-#  ...
-#}: {
-#  config,
-#  pkgs,
-#  lib,
-#  ...
-#}:
 {
   self,
   config,
@@ -31,39 +22,39 @@
   #defaultSopsFormat = "json";
 
   # # to be moved to shared (once I figure out how to source it)
-  programs = {
-    neovim = {
-      plugins = [
-        pkgs.vimPlugins.nvim-treesitter.withAllGrammars # can also choose specific ones with `.withPlugins (p: [ p.c p.java /*etc*/ ]))`
-      ];
-      defaultEditor = true; # sets $EDITOR
-      #? Can I get a nano alias?
-      viAlias = true;
-      vimAlias = true;
-      vimdiffAlias = true;
-    };
-    direnv.enable = true;
-    eza.enable = true;
-  };
-  home.sessionPath = [
-    "${pkgs.lib.makeBinPath [ ]}"
-    "${config.home.homeDirectory}/s/evdev/"
-    "${config.home.homeDirectory}/.cargo/bin/"
-    "${config.home.homeDirectory}/go/bin/"
-    "/usr/lib/rustup/bin/"
-    "${config.home.homeDirectory}/.local/bin/"
-    "${config.home.homeDirectory}/pkg/packages.modular.com_mojo/bin"
-    "${config.home.homeDirectory}/.local/share/flatpak"
-    "/usr/bin"
-    "/var/lib/flatpak"
-  ];
-
-  dconf = {
-    enable = true;
-    settings."org/gnome/desktop/interface" = {
-      color-scheme = "prefer-dark";
-    };
-  };
+  #programs = {
+  #  neovim = {
+  #    plugins = [
+  #      pkgs.vimPlugins.nvim-treesitter.withAllGrammars # can also choose specific ones with `.withPlugins (p: [ p.c p.java /*etc*/ ]))`
+  #    ];
+  #    defaultEditor = true; # sets $EDITOR
+  #    #? Can I get a nano alias?
+  #    viAlias = true;
+  #    vimAlias = true;
+  #    vimdiffAlias = true;
+  #  };
+  #  direnv.enable = true;
+  #  eza.enable = true;
+  #};
+  #home.sessionPath = [
+  #  "${pkgs.lib.makeBinPath [ ]}"
+  #  "${config.home.homeDirectory}/s/evdev/"
+  #  "${config.home.homeDirectory}/.cargo/bin/"
+  #  "${config.home.homeDirectory}/go/bin/"
+  #  "/usr/lib/rustup/bin/"
+  #  "${config.home.homeDirectory}/.local/bin/"
+  #  "${config.home.homeDirectory}/pkg/packages.modular.com_mojo/bin"
+  #  "${config.home.homeDirectory}/.local/share/flatpak"
+  #  "/usr/bin"
+  #  "/var/lib/flatpak"
+  #];
+  #
+  #dconf = {
+  #  enable = true;
+  #  settings."org/gnome/desktop/interface" = {
+  #    color-scheme = "prefer-dark";
+  #  };
+  #};
   #
 
   #imports = [

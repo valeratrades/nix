@@ -15,7 +15,8 @@ in
     #./impermanence.nix
     #./secureboot.nix
     ./home.nix
-    (mylib.relativeToRoot "./home/config/fish/default.nix")
+    ../shared
+    #(mylib.relativeToRoot "./home/config/fish/default.nix")
   ];
 
   #networking = {

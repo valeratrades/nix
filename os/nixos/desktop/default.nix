@@ -1,4 +1,4 @@
 { mylib, ... }:
 {
-  imports = mylib.scanPaths ./.;
+  imports = mylib.scanPaths ./. ++ [ (mylib.relativeToRoot "home/config/fish/default.nix") ];
 }

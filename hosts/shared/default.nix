@@ -7,9 +7,11 @@
   ...
 }:
 {
-	#XXX: currently not sourced
-	programs = {
+  programs = {
     neovim = {
+      plugins = [
+        pkgs.vimPlugins.nvim-treesitter.withAllGrammars # can also choose specific ones with `.withPlugins (p: [ p.c p.java /*etc*/ ]))`
+      ];
       defaultEditor = true; # sets $EDITOR
       #? Can I get a nano alias?
       viAlias = true;
@@ -17,8 +19,8 @@
       vimdiffAlias = true;
     };
     direnv.enable = true;
-		eza.enable = true;
-	};
+    eza.enable = true;
+  };
   home.sessionPath = [
     "${pkgs.lib.makeBinPath [ ]}"
     "${config.home.homeDirectory}/s/evdev/"
@@ -33,9 +35,10 @@
   ];
 
   dconf = {
-		enable = true;
-		settings."org/gnome/desktop/interface" = {
+    enable = true;
+    settings."org/gnome/desktop/interface" = {
       color-scheme = "prefer-dark";
     };
   };
+
 }
