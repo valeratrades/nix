@@ -44,7 +44,7 @@
     ".config/tg.toml".source = "${self}/home/config/tg.toml";
     ".config/tg_admin.toml".source = "${self}/home/config/tg_admin.toml";
     ".config/auto_redshift.toml".source = "${self}/home/config/auto_redshift.toml";
-    ".config/todo.toml".source = ''
+    ".config/todo.toml".text = ''
       data_dir = "~/.data/personal/"
       github_token = { env = "GITHUB_KEY" }
       date_format = "%Y-%m-%d"
