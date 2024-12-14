@@ -153,6 +153,7 @@ in
         KbdInteractiveAuthentication = true;
         UseDns = true; # allows for using hostnames in authorized_keys
         X11Forwarding = true; # theoretically allows for use of graphical applications
+        PermitRootLogin = "yes"; # HACK: security risk
       };
       #openFirewall = true; # auto-open specified ports in the firewall. Seems to conflict with manual specification of eg `22` port
     };
