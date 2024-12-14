@@ -151,6 +151,7 @@ in
       enable = true;
       settings = {
         KbdInteractiveAuthentication = true;
+        UseDns = true; # allows for using hostnames in authorized_keys
       };
     };
     blueman.enable = true;
