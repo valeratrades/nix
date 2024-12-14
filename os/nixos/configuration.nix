@@ -154,6 +154,7 @@ in
         UseDns = true; # allows for using hostnames in authorized_keys
         X11Forwarding = true; # theoretically allows for use of graphical applications
       };
+      #openFirewall = true; # auto-open specified ports in the firewall. Seems to conflict with manual specification of eg `22` port
     };
     blueman.enable = true;
     gvfs.enable = true; # Mount, trash, and other functionalities
@@ -488,6 +489,7 @@ in
 
   #MOVE: make specific to each host
   imports = [
+    ./desktop
     (
       if builtins.pathExists "/etc/nixos/hardware-configuration.nix" then
         /etc/nixos/hardware-configuration.nix
@@ -896,6 +898,7 @@ in
         # Networking Tools
         [
           openssh
+          waypipe # similar to X11 forwarding, but for wayland
           bluez
           dnsutils
           ipcalc
