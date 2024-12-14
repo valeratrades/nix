@@ -1128,13 +1128,14 @@ in
   #TODO!: make specific to the host
   networking = {
     firewall = {
+      enable = true;
       allowedTCPPorts = [
         80 # HTTP
         443 # HTTPS
         53 # DNS (some DNS services use TCP for large responses)
-        22 # SSH (if SSH access is needed)
-        23 # Telnet (legacy, if required)
-        21 # FTP (if needed for legacy protocols)
+        22 # SSH
+        23 # Telnet (legacy, just in case)
+        21 # FTP (legacy, just in case)
         554 # RTSP (for streaming media services)
         1935 # RTMP (often used for streaming)
         57621 # for Spotify
