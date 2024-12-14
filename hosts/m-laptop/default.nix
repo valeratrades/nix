@@ -6,6 +6,7 @@
 #############################################################
 {
   imports = [
+    ../shared
     ./home.nix
   ];
   home.stateVersion = "24.05"; # NB: changing requires migration

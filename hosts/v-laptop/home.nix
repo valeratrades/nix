@@ -10,9 +10,6 @@
   ...
 }:
 {
-  #home.username = user.username;
-  #home.homeDirectory = "/home/${user.username}";
-
   #nix.extraOptions = "include ${config.home.homeDirectory}/s/g/private/sops.conf";
   #sops = {
   #	defaultSopsFile = "${config.home.homeDirectory}/s/g/private/sops.yaml";
@@ -20,46 +17,6 @@
 
   #defaultSopsFile = /home/v/s/g/private/sops.json;
   #defaultSopsFormat = "json";
-
-  # # to be moved to shared (once I figure out how to source it)
-  #programs = {
-  #  neovim = {
-  #    plugins = [
-  #      pkgs.vimPlugins.nvim-treesitter.withAllGrammars # can also choose specific ones with `.withPlugins (p: [ p.c p.java /*etc*/ ]))`
-  #    ];
-  #    defaultEditor = true; # sets $EDITOR
-  #    #? Can I get a nano alias?
-  #    viAlias = true;
-  #    vimAlias = true;
-  #    vimdiffAlias = true;
-  #  };
-  #  direnv.enable = true;
-  #  eza.enable = true;
-  #};
-  #home.sessionPath = [
-  #  "${pkgs.lib.makeBinPath [ ]}"
-  #  "${config.home.homeDirectory}/s/evdev/"
-  #  "${config.home.homeDirectory}/.cargo/bin/"
-  #  "${config.home.homeDirectory}/go/bin/"
-  #  "/usr/lib/rustup/bin/"
-  #  "${config.home.homeDirectory}/.local/bin/"
-  #  "${config.home.homeDirectory}/pkg/packages.modular.com_mojo/bin"
-  #  "${config.home.homeDirectory}/.local/share/flatpak"
-  #  "/usr/bin"
-  #  "/var/lib/flatpak"
-  #];
-  #
-  #dconf = {
-  #  enable = true;
-  #  settings."org/gnome/desktop/interface" = {
-  #    color-scheme = "prefer-dark";
-  #  };
-  #};
-  #
-
-  #imports = [
-  #  ../../home/config/fish/default.nix
-  #];
 
   # fuck mkOutOfStoreSymlink and home-manager. Just link everything except for where apps like to write artifacts to the config dir.
   home.activation = {
@@ -171,54 +128,10 @@
   home.packages =
     with pkgs;
     lib.lists.flatten [
-      cowsay
-      unimatrix
-      spotify
-      #spotube // spotify-adblock is perfectly sufficient
       nyxt
       en-croissant # chess analysis GUI
-      [
-        # messengers
-        telegram-desktop
-        vesktop
-        discord # for when vesktop breaks, otherwise vesktop is a superset
-        zulip
-      ]
-      [
-        # nix
-        nix-tree # analyse nix-store
-      ]
-      rnote
-      zathura # read PDFs
-      pdfgrep
-      xournalpp # draw on PDFs
       ncspot
-      songrec # shazam in rust. Might come with some crazy mic patches, as running it may have just fixed my laptop's built-in mic.
-      fswebcam # instant webcam photo
-      neomutt
-      anyrun # wayland-native rust alternative to rofi
-      neofetch
-      figlet
-      [
-        # auth
-        oath-toolkit # https://askubuntu.com/questions/1460640/generating-totp-for-2fa-directly-from-the-computer-no-mobile-device
-        bitwarden-desktop # seems like bitwarden is lacking TOTP on free plans
-        bitwarden-cli
-        keepassxc
-        #TODO: attempt to maybe start using it. Or just go agenix/sops. Current system is rather fragile. Priority is low because currently there isn't much to protect.
-        pass # linux password manager
-        prs # some password manager in rust
-        passh # non-interactive SSH auth
-      ]
-      [
-        # RDP clients
-        remmina
-        anydesk # works to manage windows/linux+X11, but obviously can't RDP linux running wayland
-        freerdp
-      ]
       #flutterPackages-source.stable // errors
-      typioca # tui monkeytype
-      smassh # tui monkeytype
 
       [
         # retarded games. Here only for Tima, TODO: remove from v right after the host config split.
@@ -228,58 +141,13 @@
       ]
     ]
     ++ [
-      inputs.auto_redshift.packages.${pkgs.system}.default
-      inputs.todo.packages.${pkgs.system}.default
-      inputs.booktyping.packages.${pkgs.system}.default
+      # some of my own packages are in shared, not everything is here
       inputs.btc_line.packages.${pkgs.system}.default
-      inputs.tg.packages.${pkgs.system}.default
-      inputs.bbeats.packages.${pkgs.system}.default
       #inputs.prettify_log.packages.${pkgs.system}.default
-      inputs.distributions.packages.${pkgs.system}.default
+      inputs.distributions.packages.${pkgs.system}.default # ? shared?
       inputs.bad_apple_rs.packages.${pkgs.system}.default
-      inputs.reasonable_envsubst.packages.${pkgs.system}.default
 
       #inputs.aggr_orderbook.packages.${pkgs.system}.default
       #inputs.orderbook_3d.packages.${pkgs.system}.default
     ];
-
-  gtk = {
-    enable = true;
-    theme = {
-      name = "Materia-dark"; # dbg: want Adwaita-dark
-      package = pkgs.materia-theme;
-    };
-  };
-
-  home.pointerCursor = {
-    name = "Adwaita";
-    package = pkgs.adwaita-icon-theme;
-    size = 24;
-    x11 = {
-      enable = true;
-      defaultCursor = "Adwaita";
-    };
-  };
-
-  home.keyboard = null; # otherwise it overwrites my semimak
-
-  programs = {
-    yazi.enable = true;
-
-    tmux = {
-      enable = true;
-      keyMode = "vi";
-      shortcut = "e";
-      package = pkgs.tmux;
-      plugins = with pkgs; [
-        tmuxPlugins.resurrect # persist sessions
-        tmuxPlugins.open # open files
-        tmuxPlugins.copycat # enables regex
-      ];
-      extraConfig = "${self}/home/config/tmux/tmux.conf";
-    };
-
-    home-manager.enable = true; # let it manage itself
-  };
-  #home.stateVersion = "24.05"; # NB: DO NOT CHANGE, same as `system.stateVersion`
 }
