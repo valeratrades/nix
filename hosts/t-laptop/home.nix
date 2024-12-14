@@ -11,7 +11,7 @@
 {
   home.packages =
     with pkgs;
-    lib.lists.flatten [
+    builtins.trace "DEBUG: sourcing Timur-specific home.nix" lib.lists.flatten [
       [
         # retarded games. Here only for Tima, TODO: remove from v right after the host config split.
         prismlauncher
