@@ -3,10 +3,18 @@
   config,
   lib,
   pkgs,
+  user,
   inputs,
   ...
 }:
 {
+  imports = [
+    (
+      # in my own config I symlink stuff to fascilitate experimentation. In derived setups I value reproducibility much more
+      if user.userFullName == "Valera" then ./config_symlinks.nix else ./config_writes.nix
+    )
+  ];
+
   programs = {
     neovim = {
       plugins = [
@@ -62,8 +70,8 @@
   # Things that never need to be available with sudo
   home.packages =
     with pkgs;
+    # INFO: arrays are always automatically merged, in host-specfic `home.nix`s it may seem like I'm overwriting this, but it only looks this way.
     lib.lists.flatten [
-      # INFO: arrays are always automatically merged, in host-specfic `home.nix`s it may seem like I'm overwriting this, but it only looks this way.
       [
         # funsies
         unimatrix
@@ -122,4 +130,52 @@
       inputs.reasonable_envsubst.packages.${pkgs.system}.default # definitely have scripts depending on it, and they are currently part of the shared config.
       inputs.booktyping.packages.${pkgs.system}.default
     ];
+
+  home.activation = {
+    # # my file arch consequences
+    mkdir = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      mkdir -p $HOME/tmp/
+      mkdir -p $HOME/Videos/obs/
+      mkdir -p $HOME/tmp/Screenshots/
+    '';
+    #
+  };
+  home.file = {
+    # # fs
+    "g/README.md".source = "${self}/home/fs/g/README.md$";
+    "s/g/README.md".source = "${self}/home/fs/s/g/README.md";
+    "s/l/README.md".source = "${self}/home/fs/s/l/README.md";
+    "tmp/README.md".source = "${self}/home/fs/tmp/README.md";
+    #
+
+    ".config/tg.toml".source = "${self}/home/config/tg.toml";
+    ".config/tg_admin.toml".source = "${self}/home/config/tg_admin.toml";
+    ".config/auto_redshift.toml".source = "${self}/home/config/auto_redshift.toml";
+    ".config/todo.toml".source = "${self}/home/config/todo.toml";
+    ".config/discretionary_engine.toml".source = "${self}/home/config/discretionary_engine.toml";
+    ".config/btc_line.toml".source = "${self}/home/config/btc_line.toml";
+
+    ".lesskey".source = "${self}/home/config/lesskey";
+    ".config/fish/conf.d/sway.fish".source = "${self}/home/config/fish/conf.d/sway.fish";
+    ".config/greenclip.toml".source = "${self}/home/config/greenclip.toml";
+
+    # # Might be able to join these, syntaxis should be similar
+    ".config/vesktop" = {
+      source = "${self}/home/config/vesktop";
+      recursive = true;
+    };
+    ".config/discord" = {
+      source = "${self}/home/config/discord";
+      recursive = true;
+    };
+    # configured via hm, can't just symlink it in my host's config
+    ".config/tmux" = {
+      source = "${self}/home/config/tmux";
+      recursive = true;
+    };
+    ".cargo" = {
+      source = "${self}/home/config/cargo";
+      recursive = true;
+    };
+  };
 }
