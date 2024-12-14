@@ -261,7 +261,6 @@ vim.g.rustaceanvim = {
 			local output = handle:read("*a")
 			handle:close()
 			local rust_version = output:match("%S+")
-			--io.popen("notify-send 'Rust version: " .. rust_version .. "'") --dbg
 			--return { "rustup run " .. rust_version .. " rust-analyzer" }
 			--return { "~/.rustup/toolchains/" .. rust_version .. "/bin/rust-analyzer" }
 			return { "rust-analyzer" }

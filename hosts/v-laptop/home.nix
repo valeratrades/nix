@@ -276,7 +276,7 @@
     yazi.enable = true;
 
     tmux = {
-      enable = true; # dbg
+      enable = true;
       keyMode = "vi";
       shortcut = "e";
       package = pkgs.tmux;

@@ -10,9 +10,6 @@ set $wifi ~/.config/rofi/modi/nmcli
 set $menu rofi -m 0 -show drun -sorting-method fzf -sort -run-command 'swaymsg exec -- {cmd}'
 #
 
-#dbg
-#set $output_laptop "DP-1"
-
 set $left s
 set $down r
 set $up n

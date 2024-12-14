@@ -60,7 +60,6 @@ let
     myvars.timur
     myvars.maria
   ];
-  dbg_user = myvars.valera; # dbg
 in
 {
   # Add attribute sets into outputs, for debugging
@@ -158,8 +157,7 @@ in
         #		configPath = "./.prettierrc.yaml"; # relative to the flake root
         #	};
         #};
-        #dbg: temporarily disabled
-        #deadnix.enable = true; # detect unused variable bindings in `*.nix`
+        #deadnix.enable = true; # detect unused variable bindings in `*.nix`. Also fails if false, so maybe this shouldn't be a hook.
         statix.enable = true; # lints and suggestions for Nix code(auto suggestions)
       };
     };

@@ -183,7 +183,7 @@ in
     mtr.enable = true;
     gnupg.agent = {
       enable = true;
-      enableSSHSupport = false; # dbg
+      enableSSHSupport = false;
     };
     nh = {
       enable = true;

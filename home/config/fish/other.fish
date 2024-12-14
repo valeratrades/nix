@@ -106,7 +106,6 @@ alias sql="sqlite3"
 alias poetry="POETRY_KEYRING_DISABLED=true poetry"
 alias dk="sudo docker"
 alias hardware="sudo lshw"
-alias home_wifi="nmcli connection up id \"Livebox-3B70\"" # dbg
 alias keys="xev -event keyboard"
 alias audio="qpwgraph"
 alias test_mic="arecord -c1 -vvv /tmp/mic.wav"
