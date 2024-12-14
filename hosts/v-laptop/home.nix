@@ -228,6 +228,13 @@
       #flutterPackages-source.stable // errors
       typioca # tui monkeytype
       smassh # tui monkeytype
+
+      [
+        # retarded games. Here only for Tima, TODO: remove from v right after the host config split.
+        prismlauncher
+        modrinth-app
+        jdk23
+      ]
     ]
     ++ [
       inputs.auto_redshift.packages.${pkgs.system}.default
@@ -269,10 +276,10 @@
     yazi.enable = true;
 
     tmux = {
-      # enable brings in additional configuration state, so don't enable
       enable = true; # dbg
+      keyMode = "vi";
+      shortcut = "e";
       package = pkgs.tmux;
-      # don't work without enable. But enable, again, brings a bunch of unrelated shit. So basically no plugins for me.
       plugins = with pkgs; [
         tmuxPlugins.resurrect # persist sessions
         tmuxPlugins.open # open files

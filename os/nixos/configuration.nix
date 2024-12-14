@@ -208,7 +208,6 @@ in
       };
 
       enable = true;
-      #enableTransience = true;
       settings = {
         # tipbits:
         # - `symbol` usually has a trailing whitespace
@@ -490,6 +489,11 @@ in
 
   # Bootloader.
   boot = {
+    tmp.useTmpfs = true;
+    systemd.services.nix-daemon = {
+      # https://github.com/NixOS/nixpkgs/pull/338181
+      environment.TMPDIR = "/var/tmp";
+    };
     loader = {
       systemd-boot = {
         enable = true;
