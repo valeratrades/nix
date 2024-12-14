@@ -91,10 +91,8 @@ in
   #   system: allSystems.${system}.packages or {}
   # );
 
-  #NB: when writing hostname, remove all '_' characters
   nixosConfigurations = lib.listToAttrs (
     map (user: {
-      #"${user.desktopHostName}" = nixpkgs.lib.nixosSystem {
       name = user.desktopHostName;
       value = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
