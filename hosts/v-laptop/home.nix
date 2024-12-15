@@ -26,6 +26,7 @@
       ncspot
       #flutterPackages-source.stable // errors
     ]
+
     ++ [
       # some of my own packages are in shared, not everything is here
       inputs.btc_line.packages.${pkgs.system}.default
