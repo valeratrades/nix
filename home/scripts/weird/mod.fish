@@ -1,3 +1,4 @@
+set current_dir_weird (dirname (status --current-filename))
 alias emacs="printf \"\033[31mno\033[0m\n\""
 alias nano="printf \"\033[31mno\033[0m\n\""
 
@@ -72,7 +73,7 @@ function typing_guide
 end
 
 function what
-    cat ~/s/help_scripts/weird/sbf_tweet.txt | python3 ~/s/help_scripts/weird/what.py | figlet
+    cat $current_dir_weird/sbf_tweet.txt | python3 $current_dir_weird/what.py | figlet
 end
 
 alias bad_apple="bad-apple-rs"
