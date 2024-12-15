@@ -98,7 +98,7 @@
           # messengers
           telegram-desktop
           vesktop
-          discord # for when vesktop breaks, otherwise vesktop is a superset
+          #discord # for when vesktop breaks, otherwise vesktop is a superset #dbg: was breaking for Tima
           zulip
         ]
         [
