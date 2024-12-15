@@ -8,6 +8,7 @@ set $mod Mod4
 # Rofi
 set $wifi ~/.config/rofi/modi/nmcli
 set $menu rofi -m 0 -show drun -sorting-method fzf -sort -run-command 'swaymsg exec -- {cmd}'
+set $user ${USER}
 #
 
 set $left s
@@ -60,10 +61,15 @@ bindsym $mod+g exec rofi -modi "clipboard:greenclip print" -show clipboard
 bindsym $mod+Shift+g exec greenclip clear
 #
 
+#if (user == "v") {
+#	exec_always notify-send "Test"
+#}
+
 input * {
 	xkb_layout "semimak,ru,us"
 	#dbg: `us` is here mostly in case semimak adds layer of inderection when using anydesk on Tima's setup
 	#dbg: was "iso,,", testing if spec in nixos conf suffices
+	#TODO: somehow make conditional on the user, keeping two config trees is too much
 	xkb_variant "iso,,"
 	#ru should be `iso`, but it doesn't work for some reason.
 	xkb_options "grp:win_space_toggle"
