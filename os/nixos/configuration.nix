@@ -426,6 +426,7 @@ in
             unstage = "reset HEAD --"; # in case you did `git add .` before running `git diff`
             last = "log -1 HEAD";
             au = "remote add upstream";
+            aa = "add -A";
             su = "remote set-url";
             b = "branch";
             c = "checkout";
@@ -489,6 +490,7 @@ in
 
   imports = [
     ./desktop
+    (mylib.relativeToRoot "./hosts/${user.desktopHostName}/configuration.nix")
     (
       if builtins.pathExists "/etc/nixos/hardware-configuration.nix" then
         /etc/nixos/hardware-configuration.nix
