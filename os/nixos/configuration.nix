@@ -532,18 +532,37 @@ in
   };
 
   time.timeZone = "UTC";
-  i18n.defaultLocale = "en_US.UTF-8";
-  i18n.extraLocaleSettings = {
-    LC_ADDRESS = "fr_FR.UTF-8";
-    LC_IDENTIFICATION = "fr_FR.UTF-8";
-    LC_MEASUREMENT = "en_GB.UTF-8";
-    LC_MONETARY = "en_US.UTF-8";
-    LC_NAME = "fr_FR.UTF-8";
-    LC_NUMERIC = "fr_FR.UTF-8";
-    LC_PAPER = "fr_FR.UTF-8";
-    LC_TELEPHONE = "fr_FR.UTF-8";
-    LC_TIME = "en_GB.UTF-8";
-  };
+  i18n =
+    if user.userFullName == "Timur" then
+      {
+        defaultLocale = "en_US.UTF-8"; # contemplated on making this `ru_RU.UTF-8`, but decided against it as that also affects outputs of some terminal commands, and that is just asking for developing bad habits.
+        extraLocaleSettings = {
+          LC_ADDRESS = "ru_RU.UTF-8";
+          LC_IDENTIFICATION = "ru_RU.UTF-8";
+          LC_MEASUREMENT = "ru_RU.UTF-8";
+          LC_MONETARY = "ru_RU.UTF-8";
+          LC_NAME = "ru_RU.UTF-8";
+          LC_NUMERIC = "ru_RU.UTF-8";
+          LC_PAPER = "ru_RU.UTF-8";
+          LC_TELEPHONE = "ru_RU.UTF-8";
+          LC_TIME = "ru_RU.UTF-8";
+        };
+      }
+    else
+      {
+        defaultLocale = "en_US.UTF-8";
+        extraLocaleSettings = {
+          LC_ADDRESS = "fr_FR.UTF-8";
+          LC_IDENTIFICATION = "fr_FR.UTF-8";
+          LC_MEASUREMENT = "en_GB.UTF-8";
+          LC_MONETARY = "en_US.UTF-8";
+          LC_NAME = "fr_FR.UTF-8";
+          LC_NUMERIC = "fr_FR.UTF-8";
+          LC_PAPER = "fr_FR.UTF-8";
+          LC_TELEPHONE = "fr_FR.UTF-8";
+          LC_TIME = "en_GB.UTF-8";
+        };
+      };
 
   hardware = {
     pulseaudio.enable = false;
