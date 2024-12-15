@@ -56,12 +56,8 @@ in
       enable = false;
       #
       autorun = false; # no clue if it does anything if `enable = false`, but might as well keep it
-      #TODO!!!!!!!!!: update to actually install semimak there first.
       xkb = {
-        #dir = lib.mkDefault "/etc/nixos/X11/xkb"; # Changing the root dir does not work. It must be exactly where expected or xkb goes nuts.
         options = "grp:win_space_toggle";
-
-        # # selecting the following doesn't change anything though, must be configured through sway (or so I think now)
         extraLayouts.semimak = {
           description = "Semimak for both keyboard standards";
           languages = [ "eng" ];
