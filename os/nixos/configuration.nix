@@ -535,7 +535,7 @@ in
   i18n =
     if user.userFullName == "Timur" then
       {
-        defaultLocale = "ru_RU.UTF-8";
+        defaultLocale = "en_US.UTF-8"; # contemplated on making this `ru_RU.UTF-8`, but decided against it as that also affects outputs of some terminal commands, and that is just asking for developing bad habits.
         extraLocaleSettings = {
           LC_ADDRESS = "ru_RU.UTF-8";
           LC_IDENTIFICATION = "ru_RU.UTF-8";
