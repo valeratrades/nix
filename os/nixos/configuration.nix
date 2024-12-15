@@ -501,8 +501,7 @@ in
           "./hosts/${user.desktopHostName}/hardware-configuration.nix"
     )
   ];
-
-  ##hardware.enableAllFirmware = true;
+  #hardware.enableAllFirmware = true;
 
   # Bootloader.
   systemd.services.nix-daemon = {
