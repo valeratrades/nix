@@ -63,7 +63,8 @@ bindsym $mod+Shift+g exec greenclip clear
 input * {
 	xkb_layout "semimak,ru,us"
 	#dbg: `us` is here mostly in case semimak adds layer of inderection when using anydesk on Tima's setup
-	xkb_variant "iso,,"
+	#dbg: was "iso,,", testing if spec in nixos conf suffices
+	xkb_variant ",,"
 	#ru should be `iso`, but it doesn't work for some reason.
 	xkb_options "grp:win_space_toggle"
 

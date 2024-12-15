@@ -68,7 +68,7 @@ in
           symbolsFile = mylib.relativeToRoot "./xkb/symbols/semimak";
         };
         layout = "semimak";
-        variant = "iso";
+        variant = (if user.userFullName == "Timur" then "ansi" else "iso");
         #
       };
     };
