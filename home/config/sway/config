@@ -248,7 +248,7 @@ output $output_laptop pos 560 1466
 # anything but `0 0` will break `wine`, so the commented out versions, hence the line above for running it when monitor is unplugged.
 #
 
-exec_always "sh -c -- pkill -f 'todo monitor' && todo monitor || todo monitor"
+exec_always "sh -c -- pkill -f 'todo monitor'; todo monitor"
 
 bindsym $mod+w exec "$NIXOS_CONFIG/home/scripts/circle_wallpapers.sh f"
 bindsym $mod+Shift+w exec "$NIXOS_CONFIG/home/scripts/circle_wallpapers.sh b"
