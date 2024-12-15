@@ -13,7 +13,7 @@
 }:
 #TODO: add build script that cds in $XDG_DATA_HOME/nvim/lazy-telescope-fzf-native.nvim and runs `make`
 let
-  userHome = config.users.users."${user.username}".home; # TODO: also should be dynamic
+  userHome = config.users.users."${user.username}".home;
   configRoot = "/home/${user.username}/nix"; # TODO!!!!!: have this be dynamic based on the actual dir where this config is currently located.
 
   modularHome = "${userHome}/.modular";
@@ -381,7 +381,7 @@ in
         };
 
         core = {
-          excludesfile = "/home/v/.config/git/.gitignore_global"; # converts any large files that were not included into .gitignore into pointers
+          excludesfile = "${userHome}.config/git/.gitignore_global"; # converts any large files that were not included into .gitignore into pointers
         };
 
         pager = {
