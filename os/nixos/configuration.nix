@@ -195,6 +195,8 @@ in
       };
     };
     starship = {
+      enable = true; # enabled from mod.fish, using --print-full-init to fix `psub` issue. However the `enable` here is also necessary, to have right-prompt working correctly. TODO: submit a pr to enable such option in the nix starship module.
+      interactiveOnly = true; # only use it when shell is interactive
       # defined here, as `hm` doesn't yet recognize the `presets` option on `starship` (2024/10/31)
       presets = [ "no-runtime-versions" ]; # noisy on python, lua, and all the languages I don't care about. Would rather explicitly setup expansions on the important ones.
       settings = {
@@ -222,8 +224,6 @@ in
           #version_format = "$major.$minor(-$toolchain)"; # $toolchain is not recognized correctly right now (2024/10/31)
         };
       };
-
-      enable = false; # enabled from mod.fish, using --print-full-init to fix `psub` issue. TODO: submit a pr to enable such option in the nix starship module.
       settings = {
         # tipbits:
         # - `symbol` usually has a trailing whitespace
