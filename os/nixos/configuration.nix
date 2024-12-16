@@ -1025,7 +1025,7 @@ in
           [
             docker
             devenv
-            direnv
+            nix-direnv
           ]
         ]
 
@@ -1142,6 +1142,8 @@ in
               clang-tools
               cmake
               gnumake
+              meson
+              ninja
             ]
 
             # lua

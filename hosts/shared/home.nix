@@ -26,7 +26,15 @@
       vimAlias = true;
       vimdiffAlias = true;
     };
-    direnv.enable = true;
+    direnv = {
+      enable = true;
+      package = pkgs.direnv;
+      nix-direnv = {
+        enable = true;
+        package = pkgs.nix-direnv;
+      };
+      silent = true;
+    };
     eza.enable = true;
     yazi.enable = true;
     tmux = {
@@ -197,12 +205,36 @@
                 gc = ":chats<Enter>";
                 gd = ":dms<Enter>";
                 j = ":join<Enter>";
+                gr = ":reply<Enter>";
+                gh = ":react! heart";
+
+                "<M-c>" = "<C-w>q";
+                "<C-w>v" = ":vsplit #alias:example.com<Enter>";
+                "<C-w>h" = ":split #alias:example.com<Enter>";
               };
               command = {
                 help = "welcome<Enter>";
               };
             };
           };
+
+      #".config/xdg-desktop-portal-shana/config.toml".source =
+      #  (pkgs.formats.toml { }).generate
+      #    "" {
+      #      open_file = "org.freedesktop.desktop.impl.lxqt";
+      #      save_file = "org.freedesktop.desktop.impl.lxqt";
+      #    };
+      #".config/xdg-desktop-portal/sway.conf".text = ''
+      #  [preferred]
+      #  default=dolphin
+      #  org.freedesktop.impl.portal.Settings=dolphin
+      #  #;gtk
+      #  org.freedesktop.impl.portal.FileChooser=shana
+      #  '';
+      #        [portal]
+      #DBusName=org.freedesktop.impl.portal.desktop.termfilechooser
+      #Interfaces=org.freedesktop.impl.portal.FileChooser;
+      #UseIn=i3;wlroots;sway;Wayfire;river;mate;lxde;openbox;unity;pantheon
 
       # # Might be able to join these, syntaxis should be similar
       ".config/vesktop" = {
