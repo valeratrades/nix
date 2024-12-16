@@ -178,8 +178,8 @@
 
       ".config/iamb/config.toml".text = ''
         [profiles."master"]
-        user_id: "valeratrades"
-        url: "https://matrix.org"
+        user_id =  "@valeratrades:matrix.org"
+        #url = "https://matrix.org"
       '';
 
       # # Might be able to join these, syntaxis should be similar
