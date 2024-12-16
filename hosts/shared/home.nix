@@ -201,9 +201,6 @@
                 help = ":welcome";
               };
             };
-            settings.users = {
-              master.name = "${user.userFullName}";
-            };
           };
 
       # # Might be able to join these, syntaxis should be similar
