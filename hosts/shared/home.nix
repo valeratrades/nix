@@ -107,6 +107,7 @@
           smassh # tui monkeytype
           neofetch
           figlet
+          iamb # matrix client (rust)
         ]
         [
           # nix
@@ -174,6 +175,12 @@
       ".lesskey".source = "${self}/home/config/lesskey";
       ".config/fish/conf.d/sway.fish".source = "${self}/home/config/fish/conf.d/sway.fish";
       ".config/greenclip.toml".source = "${self}/home/config/greenclip.toml";
+
+      ".config/iamb.toml".text = ''
+        [profiles."master"]
+        user_id: "valeratrades"
+        url: "https://matrix.org"
+      '';
 
       # # Might be able to join these, syntaxis should be similar
       ".config/vesktop" = {

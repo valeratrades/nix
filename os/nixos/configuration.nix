@@ -175,6 +175,20 @@ in
     sway = {
       enable = true;
       wrapperFeatures.gtk = true;
+      extraSessionCommands = ''
+        				export XDG_CURRENT_DESKTOP="sway";
+        				export GDK_BACKEND="wayland";
+        				export XDG_BACKEND="wayland";
+        				export QT_WAYLAND_FORCE_DPI="physical";
+        				export QT_QPA_PLATFORM="wayland-egl";
+        				export CLUTTER_BACKEND="wayland";
+        				export SDL_VIDEODRIVER="wayland";
+        				export BEMENU_BACKEND="wayland";
+        				export MOZ_ENABLE_WAYLAND="1";
+        				# QT (needs qt5.qtwayland in systemPackages)
+        				export QT_QPA_PLATFORM=wayland-egl
+        				export SDL_VIDEODRIVER=wayland
+        			'';
     };
     sway.xwayland.enable = true;
     fish.enable = true;
@@ -495,9 +509,13 @@ in
   xdg.portal = {
     enable = true;
     extraPortals = with pkgs; [
-      xdg-desktop-portal-wlr
       xdg-desktop-portal
+      xdg-desktop-portal-wlr
       xdg-desktop-portal-gtk
+      xdg-desktop-portal-gnome
+      xdg-desktop-portal-shana
+      dolphin # dbg: trying to figure out switching default file-chooser. First step is one that definitely works, Second is switching to my nvim wrapper
+      lxqt.xdg-desktop-portal-lxqt
     ];
     wlr.enable = true;
   };
@@ -708,15 +726,6 @@ in
       XDG_CONFIG_HOME = "${userHome}/.config";
       XDG_CACHE_HOME = "${userHome}/.cache";
       #XDG_RUNTIME_DIR is set by nix to /run/user/1000
-      XDG_CURRENT_DESKTOP = "sway";
-      GDK_BACKEND = "wayland";
-      XDG_BACKEND = "wayland";
-      QT_WAYLAND_FORCE_DPI = "physical";
-      QT_QPA_PLATFORM = "wayland-egl";
-      CLUTTER_BACKEND = "wayland";
-      SDL_VIDEODRIVER = "wayland";
-      BEMENU_BACKEND = "wayland";
-      MOZ_ENABLE_WAYLAND = "1";
 
       # Other specific environment variables
       GIT_CONFIG_HOME = "${userHome}/.config/git/config";
