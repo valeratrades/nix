@@ -492,8 +492,15 @@ in
       };
     };
   };
-  xdg.portal.enable = true;
-  xdg.portal.wlr.enable = true;
+  xdg.portal = {
+    enable = true;
+    extraPortals = with pkgs; [
+      xdg-desktop-portal-wlr
+      xdg-desktop-portal
+      xdg-desktop-portal-gtk
+    ];
+    portal.wlr.enable = true;
+  };
 
   imports = [
     ./desktop
@@ -767,7 +774,6 @@ in
         libinput-gestures
         pkgs.qt5.full
         fractal # matrix chat protocol adapter
-        xdg-desktop-portal-gtk # not sure if I even need it here, it's probably already brought into the scope by `xdg.portal.enable`
         haskellPackages.greenclip
         lefthook # git hooks
         wayland-scanner
