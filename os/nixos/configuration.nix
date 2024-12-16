@@ -588,9 +588,6 @@ in
     sudo = {
       wheelNeedsPassword = false;
       enable = true;
-      #extraConfig = ''
-      #  %wheel ALL=(ALL) NOPASSWD: ALL
-      #'';
     };
     rtkit.enable = true;
     polkit.enable = true;
