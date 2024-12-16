@@ -56,6 +56,11 @@ in
       enable = false;
       #
       autorun = false; # no clue if it does anything if `enable = false`, but might as well keep it
+
+      #layout = "us,ir";
+      #xkbVariant = "latitude";
+      #xkbOptions = "grp:alt_shift_toggle";
+
       xkb = {
         options = "grp:win_space_toggle";
         extraLayouts.semimak = {
@@ -63,10 +68,16 @@ in
           languages = [ "eng" ];
           symbolsFile = mylib.relativeToRoot "./xkb/symbols/semimak";
         };
-        layout = "semimak";
-        variant = (if user.userFullName == "Timur" then "ansi" else "iso");
+        layout = "semimak,ru,us";
+        variant = (if user.userFullName == "Timur" then "ansi,," else "iso,,");
         #
       };
+      autoRepeatDelay = 240; # doesn't do anything currently (could be reset by sway)
+      autoRepeatInterval = 70; # doesn't do anything currently (could be reset by sway)
+    };
+    libinput = {
+      enable = true;
+      touchpad.tapping = true; # doesn't do anything currently (could be reset by sway)
     };
 
     pipewire = {
@@ -130,7 +141,8 @@ in
               backspace = "C-backspace";
               # `C-{arrow}` couldn't care less for the start of the line; and just goes right past it. Although is useful for quick nav across long lines in the terminal.
               l = "macro(C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right C-right)";
-              ";" = "macro(C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left)";
+              ";" =
+                "macro(C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left C-left)";
             };
             shift = {
               backspace = "C-backspace";
@@ -142,7 +154,6 @@ in
         };
       };
     };
-    libinput.enable = true;
     openssh = {
       enable = true;
       settings = {
@@ -884,6 +895,7 @@ in
         [
           dust # `du` in rust
           atuin
+          expect # automate things with interactive prompts
           tldr
           procs # `ps` in rust
           comma # auto nix-shell missing commands, so you can just `, cowsay hello`
