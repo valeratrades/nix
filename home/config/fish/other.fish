@@ -177,7 +177,7 @@ alias nsync="git -C $NIXOS_CONFIG reset --hard && git -C $NIXOS_CONFIG pull && s
 #TODO: add some git add -A on $NIXOS_CONFIG and maybe make this into the main way of running this
 function nb
 	sudo nixos-rebuild switch --impure --fast --flake ~/nix#$(hostname)
-	if [ (count $argv) > 0 ]
+	if [ (count $argv) != 0 ]
 		if [ $argv[1] = "-b" ] || [ $argv[1] = "--beep" ]
 			beep "nix rb $status"
 		end
