@@ -98,6 +98,8 @@
           # messengers
           telegram-desktop
           vesktop
+          element-desktop # GUI matrix client
+          iamb # TUI matrix client (rust)
           #discord # for when vesktop breaks, otherwise vesktop is a superset #dbg: was breaking for Tima
           zulip
         ]
@@ -107,7 +109,6 @@
           smassh # tui monkeytype
           neofetch
           figlet
-          iamb # matrix client (rust)
         ]
         [
           # nix
