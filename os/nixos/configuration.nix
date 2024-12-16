@@ -779,7 +779,6 @@ in
         self.packages.${pkgs.system}.wlr-gamma-service
         libinput-gestures
         pkgs.qt5.full
-        fractal # matrix chat protocol adapter
         haskellPackages.greenclip
         lefthook # git hooks
         wayland-scanner
