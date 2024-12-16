@@ -125,6 +125,7 @@ alias phone_wifi="phone-wifi"
 alias cdd="cd .. && cd -" # effectively just reloads `direnv`
 alias monkey="smassh"
 alias bbeats="sudo -Es nice -n -20 /etc/profiles/per-user/v/bin/bbeats" # otherwise any demanding process will produce bad breaks in sound
+alias workspaces="swaymsg -t get_tree" # shortcut for ease of remembrance by Ania and Tima
 
 function selfie
 	fswebcam /tmp/selfie.jpg
