@@ -198,7 +198,7 @@
                 j = ":join<Enter>";
               };
               command = {
-                help = ":welcome";
+                help = "welcome<Enter>";
               };
             };
           };
