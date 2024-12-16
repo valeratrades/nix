@@ -176,11 +176,16 @@
       ".config/fish/conf.d/sway.fish".source = "${self}/home/config/fish/conf.d/sway.fish";
       ".config/greenclip.toml".source = "${self}/home/config/greenclip.toml";
 
-      ".config/iamb/config.toml".text = ''
-        [profiles."master"]
-        user_id =  "@valeratrades:matrix.org"
-        #url = "https://matrix.org"
-      '';
+      ".config/iamb/config.toml".source =
+        (pkgs.formats.toml { }).generate
+          "? wonder what does this block do. Errors if I remove it, doesn't seem to have any consiquences for changing it."
+          {
+            profiles = {
+              master = {
+                user_id = "@${user.defaultUsername}:matrix.org";
+              };
+            };
+          };
 
       # # Might be able to join these, syntaxis should be similar
       ".config/vesktop" = {

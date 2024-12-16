@@ -38,12 +38,5 @@
         #inputs.aggr_orderbook.packages.${pkgs.system}.default
         #inputs.orderbook_3d.packages.${pkgs.system}.default
       ];
-    file = {
-      ".config/iamb/config.toml".text = ''
-        [profiles."master"]
-        user_id =  "@valeratrades:matrix.org"
-        #url = "https://matrix.org"
-      '';
-    };
   };
 }

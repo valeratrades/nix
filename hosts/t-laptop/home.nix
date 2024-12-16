@@ -21,10 +21,6 @@
         ]
       ];
     file = {
-      ".config/iamb/config.toml".text = ''
-        [profiles."master"]
-        user_id = "@codertima:matrix.org"
-      '';
     };
   };
 }
