@@ -180,10 +180,29 @@
         (pkgs.formats.toml { }).generate
           "? wonder what does this block do. Errors if I remove it, doesn't seem to have any consiquences for changing it."
           {
+            default_profile = "master";
             profiles = {
               master = {
                 user_id = "@${user.defaultUsername}:matrix.org";
               };
+            };
+            macros = {
+              normal = {
+                s = "h";
+                r = "j";
+                n = "k";
+                t = "l";
+
+                gc = ":chats<Enter>";
+                gd = ":dms<Enter>";
+                j = ":join<Enter>";
+              };
+              command = {
+                help = ":welcome";
+              };
+            };
+            settings.users = {
+              master.name = "${user.userFullName}";
             };
           };
 
