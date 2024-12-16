@@ -499,7 +499,7 @@ in
       xdg-desktop-portal
       xdg-desktop-portal-gtk
     ];
-    portal.wlr.enable = true;
+    wlr.enable = true;
   };
 
   imports = [
