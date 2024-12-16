@@ -176,7 +176,7 @@
       ".config/fish/conf.d/sway.fish".source = "${self}/home/config/fish/conf.d/sway.fish";
       ".config/greenclip.toml".source = "${self}/home/config/greenclip.toml";
 
-      ".config/iamb.toml".text = ''
+      ".config/iamb/config.toml".text = ''
         [profiles."master"]
         user_id: "valeratrades"
         url: "https://matrix.org"
