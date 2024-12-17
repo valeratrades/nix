@@ -86,6 +86,13 @@ K("n", "<C-w><C-h>", "<C-w><C-s>", { desc = "windows: new horizontal" })
 K("n", "<C-w>f", "<cmd>tab split<cr>", { desc = "windows: focus current by `:tab split`" })
 K("n", "<C-w>T", "<cmd>tab sb<cr>", { desc = "C-w>t that is consistent with <C-w>v and <C-w>h" })
 K("n", "<C-w>x", "<cmd>tabclose<cr>", { desc = "Close Tab" })
+
+-- execute any `g` command in a new vsplit
+vim.keymap.set('n', 'gw', function()
+	vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<C-w><C-v>', true, false, true), 'n', false)
+	vim.api.nvim_feedkeys('g', 'm', false)
+end, { noremap = true, silent = true })
+
 -- <C-w>= for normalizing
 --
 
