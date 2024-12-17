@@ -34,13 +34,8 @@
       source = "${self}/home/config/mako";
       recursive = true;
     };
-    ".config/direnv" = {
-      source = "${self}/home/config/direnv";
-      recursive = true;
-    };
 
     # ind files
-    ".config/vesktop/settings.json".source = "${self}/home/config/vesktop/settings.json";
     ".config/tg.toml".source = "${self}/home/config/tg.toml";
     ".config/tg_admin.toml".source = "${self}/home/config/tg_admin.toml";
     ".config/auto_redshift.toml".source = "${self}/home/config/auto_redshift.toml";
