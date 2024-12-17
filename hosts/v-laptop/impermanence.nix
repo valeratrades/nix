@@ -62,6 +62,7 @@
         "g"
         "tmp"
         "nix"
+        ".data"
 
         "Downloads"
         "Videos"

@@ -249,22 +249,12 @@ vim.g.rustaceanvim = {
 	},
 	server = {
 		status_notify_level = rustaceanvim.disable, -- doesn't work
-		--cmd = function()
-		--	local mason_registry = require('mason-registry')
-		--	local ra_binary = mason_registry.is_installed('rust-analyzer')
-		--			and mason_registry.get_package('rust-analyzer'):get_install_path() .. "/rust-analyzer"
-		--			or "rust-analyzer"
-		--	return { ra_binary } -- You can add args to the list, such as '--log-file'
-		--end,
 		cmd = function()
 			local handle = io.popen("rustup show active-toolchain")
 			local output = handle:read("*a")
 			handle:close()
 			local rust_version = output:match("%S+")
-			--return { "rustup run " .. rust_version .. " rust-analyzer" }
-			--return { "~/.rustup/toolchains/" .. rust_version .. "/bin/rust-analyzer" }
 			return { "rust-analyzer" }
-			--return { "rustup", "run", "nightly", "rust-analyzer" }
 		end,
 		on_attach = on_attach,
 		default_settings = {
@@ -276,8 +266,7 @@ vim.g.rustaceanvim = {
 					"rustup", "run", "nightly", "rust-analyzer",
 				},
 				rustfmt = {
-					--overrideCommand = { "cargo", "fmt" },
-					overrideCommand = { "rustup", "run", "nightly", "cargo", "fmt" }, -- don't think there is a reason to match versions here
+					overrideCommand = { "cargo", "fmt" },
 				},
 				cargo = {
 					BuildScripts = {
