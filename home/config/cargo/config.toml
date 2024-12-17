@@ -1,24 +1,19 @@
 # currently must rewrite _all_ the desired rustflags for each target, - they don't stack
 
-[target.x86_64-unknown-linux-gnu]
-linker = "clang"
-##rustflags = ["-C", "link-arg=-fuse-ld=/usr/bin/mold"]
-#rustflags = ["-C", "link-arg=-fuse-ld=mold", "--cfg", "tokio_unstable", "-Z", "threads=8", "-Z", "track-diagnostics"]
 
-#[target.'cfg(all(nightly))']
-
-[target.nightly-x86_64-unknown-linux-gnu]
+[target.stable]
+rustflags = ["-C", "link-arg=-fuse-ld=mold"] # have a very cursed script to overwrite this for nightly
 linker = "clang"
-rustflags = ["-C", "link-arg=-fuse-ld=mold", "--cfg", "tokio_unstable", "-Z", "threads=8", "-Z", "track-diagnostics"]
+
+
+[profile.release]
+debug = 0
 
 [profile.dev]
-## Disabling debug info speeds up builds a bit.
-#debug = 0
-## However, in many cases useful to get a good trace:
 debug = true
-## Will cost compile time, however
-# supposed to be faster than llvm, following Orion on this blindly
 
+# supposed to be faster than llvm, following Orion on this blindly
+#codegen-backend = "cranelift" # doesn't work on nix rn (2024/12/17)
 
 [build]
 rustc-wrapper = "sccache"
@@ -37,24 +32,20 @@ s = "sweep --recursive --installed" # only leave currently active artifacts
 rel = "release --no-confirm --execute"
 
 # overriding defaults in favor of cargo-limit alternatives
-#b = "lbuild --all-features"
-#c = "lcheck --all-features"
-#t = "ltest --all-features"
-#r = "lrun --all-features"
+# if `--all-features` is needed for better dev experience, override these shortcuts with it on per-project basis. eg: "lbuild --all-features"
 b = "lbuild"
 c = "lcheck"
 t = "nextest run"
 r = "lrun"
 
-# Orion says 3 is too much, suggested 2. 2 would lead to rebuild on `release` builds anyways, so going with just default 1.
-# all deps except package
-#[profile.dev.package."*"]
-#opt-level = 3
-
 [profile.dev.package]
-v_utils.opt-level = 1
+v_utils.opt-level = 1 # Orion says 3 is too much, suggested 2. 2 would lead to rebuild on `release` builds anyways, so going with just default 1.
 bevy.opt-level = 3
 bevy_editor_pls.opt-level = 3
 bevy_panorbit_camera.opt-level = 3
-#insta.opt-level = 3
+insta.opt-level = 3
 #similar.opt-level = 3
+
+[cargo-new]
+# VCS to use ('git', 'hg', 'pijul', 'fossil', 'none')
+vcs = "none" # set it up with my `can` script, don't need this
