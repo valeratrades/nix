@@ -15,7 +15,7 @@ in
     #./impermanence.nix
     #./secureboot.nix
 
-    ../shared/home.nix # NB: must be above home.nix
+    ../hm-shared/home.nix # NB: must be above home.nix
     ./home.nix
   ];
 

@@ -115,9 +115,10 @@ in
               inherit mylib user;
             };
 
-            #home-manager.sharedModules = [
-            #	inputs.sops-nix.homeManagerModules.sops
-            #];
+            home-manager.sharedModules = [
+              inputs.nixcord.homeManagerModules.nixcord
+              #	inputs.sops-nix.homeManagerModules.sops
+            ];
 
             home-manager.users."${user.username}" = import (
               mylib.relativeToRoot "hosts/${user.desktopHostName}/default.nix"
@@ -196,56 +197,3 @@ in
 
   formatter = forAllSystems (system: nixpkgs.legacyPackages.${system}.alejandra);
 }
-## Ex of building for different users:
-#inherit (self) outputs;
-#    inherit (nixpkgs) lib;
-#    inherit (lib) mapAttrs;
-#    sharedModules = [
-#      meat.nixosModules.meat
-#      madness.nixosModules.madness
-#      nur.nixosModules.nur
-#      nix-index-database.nixosModules.nix-index
-#      niri.nixosModules.niri
-#      ./system/cachix.nix
-#    ];
-#    system = "x86_64-linux";
-#    createSystems = definitions:
-#      mapAttrs (name: info:
-#        nixpkgs.lib.nixosSystem {
-#          inherit system;
-#          specialArgs = {
-#            inherit inputs outputs;
-#            mainUser = info.user;
-#          };
-#          modules =
-#            [
-#              ./system/${name}.nix
-#              home-manager.nixosModules.home-manager
-#              {
-#                home-manager = {
-#                  useGlobalPkgs = true;
-#                  extraSpecialArgs = {
-#                    inherit inputs outputs;
-#                    mainUser = info.user;
-#                  };
-#                  users.${info.user}.imports =
-#                    [
-#                      ./home/${info.user}.nix
-#                    ]
-#                    ++ info.hmImports or [];
-#                };
-#              }
-#            ]
-#            ++ info.imports or []
-#            ++ sharedModules;
-#        })
-#      definitions;
-#  in {
-#    overlays = import ./util/overlay.nix {inherit inputs;};
-#
-#    nixosConfigurations = createSystems {
-#      quiver.user = "bolt";
-#      adrift.user = "plank";
-#    };
-#  };
-#}

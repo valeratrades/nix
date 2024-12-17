@@ -109,10 +109,8 @@
         [
           # messengers
           telegram-desktop
-          vesktop
           element-desktop # GUI matrix client
           iamb # TUI matrix client (rust)
-          #discord # for when vesktop breaks, otherwise vesktop is a superset #dbg: was breaking for Tima
           zulip
         ]
         [
@@ -240,15 +238,6 @@
       #Interfaces=org.freedesktop.impl.portal.FileChooser;
       #UseIn=i3;wlroots;sway;Wayfire;river;mate;lxde;openbox;unity;pantheon
 
-      # # Might be able to join these, syntaxis should be similar
-      ".config/vesktop" = {
-        source = "${self}/home/config/vesktop";
-        recursive = true;
-      };
-      ".config/discord" = {
-        source = "${self}/home/config/discord";
-        recursive = true;
-      };
       # configured via hm, can't just symlink it in my host's config
       ".config/tmux" = {
         source = "${self}/home/config/tmux";
