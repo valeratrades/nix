@@ -25,6 +25,7 @@
         nyxt
         en-croissant # chess analysis GUI
         ncspot
+        gitui
         #flutterPackages-source.stable // errors
       ]
 

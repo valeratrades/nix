@@ -104,8 +104,9 @@
         [
           # funsies
           unimatrix
-          #spotify
           cowsay
+          xdotool # most options don't work on wayland though
+
         ]
         [
           # messengers

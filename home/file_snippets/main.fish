@@ -28,9 +28,8 @@ function shared_before
 
 	mkdir tests && cp -r "$FILE_SNIPPETS_PATH/tests/$lang"/* ./tests/
 	mkdir tmp
-	#cp "$FILE_SNIPPETS_PATH/local_sh/$lang.sh" ./tmp/.local.sh # when rewriting in fish didn't see how it's useful to template such a file
-	touch ./tmp/.local.fish # so it is created as empty (but still exists, so it's evident where to put the local shell expansions) // do I even need any of this now that I have nix shells and direnvs?
-	#source ./tmp/.local.fish
+	cp "$FILE_SNIPPETS_PATH/local_sh/$lang.fish" ./tmp/.local.fish
+	source ./tmp/.local.fish
 end
 
 function shared_after

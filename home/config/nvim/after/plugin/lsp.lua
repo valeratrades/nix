@@ -265,9 +265,9 @@ vim.g.rustaceanvim = {
 				cmd = {
 					"rustup", "run", "nightly", "rust-analyzer",
 				},
-				rustfmt = {
-					overrideCommand = { "cargo", "fmt" },
-				},
+				--rustfmt = {
+				--	overrideCommand = { "cargo", "fmt" },
+				--},
 				cargo = {
 					BuildScripts = {
 						enable = true,
