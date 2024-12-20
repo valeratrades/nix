@@ -30,6 +30,8 @@ EOF
 
 
 ## Manual adjustments
+Introduced `MANUAL` keyword in config next to things that require manual adjustments and cannot be proceduralized. Do not guarantee surjectivity.
+
 Currently:
 - git config in ./os/configuration.nix must be adjusted for the correct username and email
 

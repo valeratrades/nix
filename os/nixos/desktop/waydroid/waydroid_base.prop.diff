@@ -1,0 +1,12 @@
+--- orig.prop	2024-12-20 14:05:48.209362219 +0000
++++ /var/lib/waydroid/waydroid_base.prop	2024-12-20 13:52:29.507174559 +0000
+@@ -1,7 +1,7 @@
+ sys.use_memfd=true
+ debug.stagefright.ccodec=0
+-ro.hardware.gralloc=gbm
+-ro.hardware.egl=mesa
++ro.hardware.gralloc=default
++ro.hardware.egl=swiftshader
+ ro.hardware.vulkan=radeon
+ ro.hardware.camera=v4l2
+ ro.opengles.version=196609

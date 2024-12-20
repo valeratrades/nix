@@ -15,7 +15,6 @@ xkb_symbols "basic" {
 	key <AD07> {[ w,         W         ]};
 	key <AD08> {[ u,         U         ]};
 	key <AD09> {[ o,         O         ]};
-	key <AD10> {[ y,         Y         ]};
 
 	key <AC01> {[ s,         S         ]};
 	key <AC02> {[ r,         R         ]};
@@ -68,6 +67,8 @@ xkb_symbols "basic" {
 	key <AC06> {[ c, C, ccedilla, Ccedilla ]};
 
 	key <AD06> {[ q, Q, udiaeresis, Udiaeresis ]};
+
+	key <AD10> {[ y, Y, idiaeresis, Idiaeresis ]};
 	//
 	
 	// // sign placement I'm used to from dvorak

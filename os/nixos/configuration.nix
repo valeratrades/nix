@@ -54,6 +54,7 @@ in
       desktopManager.gnome.enable = true;
       #displayManager.gdm.enable = true; #NB: if you enable `xserver`, _must_ enable this too. Otherwise it will use default `lightdm`, which will log you out.
       enable = false;
+      displayManager.startx.enable = true; # TEST
       #
       autorun = false; # no clue if it does anything if `enable = false`, but might as well keep it
 
@@ -555,13 +556,33 @@ in
     extraModulePackages = with config.boot.kernelPackages; [ v4l2loopback ];
     kernelModules = [
       "v4l2loopback"
+      "binder-linux"
     ];
     extraModprobeConfig = ''
-      options v4l2loopback devices=1 video_nr=1 card_label="OBS Cam" exclusive_caps=1
-      options kvm_amd nested=1 # gnome-boxes require kvm
+            options v4l2loopback devices=1 video_nr=1 card_label="OBS Cam" exclusive_caps=1
+            options kvm_amd nested=1 # gnome-boxes require kvm
+      			options binder-linux devices=binder,hwbinder,vndbinder # waydroid wants this
     '';
     #
   };
+
+  # # waydroid
+  # No, I can't fucking move it. Because there is still no good way to refer to config root, even with `mylib`
+  #MANUAL:
+  #- init with `sudo waydroid init -s GAPSS -f`
+  #- patch google-play certificate: https://docs.waydro.id/faq/google-play-certification
+  # normally setup also requires modyfiying waydroid_base.prop and starting up `systemctl wayland-container`, but these are taken care of below (theoretically).
+  #// to use, do `waydroid show-full-ui`, currently also aliased with `wui`
+  virtualisation = {
+    waydroid.enable = true;
+    lxd.enable = true;
+  };
+  system.activationScripts.patchWaydroid = {
+    text = ''
+      			${pkgs.patch}/bin/patch "/var/lib/waydroid/waydroid_base.prop" < "${configRoot}/os/nixos/desktop/waydroid/waydroid_base.prop.diff"
+      		'';
+  };
+  #
 
   time.timeZone = "UTC";
   i18n =
@@ -781,7 +802,6 @@ in
         pkgs.qt5.full
         haskellPackages.greenclip
         lefthook # git hooks
-        wayland-scanner
         nerdfix # fixes illegal font codepoints https://discourse.nixos.org/t/nerd-fonts-only-see-half-the-icon-set/27513
         poppler_utils
 
@@ -792,7 +812,7 @@ in
 
         # emulators
         [
-          waydroid
+          #waydroid # might be auto-brought into the scope by `virtualization` module
           gnome-boxes # vm with linux distros
           # Windows
           [
@@ -1036,6 +1056,7 @@ in
           sccache
           just
           bash-language-server
+          jdk23 # java dev kit (pray for my sanity)
 
           # editors
           [

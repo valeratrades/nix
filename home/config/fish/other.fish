@@ -196,6 +196,10 @@ function nbg
 end
 #
 
+# # waydroid
+alias wui="waydroid show-full-ui" # default way to open it, after initiating the session with `waydroid session start`
+#
+
 # # direnv
 alias dira="git add -A && direnv allow"
 function de
