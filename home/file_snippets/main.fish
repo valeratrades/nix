@@ -28,8 +28,13 @@ function shared_before
 
 	mkdir tests && cp -r "$FILE_SNIPPETS_PATH/tests/$lang"/* ./tests/
 	mkdir tmp
-	cp "$FILE_SNIPPETS_PATH/local_sh/$lang.fish" ./tmp/.local.fish
-	source ./tmp/.local.fish
+	#cp "$FILE_SNIPPETS_PATH/local_sh/$lang.fish" ./tmp/.local.fish # while I like my little standard, normally those things should go to .envrc or global config
+	#source ./tmp/.local.fish
+
+	cp "$FILE_SNIPPETS_PATH/$lang/flake.nix" ./flake.nix
+	cat "$FILE_SNIPPETS_PATH/envrc/shared" > .envrc
+	echo "\n" >> .envrc
+	cat "$FILE_SNIPPETS_PATH/envrc/$lang.sh" >> .envrc
 end
 
 function shared_after
@@ -86,7 +91,7 @@ function can
 
 	sudo ln "$FILE_SNIPPETS_PATH/$lang/rustfmt.toml" ./rustfmt.toml
 	sudo ln "$FILE_SNIPPETS_PATH/$lang/deny.toml" ./deny.toml
-	sudo ln "$FILE_SNIPPETS_PATH/$lang/flake.nix" ./flake.nix
+
 	cp -r "$FILE_SNIPPETS_PATH/$lang/.cargo" ./.cargo
 	sed -i '$d' Cargo.toml
 	cat "$FILE_SNIPPETS_PATH/$lang/default_dependencies.toml" >> Cargo.toml

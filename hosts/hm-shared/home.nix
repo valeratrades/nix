@@ -29,11 +29,8 @@
     };
     direnv = {
       enable = true;
+      enableFishIntegration = true;
       package = pkgs.direnv;
-      #   direnvrcExtra = ''
-      #	[global]
-      #	hide_env_diff = true
-      #'';
       nix-direnv = {
         enable = true; # faster on nix
         package = pkgs.nix-direnv;
