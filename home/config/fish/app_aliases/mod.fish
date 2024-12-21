@@ -5,4 +5,3 @@ source (dirname (status --current-filename))/go.fish
 source (dirname (status --current-filename))/cargo.fish
 source (dirname (status --current-filename))/tg.fish
 source (dirname (status --current-filename))/ffmpeg.fish
-source (dirname (status --current-filename))/todo.fish
