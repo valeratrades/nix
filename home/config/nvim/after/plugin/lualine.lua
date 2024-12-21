@@ -10,6 +10,8 @@ local function hide_in_width()
 	return vim.fn.winwidth(0) > 80
 end
 
+--TODO!!: have filename be right after the mode (and before the branch) on the left side. Will ensure consistency across pane splits.
+
 --local function countSpellingMistakes()
 --	local count = 0
 --	for _, line in ipairs(vim.api.nvim_buf_get_lines(0, 0, -1, false)) do
