@@ -19,6 +19,9 @@ source "$NIXOS_CONFIG/home/scripts/shell_harpoon/main.fish"
 
 # # Init utils
 zoxide init fish | source
+todo init fish | source
+
+starship init fish --print-full-init | source # somehow fixes the psub bug that happens when using tmux with my config, initiated via standard nixos's `enable`
 
 atuin init fish --disable-up-arrow --disable-ctrl-r | source
 export filter_mode_shell_up_key_binding="directory"

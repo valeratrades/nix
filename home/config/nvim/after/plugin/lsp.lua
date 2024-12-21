@@ -263,11 +263,9 @@ vim.g.rustaceanvim = {
 					autoload_configuration = true,
 				},
 				cmd = {
-					"rustup", "run", "nightly", "rust-analyzer",
+					--"rustup", "run", "nightly", "rust-analyzer",
+					"rust-analyzer", --TEST
 				},
-				--rustfmt = {
-				--	overrideCommand = { "cargo", "fmt" },
-				--},
 				cargo = {
 					BuildScripts = {
 						enable = true,

@@ -263,8 +263,3 @@ end
 # name is play of words on russian; can't use `spotify` because of occuring recursion
 alias spoy="set -x LD_PRELOAD $SPOTIFY_ADBLOCK_LIB; spotify" # the SPOTIFY_ADBLOCK_LIB is set by nixos config
 #
-
-
-# # Starship
-starship init fish --print-full-init | source # somehow fixes the psub bug that happens when using tmux with my config, initiated via standard nixos's `enable`
-#

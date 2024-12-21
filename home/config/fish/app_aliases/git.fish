@@ -57,10 +57,14 @@ alias git_force_pull="git_pull_force"
 # GitHub aliases
 alias gi="gh issue create -b \"\" -t"
 alias gil="gh issue list"
-alias gic="gh issue close -r completed"
+
 alias gia="gh issue edit --add-assignee"
 alias giam="gh issue edit --add-assignee @me"
 alias gila="gh issue edit --add-label"
+
+alias gic="gh issue close -r completed"
+alias gir="gh issue close -r \"not planned\"" # for "retract"
+alias gix="gh issue delete --yes"
 
 alias git_rate_limit 'curl -L -X GET -H "Accept: application/vnd.github+json" -H "Authorization: token $GITHUB_KEY" https://api.github.com/rate_limit'
 
@@ -80,9 +84,6 @@ end
 function gml
 	gh api repos/:owner/:repo/milestones --jq '.[] | select(.state=="open") | "\(.title): \(.description | split("\n")[0] | gsub("\r"; ""))"'
 end
-
-alias gir="gh issue close -r \"not planned\""
-alias gid="gh issue delete --yes"
 
 alias git_zip="rm -f ~/Downloads/last_git_zip.zip && git ls-files -o -c --exclude-standard | zip ~/Downloads/last_git_zip.zip -@"
 
