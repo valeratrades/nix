@@ -27,21 +27,18 @@
       vimAlias = true;
       vimdiffAlias = true;
     };
+
     direnv = {
       enable = true;
       enableFishIntegration = true;
       package = pkgs.direnv;
-      #direnvrcExtra = ''
-      #	[global]
-      #	# https://github.com/direnv/direnv/issues/68#issuecomment-2054033048
-      #	hide_env_diff = true
-      #'';
       nix-direnv = {
         enable = true; # faster on nix
         package = pkgs.nix-direnv;
       };
       silent = true;
     };
+
     eza.enable = true;
     yazi.enable = true;
     tmux = {
@@ -242,11 +239,19 @@
       #Interfaces=org.freedesktop.impl.portal.FileChooser;
       #UseIn=i3;wlroots;sway;Wayfire;river;mate;lxde;openbox;unity;pantheon
 
+      ".config/direnv/direnv.toml".source = (pkgs.formats.toml { }).generate "" {
+        global = {
+          # https://github.com/direnv/direnv/issues/68#issuecomment-2054033048
+          hide_env_diff = true;
+        };
+      };
+
       # configured via hm, can't just symlink it in my host's config
       ".config/tmux" = {
         source = "${self}/home/config/tmux";
         recursive = true;
       };
+
       ".cargo" = {
         source = "${self}/home/config/cargo";
         recursive = true;
