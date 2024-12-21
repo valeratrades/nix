@@ -31,6 +31,11 @@
       enable = true;
       enableFishIntegration = true;
       package = pkgs.direnv;
+      #direnvrcExtra = ''
+      #	[global]
+      #	# https://github.com/direnv/direnv/issues/68#issuecomment-2054033048
+      #	hide_env_diff = true
+      #'';
       nix-direnv = {
         enable = true; # faster on nix
         package = pkgs.nix-direnv;
