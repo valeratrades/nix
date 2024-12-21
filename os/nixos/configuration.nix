@@ -579,10 +579,10 @@ in
   };
   system.activationScripts.patchWaydroid = {
     text = ''
-      			# if the patch was already appplied, testing reversing it (\`--dry-run -R\`) returns 0
-      			if ! ${pkgs.patch}/bin/patch --dry-run -R "/var/lib/waydroid/waydroid_base.prop" < "${configRoot}/os/nixos/desktop/waydroid/waydroid_base.prop.diff" >/dev/null 2>&1; then
-      				${pkgs.patch}/bin/patch "/var/lib/waydroid/waydroid_base.prop" < "${configRoot}/os/nixos/desktop/waydroid/waydroid_base.prop.diff"
-      			fi
+      # if the patch was already appplied, testing reversing it (\`--dry-run -R\`) returns 0
+      if ! ${pkgs.patch}/bin/patch --dry-run -R "/var/lib/waydroid/waydroid_base.prop" < "${configRoot}/os/nixos/desktop/waydroid/waydroid_base.prop.diff" >/dev/null 2>&1; then
+        ${pkgs.patch}/bin/patch "/var/lib/waydroid/waydroid_base.prop" < "${configRoot}/os/nixos/desktop/waydroid/waydroid_base.prop.diff"
+      fi
     '';
   };
   #
