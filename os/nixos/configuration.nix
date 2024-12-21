@@ -1058,6 +1058,7 @@ in
           mold
           sccache
           just
+          toml-cli
           bash-language-server
           jdk23 # java dev kit (pray for my sanity)
 

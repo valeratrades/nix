@@ -1,0 +1,353 @@
+################################################################################
+###[ Global configuration ]#####################################################
+################################################################################
+
+display-name = "Valera"
+
+signature = "Yours, Valeriy"
+# delimits the end of the message body from the signature.
+signature-delim = "-- \n"
+downloads-dir = "~/Downloads"
+
+# See <https://docs.rs/comfy-table/latest/comfy_table/presets/index.html>.
+#account.list.table.preset = "||  |-|||           " # markdown tables
+#
+#account.list.table.name-color = "green"
+#account.list.table.backends-color = "blue"
+#account.list.table.default-color = "black"
+
+################################################################################
+###[ Account configuration ]####################################################
+################################################################################
+
+[accounts.master]
+default = true
+email = "valeratrades@gmail.com"
+
+
+# Defines aliases for your mailboxes. There are 4 special aliases used
+# by the tool: inbox, sent, drafts and trash. Other aliases can be
+# defined as well.
+#
+folder.aliases.inbox = "INBOX"
+folder.aliases.sent = "Sent"
+folder.aliases.drafts = "Drafts"
+folder.aliases.trash = "Trash"
+folder.aliases.a23 = "Archives/2023"
+
+folder.list.page-size = 10
+
+folder.list.table.name-color = "blue"
+folder.list.table.desc-color = "green"
+
+
+
+envelope.list.page-size = 10
+# See supported formats at <https://docs.rs/chrono/latest/chrono/format/strftime/>. 
+envelope.list.datetime-fmt = "%F %R%:z"
+
+# Transforms envelopes date timezone into the user's local one. For
+# example, if the user's local timezone is UTC, the envelope date
+# `2023-06-15T09:00:00+02:00` becomes `2023-06-15T07:00:00-00:00`.
+#
+envelope.list.datetime-local-tz = true
+
+#TODO: combine with folders
+envelope.list.table.preset = "||  |-|||           "
+
+# Customizes the character of the unseen flag of the envelope listing
+# table.
+#
+envelope.list.table.unseen-char = "*"
+
+# Customizes the character of the replied flag of the envelope listing
+# table.
+#
+envelope.list.table.replied-char = "R"
+
+# Customizes the character of the flagged flag of the envelope listing
+# table.
+#
+envelope.list.table.flagged-char = "!"
+
+# Customizes the character of the attachment property of the envelope
+# listing table.
+#
+envelope.list.table.attachment-char = "@"
+
+# Customizes the color of the ID column of the envelope listing table.
+#
+envelope.list.table.id-color = "red"
+
+# Customizes the color of the FLAGS column of the envelope listing
+# table.
+#
+envelope.list.table.flags-color = "black"
+
+# Customizes the color of the SUBJECT column of the envelope listing
+# table.
+#
+envelope.list.table.subject-color = "green"
+
+# Customizes the color of the SENDER column of the envelope listing
+# table.
+#
+envelope.list.table.sender-color = "blue"
+
+# Customizes the color of the DATE column of the envelope listing
+# table.
+#
+envelope.list.table.date-color = "yellow"
+
+
+
+# Defines headers to show at the top of messages when reading them.
+message.read.headers = ["From", "To", "Cc", "Subject"]
+
+# Represents the message text/plain format as defined in RFC2646. See <https://www.ietf.org/rfc/rfc2646.txt>.
+message.read.format = "auto" # | flowed | fixed = 80
+
+# Headers to show when writing the message
+message.write.headers = ["From", "To", "In-Reply-To", "Cc", "Subject"]
+
+# Saves a copy of sent messages to the sent folder. The sent folder is taken from folder.aliases, defaults to Sent.
+message.send.save-copy = true
+
+# Hook called just before sending a message. The command should take a
+# raw message as standard input (stdin) and returns the modified raw
+# message to the standard output (stdout).
+#TODO!: find the correct command for this
+message.send.pre-hook = "process-markdown.sh"
+
+# Customizes the message deletion style. Message deletion can be performed either by moving messages to the Trash folder or by adding the Deleted flag to their respective envelopes.
+message.delete.style = "folder" # | flag
+
+
+
+# Defines how and where the signature should be displayed when writing
+# a new message.
+#
+#template.new.signature-style = "hidden"
+#template.new.signature-style = "attached"
+template.new.signature-style = "inlined"
+
+# Defines the posting style when replying to a message.
+#
+# See <https://en.wikipedia.org/wiki/Posting_style>.
+#
+#template.reply.posting-style = "interleaved"
+#template.reply.posting-style = "bottom"
+template.reply.posting-style = "top"
+
+# Defines how and where the signature should be displayed when repyling to a message.
+template.reply.signature-style = "below-quote" # hidden | attached | above-quote
+
+# Defines the headline format put at the top of a quote when replying
+# to a message.
+# 
+# Available placeholders: {senders}
+# See supported date formats at <https://docs.rs/chrono/latest/chrono/format/strftime/>.
+#
+template.reply.quote-headline-fmt = "On %d/%m/%Y %H:%M, {senders} wrote:\n"
+
+# Defines the posting style when forwarding a message. See <https://en.wikipedia.org/wiki/Posting_style>.
+template.forward.posting-style = "top" # | attached
+
+# Defines how and where the signature should be displayed when forwarding a message.
+template.forward.signature-style = "inlined" # | attached | hidden
+
+# Defines the headline format put at the top of the quote when forwarding a message.
+template.forward.quote-headline = "-------- Forwarded Message --------\n"
+
+
+
+# Enables PGP using GPG bindings. It requires the GPG lib to be
+# installed on the system, and the `pgp-gpg` cargo feature on.
+#
+#pgp.type = "gpg"
+
+
+
+# Enables PGP using shell commands. A PGP client needs to be installed
+# on the system, like gpg. It also requires the `pgp-commands` cargo
+# feature.
+#
+#pgp.type = "commands"
+
+# Defines the encrypt command. The special placeholder `<recipients>`
+# represents the list of recipients, formatted by
+# `pgp.encrypt-recipient-fmt`.
+#
+#pgp.encrypt-cmd = "gpg --encrypt --quiet --armor <recipients>"
+
+# Formats recipients for `pgp.encrypt-cmd`. The special placeholder
+# `<recipient>` is replaced by an actual recipient at runtime.
+#
+#pgp.encrypt-recipient-fmt = "--recipient <recipient>"
+
+# Defines the separator used between formatted recipients
+# `pgp.encrypt-recipient-fmt`.
+#
+#pgp.encrypt-recipients-sep = " "
+
+# Defines the decrypt command.
+#
+#pgp.decrypt-cmd = "gpg --decrypt --quiet"
+
+# Defines the sign command.
+#
+#pgp.sign-cmd = "gpg --sign --quiet --armor"
+
+# Defines the verify command.
+#
+#pgp.verify-cmd = "gpg --verify --quiet"
+
+
+
+# Enables the native Rust implementation of PGP. It requires the
+# `pgp-native` cargo feature.
+#
+#pgp.type = "native"
+
+# Defines where to find the PGP secret key.
+#
+#pgp.secret-key.path = "/path/to/secret.key"
+#pgp.secret-key.keyring = "my-pgp-secret-key"
+
+# Defines how to retrieve the PGP secret key passphrase.
+#
+#pgp.secret-key-passphrase.raw = "p@assw0rd"
+#pgp.secret-key-passphrase.keyring = "my-pgp-passphrase"
+#pgp.secret-key-passphrase.cmd = "pass show pgp-passphrase"
+
+# Enables the Web Key Discovery protocol to discover recipients'
+# public key based on their email address.
+#
+#pgp.wkd = true
+
+# Enables public key servers discovery.
+#
+#pgp.key-servers = ["hkps://keys.openpgp.org", "hkps://keys.mailvelope.com"]
+
+
+
+# Defines the IMAP backend as the default one for all features.
+#
+backend.type = "imap"
+
+# IMAP server host name.
+#
+backend.host = "localhost"
+
+# IMAP server port.
+#
+#backend.port = 143
+backend.port = 993
+
+# IMAP server encryption.
+#
+#backend.encryption.type = "none"
+#backend.encryption.type = "start-tls"
+backend.encryption.type = "tls"
+
+# IMAP server login.
+#
+backend.login = "example@localhost"
+
+# IMAP server password authentication configuration.
+#
+backend.auth.type = "password"
+#
+# Password can be inlined (not recommended).
+#
+#backend.auth.raw = "p@assw0rd"
+#
+# Password can be stored inside your system global keyring (requires
+# the keyring cargo feature). You must run at least once `himalaya
+# account configure` to set up the password.
+#
+#backend.auth.keyring = "example-imap"
+#
+# Password can be retrieved from a shell command.
+#
+backend.auth.cmd = "pass show example-imap"
+
+# IMAP server OAuth 2.0 authorization configuration.
+#
+#backend.auth.type = "oauth2"
+#
+# Client identifier issued to the client during the registration
+# process described in RFC6749.
+# See <https://datatracker.ietf.org/doc/html/rfc6749#section-2.2>.
+#
+#backend.auth.client-id = "client-id"
+#
+# Client password issued to the client during the registration process
+# described in RFC6749.
+#
+# Defaults to keyring "<account-name>-imap-client-secret".
+# See <https://datatracker.ietf.org/doc/html/rfc6749#section-2.2>.
+#
+#backend.auth.client-secret.raw = "<raw-client-secret>"
+#backend.auth.client-secret.keyring = "example-imap-client-secret"
+#backend.auth.client-secret.cmd = "pass show example-imap-client-secret"
+#
+# Method for presenting an OAuth 2.0 bearer token to a service for
+# authentication.
+#
+#backend.auth.method = "oauthbearer"
+#backend.auth.method = "xoauth2"
+#
+# URL of the authorization server's authorization endpoint.
+#
+#backend.auth.auth-url = "https://accounts.google.com/o/oauth2/v2/auth"
+#
+# URL of the authorization server's token endpoint.
+#
+#backend.auth.token-url = "https://www.googleapis.com/oauth2/v3/token"
+#
+# Access token returned by the token endpoint and used to access
+# protected resources. It is recommended to use the keyring variant,
+# as it will refresh automatically.
+#
+# Defaults to keyring "<account-name>-imap-access-token".
+#
+#backend.auth.access-token.raw = "<raw-access-token>"
+#backend.auth.access-token.keyring = "example-imap-access-token"
+#backend.auth.access-token.cmd = "pass show example-imap-access-token"
+#
+# Refresh token used to obtain a new access token (if supported by the
+# authorization server). It is recommended to use the keyring variant,
+# as it will refresh automatically.
+#
+# Defaults to keyring "<account-name>-imap-refresh-token".
+#
+#backend.auth.refresh-token.raw = "<raw-refresh-token>"
+#backend.auth.refresh-token.keyring = "example-imap-refresh-token"
+#backend.auth.refresh-token.cmd = "pass show example-imap-refresh-token"
+#
+# Enable the protection, as defined in RFC7636.
+#
+# See <https://datatracker.ietf.org/doc/html/rfc7636>.
+#
+#backend.auth.pkce = true
+#
+# Access token scope(s), as defined by the authorization server.
+#
+#backend.auth.scope = "unique scope"
+#backend.auth.scopes = ["multiple", "scopes"]
+#
+# URL scheme of the redirect server.
+# Defaults to http.
+#
+#backend.auth.redirect-scheme = "http"
+#
+# Host name of the redirect server.
+# Defaults to localhost.
+#
+#backend.auth.redirect-host = "localhost"
+#
+# Port of the redirect server.
+# Defaults to the first available one.
+#
+#backend.auth.redirect-port = 9999

@@ -18,6 +18,11 @@
   #defaultSopsFile = /home/v/s/g/private/sops.json;
   #defaultSopsFormat = "json";
 
+  # if needing to move away from neomutt, can switch to more generic `accounts.email.accounts.<name>`
+  programs.neomutt = {
+    enable = true;
+  };
+
   home = {
     packages =
       with pkgs;

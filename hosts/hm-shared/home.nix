@@ -144,6 +144,7 @@
         ]
         rnote
         neomutt # email client
+        himalaya # email client but in rust
         songrec # shazam in rust. Might come with some crazy mic patches, as running it may have just fixed my laptop's built-in mic.
         fswebcam # instant webcam photo
         anyrun # wayland-native rust alternative to rofi
@@ -207,7 +208,6 @@
 
                 gc = ":chats<Enter>";
                 gd = ":dms<Enter>";
-                j = ":join<Enter>";
                 gr = ":reply<Enter>";
                 eh = ":react! heart<Enter>";
                 eu = ":react! up<Enter>";

@@ -26,6 +26,9 @@
     mako = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       [ -e "$XDG_CONFIG_HOME/mako" ] || ln -sf "$NIXOS_CONFIG/home/config/mako" "$XDG_CONFIG_HOME/mako"
     '';
+    himalaya = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      [ -e "$XDG_CONFIG_HOME/himalaya" ] || ln -sf "$NIXOS_CONFIG/home/config/himalaya" "$XDG_CONFIG_HOME/himalaya"
+    '';
 
     # ind files
     tg = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
