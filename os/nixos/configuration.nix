@@ -67,7 +67,7 @@ in
         extraLayouts.semimak = {
           description = "Semimak for both keyboard standards";
           languages = [ "eng" ];
-          symbolsFile = mylib.relativeToRoot "./xkb/symbols/semimak";
+          symbolsFile = mylib.relativeToRoot "home/xkb_symbols/semimak";
         };
         layout = "semimak,ru,us";
         variant = (if user.userFullName == "Timur" then "ansi,," else "iso,,");
