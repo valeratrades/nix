@@ -1,9 +1,10 @@
-(defwidget reveal_on_hover [var varname ?transition ?label_text ?label_class]
+(defwidget reveal_on_hover [var varname ?transition ?label_text ?label_class ?visible]
 	(eventbox
 		:class "eventbox"
 		:onhover "eww update ${varname}=true"
 		:onhoverlost "eww update ${varname}=false"
 		(box
+			; hovering over anything inside here is recognized.
 			:space-evenly false
 			(revealer
 				:reveal var
@@ -13,7 +14,9 @@
 				(children)
 				)
 			)
-			(label :class label_class :text label_text) ; also the area over which the hover is detected, as revealer is hiding
+			(label :class label_class :text label_text
+				:visible {visible ?: var == "false"}
+			)
 		)
 	)
 )

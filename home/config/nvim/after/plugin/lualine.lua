@@ -82,9 +82,9 @@ require('lualine').setup {
 	},
 	sections = {
 		lualine_a = { 'mode' },
+		lualine_d = { { "b:gitsigns_head", icon = "" } },
 		lualine_b = { diagnostics, --[[n_misspelled]] },
 		lualine_c = { 'filename' }, -- does repeat one indicated at the top of the tab, but this one has consistent location rel to pane's pos.
-		lualine_d = { { "b:gitsigns_head", icon = "" } },
 		lualine_x = { diff, spaces, 'encoding' },
 		lualine_y = { 'progress' },
 		lualine_z = { location }

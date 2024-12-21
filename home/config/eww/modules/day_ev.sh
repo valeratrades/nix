@@ -25,7 +25,7 @@ else
 fi
 
 
-healthcheck_status_file="${XDG_STATE_HOME}/todo/healthcheck.status"
+healthcheck_status_file="$(todo milestones healthcheck | head -n 1)"
 if [ "$(find "$healthcheck_status_file" -mmin +120)" ]; then
 	todo milestones healthcheck
 	wait $!

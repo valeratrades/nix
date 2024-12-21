@@ -1,8 +1,4 @@
 ; general docs are at https://elkowar.github.io/eww/configuration.html
-; currently sitting on:
-; gc -b tray-3 https://github.com/ralismark/eww
-; that's a version with tray support. Will have to switch to main when it is merged.
-; pull request here: https://github.com/elkowar/eww/pull/743
 
 (include "revealer.yuck")
 
@@ -182,6 +178,7 @@
 		:transition "slideleft"
 		:label_text "${day_ev_poll.content}"
 		:label_class "${day_ev_poll.class}"
+		:visible true
 		(button :onclick "notify-send TODO \"Open manually for now. fuck eww.\""
 			(label :class "text" :text "d")
 		)
@@ -233,5 +230,34 @@
 		:visible {bar_visible == "true" && btc_line_spy_str != ""}
 		:class "text"
 		btc_line_spy_str
+	)
+)
+
+(defwindow todo_blocker
+	:monitor 0
+	:geometry (geometry :anchor "top right" :y 41 :width "0%" :height "0%")
+	(box
+		(what)
+	)
+)
+(defvar todo_blocker_hover_state false)
+;; Can't combine these two polls, because eww doesn't work well with newlines
+(defpoll todo_blocker_last_poll :initial "" :interval "10s" "todo blocker list | tail -n 1")
+(defpoll todo_blocker_list_poll :interval "5s" "todo blocker list")
+(defwidget what[]
+	(box
+		;;:vexpand true
+		;;:orientation "vertical"
+		:class ""
+		;;"${todo_blocker_last_poll}"
+		(reveal_on_hover
+			:var todo_blocker_hover_state
+			:varname "todo_blocker_hover_state"
+			:transition "none"
+			:orientation "vertical"
+			:label_text "${todo_blocker_last_poll}"
+			:label_class "text"
+			(label :class "text" :text "${todo_blocker_list_poll}")
+		)
 	)
 )
