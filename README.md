@@ -45,3 +45,8 @@ Spawns an fhs-compatible shell
 
 # Dev
 Currently config is impure. For possibility of reversion, all known places that introduce impurities are marked with `#IMPURE`
+
+# Other
+### Cli Philosophie
+Target length for general aliases is 2 characters, if they are important enough.
+One-letter cases are mostly reserved for custom scripts, local to the project, eg: commands initialized when I `cs` into a directory with `run.sh` in it.
