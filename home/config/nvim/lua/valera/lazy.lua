@@ -274,5 +274,5 @@ return require('lazy').setup({
 	{ 'wakatime/vim-wakatime', lazy = false },
 	--{ "tjdevries/ocaml.nvim",  build = "make" }, -- requires 3.17 dune, but my nix only has 3.16
 	"folke/which-key.nvim",
-	"pimalaya/himalaya-vim", --TODO: setup
+	--"pimalaya/himalaya-vim", --TODO: setup
 })

@@ -242,8 +242,8 @@
 )
 (defvar todo_blocker_hover_state false)
 ;; Can't combine these two polls, because eww doesn't work well with newlines
-(defpoll todo_blocker_last_poll :initial "" :interval "10s" "todo blocker list | tail -n 1")
-(defpoll todo_blocker_list_poll :interval "5s" "todo blocker list")
+(defpoll todo_blocker_last_poll :initial "" :interval "5s" "todo blocker list | tail -n 1")
+(defpoll todo_blocker_list_poll :interval "10s" "todo blocker list")
 (defwidget what[]
 	(box
 		;;:vexpand true

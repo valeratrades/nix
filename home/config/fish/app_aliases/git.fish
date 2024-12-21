@@ -179,6 +179,7 @@ function protect_branch
 end
 
 ## git new repository
+#TODO!!!!!!: figure out how to sync the base labels settings across all repos
 function gn
 	if [ "$argv[1]" = "-h" ] || [ "$argv[1]" = "--help" ] || [ "$argv[1]" = "help" ]
 		printf """\
