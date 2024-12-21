@@ -10,8 +10,6 @@ local function hide_in_width()
 	return vim.fn.winwidth(0) > 80
 end
 
---TODO!!: have filename be right after the mode (and before the branch) on the left side. Will ensure consistency across pane splits.
-
 --local function countSpellingMistakes()
 --	local count = 0
 --	for _, line in ipairs(vim.api.nvim_buf_get_lines(0, 0, -1, false)) do
@@ -84,8 +82,9 @@ require('lualine').setup {
 	},
 	sections = {
 		lualine_a = { 'mode' },
-		lualine_b = { { "b:gitsigns_head", icon = "" } },
-		lualine_c = { diagnostics, --[[n_misspelled]] },
+		lualine_b = { diagnostics, --[[n_misspelled]] },
+		lualine_c = { 'filename' }, -- does repeat one indicated at the top of the tab, but this one has consistent location rel to pane's pos.
+		lualine_d = { { "b:gitsigns_head", icon = "" } },
 		lualine_x = { diff, spaces, 'encoding' },
 		lualine_y = { 'progress' },
 		lualine_z = { location }
