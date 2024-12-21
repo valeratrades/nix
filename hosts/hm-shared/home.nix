@@ -209,7 +209,9 @@
                 gd = ":dms<Enter>";
                 j = ":join<Enter>";
                 gr = ":reply<Enter>";
-                gh = ":react! heart";
+                eh = ":react! heart<Enter>";
+                eu = ":react! up<Enter>";
+                ed = ":react! down<Enter>";
 
                 "<M-c>" = "<C-w>q";
                 "<C-w>v" = ":vsplit #alias:example.com<Enter>";
