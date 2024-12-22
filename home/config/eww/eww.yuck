@@ -246,10 +246,8 @@
 (defpoll todo_blocker_list_poll :interval "10s" "todo blocker list")
 (defwidget what[]
 	(box
-		;;:vexpand true
-		;;:orientation "vertical"
+		:visible {bar_visible == "true"}
 		:class ""
-		;;"${todo_blocker_last_poll}"
 		(reveal_on_hover
 			:var todo_blocker_hover_state
 			:varname "todo_blocker_hover_state"

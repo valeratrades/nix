@@ -143,6 +143,8 @@
           passh # non-interactive SSH auth
         ]
         rnote
+        qbittorrent
+        dragon # drag-and-drop for X11; don't know if works on wayland
         neomutt # email client
         himalaya # email client but in rust
         songrec # shazam in rust. Might come with some crazy mic patches, as running it may have just fixed my laptop's built-in mic.
