@@ -263,7 +263,6 @@ vim.g.rustaceanvim = {
 					autoload_configuration = true,
 				},
 				cmd = {
-					--"rustup", "run", "nightly", "rust-analyzer", -- it's really weird, but even on nixos this seems to just work better (but HACK: can cause mismatch problems if shell brings in its own RA version)
 					"rust-analyzer",
 				},
 				cargo = {

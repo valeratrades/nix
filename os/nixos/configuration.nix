@@ -552,11 +552,17 @@ in
       #grub.useOsProber = true; # need to find alternative for systemd-boot
     };
 
+    # from what I understand, zswap is an intermediate layer with 3-4.3x compression in-RAM, to which older blocks are saved before being written to disk swap. Zram is the same, but no writes to disk at all, it just stays in the compressed RAM block. Don't want the latter, but former sounds promising.
+    # not sure how to objectively check its effect on performance, though.
+    kernelParams = [
+      "zswap.enabled=1"
+    ];
+
     # # for obs's Virtual Camera
     extraModulePackages = with config.boot.kernelPackages; [ v4l2loopback ];
     kernelModules = [
       "v4l2loopback"
-      "binder-linux"
+      "binder-linux" # waydroid, nothing to do with obs (but I'm bad with nix, can't split them)
     ];
     extraModprobeConfig = ''
             options v4l2loopback devices=1 video_nr=1 card_label="OBS Cam" exclusive_caps=1

@@ -118,7 +118,7 @@
           # Terminal apps/scripts (actually useful)
           typioca # tui monkeytype
           smassh # tui monkeytype
-          neofetch
+          fastfetch
           figlet
         ]
         [
