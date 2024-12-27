@@ -1061,7 +1061,7 @@ in
         # Coding
         [
           vscode-extensions.github.copilot
-          mold
+          mald-wrapped # probably shouldn't be here though
           sccache
           just
           toml-cli
