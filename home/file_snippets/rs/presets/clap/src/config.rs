@@ -1,5 +1,6 @@
-use anyhow::Result;
 use std::path::Path;
+
+use color_eyre::eyre::{Result, bail};
 use v_utils::macros::MyConfigPrimitives;
 
 #[derive(Clone, Debug, Default, MyConfigPrimitives)]
@@ -14,7 +15,7 @@ impl AppConfig {
 				let raw: config::Config = builder.build()?;
 				Ok(raw.try_deserialize()?)
 			}
-			false => Err(anyhow::anyhow!("Config file does not exist: {:?}", path)),
+			false => bail!("Config file does not exist: {:?}", path),
 		}
 	}
 }

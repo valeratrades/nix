@@ -60,7 +60,7 @@ alias gil="gh issue list"
 
 alias gia="gh issue edit --add-assignee"
 alias giam="gh issue edit --add-assignee @me"
-alias gila="gh issue edit --add-label"
+alias gial="gh issue edit --add-label"
 
 alias gic="gh issue close -r completed"
 alias gir="gh issue close -r \"not planned\"" # for "retract"
@@ -229,6 +229,7 @@ function gn
 	}'
 end
 
+#TODO: make a file in main .github repo to store all additional labels defined for all repositories. Than change the label-manipulation commands to simply overwrite those. (or check for differences first, but that's more difficult, as some can have eg same name but outdated description)
 function git_add_global_label
 	set label_name $argv[1]
 	set label_description $argv[2]
