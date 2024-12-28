@@ -10,7 +10,7 @@ function shared_before
 
 	rm -f ./.gitignore
 	cat "$FILE_SNIPPETS_PATH/gitignore/shared" > ./.gitignore
-	echo "\n" >> ./.gitignore
+	echo "" >> ./.gitignore # appends a newline
 	cat "$FILE_SNIPPETS_PATH/gitignore/$lang" >> ./.gitignore
 
 	cat "$FILE_SNIPPETS_PATH/readme/header.md" > README.md
