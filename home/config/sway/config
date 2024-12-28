@@ -35,7 +35,7 @@ xwayland enable
 smart_borders off
 hide_edge_borders both
 # hides mouse if inactive
-seat * hide_cursor 8000
+seat * hide_cursor 16000
 
 bindgesture pinch:outward exec xdotool key ctrl+plus
 bindgesture pinch:inward exec xdotool key ctrl+minus
