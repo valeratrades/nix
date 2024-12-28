@@ -50,14 +50,13 @@ function shared_after
 
 	set rustc_current_version (rustc -V | sed -E 's/rustc ([0-9]+\.[0-9]+).*/\1/')
 	set current_nightly_by_date "nightly-"(date -d '-1 day' +%Y-%m-%d)
-	fd --type f --exclude .git | rg -v --file (git ls-files --others --ignored --exclude-standard) | while read -l file
+	fd --type f --exclude .git --exclude .gitignore | while read -l file
 		sed -i "s/PROJECT_NAME_PLACEHOLDER/$project_name/g" "$file"
 		sed -i "s/RUSTC_CURRENT_VERSION/$rustc_current_version/g" "$file"
 	end
 	sed -i "s/PROJECT_NAME_PLACEHOLDER/$project_name/g" ".git/hooks/pre-commit"
 	sed -i "s/RUSTC_CURRENT_VERSION/$rustc_current_version/g" ".git/hooks/pre-commit"
 	sed -i "s/CURRENT_NIGHTLY_BY_DATE/$current_nightly_by_date/g" ".github/workflows/ci.yml"
-	fd -t f -x sed -i "s/PROJECT_NAME_PLACEHOLDER/$project_name/g" {}
 
 	git add -A
 	git commit -m "-- New Project Snippet --"
