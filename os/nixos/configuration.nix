@@ -438,6 +438,7 @@ in
             unstage = "reset HEAD --"; # in case you did `git add .` before running `git diff`
             last = "log -1 HEAD";
             au = "remote add upstream";
+            ao = "remote add origin";
             aa = "add -A";
             su = "remote set-url";
             b = "branch";
