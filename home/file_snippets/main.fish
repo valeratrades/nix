@@ -44,9 +44,12 @@ function shared_after
 	cp "$FILE_SNIPPETS_PATH/git/hooks/pre-commit.sh" .git/hooks/pre-commit
 	chmod u+x .git/hooks/pre-commit
 
+	cat "$FILE_SNIPPETS_PATH/readme/footer.md" >> README.md
+	sudo ln "$FILE_SNIPPETS_PATH/readme/LICENSE-APACHE" ./LICENSE-APACHE
+	sudo ln "$FILE_SNIPPETS_PATH/readme/LICENSE-MIT" ./LICENSE-MIT
+
 	set rustc_current_version (rustc -V | sed -E 's/rustc ([0-9]+\.[0-9]+).*/\1/')
 	set current_nightly_by_date "nightly-"(date -d '-1 day' +%Y-%m-%d)
-
 	fd --type f --exclude .git | rg -v --file (git ls-files --others --ignored --exclude-standard) | while read -l file
 		sed -i "s/PROJECT_NAME_PLACEHOLDER/$project_name/g" "$file"
 		sed -i "s/RUSTC_CURRENT_VERSION/$rustc_current_version/g" "$file"
@@ -54,10 +57,7 @@ function shared_after
 	sed -i "s/PROJECT_NAME_PLACEHOLDER/$project_name/g" ".git/hooks/pre-commit"
 	sed -i "s/RUSTC_CURRENT_VERSION/$rustc_current_version/g" ".git/hooks/pre-commit"
 	sed -i "s/CURRENT_NIGHTLY_BY_DATE/$current_nightly_by_date/g" ".github/workflows/ci.yml"
-
-	cat "$FILE_SNIPPETS_PATH/readme/footer.md" >> README.md
-	sudo ln "$FILE_SNIPPETS_PATH/readme/LICENSE-APACHE" ./LICENSE-APACHE
-	sudo ln "$FILE_SNIPPETS_PATH/readme/LICENSE-MIT" ./LICENSE-MIT
+	fd -t f -x sed -i "s/PROJECT_NAME_PLACEHOLDER/$project_name/g" {}
 
 	git add -A
 	git commit -m "-- New Project Snippet --"
@@ -125,9 +125,7 @@ function can
 	end
 	touch src/lib.rs
 
-
 	shared_after $argv[1] $lang
-	cargo run # build takes time, might as well start it immediately
 end
 
 
