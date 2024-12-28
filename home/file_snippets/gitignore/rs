@@ -1,2 +1,3 @@
 ## Rust
 **/**.pending-snap
+config.toml # could be used for initial debugging of apps using `config` crate

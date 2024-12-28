@@ -98,6 +98,19 @@
       Restart = "on-failure";
     };
   };
+  systemd.user.services.wlr-gamma = {
+    Unit = {
+      Description = "wlroots Brightness Control";
+      PartOf = "graphical-session.target";
+    };
+    Install = {
+      WantedBy = [ "graphical-session.target" ];
+    };
+    Service = {
+      Type = "simple";
+      ExecStart = "wlr-gamma-service";
+    };
+  };
 
   home = {
     sessionPath = [
