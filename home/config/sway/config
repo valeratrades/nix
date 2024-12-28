@@ -109,16 +109,23 @@ bindsym $mod+Shift+b exec bluetoothctl disconnect E8:EE:CC:36:53:49
 
 # # Redshift
 # calibrated so it takes 20 key presses for both temperature and brightness to move between the two default states.
-# minus brightness
+# minus brightness plus red
 bindsym $mod+F6 exec gdbus call -e -d net.zoidplex.wlr_gamma_service -o /net/zoidplex/wlr_gamma_service -m net.zoidplex.wlr_gamma_service.temperature.decrease 210 && gdbus call -e -d net.zoidplex.wlr_gamma_service -o /net/zoidplex/wlr_gamma_service -m net.zoidplex.wlr_gamma_service.brightness.decrease 0.0275
-# plus brightness
+# plus brightness plus blue
 bindsym $mod+F7 exec gdbus call -e -d net.zoidplex.wlr_gamma_service -o /net/zoidplex/wlr_gamma_service -m net.zoidplex.wlr_gamma_service.temperature.increase 210 && gdbus call -e -d net.zoidplex.wlr_gamma_service -o /net/zoidplex/wlr_gamma_service -m net.zoidplex.wlr_gamma_service.brightness.increase 0.0275
-# night + glasses
+# night brightness and red
 bindsym $mod+Shift+F6 exec gdbus call -e -d net.zoidplex.wlr_gamma_service -o /net/zoidplex/wlr_gamma_service -m net.zoidplex.wlr_gamma_service.temperature.set 2300 && gdbus call -e -d net.zoidplex.wlr_gamma_service -o /net/zoidplex/wlr_gamma_service -m net.zoidplex.wlr_gamma_service.brightness.set 0.35
-# day
+# day brigthness and blue
 bindsym $mod+Shift+F7 exec gdbus call -e -d net.zoidplex.wlr_gamma_service -o /net/zoidplex/wlr_gamma_service -m net.zoidplex.wlr_gamma_service.temperature.set 6500 && gdbus call -e -d net.zoidplex.wlr_gamma_service -o /net/zoidplex/wlr_gamma_service -m net.zoidplex.wlr_gamma_service.brightness.set 1
-# night + no glasses
-bindsym $mod+Ctrl+F6 exec gdbus call -e -d net.zoidplex.wlr_gamma_service -o /net/zoidplex/wlr_gamma_service -m net.zoidplex.wlr_gamma_service.brightness.set 0.15
+
+# minus brightness
+bindsym $mod+Ctrl+F6 exec gdbus call -e -d net.zoidplex.wlr_gamma_service -o /net/zoidplex/wlr_gamma_service -m net.zoidplex.wlr_gamma_service.brightness.decrease 0.0275
+# plus brightness
+bindsym $mod+Ctrl+F7 exec gdbus call -e -d net.zoidplex.wlr_gamma_service -o /net/zoidplex/wlr_gamma_service -m net.zoidplex.wlr_gamma_service.brightness.increase 0.0275
+# night brightness
+bindsym $mod+Shift+Ctrl+F6 exec gdbus call -e -d net.zoidplex.wlr_gamma_service -o /net/zoidplex/wlr_gamma_service -m net.zoidplex.wlr_gamma_service.brightness.set 0.15
+
+#TODO: move to its own systmd service
 exec_always sudo killall auto_redshift
 exec_always sleep 2 && auto_redshift start 7:00
 #
