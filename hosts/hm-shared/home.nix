@@ -84,6 +84,21 @@
     };
   };
 
+  #TEST
+  systemd.user.services.eww-widgets = {
+    Unit = {
+      Description = "Start Eww Widgets";
+      After = [ "default.target" ];
+    };
+    Install = {
+      WantedBy = [ "default.target" ];
+    };
+    Service = {
+      ExecStart = "${pkgs.dash}/bin/dash -c 'eww open bar && eww open btc_line_lower && eww open btc_line_upper && eww open todo_blocker'";
+      Restart = "on-failure";
+    };
+  };
+
   home = {
     sessionPath = [
       "${pkgs.lib.makeBinPath [ ]}"

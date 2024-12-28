@@ -37,16 +37,6 @@ in
         };
   };
 
-  #environment.etc."systemd/system/wlr-gamma-service.service" = {
-  #	source = ../modules/wlr-brightness/res/wlr-gamma-service.service;
-  #	mode = "0644";
-  #};
-  #systemd.services.wlr-gamma-service = {
-  #   description = "WLR Gamma Service";
-  #   wantedBy = [ "multi-user.target" ];
-  #   serviceConfig.ExecStart = "${pkgs.wlr-gamma-service}/bin/wlr-gamma-service";  # Adjust if the binary path differs
-  # };
-
   services = {
     getty.autologinUser = user.username;
     xserver = {

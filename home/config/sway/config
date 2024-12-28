@@ -256,7 +256,7 @@ exec_always "sh -c -- pkill -f 'todo monitor'; todo monitor"
 bindsym $mod+w exec "$NIXOS_CONFIG/home/scripts/circle_wallpapers.sh f"
 bindsym $mod+Shift+w exec "$NIXOS_CONFIG/home/scripts/circle_wallpapers.sh b"
 
-bindsym $mod+d exec notify-send "Test"
+bindsym $mod+d exec zathura "~/Downloads/$(ls -t ~/Downloads | head -n 1)"
 
 # # Screenshots
 exec mkdir -p ~/tmp/Screenshots >/dev/null
