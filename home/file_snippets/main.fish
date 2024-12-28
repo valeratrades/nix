@@ -1,5 +1,5 @@
 # TODO!: look into speeding GA up with docker containers
-# TODO!!: riir
+# TODO!!: riir (there was some macro that allowed for very compact writing of shell commands)
 set -g FILE_SNIPPETS_PATH "$NIXOS_CONFIG/home/file_snippets"
 
 function shared_before
@@ -31,9 +31,8 @@ function shared_before
 	#cp "$FILE_SNIPPETS_PATH/local_sh/$lang.fish" ./tmp/.local.fish # while I like my little standard, normally those things should go to .envrc or global config
 	#source ./tmp/.local.fish
 
-	cp "$FILE_SNIPPETS_PATH/$lang/flake.nix" ./flake.nix
+	cp "$FILE_SNIPPETS_PATH/$lang/flake.nix" ./flake.nix # doesn't exist for all languages, for ex rust has this added in its own function, conditional on toolchain version. Good news is - this does nothing if source is not found. (but HACK: could lead to nasty logical errors)
 	cat "$FILE_SNIPPETS_PATH/envrc/shared" > .envrc
-	echo "\n" >> .envrc
 	cat "$FILE_SNIPPETS_PATH/envrc/$lang.sh" >> .envrc
 end
 
@@ -65,9 +64,17 @@ function shared_after
 	git branch "release"
 end
 
+### EX: `can --nightly --clap project_name`
+### HACK: can't flip the order of the arguments
 function can
+	set toolchain "--stable"
+	if test (string sub -s 1 -l 1 -- $argv[1]) = "-"
+		set toolchain "$argv[1]"
+		set argv $argv[2..-1]
+	end
+	
 	set preset "--default"
-	if test (string sub -s 1 -l 1 $argv[1]) = "-"
+	if test (string sub -s 1 -l 1 -- $argv[1]) = "-"
 		set preset "$argv[1]"
 		set argv $argv[2..-1]
 	end
@@ -92,7 +99,14 @@ function can
 	sudo ln "$FILE_SNIPPETS_PATH/$lang/rustfmt.toml" ./rustfmt.toml
 	sudo ln "$FILE_SNIPPETS_PATH/$lang/deny.toml" ./deny.toml
 
-	cp -r "$FILE_SNIPPETS_PATH/$lang/.cargo" ./.cargo
+	# both could have `.cargo` dir in them, which wouldn't be mached by just `/*`, hence `{*,.*}` pattern
+	switch $toolchain
+	case "--stable"
+		cp -r $FILE_SNIPPETS_PATH/$lang/stable/{*,.*} . 
+	case "--nightly"
+		cp -r $FILE_SNIPPETS_PATH/$lang/nightly/{*,.*} .
+	end
+
 	sed -i '$d' Cargo.toml
 	cat "$FILE_SNIPPETS_PATH/$lang/default_dependencies.toml" >> Cargo.toml
 
@@ -113,6 +127,7 @@ function can
 
 
 	shared_after $argv[1] $lang
+	cargo run # build takes time, might as well start it immediately
 end
 
 
