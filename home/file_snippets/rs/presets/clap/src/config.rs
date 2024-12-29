@@ -1,21 +1,29 @@
-use std::path::Path;
-
-use color_eyre::eyre::{Result, bail};
+use color_eyre::eyre::Result;
 use v_utils::macros::MyConfigPrimitives;
 
 #[derive(Clone, Debug, Default, MyConfigPrimitives)]
 pub struct AppConfig {}
 
 impl AppConfig {
-	//TODO!!!: figure out how to return error iff all potentail sources combined fail to provide all of the values;
-	pub fn read(path: &Path) -> Result<Self> {
-		match path.exists() {
-			true => {
-				let builder = config::Config::builder().add_source(config::File::with_name(path.to_str().unwrap()));
-				let raw: config::Config = builder.build()?;
-				Ok(raw.try_deserialize()?)
+	pub fn read() -> Result<Self> {
+		let app_name = env!("CARGO_PKG_NAME");
+		let locations = [
+			format!("{}/{app_name}", env!("XDG_CONFIG_HOME")),
+			format!("{}/{app_name}/config", env!("XDG_CONFIG_HOME")), //
+		];
+
+		let mut builder = config::Config::builder().add_source(config::Environment::default());
+		for location in locations.iter() {
+			builder = builder.add_source(config::File::with_name(location).required(false));
+		}
+		let raw: config::Config = builder.build()?;
+
+		match raw.try_deserialize() {
+			Ok(config) => Ok(config),
+			Err(e) => {
+				eprintln!("Config file does not exist or is invalid:");
+				Err(e.into())
 			}
-			false => bail!("Config file does not exist: {:?}", path),
 		}
 	}
 }
