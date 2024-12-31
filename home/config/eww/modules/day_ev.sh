@@ -24,11 +24,11 @@ else
 fi
 
 temp_var_file="/run/user/$(id -u)/todo_milestones_healthcheck_status_path"
-if [ ! -f "$temp_var_file" ]; then
-    healthcheck_status_file="$(todo milestones healthcheck | head -n 1)"
-    echo "$healthcheck_status_file" > "$temp_var_file"
+if [ -f "$temp_var_file" ]; then
+	healthcheck_status_file="$(cat "$temp_var_file")"
 else
-    healthcheck_status_file="$(cat "$temp_var_file")"
+	healthcheck_status_file="$(todo milestones healthcheck | head -n 1)"
+	echo "$healthcheck_status_file" > "$temp_var_file"
 fi
 
 if [ "$(find "$healthcheck_status_file" -mmin +120)" ]; then

@@ -39,7 +39,7 @@ in
     username = "m";
     userFullName = "Maria";
     desktopHostName = "m-laptop";
-    defaultUsername = "chaesgfnd";
+    defaultUsername = "sakhmasha";
     defaultUserEmail = "m79160164445@gmail.com";
     masterUserEmail = "m79160164445@gmail.com";
   };
