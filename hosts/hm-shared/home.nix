@@ -86,32 +86,32 @@
   #};
 
   #TEST
-  systemd.user.services.eww-widgets = {
-    Unit = {
-      Description = "Start Eww Widgets";
-      After = [ "default.target" ];
-    };
-    Install = {
-      WantedBy = [ "default.target" ];
-    };
-    Service = {
-      ExecStart = "${pkgs.dash}/bin/dash -c 'cd ~/nix/home/config/eww; eww open bar && eww open btc_line_lower && eww open btc_line_upper && eww open todo_blocker'";
-      Restart = "on-failure";
-    };
-  };
-  systemd.user.services.wlr-gamma = {
-    Unit = {
-      Description = "wlroots Brightness Control";
-      PartOf = "graphical-session.target";
-    };
-    Install = {
-      WantedBy = [ "graphical-session.target" ];
-    };
-    Service = {
-      Type = "simple";
-      ExecStart = "wlr-gamma-service";
-    };
-  };
+  #systemd.user.services.eww-widgets = {
+  #  Unit = {
+  #    Description = "Start Eww Widgets";
+  #    After = [ "default.target" ];
+  #  };
+  #  Install = {
+  #    WantedBy = [ "default.target" ];
+  #  };
+  #  Service = {
+  #    ExecStart = "${pkgs.dash}/bin/dash -c 'cd ~/nix/home/config/eww; eww open bar && eww open btc_line_lower && eww open btc_line_upper && eww open todo_blocker'";
+  #    Restart = "on-failure";
+  #  };
+  #};
+  #systemd.user.services.wlr-gamma = {
+  #  Unit = {
+  #    Description = "wlroots Brightness Control";
+  #    PartOf = "graphical-session.target";
+  #  };
+  #  Install = {
+  #    WantedBy = [ "graphical-session.target" ];
+  #  };
+  #  Service = {
+  #    Type = "simple";
+  #    ExecStart = "wlr-gamma-service";
+  #  };
+  #};
 
   home = {
     sessionPath = [
