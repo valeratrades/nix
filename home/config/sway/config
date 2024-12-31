@@ -63,6 +63,7 @@ bindsym $mod+Shift+g exec greenclip clear
 
 exec_always fish -c 'eww kill; eww open bar && eww open btc_line_lower && eww open btc_line_upper && eww open todo_blocker'
 
+
 #if (user == "v") {
 #	exec_always notify-send "Test"
 #}
@@ -231,8 +232,11 @@ bindsym $mod+Mod1+t exec ~/s/help_scripts/theme_toggle.sh
 # Ctrl suffix because it will often be used after `Ctrl+l` in chrome.
 bindsym $mod+Ctrl+g exec tg $(greenclip print | awk 'NR==1 {print}')
 
+set $refresh_eww "eww kill; eww open bar; eww open btc_line_upper; eww open btc_line_lower"
+exec_always $refresh_eww
 bindsym $mod+e exec ~/.config/sway/eww_zoom_toggle.sh
 bindsym $mod+Shift+e exec ~/.config/sway/eww_visibility_toggle.sh
+bindsym $mod+Ctrl+e exec $refresh_eww
 
 bindsym $mod+a exec echo "true" > /tmp/btc_line_additional_line
 bindsym $mod+Shift+a exec echo "false" > /tmp/btc_line_additional_line
