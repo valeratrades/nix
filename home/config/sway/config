@@ -61,6 +61,8 @@ bindsym $mod+g exec rofi -modi "clipboard:greenclip print" -show clipboard
 bindsym $mod+Shift+g exec greenclip clear
 #
 
+exec_always "env fish -c 'eww kill; eww open bar && eww open btc_line_lower && eww open btc_line_upper && eww open todo_blocker'"
+
 #if (user == "v") {
 #	exec_always notify-send "Test"
 #}

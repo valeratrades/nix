@@ -9,6 +9,7 @@
 }:
 {
   imports = [
+    ./programs
     ./nixcord.nix
     (
       # in my own config I symlink stuff to fascilitate experimentation. In derived setups I value reproducibility much more
@@ -71,18 +72,18 @@
     };
   };
 
-  xdg = {
-    enable = true;
-    mimeApps = {
-      enable = true;
-      associations.added = {
-        "application/pdf" = [ "zathura.desktop" ];
-      };
-      defaultApplications = {
-        "application/pdf" = [ "zathura.desktop" ];
-      };
-    };
-  };
+  #xdg = {
+  #  enable = true;
+  #  mimeApps = {
+  #    enable = true;
+  #    associations.added = {
+  #      "application/pdf" = [ "zathura.desktop" ];
+  #    };
+  #    defaultApplications = {
+  #      "application/pdf" = [ "zathura.desktop" ];
+  #    };
+  #  };
+  #};
 
   #TEST
   systemd.user.services.eww-widgets = {
@@ -94,7 +95,7 @@
       WantedBy = [ "default.target" ];
     };
     Service = {
-      ExecStart = "${pkgs.dash}/bin/dash -c 'eww open bar && eww open btc_line_lower && eww open btc_line_upper && eww open todo_blocker'";
+      ExecStart = "${pkgs.dash}/bin/dash -c 'cd ~/nix/home/config/eww; eww open bar && eww open btc_line_lower && eww open btc_line_upper && eww open todo_blocker'";
       Restart = "on-failure";
     };
   };
