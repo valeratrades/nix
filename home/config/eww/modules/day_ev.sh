@@ -24,9 +24,14 @@ else
 fi
 
 temp_var_file="/run/user/$(id -u)/todo_milestones_healthcheck_status_path"
+success=0
 if [ -f "$temp_var_file" ]; then
 	healthcheck_status_file="$(cat "$temp_var_file")"
-else
+	if [ "$healthcheck_status_file" != "" ]; then
+		success=1
+	fi
+fi
+if [ "$success" != 1 ]; then
 	healthcheck_status_file="$(todo milestones healthcheck | head -n 1)"
 	echo "$healthcheck_status_file" > "$temp_var_file"
 fi
