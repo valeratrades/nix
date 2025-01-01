@@ -210,10 +210,12 @@ in
             l = "branch --list";
             unstage = "reset HEAD --"; # in case you did `git add .` before running `git diff`
             last = "log -1 HEAD";
+            a = "add";
+            aa = "add -A";
             au = "remote add upstream";
             ao = "remote add origin";
-            aa = "add -A";
-            su = "remote set-url";
+            su = "remote set-url upstream";
+            so = "remote set-url origin";
             b = "branch";
             c = "checkout";
             cb = "checkout -b";
@@ -549,6 +551,7 @@ in
       EDITOR = "nvim";
       WAKETIME = "6:00";
       DAY_SECTION_BORDERS = "2.5:10.5:16";
+      DEFAULT_BROWSER = "${pkgs.google-chrome}/bin/google-chrome-stable";
       PAGER = "less";
       MANPAGER = "less";
       LESSHISTFILE = "-";

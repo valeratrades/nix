@@ -21,6 +21,9 @@
       ocaml = {
         format = "[$symbol]($style) ";
       };
+      c = {
+        format = "[$symbol]($style) ";
+      };
       ruby = {
         format = "[$symbol]($style) ";
       };

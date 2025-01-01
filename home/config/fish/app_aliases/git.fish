@@ -215,6 +215,11 @@ function gn
 	-f color="0052CC" \
 	-f description="Small non-imaginative task"
 
+	gh api repos/$GITHUB_NAME/$repo_name/labels \
+	-f name="breaking" \
+	-f color="000000" \
+	-f description="Implementing should be postponed until next major version"
+
 	gh api -X DELETE repos/$GITHUB_NAME/$repo_name/labels/enhancement
 
 	curl -L -X POST \

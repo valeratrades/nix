@@ -72,18 +72,18 @@
     };
   };
 
-  #xdg = {
-  #  enable = true;
-  #  mimeApps = {
-  #    enable = true;
-  #    associations.added = {
-  #      "application/pdf" = [ "zathura.desktop" ];
-  #    };
-  #    defaultApplications = {
-  #      "application/pdf" = [ "zathura.desktop" ];
-  #    };
-  #  };
-  #};
+  xdg = {
+    enable = true;
+    mimeApps = {
+      enable = true;
+      associations.added = {
+        "application/pdf" = [ "zathura.desktop" ];
+      };
+      defaultApplications = {
+        "application/pdf" = [ "zathura.desktop" ];
+      };
+    };
+  };
 
   #TEST
   #systemd.user.services.eww-widgets = {

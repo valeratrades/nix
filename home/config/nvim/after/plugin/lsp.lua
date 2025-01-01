@@ -285,6 +285,13 @@ vim.g.rustaceanvim = {
 						},
 					},
 				},
+				completion = {
+					-- a vec (fuck lua)
+					excludeTraits = {
+						"owo_colors::FgColorDisplay",
+						"owo_colors::BgColorDisplay",
+					},
+				},
 				checkOnSave = {
 					enable = true,
 					--TODO!!: think how to toggle clippy::all (for pedantic checks right before commiting to master)
