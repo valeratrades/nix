@@ -20,11 +20,12 @@ function shared_before
 	mkdir -p docs/.assets
 	cat "$FILE_SNIPPETS_PATH/docs/ARCHITECTURE.md" > docs/ARCHITECTURE.md
 
-	set ci_file "./.github/workflows/ci.yml"
+	#DEPRECATED: rm in a month (2025/01/02)
+	#set ci_file "./.github/workflows/ci.yml"
+	#cp "$FILE_SNIPPETS_PATH/.github/workflows/shared.yml" $ci_file
+	#echo "" >> $ci_file
+	#cat "$FILE_SNIPPETS_PATH/.github/workflows/$lang.yml" | awk 'NR > 1' | reasonable_envsubst - 2>/dev/null >> $ci_file
 	mkdir -p .github/workflows
-	cp "$FILE_SNIPPETS_PATH/.github/workflows/shared.yml" $ci_file
-	echo "" >> $ci_file
-	cat "$FILE_SNIPPETS_PATH/.github/workflows/$lang.yml" | awk 'NR > 1' | reasonable_envsubst - 2>/dev/null >> $ci_file
 	cat "$FILE_SNIPPETS_PATH/.github/workflows/$lang.nix" | reasonable_envsubst - 2>/dev/null >> "./.github/workflows/ci.nix"
 
 	mkdir tests && cp -r "$FILE_SNIPPETS_PATH/tests/$lang"/* ./tests/
