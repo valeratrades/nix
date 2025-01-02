@@ -41,7 +41,7 @@ alias ggp="gg -p perf"
 alias ggd="gg -p docs"
 alias ggi="gg -p ci"
 
-alias ggup="gg 'fixup!'"
+alias gup="git commit -a --fixup (git rev-parse HEAD) && git push --follow-tags"
 
 function gd
 	set branch_name $argv[1]
