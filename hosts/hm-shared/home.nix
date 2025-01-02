@@ -42,15 +42,22 @@
 
     eza.enable = true;
     yazi.enable = true;
+    # ref tmux config: https://github.com/Dich0tomy/snowstorm/blob/trunk/modules/home/tmux/default.nix
     tmux = {
       enable = true; # dbg
       keyMode = "vi";
       shortcut = "e";
       package = pkgs.tmux;
       plugins = with pkgs; [
-        tmuxPlugins.resurrect # persist sessions
+        #tmuxPlugins.resurrect # persist sessions
         tmuxPlugins.open # open files
         tmuxPlugins.copycat # enables regex
+
+        # [To save]: <prefix> + C-s
+        {
+          plugin = tmuxPlugins.resurrect;
+          extraConfig = "set -g @resurrect-strategy-nvim 'session'";
+        }
       ];
       extraConfig = "${self}/home/config/tmux/tmux.conf";
     };
@@ -72,18 +79,18 @@
     };
   };
 
-  xdg = {
-    enable = true;
-    mimeApps = {
-      enable = true;
-      associations.added = {
-        "application/pdf" = [ "zathura.desktop" ];
-      };
-      defaultApplications = {
-        "application/pdf" = [ "zathura.desktop" ];
-      };
-    };
-  };
+  #xdg = {
+  #  enable = true;
+  #  mimeApps = {
+  #    enable = true;
+  #    associations.added = {
+  #      "application/pdf" = [ "zathura.desktop" ];
+  #    };
+  #    defaultApplications = {
+  #      "application/pdf" = [ "zathura.desktop" ];
+  #    };
+  #  };
+  #};
 
   #TEST
   #systemd.user.services.eww-widgets = {

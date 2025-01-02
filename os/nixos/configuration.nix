@@ -514,6 +514,8 @@ in
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
 
+  nix.settings.download-buffer-size = "50G";
+
   environment = {
     # XDG directories and Wayland environment variables setup
     variables = {
@@ -598,14 +600,14 @@ in
             winePackages.stagingFull
             #wine-staging # nightly wine
             winetricks # install deps for wine
-            bottles # ... python
+            #bottles # ... python
             lutris # supposed to be more modern `playonlinux`. It's in python.
             playonlinux # oh wait, this shit's in python too
           ]
           # MacOS
           [
-            darling
-            dmg2img
+            #darling
+            #dmg2img
           ]
         ]
 

@@ -27,7 +27,7 @@
     packages =
       with pkgs;
       builtins.trace "DEBUG: sourcing Valera-specific home.nix" lib.lists.flatten [
-        nyxt
+        #nyxt
         en-croissant # chess analysis GUI
         ncspot
         gitui
@@ -37,7 +37,7 @@
       ++ [
         # some of my own packages are in shared, not everything is here
         inputs.btc_line.packages.${pkgs.system}.default
-        #inputs.prettify_log.packages.${pkgs.system}.default
+        inputs.prettify_log.packages.${pkgs.system}.default
         inputs.distributions.packages.${pkgs.system}.default # ? shared?
         inputs.bad_apple_rs.packages.${pkgs.system}.default
 
