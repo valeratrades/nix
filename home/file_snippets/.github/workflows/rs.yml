@@ -90,14 +90,32 @@ jobs:
             exit $exit_code
           fi
 
+  #machete:
+  #  name: Cargo Machete
+  #  runs-on: ubuntu-latest
+  #
+  #  steps:
+  #    - uses: actions/checkout@v4
+  #    - name: Check for unused dependencies
+  #      uses: bnjbvr/cargo-machete@main
+  # the above is their own GHA, but it uses `cargo install`. Until they transfer to binstall, the following is better.
   machete:
-    name: Cargo Machete
+    name: Unused Dependencies
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
-      - name: Check for unused dependencies
-        uses: bnjbvr/cargo-machete@main
+    - name: Installation
+      uses: taiki-e/install-action@v2
+      with:
+        tool: cargo-machete
+    - name: Cargo Machete
+      run: |
+        cargo machete
+        exit_code=$?
+        if [ $exit_code = 0 ]; then
+          echo "Found unused dependencies"
+          exit $exit_code
+        fi
 
   bad_practices:
     name: Bad Practices
