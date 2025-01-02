@@ -8,8 +8,8 @@ use config::AppConfig;
 struct Cli {
 	#[command(subcommand)]
 	command: Commands,
-	#[arg(long, default_value = "~/.config/PROJECT_NAME_PLACEHOLDER.toml")]
-	config: ExpandedPath,
+	#[arg(long)]
+	config: Option<ExpandedPath>,
 }
 #[derive(Subcommand)]
 enum Commands {
