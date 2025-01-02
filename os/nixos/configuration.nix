@@ -951,6 +951,12 @@ in
               lua
               lua-language-server
             ]
+
+            # Yaml
+            [
+              yamlfmt
+              yamllint
+            ]
           ]
 
           # Debuggers

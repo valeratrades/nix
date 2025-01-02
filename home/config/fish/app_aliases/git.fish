@@ -220,6 +220,11 @@ function gn
 	-f color="000000" \
 	-f description="Implementing should be postponed until next major version"
 
+	gh api repos/$GITHUB_NAME/$repo_name/labels \
+	-f name="enhancement" \
+	-f color="a2eeef" \
+	-f description="New feature or request"
+
 	gh api -X DELETE repos/$GITHUB_NAME/$repo_name/labels/enhancement
 
 	curl -L -X POST \
