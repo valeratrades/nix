@@ -175,3 +175,12 @@ function ce
 	set result (eval $cmd)
 	printf (string trim $result)
 end
+
+# for "cargo release test". Runs tests without using `path`-specified dependencies, in the state that would be uploaded to registries.
+function crt
+	set temp_dir (mktemp -d /tmp/cargo_test.XXXXXX) &&
+	cargo package --allow-dirty &&
+	tar -xzf target/package/*.crate -C $temp_dir &&
+	cargo test --manifest-path $temp_dir/Cargo.toml &&
+	rm -rf $temp_dir
+end
