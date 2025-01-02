@@ -75,9 +75,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install cargo-sort
-        run: |
-          cargo install cargo-sort
+
+      - name: Installation
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-sort
 
       - name: Check if Cargo.toml is sorted
         run: |
