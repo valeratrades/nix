@@ -25,7 +25,7 @@ function shared_before
 	cp "$FILE_SNIPPETS_PATH/.github/workflows/shared.yml" $ci_file
 	echo "" >> $ci_file
 	cat "$FILE_SNIPPETS_PATH/.github/workflows/$lang.yml" | awk 'NR > 1' | reasonable_envsubst - 2>/dev/null >> $ci_file
-	cp "$FILE_SNIPPETS_PATH/.github/workflows/$lang.nix" "./.github/workflows/ci.nix"
+	cat "$FILE_SNIPPETS_PATH/.github/workflows/$lang.nix" | reasonable_envsubst - 2>/dev/null >> "./.github/workflows/ci.nix"
 
 	mkdir tests && cp -r "$FILE_SNIPPETS_PATH/tests/$lang"/* ./tests/
 	mkdir tmp
