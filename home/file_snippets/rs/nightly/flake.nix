@@ -61,8 +61,6 @@
             shellHook =
               checks.pre-commit-check.shellHook
               + ''
-                echo "Generating TOML configuration..."
-                #cp -f ${generatedContents} ./tmp/test.yaml
                 rm -f ./.github/workflows/ci.yml
                 cp ${generatedContents} ./.github/workflows/ci.yml
               '';
