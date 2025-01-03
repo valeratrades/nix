@@ -30,6 +30,7 @@ x = "fix --allow-dirty --allow-no-vcs"
 xc = "clippy --fix --allow-dirty --allow-no-vcs"
 s = "sweep --recursive --installed" # only leave currently active artifacts
 rel = "release --no-confirm --execute"
+so = "sort -wg"
 
 # overriding defaults in favor of cargo-limit alternatives
 # if `--all-features` is needed for better dev experience, override these shortcuts with it on per-project basis. eg: "lbuild --all-features"

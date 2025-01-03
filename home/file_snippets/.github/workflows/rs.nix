@@ -40,7 +40,7 @@ in
     pkgs.lib.recursiveUpdate base {
       name = "Warnings";
       inherit (shared-base) permissions;
-      jobs = pkgs.lib.recursiveUpdate shared-jobs rust-jobs-warn;
+      jobs = pkgs.lib.recursiveUpdate (pkgs.lib.recursiveUpdate shared-jobs rust-jobs-warn) rust-base.jobs;
     }
   );
 }
