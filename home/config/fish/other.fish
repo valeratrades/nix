@@ -40,29 +40,31 @@ function chess
     py -m cli_chess --token lip_sjCnAuNz1D3PM5plORrC
 end
 
-# move head
-function mvt
-    set from "."
-    set to $argv[1]
-    if test $argv[1] = "-p" -o $argv[1] = "--paper"
-        set from "$HOME/Downloads"
-        set to "$HOME/Documents/Papers"
-    else if test $argv[1] = "-b" -o $argv[1] = "--book"
-        set from "$HOME/Downloads"
-        set to "$HOME/Documents/Books"
-    else if test $argv[1] = "-n" -o $argv[1] = "--notes"
-        set from "$HOME/Downloads"
-        set to "$HOME/Documents/Notes"
-    else if test $argv[1] = "-c" -o $argv[1] = "--courses"
-        set from "$HOME/Downloads"
-        set to "$HOME/Documents/Courses"
-    else if test $argv[1] = "-w" -o $argv[1] = "--wine"
-        set from "$HOME/Downloads"
-        set to "$HOME/.wine/drive_c/users/v/Downloads"
-    end
-    
-    mv "$from/(ls $from -t | head -n 1)" $to
+# move latest download
+function mvd
+	set from "."
+	set to $argv[1]
+
+	switch $argv[1]
+	case "-p" "--paper"
+		set from "$HOME/Downloads"
+		set to "$HOME/Documents/Papers"
+	case "-b" "--book"
+		set from "$HOME/Downloads"
+		set to "$HOME/Documents/Books"
+	case "-n" "--notes"
+		set from "$HOME/Downloads"
+		set to "$HOME/Documents/Notes"
+	case "-c" "--courses"
+		set from "$HOME/Downloads"
+		set to "$HOME/Documents/Courses"
+	case "-w" "--wine"
+		set from "$HOME/Downloads"
+		set to "$HOME/.wine/drive_c/users/v/Downloads"
+	end
+	mv "$from/$(ls $from -t | head -n 1)" $to
 end
+
 
 function matrix
     function cleanup

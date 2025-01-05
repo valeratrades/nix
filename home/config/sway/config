@@ -142,6 +142,8 @@ mode "monitors" {
 	bindsym s exec $switch_out && 'set $primary "eDP-1"'
 	bindsym l exec $switch_out && 'set $primary "HDMI-A-1" "eDP-1"'
 
+	bindsym t exec $switch_out &&  swaymsg 'output DP-1 toggle'
+
 	bindsym $mod+k exec $switch_out
 	bindsym $mod+c exec $switch_out
 	bindsym $mod+q exec $switch_out
