@@ -546,6 +546,7 @@ in
       #NB: when enabling, make sure the main monitor the wine will be displayed on starts at `0 0`
       WINEPREFIX = "${userHome}/.wine";
       #WINEARCH = "win32";
+      STARSHIP_LOG = "error"; # disable the pesky [WARN] messages
 
       # home vars
       MODULAR_HOME = "${modularHome}";
