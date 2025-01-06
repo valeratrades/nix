@@ -115,7 +115,7 @@ function cw
 	end
 
 	trap cleanup INT
-	cargo watch -c -x "b"
+	cargo watch -x "b"
 	cleanup
 end
 
