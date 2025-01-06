@@ -10,7 +10,7 @@
 {
   imports = [
     ./programs
-    ./nixcord.nix
+    #./nixcord.nix
     (
       # in my own config I symlink stuff to fascilitate experimentation. In derived setups I value reproducibility much more
       if user.userFullName == "Valera" then ./config_symlinks.nix else ./config_writes.nix
