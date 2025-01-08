@@ -70,10 +70,11 @@
             shellHook =
               checks.pre-commit-check.shellHook
               + ''
-                								rm -f ./.github/workflows/errors.yml; cp ${workflowContents.errors} ./.github/workflows/errors.yml
-                								rm -f ./.github/workflows/warnings.yml; cp ${workflowContents.warnings} ./.github/workflows/warnings.yml
+                rm -f ./.github/workflows/errors.yml; cp ${workflowContents.errors} ./.github/workflows/errors.yml
+                rm -f ./.github/workflows/warnings.yml; cp ${workflowContents.warnings} ./.github/workflows/warnings.yml
 
-                								cargo -Zscript -q ${hooks.appendCustom} ./.git/hooks/pre-commit
+                cargo -Zscript -q ${hooks.appendCustom} ./.git/hooks/pre-commit
+                cp -f ${hooks.treefmt} ./.treefmt.toml
               '';
             packages = [
               mold-wrapped
