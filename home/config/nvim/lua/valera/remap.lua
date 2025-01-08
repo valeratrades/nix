@@ -173,6 +173,9 @@ K("n", "<Esc>", function()
 	print(" ")
 end)
 
+K('n', '<C-z>', '<Nop>')
+K('n', "<Space><C-z>", "<C-z>")
+
 local function saveSessionIfOpen(cmd, hook_before)
 	hook_before = hook_before or ""
 	return function()

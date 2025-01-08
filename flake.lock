@@ -627,17 +627,34 @@
         ]
       },
       "locked": {
-        "lastModified": 1736336279,
-        "narHash": "sha256-9Xp2X7ofKY4h39vUbd4coNambsG7Y/9axLFyTXaXOMU=",
+        "lastModified": 1736366465,
+        "narHash": "sha256-Fo68EF6p/N9GJyHiAUbXtiE7IJlb3IMjK86LuxFMsRU=",
         "owner": "nix-community",
         "repo": "home-manager",
-        "rev": "45bcdbc910dc5131943bb6f7edb156617898fd1a",
+        "rev": "7e00856596891850ba5ad4c5ecd2ed74468c08c5",
         "type": "github"
       },
       "original": {
         "owner": "nix-community",
         "ref": "master",
         "repo": "home-manager",
+        "type": "github"
+      }
+    },
+    "hooks": {
+      "locked": {
+        "dir": "hooks",
+        "lastModified": 1736356095,
+        "narHash": "sha256-37SECNSGTd4admlNA7Idl51jIcVvfqqaQmggSQsIc4U=",
+        "owner": "valeratrades",
+        "repo": ".github",
+        "rev": "c89730a8fe623e61cb8542c5db63ee33680e271c",
+        "type": "github"
+      },
+      "original": {
+        "dir": "hooks",
+        "owner": "valeratrades",
+        "repo": ".github",
         "type": "github"
       }
     },
@@ -1188,17 +1205,18 @@
     "rm_engine": {
       "inputs": {
         "flake-utils": "flake-utils_3",
+        "hooks": "hooks",
         "nixpkgs": "nixpkgs_8",
         "pre-commit-hooks": "pre-commit-hooks_3",
         "rust-overlay": "rust-overlay_3",
         "workflow-parts": "workflow-parts_2"
       },
       "locked": {
-        "lastModified": 1736290387,
-        "narHash": "sha256-11fh2X0XT2rIOtlw5aU84akTX3GpsU+1vUreiWcLgCg=",
+        "lastModified": 1736367695,
+        "narHash": "sha256-1uxDvuKOh1VBznQQJGRowELdv9412eO3tSl6wC5u2n0=",
         "owner": "valeratrades",
         "repo": "rm_engine",
-        "rev": "55d89ba5ae007e963f21fabb39c5e366809bc999",
+        "rev": "8263443659725d46e586f142691aba085aeab8e6",
         "type": "github"
       },
       "original": {
@@ -1418,11 +1436,11 @@
         "workflow-parts": "workflow-parts_3"
       },
       "locked": {
-        "lastModified": 1736347476,
-        "narHash": "sha256-fqgKbaIWO0NqQjw8u6Q3pvnuCD7ke2OHlwqhalJU66s=",
+        "lastModified": 1736366564,
+        "narHash": "sha256-6EgFQeUmbEDM/UnNWK9wOnTvbDf/p7EEZBCeEA84eLk=",
         "owner": "valeratrades",
         "repo": "todo",
-        "rev": "139ccdfc37ec9cf9b0266675806996a0fcd3478d",
+        "rev": "6a862bd2e4e2996814e3da80d7c8121dca17c5af",
         "type": "github"
       },
       "original": {

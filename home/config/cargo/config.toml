@@ -3,7 +3,7 @@
 
 [target.x86_64-unknown-linux-gnu]
 rustflags = ["-C", "link-arg=-fuse-ld=mold"] # have a very cursed script to overwrite this for nightly
-linker = "clang"
+#linker = "clang"
 
 
 [profile.release]

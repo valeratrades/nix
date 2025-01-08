@@ -28,7 +28,16 @@
           pre-commit-check = pre-commit-hooks.lib.${system}.run {
             src = ./.;
             hooks = {
-              nixpkgs-fmt.enable = true;
+              treefmt = {
+                enable = true;
+                settings = {
+                  #BUG: this option does NOTHING
+                  fail-on-change = false; # that's GHA's job, pre-commit hooks stricty *do*
+                  formatters = with pkgs; [
+                    nixpkgs-fmt
+                  ];
+                };
+              };
             };
           };
         };
