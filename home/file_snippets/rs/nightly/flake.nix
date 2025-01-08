@@ -74,7 +74,7 @@
                 rm -f ./.github/workflows/warnings.yml; cp ${workflowContents.warnings} ./.github/workflows/warnings.yml
 
                 cargo -Zscript -q ${hooks.appendCustom} ./.git/hooks/pre-commit
-                cp -f ${hooks.treefmt} ./.treefmt.toml
+                cp -f ${(import hooks.treefmt { inherit pkgs; })} ./.treefmt.toml
               '';
             packages = [
               mold-wrapped
