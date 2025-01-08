@@ -68,17 +68,26 @@ alias gix="gh issue delete --yes"
 
 alias git_rate_limit 'curl -L -X GET -H "Accept: application/vnd.github+json" -H "Authorization: token $GITHUB_KEY" https://api.github.com/rate_limit'
 
+#TODO!: add all issues outside of milestones to the list _if no milestone is specified_
 function gifm
 	set milestone $argv[1]
 	if test -z "$milestone"
 		set milestone (gh api "repos/{owner}/{repo}/milestones" --jq 'sort_by(.title) | .[].title' | head -n 1)
+		echo "INFO: No milestone specified, defaulting to the latest one ($milestone) + issues without a milestone"
+
+		echo "Issues without milestones:"
+		script -f -q /dev/null -c "gh issue list --milestone=none" | awk 'NR > 3'
+		echo ""
 	end
-	script -f -q /dev/null -c="gh issue list --milestone=$milestone" | awk 'NR > 3'
-	script -f -q /dev/null -c='gh issue list --label=bug' | awk 'NR > 3'
+	echo "Issues in milestone $milestone:"
+	script -f -q /dev/null -c "gh issue list --milestone=$milestone" | awk 'NR > 3'
+	echo ""
+	echo "Bug Issues (across milestones):"
+	script -f -q /dev/null -c 'gh issue list --label=bug' | awk 'NR > 3'
 end
 
 function gifa
-	script -f -q /dev/null -c='gh issue list --assignee="@me"' | awk 'NR > 3'
+	script -f -q /dev/null -c 'gh issue list --assignee="@me"' | awk 'NR > 3'
 end
 
 function gml

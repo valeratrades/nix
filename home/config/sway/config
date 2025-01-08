@@ -59,6 +59,7 @@ exec wireplumber
 exec greenclip daemon
 bindsym $mod+g exec rofi -modi "clipboard:greenclip print" -show clipboard
 bindsym $mod+Shift+g exec greenclip clear
+bindsym $mod+Ctrl+w exec "pkill wlr-gamma-service; wlr-gamma-service"
 #
 
 #if (user == "v") {
