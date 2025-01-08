@@ -43,8 +43,7 @@ function shared_after
 	set lang "$argv[2]"
 
 	git init
-	cp "$FILE_SNIPPETS_PATH/git/hooks/pre-commit.sh" .git/hooks/pre-commit
-	chmod u+x .git/hooks/pre-commit
+	cp "$FILE_SNIPPETS_PATH/git/hooks/custom.sh" .git/hooks/custom.sh # relies on flake.nix and my append_custom.rs script evoked by it (rn only for rust nightly (2025/01/08))
 
 	cat "$FILE_SNIPPETS_PATH/readme/footer.md" >> README.md
 	sudo ln "$FILE_SNIPPETS_PATH/readme/LICENSE-APACHE" ./LICENSE-APACHE
