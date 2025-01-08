@@ -87,6 +87,11 @@ input type:touchpad {
 	natural_scroll enabled
 }
 
+input type:tablet_tool {
+	left_handed enabled
+}
+
+
 exec_always ~/.config/sway/loop_bind_tablet_to_focused.sh
 
 # # Multimedia

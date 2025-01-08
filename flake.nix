@@ -91,6 +91,7 @@
       url = "github:valeratrades/btc_line";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    rm_engine.url = "github:valeratrades/rm_engine";
     tg = {
       url = "github:valeratrades/tg";
       inputs.nixpkgs.follows = "nixpkgs";

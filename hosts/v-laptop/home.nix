@@ -31,6 +31,8 @@
         en-croissant # chess analysis GUI
         ncspot
         gitui
+
+        libinput
         #flutterPackages-source.stable // errors
       ]
 
@@ -39,6 +41,7 @@
         inputs.btc_line.packages.${pkgs.system}.default
         inputs.prettify_log.packages.${pkgs.system}.default
         inputs.distributions.packages.${pkgs.system}.default # ? shared?
+        inputs.rm_engine.packages.${pkgs.system}.default
         inputs.bad_apple_rs.packages.${pkgs.system}.default
 
         #inputs.aggr_orderbook.packages.${pkgs.system}.default

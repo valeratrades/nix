@@ -10,7 +10,7 @@
 {
   imports = [
     ./programs
-    #./nixcord.nix
+    ./nixcord.nix
     (
       # in my own config I symlink stuff to fascilitate experimentation. In derived setups I value reproducibility much more
       if user.userFullName == "Valera" then ./config_symlinks.nix else ./config_writes.nix
@@ -93,6 +93,8 @@
   #};
 
   #TEST
+  #REF: example of working service setup here: https://github.com/nix-community/home-manager/blob/master/modules/services/polybar.nix
+
   #systemd.user.services.eww-widgets = {
   #  Unit = {
   #    Description = "Start Eww Widgets";
@@ -162,6 +164,9 @@
           element-desktop # GUI matrix client
           iamb # TUI matrix client (rust)
           zulip
+
+          #vesktop #dbg
+          #discord #dbg
         ]
         [
           # Terminal apps/scripts (actually useful)

@@ -15,7 +15,7 @@ if [ -f "$config_filepath" ]; then
 fi
 
 if [ -f "Cargo.toml" ]; then
-  cargo sort --workspace
+  cargo sort --workspace --grouped --order package,dependencies,dev-dependencies,build-dependencies,features
 fi
 
 # # Count LoC

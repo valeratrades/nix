@@ -147,7 +147,7 @@ in
       config = {
         user = {
           name = user.defaultUsername;
-          email = user.defaultUserEmail;
+          email = user.masterUserEmail;
           token = "$GITHUB_KEY"; # can't name `GITHUB_TOKEN`, as `gh` gets confused
         };
 
@@ -393,7 +393,6 @@ in
       };
 
   hardware = {
-    pulseaudio.enable = false;
     bluetooth.enable = true;
     bluetooth.powerOnBoot = false;
   };
