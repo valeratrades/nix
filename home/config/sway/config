@@ -49,7 +49,7 @@ exec "sh -c 'ps -u $USER -o pid= > /tmp/sway_existing_pids.txt'"
 exec mako
 #exec "sh -c 'tg server' > /tmp/tg_server_log.txt 2>&1 &" # for some damn reason doesn't work
 exec libinput-gestures
-exec_always wlr-gamma-service
+exec wlr-gamma-service
 exec "sh -c 'sudo chmod 766 /var/run/keyd.socket'"
 exec keyd-application-mapper -d
 exec bluetoothctl
@@ -59,7 +59,8 @@ exec wireplumber
 exec greenclip daemon
 bindsym $mod+g exec rofi -modi "clipboard:greenclip print" -show clipboard
 bindsym $mod+Shift+g exec greenclip clear
-bindsym $mod+Ctrl+w exec "pkill wlr-gamma-service; wlr-gamma-service"
+# in `pkill` query the name is concatenated to avoid hitting 15 char limit it has
+bindsym $mod+Ctrl+w exec "pkill wlr-gamma-serv; wlr-gamma-service"
 #
 
 #if (user == "v") {

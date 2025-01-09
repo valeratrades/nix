@@ -85,7 +85,15 @@ K("n", "<C-w>v", "<C-w><C-v>", { desc = "windows: new vertical" })
 K("n", "<C-w><C-h>", "<C-w><C-s>", { desc = "windows: new horizontal" })
 K("n", "<C-w>f", "<cmd>tab split<cr>", { desc = "windows: focus current by `:tab split`" })
 K("n", "<C-w>T", "<cmd>tab sb<cr>", { desc = "C-w>t that is consistent with <C-w>v and <C-w>h" })
+K("n", "<C-w><C-t>", function() MoveToNewTab() end, { desc = "windows: move to new tab" })
+
 K("n", "<C-w>x", "<cmd>tabclose<cr>", { desc = "Close Tab" })
+
+function MoveToNewTab()
+	current_win = vim.api.nvim_get_current_win()
+	vim.cmd("tab sb")
+	vim.api.nvim_win_close(current_win, false)
+end
 
 -- execute any `g` command in a new vsplit
 vim.keymap.set('n', 'gw', function()
