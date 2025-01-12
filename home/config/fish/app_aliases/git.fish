@@ -246,6 +246,28 @@ function gn
 	"state":"open",
 	"description":"Minimum viable product"
 	}'
+
+	curl -L -X POST \
+	-H "Accept: application/vnd.github+json" \
+	-H "Authorization: token $GITHUB_KEY" \
+	-H "X-GitHub-Api-Version: 2022-11-28" \
+	https://api.github.com/repos/$GITHUB_NAME/$repo_name/milestones \
+	-d '{
+	"title":"2.0",
+	"state":"open",
+	"description":"Fix bugs, rewrite hacks"
+	}'
+
+	curl -L -X POST \
+	-H "Accept: application/vnd.github+json" \
+	-H "Authorization: token $GITHUB_KEY" \
+	-H "X-GitHub-Api-Version: 2022-11-28" \
+	https://api.github.com/repos/$GITHUB_NAME/$repo_name/milestones \
+	-d '{
+	"title":"3.0",
+	"state":"open",
+	"description":"More and better"
+	}'
 end
 
 #TODO: make a file in main .github repo to store all additional labels defined for all repositories. Than change the label-manipulation commands to simply overwrite those. (or check for differences first, but that's more difficult, as some can have eg same name but outdated description)
