@@ -34,6 +34,8 @@
 
         libinput
         #flutterPackages-source.stable // errors
+
+        virt-viewer
       ]
 
       ++ [
