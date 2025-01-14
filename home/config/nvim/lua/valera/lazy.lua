@@ -276,4 +276,14 @@ return require('lazy').setup({
 	"folke/which-key.nvim",
 	"folke/trouble.nvim", --TODO: setup (or at least try: default key is <Space>xx)
 	--"pimalaya/himalaya-vim", --TODO: setup
+	{
+		"gabrielpoca/replacer.nvim",
+		keys = {
+			{
+				'<Space>h',
+				function() require('replacer').run() end,
+				desc = "run replacer.nvim"
+			}
+		}
+	}
 })

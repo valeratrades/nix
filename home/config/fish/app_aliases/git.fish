@@ -119,6 +119,15 @@ function gc
 	return $status
 end
 
+function gpr
+	set current_branch (git branch --show-current)
+	set target_branch $argv[1]
+	gh pr create -B "$target_branch" -f -t "$current_branch"
+	git checkout $target_branch
+	set pr_number (gh pr list --limit 100 --json number,title | jq -r --arg title "$current_branch" '.[] | select(.title == $title) | .number')
+	gh pr merge -D "$pr_number"
+end
+
 #TODO: a thing to sync fork
 
 
@@ -187,6 +196,30 @@ function protect_branch
 	-d '{"allow_auto_merge":true}'
 end
 
+function init_labels
+	set repo_name $argv[1]
+	gh api repos/$GITHUB_NAME/$repo_name/labels \
+	-f name="ci" \
+	-f color="808080" \
+	-f description="New test or benchmark"
+
+	gh api repos/$GITHUB_NAME/$repo_name/labels \
+	-f name="chore" \
+	-f color="0052CC" \
+	-f description="Small non-imaginative task"
+
+	gh api repos/$GITHUB_NAME/$repo_name/labels \
+	-f name="breaking" \
+	-f color="000000" \
+	-f description="Implementing should be postponed until next major version"
+
+	gh api repos/$GITHUB_NAME/$repo_name/labels \
+	-f name="enhancement" \
+	-f color="a2eeef" \
+	-f description="New feature or request"
+	#gh api -X DELETE repos/$GITHUB_NAME/$repo_name/labels/enhancement
+end
+
 ## git new repository
 #TODO!!!!!!: figure out how to sync the base labels settings across all repos
 function gn
@@ -214,27 +247,7 @@ function gn
 	git remote add origin https://github.com/$GITHUB_NAME/$repo_name.git
 	git push -u origin master
 
-	gh api repos/$GITHUB_NAME/$repo_name/labels \
-	-f name="ci" \
-	-f color="808080" \
-	-f description="New test or benchmark"
-
-	gh api repos/$GITHUB_NAME/$repo_name/labels \
-	-f name="chore" \
-	-f color="0052CC" \
-	-f description="Small non-imaginative task"
-
-	gh api repos/$GITHUB_NAME/$repo_name/labels \
-	-f name="breaking" \
-	-f color="000000" \
-	-f description="Implementing should be postponed until next major version"
-
-	gh api repos/$GITHUB_NAME/$repo_name/labels \
-	-f name="enhancement" \
-	-f color="a2eeef" \
-	-f description="New feature or request"
-
-	gh api -X DELETE repos/$GITHUB_NAME/$repo_name/labels/enhancement
+	init_labels $repo_name
 
 	curl -L -X POST \
 	-H "Accept: application/vnd.github+json" \

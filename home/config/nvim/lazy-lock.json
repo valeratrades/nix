@@ -68,6 +68,7 @@
   "presence.nvim": { "branch": "main", "commit": "87c857a56b7703f976d3a5ef15967d80508df6e6" },
   "rainbow_csv.nvim": { "branch": "main", "commit": "7f3fddfe813641035fac2cdf94c2ff69bb0bf0b9" },
   "recursive-macro.nvim": { "branch": "main", "commit": "9ecf0f9967975a61611791525e51bbc97bfff137" },
+  "replacer.nvim": { "branch": "master", "commit": "32e1713230844fa52f7f0598c59295de3c90dc95" },
   "rose-pine": { "branch": "main", "commit": "07a887a7bef4aacea8c7caebaf8cbf808cdc7a8e" },
   "rustaceanvim": { "branch": "master", "commit": "a244210b28f9055c2b4cfa85c92c8a71c13671c9" },
   "shnip.nvim": { "branch": "main", "commit": "a48cedfc89fd8b64cca75a972f15d8c584fe0e8c" },
