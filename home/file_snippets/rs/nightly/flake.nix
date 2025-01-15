@@ -15,6 +15,7 @@
       flake-utils,
       pre-commit-hooks,
       workflow-parts,
+      hooks,
       ...
     }:
     flake-utils.lib.eachDefaultSystem (
