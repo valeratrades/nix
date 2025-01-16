@@ -125,7 +125,7 @@ function gpr
 	gh pr create -B "$target_branch" -f -t "$current_branch"
 	git checkout $target_branch
 	set pr_number (gh pr list --limit 100 --json number,title | jq -r --arg title "$current_branch" '.[] | select(.title == $title) | .number')
-	gh pr merge -D "$pr_number"
+	gh pr merge -d "$pr_number"
 end
 
 #TODO: a thing to sync fork

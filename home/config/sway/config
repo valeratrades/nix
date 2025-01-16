@@ -137,7 +137,7 @@ exec_always sudo killall auto_redshift
 exec_always sleep 2 && auto_redshift start 7:00
 #
 
-# # Workspaces
+# Workspaces {{{
 set $output_laptop "eDP-1"
 set $output_monitor "DP-1"
 # "HDMI-A-1" # can't have a list here, because sway. Need to update manually when switching connection method.
@@ -157,7 +157,6 @@ mode "monitors" {
 	bindsym Ctrl+c exec $switch_out
 	bindsym Escape exec $switch_out
 	bindsym q exec $switch_out
-
 }
 bindsym $mod+Period exec "swaymsg mode monitors && eww update sway_mode=monitors"
 
@@ -214,7 +213,7 @@ bindsym $mod+z floating toggle
 bindsym $mod+Shift+z sticky toggle
 # allows 1) moving by holding $mod + mouse_left_click + moving mouse 2) resizing by holding $mod + mouse_right_click + moving mouse
 floating_modifier $mod normal
-#
+#,}}}
 
 bindsym $mod+j reload
 # the first command gracefully exits chrome, which is apparently very sensitive.
