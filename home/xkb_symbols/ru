@@ -90,7 +90,9 @@ xkb_symbols "iso" {
 
   //key <RALT> { type="FOUR_LEVEL", [ BackSpace ] };
   //key <RTRN> { [ backslash, bar ] };
-  //key <BKSL> { [ Return, Return ] };
+
+  //TEST
+  key <BKSL> { [ Return, Return ] };
 };
 
 partial alphanumeric_keys

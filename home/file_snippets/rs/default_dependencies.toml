@@ -2,11 +2,17 @@
 cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
 
 [lints.clippy]
+# Stable
 float_cmp = "allow" # is bad for `==` direct comparisons, but `<` and `>` should be allowed
-#get_first = "allow" # const fn, so actually more performant
 len_zero = "allow" # `.empty()` is O(1) but on &str only
 undocumented_unsafe_blocks = "warn"
 tabs_in_doc_comments = "allow"
+
+# Questionable
+# const fns, so actually more performant
+get_first = "allow"
+get_last_with_len = "allow"
+
 
 [dependencies]
 derive-new = "^0"
