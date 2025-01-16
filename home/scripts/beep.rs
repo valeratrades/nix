@@ -1,4 +1,4 @@
-#!/usr/bin/env -S cargo +nightly -Zscript
+#!/usr/bin/env -S cargo +nightly -Zscript -q
 #![allow(clippy::len_zero)]
 
 //! ```cargo
