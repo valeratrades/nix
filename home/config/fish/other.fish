@@ -209,6 +209,7 @@ function de
 	$argv && \
 	direnv deny
 end
+alias dirr="rm -r .direnv; dira" # for `direnv reload`
 #
 
 # # exa (for future reference only, as now I have programs.eza.enable in home.nix)

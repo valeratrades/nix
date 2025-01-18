@@ -515,6 +515,19 @@ in
 
   nix.settings.download-buffer-size = "50G";
 
+  #	neovim = import "${neovim-nightly}/flake/packages/neovim.nix" {
+  #  inherit lib pkgs;
+  #  neovim-src =
+  #    let
+  #      lock = lib.importJSON "${neovim-nightly}/flake.lock";
+  #      nodeName = lock.nodes.root.inputs.neovim-src;
+  #      input = lock.nodes.${nodeName}.locked;
+  #    in
+  #    pkgs.fetchFromGitHub {
+  #      inherit (input) owner repo rev;
+  #      hash = input.narHash;
+  #    };
+  #};
   environment = {
     # XDG directories and Wayland environment variables setup
     variables = {

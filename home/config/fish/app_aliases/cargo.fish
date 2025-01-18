@@ -54,6 +54,21 @@ end
 
 function cpublish
 	cargo release --no-confirm --execute "$argv"
+	crelease
+end
+
+#DEPENDS:
+# - [sed-deps](~/s/g/github/.github/workflows/pre_ci_sed_deps.rs)
+# - nix: a packaged flake
+function crelease
+	git checkout master; git branch -f release || return 1
+	git checkout release || return 1
+	~/s/g/github/.github/workflows/pre_ci_sed_deps.rs ./ || return 1 # will rewrite `Cargo.toml`s in-place
+	cargo t || return 1 # 2 things: re-ensure tests pass and, and update Cargo.lock for nix build
+	nix build || return 1
+	git commit -am "upload" || return 1
+	git push --force || return 1 # got some "stale refs" error last time running `git push --force-with-lease, don't care to debug"
+	git checkout master
 end
 
 # Pause resource-hungry apps

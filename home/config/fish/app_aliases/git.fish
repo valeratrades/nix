@@ -17,6 +17,11 @@ function gg
 		set argv $argv[3..-1]
 	end
 
+	if [ "$argv[1]" = "r" ] || [ "$argv[1]" = "-r" ] || [ "$argv[1]" = "--release" ]
+		git push origin master:release --force-with-lease
+		set argv $argv[2..-1]
+	end
+
 	set message "_"
 	if test -n "$argv"
 		set message "$argv"
@@ -61,6 +66,12 @@ alias gil="gh issue list"
 alias gia="gh issue edit --add-assignee"
 alias giam="gh issue edit --add-assignee @me"
 alias gial="gh issue edit --add-label"
+
+function giem
+	set issue $argv[1]
+	set milestone $argv[2]
+	gh issue edit $issue --milestone $milestone
+end
 
 alias gic="gh issue close -r completed"
 alias gir="gh issue close -r \"not planned\"" # for "retract"

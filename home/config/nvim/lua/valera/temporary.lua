@@ -9,6 +9,46 @@ for _, method in ipairs({ 'textDocument/diagnostic', 'workspace/diagnostic' }) d
 	end
 end
 
+-- prevent warnings and errors from blocking ui
+function vim.notify(msg, level, opts)
+	if level == vim.log.levels.ERROR then
+		print('error:', msg)
+	elseif level == vim.log.levels.WARN then
+		print('warn:', msg)
+	else
+		print('info:', msg)
+	end
+end
+
+-- The following is copied from another guy who (allegedly) was trying to solve the same problem. Haven't checked yet.
+--local orig_notify = vim.notify
+--local new_notify = require("notify")
+--
+--local normal_notify = { "nvim-tree.lua" }
+--
+--vim.notify = function(msg, level, opts)
+--    local info = debug.getinfo(2, "S")
+--    local source = string.replace(info.source, "@", "")
+--    local found = false
+--
+--    if opts and opts["normal_notify"] ~= nil and opts["normal_notify"] then
+--        found = true
+--    else
+--        for _, item in ipairs(normal_notify) do
+--            if string.find(source, item, 1, true) then
+--                found = true
+--                break
+--            end
+--        end
+--    end
+--
+--    if found then
+--        orig_notify(msg, level, opts)
+--    else
+--        new_notify(msg, level, opts)
+--    end
+--end
+
 ---- README:
 ---- , for change
 ---- . for scrolling to the next

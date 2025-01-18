@@ -88,10 +88,12 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     btc_line = {
-      url = "github:valeratrades/btc_line";
+      url = "github:valeratrades/btc_line?ref=release";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    rm_engine.url = "github:valeratrades/rm_engine";
+    rm_engine = {
+      url = "github:valeratrades/rm_engine?ref=release";
+    };
     tg = {
       url = "github:valeratrades/tg";
       inputs.nixpkgs.follows = "nixpkgs";

@@ -258,46 +258,55 @@ vim.g.rustaceanvim = {
 		end,
 		on_attach = on_attach,
 		default_settings = {
-			['rust-analyzer'] = {
-				dap = {
-					autoload_configuration = true,
-				},
-				cmd = {
-					"rust-analyzer",
-				},
-				cargo = {
-					BuildScripts = {
+			['rust-analyzer'] = (function()
+				local settings = {
+					dap = {
+						autoload_configuration = true,
+					},
+					cmd = {
+						"rust-analyzer",
+					},
+					cargo = {
+						BuildScripts = {
+							enable = true,
+						},
+						runBuildScripts = true,
+						loadOutDirsFromCheck = true,
+						--allFeatures = true, -- will break on projects with incompatible features. If comes up, write a script to copy code before uploading to crates.io and sed `features = ["full"]` for `[]`
+						--extraEnv = { CARGO_TARGET_DIR = "target/analyzer" },
+					},
+					procMacro = {
 						enable = true,
 					},
-					runBuildScripts = true,
-					loadOutDirsFromCheck = true,
-					--allFeatures = true, -- will break on projects with incompatible features. If comes up, write a script to copy code before uploading to crates.io and sed `features = ["full"]` for `[]`
-					--extraEnv = { CARGO_TARGET_DIR = "target/analyzer" },
-				},
-				procMacro = {
-					enable = true,
-				},
-				workspace = {
-					symbol = {
-						search = {
-							-- default is "only_types"
-							kind = "all_symbols",
+					completion = {
+						-- a vec (fuck lua)
+						excludeTraits = {
+							"owo_colors::FgColorDisplay",
+							"owo_colors::BgColorDisplay",
 						},
 					},
-				},
-				completion = {
-					-- a vec (fuck lua)
-					excludeTraits = {
-						"owo_colors::FgColorDisplay",
-						"owo_colors::BgColorDisplay",
+					checkOnSave = {
+						enable = true,
+						--TODO!!: think how to toggle clippy::all (for pedantic checks right before commiting to master)
+						command = "clippy",
 					},
-				},
-				checkOnSave = {
-					enable = true,
-					--TODO!!: think how to toggle clippy::all (for pedantic checks right before commiting to master)
-					command = "clippy",
-				},
-			},
+				}
+				local cargo_exists = vim.fn.filereadable(vim.fn.getcwd() .. "/Cargo.toml") == 1
+				--vim.notify("Cargo.toml exists: " .. tostring(cargo_exists))
+				--vim.notify("Current directory: " .. vim.fn.getcwd())
+				if cargo_exists then
+					-- RA is being dumb, so on cargo-script projects touching workspaces leads to very annoying warnings
+					settings.workspace = {
+						symbol = {
+							search = {
+								-- default is "only_types"
+								kind = "all_symbols",
+							},
+						},
+					}
+				end
+				return settings
+			end)(),
 			--server = {
 			--	extraEnv = { CARGO_TARGET_DIR = "target/analyzer" },
 			--},
