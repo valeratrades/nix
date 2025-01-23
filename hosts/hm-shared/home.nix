@@ -13,7 +13,10 @@
     ./nixcord.nix
     (
       # in my own config I symlink stuff to fascilitate experimentation. In derived setups I value reproducibility much more
-      if user.userFullName == "Valera" then ./config_symlinks.nix else ./config_writes.nix
+      if user.userFullName == "Valera" then
+        ./config_symlinks.nix
+      else
+        (import ./config_writes.nix { inherit user; })
     )
   ];
 

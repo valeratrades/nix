@@ -54,13 +54,14 @@ end
 
 function cpublish
 	cargo release --no-confirm --execute "$argv"
-	crelease
 end
 
+# Releasing for crates is normally managed simply through `cargo publish`, but since nix wants to get them from git, and also is not satisfied with path-deps (which I have on master most of the time), hence this function for releasing things I then install in my nixos setup.
+# 
 #DEPENDS:
 # - [sed-deps](~/s/g/github/.github/workflows/pre_ci_sed_deps.rs)
 # - nix: a packaged flake
-function crelease
+function cnix_release
 	git checkout master; git branch -f release || return 1
 	git checkout release || return 1
 	~/s/g/github/.github/workflows/pre_ci_sed_deps.rs ./ || return 1 # will rewrite `Cargo.toml`s in-place

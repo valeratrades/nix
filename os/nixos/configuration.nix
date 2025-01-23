@@ -295,7 +295,7 @@ in
         /etc/nixos/hardware-configuration.nix
       else
         builtins.trace
-          "WARNING: Falling back to ./hosts/${user.desktopHostName}/hardware-configuration.nix as /etc/nixos/hardware-configuration.nix does not exist. Likely to cause problems."
+          "WARNING: Falling back to ./hosts/${user.desktopHostName}/hardware-configuration.nix, as /etc/nixos/hardware-configuration.nix does not exist. Likely to cause problems."
           mylib.relativeToRoot
           "./hosts/${user.desktopHostName}/hardware-configuration.nix"
     )
@@ -930,6 +930,7 @@ in
               crate2nix
               cargo-edit # cargo add command
               cargo-expand # expand macros
+              cargo-bloat
               cargo-hack
               cargo-udeps
               cargo-outdated

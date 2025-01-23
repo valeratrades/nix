@@ -2,6 +2,7 @@
 # this is likely to contain configs for some things that are not actually shared, but text bloat is fine.
 {
   self,
+  user,
   ...
 }:
 {
@@ -18,10 +19,6 @@
       source = "${self}/home/config/zathura";
       recursive = true;
     };
-    ".config/sway" = {
-      source = "${self}/home/config/sway";
-      recursive = true;
-    };
     ".config/alacritty" = {
       source = "${self}/home/config/alacritty";
       recursive = true;
@@ -34,6 +31,19 @@
       source = "${self}/home/config/mako";
       recursive = true;
     };
+
+    ".config/sway" = {
+      source = "${self}/home/config/sway";
+      recursive = true;
+    };
+
+    ".config/sway/config" =
+      if user.userFullName == "Timur" then
+        {
+          source = builtins.trace "DEBUG: overwriting sway config with timur's" "${self}/home/config/sway/config_timur";
+        }
+      else
+        { };
 
     # ind files
     ".config/tg.toml".source = "${self}/home/config/tg.toml";

@@ -285,5 +285,6 @@ return require('lazy').setup({
 				desc = "run replacer.nvim"
 			}
 		}
-	}
+	},
+	--"Saghen/blink.cmp", -- potentially a better nvim-cmp, worth trying at some point
 })

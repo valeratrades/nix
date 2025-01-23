@@ -27,6 +27,11 @@ vim.keymap.set('n', '<Space>rd', function()
 	vim.cmd.RustLsp({ 'renderDiagnostic', 'current' }) -- default is 'cycle'
 end, { desc = "Rustacean: Render Diagnostic" })
 
+vim.keymap.set('n', '<Space>rl', function()
+		vim.cmd.RustLsp('relatedDiagnostics')
+	end,
+	{ desc = "Rustacean: Related Diagnostic (for when you break the callsite by changing an object and a hint appears)" })
+
 vim.keymap.set('n', '<Space>rc', function()
 	vim.cmd.RustLsp('openCargo')
 end, { desc = "Rustacean: Open Cargo" })
@@ -54,6 +59,7 @@ end, { desc = "Rustacean: View MIR" })
 vim.keymap.set('n', '<Space>ri', function()
 	vim.cmd.RustLsp('view', 'hir')
 end, { desc = "Rustacean: View HIR" })
+
 
 --?
 --vim.cmd.RustLsp {

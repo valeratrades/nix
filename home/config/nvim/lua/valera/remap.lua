@@ -90,7 +90,7 @@ K("n", "<C-w><C-t>", function() MoveToNewTab() end, { desc = "windows: move to n
 K("n", "<C-w>x", "<cmd>tabclose<cr>", { desc = "Close Tab" })
 
 function MoveToNewTab()
-	current_win = vim.api.nvim_get_current_win()
+	local current_win = vim.api.nvim_get_current_win()
 	vim.cmd("tab sb")
 	vim.api.nvim_win_close(current_win, false)
 end
