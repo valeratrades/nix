@@ -706,6 +706,7 @@ in
         # Compression and Archiving
         [
           atool
+          libjxl # jpeg-xl tools
           p7zip
           unzip
           zip

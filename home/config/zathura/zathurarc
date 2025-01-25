@@ -39,6 +39,7 @@ map k search prev
 map f zoom width
 
 # General
+map y copy
 set selection-clipboard clipboard
 set adjust-open "best-fit"
 set recolor true
