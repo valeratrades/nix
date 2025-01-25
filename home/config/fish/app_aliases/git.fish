@@ -33,7 +33,8 @@ function gg
 	# if test (git log -1 --pretty=format:%s) = "$message"
 	#     set squash_if_needed '--squash HEAD~1'
 	# end
-	git add -A && git commit -m "$message"; git push --follow-tags
+	# repeat the commit to go around the pre-commit formatting hooks that are currently failing if requiring formatting (wtf)
+	git add -A && git commit -m "$message"; git commit; git push --follow-tags
 end
 
 alias ggf="gg -p feat"
