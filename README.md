@@ -49,10 +49,9 @@ Spawns an fhs-compatible shell
 Currently config is impure. For possibility of reversion, all known places that introduce impurities are marked with `#IMPURE`
 
 ## Other
-### Philosophie
+### Philosophy
+No convenience optimisations should be made for suboptimal actions/behaviors/patterns. For example, I will never have `Spotify` pinned to a designated workspace, as it is desirable to maximize friction around these.
+
 #### Cli
 Target length for general aliases is 2 characters, if they are important enough.
 One-letter cases are mostly reserved for custom scripts, local to the project, eg: commands initialized when I `cs` into a directory with `run.sh` in it.
-
-#### Other
-No convenience optimisations should be made for suboptimal actions/behaviors/patterns. For example, I will never have `Spotify` pinned to a designated workspace, as it is desirable to maximize friction around these.
