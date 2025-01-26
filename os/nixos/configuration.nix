@@ -607,6 +607,11 @@ in
           gnome-boxes # vm with linux distros
           # Windows
           [
+            wineWowPackages.stable
+            wine
+            (wine.override { wineBuild = "wine64"; })
+            wine64
+            wineWowPackages.staging
             wineWowPackages.wayland
             #wineWowPackages.waylandFull
             #wineWowPackages.unstableFull
