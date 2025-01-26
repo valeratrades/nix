@@ -134,10 +134,11 @@ end
 function gpr
 	set current_branch (git branch --show-current)
 	set target_branch $argv[1]
-	gh pr create -B "$target_branch" -f -t "$current_branch"
+	# could ask whether I want to push
+	yes | gh pr create -B "$target_branch" -f -t "$current_branch"
 	git checkout $target_branch
 	set pr_number (gh pr list --limit 100 --json number,title | jq -r --arg title "$current_branch" '.[] | select(.title == $title) | .number')
-	gh pr merge -d "$pr_number"
+	yes | gh pr merge -dm "$pr_number"
 end
 
 #TODO: a thing to sync fork

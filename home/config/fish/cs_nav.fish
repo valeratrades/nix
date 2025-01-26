@@ -32,6 +32,14 @@ function csd
     cs $_path
 end
 
+function csl
+    set _path "$HOME/s/tmp/"
+    if test -n "$argv[1]"
+        set _path "$_path$argv[1]"
+    end
+    cs $_path
+end
+
 function cst
     set _path "$HOME/tmp/"
     if test -n "$argv[1]"

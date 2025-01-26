@@ -11,13 +11,13 @@ let
   ];
   rust-jobs-errors = {
     tests = import workflow-parts.rust.tests { inherit rustc-versions; };
-    doc = import workflow-parts.rust.doc { inherit pkgs; };
     miri = import workflow-parts.rust.miri { inherit pkgs; };
   };
   rust-jobs-warn = {
+    doc = import workflow-parts.rust.doc { inherit pkgs; };
+    clippy = import workflow-parts.rust.clippy { inherit pkgs; };
     machete = import workflow-parts.rust.machete { inherit pkgs; };
     sort = import workflow-parts.rust.sort { inherit pkgs; };
-    clippy = import workflow-parts.rust.clippy { inherit pkgs; };
   };
   base = {
     on = {

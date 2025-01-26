@@ -855,6 +855,7 @@ in
           toml-cli
           bash-language-server
           jdk23 # java dev kit (pray for my sanity)
+          htmx-lsp
 
           # editors
           [
