@@ -23,6 +23,11 @@ todo init fish | source
 
 starship init fish --print-full-init | source # somehow fixes the psub bug that happens when using tmux with my config, initiated via standard nixos's `enable`
 
+set -g MANPATH "$XDG_DATA_HOME/man:$MANPATH";
+shuttle generate shell fish | source
+mkdir -p "$XDG_DATA_HOME/man/man1/"
+shuttle generate manpage > "$XDG_DATA_HOME/man/man1/shuttle.1"
+
 atuin init fish --disable-up-arrow --disable-ctrl-r | source
 export filter_mode_shell_up_key_binding="directory"
 bind \cr "_atuin_bind_up" # only for current dir

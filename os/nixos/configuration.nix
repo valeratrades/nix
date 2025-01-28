@@ -528,50 +528,59 @@ in
   #      hash = input.narHash;
   #    };
   #};
+  documentation.dev.enable = true;
+  documentation.man = {
+    man-db.enable = false; # In order to enable to mandoc man-db has to be disabled.
+    mandoc.enable = true;
+  };
   environment = {
     # XDG directories and Wayland environment variables setup
-    variables = {
-      XDG_DATA_HOME = "${userHome}/.local/share";
-      XDG_STATE_HOME = "${userHome}/.local/state";
-      XDG_CONFIG_HOME = "${userHome}/.config";
-      XDG_CACHE_HOME = "${userHome}/.cache";
-      #XDG_RUNTIME_DIR is set by nix to /run/user/1000
+    variables =
+      let
+        xdgDataHome = "${userHome}/.local/share";
+      in
+      {
+        XDG_DATA_HOME = "${xdgDataHome}";
+        XDG_STATE_HOME = "${userHome}/.local/state";
+        XDG_CONFIG_HOME = "${userHome}/.config";
+        XDG_CACHE_HOME = "${userHome}/.cache";
+        #XDG_RUNTIME_DIR is set by nix to /run/user/1000
 
-      # Other specific environment variables
-      GIT_CONFIG_HOME = "${userHome}/.config/git/config";
-      QT_QPA_PLATFORMTHEME = "flatpak";
-      GTK_USE_PORTAL = "1";
-      GDK_DEBUG = "portals";
+        # Other specific environment variables
+        GIT_CONFIG_HOME = "${userHome}/.config/git/config";
+        QT_QPA_PLATFORMTHEME = "flatpak";
+        GTK_USE_PORTAL = "1";
+        GDK_DEBUG = "portals";
 
-      # Nix
-      NIXOS_CONFIG = "${configRoot}";
-      #TODO!: figure out how to procedurally disable [vesktop, tg] evokations via rofi, outside of preset times in my calendar
-      DOT_DESKTOP = "${pkgs.home-manager}/share/applications";
-      DIRENV_WARN_TIMEOUT = "1h";
-      # openssl hurdle
-      PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig:${pkgs.alsa-lib.dev}/lib/pkgconfig:${pkgs.wayland-scanner.bin}/bin"; # :${pkgs.openssl}/lib"; # many of my rust scripts require it
-      #LD_PRELOAD = "${inputs.distributions.packages.${pkgs.system}.default}/lib/libspotifyadblock.so"; # really hoping I'm not breaking anything
-      SPOTIFY_ADBLOCK_LIB = "${pkgs.nur.repos.nltch.spotify-adblock}/lib/spotify/libspotifyadblock.so"; # need to add it to `LD_PRELOAD` before starting spotify to get rid of adds
-      #TODO: SPOTIFY_ADBLOCK_LIB = "${"github:nt-ltch/nur-packages#spotify-adblock"}/lib/spotify/libspotifyadblock.so"; # need to add it to `LD_PRELOAD` before starting spotify to get rid of adds
+        # Nix
+        NIXOS_CONFIG = "${configRoot}";
+        #TODO!: figure out how to procedurally disable [vesktop, tg] evokations via rofi, outside of preset times in my calendar
+        DOT_DESKTOP = "${pkgs.home-manager}/share/applications";
+        DIRENV_WARN_TIMEOUT = "1h";
+        # openssl hurdle
+        PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig:${pkgs.alsa-lib.dev}/lib/pkgconfig:${pkgs.wayland-scanner.bin}/bin"; # :${pkgs.openssl}/lib"; # many of my rust scripts require it
+        #LD_PRELOAD = "${inputs.distributions.packages.${pkgs.system}.default}/lib/libspotifyadblock.so"; # really hoping I'm not breaking anything
+        SPOTIFY_ADBLOCK_LIB = "${pkgs.nur.repos.nltch.spotify-adblock}/lib/spotify/libspotifyadblock.so"; # need to add it to `LD_PRELOAD` before starting spotify to get rid of adds
+        #TODO: SPOTIFY_ADBLOCK_LIB = "${"github:nt-ltch/nur-packages#spotify-adblock"}/lib/spotify/libspotifyadblock.so"; # need to add it to `LD_PRELOAD` before starting spotify to get rid of adds
 
-      # apparently wine works better on 32-bit
-      #NB: when enabling, make sure the main monitor the wine will be displayed on starts at `0 0`
-      WINEPREFIX = "${userHome}/.wine";
-      #WINEARCH = "win32";
-      STARSHIP_LOG = "error"; # disable the pesky [WARN] messages
+        # apparently wine works better on 32-bit
+        #NB: when enabling, make sure the main monitor the wine will be displayed on starts at `0 0`
+        WINEPREFIX = "${userHome}/.wine";
+        #WINEARCH = "win32";
+        STARSHIP_LOG = "error"; # disable the pesky [WARN] messages
 
-      # home vars
-      MODULAR_HOME = "${modularHome}";
-      #PATH = "${pkgs.lib.makeBinPath [ ]}:${userHome}/s/evdev/:${userHome}/.cargo/bin/:${userHome}/go/bin/:/usr/lib/rustup/bin/:${userHome}/.local/bin/:${modularHome}/pkg/packages.modular.com_mojo/bin:${userHome}/.local/share/flatpak:/var/lib/flatpak";
-      EDITOR = "nvim";
-      WAKETIME = "6:00";
-      DAY_SECTION_BORDERS = "2.5:10.5:16";
-      DEFAULT_BROWSER = "${pkgs.google-chrome}/bin/google-chrome-stable";
-      PAGER = "less";
-      MANPAGER = "less";
-      LESSHISTFILE = "-";
-      HISTCONTROL = "ignorespace";
-    };
+        # home vars
+        MODULAR_HOME = "${modularHome}";
+        #PATH = "${pkgs.lib.makeBinPath [ ]}:${userHome}/s/evdev/:${userHome}/.cargo/bin/:${userHome}/go/bin/:/usr/lib/rustup/bin/:${userHome}/.local/bin/:${modularHome}/pkg/packages.modular.com_mojo/bin:${userHome}/.local/share/flatpak:/var/lib/flatpak";
+        EDITOR = "nvim";
+        WAKETIME = "6:00";
+        DAY_SECTION_BORDERS = "2.5:10.5:16";
+        DEFAULT_BROWSER = "${pkgs.google-chrome}/bin/google-chrome-stable";
+        PAGER = "less";
+        MANPAGER = "less";
+        LESSHISTFILE = "-";
+        HISTCONTROL = "ignorespace";
+      };
 
     binsh = "${pkgs.dash}/bin/dash";
 
@@ -664,6 +673,8 @@ in
         [
           alsa-utils
           dbus
+          pkgs.man-pages
+          pkgs.man-pages-posix
           hwinfo
           file
           gsettings-desktop-schemas
@@ -838,9 +849,10 @@ in
           openssl
           tokei
 
-          # env
+          # env / deployment
           [
             docker
+            cargo-shuttle
             devenv
             nix-direnv
           ]
@@ -852,6 +864,7 @@ in
           mold-wrapped # probably shouldn't be here though
           sccache
           just
+          trunk # fascilitates running CSR web apps
           toml-cli
           bash-language-server
           jdk23 # java dev kit (pray for my sanity)
