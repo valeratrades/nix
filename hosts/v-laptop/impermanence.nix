@@ -115,7 +115,6 @@
             ".config/vesktop"
             ".config/discord"
             ".config/google-chrome"
-            ".config/chromium"
             ".config/Code" # /User ?
             ".config/github-copilot"
           ]

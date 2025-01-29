@@ -806,8 +806,6 @@ in
         [
           httpie
           google-chrome
-          chromium
-          firefox
           wget
           aria2
         ]
