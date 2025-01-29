@@ -126,7 +126,6 @@ alias cdd="cd .. && cd -" # effectively just reloads `direnv`
 alias monkey="smassh"
 alias bbeats="sudo -Es nice -n -20 /etc/profiles/per-user/v/bin/bbeats" # otherwise any demanding process will produce bad breaks in sound
 alias workspaces="swaymsg -t get_tree" # shortcut for ease of remembrance by Ania and Tima
-alias shazam="songrec"
 
 function selfie
 	fswebcam /tmp/selfie.jpg
@@ -259,9 +258,4 @@ function lr
 	#TODO!: inference of binary name
 	lake build && printf '\n' && .lake/build/bin/$argv[1]
 end
-#
-
-# # spotify
-# name is play of words on russian; can't use `spotify` because of occuring recursion
-alias spoy="set -x LD_PRELOAD $SPOTIFY_ADBLOCK_LIB; spotify" # the SPOTIFY_ADBLOCK_LIB is set by nixos config
 #

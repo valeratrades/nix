@@ -27,7 +27,7 @@
     packages =
       with pkgs;
       builtins.trace "DEBUG: sourcing Valera-specific home.nix" lib.lists.flatten [
-        #nyxt
+        nyxt
         en-croissant # chess analysis GUI
         ncspot
         gitui

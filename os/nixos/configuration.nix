@@ -23,19 +23,6 @@ in
     "flakes"
   ];
 
-  nixpkgs.config.packageOverrides = pkgs: {
-    nur =
-      import
-        #IMPURE
-        (builtins.fetchTarball {
-          url = "https://github.com/nix-community/NUR/archive/master.tar.gz";
-          #sha256 = "sha256:0766s5dr3cfcyf31krr3mc6sllb2a7qkv2gn78b6s5v4v2bs545l";
-        })
-        {
-          inherit pkgs;
-        };
-  };
-
   services = {
     getty.autologinUser = user.username;
     xserver = {
@@ -559,9 +546,6 @@ in
         DIRENV_WARN_TIMEOUT = "1h";
         # openssl hurdle
         PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig:${pkgs.alsa-lib.dev}/lib/pkgconfig:${pkgs.wayland-scanner.bin}/bin"; # :${pkgs.openssl}/lib"; # many of my rust scripts require it
-        #LD_PRELOAD = "${inputs.distributions.packages.${pkgs.system}.default}/lib/libspotifyadblock.so"; # really hoping I'm not breaking anything
-        SPOTIFY_ADBLOCK_LIB = "${pkgs.nur.repos.nltch.spotify-adblock}/lib/spotify/libspotifyadblock.so"; # need to add it to `LD_PRELOAD` before starting spotify to get rid of adds
-        #TODO: SPOTIFY_ADBLOCK_LIB = "${"github:nt-ltch/nur-packages#spotify-adblock"}/lib/spotify/libspotifyadblock.so"; # need to add it to `LD_PRELOAD` before starting spotify to get rid of adds
 
         # apparently wine works better on 32-bit
         #NB: when enabling, make sure the main monitor the wine will be displayed on starts at `0 0`
@@ -604,11 +588,6 @@ in
         lefthook # git hooks
         nerdfix # fixes illegal font codepoints https://discourse.nixos.org/t/nerd-fonts-only-see-half-the-icon-set/27513
         poppler_utils
-
-        # nur plugs
-        [
-          nur.repos.nltch.spotify-adblock
-        ]
 
         # emulators
         [
@@ -947,10 +926,12 @@ in
             [
               # cargo, rustcs, etc are brought in by fenix.nix
               rustup
+              leptosfmt # fork of rustfmt with support for formatting some leptos-specific macros
               crate2nix
               cargo-edit # cargo add command
               cargo-expand # expand macros
               cargo-bloat
+              cargo-generate
               cargo-hack
               cargo-udeps
               cargo-outdated
@@ -1000,11 +981,7 @@ in
             vscode-extensions.vadimcn.vscode-lldb
           ]
         ]
-      ]
-      ++ [
-      ]
-    # ++ (inputs.nltch.legacyPackages.${pkgs.system}.spotify-adblock)
-    ;
+      ];
   };
 
   #TODO!: make specific to the host
@@ -1020,7 +997,6 @@ in
         21 # FTP (legacy, just in case)
         554 # RTSP (for streaming media services)
         1935 # RTMP (often used for streaming)
-        57621 # for Spotify
       ];
       allowedUDPPorts = [
         53 # DNS
@@ -1030,7 +1006,6 @@ in
         5353 # mDNS (for local network service discovery)
         3478 # STUN (for NAT traversal, used in VoIP/WebRTC)
         1935 # RTMP (for streaming if required)
-        57621 # for Spotify
       ];
 
       # to transfer files from phone
