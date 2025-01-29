@@ -85,7 +85,6 @@ in
     printing.enable = true; # Enable CUPS to print documents.
   };
   programs = {
-    firefox.enable = true;
     sway = {
       enable = true;
       wrapperFeatures.gtk = true;
