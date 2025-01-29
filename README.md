@@ -52,7 +52,7 @@ Currently config is impure. For possibility of reversion, all known places that 
 ### Philosophy
 - No convenience optimisations should be made for suboptimal actions/behaviors/patterns. For example, I will never have `Spotify` pinned to a designated workspace, as it is desirable to maximize friction around these.
 
-- Declarative > Situational. That's the reason I don't end up using shortcuts for switching panes. All my tools must be designed with this in mind: it's fine if more work is required for the same action, as long as this leads to it being [pure](<https://en.wikipedia.org/wiki/Pure_function>); and then all situational, impure, shortcuts should not be introduced at all, as it only convolutes the manpage.
+- Declarative > Situational. That's the reason I don't end up using shortcuts for switching panes. All my tools must be designed with this in mind: it's fine if more work is required for the same action, as long as this leads to it being [pure](<https://en.wikipedia.org/wiki/Pure_function>); and then all situational, impure, shortcuts should not be introduced at all, as it only convolutes the manpage. The largest change in behavior this should prompt: getting rid of all toggles, unless it is meant to be evoked exclusively via keybind, (meaning can't add <command> on / <command> off), and there is a keybind deficit.
 
 #### Cli
 Target length for general aliases is 2 characters, if they are important enough.
