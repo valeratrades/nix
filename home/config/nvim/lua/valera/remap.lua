@@ -104,6 +104,9 @@ end, { noremap = true, silent = true })
 -- <C-w>= for normalizing
 --
 
+vim.keymap.set('n', '<Space>p', '"+p', { desc = "paste from system clipboard" })
+
+
 -- Toggle Options
 -- local leader doesn't work, so doing manually. Otherwise it'd be "<space> u"
 --K("n", "<space>uf", function() Util.format.toggle() end, { desc = "toggle: auto format (global)" })
