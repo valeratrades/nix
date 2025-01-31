@@ -8,6 +8,7 @@ rustflags = ["-C", "link-arg=-fuse-ld=mold"] # have a very cursed script to over
 
 [profile.release]
 debug = 0
+opt-level = 2 # Orion says 3 is too much, suggesting 2. Have no evidence to disagree, especially considering how much 3 bloats the binary.
 
 [profile.dev]
 debug = true
@@ -40,7 +41,7 @@ t = "nextest run"
 r = "lrun"
 
 [profile.dev.package]
-v_utils.opt-level = 1 # Orion says 3 is too much, suggested 2. 2 would lead to rebuild on `release` builds anyways, so going with just default 1.
+v_utils.opt-level = 1
 bevy.opt-level = 3
 bevy_editor_pls.opt-level = 3
 bevy_panorbit_camera.opt-level = 3

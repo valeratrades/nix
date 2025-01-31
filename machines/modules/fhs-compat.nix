@@ -5,15 +5,15 @@
   config,
   ...
 }:
-let
-  nix-alien-pkgs =
-    import (builtins.fetchTarball "https://github.com/thiagokokada/nix-alien/tarball/master")
-      { };
-in
+#let
+#  nix-alien-pkgs =
+#    import (builtins.fetchTarball "https://github.com/thiagokokada/nix-alien/tarball/master")
+#      { };
+#in
 {
 
-  environment.systemPackages = with nix-alien-pkgs; [
-    nix-alien
+  environment.systemPackages = [
+    #nix-alien-pkgs.nix-alien
 
     # # This is stolen from https://github.com/ryan4yin/nix-config
     # create a fhs environment by command `fhs`, so we can run non-nixos packages in nixos!
