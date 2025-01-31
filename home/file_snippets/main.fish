@@ -110,6 +110,7 @@ function can
 	sed -i '$d' Cargo.toml
 	cat "$FILE_SNIPPETS_PATH/$lang/default_dependencies.toml" >> Cargo.toml
 
+	#HACK: code duplication. But instead of rewriting now, I'd rather do it properly during riir
 	switch $preset
 	case "--clap"
 		rm -r src
@@ -119,6 +120,11 @@ function can
 		rm -r src
 		cp -r "$FILE_SNIPPETS_PATH/$lang/presets/tokio/src" src
 		cat "$FILE_SNIPPETS_PATH/$lang/presets/tokio/additional_dependencies.toml" >> Cargo.toml
+	case "--leptos"
+		rm -r src
+		cp -r $FILE_SNIPPETS_PATH/$lang/presets/leptos/* ./
+		cat ./additional_dependencies.toml >> Cargo.toml || :
+		rm -r additional_dependencies.toml || :
 	case "*"
 		rm -r src
 		cp -r "$FILE_SNIPPETS_PATH/$lang/presets/default/src" src

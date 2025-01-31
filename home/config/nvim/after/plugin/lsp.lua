@@ -213,9 +213,9 @@ vim.g.rust_recommended_style = false
 
 local lua_opts = lsp_zero.nvim_lua_ls()
 lspconfig.lua_ls.setup(lua_opts)
-lspconfig.htmx.setup {
-	on_attach = on_attach,
-}
+--lspconfig.htmx.setup {
+--	on_attach = on_attach,
+--}
 
 local function codelldb_adapter()
 	local extension_path = vim.env.HOME .. '/.vscode/extensions/vadimcn.vscode-lldb-1.10.0/'
