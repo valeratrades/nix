@@ -766,10 +766,11 @@ in
           pandoc
         ]
 
-        # Audio/Video Utilities
+        # Audio/Video/Image Utilities
         [
           pamixer
           easyeffects
+          imagemagick
           vlc
           pavucontrol
           pulseaudio
