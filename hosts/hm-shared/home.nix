@@ -248,39 +248,36 @@
       ".config/fish/conf.d/sway.fish".source = "${self}/home/config/fish/conf.d/sway.fish";
       ".config/greenclip.toml".source = "${self}/home/config/greenclip.toml";
 
-      ".config/iamb/config.toml".source =
-        (pkgs.formats.toml { }).generate
-          "? wonder what does this block do. Errors if I remove it, doesn't seem to have any consiquences for changing it."
-          {
-            default_profile = "master";
-            profiles = {
-              master = {
-                user_id = "@${user.defaultUsername}:matrix.org";
-              };
-            };
-            macros = {
-              normal = {
-                s = "h";
-                r = "j";
-                n = "k";
-                t = "l";
-
-                gc = ":chats<Enter>";
-                gd = ":dms<Enter>";
-                gr = ":reply<Enter>";
-                eh = ":react! heart<Enter>";
-                eu = ":react! up<Enter>";
-                ed = ":react! down<Enter>";
-
-                "<M-c>" = "<C-w>q";
-                "<C-w>v" = ":vsplit #alias:example.com<Enter>";
-                "<C-w>h" = ":split #alias:example.com<Enter>";
-              };
-              command = {
-                help = "welcome<Enter>";
-              };
-            };
+      ".config/iamb/config.toml".source = (pkgs.formats.toml { }).generate "" {
+        default_profile = "master";
+        profiles = {
+          master = {
+            user_id = "@${user.defaultUsername}:matrix.org";
           };
+        };
+        macros = {
+          normal = {
+            s = "h";
+            r = "j";
+            n = "k";
+            t = "l";
+
+            gc = ":chats<Enter>";
+            gd = ":dms<Enter>";
+            gr = ":reply<Enter>";
+            eh = ":react! heart<Enter>";
+            eu = ":react! up<Enter>";
+            ed = ":react! down<Enter>";
+
+            "<M-c>" = "<C-w>q";
+            "<C-w>v" = ":vsplit #alias:example.com<Enter>";
+            "<C-w>h" = ":split #alias:example.com<Enter>";
+          };
+          command = {
+            help = "welcome<Enter>";
+          };
+        };
+      };
 
       #".config/xdg-desktop-portal-shana/config.toml".source =
       #  (pkgs.formats.toml { }).generate
