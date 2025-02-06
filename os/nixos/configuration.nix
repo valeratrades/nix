@@ -976,6 +976,7 @@ in
           # Debuggers
           [
             lldb
+            gdb
             pkgs.llvmPackages.bintools
             vscode-extensions.vadimcn.vscode-lldb
           ]

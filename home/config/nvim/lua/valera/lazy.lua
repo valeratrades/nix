@@ -214,7 +214,12 @@ return require('lazy').setup({
 		version = "*",
 		event = "VeryLazy",
 	},
-	'kaarmu/typst.vim',
+	{
+		'kaarmu/typst.vim',
+		config = function()
+			vim.g.typst_embedded_languages = { 'rs -> rust', 'md -> markdown', 'py -> python' }
+		end,
+	},
 	{
 		'kawre/leetcode.nvim',
 		build = ":TSUpdate html",
