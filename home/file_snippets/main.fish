@@ -46,8 +46,8 @@ function shared_after
 	cp "$FILE_SNIPPETS_PATH/git/hooks/custom.sh" .git/hooks/custom.sh # relies on flake.nix and my append_custom.rs script evoked by it (rn only for rust nightly (2025/01/08))
 
 	cat "$FILE_SNIPPETS_PATH/readme/footer.md" >> README.md
-	sudo ln "$FILE_SNIPPETS_PATH/readme/LICENSE-APACHE" ./LICENSE-APACHE
-	sudo ln "$FILE_SNIPPETS_PATH/readme/LICENSE-MIT" ./LICENSE-MIT
+	#sudo ln "$FILE_SNIPPETS_PATH/readme/LICENSE-APACHE" ./LICENSE-APACHE
+	#sudo ln "$FILE_SNIPPETS_PATH/readme/LICENSE-MIT" ./LICENSE-MIT
 
 	set rustc_current_version (rustc -V | sed -E 's/rustc ([0-9]+\.[0-9]+).*/\1/')
 	set current_nightly_by_date "nightly-"(date -d '-1 day' +%Y-%m-%d)

@@ -213,6 +213,10 @@ vim.g.rust_recommended_style = false
 
 local lua_opts = lsp_zero.nvim_lua_ls()
 lspconfig.lua_ls.setup(lua_opts)
+lspconfig.tailwindcss.setup({
+	on_attach = lsp_zero.default_setup,
+	cmd = { 'tailwindcss-language-server', '--stdio' },
+})
 --lspconfig.htmx.setup {
 --	on_attach = on_attach,
 --}

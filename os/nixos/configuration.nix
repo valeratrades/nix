@@ -556,7 +556,7 @@ in
         MODULAR_HOME = "${modularHome}";
         #PATH = "${pkgs.lib.makeBinPath [ ]}:${userHome}/s/evdev/:${userHome}/.cargo/bin/:${userHome}/go/bin/:/usr/lib/rustup/bin/:${userHome}/.local/bin/:${modularHome}/pkg/packages.modular.com_mojo/bin:${userHome}/.local/share/flatpak:/var/lib/flatpak";
         EDITOR = "nvim";
-        WAKETIME = "6:00";
+        WAKETIME = "7:00";
         DAY_SECTION_BORDERS = "2.5:10.5:16";
         DEFAULT_BROWSER = "${pkgs.google-chrome}/bin/google-chrome-stable";
         PAGER = "less";
@@ -838,12 +838,14 @@ in
         # Coding
         [
           vscode-extensions.github.copilot
+          sass # css3 tools
           mold-wrapped # probably shouldn't be here though
           sccache
           just
           trunk # fascilitates running CSR web apps
           toml-cli
           bash-language-server
+          tailwindcss-language-server
           jdk23 # java dev kit (pray for my sanity)
           htmx-lsp
 
