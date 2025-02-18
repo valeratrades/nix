@@ -28,6 +28,7 @@
     device = "/dev/disk/by-uuid/67b8f5b9-5931-4a6f-9ea6-3d7691e8fa94";
     fsType = "ext4";
   };
+  #TODO!: specify resume partition
 
   fileSystems."/boot" = {
     device = "/dev/disk/by-uuid/6040-1795";

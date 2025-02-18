@@ -23,6 +23,7 @@
   boot.initrd.kernelModules = [ ];
   boot.kernelModules = [ "kvm-amd" ];
   boot.extraModulePackages = [ ];
+  boot.resumeDevice = "/dev/nvme0n1p4"; # for hibernation
 
   #NOTE: the more important, the closer to 0 on the partition table
   fileSystems."/boot" = {
