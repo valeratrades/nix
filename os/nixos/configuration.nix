@@ -294,6 +294,7 @@ in
     environment.TMPDIR = "/var/tmp";
   };
   boot = {
+    resumeDevice = "/dev/nvme0n1p4"; # for hibernation
     tmp.useTmpfs = true;
     loader = {
       systemd-boot = {

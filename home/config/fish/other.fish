@@ -259,3 +259,12 @@ function lr
 	lake build && printf '\n' && .lake/build/bin/$argv[1]
 end
 #
+
+function wipe
+	# wipe secondary browsers
+	pkill firefox
+	rm -rf ~/.mozilla
+	
+	pkill chromium
+	rf ~/.config/chromium
+end
