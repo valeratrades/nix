@@ -61,7 +61,7 @@
         packages.default = pkgs.buildPythonPackage rec {
           inherit pname buildInputs;
           version = "0.1.0";
-          src = ./main.py;
+          src = ./.;
         };
 
         devShells.default =
