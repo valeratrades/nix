@@ -1,4 +1,3 @@
-#TODO!!!!!!!!! .
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -55,11 +54,12 @@
         };
       in
       {
-        packages.default = pkgs.buildGoPackage rec {
-          inherit pname buildInputs;
-          version = "0.1.0";
-          src = ./.;
-        };
+        #TODO!: \
+        #packages.default = pkgs.buildGoPackage rec {
+        #  inherit pname;
+        #  version = "0.1.0";
+        #  src = ./.;
+        #};
 
         devShells.default =
           with pkgs;
