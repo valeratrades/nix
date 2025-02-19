@@ -11,3 +11,4 @@ except ImportError:  # Graceful fallback if IceCream isn't installed.
 
 def run():
     L.debug("Hello World!")
+    ic(L)

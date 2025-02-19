@@ -111,7 +111,7 @@
                 								cp -f ${(v-utils.files.rust.config { inherit pkgs; })} ./.cargo/config.toml
                 								cp -f ${
                           (v-utils.files.rust.toolchain {
-                            pkgs = pkgs;
+                            inherit pkgs;
                             toolchain = "nightly";
                           })
                         } ./.cargo/rust-toolchain.toml
@@ -119,7 +119,7 @@
                 								cp -f ${(v-utils.files.rust.deny { inherit pkgs; })} ./deny.toml
                 								cp -f ${
                           (v-utils.files.gitignore {
-                            pkgs = pkgs;
+                            inherit pkgs;
                             langs = [ "rs" ];
                           })
                         } ./.gitignore

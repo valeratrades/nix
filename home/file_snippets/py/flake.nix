@@ -48,21 +48,15 @@
             "ci"
           ];
         };
-
-        buildInputs = [
-          (pkgs.python3.withPackages (
-            python-pkgs: with python-pkgs; [
-              icecream
-            ]
-          ))
-        ];
       in
       {
-        packages.default = pkgs.buildPythonPackage rec {
-          inherit pname buildInputs;
-          version = "0.1.0";
-          src = ./.;
-        };
+        packages.default =
+          let
+            pythonEnv = pkgs.python3.withPackages (ps: [ ps.icecream ]);
+          in
+          pkgs.writeShellScriptBin "run-python" ''
+            							${pythonEnv}/bin/python -m src "$@"
+            							'';
 
         devShells.default =
           with pkgs;
