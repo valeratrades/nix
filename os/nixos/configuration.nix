@@ -584,7 +584,6 @@ in
         libinput-gestures
         pkgs.qt5.full
         haskellPackages.greenclip
-        lefthook # git hooks
         nerdfix # fixes illegal font codepoints https://discourse.nixos.org/t/nerd-fonts-only-see-half-the-icon-set/27513
         poppler_utils
 
