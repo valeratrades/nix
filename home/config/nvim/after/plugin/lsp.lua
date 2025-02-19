@@ -329,7 +329,7 @@ lspconfig.gopls.setup({
 	},
 })
 
--- Apparently ruff-lsp doesn't provide goto-definition functionality, and is meant to be used in tandem
+-- Apparently ruff's lsp doesn't provide goto-definition functionality, and is meant to be used in tandem
 lspconfig.jedi_language_server.setup({
 	on_attach = lsp_zero.default_setup,
 	settings = {
@@ -352,9 +352,9 @@ lspconfig.jedi_language_server.setup({
 
 lspconfig.ruff.setup({
 	on_attach = lsp_zero.default_setup,
-	cmd = { 'ruff-lsp' },
-	filetypes = { 'python' },
-	root_dir = lspconfig.util.find_git_ancestor,
+	cmd = { 'ruff', 'server' },
+	filetypes = { 'py' },
+	--root_dir = lspconfig.util.find_git_ancestor,
 })
 
 lspconfig.tinymist.setup({
