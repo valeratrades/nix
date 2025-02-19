@@ -887,7 +887,6 @@ in
             # typst
             [
               typst
-              typst-lsp
               tinymist
               typstyle # formatter
               typstfmt # only formats codeblocks
