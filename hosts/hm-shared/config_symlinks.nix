@@ -29,6 +29,9 @@
     himalaya = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       [ -e "$XDG_CONFIG_HOME/himalaya" ] || ln -sf "$NIXOS_CONFIG/home/config/himalaya" "$XDG_CONFIG_HOME/himalaya"
     '';
+    nyxt = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      [ -e "$XDG_CONFIG_HOME/nyxt" ] || ln -sf "$NIXOS_CONFIG/home/config/nyxt" "$XDG_CONFIG_HOME/nyxt"
+    '';
 
     # ind files
     tg = lib.hm.dag.entryAfter [ "writeBoundary" ] ''

@@ -127,6 +127,58 @@ alias monkey="smassh"
 alias bbeats="sudo -Es nice -n -20 /etc/profiles/per-user/v/bin/bbeats" # otherwise any demanding process will produce bad breaks in sound
 alias workspaces="swaymsg -t get_tree" # shortcut for ease of remembrance by Ania and Tima
 
+function sway_rect
+	if string match -qr '^[0-9]+$' $argv[1]
+		swaymsg -t get_tree | jq '.. | select(.pid?=='$argv[1]') | .rect'
+	else
+		swaymsg -t get_tree | jq '.. | select(.app_id?=="'$argv[1]'") | .rect'
+	end
+end
+function position_window
+	# Takes app_id and rect JSON as arguments
+	# Example usage: position_window "nyxt" '{"x": 1525, "y": 2225, "width": 956, "height": 437}'
+	# Note that the `rect` standard matches swaymsg output for the `rect` field
+
+	set app_id $argv[1]
+	set rect $argv[2]
+
+	set x (echo $rect | jq '.x')
+	set y (echo $rect | jq '.y')
+	set width (echo $rect | jq '.width')
+	set height (echo $rect | jq '.height')
+
+	# First resize, then move
+	swaymsg "[app_id=\"$app_id\"] resize set $width $height; [app_id=\"$app_id\"] move absolute position $x $y"
+end
+function position_over_tmux_pane
+	#Ex: position_over_tmux_pane "nyxt"
+
+	set outer_shell_rect (swaymsg -t get_tree | jq '.. | select(.focused?) | .rect')
+	set outer_shell_x (echo $outer_shell_rect | jq '.x')
+	set outer_shell_y (echo $outer_shell_rect | jq '.y')
+	set outer_shell_width (echo $outer_shell_rect | jq '.width')
+	set outer_shell_height (echo $outer_shell_rect | jq '.height')
+
+	set tmux_window_width (tmux display-message -p '#{window_width}')
+	set tmux_window_height (tmux display-message -p '#{window_height}')
+	set tmux_scale_x (math "$outer_shell_width / $tmux_window_width")
+	set tmux_scale_y (math "$outer_shell_height / $tmux_window_height")
+
+	set tmux_pane_width (tmux display-message -p '#{pane_width}')
+	set tmux_pane_height (tmux display-message -p '#{pane_height}')
+	set _width (math "round($tmux_pane_width * $tmux_scale_x)")
+	set _height (math "round($tmux_pane_height * $tmux_scale_y)")
+
+	set tmux_pane_x (tmux display-message -p '#{e|+:#{window_x},#{pane_left}}')
+	set tmux_pane_y (tmux display-message -p '#{e|+:#{window_y},#{pane_top}}')
+	set _x (math "round($outer_shell_x + ($tmux_pane_x * $tmux_scale_x))")
+	set _y (math "round($outer_shell_y + ($tmux_pane_y * $tmux_scale_y))")
+
+	echo "$_width $_height $_x $_y"
+
+	position_window $argv[1] "{\"x\": $_x, \"y\": $_y, \"width\": $_width, \"height\": $_height}"
+end
+
 function selfie
 	fswebcam /tmp/selfie.jpg
 	if [ $status != 0 ]
