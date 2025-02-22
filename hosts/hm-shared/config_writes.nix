@@ -28,10 +28,15 @@
       recursive = true;
     };
 
-    ".config/sway" = {
-      source = "${self}/home/config/sway";
-      recursive = true;
-    };
+    #dbg: fails for Masha for some reason
+    ${if user.userFullName != "Maria" then ".config/sway" else null} =
+      if user.userFullName != "Maria" then
+        {
+          source = "${self}/home/config/sway";
+          recursive = true;
+        }
+      else
+        null;
 
     ".config/sway/config" =
       if user.userFullName == "Timur" then
