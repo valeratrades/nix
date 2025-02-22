@@ -135,11 +135,13 @@ function sway_rect
 	end
 end
 function position_window
-	# Takes app_id and rect JSON as arguments
-	# Example usage: position_window "nyxt" '{"x": 1525, "y": 2225, "width": 956, "height": 437}'
-	# Note that the `rect` standard matches swaymsg output for the `rect` field
+	# Args
+	# 1. select_with: query to select the window, e.g. "app_id='nyxt'"
+	# 2. rect: JSON string with x, y, width, height; matches swaymsg output for the `rect` field
+	# # Ex
+	# position_window 'app_id="nyxt"' '{"x": 1525, "y": 2225, "width": 956, "height": 437}'
 
-	set app_id $argv[1]
+	set select_with $argv[1]
 	set rect $argv[2]
 
 	set x (echo $rect | jq '.x')
@@ -148,10 +150,10 @@ function position_window
 	set height (echo $rect | jq '.height')
 
 	# First resize, then move
-	swaymsg "[app_id=\"$app_id\"] resize set $width $height; [app_id=\"$app_id\"] move absolute position $x $y"
+	swaymsg "[$select_with] resize set $width $height; [$select_with] move absolute position $x $y"
 end
 function position_over_tmux_pane
-	#Ex: position_over_tmux_pane "nyxt"
+	#Ex: position_over_tmux_pane 'app_id="nyxt"'
 
 	set outer_shell_rect (swaymsg -t get_tree | jq '.. | select(.focused?) | .rect')
 	set outer_shell_x (echo $outer_shell_rect | jq '.x')
@@ -317,7 +319,8 @@ function wipe
 	# wipe secondary browsers
 	pkill firefox
 	rm -rf ~/.mozilla
-	
-	pkill chromium
-	rf ~/.config/chromium
+
+	# currently using it for site testing, but may bring back to wipe in the future.
+	#pkill chromium
+	#rf ~/.config/chromium
 end

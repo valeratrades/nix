@@ -19,7 +19,7 @@
     flake-utils.lib.eachDefaultSystem (
       system:
       let
-        overlays = builtins.trace "flake.nix sourced" [ (import rust-overlay) ];
+        overlays = [ (import rust-overlay) ];
         pkgs = import nixpkgs {
           inherit system overlays;
           allowUnfree = true;

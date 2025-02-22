@@ -23,6 +23,7 @@
   boot.initrd.kernelModules = [ ];
   boot.kernelModules = [ "kvm-intel" ];
   boot.extraModulePackages = [ ];
+  boot.resumeDevice = "/dev/nvme0n1p3"; # for hibernation
 
   fileSystems."/" = {
     device = "/dev/disk/by-uuid/67b8f5b9-5931-4a6f-9ea6-3d7691e8fa94";
