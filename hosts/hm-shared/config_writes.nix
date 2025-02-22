@@ -28,23 +28,16 @@
       recursive = true;
     };
 
-    #dbg: fails for Masha for some reason
-    ${if user.userFullName != "Maria" then ".config/sway" else null} =
-      if user.userFullName != "Maria" then
-        {
-          source = "${self}/home/config/sway";
-          recursive = true;
-        }
-      else
-        null;
-
     ".config/sway/config" =
       if user.userFullName == "Timur" then
         {
           source = builtins.trace "DEBUG: overwriting sway config with timur's" "${self}/home/config/sway/config_timur";
         }
       else
-        { };
+        {
+          source = "${self}/home/config/sway";
+          recursive = true;
+        };
 
     # ind files
     ".config/tg.toml".source = "${self}/home/config/tg.toml";
