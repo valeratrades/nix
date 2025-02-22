@@ -29,7 +29,7 @@ function e
 			set full_command "$nvim_evocation $argv ."
 		else
 			set -l could_fix 0
-			set -l try_extensions "" .sh .rs .go .py .json .txt .md .typ .tex .html .js .toml .conf
+			set -l try_extensions "" .sh .rs .go .py .fish .json .txt .md .typ .tex .html .js .toml .conf
 			# note that indexing starts at 1, as we're in a piece of shit zsh.
 			for ext in $try_extensions
 				set -l try_path "$argv[1]$ext"
@@ -67,10 +67,19 @@ end
 function se
 	e --use_sudo_env $argv
 end
+function et
+   set ext "md"
+   if [ ! -z "$argv[1]" ]
+       set ext $argv[1]
+   end
+   
+   nvim /tmp/a_temporary_note.$ext -c 'nnoremap q gg^vG^g_"+y:qa!<CR>' -c 'startinsert'
+end
+
 alias ec="e $NIXOS_CONFIG/home/config/nvim"
 alias es="nvim $NIXOS_CONFIG/home/config/fish/main.fish"
 alias epy="e ~/envs/Python/lib/python3.11/site-packages"
-alias et="nvim /tmp/a_temporary_note.md -c 'nnoremap q gg^vG^g_\"+y:qa!<CR>' -c 'startinsert'"
+
 
 # to simplify pasting stuff
 alias nano="nvim"

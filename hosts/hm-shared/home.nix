@@ -82,18 +82,19 @@
     };
   };
 
-  #xdg = {
-  #  enable = true;
-  #  mimeApps = {
-  #    enable = true;
-  #    associations.added = {
-  #      "application/pdf" = [ "zathura.desktop" ];
-  #    };
-  #    defaultApplications = {
-  #      "application/pdf" = [ "zathura.desktop" ];
-  #    };
-  #  };
-  #};
+  #TODO!!!: get all needed mimeApps setting working
+  xdg = {
+    enable = true;
+    mimeApps = {
+      enable = true;
+      associations.added = {
+        "application/pdf" = [ "zathura.desktop" ];
+      };
+      defaultApplications = {
+        "application/pdf" = [ "zathura.desktop" ];
+      };
+    };
+  };
 
   #TEST
   #REF: example of working service setup here: https://github.com/nix-community/home-manager/blob/master/modules/services/polybar.nix
