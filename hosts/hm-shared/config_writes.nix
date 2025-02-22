@@ -1,10 +1,6 @@
 # this is the way I have configs written for the forking hosts (more reproducible than what I have myself).
 # this is likely to contain configs for some things that are not actually shared, but text bloat is fine.
-{
-  self,
-  user,
-  ...
-}:
+{ self, user }:
 {
   home.file = {
     ".config/nvim" = {
