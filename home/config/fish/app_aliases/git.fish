@@ -219,6 +219,7 @@ function init_labels
 	set pname $argv[1]
 
 	function gh_submit_label
+		set code 0
 		set -l pname $argv[1]
 		set -l name $argv[2]
 		set -l color $argv[3]
@@ -236,8 +237,12 @@ function init_labels
 			echo $output >&2
 			if not echo $output | grep -q "error"
 				echo "Successfully created: '$name'"
+			else
+				echo "ERROR: $output"
+				set code 1
 			end
 		end
+		return $code
 	end
 
 	gh_submit_label $pname "ci" "808080" "New test or benchmark"
