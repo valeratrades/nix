@@ -5,6 +5,11 @@ vim.g.maplocalleader = '<Space>m' -- pretty sure this does not work
 require('lean').setup {
 	--TODO: write all keys explicitly
 	mappings = true, --HACK: sets a bunch of stuff over maplocalleader
+	lsp = {
+		init_options = {
+			editDelay = 250,
+		},
+	},
 }
 
 K("n", "<Space>ml", function() vim.cmd("Telescope loogle") end)
