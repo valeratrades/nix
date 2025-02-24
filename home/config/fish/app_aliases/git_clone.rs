@@ -78,10 +78,11 @@ fn clone_repo(args: &[String]) -> Result<String, String> {
 fn main() {
 	let args: Vec<String> = env::args().skip(1).collect();
 	let help_message = "\
-# git clone on rails.
-# give repo name, it clones into /tmp or provided directory.
-#
-# ex: gc neovim/neovim";
+git clone on rails.
+give repo name, it clones into /tmp or provided directory.
+
+ex 1: gc neovim/neovim . # will clone to current directory
+ex 2: gc neovim/neovim # will clone to /tmp/neovim";
 
 	if args.is_empty() || matches!(args[0].as_str(), "-h" | "--help" | "help") {
 		println!("{}", help_message);
