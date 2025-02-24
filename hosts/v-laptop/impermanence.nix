@@ -130,6 +130,7 @@
             ".vscode"
             ".mozilla"
             ".wakatime" # dev monitoring
+            ".openvpn"
           ]
 
           [

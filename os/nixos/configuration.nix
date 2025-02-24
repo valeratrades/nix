@@ -670,6 +670,7 @@ in
 
         # Network Tools
         [
+          openvpn
           aria2 # better wget
           wireguard-tools
           ngrok
