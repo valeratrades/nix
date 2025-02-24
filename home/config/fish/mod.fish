@@ -17,20 +17,25 @@ source $main_config_pdir/app_aliases/mod.fish
 source "$NIXOS_CONFIG/home/file_snippets/main.fish"
 source "$NIXOS_CONFIG/home/scripts/shell_harpoon/main.fish"
 
-# # Init utils
-zoxide init fish | source
-todo init fish | source
+# Init utils {{{
+## optional {{{
+if command -v zoxide &>/dev/null
+    zoxide init fish | source
+end
+if command -v todo &>/dev/null
+    todo init fish | source
+end
+if command -v shuttle &>/dev/null
+shuttle generate shell fish | source
+shuttle generate manpage > "$XDG_DATA_HOME/man/man1/shuttle.1"
+end
+##,}}}
+atuin init fish --disable-up-arrow --disable-ctrl-r | source
+bind \cr "_atuin_bind_up" # configured in $XDG_CONFIG_HOME/atuin/config.toml
+bind \cg "_atuin_search" # global search
 
 starship init fish --print-full-init | source # somehow fixes the psub bug that happens when using tmux with my config, initiated via standard nixos's `enable`
+#,}}}
 
 set -g MANPATH "$XDG_DATA_HOME/man:$MANPATH";
-shuttle generate shell fish | source
 mkdir -p "$XDG_DATA_HOME/man/man1/"
-shuttle generate manpage > "$XDG_DATA_HOME/man/man1/shuttle.1"
-
-atuin init fish --disable-up-arrow --disable-ctrl-r | source
-export filter_mode_shell_up_key_binding="directory"
-bind \cr "_atuin_bind_up" # only for current dir
-bind \cg "_atuin_search" # global search
-# and then the actual Up is searching through the session history, as is the default.
-#

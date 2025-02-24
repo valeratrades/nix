@@ -311,6 +311,10 @@
         recursive = true;
       };
 
+      ".config/atuin/config.toml" = (pkgs.formats.toml { }).generate "atuin.toml" {
+        filter_mode_shell_up_key_binding = "directory"; # `_bind_up_search` will now only search in current dir
+      };
+
       ".cargo" = {
         source = "${self}/home/config/cargo";
         recursive = true;
