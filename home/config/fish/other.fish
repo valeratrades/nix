@@ -40,10 +40,22 @@ function chess
     py -m cli_chess --token lip_sjCnAuNz1D3PM5plORrC
 end
 
-# move latest download
 function mvd
+	# move latest download
+	# Usage:
+	# mvd PATH               # moves to specified path directly
+	# mvd [OPTION] [SUBPATH] # moves to predefined location, optionally with subpath
+	# ex: mvd ~/Documents/Books/tmp/  # moves directly to specified path
+	# ex: mvd -p research    # moves to $HOME/Documents/Papers/research
+	# ex: mvd -b             # moves to $HOME/Documents/Books
+
 	set from "."
-	set to $argv[1]
+	set to ""
+	set subpath ""
+
+	if test (count $argv) -gt 1
+		set subpath $argv[2]
+	end
 
 	switch $argv[1]
 	case "-p" "--paper"
@@ -61,8 +73,32 @@ function mvd
 	case "-w" "--wine"
 		set from "$HOME/Downloads"
 		set to "$HOME/.wine/drive_c/users/v/Downloads"
+	case "*" # Default case: treat as direct path
+		set from "$HOME/Downloads"
+		set to $argv[1]
 	end
-	mv "$from/$(ls $from -t | head -n 1)" $to
+
+	# If a subpath was provided and we're using an option, append the subpath
+	if test (count $argv) -gt 1; and string match -q -- "-*" $argv[1]
+		set subpath $argv[2]
+		if test -n "$subpath" -a -n "$to"
+			set to "$to/$subpath"
+		end
+	end
+
+	if not test -d "$to"
+		echo "Error: Directory $to does not exist"
+		return 1
+	end
+
+	set latest_file (ls $from -t | head -n 1)
+	if test -n "$latest_file"
+		mv "$from/$latest_file" "$to"
+		echo "Moved $latest_file to $to"
+	else
+		echo "No files found in $from"
+		return 1
+	end
 end
 
 
