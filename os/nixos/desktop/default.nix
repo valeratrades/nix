@@ -5,10 +5,8 @@
   ...
 }:
 {
-  #TODO!!!!: move into shared mod, - servers will have fish configured too
-  imports = mylib.scanPaths ./. ++ [
-    (mylib.relativeToRoot "home/config/fish/default.nix")
-  ];
+  imports = mylib.scanPaths ./.;
+
   # appends to existing if any
   environment.systemPackages =
     with pkgs;

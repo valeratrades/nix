@@ -26,7 +26,7 @@ let
       submitRule = "enter"; # while <C-<CR>> is indeed better in vacuum, it's non-standard.
       sendMessageInTheMiddleOfACodeBlock = true;
     };
-    fixCodeblockGap.enable = true;
+    fixCodeblockGap.enable = true; # trims trailing newline after codeblocks
     friendInvites.enable = true; # `/create` command suite
     friendsSince.enable = true;
     ignoreActivities = {
@@ -36,7 +36,7 @@ let
     };
     #memberCount.enable = true;
     messageClickActions.enable = true; # double-click to edit/reply, backspace+click to delete
-    noOnboardingDelay.enable = true;
+    noOnboardingDelay.enable = true; # claims to cut load times
     noUnblockToJump.enable = true;
     #pinDMs = {
     #  enable = true;

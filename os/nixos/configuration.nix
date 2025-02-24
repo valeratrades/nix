@@ -274,19 +274,21 @@ in
   };
 
   imports = [
-    ./desktop
+    (mylib.relativeToRoot "home/config/fish/default.nix")
+    ./shared
+    (if user.userFullName != "Server" then ./desktop else null)
     (mylib.relativeToRoot "./hosts/${user.desktopHostName}/configuration.nix")
     (
       if builtins.pathExists "/etc/nixos/hardware-configuration.nix" then
         /etc/nixos/hardware-configuration.nix
       else
         builtins.trace
-          "WARNING: Falling back to ./hosts/${user.desktopHostName}/hardware-configuration.nix, as /etc/nixos/hardware-configuration.nix does not exist. Likely to cause problems."
+          "WARNING: Falling back to ./hosts/${user.desktopHostName}/hardware-configuration.nix, as /etc/nixos/hardware-configuration.nix does not exist. Could cause problems."
           mylib.relativeToRoot
           "./hosts/${user.desktopHostName}/hardware-configuration.nix"
     )
   ];
-  #hardware.enableAllFirmware = true;
+  hardware.enableAllFirmware = true; # Q: not sure if I need it
 
   # Bootloader.
   systemd.services.nix-daemon = {
@@ -323,27 +325,6 @@ in
     '';
     #
   };
-
-  # # waydroid
-  # No, I can't fucking move it. Because there is still no good way to refer to config root, even with `mylib`
-  #MANUAL:
-  #- init with `sudo waydroid init -s GAPSS -f`
-  #- patch google-play certificate: https://docs.waydro.id/faq/google-play-certification
-  # normally setup also requires modyfiying waydroid_base.prop and starting up `systemctl wayland-container`, but these are taken care of below (theoretically).
-  #// to use, do `waydroid show-full-ui`, currently also aliased with `wui`
-  virtualisation = {
-    waydroid.enable = true;
-    lxd.enable = true;
-  };
-  system.activationScripts.patchWaydroid = {
-    text = ''
-      # if the patch was already appplied, testing reversing it (\`--dry-run -R\`) returns 0
-      if ! ${pkgs.patch}/bin/patch --dry-run -R "/var/lib/waydroid/waydroid_base.prop" < "${configRoot}/os/nixos/desktop/waydroid/waydroid_base.prop.diff" >/dev/null 2>&1; then
-        ${pkgs.patch}/bin/patch "/var/lib/waydroid/waydroid_base.prop" < "${configRoot}/os/nixos/desktop/waydroid/waydroid_base.prop.diff"
-      fi
-    '';
-  };
-  #
 
   time.timeZone = "UTC";
   i18n =
@@ -769,6 +750,7 @@ in
         21 # FTP (legacy, just in case)
         554 # RTSP (for streaming media services)
         1935 # RTMP (often used for streaming)
+        993 # himalaya
       ];
       allowedUDPPorts = [
         53 # DNS

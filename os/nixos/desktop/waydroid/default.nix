@@ -1,6 +1,23 @@
-# Had to move it back to main configuration.nix, because still don't have a good fucking way to refer to paths relative to config root outside of the main configuration.nix
 {
+  pkgs,
+  mylib,
   ...
 }:
 {
+  environment.shellAliases.wui = "waydroid show-full-ui"; # main entry point
+  virtualisation = {
+    waydroid.enable = true;
+    lxd.enable = true;
+  };
+  #- init with `sudo waydroid init -s GAPSS -f`
+  #- patch google-play certificate: https://docs.waydro.id/faq/google-play-certification
+  # normally setup also requires modyfiying waydroid_base.prop and starting up `systemctl wayland-container`, but these are taken care of below (theoretically).
+  system.activationScripts.patchWaydroid = {
+    text = ''
+      # if the patch was already appplied, testing reversing it (\`--dry-run -R\`) returns 0
+      if ! ${pkgs.patch}/bin/patch --dry-run -R "/var/lib/waydroid/waydroid_base.prop" < ${(mylib.relativeToRoot "os/nixos/desktop/waydroid/waydroid_base.prop.diff")} >/dev/null 2>&1; then
+        ${pkgs.patch}/bin/patch "/var/lib/waydroid/waydroid_base.prop" < ${(mylib.relativeToRoot "os/nixos/desktop/waydroid/waydroid_base.prop.diff")}
+      fi
+    '';
+  };
 }

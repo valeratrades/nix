@@ -216,27 +216,49 @@ function protect_branch
 end
 
 function init_labels
-	set repo_name $argv[1]
-	gh api repos/$GITHUB_NAME/$repo_name/labels \
-	-f name="ci" \
-	-f color="808080" \
-	-f description="New test or benchmark"
+	set pname $argv[1]
 
-	gh api repos/$GITHUB_NAME/$repo_name/labels \
-	-f name="chore" \
-	-f color="0052CC" \
-	-f description="Small non-imaginative task"
+	function gh_submit_label
+		set -l pname $argv[1]
+		set -l name $argv[2]
+		set -l color $argv[3]
+		set -l description $argv[4]
 
-	gh api repos/$GITHUB_NAME/$repo_name/labels \
-	-f name="breaking" \
-	-f color="000000" \
-	-f description="Implementing should be postponed until next major version"
+		#TODO: request through `script` so it's colorful
+		set -l output (gh api repos/$GITHUB_NAME/$pname/labels \
+		-f name="$name" \
+		-f color="$color" \
+		-f description="$description" 2>&1)
+		
+		if echo $output | grep -q "already_exists"
+			echo "Label '$name' already exists, skipping..."
+		else
+			echo $output >&2
+			if not echo $output | grep -q "error"
+				echo "Successfully created: '$name'"
+			end
+		end
+	end
 
-	gh api repos/$GITHUB_NAME/$repo_name/labels \
-	-f name="enhancement" \
-	-f color="a2eeef" \
-	-f description="New feature or request"
-	#gh api -X DELETE repos/$GITHUB_NAME/$repo_name/labels/enhancement
+	gh_submit_label $pname "ci" "808080" "New test or benchmark"
+	gh_submit_label $pname "chore" "0052CC" "Small non-imaginative task"
+	gh_submit_label $pname "breaking" "000000" "Implementing should be postponed until next major version"
+	gh_submit_label $pname "hack" "FF8C00" "Hacky feature" #Q: not sold on this one, I think it could be fully encapsulated with just `rewrite`
+	gh_submit_label $pname "rewrite" "008672" "Code quality"
+
+	# present by default {{{
+	gh_submit_label $pname "enhancement" "a2eeef" "New feature or request"
+	gh_submit_label $pname "bug" "d73a4a" "Something isn't working"
+	gh_submit_label $pname "documentation" "0075ca" "Improvements or additions to documentation"
+	gh_submit_label $pname "duplicate" "cfd3d7" "This issue or pull request already exists"
+	gh_submit_label $pname "good first issue" "7057ff" "Good for newcomers"
+	gh_submit_label $pname "help wanted" "008672" "Extra attention is needed"
+	gh_submit_label $pname "invalid" "e4e669" "This doesn't seem right"
+	gh_submit_label $pname "question" "d876e3" "Further information is requested"
+	gh_submit_label $pname "wontfix" "ffffff" "This will not be worked on"
+	#,}}}
+
+	functions -e gh_submit_label
 end
 
 ## git new repository

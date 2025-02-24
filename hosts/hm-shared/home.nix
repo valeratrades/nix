@@ -305,14 +305,17 @@
         };
       };
 
+      #BUG: stupid `atuin` overwrites my generated config with a dummy one
+      ".config/atuin/config.toml".source = (pkgs.formats.toml { }).generate "atuin.toml" {
+        filter_mode_shell_up_key_binding = "directory"; # `_bind_up_search` will now only search in current dir
+        sync.records = true;
+        enter_accept = true;
+      };
+
       # configured via hm, can't just symlink it in my host's config
       ".config/tmux" = {
         source = "${self}/home/config/tmux";
         recursive = true;
-      };
-
-      ".config/atuin/config.toml" = (pkgs.formats.toml { }).generate "atuin.toml" {
-        filter_mode_shell_up_key_binding = "directory"; # `_bind_up_search` will now only search in current dir
       };
 
       ".cargo" = {
