@@ -123,9 +123,14 @@ function gco
 end
 
 function gc
-	set result (cargo -Zscript -q (dirname (status --current-filename))/git_clone.rs $argv)
-	if [ $status = 0 ] && [ (count $argv) = 1 ]
-		cd $result
+	#ex: gc neovim/neovim . -c
+	set result (cargo -Zscript -q (dirname (status --current-filename))/git_clone.rs $argv[1] $argv[2])
+	if [ $status = 0 ] 
+		if [ (count $argv) = 1 ] || [ $argv[3] = "--cd" ] || [ $argv[3] = "-c" ]
+			cd $result
+		else
+			echo $result
+		end
 	else
 		echo $result
 	end

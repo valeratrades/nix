@@ -2,11 +2,11 @@
 
 use std::{
 	env,
-	path::Path,
+	path::{Path, PathBuf},
 	process::{Command, exit},
 };
 
-fn clone_repo(args: &[String]) -> Result<String, String> {
+fn clone_repo(args: &[String]) -> Result<PathBuf, String> {
 	let github_username = env::var("GITHUB_USERNAME").ok();
 
 	let repo_payload = args[0].trim_end_matches("/").to_string();
@@ -49,27 +49,23 @@ fn clone_repo(args: &[String]) -> Result<String, String> {
 
 		if status.success() {
 			env::set_current_dir(&tmp_path).map_err(|_| "Failed to change directory".to_string())?;
-			Ok(env::current_dir().unwrap().display().to_string())
+			Ok(env::current_dir().unwrap())
 		} else {
 			Err("Git clone failed".to_string())
 		}
 	} else if args.len() == 2 {
 		let target = if Path::new(&args[1]).is_dir() {
-			format!("{}/{}", args[1], filename)
+			PathBuf::from(args[1].clone()).join(filename)
 		} else {
-			args[1].clone()
+			PathBuf::from(args[1].clone())
 		};
 
 		let status = Command::new("git")
-			.args(["clone", "--depth=1", &url, &target])
+			.args(["clone", "--depth=1", &url, &target.display().to_string()])
 			.status()
 			.map_err(|_| "Failed to run git clone".to_string())?;
 
-		if status.success() {
-			Ok("Git clone succeeded".to_string())
-		} else {
-			Err("Git clone failed".to_string())
-		}
+		if status.success() { Ok(target) } else { Err("Git clone failed".to_string()) }
 	} else {
 		Err("Invalid number of arguments".to_string())
 	}
@@ -90,7 +86,7 @@ ex 2: gc neovim/neovim # will clone to /tmp/neovim";
 	}
 
 	match clone_repo(&args) {
-		Ok(message) => println!("{}", message),
+		Ok(message) => println!("{}", message.display()),
 		Err(error) => {
 			eprintln!("{}", error);
 			exit(1);
