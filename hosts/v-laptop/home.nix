@@ -27,7 +27,7 @@ in
     };
   };
 
-  tg-server = {
+  tg = {
     enable = true;
     package = inputs.tg.packages.${pkgs.system}.default;
     token = config.sops.secrets.telegram_token_main.path;
