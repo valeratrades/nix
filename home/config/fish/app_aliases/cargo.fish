@@ -56,17 +56,33 @@ function cpublish
 	cargo release --no-confirm --execute "$argv"
 end
 
-# Releasing for crates is normally managed simply through `cargo publish`, but since nix wants to get them from git, and also is not satisfied with path-deps (which I have on master most of the time), hence this function for releasing things I then install in my nixos setup.
-# 
-#DEPENDS:
-# - [sed-deps](~/s/g/github/.github/workflows/pre_ci_sed_deps.rs)
-# - nix: a packaged flake
 function cnix_release
+	# Releasing for crates is normally managed simply through `cargo publish`, but since nix wants to get them from git, and also is not satisfied with path-deps (which I have on master most of the time), hence this function for releasing things I then install in my nixos setup.
+	# 
+	#DEPENDS:
+	# - [sed-deps](~/s/g/github/.github/workflows/pre_ci_sed_deps.rs)
+	# - nix: a packaged flake
+	
+	set -l fast_mode 0
+	for arg in $argv
+		switch $arg
+		case '--fast' '-f'
+			set fast_mode 1
+		end
+	end
+
 	git checkout master; git branch -f release || return 1
 	git checkout release || return 1
 	~/s/g/github/.github/workflows/pre_ci_sed_deps.rs ./ || return 1 # will rewrite `Cargo.toml`s in-place
-	cargo t || return 1 # 2 things: re-ensure tests pass and, and update Cargo.lock for nix build
-	nix build || return 1
+
+	# Test || skip if --fast
+	if test $fast_mode -eq 0
+		cargo t || return 1 # 2 things: re-ensure tests pass and, and update Cargo.lock for nix build
+		nix build || return 1
+	else
+		echo "Fast mode enabled: Skipping tests and build steps"
+	end
+
 	git commit -am "upload" || return 1
 	git push --force || return 1 # got some "stale refs" error last time running `git push --force-with-lease, don't care to debug"
 	git checkout master

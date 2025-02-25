@@ -542,3 +542,5 @@ url
 mc
 lsr
 cfg
+fixups
+nixpkgs

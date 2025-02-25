@@ -95,7 +95,7 @@
       url = "github:valeratrades/rm_engine?ref=release";
     };
     tg = {
-      url = "github:valeratrades/tg";
+      url = "github:valeratrades/tg?ref=release";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     bbeats = {

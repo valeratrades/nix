@@ -198,7 +198,7 @@
       ++ [
         inputs.auto_redshift.packages.${pkgs.system}.default # good idea for everyone
         inputs.todo.packages.${pkgs.system}.default # here, because eww depends on it, otherwise meant for my use exclusively
-        inputs.tg.packages.${pkgs.system}.default # should be reasonably generic
+        inputs.tg.packages.${pkgs.system}.default # should be reasonably generic #dbg
         inputs.bbeats.packages.${pkgs.system}.default
         inputs.reasonable_envsubst.packages.${pkgs.system}.default # have scripts depending on it, and they are currently part of the shared config.
         inputs.booktyping.packages.${pkgs.system}.default

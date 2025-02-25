@@ -8,6 +8,7 @@
   lib,
   user,
   mylib,
+  inputs,
   ...
 }:
 #TODO: add build script that cds in $XDG_DATA_HOME/nvim/lazy-telescope-fzf-native.nvim and runs `make`
@@ -22,6 +23,30 @@ in
     "nix-command"
     "flakes"
   ];
+
+  #TODO!!!!!!: \
+  #services.tg-server = builtins.trace "TRACE: sourcing my tg tool" {
+  #  enable = true;
+  #  package = inputs.tg.packages.${pkgs.system}.default;
+  #};
+
+  systemd.user.services.tg-server = {
+    enable = true;
+    description = "TG Server Service";
+    wantedBy = [ "default.target" ];
+    after = [ "network.target" ];
+
+    serviceConfig = {
+      Type = "simple";
+      LoadCredential = "telegram_bot_key:${userHome}/s/g/private/telegram_bot_key";
+      ExecStart = ''
+        /bin/sh -c '${
+          inputs.tg.packages.${pkgs.system}.default
+        }/bin/tg --token "$(cat %d/telegram_bot_key)" server'
+      '';
+      Restart = "on-failure";
+    };
+  };
 
   services = {
     getty.autologinUser = user.username;

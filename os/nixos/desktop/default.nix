@@ -2,10 +2,11 @@
   self,
   pkgs,
   mylib,
+  inputs,
   ...
 }:
 {
-  imports = mylib.scanPaths ./.;
+  imports = mylib.scanPaths ./. ++ [ inputs.tg.nixosModules.default ];
 
   # appends to existing if any
   environment.systemPackages =
