@@ -536,7 +536,7 @@ in
       {
         XDG_DATA_HOME = "${xdgDataHome}";
         XDG_STATE_HOME = "${userHome}/.local/state";
-        XDG_CONFIG_HOME = "${userHome}/.config";
+        XDG_CONFIG_HOME = "${userHome}/.config"; # NB: sops setup may break if it's not ~/.config
         XDG_CACHE_HOME = "${userHome}/.cache";
         #XDG_RUNTIME_DIR is set by nix to /run/user/1000
 
@@ -576,15 +576,12 @@ in
     binsh = "${pkgs.dash}/bin/dash";
 
     systemPackages =
-      let
-        desktopPkgs = with pkgs; [
-        ];
-      in
-      with pkgs; # basically `use pkgs::*`
-
+      with pkgs;
       lib.lists.flatten [
         libinput-gestures
         pkgs.qt5.full
+        age # secrets initial encoding
+        sops # secrets mgmt
 
         # gnome
         [
@@ -787,6 +784,7 @@ in
         5353 # mDNS (for local network service discovery)
         3478 # STUN (for NAT traversal, used in VoIP/WebRTC)
         1935 # RTMP (for streaming if required)
+        993 # himalaya
       ];
 
       # to transfer files from phone

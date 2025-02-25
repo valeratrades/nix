@@ -14,38 +14,23 @@ let
 in
 {
   nix.extraOptions = "!include ${config.home.homeDirectory}/s/g/private/sops/";
+  # ref: https://www.youtube.com/watch?v=G5f6GC7SnhU
   sops = {
     age.sshKeyPaths = [ "${sshConfigPath}/id_ed25519" ];
-    #defaultSopsFile = "${config.home.homeDirectory}/s/g/private/sops/creds.json";
-    defaultSopsFile = "${self}/secrets/users/v/default.yaml";
-    #defaultSopsFormat = "json";
-    validateSopsFiles = false; # required if sops file is outside of nix store
-    gnupg.home = "${config.home.homeDirectory}/.gnupg";
+    defaultSopsFile = "${self}/secrets/users/v/default.json";
+    defaultSopsFormat = "json";
     secrets.telegram_token_main = {
-      sopsFile = "${config.home.homeDirectory}/s/g/private/sops/creds.json";
-      format = "json";
+      mode = "0400";
+    };
+    secrets.telegram_token_test = {
+      mode = "0400";
     };
   };
 
-  #NB: section names are different from what it would be inside `configuration.nix`
-  systemd.user.services.tg-server = {
-    Unit = {
-      Description = "TG Server Service";
-      After = [ "network.target" ];
-    };
-
-    Install = {
-      WantedBy = [ "default.target" ];
-    };
-
-    Service = {
-      Type = "simple";
-      LoadCredential = "tg_token:${config.sops.secrets.telegram_token_main.path}";
-      ExecStart = ''
-        /bin/sh -c '${inputs.tg.packages.${pkgs.system}.default}/bin/tg --token "$(cat %d/tg_token)" server'
-      '';
-      Restart = "on-failure";
-    };
+  tg-server = {
+    enable = true;
+    package = inputs.tg.packages.${pkgs.system}.default;
+    token = config.sops.secrets.telegram_token_main.path;
   };
 
   home = {

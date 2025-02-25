@@ -168,6 +168,31 @@ function phone_wifi
 	sudo nmcli dev wifi connect Valera password 12345678
 end
 
+function age_key
+	# Deps: nix
+	# Ex: age_key -s; age_key -g
+
+	set set false
+	set get false
+	if [ "$argv[1]" = "-s" ] || [ "$argv[1]" = "--set" ]
+		set save true
+	end
+	if [ "$argv[1]" = "-g" ] || [ "$argv[1]" = "--get" ]
+		set get true
+	end
+
+	if [ "$set" = true ]
+		set private_key (nix run nixpkgs#ssh-to-age -- -private-key -i ~/.ssh/id_ed25519)
+		mkdir -p ~/.config/sops/age
+		echo $private_key > ~/.config/sops/age/keys.txt
+		echo "Key generated and saved to ~/.config/sops/age/keys.txt"
+	else if [ "$get" = true ]
+		nix shell nixpkgs#age -c age-keygen -y ~/.config/sops/age/keys.txt
+	else
+		return 1
+	end
+end
+
 function sway_rect
 	if string match -qr '^[0-9]+$' $argv[1]
 		swaymsg -t get_tree | jq '.. | select(.pid?=='$argv[1]') | .rect'

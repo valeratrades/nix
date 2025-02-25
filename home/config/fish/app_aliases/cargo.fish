@@ -151,7 +151,7 @@ function cw
 	cleanup
 end
 
-alias cu="cargo clean && cargo update"
+alias cu="cargo clean --doc && cargo update"
 
 function ct
 	function cleanup

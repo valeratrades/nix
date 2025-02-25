@@ -1,0 +1,7 @@
+keys:
+  - &admin age1q750njxr0gnlftxygvfrd4vschrgmj532zat45ycx6fkek8zvp4s9pgqp7
+creation_rules:
+  - path_regex: secrets/users/v/.*$
+    key_groups:
+      - age:
+          - *admin

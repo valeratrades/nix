@@ -118,6 +118,7 @@ in
             home-manager.sharedModules = [
               inputs.nixcord.homeManagerModules.nixcord
               inputs.sops-nix.homeManagerModules.sops
+              inputs.tg.homeManagerModules.tg-server
             ];
 
             home-manager.users."${user.username}" = import (
