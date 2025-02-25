@@ -16,10 +16,6 @@
       pre-commit-hooks,
       v-utils,
     }:
-    let
-      manifest = (nixpkgs.lib.importTOML ./v_exchanges/Cargo.toml).package;
-      pname = manifest.name;
-    in
     flake-utils.lib.eachDefaultSystem (
       system:
       let
@@ -29,6 +25,8 @@
           allowUnfree = true;
         };
 
+        manifest = (pkgs.lib.importTOML ./v_exchanges/Cargo.toml).package;
+        pname = manifest.name;
         pre-commit-check = pre-commit-hooks.lib.${system}.run (v-utils.files.preCommit { inherit pkgs; });
         stdenv = pkgs.stdenvAdapters.useMoldLinker pkgs.stdenv;
 
@@ -139,63 +137,5 @@
             ] ++ pre-commit-check.enabledPackages;
           };
       }
-    )
-    // {
-      #good ref: https://github.com/NixOS/nixpkgs/blob/04ef94c4c1582fd485bbfdb8c4a8ba250e359195/nixos/modules/services/audio/navidrome.nix#L89
-      homeManagerModules."${pname}" =
-        {
-          config,
-          lib,
-          pkgs,
-          ...
-        }:
-        let
-          inherit (lib) mkEnableOption mkOption mkIf;
-          inherit (lib.types) package path;
-          cfg = config."${pname}";
-        in
-        {
-          options."${pname}" = {
-            enable = mkEnableOption "";
-
-            package = mkOption {
-              type = package;
-              default = self.packages.${pkgs.system}.default;
-              description = "The package to use.";
-            };
-
-            #token = mkOption {
-            #  type = path;
-            #  description = "Path to the file containing the Telegram token for LoadCredential.";
-            #  example = "config.sops.secrets.my-token.path";
-            #};
-          };
-
-          config = mkIf cfg.enable {
-            systemd.user.services.${pname} = {
-              Unit = {
-                Description = "TODO";
-                After = [ "network.target" ];
-              };
-
-              Install = {
-                WantedBy = [ "default.target" ];
-              };
-
-              Service = {
-                Type = "simple";
-                #TODO: \
-                #LoadCredential = "tg_token:${cfg.token}";
-                #ExecStart = ''
-                #  /bin/sh -c '${cfg.package}/bin/tg --token "$(cat %d/tg_token)" server'
-                #'';
-                Restart = "on-failure";
-              };
-            };
-
-            home.packages = [ cfg.package ];
-          };
-        };
-    };
-
+    );
 }

@@ -141,8 +141,8 @@ in
       src = mylib.relativeToRoot ".";
       hooks = {
         #alejandra.enable = true;
-        #nixfmt-rfc-style.enable = true;
-        nixfmt.enable = true;
+        nixfmt-rfc-style.enable = true;
+        #nixfmt.enable = true;
 
         #				# Source code spell checker
         #				typos = {
