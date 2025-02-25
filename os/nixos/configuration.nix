@@ -30,23 +30,29 @@ in
   #  package = inputs.tg.packages.${pkgs.system}.default;
   #};
 
-  systemd.user.services.tg-server = {
-    enable = true;
-    description = "TG Server Service";
-    wantedBy = [ "default.target" ];
-    after = [ "network.target" ];
+  #sops.secrets.telegram_token_main = {
+  #	sopsFile = "${userHome}/s/g/private/sops/creds.json"; #TODO: pass around sopsFile
+  #	type = "json";
+  #};
 
-    serviceConfig = {
-      Type = "simple";
-      LoadCredential = "telegram_bot_key:${userHome}/s/g/private/telegram_bot_key";
-      ExecStart = ''
-        /bin/sh -c '${
-          inputs.tg.packages.${pkgs.system}.default
-        }/bin/tg --token "$(cat %d/telegram_bot_key)" server'
-      '';
-      Restart = "on-failure";
-    };
-  };
+  #TODO: combine with sops-nix or age-nix
+  #systemd.user.services.tg-server = {
+  #  enable = true;
+  #  description = "TG Server Service";
+  #  wantedBy = [ "default.target" ];
+  #  after = [ "network.target" ];
+  #
+  #  serviceConfig = {
+  #    Type = "simple";
+  #	LoadCredential = "tg_token:${config.sops.secrets.telegram_token_main.path}";
+  #    ExecStart = ''
+  #      /bin/sh -c '${
+  #        inputs.tg.packages.${pkgs.system}.default
+  #      }/bin/tg --token "$(cat %d/tg_token)" server'
+  #    '';
+  #    Restart = "on-failure";
+  #  };
+  #};
 
   services = {
     getty.autologinUser = user.username;
@@ -55,13 +61,9 @@ in
       desktopManager.gnome.enable = true;
       #displayManager.gdm.enable = true; #NB: if you enable `xserver`, _must_ enable this too. Otherwise it will use default `lightdm`, which will log you out.
       enable = false;
-      displayManager.startx.enable = true; # TEST
+      displayManager.startx.enable = true;
       #
       autorun = false; # no clue if it does anything if `enable = false`, but might as well keep it
-
-      #layout = "us,ir";
-      #xkbVariant = "latitude";
-      #xkbOptions = "grp:alt_shift_toggle";
 
       xkb = {
         options = "grp:win_space_toggle";

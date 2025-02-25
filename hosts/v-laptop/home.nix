@@ -9,18 +9,43 @@
   user,
   ...
 }:
+let
+  sshConfigPath = "${config.home.homeDirectory}/.ssh";
+in
 {
-  #nix.extraOptions = "include ${config.home.homeDirectory}/s/g/private/sops.conf";
-  #sops = {
-  #	defaultSopsFile = "${config.home.homeDirectory}/s/g/private/sops.yaml";
-  #};
+  nix.extraOptions = "!include ${config.home.homeDirectory}/s/g/private/sops/";
+  sops = {
+    age.sshKeyPaths = [ "${sshConfigPath}/id_ed25519" ];
+    #defaultSopsFile = "${config.home.homeDirectory}/s/g/private/sops/creds.json";
+    defaultSopsFile = "${self}/secrets/users/v/default.yaml";
+    #defaultSopsFormat = "json";
+    validateSopsFiles = false; # required if sops file is outside of nix store
+    gnupg.home = "${config.home.homeDirectory}/.gnupg";
+    secrets.telegram_token_main = {
+      sopsFile = "${config.home.homeDirectory}/s/g/private/sops/creds.json";
+      format = "json";
+    };
+  };
 
-  #defaultSopsFile = /home/v/s/g/private/sops.json;
-  #defaultSopsFormat = "json";
+  #NB: section names are different from what it would be inside `configuration.nix`
+  systemd.user.services.tg-server = {
+    Unit = {
+      Description = "TG Server Service";
+      After = [ "network.target" ];
+    };
 
-  # if needing to move away from neomutt, can switch to more generic `accounts.email.accounts.<name>`
-  programs.neomutt = {
-    enable = true;
+    Install = {
+      WantedBy = [ "default.target" ];
+    };
+
+    Service = {
+      Type = "simple";
+      LoadCredential = "tg_token:${config.sops.secrets.telegram_token_main.path}";
+      ExecStart = ''
+        /bin/sh -c '${inputs.tg.packages.${pkgs.system}.default}/bin/tg --token "$(cat %d/tg_token)" server'
+      '';
+      Restart = "on-failure";
+    };
   };
 
   home = {

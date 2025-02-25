@@ -117,7 +117,7 @@ in
 
             home-manager.sharedModules = [
               inputs.nixcord.homeManagerModules.nixcord
-              #	inputs.sops-nix.homeManagerModules.sops
+              inputs.sops-nix.homeManagerModules.sops
             ];
 
             home-manager.users."${user.username}" = import (

@@ -69,8 +69,7 @@
 
     nixcord.url = "github:kaylorben/nixcord";
 
-    #inputs.sops-nix.url = "github:Mic92/sops-nix";
-    #naersk.url = "https://github.com/nix-community/naersk/master";
+    sops-nix.url = "github:Mic92/sops-nix";
 
     # -----------------------------------------------------------------
     # My packages

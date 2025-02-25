@@ -70,6 +70,9 @@ function mvd
 	case "-c" "--courses"
 		set from "$HOME/Downloads"
 		set to "$HOME/Documents/Courses"
+	case "-t" "--twitter"
+		set from "$HOME/Downloads"
+		set to "$HOME/Documents/TwitterThreads"
 	case "-w" "--wine"
 		set from "$HOME/Downloads"
 		set to "$HOME/.wine/drive_c/users/v/Downloads"
@@ -156,12 +159,14 @@ alias bluetooth="blueman-manager"
 alias wget="aria2c -x16"
 alias disable_fan="echo 0 | sudo tee /sys/class/hwmon/hwmon6/pwm1"
 alias enable_fan="echo 2 | sudo tee /sys/class/hwmon/hwmon6/pwm1"
-alias phone-wifi="sudo nmcli dev wifi connect Valera password 12345678"
-alias phone_wifi="phone-wifi"
 alias cdd="cd .. && cd -" # effectively just reloads `direnv`
 alias monkey="smassh"
 alias bbeats="sudo -Es nice -n -20 /etc/profiles/per-user/v/bin/bbeats" # otherwise any demanding process will produce bad breaks in sound
 alias workspaces="swaymsg -t get_tree" # shortcut for ease of remembrance by Ania and Tima
+
+function phone_wifi
+	sudo nmcli dev wifi connect Valera password 12345678
+end
 
 function sway_rect
 	if string match -qr '^[0-9]+$' $argv[1]

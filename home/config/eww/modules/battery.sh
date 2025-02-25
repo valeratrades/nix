@@ -20,6 +20,9 @@ if [ "$adjusted_percent" -le 2 ] && [ ! -e "$f" ]; then
   echo "$percent" > "$f"
 	notify-send -u critical "Battery low" "$percent% left" -t 999999
 fi
+if [ "$adjusted_percent" -ge 5 ] && [ -e "$f" ]; then
+	rm -f "$f"
+fi
 
 
 echo "{\"content\": \"$adjusted_percent\", \"icon\": \"$icon\"}"

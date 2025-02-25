@@ -18,6 +18,7 @@
       haskellPackages.greenclip
       granted # access cloud
       nerdfix # fixes illegal font codepoints https://discourse.nixos.org/t/nerd-fonts-only-see-half-the-icon-set/27513
+      gcsfuse # mount google cloud storage
 
       # Audio/Video/Image Utilities
       [
