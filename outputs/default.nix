@@ -140,8 +140,9 @@ in
     pre-commit-check = pre-commit-hooks.lib.${system}.run {
       src = mylib.relativeToRoot ".";
       hooks = {
-        #alejandra.enable = true; # formatter
-        nixfmt-rfc-style.enable = true; # formatter
+        #alejandra.enable = true;
+        #nixfmt-rfc-style.enable = true;
+        nixfmt.enable = true;
 
         #				# Source code spell checker
         #				typos = {
