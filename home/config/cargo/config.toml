@@ -13,8 +13,7 @@ opt-level = 2 # Orion says 3 is too much, suggesting 2. Have no evidence to disa
 [profile.dev]
 debug = true
 
-# supposed to be faster than llvm, following Orion on this blindly
-#codegen-backend = "cranelift" # doesn't work on nix rn (2024/12/17)
+#codegen-backend = "cranelift" # faster comp times. But don't setup here - setup on per-project basis, as it has a dep on associated `component`
 
 [profile.dev.package]
 v_utils.opt-level = 1
