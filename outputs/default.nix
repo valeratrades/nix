@@ -141,7 +141,8 @@ in
       src = mylib.relativeToRoot ".";
       hooks = {
         #alejandra.enable = true;
-        nixfmt-rfc-style.enable = true;
+        #nixfmt-rfc-style.enable = true;
+        nixpkgs-fmt.enable = true; # seems to be the most reasonable (it doesn't produce vertical bloat)
         #nixfmt.enable = true;
 
         #				# Source code spell checker
