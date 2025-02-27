@@ -6,7 +6,6 @@
     pre-commit-hooks.url = "github:cachix/git-hooks.nix";
     v-utils.url = "github:valeratrades/.github";
   };
-
   outputs =
     {
       self,
