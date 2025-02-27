@@ -1,9 +1,8 @@
-inputs@{
-  self,
-  nixpkgs,
-  home-manager,
-  pre-commit-hooks,
-  ...
+inputs@{ self
+, nixpkgs
+, home-manager
+, pre-commit-hooks
+, ...
 }:
 let
   inherit (inputs.nixpkgs) lib;
@@ -91,44 +90,46 @@ in
   # );
 
   nixosConfigurations = lib.listToAttrs (
-    map (user: {
-      name = user.desktopHostName;
-      value = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
+    map
+      (user: {
+        name = user.desktopHostName;
+        value = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
 
-        specialArgs = {
-          inherit inputs self;
-          inherit mylib user;
+          specialArgs = {
+            inherit inputs self;
+            inherit mylib user;
+          };
+
+          modules = [
+            (mylib.relativeToRoot "os/nixos/configuration.nix")
+            (mylib.relativeToRoot "machines/modules/default.nix")
+
+            home-manager.nixosModules.home-manager
+            {
+              home-manager.useGlobalPkgs = true;
+              home-manager.useUserPackages = true;
+              home-manager.backupFileExtension = "backup"; # delusional home-manager wants this exact file-extension for when I backup system-level files
+              home-manager.extraSpecialArgs = {
+                inherit inputs self;
+                inherit mylib user;
+              };
+
+              home-manager.sharedModules = [
+                inputs.nixcord.homeManagerModules.nixcord
+                inputs.sops-nix.homeManagerModules.sops
+                inputs.tg.homeManagerModules.tg
+              ];
+
+              home-manager.users."${user.username}" = import (
+                mylib.relativeToRoot "hosts/${user.desktopHostName}/default.nix"
+              );
+              nix.settings.trusted-users = [ user.username ]; # all systems assume single-user configurations
+            }
+          ];
         };
-
-        modules = [
-          (mylib.relativeToRoot "os/nixos/configuration.nix")
-          (mylib.relativeToRoot "machines/modules/default.nix")
-
-          home-manager.nixosModules.home-manager
-          {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.backupFileExtension = "backup"; # delusional home-manager wants this exact file-extension for when I backup system-level files
-            home-manager.extraSpecialArgs = {
-              inherit inputs self;
-              inherit mylib user;
-            };
-
-            home-manager.sharedModules = [
-              inputs.nixcord.homeManagerModules.nixcord
-              inputs.sops-nix.homeManagerModules.sops
-              inputs.tg.homeManagerModules.tg
-            ];
-
-            home-manager.users."${user.username}" = import (
-              mylib.relativeToRoot "hosts/${user.desktopHostName}/default.nix"
-            );
-            nix.settings.trusted-users = [ user.username ]; # all systems assume single-user configurations
-          }
-        ];
-      };
-    }) user-vars
+      })
+      user-vars
   );
 
   checks = forAllSystems (system: {
@@ -136,30 +137,12 @@ in
     #		# eval-tests per system
     #		eval-tests = allSystems.${system}.evalTests == {};
     #
-    #TODO!: figure out how to make it continue after formatting something
     pre-commit-check = pre-commit-hooks.lib.${system}.run {
       src = mylib.relativeToRoot ".";
       hooks = {
-        #alejandra.enable = true;
         #nixfmt-rfc-style.enable = true;
         nixpkgs-fmt.enable = true; # seems to be the most reasonable (it doesn't produce vertical bloat)
-        #nixfmt.enable = true;
 
-        #				# Source code spell checker
-        #				typos = {
-        #					enable = true;
-        #					settings = {
-        #						write = true; # Automatically fix typos
-        #						configPath = "./.typos.toml"; # relative to the flake root
-        #					};
-        #				};
-        #prettier =
-        #	enable = true;
-        #	settings = {
-        #		write = true; # Automatically format files
-        #		configPath = "./.prettierrc.yaml"; # relative to the flake root
-        #	};
-        #};
         #deadnix.enable = true; # detect unused variable bindings in `*.nix`. Also fails if false, so maybe this shouldn't be a hook.
         statix.enable = true; # lints and suggestions for Nix code(auto suggestions)
       };
@@ -182,15 +165,15 @@ in
             gcc
             [
               # Nix-related
-              #alejandra
-              nixfmt-rfc-style
+              #nixfmt-rfc-style
+              nixpkgs-fmt
               deadnix
               statix
             ]
             typos # spell checker
             nodePackages.prettier # code formatter
           ];
-        name = "dots"; # TODO: figure out what this `name` means
+        name = "dots";
         shellHook = ''
           ${self.checks.${system}.pre-commit-check.shellHook}
         '';

@@ -6,15 +6,7 @@
     pre-commit-hooks.url = "github:cachix/git-hooks.nix";
     v-utils.url = "github:valeratrades/.github";
   };
-  outputs =
-    {
-      self,
-      nixpkgs,
-      rust-overlay,
-      flake-utils,
-      pre-commit-hooks,
-      v-utils,
-    }:
+  outputs = { self, nixpkgs, rust-overlay, flake-utils, pre-commit-hooks, v-utils }:
     flake-utils.lib.eachDefaultSystem (
       system:
       let
@@ -32,35 +24,15 @@
         workflowContents = v-utils.ci {
           inherit pkgs;
           lastSupportedVersion = "CURRENT_NIGHTLY_BY_DATE";
-          jobsErrors = [
-            "rust-tests"
-            "rust-miri"
-          ];
-          jobsWarnings = [
-            "rust-doc"
-            "rust-clippy"
-            "rust-machete"
-            "rust-sort"
-            "tokei"
-          ];
+          jobsErrors = [ "rust-tests" "rust-miri" ];
+          jobsWarnings = [ "rust-doc" "rust-clippy" "rust-machete" "rust-sort" "tokei" ];
         };
         readme = v-utils.readme-fw {
           inherit pkgs pname;
           lastSupportedVersion = "nightly-RUSTC_CURRENT_VERSION";
           rootDir = ./.;
-          licenses = [
-            {
-              name = "Blue Oak 1.0.0";
-              outPath = "LICENSE";
-            }
-          ];
-          badges = [
-            "msrv"
-            "crates_io"
-            "docs_rs"
-            "loc"
-            "ci"
-          ];
+          licenses = [{ name = "Blue Oak 1.0.0"; outPath = "LICENSE"; }];
+          badges = [ "msrv" "crates_io" "docs_rs" "loc" "ci" ];
         };
       in
       {
@@ -108,20 +80,10 @@
 
                 mkdir -p ./.cargo
                 cp -f ${(v-utils.files.rust.config { inherit pkgs; })} ./.cargo/config.toml
-                cp -f ${
-                  (v-utils.files.rust.toolchain {
-                    inherit pkgs;
-                    toolchain = "nightly";
-                  })
-                } ./.cargo/rust-toolchain.toml
+                cp -f ${ (v-utils.files.rust.toolchain { inherit pkgs; toolchain = "nightly"; }) } ./.cargo/rust-toolchain.toml
                 cp -f ${(v-utils.files.rust.rustfmt { inherit pkgs; })} ./rustfmt.toml
                 cp -f ${(v-utils.files.rust.deny { inherit pkgs; })} ./deny.toml
-                cp -f ${
-                  (v-utils.files.gitignore {
-                    inherit pkgs;
-                    langs = [ "rs" ];
-                  })
-                } ./.gitignore
+                cp -f ${ (v-utils.files.gitignore { inherit pkgs; langs = [ "rs" ]; }) } ./.gitignore
 
                 cp -f ${readme} ./README.md
 
