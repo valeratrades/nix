@@ -1,8 +1,7 @@
-{
-  self,
-  pkgs,
-  mylib,
-  ...
+{ self
+, pkgs
+, mylib
+, ...
 }:
 {
   imports = mylib.scanPaths ./.;
@@ -102,6 +101,7 @@
         tailwindcss-language-server
         jdk23 # java dev kit (pray for my sanity)
         htmx-lsp
+        watchexec # like cargo-watch, but general and mantained
 
         # editors
         [
@@ -197,7 +197,7 @@
             cargo-binstall # doesn't really work on nixos #? but could it work with fhs-compat layer?
             cargo-machete # detect unused
             cargo-release # automate release (has annoying req of having to commit _before_ this runs instead of my preffered way of pushing on success of release
-            cargo-watch # auto-rerun `build` or `run` command on changes
+            cargo-watch # auto-rerun `build` or `run` command on changes #XXX: archived
             cargo-nextest # better tests
             cargo-limit # brings `lrun` and other `l$command` aliases for cargo, that suppress warnings if any errors are present.
           ]
