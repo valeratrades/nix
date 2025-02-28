@@ -39,18 +39,24 @@
           # run `jq .browser_specific_settings.gecko.id manifest.json` or
           # `jq .applications.gecko.id manifest.json` to get the UUID
         in
-        "*".installation_mode = "blocked"; # blocks all addons except the ones specified below
-      builtins.listToAttrs [
-      (extension "ublock-origin" "uBlock0@raymondhill.net") # best adblocker today (2025/02/28)
-      (extension "dark-reader" "addon@darkreader.org")
-      (extension "tree-style-tab" "treestyletab@piro.sakura.ne.jp")
-      ];
-      };
-
-      preferences = {
-        "browser.newtabpage.activity-stream.showSponsored" = false;
-        "browser.newtabpage.activity-stream.system.showSponsored" = false;
-        "browser.newtabpage.activity-stream.showSponsoredTopSites" = false;
-      };
+        builtins.listToAttrs ([
+          {
+            name = "*";
+            value = {
+              installation_mode = "blocked"; # to my understanding will also uninstall extensions I remove from here, so this is always sole source of truth.
+            };
+          }
+        ] ++ [
+          (extension "ublock-origin" "uBlock0@raymondhill.net") # best adblocker today (2025/02/28)
+          (extension "dark-reader" "addon@darkreader.org")
+          (extension "tree-style-tab" "treestyletab@piro.sakura.ne.jp")
+        ]);
     };
-  }
+
+    preferences = {
+      "browser.newtabpage.activity-stream.showSponsored" = false;
+      "browser.newtabpage.activity-stream.system.showSponsored" = false;
+      "browser.newtabpage.activity-stream.showSponsoredTopSites" = false;
+    };
+  };
+}
