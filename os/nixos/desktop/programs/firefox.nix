@@ -1,11 +1,4 @@
-{ pkgs, ... }:
-let
-  lock-false = {
-    Value = false;
-    Status = "locked";
-  };
-in
-{
+{ pkgs, ... }: {
   environment.systemPackages = [
     pkgs.firefox
   ];
@@ -46,18 +39,18 @@ in
           # run `jq .browser_specific_settings.gecko.id manifest.json` or
           # `jq .applications.gecko.id manifest.json` to get the UUID
         in
-        builtins.listToAttrs [
-          (extension "ublock-origin" "uBlock0@raymondhill.net") # best adblocker today (2025/02/28)
-          (extension "dark-reader" "addon@darkreader.org")
-          (extension "umatrix" "uMatrix@raymondhill.net") # alternative to noscript
-          (extension "tree-style-tab" "treestyletab@piro.sakura.ne.jp")
-        ];
-    };
+        "*".installation_mode = "blocked"; # blocks all addons except the ones specified below
+      builtins.listToAttrs [
+      (extension "ublock-origin" "uBlock0@raymondhill.net") # best adblocker today (2025/02/28)
+      (extension "dark-reader" "addon@darkreader.org")
+      (extension "tree-style-tab" "treestyletab@piro.sakura.ne.jp")
+      ];
+      };
 
-    Preferences = {
-      "browser.newtabpage.activity-stream.showSponsored" = lock-false;
-      "browser.newtabpage.activity-stream.system.showSponsored" = lock-false;
-      "browser.newtabpage.activity-stream.showSponsoredTopSites" = lock-false;
+      preferences = {
+        "browser.newtabpage.activity-stream.showSponsored" = false;
+        "browser.newtabpage.activity-stream.system.showSponsored" = false;
+        "browser.newtabpage.activity-stream.showSponsoredTopSites" = false;
+      };
     };
-  };
-}
+  }
