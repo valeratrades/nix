@@ -48,7 +48,7 @@
           }
         ] ++ [
           (extension "ublock-origin" "uBlock0@raymondhill.net") # best adblocker today (2025/02/28)
-          (extension "dark-reader" "addon@darkreader.org")
+          (extension "darkreader" "addon@darkreader.org")
           (extension "tree-style-tab" "treestyletab@piro.sakura.ne.jp")
         ]);
     };
