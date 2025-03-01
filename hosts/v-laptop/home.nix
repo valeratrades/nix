@@ -1,13 +1,12 @@
 #TODO!: move much of this to shared dirs
-{
-  self,
-  config,
-  lib,
-  pkgs,
-  inputs,
-  mylib,
-  user,
-  ...
+{ self
+, config
+, lib
+, pkgs
+, inputs
+, mylib
+, user
+, ...
 }:
 let
   sshConfigPath = "${config.home.homeDirectory}/.ssh";

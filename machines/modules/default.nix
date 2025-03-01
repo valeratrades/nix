@@ -1,8 +1,7 @@
-{
-  inputs,
-  config,
-  lib,
-  ...
+{ inputs
+, config
+, lib
+, ...
 }:
 {
   security.sudo = builtins.trace "DEBUG: loading `machines` module" {

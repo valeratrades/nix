@@ -7,12 +7,12 @@
   };
 
   outputs =
-    {
-      self,
-      nixpkgs,
-      flake-utils,
-      pre-commit-hooks,
-      v-utils,
+    { self
+    , nixpkgs
+    , flake-utils
+    , pre-commit-hooks
+    , v-utils
+    ,
     }:
     flake-utils.lib.eachDefaultSystem (
       system:

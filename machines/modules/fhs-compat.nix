@@ -1,9 +1,8 @@
 # taken from https://github.com/Mic92/dotfiles
-{
-  pkgs,
-  lib,
-  config,
-  ...
+{ pkgs
+, lib
+, config
+, ...
 }:
 #let
 #  nix-alien-pkgs =

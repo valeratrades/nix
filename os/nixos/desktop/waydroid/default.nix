@@ -1,7 +1,6 @@
-{
-  pkgs,
-  mylib,
-  ...
+{ pkgs
+, mylib
+, ...
 }:
 {
   environment.shellAliases.wui = "waydroid show-full-ui"; # main entry point

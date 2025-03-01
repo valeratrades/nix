@@ -1,13 +1,12 @@
-{
-  lib,
-  inputs,
-  darwin-modules,
-  home-modules ? [ ],
-  myvars,
-  system,
-  genSpecialArgs,
-  specialArgs ? (genSpecialArgs system),
-  ...
+{ lib
+, inputs
+, darwin-modules
+, home-modules ? [ ]
+, myvars
+, system
+, genSpecialArgs
+, specialArgs ? (genSpecialArgs system)
+, ...
 }:
 let
   inherit (inputs) nixpkgs-darwin home-manager nix-darwin;

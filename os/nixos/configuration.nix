@@ -1,15 +1,14 @@
 # Edit this configuration file to define what should be installed on
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
-{
-  self,
-  config,
-  pkgs,
-  lib,
-  user,
-  mylib,
-  inputs,
-  ...
+{ self
+, config
+, pkgs
+, lib
+, user
+, mylib
+, inputs
+, ...
 }:
 #TODO: add build script that cds in $XDG_DATA_HOME/nvim/lazy-telescope-fzf-native.nvim and runs `make`
 let

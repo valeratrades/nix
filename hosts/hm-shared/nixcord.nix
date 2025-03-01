@@ -1,5 +1,4 @@
-{
-  ...
+{ ...
 }:
 let
   vencord_plugins = {

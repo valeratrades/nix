@@ -1,12 +1,11 @@
-{
-  self,
-  config,
-  lib,
-  pkgs,
-  inputs,
-  mylib,
-  user,
-  ...
+{ self
+, config
+, lib
+, pkgs
+, inputs
+, mylib
+, user
+, ...
 }:
 {
   home.packages =

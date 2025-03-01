@@ -1,16 +1,15 @@
 # colmena - Remote Deployment via SSH
-{
-  lib,
-  inputs,
-  nixos-modules,
-  home-modules ? [ ],
-  myvars,
-  system,
-  tags,
-  ssh-user,
-  genSpecialArgs,
-  specialArgs ? (genSpecialArgs system),
-  ...
+{ lib
+, inputs
+, nixos-modules
+, home-modules ? [ ]
+, myvars
+, system
+, tags
+, ssh-user
+, genSpecialArgs
+, specialArgs ? (genSpecialArgs system)
+, ...
 }:
 let
   inherit (inputs) home-manager;

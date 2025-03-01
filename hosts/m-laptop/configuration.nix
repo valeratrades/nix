@@ -1,5 +1,4 @@
-{
-  ...
+{ ...
 }:
 {
   hardware.enableAllFirmware = true; # dbg: trying to see if that could fix the mic

@@ -1,9 +1,8 @@
-{
-  self,
-  pkgs,
-  mylib,
-  userHome,
-  ...
+{ self
+, pkgs
+, mylib
+, userHome
+, ...
 }:
 {
   imports = mylib.scanPaths ./.;

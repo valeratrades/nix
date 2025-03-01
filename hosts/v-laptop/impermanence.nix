@@ -1,11 +1,10 @@
 # copied from [ryan](<https://github.com/ryan4yin/nix-config/blob/main/hosts/idols-ai/impermanence.nix>), check if he has a newer version when you do get around to implementing this
 #TODO: put it online. Currently have defined the outline, but not sure about the logistics as a) /persist takes up 300GB b) how would it interact with my adding tens of gigabytes of build artifacts to my rust projects which are then persisted there.
 #TODO: spilt to /persist and /cache, latter for things that are easy to recover, like `XDG_STATE` or `XDG_SHARE` and backup only the former.
-{
-  impermanence,
-  pkgs,
-  lib,
-  ...
+{ impermanence
+, pkgs
+, lib
+, ...
 }:
 {
   imports = [

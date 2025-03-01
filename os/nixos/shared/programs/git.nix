@@ -1,6 +1,5 @@
-{
-  userHome,
-  ...
+{ userHome
+, ...
 }:
 let
   _ = builtins.trace "TRACE: userHome: ${userHome}"; # dbg

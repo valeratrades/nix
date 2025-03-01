@@ -1,8 +1,7 @@
-{
-  pkgs,
-  lib,
-  lanzaboote,
-  ...
+{ pkgs
+, lib
+, lanzaboote
+, ...
 }:
 {
   # How to enter setup mode - msi motherboard
