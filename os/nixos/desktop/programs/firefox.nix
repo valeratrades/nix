@@ -24,6 +24,7 @@
       OverridePostUpdatePage = "";
       DontCheckDefaultBrowser = true;
 
+      #TODO: figure out how to set settings
       ExtensionSettings =
         let
           extension = shortId: uuid: {
@@ -38,18 +39,31 @@
           # Then, download the XPI by filling it in to the install_url template, unzip it,
           # run `jq .browser_specific_settings.gecko.id manifest.json` or
           # `jq .applications.gecko.id manifest.json` to get the UUID
+          # 
+          # Or potentially even simpler way of finding it: navigate to `about:support`, search for `Add-ons` section, and ids of all installed addons will be listed there.
         in
         builtins.listToAttrs ([
           {
             name = "*";
             value = {
-              installation_mode = "blocked"; # to my understanding will also uninstall extensions I remove from here, so this is always sole source of truth.
+              #dbg
+              #installation_mode = "blocked"; # to my understanding will also uninstall extensions I remove from here, so this is always sole source of truth.
             };
           }
         ] ++ [
           (extension "ublock-origin" "uBlock0@raymondhill.net") # best adblocker today (2025/02/28)
           (extension "darkreader" "addon@darkreader.org")
           (extension "tree-style-tab" "treestyletab@piro.sakura.ne.jp")
+          (extension "vimium-ff" "{d7742d87-e61d-4b78-b8a1-b469842139fa}")
+          (extension "browsec" "browsec@browsec.com")
+          (extension "wappalyzer" "wappalyzer@crunchlabz.com")
+          (extension "socialfocus" "{26b4f076-089c-4c69-8497-44b7e5c9faef}")
+          (extension "ether-metamask" "webextension@metamask.io")
+          (extension "tampermonkey" "firefox@tampermonkey.net")
+          (extension "sponsorblock" "	sponsorBlocker@ajay.app")
+          (extension "istilldontcareaboutcookies" "idcac-pub@guus.ninja")
+          (extension "wakatime" "addons@wakatime.com")
+          (extension "tab-rearranger" "{5968a446-b126-4279-8827-6889a180e3fa}")
         ]);
     };
 
