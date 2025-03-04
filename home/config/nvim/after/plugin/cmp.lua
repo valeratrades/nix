@@ -128,6 +128,18 @@ cmp.setup({
 	},
 	--mapping = cmp.mapping.preset.insert(mappings),
 	mapping = mappings,
+	-- Stolen from prof in its entirety
+	sorting = {
+		priority_weight = 1,
+		comparators = {
+			cmp.config.compare.locality,
+			cmp.config.compare.recently_used,
+			cmp.config.compare.score,
+			cmp.config.compare.offset,
+			cmp.config.compare.order,
+			cmp.config.compare.length,
+		},
+	},
 })
 cmp.setup.cmdline({ '/', '?' }, {
 	mapping = cmp.mapping.preset.cmdline(),

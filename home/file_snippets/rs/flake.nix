@@ -16,7 +16,7 @@
           allowUnfree = true;
         };
 
-        manifest = (pkgs.lib.importTOML ./v_exchanges/Cargo.toml).package;
+        manifest = (pkgs.lib.importTOML ./Cargo.toml).package;
         pname = manifest.name;
         pre-commit-check = pre-commit-hooks.lib.${system}.run (v-utils.files.preCommit { inherit pkgs; });
         stdenv = pkgs.stdenvAdapters.useMoldLinker pkgs.stdenv;
@@ -54,7 +54,6 @@
                 openssl.dev
               ];
               nativeBuildInputs = with pkgs; [ pkg-config ];
-              env.PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
 
               cargoLock.lockFile = ./Cargo.lock;
               src = pkgs.lib.cleanSource ./.;
@@ -81,7 +80,7 @@
                 mkdir -p ./.cargo
                 cp -f ${(v-utils.files.rust.config { inherit pkgs; })} ./.cargo/config.toml
                 cp -f ${(v-utils.files.rust.clippy { inherit pkgs; })} ./.cargo/.clippy.toml
-                cp -f ${ (v-utils.files.rust.toolchain { inherit pkgs; toolchain = "nightly"; }) } ./.cargo/rust-toolchain.toml
+                cp -f ${ (v-utils.files.rust.toolchain { inherit pkgs; }) } ./.cargo/rust-toolchain.toml
                 cp -f ${(v-utils.files.rust.rustfmt { inherit pkgs; })} ./rustfmt.toml
                 cp -f ${(v-utils.files.rust.deny { inherit pkgs; })} ./deny.toml
                 cp -f ${ (v-utils.files.gitignore { inherit pkgs; langs = [ "rs" ]; }) } ./.gitignore
@@ -93,9 +92,6 @@
 
             packages = [
               mold-wrapped
-              openssl
-              pkg-config
-              (rust-bin.fromRustupToolchainFile ./.cargo/rust-toolchain.toml)
             ] ++ pre-commit-check.enabledPackages;
           };
       }
