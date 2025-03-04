@@ -178,19 +178,17 @@ in
           autocorrect = 5;
         };
 
-        core = {
-          excludesfile = "${userHome}.config/git/.gitignore_global"; # converts any large files that were not included into .gitignore into pointers
-        };
-
         pager = {
           difftool = true;
         };
 
-        filter."lfs" = {
-          clean = "git-lfs clean -- %f";
-          smudge = "git-lfs smudge -- %f";
-          process = "git-lfs filter-process";
-          required = true;
+        filter = {
+          "lfs" = {
+            clean = "git-lfs clean -- %f";
+            smudge = "git-lfs smudge -- %f";
+            process = "git-lfs filter-process";
+            required = true;
+          };
         };
 
         fetch = {
@@ -200,7 +198,7 @@ in
         diff = {
           colorMoved = "zebra"; # copy/pastes are colored differently than actual removes/additions
           colormovedws = "allow-indentation-change";
-          external = "/usr/bin/env difft --color auto --background light --display side-by-side";
+          external = "difft --color auto --background light --display side-by-side";
         };
 
         advice = {
@@ -210,25 +208,30 @@ in
 
         alias =
           let
-            diff_ignore = ":!package-lock.json :!yarn.lock :!Cargo.lock :!flake.lock";
+            diff_ignore = ":!package-lock.json :!yarn.lock :!Cargo.lock :!flake.lock -I 'LoC-[0-9]\+-'"; # LoC is for my `Lines of Code` badge in READMEs, because it's updated programmatically
           in
           {
             # NB: git "aliases" must be self-contained. Say `am = commit -am` won't work.
             m = "merge";
             r = "rebase";
+
             d = "diff -- ${diff_ignore}";
             ds = "diff --staged -- ${diff_ignore}";
             s = "diff --stat -- ${diff_ignore}";
             sm = "diff --stat master -- ${diff_ignore}";
+            #diff = "diff -- ${diff_ignore}"; sadly, can't do anything for `Starship` integration, as it's hardcoded to be `git diff`, which I can't alias due to having to use it with differing args in other aliases.
+
             l = "branch --list";
             unstage = "reset HEAD --"; # in case you did `git add .` before running `git diff`
             last = "log -1 HEAD";
+
             a = "add";
             aa = "add -A";
             au = "remote add upstream";
             ao = "remote add origin";
             su = "remote set-url upstream";
             so = "remote set-url origin";
+
             b = "branch";
             c = "checkout";
             cb = "checkout -b";
