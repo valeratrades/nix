@@ -217,9 +217,6 @@ lspconfig.tailwindcss.setup({
 	on_attach = lsp_zero.default_setup,
 	cmd = { 'tailwindcss-language-server', '--stdio' },
 })
---lspconfig.htmx.setup {
---	on_attach = on_attach,
---}
 
 local function codelldb_adapter()
 	local extension_path = vim.env.HOME .. '/.vscode/extensions/vadimcn.vscode-lldb-1.10.0/'
@@ -357,6 +354,7 @@ lspconfig.ruff.setup({
 	--root_dir = lspconfig.util.find_git_ancestor,
 })
 
+-- typst
 lspconfig.tinymist.setup({
 	on_attach = lsp_zero.default_setup,
 	settings = {

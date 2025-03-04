@@ -143,7 +143,6 @@
           unimatrix
           cowsay
           xdotool # most options don't work on wayland though
-
         ]
         [
           # messengers
@@ -151,9 +150,6 @@
           element-desktop # GUI matrix client
           iamb # TUI matrix client (rust)
           zulip
-
-          #vesktop #dbg
-          #discord #dbg
         ]
         [
           # Terminal apps/scripts (actually useful)
@@ -185,6 +181,7 @@
         ]
         rnote
         qbittorrent
+        transmission_4 # BitTorrent cli
         dragon # drag-and-drop for X11; don't know if works on wayland
         neomutt # email client
         himalaya # email client but in rust

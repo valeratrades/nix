@@ -152,26 +152,22 @@ end
 --- To jump back, I do `T
 --TODO!!!!: fix \
 function FindTodo()
-	local regex = vim.fn.shellescape(Cs() .. "TODO")
+	local regex = vim.fn.shellescape(Cs() .. "TOD" .. "O") -- split the word to avoid matching this file
 	local results = vim.fn.systemlist(
 		"rg --line-number -rn -- " .. regex
 		.. " | awk -F: -v OFS=: '{print gsub(/!/, \"&\"), $0}'"
 		.. " | sort -rn"
 	)
 	if vim.v.shell_error > 0 then
-		print("No TODOs found")
+		print("No TOD" .. "Os found")
 		return
 	end
-	--TODO!!: rust todos
-	--local rust_todos_pattern = 'todo!()'
-	--local rust_todos = vim.fn.systemlist(
-	--	"rg --line-number -rn -- " .. rust_todos_pattern
-	--	.. " | awk -F: -v OFS=: '{print gsub(/!/, \"&\"), $0}'"
-	--	.. " | sort -rn"
-	--)
-	--for i, str in ipairs(rust_todos) do
-	--	table.insert(results, str .. rust_todos_pattern)
-	--end
+	-- default importance is 3 bangs
+	--DO: MOVE comments are parsed as default-importance todos
+	--DO: `todo!()` in rust are parsed as default-importance todos
+	--TODO: switch to parsing todos everywhere, not just after comment strings. false hits are acceptable.
+	--TODO: properly parse `\`, `/` and `.` after todo comments // which indicate number of lines to be added to Telescope view
+
 	local qflist = vim.fn.map(results, function(_, x)
 		local parts = split(x, ":")
 		return {
