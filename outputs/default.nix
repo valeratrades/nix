@@ -119,6 +119,7 @@ in
                 inputs.nixcord.homeManagerModules.nixcord
                 inputs.sops-nix.homeManagerModules.sops
                 inputs.tg.homeManagerModules.tg
+                inputs.auto_redshift.homeManagerModules.auto_redshift
               ];
 
               home-manager.users."${user.username}" = import (

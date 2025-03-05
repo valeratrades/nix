@@ -33,6 +33,7 @@ in
     defaultUsername = "valeratrades";
     defaultUserEmail = "v79166789533@gmail.com";
     masterUserEmail = "valeratrades@gmail.com";
+    wakeTime = "07:00"; # matches system time, - mine is in utc
   };
   maria = {
     inherit sshAuthorizedKeys;
@@ -42,6 +43,7 @@ in
     defaultUsername = "sakhmasha";
     defaultUserEmail = "m79160164445@gmail.com";
     masterUserEmail = "m79160164445@gmail.com";
+    wakeTime = "06:00";
   };
   timur = {
     inherit sshAuthorizedKeys;
@@ -51,6 +53,7 @@ in
     defaultUsername = "codertima";
     defaultUserEmail = "codertima@gmail.com";
     masterUserEmail = "codertima@gmail.com";
+    wakeTime = "05:00";
   };
   #
 

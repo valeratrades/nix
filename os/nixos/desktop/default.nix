@@ -51,7 +51,6 @@
         bemenu
         blueman
         rust-motd
-        eww
         grim
         slurp
         mako

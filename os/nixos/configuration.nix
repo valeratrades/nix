@@ -208,7 +208,7 @@ in
 
         alias =
           let
-            diff_ignore = ":!package-lock.json :!yarn.lock :!Cargo.lock :!flake.lock -I 'LoC-[0-9]\+-'"; # LoC is for my `Lines of Code` badge in READMEs, because it's updated programmatically
+            diff_ignore = ":!package-lock.json :!yarn.lock :!Cargo.lock :!flake.lock"; #TODO: get this appendage to work "-I 'LoC-[0-9]\+-'"; (currently prevents showing a **bunch** of diffs. # LoC is for my `Lines of Code` badge in READMEs, because it's updated programmatically
           in
           {
             # NB: git "aliases" must be self-contained. Say `am = commit -am` won't work.
@@ -567,7 +567,7 @@ in
         MODULAR_HOME = "${modularHome}";
         #PATH = "${pkgs.lib.makeBinPath [ ]}:${userHome}/s/evdev/:${userHome}/.cargo/bin/:${userHome}/go/bin/:/usr/lib/rustup/bin/:${userHome}/.local/bin/:${modularHome}/pkg/packages.modular.com_mojo/bin:${userHome}/.local/share/flatpak:/var/lib/flatpak";
         EDITOR = "nvim";
-        WAKETIME = "7:00";
+        WAKETIME = "${user.wakeTime}";
         DAY_SECTION_BORDERS = "2.5:10.5:16";
         DEFAULT_BROWSER = "${pkgs.google-chrome}/bin/google-chrome-stable";
         PAGER = "less";

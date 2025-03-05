@@ -82,19 +82,26 @@
   };
 
   #REF: example of working service setup here: https://github.com/nix-community/home-manager/blob/master/modules/services/polybar.nix
-  #systemd.user.services.eww-widgets = {
-  #  Unit = {
-  #    Description = "Start Eww Widgets";
-  #    After = [ "default.target" ];
-  #  };
-  #  Install = {
-  #    WantedBy = [ "default.target" ];
-  #  };
-  #  Service = {
-  #    ExecStart = "${pkgs.dash}/bin/dash -c 'cd ~/nix/home/config/eww; eww open bar && eww open btc_line_lower && eww open btc_line_upper && eww open todo_blocker'";
-  #    Restart = "on-failure";
-  #  };
-  #};
+
+  systemd.user.services.eww-widgets = {
+    Unit = {
+      Description = "Start Eww Widgets";
+      After = [ "graphical-session.target" ];
+    };
+    Install = {
+      WantedBy = [ "default.target" ];
+    };
+    Service =
+      let
+        eww = "${pkgs.eww}/bin/eww";
+      in
+      {
+        ExecStart = "${eww} open bar && ${eww} open btc_line_lower && ${eww} open btc_line_upper && ${eww} open todo_blocker";
+        Restart = "on-failure";
+      };
+  };
+
+  #TODO: \
   #systemd.user.services.wlr-gamma = {
   #  Unit = {
   #    Description = "wlroots Brightness Control";
@@ -108,6 +115,11 @@
   #    ExecStart = "wlr-gamma-service";
   #  };
   #};
+
+  auto_redshift = {
+    enable = true;
+    wakeTime = user.wakeTime;
+  };
 
   home = {
     sessionPath = [
@@ -179,8 +191,9 @@
           prs # some password manager in rust
           passh # non-interactive SSH auth
         ]
-        rnote
-        qbittorrent
+        eww # info bar
+        rnote # graphical notes
+        qbittorrent # BitTorren gui
         transmission_4 # BitTorrent cli
         dragon # drag-and-drop for X11; don't know if works on wayland
         neomutt # email client

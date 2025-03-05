@@ -75,6 +75,7 @@ function can
 	shared_before $argv[1] $lang || return 1
 
 	sed -i '$d' Cargo.toml
+	sed -i '1i cargo-features = ["codegen-backend"]' Cargo.toml
 	cat "$FILE_SNIPPETS_PATH/$lang/default_dependencies.toml" >> Cargo.toml
 
 	#HACK: code duplication. But instead of rewriting now, I'd rather do it properly during riir
