@@ -15,7 +15,7 @@
       if user.userFullName == "Valera" then
         ./config_symlinks.nix
       else
-        (import ./config_writes.nix { inherit self user; })
+        (import ./config_writes.nix { inherit self pkgs user; })
     )
   ];
 

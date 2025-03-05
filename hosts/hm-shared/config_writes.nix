@@ -1,6 +1,6 @@
 # this is the way I have configs written for the forking hosts (more reproducible than what I have myself).
 # this is likely to contain configs for some things that are not actually shared, but text bloat is fine.
-{ self, user }:
+{ self, pkgs, user }:
 {
   home.file = {
     ".config/nvim" = {
@@ -31,7 +31,16 @@
     ".config/sway/config" =
       if user.userFullName == "Timur" then
         {
-          source = builtins.trace "DEBUG: overwriting sway config with timur's" "${self}/home/config/sway/config_timur";
+          source =
+            let
+              config = builtins.readFile "${self}/home/config/sway/config";
+              ansi = builtins.replaceStrings
+                [ "xkb_variant \"iso,,\"" ]
+                [ "xkb_variant \"ansi,,\"" ]
+                config;
+            in
+            pkgs.writeText "config_timur" ansi;
+          #builtins.trace "DEBUG: overwriting sway config with timur's" "${self}/home/config/sway/config_timur"; #TODO!!!!: gen timur's config procedurally by just `sed`ing xkb_variant line
         }
       else
         {

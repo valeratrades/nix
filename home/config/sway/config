@@ -131,10 +131,6 @@ bindsym $mod+Ctrl+F6 exec gdbus call -e -d net.zoidplex.wlr_gamma_service -o /ne
 bindsym $mod+Ctrl+F7 exec gdbus call -e -d net.zoidplex.wlr_gamma_service -o /net/zoidplex/wlr_gamma_service -m net.zoidplex.wlr_gamma_service.brightness.increase 0.0275
 # night brightness
 bindsym $mod+Shift+Ctrl+F6 exec gdbus call -e -d net.zoidplex.wlr_gamma_service -o /net/zoidplex/wlr_gamma_service -m net.zoidplex.wlr_gamma_service.brightness.set 0.15
-
-#TODO: move to its own systmd service
-exec_always sudo killall auto_redshift
-exec_always sleep 2 && auto_redshift start 7:00
 #
 
 # Workspaces {{{
