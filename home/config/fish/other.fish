@@ -293,7 +293,14 @@ alias ndevelop="nix develop --command fish"
 #alias nupdate="nix flake lock --update-input nixpkgs --update-input"
 alias nup="nix flake update"
 alias up="$NIXOS_CONFIG/home/scripts/maintenance/main.sh"
-alias nsync="git -C $NIXOS_CONFIG reset --hard && git -C $NIXOS_CONFIG pull && sudo nixos-rebuild switch --flake $NIXOS_CONFIG#$(hostname) --impure --fast"
+
+function nsync
+	if [ (whoami) == "v" ]
+		echo "uhm?"
+		return 1
+	end
+	git -C $NIXOS_CONFIG reset --hard && git -C $NIXOS_CONFIG pull && sudo nixos-rebuild switch --flake $NIXOS_CONFIG#$(hostname) --impure --fast
+end
 
 #TODO: add some git add -A on $NIXOS_CONFIG and maybe make this into the main way of running this
 function nb
