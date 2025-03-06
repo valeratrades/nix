@@ -90,8 +90,11 @@
                 alias qr="./target/debug/${pname}"
               '';
 
-            packages = [
+            buildInputs = [
               mold-wrapped
+              openssl
+              pkg-config
+              (rust-bin.fromRustupToolchainFile ./.cargo/rust-toolchain.toml)
             ] ++ pre-commit-check.enabledPackages;
           };
       }
