@@ -49,7 +49,6 @@ exec "sh -c 'ps -u $USER -o pid= > /tmp/sway_existing_pids.txt'"
 exec mako
 #exec "sh -c 'tg server' > /tmp/tg_server_log.txt 2>&1 &" # for some damn reason doesn't work
 exec libinput-gestures
-exec wlr-gamma-service
 exec "sh -c 'sudo chmod 766 /var/run/keyd.socket'"
 exec keyd-application-mapper -d
 exec bluetoothctl
@@ -59,8 +58,6 @@ exec wireplumber
 exec greenclip daemon
 bindsym $mod+g exec rofi -modi "clipboard:greenclip print" -show clipboard
 bindsym $mod+Shift+g exec greenclip clear
-# in `pkill` query the name is concatenated to avoid hitting 15 char limit it has
-bindsym $mod+Ctrl+w exec "pkill wlr-gamma-serv; wlr-gamma-service"
 #
 
 #if (user == "v") {
@@ -233,8 +230,8 @@ bindsym $mod+Mod1+t exec ~/s/help_scripts/theme_toggle.sh
 # Ctrl suffix because it will often be used after `Ctrl+l` in chrome.
 bindsym $mod+Ctrl+g exec tg $(greenclip print | awk 'NR==1 {print}')
 
-set $refresh_eww "eww kill; eww open bar; eww open btc_line_upper; eww open btc_line_lower"
-exec_always $refresh_eww
+#set $refresh_eww "eww kill; eww open bar; eww open btc_line_upper; eww open btc_line_lower" #TEST: trying to do this with a service
+#exec_always $refresh_eww
 bindsym $mod+e exec ~/.config/sway/eww_zoom_toggle.sh
 bindsym $mod+Shift+e exec ~/.config/sway/eww_visibility_toggle.sh
 bindsym $mod+Ctrl+e exec $refresh_eww

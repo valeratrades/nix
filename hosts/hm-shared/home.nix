@@ -101,20 +101,19 @@
       };
   };
 
-  #TODO: \
-  #systemd.user.services.wlr-gamma = {
-  #  Unit = {
-  #    Description = "wlroots Brightness Control";
-  #    PartOf = "graphical-session.target";
-  #  };
-  #  Install = {
-  #    WantedBy = [ "graphical-session.target" ];
-  #  };
-  #  Service = {
-  #    Type = "simple";
-  #    ExecStart = "wlr-gamma-service";
-  #  };
-  #};
+  systemd.user.services.wlr-gamma = {
+    Unit = {
+      Description = "wlroots Brightness Control";
+      PartOf = "graphical-session.target";
+    };
+    Install = {
+      WantedBy = [ "graphical-session.target" ];
+    };
+    Service = {
+      Type = "simple";
+      ExecStart = "${self.packages.${pkgs.system}.wlr-gamma-service}/bin/wlr-gamma-service";
+    };
+  };
 
   auto_redshift = {
     enable = true;

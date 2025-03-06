@@ -91,4 +91,4 @@ y = 0
 
 [general]
 live_config_reload = true
-import = ["/home/v/.config/alacritty/themes/github_light_high_contrast.toml"]
+import = ["/home/v/.config/alacritty/themes/github_dark.toml"]
