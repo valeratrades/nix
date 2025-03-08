@@ -42,7 +42,7 @@ function M.ShowMarkdownPopup(text)
 	vim.api.nvim_set_option_value('cursorline', true, { win = win })
 
 	-- Set the buffer filetype to Markdown to allow for syntax highlighting
-	vim.api.nvim_set_option_value('filetype', 'markdown', { scope = 'local', buf = buf })
+	vim.api.nvim_set_option_value('filetype', 'markdown', { scope = 'local' }) --Q: may be inferred: ```, buf = buf })```
 
 	-- Get the actual width and height of the window
 	local actual_width = vim.api.nvim_win_get_width(win)

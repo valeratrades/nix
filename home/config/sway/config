@@ -53,6 +53,8 @@ exec "sh -c 'sudo chmod 766 /var/run/keyd.socket'"
 exec keyd-application-mapper -d
 exec bluetoothctl
 exec pipewire
+# can't start with a service, because it starts its own daemon (not continuous)
+exec eww open bar && eww open btc_line_lower && eww open btc_line_upper && eww open todo_blocker
 exec pipewire-pulse
 exec wireplumber
 exec greenclip daemon

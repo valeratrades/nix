@@ -1,5 +1,7 @@
 -- Currently is specifically made for [rust](<https://github.com/rust-lang/rust>) and [tracing](<https://crates.io/crates/tracing>).
 local utils = require("valera.utils")
+local wk = require("which-key")
+
 
 --- Parses a log line, assuming one of the following formats:
 --- - `[indent] in [destination] with [contents]`
@@ -31,8 +33,6 @@ local function copyDestination()
 	vim.fn.setreg("+", destination)
 end
 
-vim.keymap.set("n", "<Space>ty", function() copyDestination() end, { desc = "+y log-line's destination" })
-
 ---@param contents string
 local function popupLogContents(contents)
 	local handle = io.popen("command -v prettify_log")
@@ -44,7 +44,15 @@ local function popupLogContents(contents)
 		return
 	end
 
-	local prettify_cmd = "cat <<EOF | prettify_log - --maybe-colon-nested\n" .. contents .. "\nEOF"
+	--local prettify_cmd = "cat <<EOF | prettify_log - --maybe-colon-nested\n" .. contents .. "\nEOF"
+
+	--local escaped_contents = vim.fn.shellescape(contents)
+	--local prettify_cmd = "sh -c 'echo " .. escaped_contents .. " | prettify_log - --maybe-colon-nested'"
+
+	--Q: not sure which one of the options is better. Frist one worked originally but `fish` breaks it. Others are questionable.
+	local escaped_contents = contents:gsub("'", "'\\''")
+	local prettify_cmd = "sh -c 'cat <<EOF | prettify_log - --maybe-colon-nested\n" .. escaped_contents .. "\nEOF'"
+
 	local prettified = vim.fn.system(prettify_cmd)
 	local as_rust_block = "```rs\n" .. prettified .. "```"
 	utils.ShowMarkdownPopup(as_rust_block)
@@ -60,12 +68,24 @@ local function popupExpandedLog()
 	popupLogContents(contents)
 end
 
-vim.keymap.set("n", "<Space>tp", function() popupExpandedLog() end, { desc = "Popup with prettified log line" })
-
 
 local function popupSelectedLog()
 	local selection = utils.GetVisualSelection()
 	popupLogContents(selection)
 end
 
-vim.keymap.set("v", "<Space>tp", function() popupSelectedLog() end, { desc = "Popup selection as prettyfied log" })
+
+-- Named "Tracing" because 'l' for "log" is already taken by lsp
+wk.register({
+	t = {
+		name = "Tracing",
+		y = { function() copyDestination() end, "+y log-line's destination" },
+		p = { function() popupExpandedLog() end, "Popup with prettified log line" },
+	}
+}, { prefix = "<Space>" })
+wk.register({
+	t = {
+		name = "Tracing",
+		p = { function() popupSelectedLog() end, "Popup selection as prettyfied log" },
+	}
+}, { prefix = "<Space>", mode = "v" })
