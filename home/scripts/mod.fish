@@ -7,12 +7,10 @@ source $fish_scripts_pdir/document_watch.fish
 function beep
 	$fish_scripts_pdir/beep.rs $fish_scripts_pdir/assets/sound/Notification.mp3 $argv
 end
-function timer
-	$fish_scripts_pdir/timer.rs $argv
-end
+alias timer "$fish_scripts_pdir/timer.rs"
+alias theme="$fish_scripts_pdir/theme_toggle.rs"
 
 alias q="py $fish_scripts_pdir/ask_gpt.py -s $argv"
 alias f="py $fish_scripts_pdir/ask_gpt.py -f $argv"
 
-alias theme_toggle="$fish_scripts_pdir/theme_toggle.sh"
 alias choose_port="$fish_scripts_pdir/choose_port.sh"

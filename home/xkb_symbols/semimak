@@ -41,7 +41,7 @@ xkb_symbols "basic" {
 	key <AC11> {[ semicolon, colon,    adiaeresis, Adiaeresis]}; // ä, Ä
 
 	key <RALT> { type="FOUR_LEVEL", [ BackSpace ] };
-	//key <FK09> { [ Multi_key ] };  // Compose key //BUG: but doesn't seem to do anything
+	key <FK09> { [ Multi_key ] };  // Compose key //BUG: but doesn't seem to do anything
 
 	// Alt Gr (ISO_Level3_Shift) setup
 	key <FK05> { type="ONE_LEVEL", [ ISO_Level3_Shift ] }; 
