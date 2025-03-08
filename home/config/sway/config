@@ -73,7 +73,7 @@ input * {
 	##TODO: somehow make conditional on the user, keeping two config trees is too much
 	xkb_variant "iso,,"
 	##ru should be `iso`, but it doesn't work for some reason.
-	xkb_options "grp:win_space_toggle"
+	xkb_options "grp:win_space_toggle,compose:f9"
 
 	tap enabled
 
@@ -210,14 +210,9 @@ bindsym $mod+Shift+z sticky toggle
 floating_modifier $mod normal
 #,}}}
 
-bindsym $mod+j reload
-# the first command gracefully exits chrome, which is apparently very sensitive.
-bindsym $mod+Shift+q exec "eww update sway_mode=full_upgrade_before_shutdown && ${HOME}/s/help_scripts/maintenance/main.sh && sleep 1 && pkill -TERM -x chrome; sudo shutdown -h now"
-
 #bindsym $mod+l exec $lock
 bindsym $mod+Escape exec makoctl dismiss --all
 bindsym $mod+End exec $wifi
-
 
 bindsym $mod+m exec $menu
 bindsym $mod+o split vertical
