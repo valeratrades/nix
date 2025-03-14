@@ -297,7 +297,6 @@ in
       xdg-desktop-portal-gtk
       xdg-desktop-portal-gnome
       xdg-desktop-portal-shana
-      dolphin # dbg: trying to figure out switching default file-chooser. First step is one that definitely works, Second is switching to my nvim wrapper
       lxqt.xdg-desktop-portal-lxqt
     ];
     wlr.enable = true;
@@ -503,12 +502,16 @@ in
           texlivePackages.fontawesome5
         ]
         ubuntu_font_family
-      ]; # ++ (inputs.nixpkgs-2405.legacyPackages.${pkgs.system}.nerdfonts);
+      ];
     fontconfig.enable = true;
   };
 
   # Allow unfree packages
-  nixpkgs.config.allowUnfree = true;
+  nixpkgs.config = {
+    allowUnfree = true;
+    permittedInsecurePackages = [ "electron-32.3.3" ];
+    allowInsecurePredicate = pkg: true;
+  };
 
   nix.settings.download-buffer-size = "50G";
 

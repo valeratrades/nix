@@ -216,3 +216,9 @@ function crt
 	cargo test --manifest-path $temp_dir/Cargo.toml &&
 	rm -rf $temp_dir
 end
+
+function fucking_sccache
+	sccache -z 
+	sccache --stop-server
+	sccache --start-server
+end

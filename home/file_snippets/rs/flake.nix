@@ -90,7 +90,7 @@
                 alias qr="./target/debug/${pname}"
               '';
 
-            buildInputs = [
+            packages = [
               mold-wrapped
               openssl
               pkg-config

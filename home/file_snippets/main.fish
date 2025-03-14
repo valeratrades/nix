@@ -74,6 +74,14 @@ function can
 	set lang "rs"
 	shared_before $argv[1] $lang || return 1
 
+	#HACK: this should be gen-ed by the flake, but oxalica is sourced from that same file (which is evaled before it creates this), so currently this is necessary for initial bootstrap
+	mkdir -p ./.cargo
+	echo '''
+[toolchain]
+channel = "nightly"
+components = ["rustc-codegen-cranelift-preview"]''' > ./.cargo/rust-toolchain.toml
+
+
 	sed -i '$d' Cargo.toml
 	sed -i '1i cargo-features = ["codegen-backend"]' Cargo.toml
 	cat "$FILE_SNIPPETS_PATH/$lang/default_dependencies.toml" >> Cargo.toml

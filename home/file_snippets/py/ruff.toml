@@ -1,0 +1,27 @@
+#NB: NOT a SOURCE, here only for preliminary formatting. Is NOT guaranteed to match the formatting configuration in the generated project.
+
+indent-width = 2
+line-length = 210
+src = ["src", "test"]
+[format]
+docstring-code-format = true
+indent-style = "tab"
+quote-style = "double"
+skip-magic-trailing-comma = false
+
+[lint]
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+fixable = ["ALL"]
+ignore = ["E262", "E713", "F403", "E401", "E714", "E722", "E703", "E741", "F405", "E501", "D401", "PT011", "SIM102", "SIM108", "RUF005", "D105", "D100", "D104", "TD002", "TD003", "TRY003", "D206", "W191"]
+task-tags = ["TODO", "FIXME", "Q", "BUG", "NB"]
+unfixable = []
+
+[lint.isort]
+combine-as-imports = true
+required-imports = ["from __future__ import annotations"]
+
+[lint.per-file-ignores]
+"tests/**/*.py" = ["D100", "D103", "B018", "FBT001"]
+
+[lint.pydocstyle]
+convention = "numpy"

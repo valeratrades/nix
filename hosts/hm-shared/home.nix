@@ -194,7 +194,7 @@
         rnote # graphical notes
         qbittorrent # BitTorren gui
         transmission_4 # BitTorrent cli
-        dragon # drag-and-drop for X11; don't know if works on wayland
+        xdragon # drag-and-drop for X11 only
         neomutt # email client
         himalaya # email client but in rust
         fswebcam # instant webcam photo

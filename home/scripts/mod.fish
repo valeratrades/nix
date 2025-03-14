@@ -10,7 +10,8 @@ end
 alias timer "$fish_scripts_pdir/timer.rs"
 alias theme="$fish_scripts_pdir/theme_toggle.rs"
 
-alias q="py $fish_scripts_pdir/ask_gpt.py -s $argv"
-alias f="py $fish_scripts_pdir/ask_gpt.py -f $argv"
+# should switch to `ask_llm` cli.
+#alias q="py $fish_scripts_pdir/ask_gpt.py -s $argv"
+#alias f="py $fish_scripts_pdir/ask_gpt.py -f $argv"
 
 alias choose_port="$fish_scripts_pdir/choose_port.sh"

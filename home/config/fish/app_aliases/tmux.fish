@@ -75,9 +75,8 @@ function tn
 	set -l session_name $session_name_or_err
 
 	#TODO!: make it use `script` to preserve coloring
-	tmux send-keys -t "$session_name:build.2" 'echo """$(gil)\n$(gifm)\n$(gifa)""" | less' Enter # all issues
-	#tmux send-keys -t "$session_name:build.2" 'gifm' Enter # issues of current milestone
-	#tmux send-keys -t "$session_name:build.2" 'gifa' Enter # issues of current milestone that I am working on
+	#tmux send-keys -t "$session_name:build.2" 'echo """$(gil)\n$(gifm)\n$(gifa)""" | less' Enter # all issues
+	tmux send-keys -t "$session_name:build.2" "nvim \"$XDG_STATE_HOME/{assume_project_name}/.log\"" Enter
 
 	tmux attach-session -t "$session_name:source.0"
 end
@@ -97,7 +96,7 @@ function tn2
 	end
 
 	tmux send-keys -t "$session_name:build.0" 'c t' Enter
-	tmux send-keys -t "$session_name:build.1" "cd ~/.{assume_project_name} && nvim .log" Enter
+	tmux send-keys -t "$session_name:build.1" "nvim \"$XDG_STATE_HOME/{assume_project_name}/.log\"" Enter
 	tmux send-keys -t "$session_name:build.2" 'cw' Enter
 
 	tmux new-window -t "$session_name" -n "window"

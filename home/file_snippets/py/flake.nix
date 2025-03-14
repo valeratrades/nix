@@ -48,15 +48,12 @@
             "ci"
           ];
         };
+        pythonPkgs = pkgs.python3.withPackages (ps: with ps; [
+          icecream
+        ]);
       in
       {
-        packages.default =
-          let
-            pythonEnv = pkgs.python3.withPackages (ps: [ ps.icecream ]);
-          in
-          pkgs.writeShellScriptBin "run-python" ''
-            							${pythonEnv}/bin/python -m src "$@"
-            							'';
+        packages.default = pkgs.writeShellScriptBin "run-python" ''${pythonPkgs}/bin/python -m src "$@"'';
 
         devShells.default =
           with pkgs;
@@ -88,6 +85,7 @@
 
             packages = [
               mold-wrapped
+              pythonPkgs
             ] ++ pre-commit-check.enabledPackages;
           };
       }

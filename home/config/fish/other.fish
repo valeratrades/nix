@@ -163,6 +163,8 @@ alias cdd="cd .. && cd -" # effectively just reloads `direnv`
 alias monkey="smassh"
 alias bbeats="sudo -Es nice -n -20 /etc/profiles/per-user/v/bin/bbeats" # otherwise any demanding process will produce bad breaks in sound
 alias workspaces="swaymsg -t get_tree" # shortcut for ease of remembrance by Ania and Tima
+alias q "ask_llm -f"
+
 
 function phone_wifi
 	sudo nmcli dev wifi connect Valera password 12345678
@@ -389,11 +391,10 @@ end
 #
 
 function wipe
-	# wipe secondary browsers
+	#! wipe secondary browsers
 	pkill firefox
 	rm -rf ~/.mozilla
 
-	# currently using it for site testing, but may bring back to wipe in the future.
-	#pkill chromium
-	#rf ~/.config/chromium
+	pkill chromium
+	rf ~/.config/chromium
 end

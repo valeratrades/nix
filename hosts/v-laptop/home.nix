@@ -55,6 +55,7 @@ in
         inputs.distributions.packages.${pkgs.system}.default # ? shared?
         inputs.rm_engine.packages.${pkgs.system}.default
         inputs.bad_apple_rs.packages.${pkgs.system}.default
+        inputs.ask_llm.packages.${pkgs.system}.default
 
         #inputs.aggr_orderbook.packages.${pkgs.system}.default
         #inputs.orderbook_3d.packages.${pkgs.system}.default

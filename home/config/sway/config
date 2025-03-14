@@ -73,7 +73,8 @@ input * {
 	##TODO: somehow make conditional on the user, keeping two config trees is too much
 	xkb_variant "iso,,"
 	##ru should be `iso`, but it doesn't work for some reason.
-	xkb_options "grp:win_space_toggle,compose:f9"
+	xkb_options "grp:win_space_toggle"
+	#,compose:f9" //TEST: could be appended to xkb_options here. But I'm not sure whether it could be simply defined in xkb definition itself
 
 	tap enabled
 
@@ -321,6 +322,12 @@ bindsym $mod+l focus prev
 bindsym $mod+h focus next
 bindsym $mod+u move left
 bindsym $mod+y move right
+
+focus_wrapping no
+bindsym $mod+$left focus left
+bindsym $mod+$down focus down
+bindsym $mod+$up focus up
+bindsym $mod+$right focus right
 mode "move_or_resize" {
 	bindsym $left resize grow width 6ppt
 	bindsym $down resize shrink height 6ppt

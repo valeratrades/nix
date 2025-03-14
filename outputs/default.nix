@@ -9,6 +9,12 @@ let
   #TODO!!: integrate ryan's myLib and myVars into my setup
   mylib = import ../lib { inherit lib; };
   myvars = import ../vars { inherit lib; };
+  common_pkgs_config = {
+    allowUnfree = true;
+    allowBroken = true;
+    permittedInsecurePackages = [ "electron-32.3.3" ];
+    allowInsecurePredicate = pkg: true;
+  };
 
   # Add my custom lib, vars, nixpkgs instance, and all the inputs to specialArgs,
   # so that I can use them in all my nixos/home-manager/darwin modules.
@@ -23,12 +29,12 @@ let
       pkgs-unstable = import inputs.nixpkgs-unstable {
         inherit system; # refer the `system` parameter form outer scope recursively
         # To use chrome, we need to allow the installation of non-free software
-        config.allowUnfree = true;
+        config = common_pkgs_config;
       };
       pkgs-stable = import inputs.nixpkgs-stable {
         inherit system;
         # To use chrome, we need to allow the installation of non-free software
-        config.allowUnfree = true;
+        config = common_pkgs_config;
       };
     };
   args = {
@@ -74,6 +80,12 @@ in
   # NixOS Hosts
   #nixosConfigurations =
   #  lib.attrsets.mergeAttrsList (map (it: it.nixosConfigurations or {}) nixosSystemValues);
+
+  nixpkgs.config = {
+    allowUnfree = true;
+    permittedInsecurePackages = [ "electron-32.3.3" ];
+    allowInsecurePredicate = pkg: true;
+  };
 
   packages.x86_64-linux.wlr-gamma-service =
     inputs.nixpkgs-2405.legacyPackages.x86_64-linux.callPackage
