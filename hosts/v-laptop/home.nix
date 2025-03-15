@@ -24,6 +24,18 @@ in
     secrets.telegram_token_test = {
       mode = "0400";
     };
+    secrets.mail_main_addr = {
+      mode = "0400";
+    };
+    secrets.mail_main_pass = {
+      mode = "0400";
+    };
+    secrets.mail_spam_addr = {
+      mode = "0400";
+    };
+    secrets.mail_spam_pass = {
+      mode = "0400";
+    };
   };
 
   tg = {
@@ -60,5 +72,30 @@ in
         #inputs.aggr_orderbook.packages.${pkgs.system}.default
         #inputs.orderbook_3d.packages.${pkgs.system}.default
       ];
+    #TODO: himalaya. Problems: (gmail requires oauth2, proton requires redirecting to it (also struggling with it))
+    file = {
+      ".config/himalaya/config.toml".source = (pkgs.formats.toml { }).generate "" {
+        accounts.master = {
+          default = true;
+          email = "valeratrades@gmail.com";
+          display-name = "valeratrades";
+          downloads-dir = "/home/v/Downloads";
+          backend.type = "imap";
+          backend.host = "imap.gmail.com";
+          backend.port = 993;
+          backend.login = "valeratrades@gmail.com";
+          backend.encryption.type = "tls";
+          backend.auth.type = "password";
+          backend.auth.command = ''cat ${config.sops.secrets.mail_main_pass.path}'';
+          message.send.backend.type = "smtp";
+          message.send.backend.host = "smtp.gmail.com";
+          message.send.backend.port = 465;
+          message.send.backend.login = "valeratrades@gmail.com";
+          message.send.backend.encryption.type = "tls";
+          message.send.backend.auth.type = "password";
+          message.send.backend.auth.command = ''cat ${config.sops.secrets.mail_main_pass.path}'';
+        };
+      };
+    };
   };
 }

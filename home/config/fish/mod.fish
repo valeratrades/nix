@@ -25,6 +25,9 @@ end
 if command -v todo &>/dev/null
     todo init fish | source
 end
+if command -v himalaya &>/dev/null
+		himalaya completion fish | source
+end
 if command -v shuttle &>/dev/null
 shuttle generate shell fish | source
 shuttle generate manpage > "$XDG_DATA_HOME/man/man1/shuttle.1"

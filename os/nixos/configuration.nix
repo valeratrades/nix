@@ -780,7 +780,8 @@ in
         21 # FTP (legacy, just in case)
         554 # RTSP (for streaming media services)
         1935 # RTMP (often used for streaming)
-        993 # himalaya
+        993 # IMAP (for himalaya)
+        465 # SMTP (for himalaya)
       ];
       allowedUDPPorts = [
         53 # DNS
@@ -790,7 +791,8 @@ in
         5353 # mDNS (for local network service discovery)
         3478 # STUN (for NAT traversal, used in VoIP/WebRTC)
         1935 # RTMP (for streaming if required)
-        993 # himalaya
+        993 # IMAP (for himalaya)
+        465 # SMTP (for himalaya)
       ];
 
       # to transfer files from phone
