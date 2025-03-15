@@ -76,7 +76,7 @@ function tn
 
 	#TODO!: make it use `script` to preserve coloring
 	#tmux send-keys -t "$session_name:build.2" 'echo """$(gil)\n$(gifm)\n$(gifa)""" | less' Enter # all issues
-	tmux send-keys -t "$session_name:build.2" "nvim \"$XDG_STATE_HOME/{assume_project_name}/.log\"" Enter
+	tmux send-keys -t "$session_name:build.2" "nvim \"$XDG_STATE_HOME/$assume_project_name/.log\"" Enter
 
 	tmux attach-session -t "$session_name:source.0"
 end
@@ -96,7 +96,7 @@ function tn2
 	end
 
 	tmux send-keys -t "$session_name:build.0" 'c t' Enter
-	tmux send-keys -t "$session_name:build.1" "nvim \"$XDG_STATE_HOME/{assume_project_name}/.log\"" Enter
+	tmux send-keys -t "$session_name:build.1" "nvim \"$XDG_STATE_HOME/$assume_project_name/.log\"" Enter
 	tmux send-keys -t "$session_name:build.2" 'cw' Enter
 
 	tmux new-window -t "$session_name" -n "window"
