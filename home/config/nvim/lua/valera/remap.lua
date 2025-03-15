@@ -1,10 +1,9 @@
 local utils = require('valera.utils')
+--TODO: switch all `K`s to whichkey
 -- Notes for all mappings:
 -- 1) never use ':lua', instead use '<cmd>lua', for ':lua' forces us to normal mode.
 
 vim.g.mapleader = " "
---K("n", "<space>e", vim.cmd.Ex)
---K("", "<space>e", "<cmd>Oil<cr>", { desc = "Oil equivalent to vim.cmd.Ex" })
 K({ "n", "v" }, "-", "<cmd>Oil<cr>")
 
 -- only want copilot enable if it was temporarely suspended by writing a comment.
@@ -383,3 +382,5 @@ end, {
 		return {}
 	end,
 })
+
+K("n", "<Space>c", "f}i<Cr><Esc>kf{a<Cr><Esc>", { desc = "multi-line clenched curlies" }) -- bigram chosen for "Space the curlies"

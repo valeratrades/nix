@@ -74,6 +74,11 @@ function tn
 	end
 	set -l session_name $session_name_or_err
 
+	set -l assume_project_name (basename (pwd))
+	if test -n "$argv[1]"
+		set assume_project_name $argv[1]
+	end
+
 	#TODO!: make it use `script` to preserve coloring
 	#tmux send-keys -t "$session_name:build.2" 'echo """$(gil)\n$(gifm)\n$(gifa)""" | less' Enter # all issues
 	tmux send-keys -t "$session_name:build.2" "nvim \"$XDG_STATE_HOME/$assume_project_name/.log\"" Enter
