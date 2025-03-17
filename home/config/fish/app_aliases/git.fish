@@ -126,8 +126,17 @@ function gc
 	#ex: gc neovim/neovim . -c
 	set result (cargo -Zscript -q (dirname (status --current-filename))/git_clone.rs $argv[1] $argv[2])
 	if [ $status = 0 ] 
-		if [ (count $argv) = 1 ] || [ $argv[3] = "--cd" ] || [ $argv[3] = "-c" ]
+		if begin #fucking fish
+			[ (count $argv) = 1 ]
+			or begin
+				[ (count $argv) = 3 ]
+				and begin
+					[ "$argv[3]" = "--cd" ]
+					or [ "$argv[3]" = "-c" ]
+				end
+			end
 			cd $result
+		end
 		else
 			echo $result
 		end

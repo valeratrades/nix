@@ -585,6 +585,7 @@ in
       with pkgs;
       lib.lists.flatten [
         libinput-gestures
+        librsvg
         pkgs.qt5.full
         age # secrets initial encoding
         sops # secrets mgmt
