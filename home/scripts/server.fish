@@ -18,16 +18,18 @@ function ssh_connect
 end
 
 function server
-	function vincent_connect
-		ssh_connect $VINCENT_SSH_HOST $VINCENT_SSH_PASS
-	end
-	set log_name "vincent"
+	# if openvpn connection has been established:
+	# `server ssh`
+	# else if running for the first time in a session:
+	# `server connect`
+	# hten `server disconnect` to close
 
+	set log_name "vincent"
 	if test -z "$argv[1]" -o "$argv[1]" = "ssh"
-		vincent_connect
-	else if test "$argv[1]" = "connect"
-		openvpn --config "$VINCENT_VPN_CONF" --auth-user-pass (echo -e "$VINCENT_VPN_USER\n$VINCENT_VPN_PASS" | psub) --auth-nocache > "$XDG_STATE_HOME/openvpn/$log_name.log" 2>&1 &
-		vincent_connect
+		ssh_connect $VINCENT_SSH_HOST $VINCENT_SSH_PASS
+	else if test "$argv[1]" = "vpn"
+		mkdir -p "$XDG_STATE_HOME/openvpn/"
+		sudo openvpn --config "$VINCENT_VPN_CONF" --auth-user-pass (echo -e "$VINCENT_VPN_USER\n$VINCENT_VPN_PASS" | psub) --auth-nocache > "$XDG_STATE_HOME/openvpn/$log_name.log" 2>&1 &
 	else if test "$argv[1]" = "disconnect"
 		sudo killall openvpn
 	else if test "$argv[1]" = "-h" -o "$argv[1]" = "--help" -o "$argv[1]" = "help"

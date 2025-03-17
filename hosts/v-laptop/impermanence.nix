@@ -62,6 +62,7 @@
         "tmp"
         "nix"
         ".data"
+        "whiteboard"
 
         "Downloads"
         "Videos"

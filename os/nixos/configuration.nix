@@ -588,6 +588,8 @@ in
         pkgs.qt5.full
         age # secrets initial encoding
         sops # secrets mgmt
+        nginx
+        caddy
 
         # gnome
         [
