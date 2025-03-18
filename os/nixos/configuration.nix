@@ -732,6 +732,7 @@ in
           unzip
           zip
           pandoc
+          wkhtmltopdf
         ]
 
         # System Monitoring and Debugging
