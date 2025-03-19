@@ -52,39 +52,46 @@ function load_page
 end
 
 function load_pages
-	#! Load a range of pages (start..end), where start is included and end is excluded.
-	#! Usage: load_pages "START..END" [-n|--notify]
-	#! START: First page to load (included)
-	#! END: Last page number + 1 (excluded)
-	#! -n, --notify: Enable notifications
-	#!
-	#! Examples:
-	#!   load_pages "30..40"
-	#!   load_pages "42..50" --notify
-	#!   load_pages "55..60" -n
-
-	set range (string split ".." $argv[1])
-	set notify false
-
-	for arg in $argv[2..-1]
-		switch $arg
-		case '-n' '--notify'
-			set notify true
-		end
-	end
-
-	set start $range[1]
-	set end $range[2]
-
-	for page in (seq $start (math "$end - 1"))
-		echo "Loading page $page..."
-
-		if not load_page $page (test "$notify" = true && echo "-n" || echo "")
-			echo "Failed on page $page, stopping."
-			return 1
-		end
-	end
-
-	echo "Successfully loaded all pages from $start to "(math "$end - 1")
-	return 0
+    #! Load a range of pages in Rust-like syntax: start..end (exclusive) or start..=end (inclusive).
+    #! Usage: load_pages "START..END" [-n|--notify] or load_pages "START..=END" [-n|--notify]
+    #! START: First page to load (included)
+    #! END: Last page (excluded in START..END, included in START..=END)
+    #! -n, --notify: Enable notifications
+    #!
+    #! Examples:
+    #!   load_pages "30..=40"
+    #!   load_pages "42..50" --notify
+    #!   load_pages "55..=60" -n
+    set notify false
+    for arg in $argv[2..-1]
+        switch $arg
+        case '-n' '--notify'
+            set notify true
+        end
+    end
+    
+    # Check for inclusive range (..=)
+    if string match -q "*..=*" $argv[1]
+        set range (string split "..=" $argv[1])
+        set start $range[1]
+        set end $range[2]
+        set last_page $end
+    else
+        # Regular exclusive range (..)
+        set range (string split ".." $argv[1])
+        set start $range[1]
+        set end $range[2]
+        set last_page (math "$end - 1")
+    end
+    
+    for page in (seq $start $last_page)
+        echo "Loading page $page..."
+        if not load_page $page (test "$notify" = true && echo "-n" || echo "")
+            echo "Failed on page $page, stopping."
+            return 1
+        end
+    end
+    
+    echo "Successfully loaded all pages from $start to $last_page"
+    return 0
 end
