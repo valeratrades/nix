@@ -9,6 +9,7 @@ source $main_config_pdir/other.fish
 
 source $main_config_pdir/cli_translate.fish
 source $main_config_pdir/cs_nav.fish
+source $main_config_pdir/tmp.fish
 
 source (dirname (dirname $main_config_pdir))/scripts/mod.fish
 
