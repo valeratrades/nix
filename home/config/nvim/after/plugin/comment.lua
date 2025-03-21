@@ -131,7 +131,8 @@ function AddTodoComment(n)
 end
 
 --K("n", "!", [[v:count == 0 ? '!' : ':lua AddTodoComment(' . v:count . ')<cr>']],
-K("n", "!", [[':lua AddTodoComment(' . v:count . ')<cr>']],
+K("n", "!", [[v:count == 0 ? ':lua AddTodoComment(3)<cr>' : ':lua AddTodoComment(' . v:count . ')<cr>']], -- default level
+	--K("n", "!", [[':lua AddTodoComment(' . v:count . ')<cr>']],
 	{ noremap = true, expr = true, silent = true })
 K('n', '<space>1', '<cmd>lua AddTodoComment(0)<cr>')
 
