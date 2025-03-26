@@ -383,4 +383,4 @@ end, {
 	end,
 })
 
-K("n", "<Space>c", "f}i<Cr><Esc>kf{a<Cr><Esc>", { desc = "multi-line clenched curlies" }) -- bigram chosen for "Space the curlies"
+K("n", "<Space>c", "f}i<Cr><Esc>kA<Cr>", { desc = "multi-line clenched curlies" }) -- bigram chosen for "Space the curlies"

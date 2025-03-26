@@ -6,3 +6,4 @@ source (dirname (status --current-filename))/cargo.fish
 source (dirname (status --current-filename))/tg.fish
 source (dirname (status --current-filename))/ffmpeg.fish
 source (dirname (status --current-filename))/zathura.fish
+source (dirname (status --current-filename))/swappy.fish

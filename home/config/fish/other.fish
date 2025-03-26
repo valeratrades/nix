@@ -76,6 +76,9 @@ function mvd
 	case "-w" "--wine"
 		set from "$HOME/Downloads"
 		set to "$HOME/.wine/drive_c/users/v/Downloads"
+	case "--st" "--screenshot-trading"
+		set from "$HOME/tmp/Screenshots"
+		set to "$HOME/trading/strats/"
 	case "*" # Default case: treat as direct path
 		set from "$HOME/Downloads"
 		set to $argv[1]
@@ -164,6 +167,10 @@ alias monkey="smassh"
 alias bbeats="sudo -Es nice -n -20 /etc/profiles/per-user/v/bin/bbeats" # otherwise any demanding process will produce bad breaks in sound
 alias workspaces="swaymsg -t get_tree" # shortcut for ease of remembrance by Ania and Tima
 alias q "ask_llm -f"
+
+function tge
+	q "answer concisely. Translate from german: $argv"
+end
 
 
 function phone_wifi

@@ -269,21 +269,20 @@ bindsym $mod+d exec zathura "~/Downloads/$(ls -t ~/Downloads | head -n 1)"
 
 # # Screenshots
 exec mkdir -p ~/tmp/Screenshots >/dev/null
-set $throwaway_screenshot slurp | grim -g - ~/tmp/Screenshots/scrn-$(date +"%Y-%m-%d-%H-%M-%S").png && swappy -f ~/tmp/Screenshots/$(ls -t ~/tmp/Screenshots | awk 'NR==1 {print; exit}')
+set $scrn_path ~/tmp/Screenshots/scrn-$(date +"%Y-%m-%d-%H-%M-%S")
+set $swappy_last swappy -f ~/tmp/Screenshots/$(ls -t ~/tmp/Screenshots | head -n 1) -o ~/tmp/Screenshots/$(ls -t ~/tmp/Screenshots | head -n 1)
+set $throwaway_screenshot slurp | grim -g - $scrn_path && $swappy_last
 bindsym Insert exec $throwaway_screenshot
 mode "screenshot" {
-	set $fullscreen_screenshot grim ~/tmp/Screenshots/scrn-$(date +"%Y-%m-%d-%H-%M-%S").png && swappy -f ~/tmp/Screenshots/$(ls -t ~/tmp/Screenshots | awk 'NR==1 {print; exit}')
-	set $delayed_screenshot slurp | { sleep 5; grim -g - ~/tmp/Screenshots/scrn-$(date +"%Y-%m-%d-%H-%M-%S").png } && swappy -f ~/tmp/Screenshots/$(ls -t ~/tmp/Screenshots | awk 'NR==1 {print; exit}')
-	set $important_screenshot slurp | grim -g - ~/Images/Screenshots/scrn-$(date +"%Y-%m-%d-%H-%M-%S").png && swappy -f ~/Images/Screenshots/$(ls -t ~/Images/Screenshots | awk 'NR==1 {print; exit}')
-	set $trading_screenshot slurp | grim -g - ~/Images/Trading/PatternScreenshots/scrn-$(date +"%Y-%m-%d-%H-%M-%S").png && swappy -f ~/Images/Trading/PatternScreenshots/$(ls -t ~/Images/Trading/PatternScreenshots | awk 'NR==1 {print; exit}')
-	set $open_last_screenshot swappy -f ~/Images/Screenshots/$(ls -t ~/Images/Screenshots | awk 'NR==1 {print; exit}')
+	set $fullscreen_screenshot grim $scrn_path && $swappy_last
+	set $delayed_screenshot slurp | { sleep 5; grim -g - $scrn_path } && $swappy_last
 
 	bindsym i exec $switch_out && $important_screenshot
 	bindsym t exec $switch_out && $trading_screenshot
 	# doesn't work for some reason
 	bindsym f exec $switch_out && $fullscrseen_screenshot
 	bindsym d exec $switch_out && $delayed_screenshot
-	bindsym o exec $switch_out && $open_last_screenshot
+	bindsym o exec $switch_out && $swappy_last
 	bindsym Insert exec $switch_out && throwaway_screenshot
 
 	bindsym $mod+Insert exec $switch_out
