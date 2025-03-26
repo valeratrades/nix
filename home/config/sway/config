@@ -269,7 +269,7 @@ bindsym $mod+d exec zathura "~/Downloads/$(ls -t ~/Downloads | head -n 1)"
 
 # # Screenshots
 exec mkdir -p ~/tmp/Screenshots >/dev/null
-set $scrn_path ~/tmp/Screenshots/scrn-$(date +"%Y-%m-%d-%H-%M-%S")
+set $scrn_path ~/tmp/Screenshots/scrn-$(date +"%Y-%m-%d-%H-%M-%S").png
 set $swappy_last swappy -f ~/tmp/Screenshots/$(ls -t ~/tmp/Screenshots | head -n 1) -o ~/tmp/Screenshots/$(ls -t ~/tmp/Screenshots | head -n 1)
 set $throwaway_screenshot slurp | grim -g - $scrn_path && $swappy_last
 bindsym Insert exec $throwaway_screenshot

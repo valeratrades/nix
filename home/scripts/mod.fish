@@ -9,6 +9,7 @@ function beep
 end
 alias timer "$fish_scripts_pdir/timer.rs"
 alias theme="$fish_scripts_pdir/theme_toggle.rs"
+alias mvd="$fish_scripts_pdir/mvd.rs"
 
 # should switch to `ask_llm` cli.
 #alias q="py $fish_scripts_pdir/ask_gpt.py -s $argv"

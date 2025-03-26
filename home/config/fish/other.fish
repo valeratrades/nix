@@ -40,72 +40,96 @@ function chess
     py -m cli_chess --token lip_sjCnAuNz1D3PM5plORrC
 end
 
-function mvd
-	# move latest download
-	# Usage:
-	# mvd PATH               # moves to specified path directly
-	# mvd [OPTION] [SUBPATH] # moves to predefined location, optionally with subpath
-	# ex: mvd ~/Documents/Books/tmp/  # moves directly to specified path
-	# ex: mvd -p research    # moves to $HOME/Documents/Papers/research
-	# ex: mvd -b             # moves to $HOME/Documents/Books
-
-	set from "."
-	set to ""
-	set subpath ""
-
-	if test (count $argv) -gt 1
-		set subpath $argv[2]
-	end
-
-	switch $argv[1]
-	case "-p" "--paper"
-		set from "$HOME/Downloads"
-		set to "$HOME/Documents/Papers"
-	case "-b" "--book"
-		set from "$HOME/Downloads"
-		set to "$HOME/Documents/Books"
-	case "-n" "--notes"
-		set from "$HOME/Downloads"
-		set to "$HOME/Documents/Notes"
-	case "-c" "--courses"
-		set from "$HOME/Downloads"
-		set to "$HOME/Documents/Courses"
-	case "-t" "--twitter"
-		set from "$HOME/Downloads"
-		set to "$HOME/Documents/TwitterThreads"
-	case "-w" "--wine"
-		set from "$HOME/Downloads"
-		set to "$HOME/.wine/drive_c/users/v/Downloads"
-	case "--st" "--screenshot-trading"
-		set from "$HOME/tmp/Screenshots"
-		set to "$HOME/trading/strats/"
-	case "*" # Default case: treat as direct path
-		set from "$HOME/Downloads"
-		set to $argv[1]
-	end
-
-	# If a subpath was provided and we're using an option, append the subpath
-	if test (count $argv) -gt 1; and string match -q -- "-*" $argv[1]
-		set subpath $argv[2]
-		if test -n "$subpath" -a -n "$to"
-			set to "$to/$subpath"
-		end
-	end
-
-	if not test -d "$to"
-		echo "Error: Directory $to does not exist"
-		return 1
-	end
-
-	set latest_file (ls $from -t | head -n 1)
-	if test -n "$latest_file"
-		mv "$from/$latest_file" "$to"
-		echo "Moved $latest_file to $to"
-	else
-		echo "No files found in $from"
-		return 1
-	end
-end
+#function mvd
+#	# move latest download
+#	# Usage:
+#	# mvd PATH               # moves to specified path directly
+#	# mvd [OPTION] [SUBPATH] # moves to predefined location, optionally with subpath
+#	# ex: mvd ~/Documents/Books/tmp/  # moves directly to specified path
+#	# ex: mvd -p research    # moves to $HOME/Documents/Papers/research
+#	# ex: mvd -b             # moves to $HOME/Documents/Books
+#
+#	set from "."
+#	set to ""
+#	set subpath ""
+#
+#	if test (count $argv) -gt 1
+#		set subpath $argv[2]
+#	end
+#
+#	switch $argv[1]
+#	case "-p" "--paper"
+#		set from "$HOME/Downloads"
+#		set to "$HOME/Documents/Papers"
+#		set argv $argv[3..-1]
+#	case "-b" "--book"
+#		set from "$HOME/Downloads"
+#		set to "$HOME/Documents/Books"
+#		set argv $argv[3..-1]
+#	case "-n" "--notes"
+#		set from "$HOME/Downloads"
+#		set to "$HOME/Documents/Notes"
+#		set argv $argv[3..-1]
+#	case "-c" "--courses"
+#		set from "$HOME/Downloads"
+#		set to "$HOME/Documents/Courses"
+#		set argv $argv[3..-1]
+#	case "-t" "--twitter"
+#		set from "$HOME/Downloads"
+#		set to "$HOME/Documents/TwitterThreads"
+#		set argv $argv[3..-1]
+#	case "-w" "--wine"
+#		set from "$HOME/Downloads"
+#		set to "$HOME/.wine/drive_c/users/v/Downloads"
+#		set argv $argv[3..-1]
+#	case "-i" "--images"
+#		set from "$HOME/Downloads"
+#		set to "$HOME/Images"
+#		set argv $argv[3..-1]
+#
+#	case "--st" "--screenshot-trading"
+#		set from "$HOME/tmp/Screenshots"
+#		set to "$HOME/trading/strats"
+#		set argv $argv[3..-1]
+#	case "--si" "--screenshot-images"
+#		set from "$HOME/tmp/Screenshots"
+#		set to "$HOME/Images/Screenshots"
+#		set argv $argv[3..-1]
+#
+#	case "*" # Default case: treat as direct path
+#		set from "$HOME/Downloads"
+#		set to $argv[1]
+#		set argv $argv[2..-1]
+#	end
+#
+#	# subpath
+#	if [ (count $argv) > 0 ]
+#		set subpath $argv[1]
+#		if [ "$subpath" != "" ] && [ "$to" != "" ]
+#			set to "$to/$subpath"
+#		end
+#	end
+#
+#	if not test -d "$to"
+#		echo "Error: Directory $to does not exist"
+#		return 1
+#	end
+#
+#	# fname
+#	if test (count $argv) -gt 0
+#		set fname $argv[1]
+#		set to "$to/$fname"
+#	end
+#
+#	set latest_file (ls $from -t | head -n 1)
+#	if test -n "$latest_file"
+#		mv "$from/$latest_file" "$to"
+#		echo "Moved $latest_file to $to"
+#	else
+#		echo "No files found in $from"
+#		return 1
+#	end
+#end
 
 
 function matrix
