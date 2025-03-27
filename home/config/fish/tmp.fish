@@ -27,12 +27,12 @@ function load_page
 	set tmp_path "$base_path/page_$page.txt"
 	set out_path "$base_path/page_"$page"_ti.txt"
 
-	if ~/s/other/book_parser/target/debug/book_parser -c"#reader-body > div.container > div > div.col-12.col-lg-8.col-xl-8 > section" --url "https://fb2.top/petlya-kadetskiy-korpus-kniga-sedymaya-748547/read/part-$page" -l"German" > $tmp_path
+	if ~/s/other/book_parser/target/debug/book_parser -c"#reader-body > div.container > div > div.col-12.col-lg-8.col-xl-8 > section" --url "https://fb2.top/petlya-kadetskiy-korpus-kniga-devyataya-752639/read/part-$page" -l"German" > $tmp_path
 		if test "$notify" = true
 			beep "loaded"
 		end
 
-		if cat $tmp_path | translate_infrequent -l"de" -k"4_500" > $out_path
+		if cat $tmp_path | translate_infrequent -l"de" -k"5_000" > $out_path
 			if test "$notify" = true
 				beep "translated infrequent (to $out_path)"
 			end

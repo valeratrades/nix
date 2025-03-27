@@ -32,6 +32,7 @@ fn main() {
 		eprintln!("Try 'mvd --help' for more information.");
 		std::process::exit(1);
 	}
+	dbg!(&args);
 
 	let home = match env::var("HOME") {
 		Ok(val) => PathBuf::from(val),
@@ -119,6 +120,7 @@ fn main() {
 		Some(fname) => to_dir.join(fname),
 		None => to_dir,
 	};
+	dbg!(&destination);
 
 	match latest_file {
 		Some(from_path) => {

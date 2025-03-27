@@ -47,6 +47,7 @@ alias ggr="gg -p refactor"
 alias ggp="gg -p perf"
 alias ggd="gg -p docs"
 alias ggi="gg -p ci"
+alias ggm="gg -p move"
 
 alias gup="git commit -a --fixup (git rev-parse HEAD) && git push --follow-tags"
 
