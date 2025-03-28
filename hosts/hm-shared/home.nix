@@ -136,7 +136,6 @@
     pointerCursor = {
       name = "Adwaita";
       package = pkgs.adwaita-icon-theme;
-      #size = 24; //dbg: 24 was too large, trying to find the new value
       x11 = {
         enable = true;
         defaultCursor = "Adwaita";

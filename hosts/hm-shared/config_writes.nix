@@ -15,10 +15,6 @@
       source = "${self}/home/config/zathura";
       recursive = true;
     };
-    ".config/alacritty" = {
-      source = "${self}/home/config/alacritty";
-      recursive = true;
-    };
     ".config/keyd" = {
       source = "${self}/home/config/keyd";
       recursive = true;

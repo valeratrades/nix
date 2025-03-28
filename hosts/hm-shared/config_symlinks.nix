@@ -16,9 +16,6 @@
     sway = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       [ -e "$XDG_CONFIG_HOME/sway" ] || ln -sf "$NIXOS_CONFIG/home/config/sway" "$XDG_CONFIG_HOME/sway"
     '';
-    alacritty = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      [ -e "$XDG_CONFIG_HOME/alacritty" ] || ln -sf "$NIXOS_CONFIG/home/config/alacritty" "$XDG_CONFIG_HOME/alacritty"
-    '';
     keyd = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       [ -e "$XDG_CONFIG_HOME/keyd" ] || ln -sf "$NIXOS_CONFIG/home/config/keyd" "$XDG_CONFIG_HOME/keyd"
     '';
