@@ -21,17 +21,20 @@ source "$NIXOS_CONFIG/home/scripts/shell_harpoon/main.fish"
 # Init utils {{{
 ## optional {{{
 if command -v zoxide &>/dev/null
-    zoxide init fish | source
+	zoxide init fish | source
 end
 if command -v todo &>/dev/null
-    todo init fish | source
+	todo init fish | source
 end
 if command -v himalaya &>/dev/null
-		himalaya completion fish | source
+	himalaya completion fish | source
+end
+if command -v watchexec &>/dev/null
+	watchexec --completions fish | source
 end
 if command -v shuttle &>/dev/null
-shuttle generate shell fish | source
-shuttle generate manpage > "$XDG_DATA_HOME/man/man1/shuttle.1"
+	shuttle generate shell fish | source
+	shuttle generate manpage > "$XDG_DATA_HOME/man/man1/shuttle.1"
 end
 ##,}}}
 atuin init fish --disable-up-arrow --disable-ctrl-r | source

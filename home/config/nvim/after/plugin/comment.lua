@@ -152,8 +152,10 @@ end
 --- for navigation I'm just typing `:cp` and `:cn`. Can't do much better than that.
 --- To jump back, I do `T
 --TODO!!!!: fix \
+--Q: could I riir?
 function FindTodo()
-	local regex = vim.fn.shellescape(Cs() .. "TOD" .. "O") -- split the word to avoid matching this file
+	--local regex = vim.fn.shellescape(Cs() .. "TOD" .. "O") -- split the word to avoid matching this file
+	local regex = vim.fn.shellescape("TODO")
 	local results = vim.fn.systemlist(
 		"rg --line-number -rn -- " .. regex
 		.. " | awk -F: -v OFS=: '{print gsub(/!/, \"&\"), $0}'"

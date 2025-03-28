@@ -267,11 +267,40 @@ return require('lazy').setup({
 		opts = { rename_files = false },
 		keys = {
 			{
-				'<leader>h',
+				'<space>h',
 				function() require('replacer').run() end,
 				desc = "run replacer.nvim"
 			}
 		}
+	},
+	{
+		"folke/trouble.nvim",
+		opts = {},
+		cmd = "Trouble",
+		keys = {
+			{
+				"<space><space>x",
+				"<cmd>Trouble symbols toggle focus=false<cr>",
+				desc = "Symbols (Trouble)",
+			},
+		},
+	},
+	{
+		"folke/flash.nvim",
+		event = "VeryLazy",
+		---@type Flash.Config
+		opts = {
+			modes = {
+				char = {
+					enabled = false,
+				},
+			},
+		},
+		-- tylua: ignore
+		keys = {
+			{ "<space>x", mode = { "n", "x", "o" }, function() require("flash").jump() end,       desc = "Flash" },
+			{ "<space>X", mode = { "n", "x", "o" }, function() require("flash").treesitter() end, desc = "Flash Treesitter" },
+		},
 	},
 
 	"echasnovski/mini.ai",
