@@ -1,4 +1,4 @@
-{ self, pkgs, user, lib, ... }: {
+{ self, user, ... }: {
   home.file = {
     ".config/alacritty/themes" = {
       source = "${self}/home/config/alacritty/themes";
