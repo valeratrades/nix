@@ -1,1 +1,1 @@
-/nix/store/d1va1zfxyvwh3w3wvnwp7m1m97lnmznr-home-manager-files/.config/alacritty/README.md
+[./alacritty-theme] is copied from https://github.com/alacritty/alacritty-theme
