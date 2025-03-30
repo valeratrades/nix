@@ -231,7 +231,6 @@
       ".config/tg.toml".source = "${self}/home/config/tg.toml";
       ".config/tg_admin.toml".source = "${self}/home/config/tg_admin.toml";
       ".config/auto_redshift.toml".source = "${self}/home/config/auto_redshift.toml";
-      ".config/todo.toml".source = "${self}/home/config/todo.toml";
       ".config/discretionary_engine.toml".source = "${self}/home/config/discretionary_engine.toml";
       ".config/btc_line.toml".source = "${self}/home/config/btc_line.toml";
 

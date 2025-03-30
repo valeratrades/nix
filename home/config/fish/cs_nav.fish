@@ -40,6 +40,14 @@ function csl
     cs $_path
 end
 
+function csr
+    set _path "$HOME/trading/"
+    if test -n "$argv[1]"
+        set _path "$_path$argv[1]"
+    end
+    cs $_path
+end
+
 function csst
     set _path "$HOME/s/tmp/"
     if test -n "$argv[1]"

@@ -780,6 +780,14 @@ in
     deps = [ ];
   };
 
+  powerManagement = {
+    enable = true;
+    powerUpCommands = ''
+      			systemctl --user restart wlr-gamma
+      			systemctl --user restart auto_redshift
+      		'';
+  };
+
   #TODO!: make specific to the host
   networking = {
     firewall = {
