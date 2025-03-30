@@ -108,10 +108,4 @@
         		'';
     };
   };
-  home.activation = {
-    alacritty = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-            cp ~/.config/alacritty/alacritty.toml.hm ~/.config/alacritty/alacritty.toml
-      			chmod 666 ~/.config/alacritty/alacritty.toml
-    '';
-  };
 }
