@@ -236,6 +236,11 @@ local function codelldb_adapter()
 	return cfg.get_codelldb_adapter(codelldb_path, liblldb_path)
 end
 
+vim.g.rust_check_with = "clippy"
+K("n", "<space>rwl", function() vim.g.rust_check_with = "clippy" end, { desc = "Rust: switch to checking with `clippy`" })
+K("n", "<space>rwe", function() vim.g.rust_check_with = "check" end,
+	{ desc = "Rust: switch to checking with `check`" })
+
 vim.g.rustaceanvim = {
 	tools = {
 		-- Plugin configuration
@@ -247,13 +252,6 @@ vim.g.rustaceanvim = {
 	},
 	server = {
 		status_notify_level = rustaceanvim.disable, -- doesn't work
-		cmd = function()
-			local handle = io.popen("rustup show active-toolchain")
-			local output = handle:read("*a")
-			handle:close()
-			local rust_version = output:match("%S+")
-			return { "rust-analyzer" }
-		end,
 		on_attach = on_attach,
 		default_settings = {
 			['rust-analyzer'] = (function()
@@ -285,8 +283,7 @@ vim.g.rustaceanvim = {
 					},
 					checkOnSave = {
 						enable = true,
-						--TODO!!: think how to toggle clippy::all (for pedantic checks right before commiting to master)
-						command = "clippy",
+						command = function() return vim.g.rust_check_with end,
 					},
 				}
 				local cargo_exists = vim.fn.filereadable(vim.fn.getcwd() .. "/Cargo.toml") == 1

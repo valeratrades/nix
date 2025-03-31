@@ -388,10 +388,14 @@ in
         };
       };
 
-  hardware = {
-    bluetooth.enable = true;
-    bluetooth.powerOnBoot = false;
+  hardware.bluetooth = {
+    enable = true;
+    powerOnBoot = false;
   };
+  environment.etc."bluetooth/audio.conf".text = ''
+    	# theoretically should prevent it from choosing HSP/HFP over A2DP
+    	Disable=Headset
+    	'';
 
   security = {
     sudo = {
