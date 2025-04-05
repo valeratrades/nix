@@ -120,7 +120,7 @@ fn set_theme(config: &Config) -> Result<(), String> {
 
 	// Update Neovim
 	Command::new("nvim")
-		.args(["--remote-send", "<C-\\><C-N>:lua setSystemTheme()<CR>"])
+		.args(["--remote-send", "<C-\\><C-N>;lua setSystemTheme()<CR>"]) //NB: my nvim has switched `;` and `:`. Be careful with what exactly is sent here, - I couldn't understand why the standard `:lua` wasn't working.
 		.status()
 		.map_err(|e| format!("Failed to update Neovim: {}", e))?;
 

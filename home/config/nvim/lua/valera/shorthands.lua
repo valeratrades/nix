@@ -14,8 +14,14 @@ function Cs()
 	if vim.fn.expand("%:e") == "lean" then
 		return "--"
 	end
+	if vim.fn.expand("%:e") == "html" then
+		return "//" --don't care for actual html comments there
+	end
 
 	local initial = vim.bo.commentstring
+	if initial == nil then
+		return "//"
+	end
 	local without_percent_s = string.sub(initial, 1, -3)
 	local stripped = string.gsub(without_percent_s, "%s+", "")
 	return stripped
