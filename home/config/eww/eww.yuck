@@ -39,6 +39,7 @@
 		(ping)
 		(ram)
 		(cpu)
+		(temperature)
 		(time)
 		(battery)
 		(battery_saver)
@@ -168,6 +169,10 @@
 		"${microphone_poll.icon}${microphone_poll.content}"
 	)
 )
+
+;; Temperature ;;
+(defpoll temperature_poll :initial "{}" :interval "15s" "./modules/temperature.sh")
+(defwidget temperature [] "${temperature_poll.icon}${temperature_poll.content}")
 
 (defpoll day_ev_poll :initial "{}" :interval "5s" "./modules/day_ev.sh")
 (defvar todo_milestones_hover_state false)
