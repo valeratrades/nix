@@ -118,11 +118,28 @@ fn set_theme(config: &Config) -> Result<(), String> {
 			.map_err(|e| format!("Failed to set wallpaper: {}", e))?;
 	}
 
-	// Update Neovim
-	Command::new("nvim")
-		.args(["--remote-send", "<C-\\><C-N>;lua SetThemeSystem()<CR>"]) //NB: my nvim has switched `;` and `:`. Be careful with what exactly is sent here, - I couldn't understand why the standard `:lua` wasn't working.
-		.status()
-		.map_err(|e| format!("Failed to update Neovim: {}", e))?;
+	// Update theme for all nvim instances {{{
+	let uid_output = Command::new("id").arg("-u").output().map_err(|e| format!("Failed to get user ID: {}", e))?;
+
+	let uid = String::from_utf8_lossy(&uid_output.stdout).trim().to_string();
+
+	// Find all neovim socket files and execute the theme change command for each one
+	let socket_paths = Command::new("find")
+		.args(["/run/user/", &uid, "/tmp", "-name", "nvim*", "-type", "s"])
+		.output()
+		.map_err(|e| format!("Failed to find Neovim sockets: {}", e))?;
+
+	let sockets = String::from_utf8_lossy(&socket_paths.stdout);
+
+	for socket in sockets.lines() {
+		if !socket.is_empty() {
+			Command::new("nvim")
+				.args(["--server", socket, "--remote-send", "<C-\\><C-n>;lua SetThemeSystem()<CR>"]) //NB: currently there is no way to send a direct lua command, so must be mindful of key mapping (spent a lot of time to figure out that on my config I must send ";lua" not ":lua" due to mapping (docs lie, - keys **are** mapped) (2025/04/04)
+				.status()
+				.map_err(|e| format!("Failed to update Neovim instance at {}: {}", socket, e))?;
+		}
+	}
+	//,}}}
 
 	Ok(())
 }
