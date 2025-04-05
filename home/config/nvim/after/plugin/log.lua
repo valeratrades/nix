@@ -75,17 +75,16 @@ local function popupSelectedLog()
 end
 
 
--- Named "Tracing" because 'l' for "log" is already taken by lsp
-wk.register({
-	t = {
-		name = "Tracing",
-		y = { function() copyDestination() end, "+y log-line's destination" },
-		p = { function() popupExpandedLog() end, "Popup with prettified log line" },
+wk.add({
+	--Named "Tracing" because 'l' for "log" is already taken by lsp
+	group = "Tracing",
+	{
+		mode = "n",
+		{ "<Space>ty", function() copyDestination() end,  desc = "+y log-line's destination" }
+		{ "<Space>tp", function() popupExpandedLog() end, desc = "Popup with prettified log line" },
+	},
+	{
+		mode = "v",
+		{ "<Space>tp", function() popupSelectedLog() end, desc = "Popup selection as prettyfied log" },
 	}
-}, { prefix = "<Space>" })
-wk.register({
-	t = {
-		name = "Tracing",
-		p = { function() popupSelectedLog() end, "Popup selection as prettyfied log" },
-	}
-}, { prefix = "<Space>", mode = "v" })
+})
