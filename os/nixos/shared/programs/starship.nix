@@ -30,8 +30,8 @@
         format = "[$symbol]($style) ";
       };
       rust = {
+        disabled = true; # relies on rustup. This doesn't generalize. Updated (in `custom`) to use `rustc` from the active env instead.
         format = "[$version]($style) ";
-        #version_format = "$major.$minor(-$toolchain)"; # $toolchain is not recognized correctly right now (2024/10/31)
       };
     };
     settings = {
@@ -44,7 +44,7 @@
       palette = "google_calendar";
 
       format = "$username$status$character";
-      right_format = "$custom$all"; # `all` does _not_ duplicate explicitly enabled modules
+      right_format = "\${custom.readonly}\${custom.path}$git_branch$git_commit$git_state$git_status\${custom.rust}$all"; # `all` does _not_ duplicate explicitly enabled modules
 
       hostname = {
         style = "white";
@@ -122,9 +122,9 @@
         not_found_symbol = "[🔍](bold tangerine)";
         map_symbol = true;
 
-        # we'll get indication from `$signal_name` anyways, this seems like clutter. //DEPRECATED in a month (2024/10/30)
-        sigint_symbol = ""; # "[🧱](bright-red)";
-        signal_symbol = ""; # [⚡](bold flamingo)";
+        # we'll get indication from `$signal_name` anyways, this seems like clutter.
+        sigint_symbol = "";
+        signal_symbol = "";
 
         disabled = false;
       };
@@ -148,6 +148,11 @@
         readonly = {
           command = ''printf "🔒"'';
           when = ''! [ -w . ]'';
+          style = "bold red";
+        };
+        rust = {
+          command = ''rustc -V | cut -d ' ' -f 2'';
+          when = ''[ -f Cargo.toml ] || [ -n "$(find . -maxdepth 1 -name "*.rs" 2>/dev/null | head -1)" ]'';
           style = "bold red";
         };
       };

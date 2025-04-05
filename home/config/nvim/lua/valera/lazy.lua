@@ -295,6 +295,11 @@ return require('lazy').setup({
 					enabled = false,
 				},
 			},
+			labels = 'abcdefghijklmnopqrstuvwxyz',
+		},
+		jump = {
+			pos = 'range', ---@type "start" | "end" | "range"
+			autojump = true, -- automatically jump when there is only one match
 		},
 		-- tylua: ignore
 		keys = {

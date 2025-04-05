@@ -154,7 +154,7 @@
 (defpoll ping_poll :interval "10s" "./modules/ping.sh")
 (defwidget ping []
 	(box
-		:class {ping_poll > 100 || ping_poll == "None" ? "warn" : ""}
+		:class {ping_poll > 150 || ping_poll == "None" ? "warn" : ""}
 		" ${ping_poll == "None" ? "No WiFi" : ping_poll == "Some" ? "Some WiFi" : "${ping_poll}ms"}")) 
 
 ;; Volume ;;

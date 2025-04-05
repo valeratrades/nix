@@ -237,9 +237,19 @@ local function codelldb_adapter()
 end
 
 vim.g.rust_check_with = "clippy"
-K("n", "<space>rwl", function() vim.g.rust_check_with = "clippy" end, { desc = "Rust: switch to checking with `clippy`" })
-K("n", "<space>rwe", function() vim.g.rust_check_with = "check" end,
-	{ desc = "Rust: switch to checking with `check`" })
+local function rustCheckWith(cmd)
+	if cmd ~= "cargo" and cmd ~= "clippy" then
+		vim.notify("Invalid command: " .. cmd, vim.log.levels.ERROR)
+		return
+	end
+
+	vim.g.rust_check_with = cmd
+
+	--HACK: Restart LSP to apply the new settings. Currently they don't accept functions for checkOnSave.command (2025/03/31)
+	vim.cmd('LspRestart')
+end
+K("n", "<space>rwl", function() rustCheckWith("clippy") end, { desc = "Rust: switch to checking with `clippy`" })
+K("n", "<space>rwe", function() rustCheckWith("check") end, { desc = "Rust: switch to checking with `check`" })
 
 vim.g.rustaceanvim = {
 	tools = {
@@ -283,7 +293,9 @@ vim.g.rustaceanvim = {
 					},
 					checkOnSave = {
 						enable = true,
-						command = function() return vim.g.rust_check_with end,
+						--command = function() return vim.g.rust_check_with end, --doesn't work
+						command = vim.g
+								.rust_check_with --BUG: can't figure out how to make interactive. This is sourced only at the server init. So have to restart for this to apply.
 					},
 				}
 				local cargo_exists = vim.fn.filereadable(vim.fn.getcwd() .. "/Cargo.toml") == 1
