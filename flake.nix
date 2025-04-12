@@ -117,6 +117,7 @@
     };
     ask_llm.url = "github:valeratrades/ask_llm?ref=release";
     translate_infrequent.url = "github:valeratrades/translate_infrequent";
+    cargo_sort_derives.url = "github:valeratrades/cargo-sort-derives"; #TODO: switch to upstream once my PR is merged
 
     #aggr_orderbook = {
     #	url = "github:valeratrades/aggr_orderbook";

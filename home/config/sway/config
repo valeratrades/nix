@@ -67,11 +67,11 @@ bindsym $mod+Shift+g exec greenclip clear
 #}
 
 input * {
-	xkb_layout "semimak,ru,us"
+	xkb_layout "semimak,ru" #,us"
 	##dbg: `us` is here mostly in case semimak adds layer of inderection when using anydesk on Tima's setup
 	##dbg: was "iso,,", testing if spec in nixos conf suffices
 	##TODO: somehow make conditional on the user, keeping two config trees is too much
-	xkb_variant "iso,,"
+	xkb_variant "iso," #,"
 	##ru should be `iso`, but it doesn't work for some reason.
 	xkb_options "grp:win_space_toggle"
 	#,compose:f9" //TEST: could be appended to xkb_options here. But I'm not sure whether it could be simply defined in xkb definition itself

@@ -63,7 +63,6 @@ alias jp="jupyter lab -y"
 alias tree="eza --tree"
 alias lhost="nohup nyxt http://localhost:8080/ > /dev/null 2>&1 &"
 alias sound="qpwgraph"
-#alias obs="mkdir ~/Videos/obs >/dev/null; sudo modprobe v4l2loopback video_nr=2 card_label=\"OBS Virtual Camera\" && pamixer --default-source --set-volume 70 && obs" // fixed with nixos
 alias video_cut="video-cut"
 alias ss="sudo systemctl"
 alias cl="wl-copy"

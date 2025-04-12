@@ -69,6 +69,7 @@ in
         inputs.bad_apple_rs.packages.${pkgs.system}.default
         inputs.ask_llm.packages.${pkgs.system}.default
         inputs.translate_infrequent.packages.${pkgs.system}.default
+        inputs.cargo_sort_derives.packages.${pkgs.system}.default
 
         #inputs.aggr_orderbook.packages.${pkgs.system}.default
         #inputs.orderbook_3d.packages.${pkgs.system}.default

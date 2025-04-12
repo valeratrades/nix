@@ -71,7 +71,8 @@ in
           languages = [ "eng" ];
           symbolsFile = mylib.relativeToRoot "home/xkb_symbols/semimak";
         };
-        layout = "semimak,ru,us";
+        #layout = "semimak,ru,us"; # deprecated in a month (2025/04/12), as Timur is starting to use semimak too
+        layout = "semimak,ru";
         variant = (if user.userFullName == "Timur" then "ansi,," else "iso,,");
         #
       };
@@ -783,6 +784,7 @@ in
     '';
     deps = [ ];
   };
+  hardware.bluetooth.hsphfpd.enable = false; #HACK: will prevent me from using bluetooth mics
 
   powerManagement = {
     enable = true;

@@ -256,6 +256,9 @@ vim.g.rustaceanvim = {
 		-- Plugin configuration
 		--TODO
 		--test_executor = 'backround',
+		Opts = {
+			enable_clippy = false, --  Whether to enable clippy checks on save if a clippy installation is detected. Default: `true`. I want this to be conditional on a .g var that's toggled depending on which stage of dev process I'm in.
+		}
 	},
 	dap = {
 		adapter = codelldb_adapter(),

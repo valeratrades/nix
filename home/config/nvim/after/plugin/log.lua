@@ -80,7 +80,7 @@ wk.add({
 	group = "Tracing",
 	{
 		mode = "n",
-		{ "<Space>ty", function() copyDestination() end,  desc = "+y log-line's destination" }
+		{ "<Space>ty", function() copyDestination() end,  desc = "+y log-line's destination" },
 		{ "<Space>tp", function() popupExpandedLog() end, desc = "Popup with prettified log line" },
 	},
 	{
