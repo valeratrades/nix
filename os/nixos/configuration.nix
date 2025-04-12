@@ -54,6 +54,7 @@ in
   #};
 
   services = {
+    gnome.gnome-keyring.enable = lib.mkDefault false; # annoying // Supposed to be an extra layer of security for managed {ssh passwords, gpg, wifi, etc}
     getty.autologinUser = user.username;
     xserver = {
       # # somehow this fixed the audio problem. Like huh, what, why???
