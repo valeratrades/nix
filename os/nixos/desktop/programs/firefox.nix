@@ -4,7 +4,7 @@
   ];
   programs.firefox = {
     enable = true;
-    languagePacks = [ "en-US" "ru" "fr" ];
+    languagePacks = [ "en-US" "ru" "fr" "de" ];
     policies = {
       # privacy
       DisableTelemetry = true;
@@ -70,6 +70,7 @@
         "d3121fd9-eb69-4ae5-813d-45edf7cf74a8" = {
           searchEngines = "Like this?";
         };
+        #XXX: doesn't seem to do it
         "{d7742d87-e61d-4b78-b8a1-b469842139fa}" = {
           keyMappings = "map j scrollDown\nmap k scrollUp"; #dbg
           smoothScroll = false;

@@ -67,3 +67,7 @@ Each thing should be stored based on how it will be **used**, **not** on how it 
 
 For example, a PA screenshot should not go to say [~/Images/Screenshots] nor even to [~/Images/Screenshots/PA/], but to say [~/trading/strats/relevant/strat/path/], along all the other considerations on that strat (.md, .rnote, etc; maybe even some scripts)
 Same thing applies to notes (don't make folders for a book, - sort ideas out into correct places in the knowledge-base or discard).
+
+# New pc setup steps
+- disable default F key functions
+- turn off Secure Boot

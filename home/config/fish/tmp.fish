@@ -23,11 +23,11 @@ function load_page
 
 
 	set base_path "$HOME/tmp/book_parser"
-	mkdir -p "$base_path"
-	set tmp_path "$base_path/page_$page.txt"
+	mkdir -p "$base_path/src"
+	set tmp_path "$base_path/src/page_$page.txt"
 	set out_path "$base_path/page_"$page"_ti.txt"
 
-	if ~/s/other/book_parser/target/debug/book_parser -c"#reader-body > div.container > div > div.col-12.col-lg-8.col-xl-8 > section" --url "https://fb2.top/petlya-kadetskiy-korpus-kniga-devyataya-752639/read/part-$page" -l"German" > $tmp_path
+	if ~/s/other/book_parser/target/debug/book_parser -c"html.vkjxfpdusm.idc0_343 body div#reader-body div.container div.row div.col-12.col-lg-8.col-xl-8 section" --url "https://fb2.top/kadetskiy-korpus-kniga-desyataya-757190/read/part-$page" -l"German" > $tmp_path
 		if test "$notify" = true
 			beep "loaded"
 		end
