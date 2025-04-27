@@ -128,7 +128,7 @@ in
               };
 
               home-manager.sharedModules = [
-                inputs.nixcord.homeManagerModules.nixcord
+                inputs.nixcord.homeModules.nixcord
                 inputs.sops-nix.homeManagerModules.sops
                 inputs.tg.homeManagerModules.tg
                 inputs.auto_redshift.homeManagerModules.auto_redshift

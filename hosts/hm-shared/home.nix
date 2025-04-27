@@ -294,12 +294,13 @@
       #Interfaces=org.freedesktop.impl.portal.FileChooser;
       #UseIn=i3;wlroots;sway;Wayfire;river;mate;lxde;openbox;unity;pantheon
 
-      ".config/direnv/direnv.toml".source = (pkgs.formats.toml { }).generate "" {
-        global = {
-          # https://github.com/direnv/direnv/issues/68#issuecomment-2054033048
-          hide_env_diff = true;
-        };
-      };
+      #TODO: figure out  (they have some bug on their side at the moment)
+      #".config/direnv/direnv.toml".source = (pkgs.formats.toml { }).generate "" {
+      #  global = {
+      #    # https://github.com/direnv/direnv/issues/68#issuecomment-2054033048
+      #    hide_env_diff = true;
+      #  };
+      #};
 
       #BUG: stupid `atuin` overwrites my generated config with a dummy one
       ".config/atuin/config.toml".source = (pkgs.formats.toml { }).generate "atuin.toml" {
