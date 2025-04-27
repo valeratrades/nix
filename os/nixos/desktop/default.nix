@@ -166,7 +166,6 @@
             python312Packages.pip
             python312Packages.jedi-language-server
             ruff
-            ruff-lsp
             uv # python package manager in rust
           ]
           # golang

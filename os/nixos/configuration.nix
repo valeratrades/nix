@@ -144,7 +144,7 @@ in
     };
     rust-motd.enableMotdInSSHD = true; # better ssh greeter
     mtr.enable = true;
-    steam.enable = true; # brings steam-run
+    #steam.enable = true; # brings steam-run # currently fails due to ocaml5 (2025/04/27)
     gnupg.agent = {
       enable = true;
       enableSSHSupport = false;
@@ -496,7 +496,7 @@ in
           noto-fonts-cjk-sans
           noto-fonts-emoji
         ]
-        ocamlPackages.codicons
+        #ocamlPackages.codicons #dbg: breaking fucking retarded rebuild evaluator with `error: Package ‘ocaml5.3.0-virtual_dom-0.17.0’ in /nix/store/707m8gfbdyxhg1sgkiw5x9zh84ya012r-source/pkgs/development/ocaml-modules/janestreet/0.17.nix:1977 is marked as broken, refusing to evaluate.`
         powerline-fonts
         profont
         proggyfonts

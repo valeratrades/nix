@@ -12,7 +12,7 @@ let
   common_pkgs_config = {
     allowUnfree = true;
     allowBroken = true;
-    permittedInsecurePackages = [ "electron-32.3.3" ];
+    permittedInsecurePackages = [ "electron-32.3.3" "ocaml5.3.0-virtual_dom-0.17.0" ];
     allowInsecurePredicate = pkg: true;
   };
 
@@ -27,11 +27,13 @@ let
       # use unstable branch for some packages to get the latest updates
       #HACK: stone from ryan (as everything here), and currently are not used.
       pkgs-unstable = import inputs.nixpkgs-unstable {
+        allowBroken = true;
         inherit system; # refer the `system` parameter form outer scope recursively
         # To use chrome, we need to allow the installation of non-free software
         config = common_pkgs_config;
       };
       pkgs-stable = import inputs.nixpkgs-stable {
+        allowBroken = true;
         inherit system;
         # To use chrome, we need to allow the installation of non-free software
         config = common_pkgs_config;
