@@ -164,7 +164,9 @@
         [
           # embedded dev
           platformio-core
-          platformio
+          #platformio #dbg: couldn't build the `pio` thing for some reason
+          arduino
+          arduino-create-agent
           cargo-pio
           vscode-extensions.platformio.platformio-vscode-ide
         ]
