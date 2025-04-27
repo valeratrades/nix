@@ -162,6 +162,13 @@
           zulip
         ]
         [
+          # embedded dev
+          platformio-core
+          platformio
+          cargo-pio
+          vscode-extensions.platformio.platformio-vscode-ide
+        ]
+        [
           # Terminal apps/scripts (actually useful)
           typioca # tui monkeytype
           smassh # tui monkeytype

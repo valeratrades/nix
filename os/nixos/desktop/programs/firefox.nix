@@ -23,6 +23,7 @@
       OverrideFirstRunPage = "";
       OverridePostUpdatePage = "";
       DontCheckDefaultBrowser = true;
+      DisableLoudnessNormalization = true;
 
       ExtensionSettings =
         let
@@ -93,6 +94,9 @@
       "browser.newtabpage.activity-stream.showSponsored" = false;
       "browser.newtabpage.activity-stream.system.showSponsored" = false;
       "browser.newtabpage.activity-stream.showSponsoredTopSites" = false;
+      "widget.use-xdg-desktop-portal.file-picker" = 1; #TODO: get it to use nvim for file picking
+      "media.default_volume" = "0.3"; # stupid firefox does some cursed shit with resetting loudness to value here once in a while
+      "media.scale_volume" = "0.5";
     };
   };
 }

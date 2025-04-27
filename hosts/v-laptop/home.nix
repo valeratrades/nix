@@ -50,6 +50,7 @@ in
       builtins.trace "DEBUG: sourcing Valera-specific home.nix" lib.lists.flatten [
         nyxt
         chromium
+        code-cursor
         en-croissant # chess analysis GUI
         ncspot
         gitui

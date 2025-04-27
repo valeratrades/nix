@@ -23,16 +23,18 @@ function load_page
 
 
 	set base_path "$HOME/tmp/book_parser"
-	mkdir -p "$base_path/src"
-	set tmp_path "$base_path/src/page_$page.txt"
-	set out_path "$base_path/page_"$page"_ti.txt"
+	set book_path "$base_path/пкк_11"
+	mkdir -p "$book_path/src"
+	set tmp_path "$book_path/src/page_$page.txt"
+	set vocabulary "6_000"
+	set out_path "$book_path/page_"$page".de.ti$vocabulary.md"
 
-	if ~/s/other/book_parser/target/debug/book_parser -c"html.vkjxfpdusm.idc0_343 body div#reader-body div.container div.row div.col-12.col-lg-8.col-xl-8 section" --url "https://fb2.top/kadetskiy-korpus-kniga-desyataya-757190/read/part-$page" -l"German" > $tmp_path
+	if ~/s/other/book_parser/target/debug/book_parser -c".col-12 > section:nth-child(3)" -c".col-12 > section:nth-child(4)" --url "https://fb2.top/petlya-kadetskiy-korpus-kniga-odinnadcataya-762938/read/part-$page" -l"German" > $tmp_path
 		if test "$notify" = true
 			beep "loaded"
 		end
 
-		if cat $tmp_path | translate_infrequent -l"de" -k"5_000" > $out_path
+		if cat $tmp_path | translate_infrequent -l"de" -k"$vocabulary" > $out_path
 			if test "$notify" = true
 				beep "translated infrequent (to $out_path)"
 			end

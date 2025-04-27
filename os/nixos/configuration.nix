@@ -91,7 +91,7 @@ in
         enable = true;
         support32Bit = true;
       };
-      pulse.enable = true;
+      pulse.enable = false; #TEST
       jack.enable = true;
       wireplumber.enable = true;
     };
@@ -144,6 +144,7 @@ in
     };
     rust-motd.enableMotdInSSHD = true; # better ssh greeter
     mtr.enable = true;
+    steam.enable = true; # brings steam-run
     gnupg.agent = {
       enable = true;
       enableSSHSupport = false;
