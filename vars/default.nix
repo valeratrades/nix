@@ -32,7 +32,7 @@ in
     defaultUsername = "valeratrades";
     defaultUserEmail = "v79166789533@gmail.com";
     masterUserEmail = "valeratrades@gmail.com";
-    wakeTime = "07:00"; # matches system time, - mine is in utc
+    wakeTime = "09:00"; # matches system time, (my system time is utc)
     fontSize = 9.5;
   };
   maria = {

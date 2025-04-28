@@ -277,7 +277,7 @@ return require('lazy').setup({
 		"folke/trouble.nvim",
 		opts = {
 			modes = {
-				symbols = { auto_open = true },
+				symbols = { auto_open = false }, -- would love for it to be `true`, but today it's inconsistent (2025/04/28)
 			}
 		},
 		cmd = "Trouble",

@@ -165,10 +165,16 @@
           # embedded dev
           platformio-core
           #platformio #dbg: couldn't build the `pio` thing for some reason
-          arduino
+          #arduino #dbg: can't build for some reason
+          arduino-core
+          arduino-ci
+          arduino-mk
+          arduino-ide
+          arduino-language-server
           arduino-create-agent
           cargo-pio
           vscode-extensions.platformio.platformio-vscode-ide
+          minicom
         ]
         [
           # Terminal apps/scripts (actually useful)

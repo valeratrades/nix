@@ -578,7 +578,7 @@ in
         #PATH = "${pkgs.lib.makeBinPath [ ]}:${userHome}/s/evdev/:${userHome}/.cargo/bin/:${userHome}/go/bin/:/usr/lib/rustup/bin/:${userHome}/.local/bin/:${modularHome}/pkg/packages.modular.com_mojo/bin:${userHome}/.local/share/flatpak:/var/lib/flatpak";
         EDITOR = "nvim";
         WAKETIME = "${user.wakeTime}";
-        DAY_SECTION_BORDERS = "2.5:10.5:16";
+        DAY_SECTION_BORDERS = "0.2:8.5:16";
         DEFAULT_BROWSER = "${pkgs.google-chrome}/bin/google-chrome-stable";
         PAGER = "less";
         MANPAGER = "less";
