@@ -54,6 +54,7 @@ in
         en-croissant # chess analysis GUI
         ncspot
         gitui
+        zed
 
         libinput
         #flutterPackages-source.stable // errors

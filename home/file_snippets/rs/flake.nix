@@ -15,17 +15,20 @@
           inherit system overlays;
           allowUnfree = true;
         };
-
+        #NB: can't load rust-bin from nightly.latest, as there are week guarantees of which components will be available on each day.
+        rust = pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default.override {
+          extensions = [ "rust-src" "rust-analyzer" "rust-docs" "rustc-codegen-cranelift-preview" ];
+        });
+        pre-commit-check = pre-commit-hooks.lib.${system}.run (v-utils.files.preCommit { inherit pkgs; });
         manifest = (pkgs.lib.importTOML ./Cargo.toml).package;
         pname = manifest.name;
-        pre-commit-check = pre-commit-hooks.lib.${system}.run (v-utils.files.preCommit { inherit pkgs; });
         stdenv = pkgs.stdenvAdapters.useMoldLinker pkgs.stdenv;
 
         workflowContents = v-utils.ci {
           inherit pkgs;
           lastSupportedVersion = "CURRENT_NIGHTLY_BY_DATE";
           jobsErrors = [ "rust-tests" "rust-miri" ];
-          jobsWarnings = [ "rust-doc" "rust-clippy" "rust-machete" "rust-sort" "tokei" ];
+          jobsWarnings = [ "rust-doc" "rust-clippy" "rust-machete" "rust-sorted" "tokei" ];
         };
         readme = v-utils.readme-fw {
           inherit pkgs pname;
@@ -38,7 +41,6 @@
       {
         packages =
           let
-            rust = (pkgs.rust-bin.fromRustupToolchainFile ./.cargo/rust-toolchain.toml);
             rustc = rust;
             cargo = rust;
             rustPlatform = pkgs.makeRustPlatform {
@@ -94,7 +96,7 @@
               mold-wrapped
               openssl
               pkg-config
-              (rust-bin.fromRustupToolchainFile ./.cargo/rust-toolchain.toml)
+              rust
             ] ++ pre-commit-check.enabledPackages;
           };
       }
