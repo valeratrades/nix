@@ -770,6 +770,11 @@ in
           # env / deployment
           [
             docker
+            docker-compose
+            docker-compose-language-service
+            docker-client
+            arion # configure docker with nix
+            podman-compose
             cargo-shuttle
             devenv
             nix-direnv

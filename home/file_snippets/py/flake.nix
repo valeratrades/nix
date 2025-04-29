@@ -48,12 +48,14 @@
             "ci"
           ];
         };
-        pythonPkgs = pkgs.python3.withPackages (ps: with ps; [
-          icecream
-        ]);
+        pythonPkgs = pkgs.python3.withPackages (
+          ps: with ps; [
+            icecream
+          ]
+        );
       in
       {
-        packages.default = pkgs.writeShellScriptBin "run-python" ''${pythonPkgs}/bin/python -m src "$@"'';
+        packages.default = pkgs.writeShellScriptBin "${pname}" ''export PYTHONPATH="${self}:$PYTHONPATH"; ${pythonPkgs}/bin/python -m src "$@"'';
 
         devShells.default =
           with pkgs;

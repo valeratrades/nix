@@ -155,8 +155,7 @@ in
     pre-commit-check = pre-commit-hooks.lib.${system}.run {
       src = mylib.relativeToRoot ".";
       hooks = {
-        #nixfmt-rfc-style.enable = true;
-        nixpkgs-fmt.enable = true; # seems to be the most reasonable (it doesn't produce vertical bloat)
+        nixfmt.enable = true; # seems to be the most reasonable (doesn't produce vertical bloat). But they change them way too often, fucking morons.
 
         #deadnix.enable = true; # detect unused variable bindings in `*.nix`. Also fails if false, so maybe this shouldn't be a hook.
         statix.enable = true; # lints and suggestions for Nix code(auto suggestions)
