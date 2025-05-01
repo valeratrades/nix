@@ -112,6 +112,12 @@ in
     geoclue2.enable = true; # Enable geolocation services.
     printing.enable = true; # Enable CUPS to print documents.
   };
+  virtualisation = {
+    docker = {
+      enable = true;
+      package = pkgs.docker;
+    };
+  };
   programs = {
     sway = {
       enable = true;
@@ -419,6 +425,7 @@ in
       "keyd"
       "audio"
       "video"
+      "docker"
     ];
     openssh.authorizedKeys.keys = user.sshAuthorizedKeys;
   };
@@ -769,7 +776,7 @@ in
 
           # env / deployment
           [
-            docker
+            #docker
             docker-compose
             docker-compose-language-service
             docker-client
