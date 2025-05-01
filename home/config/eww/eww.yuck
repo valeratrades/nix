@@ -29,6 +29,7 @@
 		(openvpn)
 		(notifications)
 		(github)
+		(layout)
 		;
 
 		; ; Always rendered
@@ -48,7 +49,6 @@
 )
 
 ;; bar modules {{{
-;; Sway Mode
 (defwidget sway_mode []
 	(box
 		:visible {sway_mode != "default"}
@@ -56,7 +56,6 @@
 	)
 )
 
-;; Timer 
 (defwidget timer []
 	(box
 		:visible {timer != ""}
@@ -64,8 +63,16 @@
 	)
 )
 
+(defpoll layout_poll :initial "" :interval "1s" "./modules/layout.sh")
+(defwidget layout []
+	(box
+		:visible {layout_poll != ""}
+		:class "warn"
+		"${layout_poll}"
+	)
+)
 
-;; Todo Timer ;;
+
 (defwidget todo_timer []
 	(box
 		:class "text"
@@ -73,7 +80,6 @@
 		:visible {todo_timer != "None"}
 		" ${todo_timer}"))
 
-;; Cargo ;;
 (defwidget cargo []
 	(box
 		:class "warn"
@@ -82,7 +88,6 @@
 	)
 )
 
-;; Obs ;;
 (defpoll obs_active_poll	:initial "0" :interval "1s" "./modules/obs_active.sh")
 (defwidget obs []
 	(box
@@ -92,7 +97,6 @@
 	)
 )
 
-;; Openvpn ;;
 (defpoll openvpn_poll :initial "0" :interval "1s" "./modules/openvpn.sh")
 (defwidget openvpn []
   (box
@@ -101,11 +105,9 @@
 	)
 )
 
-;; Battery-Saver ;;
 (defpoll battery_saver_poll	:initial "" :interval "1s" "./modules/battery_saver.sh")
 (defwidget battery_saver [] "${battery_saver_poll}")
 
-;; Battery ;;
 (defpoll battery_poll	:initial "{}" :interval "1s" "./modules/battery.sh")
 (defwidget battery []
 	(box
@@ -115,11 +117,9 @@
 	)
 )
 
-;; Time ;;
 (defpoll time_poll :interval "1s" "date +\"%Y/%m/%d%a%H:%M:%S\"")
 (defwidget time [] "${time_poll}")
 
-;; Bluetooth ;;
 (defpoll bluetooth_connection :interval "2s" "./modules/bluetooth.sh")
 (defwidget bluetooth []
 	(box
@@ -128,7 +128,6 @@
 	)
 )
 
-;; System Utilization ;;
 (defwidget cpu []
 	(box
 		:class {"${round(EWW_CPU.avg, 0)}" > 90 ? "warn" : ""}
@@ -138,7 +137,6 @@
 		:visible {EWW_RAM.used_mem_perc != ""}
 		"${round(EWW_RAM.used_mem_perc, 0)}%"))
 
-;; Notifications ;;
 (defpoll github_poll :initial "" :interval "1m" "./modules/github.sh")
 (defwidget github []
 	(box
@@ -151,7 +149,7 @@
 		:visible {notifications_listen.show == "yes"}
 		{notifications_listen.content}))
 
-;; Network ;;
+; Network
 (defpoll ping_poll :interval "10s" "./modules/ping.sh")
 (defwidget ping []
 	(box
@@ -170,7 +168,6 @@
 	)
 )
 
-;; Temperature ;;
 (defpoll temperature_poll :initial "{}" :interval "15s" "./modules/temperature.sh")
 (defwidget temperature [] "${temperature_poll.icon}${temperature_poll.content}")
 
