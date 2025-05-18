@@ -58,6 +58,8 @@ Currently config is impure. For possibility of reversion, all known places that 
 
 - Declarative > Situational. That's the reason I don't end up using shortcuts for switching panes. All my tools must be designed with this in mind: it's fine if more work is required for the same action, as long as this leads to it being [pure](<https://en.wikipedia.org/wiki/Pure_function>); and then all situational, impure, shortcuts should not be introduced at all, as it only convolutes the manpage. The largest change in behavior this should prompt: getting rid of all toggles, unless it is meant to be evoked exclusively via keybind, (meaning can't add <command> on / <command> off), and there is a keybind deficit.
 
+- all shortcuts, scripts and tools must be 5std reliable. If they fail more often, the default should be used. Indexing some but not much for how important the tool is.
+
 #### Cli
 Target length for general aliases is 2 characters, if they are important enough.
 One-letter cases are mostly reserved for custom scripts, local to the project, eg: commands initialized when I `cs` into a directory with `run.sh` in it.
