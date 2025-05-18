@@ -1,27 +1,16 @@
 # Edit this configuration file to define what should be installed on
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
-{ self
-, config
-, pkgs
-, lib
-, user
-, mylib
-, inputs
-, ...
-}:
+{ self, config, pkgs, lib, user, mylib, inputs, ... }:
 #TODO: add build script that cds in $XDG_DATA_HOME/nvim/lazy-telescope-fzf-native.nvim and runs `make`
 let
   userHome = config.users.users."${user.username}".home;
-  configRoot = "/home/${user.username}/nix"; # TODO!!!!!: have this be dynamic based on the actual dir where this config is currently located.
+  configRoot =
+    "/home/${user.username}/nix"; # TODO!!!!!: have this be dynamic based on the actual dir where this config is currently located.
 
   modularHome = "${userHome}/.modular";
-in
-{
-  nix.settings.experimental-features = [
-    "nix-command"
-    "flakes"
-  ];
+in {
+  nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
   #TODO!!!!!!: \
   #services.tg-server = builtins.trace "TRACE: sourcing my tg tool" {
@@ -54,7 +43,8 @@ in
   #};
 
   services = {
-    gnome.gnome-keyring.enable = lib.mkDefault false; # annoying // Supposed to be an extra layer of security for managed {ssh passwords, gpg, wifi, etc}
+    gnome.gnome-keyring.enable = lib.mkDefault
+      false; # annoying // Supposed to be an extra layer of security for managed {ssh passwords, gpg, wifi, etc}
     getty.autologinUser = user.username;
     xserver = {
       # # somehow this fixed the audio problem. Like huh, what, why???
@@ -63,7 +53,8 @@ in
       enable = false;
       displayManager.startx.enable = true;
       #
-      autorun = false; # no clue if it does anything if `enable = false`, but might as well keep it
+      autorun =
+        false; # no clue if it does anything if `enable = false`, but might as well keep it
 
       xkb = {
         options = "grp:win_space_toggle";
@@ -77,12 +68,15 @@ in
         variant = (if user.userFullName == "Timur" then "ansi,," else "iso,,");
         #
       };
-      autoRepeatDelay = 240; # doesn't do anything currently (could be reset by sway)
-      autoRepeatInterval = 70; # doesn't do anything currently (could be reset by sway)
+      autoRepeatDelay =
+        240; # doesn't do anything currently (could be reset by sway)
+      autoRepeatInterval =
+        70; # doesn't do anything currently (could be reset by sway)
     };
     libinput = {
       enable = true;
-      touchpad.tapping = true; # doesn't do anything currently (could be reset by sway)
+      touchpad.tapping =
+        true; # doesn't do anything currently (could be reset by sway)
     };
 
     pipewire = {
@@ -91,7 +85,7 @@ in
         enable = true;
         support32Bit = true;
       };
-      pulse.enable = false; #TEST
+      pulse.enable = false; # TEST
       jack.enable = true;
       wireplumber.enable = true;
     };
@@ -101,7 +95,8 @@ in
       settings = {
         KbdInteractiveAuthentication = true;
         UseDns = true; # allows for using hostnames in authorized_keys
-        X11Forwarding = true; # theoretically allows for use of graphical applications
+        X11Forwarding =
+          true; # theoretically allows for use of graphical applications
         PermitRootLogin = "yes"; # HACK: security risk
       };
       #openFirewall = true; # auto-open specified ports in the firewall. Seems to conflict with manual specification of eg `22` port
@@ -122,27 +117,16 @@ in
     sway = {
       enable = true;
       wrapperFeatures.gtk = true;
-      extraSessionCommands = ''
-        				export XDG_CURRENT_DESKTOP="sway";
-        				export GDK_BACKEND="wayland";
-        				export XDG_BACKEND="wayland";
-        				export QT_WAYLAND_FORCE_DPI="physical";
-        				export QT_QPA_PLATFORM="wayland-egl";
-        				export CLUTTER_BACKEND="wayland";
-        				export SDL_VIDEODRIVER="wayland";
-        				export BEMENU_BACKEND="wayland";
-        				export MOZ_ENABLE_WAYLAND="1";
-        				# QT (needs qt5.qtwayland in systemPackages)
-        				export QT_QPA_PLATFORM=wayland-egl
-        				export SDL_VIDEODRIVER=wayland
-        			'';
+      extraSessionCommands =
+        "	export XDG_CURRENT_DESKTOP=\"sway\";\n	export GDK_BACKEND=\"wayland\";\n	export XDG_BACKEND=\"wayland\";\n	export QT_WAYLAND_FORCE_DPI=\"physical\";\n	export QT_QPA_PLATFORM=\"wayland-egl\";\n	export CLUTTER_BACKEND=\"wayland\";\n	export SDL_VIDEODRIVER=\"wayland\";\n	export BEMENU_BACKEND=\"wayland\";\n	export MOZ_ENABLE_WAYLAND=\"1\";\n	# QT (needs qt5.qtwayland in systemPackages)\n	export QT_QPA_PLATFORM=wayland-egl\n	export SDL_VIDEODRIVER=wayland\n";
     };
     sway.xwayland.enable = true;
     fish.enable = true;
 
     # conflicts with gnupg agent on which I have ssh support. TODO: figure out which one I want
     ssh = {
-      startAgent = true; # openssh remembers private keys; `ssh-add` adds a key to the agent
+      startAgent =
+        true; # openssh remembers private keys; `ssh-add` adds a key to the agent
       enableAskPassword = true;
       extraConfig = ''
         PasswordAuthentication = yes
@@ -170,26 +154,21 @@ in
         user = {
           name = user.defaultUsername;
           email = user.masterUserEmail;
-          token = "$GITHUB_KEY"; # can't name `GITHUB_TOKEN`, as `gh` gets confused
+          token =
+            "$GITHUB_KEY"; # can't name `GITHUB_TOKEN`, as `gh` gets confused
         };
 
         credential.helper = "store";
 
-        pull = {
-          rebase = true;
-        };
+        pull = { rebase = true; };
 
         safe = {
           directory = "*"; # says it's okay to write anywhere
         };
 
-        help = {
-          autocorrect = 5;
-        };
+        help = { autocorrect = 5; };
 
-        pager = {
-          difftool = true;
-        };
+        pager = { difftool = true; };
 
         filter = {
           "lfs" = {
@@ -201,61 +180,66 @@ in
         };
 
         fetch = {
-          prune = true; # when deleting file locally, delete pointers on the remote
+          prune =
+            true; # when deleting file locally, delete pointers on the remote
         };
 
         diff = {
-          colorMoved = "zebra"; # copy/pastes are colored differently than actual removes/additions
+          colorMoved =
+            "zebra"; # copy/pastes are colored differently than actual removes/additions
           colormovedws = "allow-indentation-change";
-          external = "difft --color auto --background light --display side-by-side";
+          external =
+            "difft --color auto --background light --display side-by-side";
         };
 
         advice = {
-          detachedHead = true; # warn when pointing to a commit instead of branch
+          detachedHead =
+            true; # warn when pointing to a commit instead of branch
           addIgnoredFile = false;
         };
 
-        alias =
-          let
-            diff_ignore = ":!package-lock.json :!yarn.lock :!Cargo.lock :!flake.lock"; #TODO: get this appendage to work "-I 'LoC-[0-9]\+-'"; (currently prevents showing a **bunch** of diffs. # LoC is for my `Lines of Code` badge in READMEs, because it's updated programmatically
-          in
-          {
-            # NB: git "aliases" must be self-contained. Say `am = commit -am` won't work.
-            m = "merge";
-            r = "rebase";
+        alias = let
+          diff_ignore =
+            ":!package-lock.json :!yarn.lock :!Cargo.lock :!flake.lock"; # TODO: get this appendage to work "-I 'LoC-[0-9]\+-'"; (currently prevents showing a **bunch** of diffs. # LoC is for my `Lines of Code` badge in READMEs, because it's updated programmatically
+        in {
+          # NB: git "aliases" must be self-contained. Say `am = commit -am` won't work.
+          m = "merge";
+          r = "rebase";
 
-            d = "diff -- ${diff_ignore}";
-            ds = "diff --staged -- ${diff_ignore}";
-            s = "diff --stat -- ${diff_ignore}";
-            sm = "diff --stat master -- ${diff_ignore}";
-            #diff = "diff -- ${diff_ignore}"; sadly, can't do anything for `Starship` integration, as it's hardcoded to be `git diff`, which I can't alias due to having to use it with differing args in other aliases.
+          d = "diff -- ${diff_ignore}";
+          ds = "diff --staged -- ${diff_ignore}";
+          s = "diff --stat -- ${diff_ignore}";
+          sm = "diff --stat master -- ${diff_ignore}";
+          #diff = "diff -- ${diff_ignore}"; sadly, can't do anything for `Starship` integration, as it's hardcoded to be `git diff`, which I can't alias due to having to use it with differing args in other aliases.
 
-            l = "branch --list";
-            unstage = "reset HEAD --"; # in case you did `git add .` before running `git diff`
-            last = "log -1 HEAD";
+          l = "branch --list";
+          unstage =
+            "reset HEAD --"; # in case you did `git add .` before running `git diff`
+          last = "log -1 HEAD";
 
-            a = "add";
-            aa = "add -A";
-            au = "remote add upstream";
-            ao = "remote add origin";
-            su = "remote set-url upstream";
-            so = "remote set-url origin";
+          a = "add";
+          aa = "add -A";
+          au = "remote add upstream";
+          ao = "remote add origin";
+          su = "remote set-url upstream";
+          so = "remote set-url origin";
 
-            b = "branch";
-            c = "checkout";
-            cb = "checkout -b";
-            f = "push --force-with-lease";
-            p = "pull --rebase";
-            blame = "blame -w -C -C -C";
-            ca = "commit -am";
-            ri = "rebase --autosquash -i master";
-            ra = "rebase --abort";
-            rc = "rebase --continue";
-            log = "-c diff.external=difft log -p --ext-diff";
-            stash = "stash --all";
-            hardupdate = "!git fetch && git reset --hard \"origin/$(git rev-parse --abbrev-ref HEAD)\""; # stolen from Orion, but not yet tested
-            noedit = "commit -a --amend --no-edit";
-          };
+          b = "branch";
+          c = "checkout";
+          cb = "checkout -b";
+          f = "push --force-with-lease";
+          p = "pull --rebase";
+          blame = "blame -w -C -C -C";
+          ca = "commit -am";
+          ri = "rebase --autosquash -i master";
+          ra = "rebase --abort";
+          rc = "rebase --continue";
+          log = "-c diff.external=difft log -p --ext-diff";
+          stash = "stash --all";
+          hardupdate = ''
+            !git fetch && git reset --hard "origin/$(git rev-parse --abbrev-ref HEAD)"''; # stolen from Orion, but not yet tested
+          noedit = "commit -a --amend --no-edit";
+        };
 
         url."git@gist.github.com:" = {
           pushInsteadOf = "https://gist.github.com/";
@@ -265,13 +249,9 @@ in
         #   pushInsteadOf = "https://github.com/";
         # };
 
-        url."git@gitlab.com:" = {
-          pushInsteadOf = "https://gitlab.com/";
-        };
+        url."git@gitlab.com:" = { pushInsteadOf = "https://gitlab.com/"; };
 
-        init = {
-          defaultBranch = "master";
-        };
+        init = { defaultBranch = "master"; };
 
         push = {
           autoSetupRemote = true;
@@ -288,13 +268,9 @@ in
           autoSetupMerge = "simple";
         };
 
-        rebase = {
-          autosquash = true;
-        };
+        rebase = { autosquash = true; };
 
-        merge = {
-          conflictStyle = "zdiff3";
-        };
+        merge = { conflictStyle = "zdiff3"; };
       };
     };
   };
@@ -316,15 +292,13 @@ in
     ./shared
     (if user.userFullName != "Server" then ./desktop else null)
     (mylib.relativeToRoot "./hosts/${user.desktopHostName}/configuration.nix")
-    (
-      if builtins.pathExists "/etc/nixos/hardware-configuration.nix" then
-        /etc/nixos/hardware-configuration.nix
-      else
-        builtins.trace
-          "WARNING: Falling back to ./hosts/${user.desktopHostName}/hardware-configuration.nix, as /etc/nixos/hardware-configuration.nix does not exist. Could cause problems."
-          mylib.relativeToRoot
-          "./hosts/${user.desktopHostName}/hardware-configuration.nix"
-    )
+    (if builtins.pathExists "/etc/nixos/hardware-configuration.nix" then
+      /etc/nixos/hardware-configuration.nix
+    else
+      builtins.trace
+      "WARNING: Falling back to ./hosts/${user.desktopHostName}/hardware-configuration.nix, as /etc/nixos/hardware-configuration.nix does not exist. Could cause problems."
+      mylib.relativeToRoot
+      "./hosts/${user.desktopHostName}/hardware-configuration.nix")
   ];
   hardware.enableAllFirmware = true; # Q: not sure if I need it
 
@@ -336,9 +310,7 @@ in
   boot = {
     tmp.useTmpfs = true;
     loader = {
-      systemd-boot = {
-        enable = true;
-      };
+      systemd-boot = { enable = true; };
       timeout = 0; # spam `Space` or `Shift` to bring the menu up when needed
       efi.canTouchEfiVariables = true;
       #grub.useOsProber = true; # need to find alternative for systemd-boot
@@ -346,9 +318,7 @@ in
 
     # from what I understand, zswap is an intermediate layer with 3-4.3x compression in-RAM, to which older blocks are saved before being written to disk swap. Zram is the same, but no writes to disk at all, it just stays in the compressed RAM block. Don't want the latter, but former sounds promising.
     # not sure how to objectively check its effect on performance, though.
-    kernelParams = [
-      "zswap.enabled=1"
-    ];
+    kernelParams = [ "zswap.enabled=1" ];
 
     # # for obs's Virtual Camera
     extraModulePackages = with config.boot.kernelPackages; [ v4l2loopback ];
@@ -365,46 +335,43 @@ in
   };
 
   time.timeZone = "UTC";
-  i18n =
-    if user.userFullName == "Timur" then
-      {
-        defaultLocale = "en_US.UTF-8"; # contemplated on making this `ru_RU.UTF-8`, but decided against it as that also affects outputs of some terminal commands, and that is just asking for developing bad habits.
-        extraLocaleSettings = {
-          LC_ADDRESS = "ru_RU.UTF-8";
-          LC_IDENTIFICATION = "ru_RU.UTF-8";
-          LC_MEASUREMENT = "ru_RU.UTF-8";
-          LC_MONETARY = "ru_RU.UTF-8";
-          LC_NAME = "ru_RU.UTF-8";
-          LC_NUMERIC = "ru_RU.UTF-8";
-          LC_PAPER = "ru_RU.UTF-8";
-          LC_TELEPHONE = "ru_RU.UTF-8";
-          LC_TIME = "ru_RU.UTF-8";
-        };
-      }
-    else
-      {
-        defaultLocale = "en_US.UTF-8";
-        extraLocaleSettings = {
-          LC_ADDRESS = "fr_FR.UTF-8";
-          LC_IDENTIFICATION = "fr_FR.UTF-8";
-          LC_MEASUREMENT = "en_GB.UTF-8";
-          LC_MONETARY = "en_US.UTF-8";
-          LC_NAME = "fr_FR.UTF-8";
-          LC_NUMERIC = "fr_FR.UTF-8";
-          LC_PAPER = "fr_FR.UTF-8";
-          LC_TELEPHONE = "fr_FR.UTF-8";
-          LC_TIME = "en_GB.UTF-8";
-        };
-      };
+  i18n = if user.userFullName == "Timur" then {
+    defaultLocale =
+      "en_US.UTF-8"; # contemplated on making this `ru_RU.UTF-8`, but decided against it as that also affects outputs of some terminal commands, and that is just asking for developing bad habits.
+    extraLocaleSettings = {
+      LC_ADDRESS = "ru_RU.UTF-8";
+      LC_IDENTIFICATION = "ru_RU.UTF-8";
+      LC_MEASUREMENT = "ru_RU.UTF-8";
+      LC_MONETARY = "ru_RU.UTF-8";
+      LC_NAME = "ru_RU.UTF-8";
+      LC_NUMERIC = "ru_RU.UTF-8";
+      LC_PAPER = "ru_RU.UTF-8";
+      LC_TELEPHONE = "ru_RU.UTF-8";
+      LC_TIME = "ru_RU.UTF-8";
+    };
+  } else {
+    defaultLocale = "en_US.UTF-8";
+    extraLocaleSettings = {
+      LC_ADDRESS = "fr_FR.UTF-8";
+      LC_IDENTIFICATION = "fr_FR.UTF-8";
+      LC_MEASUREMENT = "en_GB.UTF-8";
+      LC_MONETARY = "en_US.UTF-8";
+      LC_NAME = "fr_FR.UTF-8";
+      LC_NUMERIC = "fr_FR.UTF-8";
+      LC_PAPER = "fr_FR.UTF-8";
+      LC_TELEPHONE = "fr_FR.UTF-8";
+      LC_TIME = "en_GB.UTF-8";
+    };
+  };
 
   hardware.bluetooth = {
     enable = true;
     powerOnBoot = false;
   };
   environment.etc."bluetooth/audio.conf".text = ''
-    	# theoretically should prevent it from choosing HSP/HFP over A2DP
-    	Disable=Headset
-    	'';
+    # theoretically should prevent it from choosing HSP/HFP over A2DP
+    Disable=Headset
+  '';
 
   security = {
     sudo = {
@@ -419,14 +386,7 @@ in
     isNormalUser = true;
     description = "${user.userFullName}";
     shell = pkgs.fish;
-    extraGroups = [
-      "networkmanager"
-      "wheel"
-      "keyd"
-      "audio"
-      "video"
-      "docker"
-    ];
+    extraGroups = [ "networkmanager" "wheel" "keyd" "audio" "video" "docker" ];
     openssh.authorizedKeys.keys = user.sshAuthorizedKeys;
   };
 
@@ -435,10 +395,7 @@ in
       # not sure why I have this
       mpris-proxy = {
         description = "Mpris proxy";
-        after = [
-          "network.target"
-          "sound.target"
-        ];
+        after = [ "network.target" "sound.target" ];
         wantedBy = [ "default.target" ];
         serviceConfig.ExecStart = "${pkgs.bluez}/bin/mpris-proxy";
       };
@@ -460,8 +417,7 @@ in
 
   fonts = {
     #NB: many of the icons will be overwritten by nerd-fonts. If a character is not rendering properly, use `nerdfix` on the repo, search for correct codepoint in https://www.nerdfonts.com/cheat-sheet
-    packages =
-      with pkgs;
+    packages = with pkgs;
       lib.lists.flatten [
         cantarell-fonts
         dejavu_fonts
@@ -544,59 +500,58 @@ in
   #};
   documentation.dev.enable = true;
   documentation.man = {
-    man-db.enable = false; # In order to enable to mandoc man-db has to be disabled.
+    man-db.enable =
+      false; # In order to enable to mandoc man-db has to be disabled.
     mandoc.enable = true;
   };
   environment = {
     # XDG directories and Wayland environment variables setup
-    variables =
-      let
-        xdgDataHome = "${userHome}/.local/share";
-      in
-      {
-        XDG_DATA_HOME = "${xdgDataHome}";
-        XDG_STATE_HOME = "${userHome}/.local/state";
-        XDG_CONFIG_HOME = "${userHome}/.config"; # NB: sops setup may break if it's not ~/.config
-        XDG_CACHE_HOME = "${userHome}/.cache";
-        #XDG_RUNTIME_DIR is set by nix to /run/user/1000
+    variables = let xdgDataHome = "${userHome}/.local/share";
+    in {
+      XDG_DATA_HOME = "${xdgDataHome}";
+      XDG_STATE_HOME = "${userHome}/.local/state";
+      XDG_CONFIG_HOME =
+        "${userHome}/.config"; # NB: sops setup may break if it's not ~/.config
+      XDG_CACHE_HOME = "${userHome}/.cache";
+      #XDG_RUNTIME_DIR is set by nix to /run/user/1000
 
-        # Other specific environment variables
-        GIT_CONFIG_HOME = "${userHome}/.config/git/config";
-        QT_QPA_PLATFORMTHEME = "flatpak";
-        GTK_USE_PORTAL = "1";
-        GDK_DEBUG = "portals";
+      # Other specific environment variables
+      GIT_CONFIG_HOME = "${userHome}/.config/git/config";
+      QT_QPA_PLATFORMTHEME = "flatpak";
+      GTK_USE_PORTAL = "1";
+      GDK_DEBUG = "portals";
 
-        # Nix
-        NIXOS_CONFIG = "${configRoot}";
-        #TODO!: figure out how to procedurally disable [vesktop, tg] evokations via rofi, outside of preset times in my calendar
-        DOT_DESKTOP = "${pkgs.home-manager}/share/applications";
-        DIRENV_WARN_TIMEOUT = "1h";
-        # openssl hurdle
-        PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig:${pkgs.alsa-lib.dev}/lib/pkgconfig:${pkgs.wayland-scanner.bin}/bin"; # :${pkgs.openssl}/lib"; # many of my rust scripts require it
+      # Nix
+      NIXOS_CONFIG = "${configRoot}";
+      #TODO!: figure out how to procedurally disable [vesktop, tg] evokations via rofi, outside of preset times in my calendar
+      DOT_DESKTOP = "${pkgs.home-manager}/share/applications";
+      DIRENV_WARN_TIMEOUT = "1h";
+      # openssl hurdle
+      PKG_CONFIG_PATH =
+        "${pkgs.openssl.dev}/lib/pkgconfig:${pkgs.alsa-lib.dev}/lib/pkgconfig:${pkgs.wayland-scanner.bin}/bin"; # :${pkgs.openssl}/lib"; # many of my rust scripts require it
 
-        # apparently wine works better on 32-bit
-        #NB: when enabling, make sure the main monitor the wine will be displayed on starts at `0 0`
-        WINEPREFIX = "${userHome}/.wine";
-        #WINEARCH = "win32";
-        STARSHIP_LOG = "error"; # disable the pesky [WARN] messages
+      # apparently wine works better on 32-bit
+      #NB: when enabling, make sure the main monitor the wine will be displayed on starts at `0 0`
+      WINEPREFIX = "${userHome}/.wine";
+      #WINEARCH = "win32";
+      STARSHIP_LOG = "error"; # disable the pesky [WARN] messages
 
-        # home vars
-        MODULAR_HOME = "${modularHome}";
-        #PATH = "${pkgs.lib.makeBinPath [ ]}:${userHome}/s/evdev/:${userHome}/.cargo/bin/:${userHome}/go/bin/:/usr/lib/rustup/bin/:${userHome}/.local/bin/:${modularHome}/pkg/packages.modular.com_mojo/bin:${userHome}/.local/share/flatpak:/var/lib/flatpak";
-        EDITOR = "nvim";
-        WAKETIME = "${user.wakeTime}";
-        DAY_SECTION_BORDERS = "0.2:8.5:16";
-        DEFAULT_BROWSER = "${pkgs.google-chrome}/bin/google-chrome-stable";
-        PAGER = "less";
-        MANPAGER = "less";
-        LESSHISTFILE = "-";
-        HISTCONTROL = "ignorespace";
-      };
+      # home vars
+      MODULAR_HOME = "${modularHome}";
+      #PATH = "${pkgs.lib.makeBinPath [ ]}:${userHome}/s/evdev/:${userHome}/.cargo/bin/:${userHome}/go/bin/:/usr/lib/rustup/bin/:${userHome}/.local/bin/:${modularHome}/pkg/packages.modular.com_mojo/bin:${userHome}/.local/share/flatpak:/var/lib/flatpak";
+      EDITOR = "nvim";
+      WAKETIME = "${user.wakeTime}";
+      DAY_SECTION_BORDERS = "0.2:8.5:16";
+      DEFAULT_BROWSER = "${pkgs.google-chrome}/bin/google-chrome-stable";
+      PAGER = "less";
+      MANPAGER = "less";
+      LESSHISTFILE = "-";
+      HISTCONTROL = "ignorespace";
+    };
 
     binsh = "${pkgs.dash}/bin/dash";
 
-    systemPackages =
-      with pkgs;
+    systemPackages = with pkgs;
       lib.lists.flatten [
         libinput-gestures
         librsvg
@@ -770,6 +725,7 @@ in
         [
           gh
           git
+          git-lfs # large file storage
           pkg-config # when used in build scripts, must be included in `nativeBuildInputs`. Only _native_ will work.
           openssl
           tokei
@@ -798,14 +754,13 @@ in
     '';
     deps = [ ];
   };
-  hardware.bluetooth.hsphfpd.enable = false; #HACK: will prevent me from using bluetooth mics
+  hardware.bluetooth.hsphfpd.enable =
+    false; # HACK: will prevent me from using bluetooth mics
 
   powerManagement = {
     enable = true;
-    powerUpCommands = ''
-      			systemctl --user restart wlr-gamma
-      			systemctl --user restart auto_redshift
-      		'';
+    powerUpCommands =
+      "	systemctl --user restart wlr-gamma\n	systemctl --user restart auto_redshift\n";
   };
 
   #TODO!: make specific to the host
@@ -837,18 +792,14 @@ in
       ];
 
       # to transfer files from phone
-      allowedTCPPortRanges = [
-        {
-          from = 1714;
-          to = 1764;
-        }
-      ];
-      allowedUDPPortRanges = [
-        {
-          from = 1714;
-          to = 1764;
-        }
-      ];
+      allowedTCPPortRanges = [{
+        from = 1714;
+        to = 1764;
+      }];
+      allowedUDPPortRanges = [{
+        from = 1714;
+        to = 1764;
+      }];
       extraStopCommands = ''
         iptables -D nixos-fw -p tcp --source 192.0.2.0/24 --dport 1714:1764 -j nixos-fw-accept || true
         iptables -D nixos-fw -p udp --source 192.0.2.0/24 --dport 1714:1764 -j nixos-fw-accept || true
@@ -870,6 +821,7 @@ in
   #  dates = "weekly";
   #  options = "--delete-older-than 1w";
   #};
-  nix.settings.auto-optimise-store = true; # NB: can slow down individual builds; alternative: schedule optimise passes: https://nixos.org/manual/nix/stable/command-ref/conf-file.html#conf-auto-optimise-store
+  nix.settings.auto-optimise-store =
+    true; # NB: can slow down individual builds; alternative: schedule optimise passes: https://nixos.org/manual/nix/stable/command-ref/conf-file.html#conf-auto-optimise-store
   system.stateVersion = "24.05"; # NB: changing requires migration
 }

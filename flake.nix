@@ -22,7 +22,9 @@
 
   inputs = {
     nixpkgs = {
-      url = "github:nixos/nixpkgs/nixos-unstable";
+      #url = "github:nixos/nixpkgs/nixos-24.11"; #unstable";
+      url =
+        "github:nixos/nixpkgs/nixos-unstable"; # TODO!!!!: switch to stable (last try it just broke some packages with indescernable errors)
     };
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-24.11";
@@ -90,9 +92,7 @@
       url = "github:valeratrades/btc_line?ref=release";
       #inputs.nixpkgs.follows = "nixpkgs";
     };
-    rm_engine = {
-      url = "github:valeratrades/rm_engine?ref=release";
-    };
+    rm_engine = { url = "github:valeratrades/rm_engine?ref=release"; };
     tg = {
       url = "github:valeratrades/tg?ref=release";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -117,7 +117,8 @@
     };
     ask_llm.url = "github:valeratrades/ask_llm?ref=release";
     translate_infrequent.url = "github:valeratrades/translate_infrequent";
-    cargo_sort_derives.url = "github:valeratrades/cargo-sort-derives"; #TODO: switch to upstream once my PR is merged
+    cargo_sort_derives.url =
+      "github:valeratrades/cargo-sort-derives"; # TODO: switch to upstream once my PR is merged
 
     #aggr_orderbook = {
     #	url = "github:valeratrades/aggr_orderbook";

@@ -1,14 +1,8 @@
-{ self
-, pkgs
-, mylib
-, ...
-}:
-{
+{ self, pkgs, mylib, ... }: {
   imports = mylib.scanPaths ./.;
 
   # appends to existing if any
-  environment.systemPackages =
-    with pkgs;
+  environment.systemPackages = with pkgs;
     lib.lists.flatten [
       flatpak
       self.packages.${pkgs.system}.wlr-gamma-service
@@ -165,7 +159,7 @@
             python313Packages.cython # needs to be standalone used
             python313Packages.pip
             python313Packages.jedi-language-server
-            python313Packages.numpy # not sure why I have this here
+            #python313Packages.numpy # not sure why I have this here
             ruff
             #fix-python // have to install with `nix profile install github:GuillaumeDesforges/fix-python`
           ]
@@ -222,10 +216,7 @@
           ]
 
           # Yaml
-          [
-            yamlfmt
-            yamllint
-          ]
+          [ yamlfmt yamllint ]
         ]
 
         # Debuggers
