@@ -1,12 +1,4 @@
-{ self
-, config
-, lib
-, pkgs
-, user
-, inputs
-, ...
-}:
-{
+{ self, config, lib, pkgs, user, inputs, ... }: {
   imports = [
     ./programs
     ./nixcord.nix
@@ -15,8 +7,7 @@
       if user.userFullName == "Valera" then
         ./config_symlinks.nix
       else
-        (import ./config_writes.nix { inherit self pkgs user; })
-    )
+        (import ./config_writes.nix { inherit self pkgs user; }))
   ];
 
   programs = {
@@ -68,9 +59,7 @@
 
   dconf = {
     enable = true;
-    settings."org/gnome/desktop/interface" = {
-      color-scheme = "prefer-dark";
-    };
+    settings."org/gnome/desktop/interface" = { color-scheme = "prefer-dark"; };
   };
 
   gtk = {
@@ -88,17 +77,13 @@
       Description = "Start Eww Widgets";
       After = [ "graphical-session.target" ];
     };
-    Install = {
-      WantedBy = [ "default.target" ];
+    Install = { WantedBy = [ "default.target" ]; };
+    Service = let eww = "${pkgs.eww}/bin/eww";
+    in {
+      ExecStart =
+        "${eww} open bar && ${eww} open btc_line_lower && ${eww} open btc_line_upper && ${eww} open todo_blocker";
+      Restart = "on-failure";
     };
-    Service =
-      let
-        eww = "${pkgs.eww}/bin/eww";
-      in
-      {
-        ExecStart = "${eww} open bar && ${eww} open btc_line_lower && ${eww} open btc_line_upper && ${eww} open todo_blocker";
-        Restart = "on-failure";
-      };
   };
 
   systemd.user.services.wlr-gamma = {
@@ -106,12 +91,20 @@
       Description = "wlroots Brightness Control";
       PartOf = "graphical-session.target";
     };
-    Install = {
-      WantedBy = [ "graphical-session.target" ];
-    };
+    Install = { WantedBy = [ "graphical-session.target" ]; };
     Service = {
       Type = "simple";
-      ExecStart = "${self.packages.${pkgs.system}.wlr-gamma-service}/bin/wlr-gamma-service";
+      ExecStart = "${
+          self.packages.${pkgs.system}.wlr-gamma-service
+        }/bin/wlr-gamma-service";
+    };
+  };
+  systemd.user.services.ssh-add-ed25119 = {
+    Unit = { PartOf = "multi-user.target"; };
+    Install = { WantedBy = [ "default.target" ]; };
+    Service = {
+      Type = "simple";
+      ExecStart = "ssh-add ${config.home.homeDirectory}/.ssh/id_ed25519";
     };
   };
 
@@ -144,9 +137,8 @@
     keyboard = null; # otherwise it overwrites my semimak
 
     # Things that never need to be available with sudo
-    packages =
-      with pkgs;
-      # INFO: arrays are always automatically merged, in host-specfic `home.nix`s it may seem like I'm overwriting this, but it only looks this way.
+    packages = with pkgs;
+    # INFO: arrays are always automatically merged, in host-specfic `home.nix`s it may seem like I'm overwriting this, but it only looks this way.
       lib.lists.flatten [
         [
           # funsies
@@ -216,8 +208,7 @@
         zathura # read PDFs
         pdfgrep
         xournalpp # draw on PDFs
-      ]
-      ++ [
+      ] ++ [
         inputs.auto_redshift.packages.${pkgs.system}.default # good idea for everyone
         inputs.todo.packages.${pkgs.system}.default # here, because eww depends on it, otherwise meant for my use exclusively
         inputs.bbeats.packages.${pkgs.system}.default
@@ -245,20 +236,21 @@
 
       ".config/tg.toml".source = "${self}/home/config/tg.toml";
       ".config/tg_admin.toml".source = "${self}/home/config/tg_admin.toml";
-      ".config/auto_redshift.toml".source = "${self}/home/config/auto_redshift.toml";
-      ".config/discretionary_engine.toml".source = "${self}/home/config/discretionary_engine.toml";
+      ".config/auto_redshift.toml".source =
+        "${self}/home/config/auto_redshift.toml";
+      ".config/discretionary_engine.toml".source =
+        "${self}/home/config/discretionary_engine.toml";
       ".config/btc_line.toml".source = "${self}/home/config/btc_line.toml";
 
       ".lesskey".source = "${self}/home/config/lesskey";
-      ".config/fish/conf.d/sway.fish".source = "${self}/home/config/fish/conf.d/sway.fish";
+      ".config/fish/conf.d/sway.fish".source =
+        "${self}/home/config/fish/conf.d/sway.fish";
       ".config/greenclip.toml".source = "${self}/home/config/greenclip.toml";
 
       ".config/iamb/config.toml".source = (pkgs.formats.toml { }).generate "" {
         default_profile = "master";
         profiles = {
-          master = {
-            user_id = "@${user.defaultUsername}:matrix.org";
-          };
+          master = { user_id = "@${user.defaultUsername}:matrix.org"; };
         };
         macros = {
           normal = {
@@ -278,9 +270,7 @@
             "<C-w>v" = ":vsplit #alias:example.com<Enter>";
             "<C-w>h" = ":split #alias:example.com<Enter>";
           };
-          command = {
-            help = "welcome<Enter>";
-          };
+          command = { help = "welcome<Enter>"; };
         };
       };
 
@@ -311,11 +301,13 @@
       #};
 
       #BUG: stupid `atuin` overwrites my generated config with a dummy one
-      ".config/atuin/config.toml".source = (pkgs.formats.toml { }).generate "atuin.toml" {
-        filter_mode_shell_up_key_binding = "directory"; # `_bind_up_search` will now only search in current dir
-        sync.records = true;
-        enter_accept = true;
-      };
+      ".config/atuin/config.toml".source =
+        (pkgs.formats.toml { }).generate "atuin.toml" {
+          filter_mode_shell_up_key_binding =
+            "directory"; # `_bind_up_search` will now only search in current dir
+          sync.records = true;
+          enter_accept = true;
+        };
 
       # configured via hm, can't just symlink it in my host's config
       ".config/tmux" = {
