@@ -152,7 +152,7 @@ in {
       enable = true;
       config = {
         user = {
-          name = user.defaultUsername;
+          name = user.userFullName;
           email = user.masterUserEmail;
           token =
             "$GITHUB_KEY"; # can't name `GITHUB_TOKEN`, as `gh` gets confused
