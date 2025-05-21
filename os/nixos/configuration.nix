@@ -749,7 +749,7 @@ in {
   system.activationScripts.copyAlacrittyConfig = {
     text = ''
       # Copy the alacritty config and set permissions
-      cp /home/${user.username}/.config/alacritty/alacritty.toml.hm /home/${user.username}/.config/alacritty/alacritty.toml
+      #cp /home/${user.username}/.config/alacritty/alacritty.toml.hm /home/${user.username}/.config/alacritty/alacritty.toml # already done by another part of the config
       chmod 0666 /home/${user.username}/.config/alacritty/alacritty.toml
     '';
     deps = [ ];
