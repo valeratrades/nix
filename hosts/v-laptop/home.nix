@@ -34,6 +34,7 @@ in {
         en-croissant # chess analysis GUI
         ncspot
         gitui
+        lazygit
         zed
 
         libinput

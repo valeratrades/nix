@@ -68,9 +68,10 @@ vim.api.nvim_create_autocmd({ "BufWritePre" }, {
 	end,
 })
 
-vim.api.nvim_create_autocmd({ "BufWrite" }, {
-	pattern = { "python" },
-	callback = function()
-		vim.lsp.buf.format { async = true }
-	end,
-})
+-- it messing with comments outweighs all the potential benefits of having it on
+--vim.api.nvim_create_autocmd({ "BufWrite" }, {
+--	pattern = { "python" },
+--	callback = function()
+--		vim.lsp.buf.format { async = true }
+--	end,
+--})

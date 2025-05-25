@@ -12,9 +12,22 @@ end
 vim.opt.rtp:prepend(lazypath)
 vim.g.mapleader = ' ' -- ensure mappings are correct
 
+-- dancing with a buben, to not have to move out the plugins from existing table
+--TODO!!!: \
+--local plugin_path = debug.getinfo(1, 'S').source:sub(2):match("(.*/)")
+--local plugin_specs = {}
+--for _, file in ipairs(vim.fn.glob(plugin_path .. "plugins/*.lua", true, true)) do
+--	local spec = dofile(file)
+--	if type(spec) == "table" then
+--		table.insert(plugin_specs, spec)
+--	end
+--end
+
+
+--return require('lazy').setup(vim.tbl_extend("force", {
 return require('lazy').setup({
 	-- Cornerstone
-	'theprimeagen/harpoon',
+	--'theprimeagen/harpoon',
 	'mbbill/undotree',
 	'L3MON4D3/LuaSnip',
 	"lewis6991/gitsigns.nvim",
@@ -389,4 +402,32 @@ return require('lazy').setup({
 		}
 	},
 	--"Saghen/blink.cmp", -- potentially a better nvim-cmp, worth trying at some point
+	{
+		"amitds1997/remote-nvim.nvim",
+		version = "*",
+		dependencies = {
+			"nvim-lua/plenary.nvim",
+			"MunifTanjim/nui.nvim",
+			"nvim-telescope/telescope.nvim",
+		},
+		config = function()
+			require("remote-nvim").setup({
+				client_callback = function(port, workspace_config)
+					local session_name = "remote-" .. workspace_config.host
+					local cmd = string.format(
+						"tmux new-session -d -s %s 'nvim --server localhost:%s --remote-ui'",
+						session_name,
+						port
+					)
+					vim.fn.jobstart(cmd, {
+						detach = true,
+						on_exit = function(job_id, exit_code, event_type)
+							print(string.format("Client %d exited with code %d (Event: %s)", job_id, exit_code, event_type))
+						end,
+					})
+				end,
+			})
+		end,
+	},
 })
+--}, plugin_specs))

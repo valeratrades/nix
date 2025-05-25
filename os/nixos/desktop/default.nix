@@ -157,6 +157,7 @@
           [
             python3
             python313Packages.cython # needs to be standalone used
+            python313Packages.jupyterlab
             python313Packages.pip
             python313Packages.jedi-language-server
             #python313Packages.numpy # not sure why I have this here

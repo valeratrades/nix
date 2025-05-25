@@ -69,6 +69,7 @@ shnip.setup({
 				["<c-f>"] = "def :<CR><CR>raise NotImplementedError<Esc>2kg_i",
 				["<c-n>"] = "raise NotImplementedError<Esc>",
 				["<c-u>"] = "while True:<CR>",
+				["<c-d>"] = "print() #dbg<Esc>5hi",
 			}
 		},
 		typst = {

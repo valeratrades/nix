@@ -10,6 +10,8 @@ vim.diagnostic.config({
 	severity_sort = true,
 })
 
+-- TODO!!!!!: check out better type-checker for python: https://github.com/astral-sh/ty
+
 function ToggleDiagnostics()
 	local state = vim.diagnostic.is_enabled()
 	if state then
@@ -189,13 +191,17 @@ local on_attach = function(client, bufnr)
 
 
 	if client.supports_method('textDocument/formatting') then
-		require('lsp-format').on_attach(client)
+		if vim.fn.expand('%:e') ~= 'py' then
+			require('lsp-format').on_attach(client)
+		end
 	end
 
-	vim.bo.tabstop = 2
-	vim.bo.softtabstop = 0
-	vim.bo.shiftwidth = 2
-	vim.bo.expandtab = false
+	if vim.fn.expand('%:e') ~= 'py' then
+		vim.bo.tabstop = 2
+		vim.bo.softtabstop = 0
+		vim.bo.shiftwidth = 2
+		vim.bo.expandtab = false
+	end
 end
 
 
@@ -359,12 +365,13 @@ lspconfig.jedi_language_server.setup({
 	},
 })
 
-lspconfig.ruff.setup({
-	on_attach = lsp_zero.default_setup,
-	cmd = { 'ruff', 'server' },
-	filetypes = { 'py' },
-	--root_dir = lspconfig.util.find_git_ancestor,
-})
+--DEPRECATE: already done in main setup
+--lspconfig.ruff.setup({
+--	on_attach = lsp_zero.default_setup,
+--	cmd = { 'ruff', 'server' },
+--	filetypes = { 'py' },
+--	--root_dir = lspconfig.util.find_git_ancestor,
+--})
 
 -- typst
 lspconfig.tinymist.setup({

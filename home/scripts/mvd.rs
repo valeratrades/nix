@@ -75,13 +75,17 @@ fn main() {
 			let subfolder = args.next().unwrap_or_default();
 			(home.join("Downloads"), home.join("Images").join(subfolder))
 		}
+		"-s" | "--screenshot" => {
+			let subfolder = args.next().unwrap_or_default();
+			(home.join("tmp/Screenshots"), home.join("trading/strats").join(subfolder))
+		}
 		"--st" | "--screenshot-trading" => {
 			let subfolder = args.next().unwrap_or_default();
 			(home.join("tmp/Screenshots"), home.join("trading/strats").join(subfolder))
 		}
 		"--si" | "--screenshot-images" => {
 			let subfolder = args.next().unwrap_or_default();
-			(home.join("tmp/Screenshots"), home.join("Images/Screenshots").join(subfolder))
+			(home.join("tmp/Screenshots"), home.join(subfolder))
 		}
 		path => {
 			// treat as direct path

@@ -42,3 +42,17 @@ vim.g.lazygit_config_file_path = '' -- custom config file path
 -- OR
 vim.g.lazygit_config_file_path = {} -- table of custom config file paths
 --
+
+-- hunks {{{
+vim.keymap.set('n', ']c', function()
+	if vim.wo.diff then return ']c' end
+	vim.schedule(function() gs.next_hunk() end)
+	return '<Ignore>'
+end, { expr = true, desc = 'Git: next hunk' })
+
+vim.keymap.set('n', '[c', function()
+	if vim.wo.diff then return '[c' end
+	vim.schedule(function() gs.prev_hunk() end)
+	return '<Ignore>'
+end, { expr = true, desc = 'Git: prev hunk' })
+--,}}}

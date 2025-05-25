@@ -386,7 +386,8 @@ in {
     isNormalUser = true;
     description = "${user.userFullName}";
     shell = pkgs.fish;
-    extraGroups = [ "networkmanager" "wheel" "keyd" "audio" "video" "docker" ];
+    extraGroups =
+      [ "networkmanager" "wheel" "keyd" "audio" "video" "docker" "dialout" ];
     openssh.authorizedKeys.keys = user.sshAuthorizedKeys;
   };
 
