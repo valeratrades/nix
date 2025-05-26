@@ -155,12 +155,13 @@
           ]
           # python
           [
+            ty # typechecker in rust
+            #python313Packages.numpy # not sure why I have this here
             python3
             python313Packages.cython # needs to be standalone used
+            python313Packages.jedi-language-server
             python313Packages.jupyterlab
             python313Packages.pip
-            python313Packages.jedi-language-server
-            #python313Packages.numpy # not sure why I have this here
             ruff
             #fix-python // have to install with `nix profile install github:GuillaumeDesforges/fix-python`
           ]

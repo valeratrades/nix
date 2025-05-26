@@ -426,6 +426,10 @@ return require('lazy').setup({
 						end,
 					})
 				end,
+				offline_mode = {
+					enabled = true,
+					no_github = true, -- whether not to even try to fetch from github
+				},
 			})
 		end,
 	},
