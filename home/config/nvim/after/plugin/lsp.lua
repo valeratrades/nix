@@ -209,13 +209,13 @@ lsp_zero.on_attach(on_attach)
 
 
 -- Language setup //? Do I still need this? Maybe it's possible to get rid of `lsp_zero` altogether
-local lspconfig_servers = { 'ruff', 'tinymist', 'lua_ls', 'gopls', 'bashls', 'clangd', 'jedi_language_server',
+local lspconfig_servers = { 'ruff', 'tinymist', 'lua_ls', 'gopls', 'bashls', 'clangd',
+	'jedi_language_server',
 	'jsonls', 'marksman', 'nil_ls', 'ocamllsp' }
 lsp_zero.setup_servers(lspconfig_servers)
 lsp_zero.setup()
 
 vim.g.rust_recommended_style = false
-
 
 local lua_opts = lsp_zero.nvim_lua_ls()
 lspconfig.lua_ls.setup(lua_opts)
@@ -344,6 +344,18 @@ lspconfig.gopls.setup({
 	},
 })
 
+
+-- not ready yet. Would be great to start using once it is.
+--lspconfig.ty.setup({
+--	on_attach = lsp_zero.default_setup,
+--	settings = {
+--		cmd = { "ty", "server" },
+--		filetypes = { "python" },
+--		root_markers = {"pyproject.toml", ".git"}
+--	}
+--})
+
+
 -- Apparently ruff's lsp doesn't provide goto-definition functionality, and is meant to be used in tandem
 lspconfig.jedi_language_server.setup({
 	on_attach = lsp_zero.default_setup,
@@ -364,14 +376,6 @@ lspconfig.jedi_language_server.setup({
 		},
 	},
 })
-
---DEPRECATE: already done in main setup
---lspconfig.ruff.setup({
---	on_attach = lsp_zero.default_setup,
---	cmd = { 'ruff', 'server' },
---	filetypes = { 'py' },
---	--root_dir = lspconfig.util.find_git_ancestor,
---})
 
 -- typst
 lspconfig.tinymist.setup({

@@ -22,6 +22,26 @@ vim.api.nvim_create_autocmd({ "FileType" }, {
 	end,
 })
 
+--TEST: if all good, try expanding to other languages. Auto-importing for rust could be great
+vim.api.nvim_create_autocmd({ "BufWritePost" }, {
+	pattern = { "*.py" },
+	callback = function(args)
+		local bufnr = args.buf
+		local clients = vim.lsp.get_clients({ bufnr = bufnr })
+		for _, client in ipairs(clients) do
+			if client:supports_method("textDocument/codeAction") then
+				vim.lsp.buf.code_action({
+					apply = true,
+					context = { only = { "source.fixAll" }, diagnostics = {} },
+				})
+				break
+			end
+		end
+	end,
+	desc = "LSP: Fix all auto-fixable issues on save (source.fixAll)",
+})
+
+
 --vim.cmd([[ autocmd BufWritePost *.sh silent !chmod +x <afile> ]])
 vim.api.nvim_create_autocmd({ "BufWritePost" }, {
 	pattern = { "*.sh", "*.zsh", "*.bash", "*.fish", "*.xsh", "*script.rs" },

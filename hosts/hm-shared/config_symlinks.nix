@@ -1,7 +1,4 @@
-{ lib
-, ...
-}:
-{
+{ lib, ... }: {
   # fuck mkOutOfStoreSymlink and home-manager. Just link everything except for where apps like to write artifacts to the config dir.
   home.activation = {
     nvim = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
@@ -13,9 +10,10 @@
     zathura = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       [ -e "$XDG_CONFIG_HOME/zathura" ] || ln -sf "$NIXOS_CONFIG/home/config/zathura" "$XDG_CONFIG_HOME/zathura"
     '';
-    sway = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      [ -e "$XDG_CONFIG_HOME/sway" ] || ln -sf "$NIXOS_CONFIG/home/config/sway" "$XDG_CONFIG_HOME/sway"
-    '';
+    #dbg: my kbd broke, so have to procedurally substitute the `iso -> ansi` from the base config for myself too.
+    #sway = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    #  [ -e "$XDG_CONFIG_HOME/sway" ] || ln -sf "$NIXOS_CONFIG/home/config/sway" "$XDG_CONFIG_HOME/sway"
+    #'';
     keyd = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       [ -e "$XDG_CONFIG_HOME/keyd" ] || ln -sf "$NIXOS_CONFIG/home/config/keyd" "$XDG_CONFIG_HOME/keyd"
     '';

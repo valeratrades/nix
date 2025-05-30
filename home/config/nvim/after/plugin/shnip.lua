@@ -66,10 +66,10 @@ shnip.setup({
 		},
 		python = {
 			extra = {
-				["<c-f>"] = "def :<CR><CR>raise NotImplementedError<Esc>2kg_i",
-				["<c-n>"] = "raise NotImplementedError<Esc>",
-				["<c-u>"] = "while True:<CR>",
-				["<c-d>"] = "print() #dbg<Esc>5hi",
+				["<c-f>"] = "def :<CR><CR>raise NotImplementedError #dbg<Esc>2kg_i",
+				["<c-n>"] = "raise NotImplementedError #dbg<Esc>",
+				["<c-d>"] = 'print(f"{=}") #dbg<Esc>8hi',
+				["<c-u>"] = 'input(f"{=}") #dbg<Esc>8hi',
 			}
 		},
 		typst = {

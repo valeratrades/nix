@@ -68,7 +68,7 @@ partial
 xkb_symbols "iso" {
 	include "semimak(basic)"
 	
-		name[Group1] = "Semimak ISO";
+	name[Group1] = "Semimak ISO";
 
 	// Swap Enter and backslash/bar
 	key <RTRN> { [ backslash, bar ] };

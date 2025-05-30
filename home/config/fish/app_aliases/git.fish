@@ -51,6 +51,11 @@ alias ggm="gg -p move"
 
 alias gup="git commit -a --fixup (git rev-parse HEAD) && git push --follow-tags"
 
+function gbl
+	# get branches sorted by date, with HEAD, name, commit hash, subject and author
+	git for-each-ref --sort=committerdate refs/heads/ --format='%(HEAD) %(color:yellow)%(refname:short)%(color:reset) - %(color:red)%(objectname:short)%(color:reset) - %(contents:subject) - %(authorname) (%(color:green)%(committerdate:relative)%(color:reset))'
+end
+
 function gd
 	set branch_name $argv[1]
 	git branch -d $branch_name

@@ -403,7 +403,7 @@ return require('lazy').setup({
 	},
 	--"Saghen/blink.cmp", -- potentially a better nvim-cmp, worth trying at some point
 	{
-		"amitds1997/remote-nvim.nvim",
+		"https://github.com/hmk114/remote-nvim.nvim", -- temp, until it's merged upstream (2025/05/27)
 		version = "*",
 		dependencies = {
 			"nvim-lua/plenary.nvim",

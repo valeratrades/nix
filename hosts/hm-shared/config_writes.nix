@@ -1,7 +1,6 @@
 # this is the way I have configs written for the forking hosts (more reproducible than what I have myself).
 # this is likely to contain configs for some things that are not actually shared, but text bloat is fine.
-{ self, pkgs, user }:
-{
+{ self, pkgs, user }: {
   home.file = {
     ".config/nvim" = {
       source = "${self}/home/config/nvim";
@@ -25,27 +24,22 @@
     };
 
     ".config/sway/config" =
-      if user.userFullName == "Timur" then
-        {
-          source =
-            let
-              config = builtins.readFile "${self}/home/config/sway/config";
-              ansi = builtins.replaceStrings
-                [ "xkb_variant \"iso,,\"" ]
-                [ "xkb_variant \"ansi,,\"" ]
-                config;
-            in
-            pkgs.writeText "config_timur" ansi;
-          #builtins.trace "DEBUG: overwriting sway config with timur's" "${self}/home/config/sway/config_timur"; #TODO!!!!: gen timur's config procedurally by just `sed`ing xkb_variant line
-        }
-      else
-        {
-          source = "${self}/home/config/sway";
-          recursive = true;
-        };
+      if user.userFullName == "Timur" || user.userFullName == "Valera" then {
+        source = let
+          config = builtins.readFile "${self}/home/config/sway/config";
+          ansi = builtins.replaceStrings [ ''xkb_variant "iso,,"'' ]
+            [ ''xkb_variant "ansi,,"'' ] config;
+        in pkgs.writeText "sway_conf_for_ansi_kbd"
+        ansi; # TODO: also add the scripts (normally would be done with `recursive = true`)
+        #builtins.trace "DEBUG: overwriting sway config with timur's" "${self}/home/config/sway/config_timur"; #TODO!!!!: gen timur's config procedurally by just `sed`ing xkb_variant line
+      } else {
+        source = "${self}/home/config/sway";
+        recursive = true;
+      };
 
     # ind files
-    ".config/auto_redshift.toml".source = "${self}/home/config/auto_redshift.toml";
+    ".config/auto_redshift.toml".source =
+      "${self}/home/config/auto_redshift.toml";
     ".config/todo.toml".text = ''
       github_token = { env = "GITHUB_KEY" }
       date_format = "%Y-%m-%d"
@@ -60,7 +54,8 @@
       [activity_monitor]
       delimitor = " - "
     ''; # my own config relies on some env vars, this is a trimmed-down version
-    ".config/discretionary_engine.toml".source = "${self}/home/config/discretionary_engine.toml";
+    ".config/discretionary_engine.toml".source =
+      "${self}/home/config/discretionary_engine.toml";
     ".config/btc_line.toml".source = "${self}/home/config/btc_line.toml";
   };
 }
