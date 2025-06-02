@@ -349,3 +349,6 @@ function wipe
 	pkill chromium
 	rf ~/.config/chromium
 end
+
+
+

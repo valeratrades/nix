@@ -70,6 +70,8 @@ shnip.setup({
 				["<c-n>"] = "raise NotImplementedError #dbg<Esc>",
 				["<c-d>"] = 'print(f"{=}") #dbg<Esc>8hi',
 				["<c-u>"] = 'input(f"{=}") #dbg<Esc>8hi',
+				["<c-h>"] = 'print("here") #dbg<Esc>6hi',
+				["<c-l>"] = 'logger.error(f"MYDBG: {=}") #dbg<Esc>==8hi', --NB: notice `==` at the end: python formatter assumes things very early at times, and this is the way to deal with it in such macros.
 			}
 		},
 		typst = {

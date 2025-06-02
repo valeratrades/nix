@@ -98,6 +98,16 @@ telescope.setup {
 require("telescope").load_extension("media_files")
 require("telescope").load_extension("ui-select")
 
+vim.keymap.set('n', '<space>sd', function()
+	local gs_ext = vim.tbl_extend("force", gs, {
+		default_text = '#TEST:|#dbg',
+		additional_args = function()
+			return { '--pcre2' }
+		end
+	})
+	builtin.live_grep(gs_ext)
+end, { desc = "Find Temporary" })
+
 -- Default mappings reference {{{
 --<C-n>/<Down>	Next item
 --<C-p>/<Up>	Previous item

@@ -75,10 +75,10 @@ in {
     };
 
     # a column on my laptop kbd gave in, so turn the whole thing off, so I can put another keyboard over it.
-    udev.extraRules = if user.userFullName == "Valera" then ''
-      ACTION=="add|change", KERNEL=="event0", ATTRS{name}=="AT Translated Set 2 keyboard", ENV{LIBINPUT_IGNORE_DEVICE}="1"
-      	'' else
-      "";
+    #udev.extraRules = if user.userFullName == "Valera" then ''
+    #  ACTION=="add|change", KERNEL=="event0", ATTRS{name}=="AT Translated Set 2 keyboard", ENV{LIBINPUT_IGNORE_DEVICE}="1"
+    #  	'' else
+    #  "";
 
     libinput = {
       enable = true;
