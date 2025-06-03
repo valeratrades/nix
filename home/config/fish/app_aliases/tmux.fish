@@ -101,7 +101,7 @@ function tn
 	# `window`: cd
 	tmux send-keys -t "$SESSION_NAME:window.0" "cd ~/.$log_dir && nvim '+AnsiEsc' window.toml" Enter
 	tmux send-keys -t "$SESSION_NAME:window.1" "cd ~/.$log_dir && nvim .log..window" Enter
-	tmux send-keys -t "$SESSION_NAME:window.1" "cd ~/.$log_dir && window .log" Enter
+	tmux send-keys -t "$SESSION_NAME:window.1" "cd ~/.$log_dir && ~/.cargo/bin/window .log" Enter
 
 	tmux attach-session -t "$session_name:source.0"
 end
