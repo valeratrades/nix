@@ -135,8 +135,9 @@
   };
 
   home = {
+    #FIXME: doesn't seem to work //Q: could it be because I have `fish.enable` inside the main configuration.nix, which overwrites this clean?
     sessionPath = [
-      "${pkgs.lib.makeBinPath [ ]}"
+      #"${pkgs.lib.makeBinPath [ ]}"
       "${config.home.homeDirectory}/s/evdev/"
       "${config.home.homeDirectory}/.cargo/bin/"
       "${config.home.homeDirectory}/go/bin/"

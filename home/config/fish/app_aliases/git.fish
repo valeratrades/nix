@@ -87,6 +87,19 @@ alias gix="gh issue delete --yes"
 
 alias git_rate_limit 'curl -L -X GET -H "Accept: application/vnd.github+json" -H "Authorization: token $GITHUB_KEY" https://api.github.com/rate_limit'
 
+function gpf
+	# force push, but refuse on main-ish ones
+	set branch (git rev-parse --abbrev-ref HEAD)
+	switch $branch
+	case master main release stg prod #TODO: move out into a static var, for other scripts to use
+		echo "Refusing to force push $branch"
+		return 1
+	case '*'
+		git push --force $argv
+	end
+end
+
+
 #TODO!: add all issues outside of milestones to the list _if no milestone is specified_
 function gifm
 	set milestone $argv[1]

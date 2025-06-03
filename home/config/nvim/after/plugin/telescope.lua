@@ -100,7 +100,7 @@ require("telescope").load_extension("ui-select")
 
 vim.keymap.set('n', '<space>sd', function()
 	local gs_ext = vim.tbl_extend("force", gs, {
-		default_text = '#TEST:|#dbg',
+		default_text = [[#TEST|#dbg|dbg!\(|#Q|#DEPRECATE|#DO|#.*TODO]],
 		additional_args = function()
 			return { '--pcre2' }
 		end

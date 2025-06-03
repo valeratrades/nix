@@ -27,6 +27,13 @@ function tmux_new_session_base
 		set SESSION_NAME $argv[1]
 	end
 	set SESSION_NAME (echo "$SESSION_NAME" | sed 's/\./_/g')
+	# add -tmp if parent directory is exactly "tmp" and session name doesn't already start with it
+	set -l PARENT_DIR (basename (dirname (pwd)))
+	if test "$PARENT_DIR" = "tmp"
+		if not string match -q 'tmp-*' -- "$SESSION_NAME"
+			set SESSION_NAME "tmp-$SESSION_NAME"
+		end
+	end
 	if tmux has-session -t "$SESSION_NAME" 2>/dev/null
 		echo "Session $SESSION_NAME already exists."
 		return 1
@@ -56,6 +63,12 @@ function tmux_new_session_base
 	tmux send-keys -t "$SESSION_NAME:tmp.0" 'nvim .' Enter
 	tmux select-pane -t "$SESSION_NAME:tmp.0"
 
+	# `window` window
+	tmux new-window -t "$SESSION_NAME" -n "window"
+	tmux split-window -h -t "$SESSION_NAME:window"
+	tmux split-window -v -t "$SESSION_NAME:window.0"
+	tmux select-pane -t "$SESSION_NAME:window.0"
+
 	# Ref window
 	#// Moved ref to bottom, as I often end up having more than one of these
 	#TODO: add a small bottom pane under ref for pulls and test runs
@@ -79,38 +92,16 @@ function tn
 		set assume_project_name $argv[1]
 	end
 
+	log_dir="$XDG_STATE_HOME/$assume_project_name/"
+
 	#TODO!: make it use `script` to preserve coloring
 	#tmux send-keys -t "$session_name:build.2" 'echo """$(gil)\n$(gifm)\n$(gifa)""" | less' Enter # all issues
-	tmux send-keys -t "$session_name:build.2" "nvim \"$XDG_STATE_HOME/$assume_project_name/.log\"" Enter
+	tmux send-keys -t "$session_name:build.2" "nvim \"$log_dir/.log\"" Enter
 
-	tmux attach-session -t "$session_name:source.0"
-end
-
-function tn2
-	#! Cargo Watch + log init
-	set -l session_name_or_err (tmux_new_session_base $argv)
-	if test $status = 1
-		echo $session_name_or_err
-		return 1
-	end
-	set -l session_name $session_name_or_err
-
-	set -l assume_project_name (basename (pwd))
-	if test -n "$argv[1]"
-		set assume_project_name $argv[1]
-	end
-
-	tmux send-keys -t "$session_name:build.0" 'c t' Enter
-	tmux send-keys -t "$session_name:build.1" "nvim \"$XDG_STATE_HOME/$assume_project_name/.log\"" Enter
-	tmux send-keys -t "$session_name:build.2" 'cw' Enter
-
-	tmux new-window -t "$session_name" -n "window"
-	tmux send-keys -t "$session_name:window.0" "cd ~/.{assume_project_name} && nvim window.toml" Enter
-	tmux split-window -h -t "$session_name:window"
-	tmux send-keys -t "$session_name:window.1" "cd ~/.{assume_project_name} && nvim .log..window" Enter
-	tmux split-window -v -t "$session_name:window.0"
-	tmux send-keys -t "$session_name:window.1" "cd ~/.{assume_project_name} && window .log" Enter
-	tmux select-pane -t "$session_name:window.0"
+	# `window`: cd
+	tmux send-keys -t "$SESSION_NAME:window.0" "cd ~/.$log_dir && nvim '+AnsiEsc' window.toml" Enter
+	tmux send-keys -t "$SESSION_NAME:window.1" "cd ~/.$log_dir && nvim .log..window" Enter
+	tmux send-keys -t "$SESSION_NAME:window.1" "cd ~/.$log_dir && window .log" Enter
 
 	tmux attach-session -t "$session_name:source.0"
 end
