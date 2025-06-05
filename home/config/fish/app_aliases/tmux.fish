@@ -69,6 +69,10 @@ function tmux_new_session_base
 	tmux split-window -v -t "$SESSION_NAME:window.0"
 	tmux select-pane -t "$SESSION_NAME:window.0"
 
+	# `cursor` window
+	tmux new-window -t "$SESSION_NAME" -n "cursor"
+	tmux send-keys -t "$SESSION_NAME:cursor.0" "cursor ." # no `Enter` - just prepare the command
+
 	# Ref window
 	#// Moved ref to bottom, as I often end up having more than one of these
 	#TODO: add a small bottom pane under ref for pulls and test runs
@@ -92,16 +96,16 @@ function tn
 		set assume_project_name $argv[1]
 	end
 
-	log_dir="$XDG_STATE_HOME/$assume_project_name/"
+	set -l log_dir "$XDG_STATE_HOME/$assume_project_name/"
 
 	#TODO!: make it use `script` to preserve coloring
 	#tmux send-keys -t "$session_name:build.2" 'echo """$(gil)\n$(gifm)\n$(gifa)""" | less' Enter # all issues
-	tmux send-keys -t "$session_name:build.2" "nvim \"$log_dir/.log\"" Enter
+	tmux send-keys -t "$session_name:build.2" "nvim '+AnsiEsc' \"$log_dir/.log\"" Enter
 
 	# `window`: cd
-	tmux send-keys -t "$SESSION_NAME:window.0" "cd ~/.$log_dir && nvim '+AnsiEsc' window.toml" Enter
-	tmux send-keys -t "$SESSION_NAME:window.1" "cd ~/.$log_dir && nvim .log..window" Enter
-	tmux send-keys -t "$SESSION_NAME:window.1" "cd ~/.$log_dir && ~/.cargo/bin/window .log" Enter
+	tmux send-keys -t "$SESSION_NAME:window.0" "cd $log_dir && nvim window.toml" Enter
+	tmux send-keys -t "$SESSION_NAME:window.1" "cd $log_dir && ~/.cargo/bin/window .log" Enter
+	tmux send-keys -t "$SESSION_NAME:window.2" "cd $log_dir && nvim '+AnsiEsc' .log..window" Enter
 
 	tmux attach-session -t "$session_name:source.0"
 end

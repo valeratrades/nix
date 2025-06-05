@@ -351,4 +351,48 @@ function wipe
 end
 
 
+function cpf
+	# Force-copy file (automatically repeats part of the file path)
+	# Ex: run:
+	# cpf -t ../tmp/nautilus-utils nautilus_utils/backtest_machine/__init__.py
+	# for
+	#	cp -f nautilus_utils/backtest_machine/__init__.py ../tmp/nautilus-utils/nautilus_utils/backtest_machine/__init__.py
+
+	set -l target_dir_root ""
+	set -l relative_filepath ""
+
+	set -l i 1
+	while test $i -le (count $argv)
+		if test "$argv[$i]" = "-t"
+			set target_dir_root $argv[(math $i + 1)]
+			set i (math $i + 2)
+			continue
+		end
+		if test -z "$relative_filepath"
+			set relative_filepath $argv[$i]
+		end
+		set i (math $i + 1)
+	end
+
+	if test -z "$target_dir_root" -o -z "$relative_filepath"
+		echo "Usage: cpf -t <target_dir_root> <relative_filepath>"
+		return 1
+	end
+
+	if not test -d "$target_dir_root"
+		echo "Target dir root does not exist: $target_dir_root"
+		return 1
+	end
+
+	if not test -f "$relative_filepath"
+		echo "File does not exist: $relative_filepath"
+		return 1
+	end
+
+	set dest (string join "/" "$target_dir_root" "$relative_filepath")
+	set dest_dir (dirname "$dest")
+	mkdir -p "$dest_dir"
+	echo "INFO: Running: cp -f $relative_filepath $dest"
+	cp -f "$relative_filepath" "$dest"
+end
 

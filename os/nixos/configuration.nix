@@ -237,6 +237,7 @@ in {
           f = "push --force-with-lease";
           p = "pull --rebase";
           blame = "blame -w -C -C -C";
+          fp = "merge-base --fork-point HEAD"; # fork-point
           ca = "commit -am";
           ri = "rebase --autosquash -i master";
           ra = "rebase --abort";

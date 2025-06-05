@@ -3,6 +3,7 @@
 #TODO!!: start assigning difficulty score to all entries. Default to NaN.
 # Could do it through a label with say black-color. Probably a series of labels, simply named {[1-9],NaN}
 
+set -g GIT_SHARED_MAIN_BRANCHES master main release stg prod
 alias g="git"
 
 function gg
@@ -67,6 +68,12 @@ function git_pull_force
 end
 alias git_force_pull="git_pull_force"
 
+function grr
+	# Git really reset
+	# discards all changes, including untracked files
+	git reset --hard HEAD && git clean -fn && git stash clear
+end
+
 # GitHub aliases
 alias gi="gh issue create -b \"\" -t"
 alias gil="gh issue list"
@@ -91,13 +98,27 @@ function gpf
 	# force push, but refuse on main-ish ones
 	set branch (git rev-parse --abbrev-ref HEAD)
 	switch $branch
-	case master main release stg prod #TODO: move out into a static var, for other scripts to use
+	case $GIT_SHARED_MAIN_BRANCHES
 		echo "Refusing to force push $branch"
 		return 1
 	case '*'
 		git push --force $argv
 	end
 end
+
+function gbd
+	# git branch delete, but refuse on main-ish ones
+	set branch (git rev-parse --abbrev-ref HEAD)
+	switch $branch
+	case $GIT_SHARED_MAIN_BRANCHES
+		echo "Refusing to delete $branch"
+		return 1
+	case '*'
+		git branch -D $argv[1]
+		git push origin --delete $argv[1]
+	end
+end
+
 
 
 #TODO!: add all issues outside of milestones to the list _if no milestone is specified_
