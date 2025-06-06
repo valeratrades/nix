@@ -36,7 +36,7 @@ function gg
 	# end
 
 	# repeat the commit to go around the pre-commit formatting hooks that are currently failing if requiring formatting (wtf)
-	git add -A; git commit -m "$message" || git commit -am "$message"; git push --follow-tags
+	git add -A; git commit -m "$message" || git commit -am "$message"; git push --follow-tags; git push --tags # --follow-tags is inconsistent
 end
 
 alias ggf="gg -p feat"
@@ -102,23 +102,33 @@ function gpf
 		echo "Refusing to force push $branch"
 		return 1
 	case '*'
-		git push --force $argv
+		git push --force--with-lease --follow-tags $argv 
+	end
+end
+function gpff
+	# same af `gpf`, but actual force push,-  not even `--with-lease`
+	set branch (git rev-parse --abbrev-ref HEAD)
+	switch $branch
+	case $GIT_SHARED_MAIN_BRANCHES
+		echo "Refusing to force push $branch"
+		return 1
+	case '*'
+		git push --force --follow-tags $argv 
 	end
 end
 
 function gbd
 	# git branch delete, but refuse on main-ish ones
-	set branch (git rev-parse --abbrev-ref HEAD)
-	switch $branch
+	set target $argv[1]
+	switch $target
 	case $GIT_SHARED_MAIN_BRANCHES
-		echo "Refusing to delete $branch"
+		echo "Refusing to delete $target"
 		return 1
 	case '*'
-		git branch -D $argv[1]
-		git push origin --delete $argv[1]
+		git branch -D $target
+		git push origin --delete $target
 	end
 end
-
 
 
 #TODO!: add all issues outside of milestones to the list _if no milestone is specified_
