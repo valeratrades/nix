@@ -196,6 +196,12 @@ local on_attach = function(client, bufnr)
 		end
 	end
 
+	vim.cmd('Trouble symbols open')
+	vim.defer_fn(function()
+		vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<C-w>=", true, false, true), "n", false)
+	end, 1000) -- wait conservatively for the thing to open
+
+
 	if vim.fn.expand('%:e') ~= 'py' then
 		vim.bo.tabstop = 2
 		vim.bo.softtabstop = 0

@@ -21,7 +21,7 @@ check_and_clean_cargo() {
 
 			if [ "$diff" -gt $((4 * 7 * 24 * 3600)) ]; then
 				echo "\033[32mCleaned build artefacts in: $parent_dir\033[0m"
-				(cd "$parent_dir" && cargo clean)
+				(cd "$parent_dir" && /run/current-system/sw/bin/cargo clean)
 			fi
 		fi
 	done

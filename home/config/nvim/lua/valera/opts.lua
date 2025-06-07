@@ -11,7 +11,8 @@ o.foldlevel = 99
 --
 
 o.nu = true
-o.relativenumber = true
+--o.relativenumber = true
+o.relativenumber = false --TEST: maybe it's easier to just `:$line` instead
 
 o.tabstop = 2
 o.softtabstop = 0

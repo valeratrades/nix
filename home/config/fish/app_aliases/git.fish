@@ -63,6 +63,11 @@ function gd
 	git push origin --delete $branch_name
 end
 
+function gf
+	# not sure why this is not default
+	git fetch origin $argv[1]:$argv[1] && git checkout $argv[1]
+end
+
 function git_pull_force
 	git fetch --all && git reset --hard origin/(git branch --show-current)
 end

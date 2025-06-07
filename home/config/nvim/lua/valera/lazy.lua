@@ -290,14 +290,21 @@ return require('lazy').setup({
 		"folke/trouble.nvim",
 		opts = {
 			modes = {
-				symbols = { auto_open = false }, -- would love for it to be `true`, but today it's inconsistent (2025/04/28)
-			}
+				symbols = {
+					--auto_open = true, -- behaves inconsistently, have to do manually
+					--auto_close = true, -- without `auto_open`, just nukes itself when navigating
+					auto_refresh = true,
+					warn_no_results = false,
+					pinned = false, -- don't pin to initial window (doesn't work)
+					focus = false, -- don't focus on open
+				},
+			},
 		},
 		cmd = "Trouble",
 		keys = {
 			{
 				"<space><space>x",
-				"<cmd>Trouble symbols toggle focus=false<cr>",
+				"<cmd>Trouble symbols close<cr><cmd>Trouble symbols open<cr>", --HACK: with current impl it's pinned to the window. So if I need it in another one - must first close. (2025/06/06)
 				desc = "Symbols (Trouble)",
 			},
 		},
@@ -389,7 +396,6 @@ return require('lazy').setup({
 	{ 'wakatime/vim-wakatime', lazy = false },
 	--{ "tjdevries/ocaml.nvim",  build = "make" }, -- requires 3.17 dune, but my nix only has 3.16
 	"folke/which-key.nvim",
-	"folke/trouble.nvim", --TODO: setup (or at least try: default key is <Space>xx)
 	--"pimalaya/himalaya-vim", --TODO: setup
 	{
 		"gabrielpoca/replacer.nvim",

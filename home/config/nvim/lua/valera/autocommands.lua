@@ -22,6 +22,27 @@ vim.api.nvim_create_autocmd({ "FileType" }, {
 	end,
 })
 
+--HACK: this is the workaround to have true `auto_open` on the `Trouble` plugin, across the tabs
+vim.api.nvim_create_autocmd("TabEnter", {
+  callback = function()
+    local bufnr = vim.api.nvim_get_current_buf()
+    local n = 0
+    for _, client in pairs(vim.lsp.get_clients()) do
+      if client.name ~= "copilot" and client.attached_buffers and client.attached_buffers[bufnr] then
+        n = n + 1
+      end
+    end
+    if n > 0 then
+			vim.cmd('Trouble symbols close')
+			vim.cmd('Trouble symbols open')
+			vim.defer_fn(function()
+				vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<C-w>=", true, false, true), "n", false)
+			end, 20) -- window doesn't open instantly
+    end
+  end,
+})
+
+
 --TEST: if all good, try expanding to other languages. Auto-importing for rust could be great
 vim.api.nvim_create_autocmd({ "BufWritePost" }, {
 	pattern = { "*.py" },
