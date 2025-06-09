@@ -50,7 +50,8 @@ alias ggd="gg -p docs"
 alias ggi="gg -p ci"
 alias ggm="gg -p move"
 
-alias gup="git commit -a --fixup (git rev-parse HEAD) && git push --follow-tags"
+alias gup="git commit -a --fixup (git rev-parse HEAD)"
+alias gupp="gup && git push --follow-tags"
 
 function gbl
 	# get branches sorted by date, with HEAD, name, commit hash, subject and author
@@ -76,7 +77,7 @@ alias git_force_pull="git_pull_force"
 function grr
 	# Git really reset
 	# discards all changes, including untracked files
-	git reset --hard HEAD && git clean -fn && git stash clear
+	git reset --hard HEAD; git clean -fn; git stash clear
 end
 
 # GitHub aliases
@@ -107,7 +108,7 @@ function gpf
 		echo "Refusing to force push $branch"
 		return 1
 	case '*'
-		git push --force--with-lease --follow-tags $argv 
+		git push --force-with-lease --follow-tags $argv 
 	end
 end
 function gpff
