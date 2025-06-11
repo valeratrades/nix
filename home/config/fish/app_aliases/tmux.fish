@@ -99,8 +99,10 @@ function tn
 	set -l log_dir "$XDG_STATE_HOME/$assume_project_name/"
 
 	#TODO!: make it use `script` to preserve coloring
+	#DEPRECATE
 	#tmux send-keys -t "$session_name:build.2" 'echo """$(gil)\n$(gifm)\n$(gifa)""" | less' Enter # all issues
-	tmux send-keys -t "$session_name:build.2" "nvim '+AnsiEsc' \"$log_dir/.log\"" Enter
+	#DEPRECATE
+	#tmux send-keys -t "$session_name:build.2" "nvim '+AnsiEsc' \"$log_dir/.log\"" Enter
 
 	# `window`: cd
 	tmux send-keys -t "$SESSION_NAME:window.0" "cd $log_dir && nvim window.toml" Enter
