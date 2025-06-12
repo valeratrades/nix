@@ -100,6 +100,8 @@ alias gix="gh issue delete --yes"
 
 alias git_rate_limit 'curl -L -X GET -H "Accept: application/vnd.github+json" -H "Authorization: token $GITHUB_KEY" https://api.github.com/rate_limit'
 
+alias eg 'git branch -D tmp/experiment; git cb tmp/experiment'
+
 function gpf
 	# force push, but refuse on main-ish ones
 	set branch (git rev-parse --abbrev-ref HEAD)

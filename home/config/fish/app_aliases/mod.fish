@@ -7,3 +7,4 @@ source (dirname (status --current-filename))/swappy.fish
 source (dirname (status --current-filename))/tg.fish
 source (dirname (status --current-filename))/tmux.fish
 source (dirname (status --current-filename))/zathura.fish
+source (dirname (status --current-filename))/uv.fish
