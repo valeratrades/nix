@@ -96,7 +96,7 @@ function russian_roulette
     end
 end
 
-function away
+function brb
     set current_fontsize (fontsize)
     fontsize 22
     printf 'Will be\nright back' | figlet | $PAGER
