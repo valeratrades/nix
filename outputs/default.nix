@@ -128,8 +128,8 @@ in {
     pre-commit-check = pre-commit-hooks.lib.${system}.run {
       src = mylib.relativeToRoot ".";
       hooks = {
-        nixfmt-classic.enable =
-          true; # seems to be the most reasonable (doesn't produce vertical bloat). But they change them way too often, fucking morons.
+        #TODO: the following shit does some weird weird fucking things, I need to once again find a good nix formatter
+        #nixfmt-classic.enable = true; # seems to be the most reasonable (doesn't produce vertical bloat). But they change them way too often, fucking morons.
 
         #deadnix.enable = true; # detect unused variable bindings in `*.nix`. Also fails if false, so maybe this shouldn't be a hook.
         statix.enable =
