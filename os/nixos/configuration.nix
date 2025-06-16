@@ -46,9 +46,9 @@ in {
     gnome.gnome-keyring.enable = lib.mkDefault
       false; # annoying // Supposed to be an extra layer of security for managed {ssh passwords, gpg, wifi, etc}
     getty.autologinUser = user.username;
+    desktopManager.gnome.enable = true;
     xserver = {
       # # somehow this fixed the audio problem. Like huh, what, why???
-      desktopManager.gnome.enable = true;
       #displayManager.gdm.enable = true; #NB: if you enable `xserver`, _must_ enable this too. Otherwise it will use default `lightdm`, which will log you out.
       enable = false;
       displayManager.startx.enable = true;
