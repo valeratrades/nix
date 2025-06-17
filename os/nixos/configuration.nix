@@ -9,6 +9,8 @@ let
     "/home/${user.username}/nix"; # TODO!!!!!: have this be dynamic based on the actual dir where this config is currently located.
 
   modularHome = "${userHome}/.modular";
+  redisPort = 49974;
+  postgresqlPort = 52362;
 in {
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
@@ -72,6 +74,36 @@ in {
         240; # doesn't do anything currently (could be reset by sway)
       autoRepeatInterval =
         70; # doesn't do anything currently (could be reset by sway)
+    };
+
+    #TODO: also move `clickhouse` here, once they provide a nix-compatible package.
+    redis.servers.default = {
+      enable = true;
+      port = redisPort;
+    };
+    postgresql = {
+      enable = true;
+      enableTCPIP = true;
+      ensureUsers = [{
+        name = "default";
+        ensureClauses = {
+          superuser = true;
+          login = true;
+        };
+      }];
+      ensureDatabases = [ "default" ];
+      authentication = ''
+        # TYPE  DATABASE        USER            ADDRESS                 METHOD
+        local   all             all                                     trust
+        host    all             all             127.0.0.1/32            trust
+        host    all             all             ::1/128                 trust
+      '';
+
+      settings = {
+        port = postgresqlPort;
+        log_line_prefix = "[%p] ";
+        logging_collector = true;
+      };
     };
 
     # a column on my laptop kbd gave in, so turn the whole thing off, so I can put another keyboard over it.
@@ -557,6 +589,14 @@ in {
       MANPAGER = "less";
       LESSHISTFILE = "-";
       HISTCONTROL = "ignorespace";
+
+      #TODO: set port, user, etc too for postgres
+      ENCRYPTION_KEY =
+        "lwLC4GH5UnAYdmHVyfD9UClbMh/saKnRPS+5nILfV2k="; # 32-byte base64-encoded key, here only for `PostgressDB`, that can't live without it for some reason
+      POSTGRESQL_PORT = postgresqlPort;
+
+      REDIS_PORT = redisPort;
+      REDIS_DB = "0";
     };
 
     binsh = "${pkgs.dash}/bin/dash";
@@ -570,6 +610,12 @@ in {
         sops # secrets mgmt
         nginx
         caddy
+
+        # dbs
+        [
+          redis
+          postgresql
+        ]
 
         # gnome
         [
