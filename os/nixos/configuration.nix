@@ -45,6 +45,7 @@ in {
   #};
 
   services = {
+		power-profiles-daemon.enable = true;
     gnome.gnome-keyring.enable = lib.mkDefault
       false; # annoying // Supposed to be an extra layer of security for managed {ssh passwords, gpg, wifi, etc}
     getty.autologinUser = user.username;
@@ -610,7 +611,6 @@ in {
         sops # secrets mgmt
         nginx
         caddy
-				astal.powerprofiles
 
         # dbs
         [
