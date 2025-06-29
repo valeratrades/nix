@@ -23,13 +23,14 @@ function load_page
 
 
 	set base_path "$HOME/tmp/book_parser"
-	set book_path "$base_path/пкк_11"
+	set book_path "$base_path/пкк_1"
 	mkdir -p "$book_path/src"
 	set tmp_path "$book_path/src/page_$page.txt"
 	set vocabulary "6_000"
 	set out_path "$book_path/page_"$page".de.ti$vocabulary.md"
 
-	if ~/s/other/book_parser/target/debug/book_parser -c".col-12 > section:nth-child(3)" -c".col-12 > section:nth-child(4)" --url "https://fb2.top/petlya-kadetskiy-korpus-kniga-odinnadcataya-762938/read/part-$page" -l"German" > $tmp_path
+	if ~/s/other/book_parser/target/debug/book_parser -c "#main" -c ".BookText" -c".col-12 > section:nth-child(3)" -c".col-12 > section:nth-child(4)" --url "https://flibusta.is/b/699753/read#t$page" -l"German" > $tmp_path
+	#if ~/s/other/book_parser/target/debug/book_parser -c".col-12 > section:nth-child(3)" -c".col-12 > section:nth-child(4)" --url "https://litmir.club/br/?b=801111&p=$page" -l"German" > $tmp_path
 		if test "$notify" = true
 			beep "loaded"
 		end

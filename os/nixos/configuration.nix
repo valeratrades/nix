@@ -1,6 +1,6 @@
 # Edit this configuration file to define what should be installed on
 # your system.  Help is available in the configuration.nix(5) man page
-# and in the NixOS manual (accessible by running ‘nixos-help’).
+# and in the NixOS manual (accessible by running 'nixos-help').
 { self, config, pkgs, lib, user, mylib, inputs, ... }:
 #TODO: add build script that cds in $XDG_DATA_HOME/nvim/lazy-telescope-fzf-native.nvim and runs `make`
 let
@@ -48,7 +48,7 @@ in {
     gnome.gnome-keyring.enable = lib.mkDefault
       false; # annoying // Supposed to be an extra layer of security for managed {ssh passwords, gpg, wifi, etc}
     getty.autologinUser = user.username;
-    desktopManager.gnome.enable = true;
+    # desktopManager.gnome.enable = true; # Disabled to avoid SSH agent conflict with programs.ssh.startAgent
     xserver = {
       # # somehow this fixed the audio problem. Like huh, what, why???
       #displayManager.gdm.enable = true; #NB: if you enable `xserver`, _must_ enable this too. Otherwise it will use default `lightdm`, which will log you out.
@@ -176,7 +176,7 @@ in {
     mtr.enable = true;
     #steam.enable = true; # brings steam-run # currently fails due to ocaml5 (2025/04/27)
     gnupg.agent = {
-      enable = true;
+      enable = true; # conflicts with ssh-agent
       enableSSHSupport = false;
     };
     nh = {
@@ -501,7 +501,7 @@ in {
           noto-fonts-cjk-sans
           noto-fonts-emoji
         ]
-        #ocamlPackages.codicons #dbg: breaking fucking retarded rebuild evaluator with `error: Package ‘ocaml5.3.0-virtual_dom-0.17.0’ in /nix/store/707m8gfbdyxhg1sgkiw5x9zh84ya012r-source/pkgs/development/ocaml-modules/janestreet/0.17.nix:1977 is marked as broken, refusing to evaluate.`
+        #ocamlPackages.codicons #dbg: breaking fucking retarded rebuild evaluator with `error: Package 'ocaml5.3.0-virtual_dom-0.17.0' in /nix/store/707m8gfbdyxhg1sgkiw5x9zh84ya012r-source/pkgs/development/ocaml-modules/janestreet/0.17.nix:1977 is marked as broken, refusing to evaluate.`
         powerline-fonts
         profont
         proggyfonts
@@ -610,10 +610,12 @@ in {
         sops # secrets mgmt
         nginx
         caddy
+				astal.powerprofiles
 
         # dbs
         [
           redis
+          awscli2
           postgresql
         ]
 

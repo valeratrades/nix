@@ -36,10 +36,6 @@ Introduced `MANUAL` keyword in config next to things that require manual adjustm
 
 Currently:
 - git config in ./os/configuration.nix must be adjusted for the correct username and email
-- set up nyxt
-	```sh
-	git clone https://github.com/aartaka/nx-dark-reader.git ~/.local/share/nyxt/extensions/nx-dark-reader
-	```
 
 ## Usage
 ```sh

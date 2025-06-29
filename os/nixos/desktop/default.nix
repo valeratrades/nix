@@ -1,8 +1,15 @@
-{ self, pkgs, mylib, ... }: {
+{
+  self,
+  pkgs,
+  mylib,
+  ...
+}:
+{
   imports = mylib.scanPaths ./.;
 
   # appends to existing if any
-  environment.systemPackages = with pkgs;
+  environment.systemPackages =
+    with pkgs;
     lib.lists.flatten [
       flatpak
       self.packages.${pkgs.system}.wlr-gamma-service
@@ -155,15 +162,10 @@
           ]
           # python
           [
+            python
             ty # typechecker in rust
-            #python313Packages.numpy # not sure why I have this here
-            python3
-            python313Packages.cython # needs to be standalone used
             python313Packages.jedi-language-server
-            python313Packages.jupyterlab
-            python313Packages.pip
             ruff
-            #fix-python // have to install with `nix profile install github:GuillaumeDesforges/fix-python`
           ]
           # golang
           [
@@ -218,7 +220,10 @@
           ]
 
           # Yaml
-          [ yamlfmt yamllint ]
+          [
+            yamlfmt
+            yamllint
+          ]
         ]
 
         # Debuggers

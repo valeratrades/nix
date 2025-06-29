@@ -61,7 +61,7 @@ alias rf="sudo rm -rf"
 alias jp="jupyter lab -y"
 #alias tree="tree -I 'target|debug|_*'"
 alias tree="eza --tree"
-alias lhost="nohup nyxt http://localhost:8080/ > /dev/null 2>&1 &"
+alias lhost="nohup chromium http://localhost:8080/ > /dev/null 2>&1 &"
 alias sound="qpwgraph"
 alias video_cut="video-cut"
 alias ss="sudo systemctl"
@@ -396,3 +396,17 @@ function cpf
 	cp -f "$relative_filepath" "$dest"
 end
 
+
+function log
+	set -l guess_project_name (basename (pwd))
+	set -l log_file "$XDG_STATE_HOME/$guess_project_name/.log"
+	echo "INFO: will be logging to $log_file"
+	if not test -d (dirname $log_file)
+		mkdir -p (dirname $log_file)
+		echo "INFO: Created directory: $(dirname $log_file)"
+	end
+
+	#TODO: add `^| tee -a $log_file` once certain it works as-is
+	#eval "$argv" ^| tee -a $log_file
+	eval "$argv" > $log_file
+end

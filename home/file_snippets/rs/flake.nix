@@ -98,6 +98,9 @@
               pkg-config
               rust
             ] ++ pre-commit-check.enabledPackages;
+
+						env.RUST_BACKTRACE = 1;
+						env.RUST_LIB_BACKTRACE = 0;
           };
       }
     );

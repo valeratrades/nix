@@ -68,8 +68,8 @@ shnip.setup({
 			extra = {
 				["<c-f>"] = "def :<CR><CR>raise NotImplementedError #dbg<Esc>2kg_i",
 				["<c-n>"] = "raise NotImplementedError #dbg<Esc>",
-				["<c-d>"] = 'print(f"{=}") #dbg<Esc>8hi',
-				["<c-u>"] = 'input(f"{=}") #dbg<Esc>8hi',
+				["<c-d>"] = 'input(f"{=}") #dbg<Esc>8hi',
+				["<c-u>"] = 'input("here") #dbg<Esc>',
 				["<c-h>"] = 'print("here") #dbg<Esc>6hi',
 				["<c-l>"] = 'from loguru import logger<CR>logger.warning(f"MYDBG: {=}") #dbg<Esc>==8hi', --NB: notice `==` at the end: python formatter assumes things very early at times, and this is the way to deal with it in such macros.
 			}

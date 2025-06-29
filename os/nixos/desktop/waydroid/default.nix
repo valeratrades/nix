@@ -5,7 +5,7 @@
 {
   environment.shellAliases.wui = "waydroid show-full-ui"; # main entry point
   virtualisation = {
-    waydroid.enable = true;
+    waydroid.enable = false; #HACK: Temporarily disabled due to Cython Python 3.13 incompatibility
     lxd.enable = true;
   };
   #- init with `sudo waydroid init -s GAPSS -f`

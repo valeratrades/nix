@@ -10,19 +10,6 @@ K({ "n", "v" }, "-", "<cmd>Oil<cr>")
 K("i", "<Esc>", "<Esc><Esc><cmd>lua CommentCopilotEsc()<cr>",
 	{ desc = "Allow quick exit from cmp suggestions by doubling <Esc>" })
 
--- -- -- "hjkl" -> "htns" Remaps and the Consequences
--- Basic Movement {\{{
-local function multiplySidewaysMovements(movement)
-	return function()
-		if vim.v.count == 0 then
-			F(movement)
-		else
-			local multiplied_count = vim.v.count * 10
-			F(multiplied_count .. movement)
-		end
-	end
-end
-
 K("", "<C-e>", "<nop>") -- used as prefix in my tmux
 K("", "j", "<nop>")
 K("", "k", "<nop>")
@@ -151,22 +138,6 @@ K("n", "<C-A>", "ggVG")
 K('', '<C-z>', '<C-a>')
 --
 -- --
-
--- FIX
--- Gitui
---local function start_gitui()
---	local handle = io.popen("git rev-parse --show-toplevel")
---	local result = handle:read("*a")
---	handle:close()
---	result = result:gsub("%s+", "")
---	if result ~= "" then
---		vim.cmd("term gitui -d " .. result)
---	else
---		print("Not inside a git repository.")
---	end
---end
---K("n", "<space>gg", [[<Cmd>lua start_gitui()<cr>]], { noremap = true, silent = true })
---
 
 local function getPopups()
 	return vim.fn.filter(vim.api.nvim_tabpage_list_wins(0),

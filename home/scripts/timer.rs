@@ -47,7 +47,7 @@ fn timer(args: &[String]) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
 	if beep {
-		Command::new("fish").args(["-c", "beep --loud time"]).status().map_err(|e| e.to_string())?;
+		Command::new("fish").args(["-c", "beep --long time"]).status().map_err(|e| e.to_string())?;
 	} else {
 		Command::new("notify-send").args(["timer finished", "-t", "2147483647"]).status().map_err(|e| e.to_string())?;
 	}
