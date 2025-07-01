@@ -615,6 +615,7 @@ in {
         # dbs
         [
           redis
+					clickhouse
           awscli2
           postgresql
         ]
