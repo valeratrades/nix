@@ -42,6 +42,7 @@
             plugins = with pkgs.obs-studio-plugins; [
               wlrobs
               obs-backgroundremoval
+							input-overlay
             ];
           })
         ]
@@ -162,7 +163,7 @@
           ]
           # python
           [
-            python
+						python312Full
             ty # typechecker in rust
             python313Packages.jedi-language-server
             ruff

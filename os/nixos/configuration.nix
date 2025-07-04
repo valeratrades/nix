@@ -429,7 +429,7 @@ in {
     description = "${user.userFullName}";
     shell = pkgs.fish;
     extraGroups =
-      [ "networkmanager" "wheel" "keyd" "audio" "video" "docker" "dialout" ];
+      [ "networkmanager" "wheel" "keyd" "audio" "video" "docker" "dialout" "postgres" ];
     openssh.authorizedKeys.keys = user.sshAuthorizedKeys;
   };
 

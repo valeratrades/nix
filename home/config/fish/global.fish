@@ -47,12 +47,12 @@ end
 # python
 function py
     todo manual counter-step --dev-runs
-    python3 $argv
+    python $argv
 end
 
 function spy
     todo manual counter-step --dev-runs
-    sudo python3 $argv
+    sudo python $argv
 end
 
 function pp
