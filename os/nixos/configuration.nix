@@ -612,6 +612,9 @@ in {
         nginx
         caddy
 
+				memtester # test for RAM corruption
+				memtest86-efi # not sure which one though
+
         # dbs
         [
           redis
@@ -824,6 +827,12 @@ in {
 
   #TODO!: make specific to the host
   networking = {
+		nameservers = [ "8.8.8.8" "1.1.1.1" ];
+		# Add hosts entries to bypass DNS issues with tailscale
+		extraHosts = ''
+			104.18.14.166 api.bitget.com
+			104.18.15.166 api.bitget.com
+		'';
     firewall = {
       enable = true;
       allowedTCPPorts = [
@@ -871,7 +880,10 @@ in {
 
     # to setup network manager with uni wifi, you can 1) reference the `edit connection -> advanced options` on the phone (normally androids just work with them, then 2) edit accordingly with `nm-connection-editor`
     # on update of interface it can hang, btw, so `sudo systemctl restart NetworkManager` if `nmtui` does stops loading all networks
-    networkmanager.enable = true;
+    networkmanager = {
+			dns = "none";
+			enable = true;
+		};
   };
 
   # replaced by `nh.clean`

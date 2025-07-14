@@ -33,6 +33,7 @@
 
   # enable the tailscale service
   services.tailscale = {
+    #enable = false; #dbg: should be true, but currently something is breaking, could be the culprit idk
     enable = true;
     port = 41641;
     interfaceName = "tailscale0";
@@ -40,6 +41,7 @@
     openFirewall = true;
     useRoutingFeatures = "client";
     extraUpFlags = "--accept-routes";
+		#extraUpFlags = "--accept-routes --accept-dns=false";
     # authKeyFile = "/var/lib/tailscale/authkey";
   };
 }

@@ -410,7 +410,7 @@ return require('lazy').setup({
 	"jecaro/fugitive-difftool.nvim",
 	--"Saghen/blink.cmp", -- potentially a better nvim-cmp, worth trying at some point
 	{
-		"https://github.com/hmk114/remote-nvim.nvim", -- temp, until it's merged upstream (2025/05/27)
+		"https://github.com/amitds1997/remote-nvim.nvim",
 		version = "*",
 		dependencies = {
 			"nvim-lua/plenary.nvim",

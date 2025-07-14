@@ -1,1 +1,0 @@
-trader-DEMO-MAINNET-QUANTM-INDICATORS-BOT-BTCUSDT-SPOT.BYBIT:streams:indicators-bot-BTCUSDT-SPOT.BYBIT.indicator.lmf-low
