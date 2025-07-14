@@ -36,6 +36,8 @@ in {
         lazygit
         zed
 
+				claude-code
+
         libinput
         #flutterPackages-source.stable // errors
 
