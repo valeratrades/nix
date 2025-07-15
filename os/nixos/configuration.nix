@@ -611,6 +611,7 @@ in {
         sops # secrets mgmt
         nginx
         caddy
+				act # run GHAs locally
 
 				memtester # test for RAM corruption
 				memtest86-efi # not sure which one though

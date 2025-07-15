@@ -103,7 +103,7 @@ require("telescope").load_extension("ui-select")
 --Q: should probably split by priority. Where "dbg" and "TEST" are actually the highest ones. Just include in the same `!` framework, have them wegh 11 and 10 respectively.
 vim.keymap.set('n', '<space>sd', function()
 	local gs_ext = vim.tbl_extend("force", gs, {
-		default_text = [[#\s*TEST|#\s*dbg|dbg!\(|#\s*Q|#\s*DEPRECATE|#\sDO|#\s*TODO]],
+		default_text = [[#\s*TEST|#\s*dbg|dbg!\(|#\s*Q|#\s*DEPRECATE|#\sDO|#\s*TODO|dbg]],
 		additional_args = function()
 			return { '--pcre2' }
 		end
