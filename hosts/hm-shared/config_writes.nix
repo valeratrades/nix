@@ -24,7 +24,7 @@
     };
 
     ".config/sway/config" =
-      if user.userFullName == "Timur" || user.userFullName == "Valera" then {
+      if user.userFullName == "Timur" {
         source = let
           config = builtins.readFile "${self}/home/config/sway/config";
           ansi = builtins.replaceStrings [ ''xkb_variant "iso,,"'' ]
