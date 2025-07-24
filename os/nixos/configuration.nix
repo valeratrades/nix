@@ -106,6 +106,9 @@ in {
         logging_collector = true;
       };
     };
+		clickhouse = {
+			enable = true;
+		};
 
     # a column on my laptop kbd gave in, so turn the whole thing off, so I can put another keyboard over it.
     #udev.extraRules = if user.userFullName == "Valera" then ''
