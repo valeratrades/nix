@@ -10,26 +10,6 @@
         (import ./config_writes.nix { inherit self pkgs user; }))
   ];
   #dbg: look at comment in ./config_symlinks.nix
-  home.file.".config/sway/config" = builtins.trace
-    "DEBUG: rewriting sway to assume `ansi` kbd for ${user.userFullName}"
-    (if user.userFullName == "Timur" || user.userFullName == "Valera" then {
-      source = let
-        config = builtins.readFile "${self}/home/config/sway/config";
-        toReplace = ''xkb_variant "iso,"'';
-      in if builtins.match ".*${toReplace}.*" config == null then
-        throw "pattern '${toReplace}' not found in sway config"
-      else
-        let
-          ansi =
-            builtins.replaceStrings [ toReplace ] [ ''xkb_variant "ansi,"'' ]
-            config;
-        in pkgs.writeText "sway_conf_for_ansi_kbd"
-        ansi; # TODO: also add the scripts (normally would be done with `recursive = true`)
-      #builtins.trace "DEBUG: overwriting sway config with timur's" "${self}/home/config/sway/config_timur"; #TODO!!!!: gen timur's config procedurally by just `sed`ing xkb_variant line
-    } else {
-      source = "${self}/home/config/sway";
-      recursive = true;
-    });
 
   programs = {
     neovim = {

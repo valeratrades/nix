@@ -34,6 +34,7 @@ in
     masterUserEmail = "valeratrades@gmail.com";
     wakeTime = "10:00"; # matches system time, (my system time is utc)
     fontSize = 9.5;
+		kbd = "ansi";
   };
   maria = {
     inherit sshAuthorizedKeys;
@@ -45,6 +46,7 @@ in
     masterUserEmail = "m79160164445@gmail.com";
     wakeTime = "06:00";
     fontSize = 11;
+		kdb = "iso";
   };
   timur = {
     inherit sshAuthorizedKeys;
@@ -56,6 +58,7 @@ in
     masterUserEmail = "codertima@gmail.com";
     wakeTime = "05:00";
     fontSize = 12;
+		kbd = "ansi";
   };
   #
 

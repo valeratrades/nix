@@ -66,9 +66,8 @@ in {
           languages = [ "eng" ];
           symbolsFile = mylib.relativeToRoot "home/xkb_symbols/semimak";
         };
-        #layout = "semimak,ru,us"; # deprecated in a month (2025/04/12), as Timur is starting to use semimak too
         layout = "semimak,ru";
-        variant = (if user.userFullName == "Timur" then "ansi,," else "iso,,");
+        variant = (if user.kbd == "ansi" then "ansi,," else "iso,,");
         #
       };
       autoRepeatDelay =

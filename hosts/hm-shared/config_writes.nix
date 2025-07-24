@@ -23,19 +23,26 @@
       recursive = true;
     };
 
-    ".config/sway/config" =
-      if user.userFullName == "Timur" {
-        source = let
-          config = builtins.readFile "${self}/home/config/sway/config";
-          ansi = builtins.replaceStrings [ ''xkb_variant "iso,,"'' ]
-            [ ''xkb_variant "ansi,,"'' ] config;
+  	".config/sway/config" = 
+    (if user.kbd == "ansi" then {
+      source = let
+        config = builtins.readFile "${self}/home/config/sway/config";
+        toReplace = builtins.trace
+    "DEBUG: rewriting sway to assume `ansi` kbd for ${user.userFullName}"''xkb_variant "iso,"'';
+      in if builtins.match ".*${toReplace}.*" config == null then
+        throw "pattern '${toReplace}' not found in sway config"
+      else
+        let
+          ansi =
+            builtins.replaceStrings [ toReplace ] [ ''xkb_variant "ansi,"'' ]
+            config;
         in pkgs.writeText "sway_conf_for_ansi_kbd"
         ansi; # TODO: also add the scripts (normally would be done with `recursive = true`)
-        #builtins.trace "DEBUG: overwriting sway config with timur's" "${self}/home/config/sway/config_timur"; #TODO!!!!: gen timur's config procedurally by just `sed`ing xkb_variant line
-      } else {
-        source = "${self}/home/config/sway";
-        recursive = true;
-      };
+      #builtins.trace "DEBUG: overwriting sway config with timur's" "${self}/home/config/sway/config_timur"; #TODO!!!!: gen timur's config procedurally by just `sed`ing xkb_variant line
+    } else {
+      source = "${self}/home/config/sway";
+      recursive = true;
+    });
 
     # ind files
     ".config/auto_redshift.toml".source =
