@@ -2202,11 +2202,11 @@
         "workflow-parts": "workflow-parts_3"
       },
       "locked": {
-        "lastModified": 1739891995,
-        "narHash": "sha256-mBDCykDsrawAzgL4OgjAdJYB3YtiLll85Vqb9OauGc4=",
+        "lastModified": 1753663016,
+        "narHash": "sha256-XTTA7mbxIhD7nph4xSbQfIUuPvw75VM2SKq2Cl/dIkE=",
         "owner": "valeratrades",
         "repo": "todo",
-        "rev": "d116c2281a0be454601858d765b3d598b563d397",
+        "rev": "d798700e35bd4b947343f1ce116ff676cdee1b23",
         "type": "github"
       },
       "original": {

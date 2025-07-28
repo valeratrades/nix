@@ -799,3 +799,6 @@ dicts
 postgres
 overmanage
 entrypoint
+GHA
+hardcodes
+compat
