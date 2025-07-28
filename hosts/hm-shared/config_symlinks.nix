@@ -22,6 +22,9 @@
     himalaya = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       [ -e "$XDG_CONFIG_HOME/himalaya" ] || ln -sf "$NIXOS_CONFIG/home/config/himalaya" "$XDG_CONFIG_HOME/himalaya"
     '';
+    claude = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      [ -e "$HOME/.claude" ] || ln -sf "$NIXOS_CONFIG/home/config/claude" "$HOME/.claude"
+    '';
 
     # ind files
     auto_redshift = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
