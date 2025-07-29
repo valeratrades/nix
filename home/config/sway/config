@@ -250,16 +250,16 @@ bindcode $mod+Shift+34 output $output_laptop dpms off
 set $switch_out swaymsg mode \"default\" && eww update sway_mode=default
 
 # # Outputs
-#TODO!: make the scale a bit larger - with my current monitor I don't have enough resolution to properly display at 0.75
-output $output_monitor pos 0 0 scale 0.75
-#output $output_laptop pos 277 1080
+
+#HACK: sway changed something recently, so scaling doesn't work properly. TODO: update back when it is fixed. (2025/07/29)
+# should be
 # these are scaled by 1/0.73684 (which is the current `scale` on the large monitor screen)
-#output $output_laptop pos 376 1466
-# pretty sure a bug on their side, so need to scale twice or something.
-output $output_laptop pos 560 1466
-#output $output_laptop pos 0 0
-# anything but `0 0` will break `wine`, so the commented out versions, hence the line above for running it when monitor is unplugged.
-#
+#NB: anything but `0 0` will break `wine`
+#output $output_monitor pos 0 0 scale 0.75
+#output $output_laptop pos 560 1466
+# is now
+output $output_monitor pos 0 0 scale 1
+output $output_laptop pos 0 1080
 
 exec_always "sh -c -- pkill -f 'todo monitor'; todo monitor"
 
