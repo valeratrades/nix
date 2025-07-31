@@ -287,16 +287,16 @@ alias dird="direnv deny"
 function 2fa
 	if [ (count $argv) != 1 ] && [ (count $argv) != 2 ]
 		echo "Usage: 2fa <app_name> [base]"
-		return
+		return 1
 	end
 
 	set pass_var (string upper "$argv[1]")_TOTP
-	if set 2fa_pass (eval echo $$pass_var)
-		:
-	else
-		echo "Variable $pass_var is not set."
+	if not set -q $pass_var
+		echo "Environment variable $pass_var is not set."
 		return 1
 	end
+
+	set 2fa_pass (eval echo $$pass_var)
 
 	set base 6
 	if [ (count $argv) = 2 ]
@@ -305,11 +305,14 @@ function 2fa
 
 	oathtool --base32 --totp "$2fa_pass" -d $base
 end
+
 function 2fac
 	set r (2fa $argv)
-	echo $r | wl-copy
-	echo """$r
+	if test $status -eq 0
+		echo $r | wl-copy
+		echo """$r
 Copied to clipboard."""
+	end
 end
 #
 
@@ -353,47 +356,54 @@ end
 
 function cpf
 	# Force-copy file (automatically repeats part of the file path)
-	# Ex: run:
-	# cpf -t ../tmp/nautilus-utils nautilus_utils/backtest_machine/__init__.py
-	# for
-	#	cp -f nautilus_utils/backtest_machine/__init__.py ../tmp/nautilus-utils/nautilus_utils/backtest_machine/__init__.py
+	# Ex:
+	# cpf -t ../dst root/path/to/file     → cp -f root/path/to/file ../dst/root/path/to/file
+	# cpf -f ../src root/path/to/file     → cp -f ../src/root/path/to/file root/path/to/file
 
 	set -l target_dir_root ""
+	set -l source_dir_root ""
 	set -l relative_filepath ""
 
 	set -l i 1
 	while test $i -le (count $argv)
-		if test "$argv[$i]" = "-t"
-			set target_dir_root $argv[(math $i + 1)]
-			set i (math $i + 2)
-			continue
+		switch $argv[$i]
+			case "-t"
+				set target_dir_root $argv[(math $i + 1)]
+				set i (math $i + 2)
+				continue
+			case "-f"
+				set source_dir_root $argv[(math $i + 1)]
+				set i (math $i + 2)
+				continue
 		end
+
 		if test -z "$relative_filepath"
 			set relative_filepath $argv[$i]
 		end
 		set i (math $i + 1)
 	end
 
-	if test -z "$target_dir_root" -o -z "$relative_filepath"
+	if test -n "$target_dir_root" -a -n "$relative_filepath"
+		set src "$relative_filepath"
+		set dest "$target_dir_root/$relative_filepath"
+	else if test -n "$source_dir_root" -a -n "$relative_filepath"
+		set src "$source_dir_root/$relative_filepath"
+		set dest "$relative_filepath"
+	else
 		echo "Usage: cpf -t <target_dir_root> <relative_filepath>"
+		echo "   or: cpf -f <source_dir_root> <relative_filepath>"
 		return 1
 	end
 
-	if not test -d "$target_dir_root"
-		echo "Target dir root does not exist: $target_dir_root"
+	if not test -f "$src"
+		echo "Source file does not exist: $src"
 		return 1
 	end
 
-	if not test -f "$relative_filepath"
-		echo "File does not exist: $relative_filepath"
-		return 1
-	end
-
-	set dest (string join "/" "$target_dir_root" "$relative_filepath")
 	set dest_dir (dirname "$dest")
 	mkdir -p "$dest_dir"
-	echo "INFO: Running: cp -f $relative_filepath $dest"
-	cp -f "$relative_filepath" "$dest"
+	echo "INFO: Running: cp -f $src $dest"
+	cp -f "$src" "$dest"
 end
 
 

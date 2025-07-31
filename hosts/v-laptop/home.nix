@@ -34,7 +34,9 @@ in {
         ncspot
         gitui
         lazygit
-        zed
+
+        zed-editor-fhs
+				zed
 
 				claude-code
 

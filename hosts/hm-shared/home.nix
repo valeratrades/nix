@@ -157,7 +157,7 @@
         ]
         [
           # embedded dev
-          platformio-core
+          #platformio-core #dbg: doesn't work rn for some reason
           #platformio #dbg: couldn't build the `pio` thing for some reason
           #arduino #dbg: can't build for some reason
           arduino-core
