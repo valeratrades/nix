@@ -3,6 +3,8 @@
 #TODO!!: start assigning difficulty score to all entries. Default to NaN.
 # Could do it through a label with say black-color. Probably a series of labels, simply named {[1-9],NaN}
 
+alias gl="lazigit"
+
 set -g GIT_SHARED_MAIN_BRANCHES master main release stg prod
 alias g="git"
 

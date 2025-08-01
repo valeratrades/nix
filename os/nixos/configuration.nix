@@ -249,7 +249,7 @@ in {
           m = "merge";
           r = "rebase";
 
-          d = "diff -- ${diff_ignore}";
+          d = "--no-pager diff -- ${diff_ignore}";
           ds = "diff --staged -- ${diff_ignore}";
           s = "diff --stat -- ${diff_ignore}";
           sm = "diff --stat master -- ${diff_ignore}";
