@@ -434,7 +434,7 @@ return require('lazy').setup({
 					})
 				end,
 				offline_mode = {
-					enabled = true,
+					enabled = false, --TEST
 					no_github = true, -- whether not to even try to fetch from github
 				},
 			})

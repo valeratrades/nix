@@ -48,6 +48,14 @@ function csr
     cs $_path
 end
 
+function csq
+    set _path "$HOME/s/quantm/"
+    if test -n "$argv[1]"
+        set _path "$_path$argv[1]"
+    end
+    cs $_path
+end
+
 function csst
     set _path "$HOME/s/tmp/"
     if test -n "$argv[1]"
