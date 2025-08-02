@@ -279,8 +279,7 @@ vim.g.rustaceanvim = {
 						autoload_configuration = true,
 					},
 					cmd = {
-						--"rust-analyzer",
-						"cargo run rust-analyzer",
+						"rust-analyzer",
 					},
 					cargo = {
 						BuildScripts = {
