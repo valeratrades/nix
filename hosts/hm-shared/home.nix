@@ -311,6 +311,18 @@
           enter_accept = true;
         };
 
+			".config/claude/config.json".source =
+				(pkgs.formats.json { }).generate "claude.json" {
+					completion_signal = {
+						command = "notify-send";
+						enabled = true;
+						format = "{task_description}";
+					};
+					user_preferences = {
+						notify_on_task_completion = true;
+					};
+				};
+
       # configured via hm, can't just symlink it in my host's config
       ".config/tmux" = {
         source = "${self}/home/config/tmux";
