@@ -2216,11 +2216,11 @@
         "v-utils": "v-utils_4"
       },
       "locked": {
-        "lastModified": 1754332335,
-        "narHash": "sha256-gr77rdR2EJD3V+t842rhK8mG+7d6VRxPazYOK7ufBd0=",
+        "lastModified": 1754334996,
+        "narHash": "sha256-Q0gGVexMrxx0k5x1ziM6RyESfwhkbNILRaZ/n4UEmec=",
         "owner": "valeratrades",
         "repo": "todo",
-        "rev": "39535e40f5c6d866a32cf86c5570582a38236394",
+        "rev": "af423efee21de96646de219e169f77cbc6751f66",
         "type": "github"
       },
       "original": {
