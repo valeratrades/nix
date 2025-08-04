@@ -314,7 +314,7 @@
 			".config/claude/config.json".source =
 				(pkgs.formats.json { }).generate "claude.json" {
 					completion_signal = {
-						command = "notify-send";
+						command = "notify-send %s";
 						enabled = true;
 						format = "{task_description}";
 					};
