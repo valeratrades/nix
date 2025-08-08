@@ -51,6 +51,7 @@ alias ggp="gg -p perf"
 alias ggd="gg -p docs"
 alias ggi="gg -p ci"
 alias ggm="gg -p move"
+alias ggw="gg -p wip"
 
 alias gup="git commit -a --fixup (git rev-parse HEAD)"
 alias gupp="gup && git push --follow-tags"
@@ -71,10 +72,9 @@ function gf
 	git fetch origin $argv[1]:$argv[1] && git checkout $argv[1]
 end
 
-function git_pull_force
+function git_force_pull
 	git fetch --all && git reset --hard origin/(git branch --show-current)
 end
-alias git_force_pull="git_pull_force"
 
 function grr
 	# Git really reset

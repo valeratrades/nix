@@ -1,4 +1,4 @@
 { mylib, ... }:
 {
-  imports = mylib.scanPaths ./.;
+  imports = builtins.trace "DEBUG: loading programs" mylib.scanPaths ./.;
 }

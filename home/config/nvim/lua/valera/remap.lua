@@ -28,7 +28,7 @@ K("n", "gf", "gF")
 K("", "<MiddleMouse>", "<nop>")
 
 -- Useful Enter key
-K("", "<CR>", "o<Esc>")
+--K("", "<CR>", "o<Esc>")
 K("", "<C-CR>", "O<Esc>")
 K("i", "<C-CR>", "<Esc>O")
 
