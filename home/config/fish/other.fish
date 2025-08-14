@@ -242,7 +242,6 @@ function nsync
 	git -C $NIXOS_CONFIG reset --hard && git -C $NIXOS_CONFIG pull && sudo nixos-rebuild switch --flake $NIXOS_CONFIG#$(hostname) --impure --fast
 end
 
-#TODO: add some git add -A on $NIXOS_CONFIG and maybe make this into the main way of running this
 function nb
 	sudo nixos-rebuild switch --impure --fast --flake ~/nix#$(hostname)
 	if [ (count $argv) != 0 ]
@@ -278,44 +277,6 @@ end
 alias dirr="rm -r .direnv; dira" # for `direnv reload`
 alias dird="direnv deny"
 #
-
-# # exa (for future reference only, as now I have programs.eza.enable in home.nix)
-#alias ll="exa -lA"
-#
-
-# # auth
-function 2fa
-	if [ (count $argv) != 1 ] && [ (count $argv) != 2 ]
-		echo "Usage: 2fa <app_name> [base]"
-		return 1
-	end
-
-	set pass_var (string upper "$argv[1]")_TOTP
-	if not set -q $pass_var
-		echo "Environment variable $pass_var is not set."
-		return 1
-	end
-
-	set 2fa_pass (eval echo $$pass_var)
-
-	set base 6
-	if [ (count $argv) = 2 ]
-		set base $argv[2]
-	end
-
-	oathtool --base32 --totp "$2fa_pass" -d $base
-end
-
-function 2fac
-	set r (2fa $argv)
-	if test $status -eq 0
-		echo $r | wl-copy
-		echo """$r
-Copied to clipboard."""
-	end
-end
-#
-
 
 #gpg id = gpg --list-keys --with-colons | awk -F: '/uid/ && /valeratrades@gmail.com/ {getline; print $5}'
 

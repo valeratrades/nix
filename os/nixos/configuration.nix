@@ -437,9 +437,8 @@ in {
 
   systemd = {
     user.services = {
-      # not sure why I have this
+      # MPRIS integrates with `pause/play` AVRCP actions sent by headphones
       mpris-proxy = {
-        description = "Mpris proxy";
         after = [ "network.target" "sound.target" ];
         wantedBy = [ "default.target" ];
         serviceConfig.ExecStart = "${pkgs.bluez}/bin/mpris-proxy";
