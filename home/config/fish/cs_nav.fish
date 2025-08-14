@@ -48,8 +48,8 @@ function csr
     cs $_path
 end
 
-function csq
-    set _path "$HOME/s/quantm/"
+function cso
+    set _path "$HOME/s/other/"
     if test -n "$argv[1]"
         set _path "$_path$argv[1]"
     end

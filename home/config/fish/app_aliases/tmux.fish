@@ -70,8 +70,8 @@ function tmux_new_session_base
 	tmux select-pane -t "$SESSION_NAME:window.0"
 
 	# `cursor` window
-	tmux new-window -t "$SESSION_NAME" -n "cursor"
-	tmux send-keys -t "$SESSION_NAME:cursor.0" "cursor ." # no `Enter` - just prepare the command
+	tmux new-window -t "$SESSION_NAME" -n "ai"
+	tmux send-keys -t "$SESSION_NAME:cursor.0" "echo '`claude_all` or `cursor .` here'" Enter
 
 	# Ref window
 	#// Moved ref to bottom, as I often end up having more than one of these
