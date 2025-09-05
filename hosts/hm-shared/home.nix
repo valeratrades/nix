@@ -4,7 +4,7 @@
     ./nixcord.nix
     (
       # in my own config I symlink stuff to fascilitate experimentation. In derived setups I value reproducibility much more
-      if user.userFullName == "Valera" then
+      if false then #dbg: user.userFullName == "Valera" then
         ./config_symlinks.nix
       else
         (import ./config_writes.nix { inherit self pkgs user; }))
@@ -303,13 +303,14 @@
       #};
 
       #BUG: stupid `atuin` overwrites my generated config with a dummy one
-      ".config/atuin/config.toml".source =
-        (pkgs.formats.toml { }).generate "atuin.toml" {
-          filter_mode_shell_up_key_binding =
-            "directory"; # `_bind_up_search` will now only search in current dir
-          sync.records = true;
-          enter_accept = true;
-        };
+      #dbg: \
+      # ".config/atuin/config.toml".source =
+      #   (pkgs.formats.toml { }).generate "atuin.toml" {
+      #     filter_mode_shell_up_key_binding =
+      #       "directory"; # `_bind_up_search` will now only search in current dir
+      #     sync.records = true;
+      #     enter_accept = true;
+      #   };
 
 			".config/claude/config.json".source =
 				(pkgs.formats.json { }).generate "claude.json" {
