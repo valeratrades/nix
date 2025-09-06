@@ -73,8 +73,6 @@
 
     sops-nix.url = "github:Mic92/sops-nix";
 
-    #clickhouse.url = "github:ClickHouse/ClickHouse"; #TODO: integrate (currently doesn't bulid (2025/06/16))
-
     # -----------------------------------------------------------------
     # My packages
     # ----------------------------------------------------------------
