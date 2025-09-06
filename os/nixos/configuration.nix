@@ -46,6 +46,7 @@ in {
 
   services = {
 		power-profiles-daemon.enable = true;
+		fstrim.enable = true; #ref: https://www.reddit.com/r/NixOS/comments/rbzhb1/if_you_have_a_ssd_dont_forget_to_enable_fstrim/
     gnome.gnome-keyring.enable = lib.mkDefault
       false; # annoying // Supposed to be an extra layer of security for managed {ssh passwords, gpg, wifi, etc}
     getty.autologinUser = user.username;
@@ -347,9 +348,15 @@ in {
   hardware.enableAllFirmware = true; # Q: not sure if I need it
 
   # Bootloader.
-  systemd.services.nix-daemon = {
+  systemd.services = {
+		nix-daemon = {
     # https://github.com/NixOS/nixpkgs/pull/338181
     environment.TMPDIR = "/var/tmp";
+		};
+		"systemd-backlight@.service" = {
+			enable = false;
+			unitConfig.Mask = true;
+		};
   };
   boot = {
     tmp.useTmpfs = true;
