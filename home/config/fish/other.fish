@@ -115,7 +115,7 @@ function age_key
 	set set false
 	set get false
 	if [ "$argv[1]" = "-s" ] || [ "$argv[1]" = "--set" ]
-		set save true
+		set set true
 	end
 	if [ "$argv[1]" = "-g" ] || [ "$argv[1]" = "--get" ]
 		set get true
