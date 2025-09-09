@@ -129,7 +129,7 @@ require('crates').setup {
 			yanked = "  yanked ",
 		},
 		cmp = {
-			enabled = false,
+			--enabled = false,
 			use_custom_kind = true,
 			kind_text = {
 				version = "Version",
@@ -141,7 +141,7 @@ require('crates').setup {
 			},
 		},
 		coq = {
-			enabled = false,
+			--enabled = false,
 			name = "crates.nvim",
 		},
 		crates = {
@@ -150,10 +150,10 @@ require('crates').setup {
 			max_results = 8,
 		},
 	},
-	null_ls = {
-		enabled = false,
-		name = "Crates",
-	},
+	--null_ls = {
+	--	enabled = false,
+	--	name = "Crates",
+	--},
 	on_attach = function(bufnr) end,
 }
 

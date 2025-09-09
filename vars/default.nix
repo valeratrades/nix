@@ -34,7 +34,7 @@ in
     masterUserEmail = "valeratrades@gmail.com";
     wakeTime = "10:00"; # matches system time, (my system time is utc)
     fontSize = 9.5;
-		kbd = "iso";
+		kbd = "ansi";
   };
   maria = {
     inherit sshAuthorizedKeys;
