@@ -694,6 +694,8 @@ in {
         # Monitoring and Performance
         [
           bottom
+					powertop
+					upower
           lm_sensors # System sensor monitoring
           ltrace # Library call monitoring
           strace # System call monitoring

@@ -185,18 +185,15 @@ end
 function gc
 	#ex: gc neovim/neovim . -c
 	set result (cargo -Zscript -q (dirname (status --current-filename))/git_clone.rs $argv[1] $argv[2])
-	if [ $status = 0 ] 
-		if begin #fucking fish
-			[ (count $argv) = 1 ]
-			or begin
-				[ (count $argv) = 3 ]
-				and begin
-					[ "$argv[3]" = "--cd" ]
-					or [ "$argv[3]" = "-c" ]
-				end
+	if [ $status = 0 ]
+		if begin
+			[ (count $argv) -ge 3 ]
+			and begin
+				[ "$argv[3]" = "--cd" ]
+				or [ "$argv[3]" = "-c" ]
 			end
-			cd $result
 		end
+			cd $result
 		else
 			echo $result
 		end
@@ -205,6 +202,7 @@ function gc
 	end
 	return $status
 end
+
 
 function gpr
 	set current_branch (git branch --show-current)
