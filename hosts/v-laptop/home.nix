@@ -44,6 +44,10 @@ in {
         #flutterPackages-source.stable // errors
 
         virt-viewer
+
+				ventoy # solution for multiple ISOs on same USB
+				woeusb # writing bootable USB, Windows-native solution
+
       ]
 
       ++ [
