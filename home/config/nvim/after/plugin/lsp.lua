@@ -399,13 +399,3 @@ lspconfig.ocamllsp.setup({
 		formatter = { command = { "ocamlformat" } },
 	},
 })
-
---lspconfig.roslyn_ls.setup({
---	on_attach = lsp_zero.default_setup,
---	--cmd = { 'roslyn_ls' },
---	--settings = {
---	--	formatter = { command = { "ocamlformat" } },
---	--},
---})
-vim.lsp.enable('roslyn_ls')
-vim.lsp.config('roslyn')
