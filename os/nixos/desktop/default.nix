@@ -164,6 +164,11 @@
               alejandra # Nix Code Formatter; not sure how it compares with nixpkgs-fmt
             ]
           ]
+					# csharp
+					[
+						dotnetCorePackages.sdk_9_0-bin
+						roslyn-ls
+					]
           # python
           [
 						python312Full
