@@ -620,6 +620,7 @@ in {
         nginx
         caddy
 				act # run GHAs locally
+				ntfs3g # `woeusb` depends on it
 
 				memtester # test for RAM corruption
 				memtest86-efi # not sure which one though

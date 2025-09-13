@@ -47,7 +47,6 @@ in {
 
 				ventoy # solution for multiple ISOs on same USB
 				woeusb # writing bootable USB, Windows-native solution
-				ntfs3g # `woeusb` depends on it
 
       ]
 
