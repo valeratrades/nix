@@ -72,7 +72,9 @@
           wine
           (wine.override { wineBuild = "wine64"; })
           wine64
+					wineWowPackages.stable
           wineWowPackages.staging
+					wineWowPackages.waylandFull
           wineWowPackages.wayland
           #wineWowPackages.waylandFull
           #wineWowPackages.unstableFull

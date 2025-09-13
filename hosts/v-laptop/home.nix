@@ -45,7 +45,7 @@ in {
 
         virt-viewer
 
-				ventoy # solution for multiple ISOs on same USB
+				ventoy-full-gtk # solution for multiple ISOs on same USB
 				woeusb # writing bootable USB, Windows-native solution
 
       ]
