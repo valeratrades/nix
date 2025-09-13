@@ -166,7 +166,7 @@
           ]
 					# csharp
 					[
-						dotnetCorePackages.sdk_9_0-bin
+						dotnetCorePackages.sdk_10_0-bin
 						roslyn-ls
 					]
           # python
