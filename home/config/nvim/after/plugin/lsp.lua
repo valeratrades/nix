@@ -408,3 +408,4 @@ lspconfig.ocamllsp.setup({
 --	--},
 --})
 vim.lsp.enable('roslyn_ls')
+vim.lsp.config('roslyn')

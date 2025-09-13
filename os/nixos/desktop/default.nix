@@ -168,6 +168,7 @@
 					[
 						dotnetCorePackages.sdk_10_0-bin
 						roslyn-ls
+						roslyn
 					]
           # python
           [
