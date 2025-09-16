@@ -1,1 +1,1 @@
-TODO: implement a custom `init shell`, that would produce correct aliases for both fish and POSIX-compliant shells
+/nix/store/6vjs39kckk8fgw9jwv1klsw35ibmn0i3-home-manager-files/.config/nvim/sh/README.md

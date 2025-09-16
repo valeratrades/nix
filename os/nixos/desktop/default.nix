@@ -64,7 +64,7 @@
 
       # emulators
       [
-        #waydroid # might be auto-brought into the scope by `virtualization` module
+        waydroid
         gnome-boxes # vm with linux distros
         # Windows
         [
@@ -166,9 +166,9 @@
           ]
 					# csharp
 					[
-						dotnetCorePackages.sdk_10_0-bin
-						roslyn-ls
-						roslyn
+						#dotnetCorePackages.sdk_10_0-bin #TODO: figure out how to get it without getting segmentation fault
+						#roslyn-ls
+						#roslyn
 					]
           # python
           [

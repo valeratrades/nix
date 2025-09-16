@@ -8,9 +8,10 @@
     waydroid.enable = false; #HACK: Temporarily disabled due to Cython Python 3.13 incompatibility
     lxd.enable = true;
   };
+	#NB: must run init manually as follows:
   #- init with `sudo waydroid init -s GAPSS -f`
   #- patch google-play certificate: https://docs.waydro.id/faq/google-play-certification
-  # normally setup also requires modyfiying waydroid_base.prop and starting up `systemctl wayland-container`, but these are taken care of below (theoretically).
+  # normally setup also requires modyfiying waydroid_base.prop and starting up `systemctl wayland-container`, but these are taken care of below.
   system.activationScripts.patchWaydroid = {
     text = ''
       # if the patch was already appplied, testing reversing it (\`--dry-run -R\`) returns 0

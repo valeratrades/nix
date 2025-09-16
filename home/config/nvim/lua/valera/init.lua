@@ -1,13 +1,1 @@
-require("valera.shorthands")
-require("valera.utils")
--- above could be used from other internal modules too
-
-require("valera.remap")
-require("valera.lazy")
-require("valera.opts")
-require("valera.temporary")
-require("valera.macros")
-require("valera.rooter")
-require("valera.autocommands")
-
-require("valera.catpuccin")
+/nix/store/6vjs39kckk8fgw9jwv1klsw35ibmn0i3-home-manager-files/.config/nvim/lua/valera/init.lua

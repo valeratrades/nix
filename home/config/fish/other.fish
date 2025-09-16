@@ -239,11 +239,11 @@ function nsync
 		echo "uhm?"
 		return 1
 	end
-	git -C $NIXOS_CONFIG reset --hard && git -C $NIXOS_CONFIG pull && sudo nixos-rebuild switch --flake $NIXOS_CONFIG#$(hostname) --impure --fast
+	git -C $NIXOS_CONFIG reset --hard && git -C $NIXOS_CONFIG pull && sudo nixos-rebuild switch --flake $NIXOS_CONFIG#$(hostname) --impure --no-reexec
 end
 
 function nb
-	sudo nixos-rebuild switch --impure --fast --flake ~/nix#$(hostname)
+	sudo nixos-rebuild switch --impure --no-reexec --flake ~/nix#$(hostname)
 	if [ (count $argv) != 0 ]
 		if [ $argv[1] = "-b" ] || [ $argv[1] = "--beep" ]
 			beep "nix rb $status"
@@ -258,7 +258,7 @@ function nbg
 	if [ (count $argv) = 1 ]
 		set hostName $argv[1]
 	end
-	sudo nixos-rebuild switch --flake "github:valeratrades/nix#$hostName" --impure --fast
+	sudo nixos-rebuild switch --flake "github:valeratrades/nix#$hostName" --impure --no-reexec
 end
 #
 

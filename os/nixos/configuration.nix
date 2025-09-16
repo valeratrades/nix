@@ -348,14 +348,16 @@ in {
   hardware.enableAllFirmware = true; # Q: not sure if I need it
 
   # Bootloader.
-  systemd.services = {
-		nix-daemon = {
-    # https://github.com/NixOS/nixpkgs/pull/338181
-    environment.TMPDIR = "/var/tmp";
-		};
-		"systemd-backlight@.service" = {
-			enable = false;
-			unitConfig.Mask = true;
+  systemd = {
+		services = {
+			nix-daemon = {
+			# https://github.com/NixOS/nixpkgs/pull/338181
+			environment.TMPDIR = "/var/tmp";
+			};
+			"systemd-backlight@.service" = {
+				enable = false;
+				unitConfig.Mask = true;
+			};
 		};
   };
   boot = {

@@ -304,13 +304,13 @@
 
       #BUG: stupid `atuin` overwrites my generated config with a dummy one
       #dbg: \
-      # ".config/atuin/config.toml".source =
-      #   (pkgs.formats.toml { }).generate "atuin.toml" {
-      #     filter_mode_shell_up_key_binding =
-      #       "directory"; # `_bind_up_search` will now only search in current dir
-      #     sync.records = true;
-      #     enter_accept = true;
-      #   };
+       ".config/atuin/config.toml".source =
+         (pkgs.formats.toml { }).generate "atuin.toml" {
+           filter_mode_shell_up_key_binding =
+             "directory"; # `_bind_up_search` will now only search in current dir
+           sync.records = true;
+           enter_accept = true;
+         };
 
 			".config/claude/config.json".source =
 				(pkgs.formats.json { }).generate "claude.json" {
