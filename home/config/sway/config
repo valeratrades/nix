@@ -190,10 +190,10 @@ bindsym $mod+Shift+8    move container to workspace 8
 bindsym $mod+Shift+9    move container to workspace 9
 bindsym $mod+Shift+0    move container to workspace 0
 
-assign [class="Google-chrome"] 2
 assign [class="discord"] 4
 assign [class="vesktop"] 4
 assign [class="Zulip"] 4
+assign [app_id="google-chrome"] 2
 assign [app_id="dorion"] 4
 assign [app_id="spotube"] 4
 assign [app_id="org.telegram.desktop"] 4
