@@ -1,2 +1,0 @@
--- may have implemented the same in correct lua autocommands in general autocommands.lua file
---vim.cmd([[ autocmd BufWritePost *.sh silent !chmod +x <afile> ]])
