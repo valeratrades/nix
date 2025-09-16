@@ -118,6 +118,7 @@ bindsym $mod+Shift+b exec bluetoothctl disconnect E8:EE:CC:36:53:49
 # # Redshift
 # calibrated so it takes 20 key presses for both temperature and brightness to move between the two default states.
 # minus brightness plus red
+#NB: note that wlr_gamma_service brightness values are relative to currently configured `brightnessctl set xxx`. Both can be changed independently; and if you don't have enough brightness atm, try setting a higher value there, after ensuring that wlr_gamma is at 1.0
 bindsym $mod+F6 exec gdbus call -e -d net.zoidplex.wlr_gamma_service -o /net/zoidplex/wlr_gamma_service -m net.zoidplex.wlr_gamma_service.temperature.decrease 210 && gdbus call -e -d net.zoidplex.wlr_gamma_service -o /net/zoidplex/wlr_gamma_service -m net.zoidplex.wlr_gamma_service.brightness.decrease 0.0275
 # plus brightness plus blue
 bindsym $mod+F7 exec gdbus call -e -d net.zoidplex.wlr_gamma_service -o /net/zoidplex/wlr_gamma_service -m net.zoidplex.wlr_gamma_service.temperature.increase 210 && gdbus call -e -d net.zoidplex.wlr_gamma_service -o /net/zoidplex/wlr_gamma_service -m net.zoidplex.wlr_gamma_service.brightness.increase 0.0275
