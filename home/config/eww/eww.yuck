@@ -212,7 +212,7 @@
 	:monitor 0
 	:geometry (geometry :anchor "top right" :y 20 :width "0%" :height "14px")
 	(button
-		:onclick "echo $([ \"$(cat /tmp/btc_line_additional_line)\" = 'true' ] && echo 'false' || echo 'true') > /tmp/btc_line_additional_line"
+		:onclick "echo $([ \"$(cat /tmp/btc_line/additional_toggle)\" = 'true' ] && echo 'false' || echo 'true') > /tmp/btc_line/additional_toggle"
 		(box
 			:class {myopia == "true" ? "myopia" : ""}
 			:visible {bar_visible == "true" && btc_line_main_str != ""}
