@@ -7,17 +7,8 @@
     eww = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       [ -e "$XDG_CONFIG_HOME/eww" ] || ln -sf "$NIXOS_CONFIG/home/config/eww" "$XDG_CONFIG_HOME/eww"
     '';
-    zathura = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      [ -e "$XDG_CONFIG_HOME/zathura" ] || ln -sf "$NIXOS_CONFIG/home/config/zathura" "$XDG_CONFIG_HOME/zathura"
-    '';
     sway = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       [ -e "$XDG_CONFIG_HOME/sway" ] || ln -sf "$NIXOS_CONFIG/home/config/sway" "$XDG_CONFIG_HOME/sway"
-    '';
-    keyd = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      [ -e "$XDG_CONFIG_HOME/keyd" ] || ln -sf "$NIXOS_CONFIG/home/config/keyd" "$XDG_CONFIG_HOME/keyd"
-    '';
-    mako = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      [ -e "$XDG_CONFIG_HOME/mako" ] || ln -sf "$NIXOS_CONFIG/home/config/mako" "$XDG_CONFIG_HOME/mako"
     '';
     himalaya = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       [ -e "$XDG_CONFIG_HOME/himalaya" ] || ln -sf "$NIXOS_CONFIG/home/config/himalaya" "$XDG_CONFIG_HOME/himalaya"

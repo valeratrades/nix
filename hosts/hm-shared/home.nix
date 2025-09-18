@@ -4,7 +4,7 @@
     ./nixcord.nix
     (
       # in my own config I symlink stuff to fascilitate experimentation. In derived setups I value reproducibility much more
-      if false then #dbg: user.userFullName == "Valera" then
+      if user.symlinkConfigs then
         ./config_symlinks.nix
       else
         (import ./config_writes.nix { inherit self pkgs user; }))
@@ -334,6 +334,18 @@
         source = "${self}/home/config/cargo";
         recursive = true;
       };
+			".config/zathura" = {
+				source = "${self}/home/config/zathura";
+				recursive = true;
+			};
+			".config/keyd" = {
+				source = "${self}/home/config/keyd";
+				recursive = true;
+			};
+			".config/mako" = {
+				source = "${self}/home/config/mako";
+				recursive = true;
+			};
     };
   };
 }

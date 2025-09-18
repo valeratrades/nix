@@ -10,18 +10,6 @@
       source = "${self}/home/config/eww";
       recursive = true;
     };
-    ".config/zathura" = {
-      source = "${self}/home/config/zathura";
-      recursive = true;
-    };
-    ".config/keyd" = {
-      source = "${self}/home/config/keyd";
-      recursive = true;
-    };
-    ".config/mako" = {
-      source = "${self}/home/config/mako";
-      recursive = true;
-    };
 
     # ind files
     ".config/auto_redshift.toml".source =

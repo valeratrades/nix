@@ -29,6 +29,7 @@ in
     username = "v";
     userFullName = "Valera";
     desktopHostName = "v-laptop";
+		symlinkConfigs = true;
     defaultUsername = "valeratrades";
     defaultUserEmail = "v79166789533@gmail.com";
     masterUserEmail = "valeratrades@gmail.com";
@@ -41,6 +42,7 @@ in
     username = "m";
     userFullName = "Maria";
     desktopHostName = "m-laptop";
+		symlinkConfigs = false;
     defaultUsername = "sakhmasha";
     defaultUserEmail = "m79160164445@gmail.com";
     masterUserEmail = "m79160164445@gmail.com";
@@ -53,6 +55,7 @@ in
     username = "t";
     userFullName = "Timur";
     desktopHostName = "t-laptop";
+		symlinkConfigs = false;
     defaultUsername = "codertima";
     defaultUserEmail = "codertima@gmail.com";
     masterUserEmail = "codertima@gmail.com";
