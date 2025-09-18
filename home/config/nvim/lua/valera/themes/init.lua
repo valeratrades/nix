@@ -1,1 +1,1 @@
-/nix/store/6vjs39kckk8fgw9jwv1klsw35ibmn0i3-home-manager-files/.config/nvim/lua/valera/themes/init.lua
+require("valera.themes.catppuccin")

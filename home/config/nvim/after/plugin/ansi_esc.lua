@@ -1,1 +1,0 @@
-/nix/store/6vjs39kckk8fgw9jwv1klsw35ibmn0i3-home-manager-files/.config/nvim/after/plugin/ansi_esc.lua

@@ -1,1 +1,4 @@
-/nix/store/6vjs39kckk8fgw9jwv1klsw35ibmn0i3-home-manager-files/.config/nvim/ftplugin/lean.lua
+-- seems to be overwritten regardless
+--vim.opt.expandtab = true
+--vim.opt.tabstop = 2
+--vim.opt.shiftwidth = 2
