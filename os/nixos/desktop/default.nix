@@ -59,6 +59,7 @@
         mako
         networkmanagerapplet
         rofi
+				sherlock # `rofi` in rust
         swappy
       ]
 

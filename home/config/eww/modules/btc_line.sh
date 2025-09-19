@@ -47,7 +47,7 @@ fi
 additional_mtime=$(get_mtime "$ADDITIONAL_PIPE")
 additional_age=$((CURRENT_TIME - additional_mtime))
 
-if [ $additional_age -gt 900 ]; then
+if [ $additional_age -gt 1860 ]; then
     additional_value="None"
 else
     # Try to read current value from pipe
