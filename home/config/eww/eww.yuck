@@ -221,7 +221,7 @@
 			:space-evenly false
 
 			"${btc_line_poll.additional != "None" ? btc_line_additional_str : "None | "}"
-			"${btc_line_poll.main}"
+			"${btc_line_main_str}"
 		)
 	)
 )
