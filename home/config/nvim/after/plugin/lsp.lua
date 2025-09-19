@@ -10,18 +10,6 @@ vim.diagnostic.config({
 	severity_sort = true,
 })
 
--- Suppress lspconfig deprecation warnings
-local original_notify = vim.notify
-vim.notify = function(msg, level, opts)
-	if type(msg) == "string" and (
-				msg:match("require.*lspconfig.*framework.*deprecated") or
-				msg:match("Feature will be removed in nvim%-lspconfig")
-			) then
-		return
-	end
-	return original_notify(msg, level, opts)
-end
-
 -- TODO: add [potentially better type-checker for python](<https://github.com/astral-sh/ty>), when it's ready
 
 function ToggleDiagnostics()
