@@ -31,5 +31,21 @@
     ".config/discretionary_engine.toml".source =
       "${self}/home/config/discretionary_engine.toml";
     ".config/btc_line.toml".source = "${self}/home/config/btc_line.toml";
-  };
+	}
+		// pkgs.lib.optionalAttrs (user.kbd != "ansi") (
+			let
+				cfgPath  = "${self}/home/config/sway/config";
+				config   = builtins.readFile cfgPath;
+				needle   = ''xkb_variant "iso,"'';
+				replaced =
+					if builtins.match ".*xkb_variant \"ansi,\".*" config != null
+						then builtins.replaceStrings [ needle ] [ ''xkb_variant "iso,"'' ] config
+					else throw "pattern '${needle}' not found in ${cfgPath}";
+			in {
+				".config/sway/config".source = pkgs.writeText "sway_conf_for_iso_kbd" replaced;
+			}
+		)
+		// pkgs.lib.optionalAttrs (user.kbd == "ansi") {
+			".config/sway" = { source = "${self}/home/config/sway"; recursive = true; };
+		};
 }

@@ -1,1 +1,9 @@
-/nix/store/vdy5pzvapqrhyd1wlja0kczjz9xa69cm-home-manager-files/.config/sway/eww_visibility_toggle.sh
+#!/bin/sh
+
+bar_visible=$(eww get bar_visible)
+if [ "$bar_visible" = "true" ]; then
+  eww update bar_visible="false"
+else
+  eww update bar_visible="true"
+fi
+

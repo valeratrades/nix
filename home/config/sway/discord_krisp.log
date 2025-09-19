@@ -1,1 +1,6 @@
-/nix/store/vdy5pzvapqrhyd1wlja0kczjz9xa69cm-home-manager-files/.config/sway/discord_krisp.log
+[2025-Jan-07 19:20:20.795 +00:00][1983604:1983604][info ] Logging initialized
+[2025-Jan-07 19:20:20.795 +00:00][1983604:1983604][info ] Initializing krisp SDK...
+[2025-Jan-07 19:20:20.795 +00:00][1983604:1983604][info ] DoKrispInitialize
+[2025-Jan-07 19:20:21.101 +00:00][1983604:1983604][warning] Application not signed by Discord, Krisp is not enabled
+[2025-Jan-07 19:20:21.101 +00:00][1983604:1983604][warning] Failed to setup Krisp module, error code: -3
+[2025-Jan-07 19:20:21.102 +00:00][1983604:1983604][info ] Krisp SDK initialized

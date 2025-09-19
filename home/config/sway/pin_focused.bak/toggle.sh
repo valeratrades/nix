@@ -1,1 +1,1 @@
-/nix/store/vdy5pzvapqrhyd1wlja0kczjz9xa69cm-home-manager-files/.config/sway/pin_focused.bak/toggle.sh
+/nix/store/7a371nxhm2gbcrsk28i0bg5cqn004nj1-home-manager-files/.config/sway/pin_focused.bak/toggle.sh

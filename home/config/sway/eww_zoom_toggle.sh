@@ -1,1 +1,9 @@
-/nix/store/vdy5pzvapqrhyd1wlja0kczjz9xa69cm-home-manager-files/.config/sway/eww_zoom_toggle.sh
+#!/bin/sh
+
+myopia=$(eww get myopia)
+if [ "$myopia" = "true" ]; then
+  eww update myopia="false"
+else
+  eww update myopia="true"
+fi
+
