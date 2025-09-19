@@ -778,6 +778,7 @@ in {
           zip
           pandoc
           wkhtmltopdf
+					texliveTeTeX # theoretically adds extensions to pandoc
         ]
 
         # System Monitoring and Debugging

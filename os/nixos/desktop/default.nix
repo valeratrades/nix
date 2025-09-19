@@ -172,7 +172,7 @@
 					]
           # python
           [
-						python312Full
+						python314
             ty # typechecker in rust
             python313Packages.jedi-language-server
             ruff

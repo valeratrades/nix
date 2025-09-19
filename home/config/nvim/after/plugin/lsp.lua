@@ -10,7 +10,19 @@ vim.diagnostic.config({
 	severity_sort = true,
 })
 
--- TODO!!!!!: check out better type-checker for python: https://github.com/astral-sh/ty
+-- Suppress lspconfig deprecation warnings
+local original_notify = vim.notify
+vim.notify = function(msg, level, opts)
+	if type(msg) == "string" and (
+				msg:match("require.*lspconfig.*framework.*deprecated") or
+				msg:match("Feature will be removed in nvim%-lspconfig")
+			) then
+		return
+	end
+	return original_notify(msg, level, opts)
+end
+
+-- TODO: add [potentially better type-checker for python](<https://github.com/astral-sh/ty>), when it's ready
 
 function ToggleDiagnostics()
 	local state = vim.diagnostic.is_enabled()
@@ -43,7 +55,7 @@ local floatOpts = {
 	focusable = true,
 	header = ""
 }
---TODO!!!!!: remove duplicated lines from the popups
+--TODO: remove duplicated lines from the popups
 function JumpToDiagnostic(direction, requestSeverity)
 	pcall(function()
 		local bufnr = vim.api.nvim_get_current_buf()

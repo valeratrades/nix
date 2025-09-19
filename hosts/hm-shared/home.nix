@@ -4,7 +4,7 @@
     ./nixcord.nix
     (
       # in my own config I symlink stuff to fascilitate experimentation. In derived setups I value reproducibility much more
-      if user.symlinkConfigs then
+      if user.symlinkConfigs == true then
         ./config_symlinks.nix
       else
         (import ./config_writes.nix { inherit self pkgs user; }))
@@ -165,7 +165,6 @@
           arduino-mk
           arduino-ide
           arduino-language-server
-          arduino-create-agent
           cargo-pio
           vscode-extensions.platformio.platformio-vscode-ide
           minicom
@@ -238,10 +237,8 @@
 
       ".config/tg.toml".source = "${self}/home/config/tg.toml";
       ".config/tg_admin.toml".source = "${self}/home/config/tg_admin.toml";
-      ".config/auto_redshift.toml".source =
-        "${self}/home/config/auto_redshift.toml";
-      ".config/discretionary_engine.toml".source =
-        "${self}/home/config/discretionary_engine.toml";
+      ".config/auto_redshift.toml".source = "${self}/home/config/auto_redshift.toml";
+      ".config/discretionary_engine.toml".source = "${self}/home/config/discretionary_engine.toml";
       ".config/btc_line.toml".source = "${self}/home/config/btc_line.toml";
 
       ".lesskey".source = "${self}/home/config/lesskey";
@@ -346,6 +343,22 @@
 				source = "${self}/home/config/mako";
 				recursive = true;
 			};
-    };
-  };
+		}
+			// pkgs.lib.optionalAttrs (user.kbd != "ansi") (
+				let
+					cfgPath  = "${self}/home/config/sway/config";
+					config   = builtins.readFile cfgPath;
+					needle   = ''xkb_variant "iso,"'';
+					replaced =
+						if builtins.match ".*xkb_variant \"ansi,\".*" config != null
+							then builtins.replaceStrings [ needle ] [ ''xkb_variant "iso,"'' ] config
+						else throw "pattern '${needle}' not found in ${cfgPath}";
+				in {
+					".config/sway/config".source = pkgs.writeText "sway_conf_for_iso_kbd" replaced;
+				}
+			)
+			// pkgs.lib.optionalAttrs (user.kbd == "ansi") {
+				".config/sway" = { source = "${self}/home/config/sway"; recursive = true; };
+			};
+	};
 }

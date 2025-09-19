@@ -1,5 +1,1 @@
-# postmortem
-
-Concepts used in the script can be later reused for persisting the layout between sessions or doing some more niche stuff.
-
-The original purpose of this exact module is fully replaced by `sticky toggle`
+/nix/store/vdy5pzvapqrhyd1wlja0kczjz9xa69cm-home-manager-files/.config/sway/pin_focused.bak/POSTMORTEM.md
