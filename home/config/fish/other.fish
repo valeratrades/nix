@@ -212,12 +212,14 @@ end
 # # fish
 function where
 	set details (functions --details $argv[1])
+	type $argv[1]
 	if test "$details" = "-" # can't locate aliases (2024/10/29)
 		rg -H "alias $argv[1]" "$NIXOS_CONFIG/home/config/fish"
 	else
 		echo $details
+		echo "brought in by:"
+		nix-store --query --referrers $(which $argv[1])
 	end
-	type $argv[1]
 end
 alias sr="source $NIXOS_CONFIG/home/config/fish/mod.fish" # Fish equivalent for reloading configuration.
 #

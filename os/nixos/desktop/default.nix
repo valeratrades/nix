@@ -59,7 +59,6 @@
         mako
         networkmanagerapplet
         rofi
-				sherlock # `rofi` in rust
         swappy
       ]
 
@@ -193,7 +192,6 @@
             cargo-edit # cargo add command
             cargo-expand # expand macros
             cargo-bloat
-            cargo-leptos
             cargo-generate
             cargo-hack
             cargo-udeps
