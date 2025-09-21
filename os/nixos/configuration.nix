@@ -46,6 +46,7 @@ in {
 
   services = {
 		power-profiles-daemon.enable = true;
+		xserver.videoDrivers = [ "displaylink" "modesetting" "amdgpu" "nvidia" ];
 		fstrim.enable = true; #ref: https://www.reddit.com/r/NixOS/comments/rbzhb1/if_you_have_a_ssd_dont_forget_to_enable_fstrim/
     gnome.gnome-keyring.enable = lib.mkDefault
       false; # annoying // Supposed to be an extra layer of security for managed {ssh passwords, gpg, wifi, etc}
@@ -345,11 +346,28 @@ in {
       mylib.relativeToRoot
       "./hosts/${user.desktopHostName}/hardware-configuration.nix")
   ];
-  hardware.enableAllFirmware = true; # Q: not sure if I need it
+	hardware = {
+		bluetooth.hsphfpd.enable =
+			false; # HACK: will prevent me from using bluetooth mics
+		enableAllFirmware = true; # Q: not sure if I need it
+		graphics = {
+			enable = true;
+			extraPackages = with pkgs; [ amdvlk ];
+		};
+		nvidia = {
+			modesetting.enable = true;
+			powerManagement.enable = true;
+			open = false;  # use the proprietary driver, not the open one
+		};
+		bluetooth = {
+			enable = true;
+			powerOnBoot = false;
+		};
+	};
 
-  # Bootloader.
   systemd = {
 		services = {
+			dlm.wantedBy = [ "multi-user.target" ];
 			nix-daemon = {
 			# https://github.com/NixOS/nixpkgs/pull/338181
 			environment.TMPDIR = "/var/tmp";
@@ -371,13 +389,17 @@ in {
 
     # from what I understand, zswap is an intermediate layer with 3-4.3x compression in-RAM, to which older blocks are saved before being written to disk swap. Zram is the same, but no writes to disk at all, it just stays in the compressed RAM block. Don't want the latter, but former sounds promising.
     # not sure how to objectively check its effect on performance, though.
-    kernelParams = [ "zswap.enabled=1" ];
+    kernelParams = [
+			"zswap.enabled=1"
+			"nvidia-drm.modeset=1"
+		];
 
     # # for obs's Virtual Camera
     extraModulePackages = with config.boot.kernelPackages; [ v4l2loopback ];
     kernelModules = [
       "v4l2loopback"
       "binder-linux" # waydroid, nothing to do with obs (but I'm bad with nix, can't split them)
+			"evdi"
     ];
     extraModprobeConfig = ''
             options v4l2loopback devices=1 video_nr=1 card_label="OBS Cam" exclusive_caps=1
@@ -417,10 +439,6 @@ in {
     };
   };
 
-  hardware.bluetooth = {
-    enable = true;
-    powerOnBoot = false;
-  };
   environment.etc."bluetooth/audio.conf".text = ''
     # theoretically should prevent it from choosing HSP/HFP over A2DP
     Disable=Headset
@@ -616,6 +634,7 @@ in {
       lib.lists.flatten [
         libinput-gestures
         librsvg
+				displaylink #NB: reqs manually doing: nix-prefetch-url --name displaylink-610.zip https://www.synaptics.com/sites/default/files/exe_files/2024-10/DisplayLink%20USB%20Graphics%20Software%20for%20Ubuntu6.1-EXE.zip
         pkgs.qt5.full
         age # secrets initial encoding
         sops # secrets mgmt
@@ -831,8 +850,6 @@ in {
     '';
     deps = [ ];
   };
-  hardware.bluetooth.hsphfpd.enable =
-    false; # HACK: will prevent me from using bluetooth mics
 
   powerManagement = {
     enable = true;
