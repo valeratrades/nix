@@ -356,7 +356,10 @@ in {
 		};
 		nvidia = {
 			modesetting.enable = true;
-			powerManagement.enable = true;
+			powerManagement = {
+				enable = true;
+				finegrained = false; #TEST
+			};
 			open = false;  # use the proprietary driver, not the open one
 		};
 		bluetooth = {
@@ -392,6 +395,9 @@ in {
     kernelParams = [
 			"zswap.enabled=1"
 			"nvidia-drm.modeset=1"
+			"mem_sleep_default=s2idle"
+			"nouveau.blacklist=1"
+			"nvidia.NVreg_PreserveVideoMemoryAllocations=1"
 		];
 
     # # for obs's Virtual Camera
@@ -536,11 +542,12 @@ in {
         proggyfonts
         source-code-pro
         [
-          # texlive
+          texliveFull
           texlivePackages.arimo
           texlivePackages.dejavu
           texlivePackages.fontawesome
           texlivePackages.fontawesome5
+					texlivePackages.newcomputermodern # many papers use it
         ]
         ubuntu_font_family
       ];

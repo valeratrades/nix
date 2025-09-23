@@ -145,7 +145,7 @@
           # typst
           [
             typst
-            tinymist
+            tinymist # lsp; also comes with `typlite`, - typst to latex converter
             typstyle # formatter
             typstfmt # only formats codeblocks
           ]
@@ -177,6 +177,12 @@
             python313Packages.jedi-language-server
             ruff
           ]
+					# latex
+					[
+						texliveFull
+						texlivePackages.chktex
+						miktex
+					]
           # golang
           [
             air # live reload
