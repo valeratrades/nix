@@ -542,12 +542,12 @@ in {
         proggyfonts
         source-code-pro
         [
-          texliveFull
+          #texliveFull
           texlivePackages.arimo
           texlivePackages.dejavu
           texlivePackages.fontawesome
           texlivePackages.fontawesome5
-					texlivePackages.newcomputermodern # many papers use it
+					#texlivePackages.newcomputermodern # many papers use it #TEST: may be breaking eww
         ]
         ubuntu_font_family
       ];

@@ -13,8 +13,7 @@ require("persisted").setup({
 })
 
 vim.keymap.set('n', '<space>sel', "<cmd>SessionLoad<cr><cmd>SessionStart<cr>", { desc = "Session: Load" })
-vim.keymap.set('n', '<space>ses', "<cmd>SessionSave<cr><cmd>lua print('session saved')<cr>", { desc = "Session: Save" })
-vim.keymap.set('n', '<space>sei', "<cmd>SessionStart<cr><cmd>lua print('session started')<cr>",
-	{ desc = "Session: Init" })
+vim.keymap.set('n', '<space>ses', "<cmd>SessionSave<cr><cmd>SessionStart<cr><cmd>lua print('session saved')<cr>",
+	{ desc = "Session: Save" })
 vim.keymap.set('n', '<space>seq', "<cmd>SessionStop<cr><cmd>lua print('stopped recording session')<cr>",
 	{ desc = "Session: Quit" })

@@ -135,7 +135,6 @@ function rr
     ./target/release/$base_name $argv
 end
 
-
 function cw
 	cargo watch --todo manual counter-step --cargo-watch >/dev/null 2>&1 &
 	set pid1 $last_pid
@@ -150,6 +149,15 @@ function cw
 	cargo watch -x "b"
 	cleanup
 end
+
+function cwe
+	watchexec -r -e rs,toml 'cargo b'
+end
+
+function cir
+	cargo insta review
+end
+
 
 alias cu="cargo clean && cargo clean --doc && cargo update"
 
