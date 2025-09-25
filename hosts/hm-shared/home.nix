@@ -309,17 +309,18 @@
            enter_accept = true;
          };
 
-			".config/claude/config.json".source =
-				(pkgs.formats.json { }).generate "claude.json" {
-					completion_signal = {
-						command = "notify-send %s";
-						enabled = true;
-						format = "{task_description}";
-					};
-					user_preferences = {
-						notify_on_task_completion = true;
-					};
-				};
+			#TEST: not certain, but it feels like this is somehow messing with it being able to persist `/login` state
+			#".config/claude/config.json".source =
+			#	(pkgs.formats.json { }).generate "claude.json" {
+			#		completion_signal = {
+			#			command = "notify-send %s";
+			#			enabled = true;
+			#			format = "{task_description}";
+			#		};
+			#		user_preferences = {
+			#			notify_on_task_completion = true;
+			#		};
+			#	};
 
       # configured via hm, can't just symlink it in my host's config
       ".config/tmux" = {
