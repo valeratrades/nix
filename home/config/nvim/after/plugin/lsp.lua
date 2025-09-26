@@ -270,7 +270,7 @@ vim.g.rustaceanvim = {
 		adapter = codelldb_adapter(),
 	},
 	server = {
-		logfile = "~/.local/state/nvim/rustaceanvim.log",
+		logfile = "/home/v/.local/state/nvim/rustaceanvim.log", --XXX: not user-agnostic
 		status_notify_level = rustaceanvim.disable, -- doesn't work
 		on_attach = on_attach,
 		default_settings = {
