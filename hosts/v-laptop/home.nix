@@ -35,6 +35,13 @@ in {
         gitui
         lazygit
 
+				# ProtonMail
+				[
+					protonmail-export # export my proton emails as `.eml` #DEPRECATE: not sure if I need it, bridge+himalaya could be covering this
+					protonmail-bridge # bridge to local e-mail client
+					protonmail-desktop #TODO: replace with himalaya
+				]
+
         zed-editor-fhs
 				zed
 

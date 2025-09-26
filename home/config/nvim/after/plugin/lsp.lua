@@ -270,6 +270,7 @@ vim.g.rustaceanvim = {
 		adapter = codelldb_adapter(),
 	},
 	server = {
+		logfile = "~/.local/state/nvim/rustaceanvim.log",
 		status_notify_level = rustaceanvim.disable, -- doesn't work
 		on_attach = on_attach,
 		default_settings = {
