@@ -211,16 +211,62 @@ end
 
 # # fish
 function where
-	set details (functions --details $argv[1])
-	type $argv[1]
-	if test "$details" = "-" # can't locate aliases (2024/10/29)
-		rg -H "alias $argv[1]" "$NIXOS_CONFIG/home/config/fish"
-	else
-		echo $details
-		echo "brought in by:"
-		nix-store --query --referrers $(which $argv[1])
-	end
+    set cmd $argv[1]
+
+    # Always show original type output (including failures)
+    type $cmd
+
+    # Only continue if command exists
+    if not command -sq $cmd
+        return 1
+    end
+
+    set kind (type -t $cmd ^/dev/null)
+    set details (functions --details $cmd ^/dev/null)
+
+    if test "$kind" = function
+        if test -n "$details" -a "$details" != "-" -a -f "$details"
+            echo "defined in: $details"
+        end
+
+        set src (string match -r -g 'source ([^ \n]+)' -- (type $cmd ^/dev/null))
+        if test -n "$src"
+            echo "defined via source: $src"
+        end
+
+        set search_dirs
+        if test -n "$NIXOS_CONFIG"
+            set search_dirs "$NIXOS_CONFIG/home/config/fish"
+        end
+        set -a search_dirs $__fish_config_dir ~/.config/fish $XDG_CONFIG_HOME/fish
+
+        set pat_func "^[ \t]*function[ \t]+"$cmd"([ \t]|\$)"
+        set pat_alias "^[ \t]*alias[ \t]+"$cmd"([ \t=]|\$)"
+
+        for d in $search_dirs
+            if test -d $d
+                rg -n -H --no-heading -m1 -e "$pat_func" $d ^/dev/null
+                and break
+                rg -n -H --no-heading -m1 -e "$pat_alias" $d ^/dev/null
+                and break
+            end
+        end
+    end
+
+    if test "$kind" = alias
+        set pat_alias "^[ \t]*alias[ \t]+"$cmd"([ \t=]|\$)"
+        if test -n "$NIXOS_CONFIG"
+            rg -n -H --no-heading -m1 -e "$pat_alias" "$NIXOS_CONFIG/home/config/fish" ^/dev/null
+        end
+        rg -n -H --no-heading -m1 -e "$pat_alias" $__fish_config_dir ~/.config/fish $XDG_CONFIG_HOME/fish ^/dev/null
+    end
+
+    if test "$kind" = file
+        echo "brought in by:"
+        nix-store --query --references (command -v $cmd)
+    end
 end
+
 alias sr="source $NIXOS_CONFIG/home/config/fish/mod.fish" # Fish equivalent for reloading configuration.
 #
 
