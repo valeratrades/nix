@@ -1,4 +1,4 @@
-#!/usr/bin/env -S cargo +nightly -Zscript -q
+#!/usr/bin/env -S rustup run nightly cargo -Zscript -q
 
 //TODO!: switch to using v_utils::Timelike for time parsing
 use std::{env, process::Command, thread::sleep, time::Duration};

@@ -34,6 +34,7 @@ in {
         ncspot
         gitui
         lazygit
+				neofetch # main system info
 
 				# ProtonMail
 				[

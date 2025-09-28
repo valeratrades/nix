@@ -1,4 +1,4 @@
-#!/usr/bin/env -S cargo +nightly -Zscript -q
+#!/usr/bin/env -S rustup run nightly cargo -Zscript -q
 #![allow(clippy::len_zero)]
 
 //! ```cargo
