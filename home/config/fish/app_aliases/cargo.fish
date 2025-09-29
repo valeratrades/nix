@@ -158,6 +158,9 @@ function cir
 	cargo insta review
 end
 
+# for "clippy fix all"
+alias cfa "cargo clippy --fix --all-targets --all-features --allow-dirty --allow-staged"
+
 
 alias cu="cargo clean && cargo clean --doc && cargo update"
 

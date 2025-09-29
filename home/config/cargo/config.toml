@@ -36,6 +36,7 @@ tr = "insta test --review"
 f = "fmt"
 x = "fix --allow-dirty --allow-no-vcs"
 xc = "clippy --fix --allow-dirty --allow-no-vcs"
+xca = "clippy --fix --all-targets --all-features --allow-dirty --allow-no-vcs --allow-staged"
 s = "sweep --recursive --installed" # only leave currently active artifacts
 rel = "release --no-confirm --execute"
 so = "sort -wg"
