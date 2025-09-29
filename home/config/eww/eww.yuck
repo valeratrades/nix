@@ -209,6 +209,7 @@
 (defvar btc_line_spy_str "")
 
 (defpoll btc_line_poll :initial "{\"main\": \"\", \"additional\": \"\"}" :interval "5s" "./modules/btc_line.sh")
+(defpoll additional_toggle_poll :initial "false" :interval "2s" "cat /tmp/btc_line/additional_toggle 2>/dev/null || echo 'false'")
 
 (defwindow btc_line_upper
 	:monitor 0
@@ -220,7 +221,7 @@
 			:visible {bar_visible == "true" && btc_line_main_str != ""}
 			:space-evenly false
 
-			"${btc_line_poll.additional != "None" ? btc_line_additional_str : "None | "}"
+			"${additional_toggle_poll == "true" && btc_line_poll.additional != "None" ? btc_line_additional_str : ""}"
 			"${btc_line_main_str}"
 		)
 	)
