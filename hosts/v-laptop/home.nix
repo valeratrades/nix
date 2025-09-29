@@ -41,15 +41,15 @@ in {
 				identitiesOnly = true;
 				identityFile = [ "~/.ssh/id_ed25519" ];
 			};
-			#TODO: \
 			"vincent" = {
-				hostname = "valera@192.168.5.204";
+				hostname = "192.168.5.204";
 				user = "valera";
-				#identitiesOnly = true;
-				#identityFile = [ "~/.ssh/id_ed25519" ];
-				pubkeyAuthentication = "no";
-				preferredAuthentications = "password,keyboard-interactive";
-				identitiesOnly = "yes";
+				identitiesOnly = true;
+				identityFile = [ "~/.ssh/id_ed25519" ];
+				extraOptions = {
+					PreferredAuthentications = "publickey,keyboard-interactive,password";
+					PubkeyAuthentication = "yes";
+				};
 			};
 		};
 	};
