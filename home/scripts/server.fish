@@ -43,15 +43,3 @@ end
 function ssh_linode
 	ssh_connect $LINODE_SSH_HOST $LINODE_SSH_PASS
 end
-
-function ssh_vincent
-	ssh -i /home/v/.ssh/id_ed25519 'valera@192.168.5.204'
-end
-
-function ssh_masha
-	ssh -i ~/.ssh/id_ed25519 m@100.107.132.25
-end
-
-function ssh_tima
-	ssh -i ~/.ssh/id_ed25519 t@100.103.90.12
-end

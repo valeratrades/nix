@@ -51,6 +51,26 @@ in {
 					PubkeyAuthentication = "yes";
 				};
 			};
+			"tima" = {
+				hostname = "100.103.90.12";
+				user = "t"; #Q: should I make shortcuts for `root@` ?
+				identitiesOnly = true;
+				identityFile = [ "~/.ssh/id_ed25519" ];
+				extraOptions = {
+					PreferredAuthentications = "publickey,keyboard-interactive,password";
+					PubkeyAuthentication = "yes";
+				};
+			};
+			"masha" = {
+				hostname = "100.107.132.25";
+				user = "m"; #Q: should I make shortcuts for `root@` ?
+				identitiesOnly = true;
+				identityFile = [ "~/.ssh/id_ed25519" ];
+				extraOptions = {
+					PreferredAuthentications = "publickey,keyboard-interactive,password";
+					PubkeyAuthentication = "yes";
+				};
+			};
 		};
 	};
 
