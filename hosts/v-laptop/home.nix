@@ -46,7 +46,10 @@ in {
 				hostname = "valera@192.168.5.204";
 				user = "valera";
 				#identitiesOnly = true;
-				identityFile = [ "~/.ssh/id_ed25519" ];
+				#identityFile = [ "~/.ssh/id_ed25519" ];
+				pubkeyAuthentication = "no";
+				preferredAuthentications = "password,keyboard-interactive";
+				identitiesOnly = "yes";
 			};
 		};
 	};
