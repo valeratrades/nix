@@ -24,6 +24,33 @@ in {
     token = config.sops.secrets.telegram_token_main.path;
   };
 
+	# is coupled with ssh block in main `configuration.bix`
+	programs.ssh = {
+		enable = true; #Q: do I need this if `enableDefaultConfig = false`?
+		enableDefaultConfig = false;
+		
+		#startAgent = true; # openssh remembers private keys; `ssh-add` adds a key to the agent
+		#enableAskPassword = true;
+		#extraConfig = ''
+		#	PasswordAuthentication = yes
+		#'';
+		matchBlocks = {
+			"github.com" = {
+				hostname = "github.com";
+				user = "git";
+				identitiesOnly = true;
+				identityFile = [ "~/.ssh/id_ed25519" ];
+			};
+			#TODO: \
+			"vincent" = {
+				hostname = "valera@192.168.5.204";
+				user = "valera";
+				#identitiesOnly = true;
+				identityFile = [ "~/.ssh/id_ed25519" ];
+			};
+		};
+	};
+
   home = {
     packages = with pkgs;
       builtins.trace "DEBUG: sourcing Valera-specific home.nix"

@@ -169,6 +169,7 @@ in {
       true; # HACK: things break if I remove it here. However, `hm` does `fish.enable` already. Conundrum.
 
     # conflicts with gnupg agent on which I have ssh support. TODO: figure out which one I want
+		# hosts are specified through hm
     ssh = {
       startAgent =
         true; # openssh remembers private keys; `ssh-add` adds a key to the agent
