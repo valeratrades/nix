@@ -312,16 +312,15 @@ mode "size_presets" {
 }
 bindsym $mod+apostrophe exec "swaymsg mode size_presets && eww update sway_mode=size_presets"
 
-bindsym $mod+l focus prev
-bindsym $mod+h focus next
-bindsym $mod+u move left
-bindsym $mod+y move right
-
 focus_wrapping no
 bindsym $mod+$left focus left
 bindsym $mod+$down focus down
 bindsym $mod+$up focus up
 bindsym $mod+$right focus right
+bindsym $mod+Shift+$left move left
+bindsym $mod+Shift+$down move down
+bindsym $mod+Shift+$up move up
+bindsym $mod+Shift+$right move right
 mode "move_or_resize" {
 	bindsym $left resize grow width 6ppt
 	bindsym $down resize shrink height 6ppt
