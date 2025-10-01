@@ -209,7 +209,7 @@ lsp_zero.on_attach(on_attach)
 
 
 -- Language setup //? Do I still need this? Maybe it's possible to get rid of `lsp_zero` altogether
-local lspconfig_servers = { 'ruff', 'tinymist', 'lua_ls', 'gopls', 'bashls', 'clangd',
+local lspconfig_servers = { 'ruff', 'lua_ls', 'gopls', 'bashls', 'clangd',
 	'jedi_language_server',
 	'jsonls', 'marksman', 'nil_ls', 'ocamllsp' }
 lsp_zero.setup_servers(lspconfig_servers)
@@ -271,7 +271,7 @@ vim.g.rustaceanvim = {
 	},
 	server = {
 		logfile = "/home/v/.local/state/nvim/rustaceanvim.log", --XXX: not user-agnostic
-		status_notify_level = rustaceanvim.disable, -- doesn't work
+		status_notify_level = rustaceanvim.disable,           -- doesn't work
 		on_attach = on_attach,
 		default_settings = {
 			['rust-analyzer'] = (function()
@@ -382,7 +382,9 @@ lspconfig.jedi_language_server.setup({
 lspconfig.tinymist.setup({
 	on_attach = lsp_zero.default_setup,
 	settings = {
-		exportPdf = "onType",
+		--exportPdf = "onType",
+		--outputPath = "/tmp/typ/$name", -- put PDFs in /tmp, instead of littering next to the source
+		exportPdf = 'never', -- currently always using `TypstWatch` of `typst.vim`
 	},
 })
 
