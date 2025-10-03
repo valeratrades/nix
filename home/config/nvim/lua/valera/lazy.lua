@@ -116,7 +116,7 @@ return require('lazy').setup({
 	{ -- Dap
 		'mfussenegger/nvim-dap',
 		'leoluz/nvim-dap-go',
-		'mfussenegger/nvim-dap-python',
+		{ 'mfussenegger/nvim-dap-python', rocks = { enabled = false } },
 		{ 'rcarriga/nvim-dap-ui', name = 'dapui' },
 		'nvim-neotest/nvim-nio',
 		'theHamsta/nvim-dap-virtual-text',
@@ -145,6 +145,7 @@ return require('lazy').setup({
 			'neovim/nvim-lspconfig',
 			'nvim-lua/plenary.nvim',
 		},
+		rocks = { enabled = false },
 	},
 	{ -- Colorschemes
 		{ 'rose-pine/neovim',      name = 'rose-pine' },
@@ -450,6 +451,11 @@ return require('lazy').setup({
 				},
 			})
 		end,
+	},
+}, {
+	rocks = {
+		enabled = true,
+		hererocks = true,
 	},
 })
 --}, plugin_specs))
