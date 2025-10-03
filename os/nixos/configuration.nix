@@ -773,6 +773,7 @@ in {
           alacritty
 
           neovim
+					luajitPackages.luarocks-nix # install some lua plugins as isolated packages
 
           fish
           dash
