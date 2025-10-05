@@ -93,7 +93,7 @@ in {
       };
     };
     git = {
-      enable = true;
+      # enable = true; # Already enabled by installation CD
       config = {
         user = {
           name = "Server User";
@@ -232,7 +232,20 @@ in {
       enable = true;
     };
     rtkit.enable = true;
-    polkit.enable = true;
+    polkit = {
+      enable = true;
+      extraConfig = ''
+        polkit.addRule(function(action, subject) {
+          if (action.id == "org.freedesktop.login1.reboot" ||
+              action.id == "org.freedesktop.login1.power-off" ||
+              action.id == "org.freedesktop.login1.halt") {
+            if (subject.isInGroup("wheel")) {
+              return polkit.Result.YES;
+            }
+          }
+        });
+      '';
+    };
   };
 
   users.users."${username}" = {
