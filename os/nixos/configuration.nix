@@ -45,62 +45,14 @@ in {
   #};
 
   services = {
-		fstrim.enable = true; #ref: https://www.reddit.com/r/NixOS/comments/rbzhb1/if_you_have_a_ssd_dont_forget_to_enable_fstrim/
     gnome.gnome-keyring.enable = lib.mkDefault
       false; # annoying // Supposed to be an extra layer of security for managed {ssh passwords, gpg, wifi, etc}
-    getty.autologinUser = user.username;
-
-    #TODO: also move `clickhouse` here, once they provide a nix-compatible package.
-    redis.servers.default = {
-      enable = true;
-      port = redisPort;
-    };
-    postgresql = {
-      enable = true;
-      enableTCPIP = true;
-      ensureUsers = [{
-        name = "default";
-        ensureClauses = {
-          superuser = true;
-          login = true;
-        };
-      }];
-      ensureDatabases = [ "default" ];
-      authentication = ''
-        # TYPE  DATABASE        USER            ADDRESS                 METHOD
-        local   all             all                                     trust
-        host    all             all             127.0.0.1/32            trust
-        host    all             all             ::1/128                 trust
-      '';
-
-      settings = {
-        port = postgresqlPort;
-        log_line_prefix = "[%p] ";
-        logging_collector = true;
-      };
-    };
-		clickhouse = {
-			enable = true;
-		};
 
     # a column on my laptop kbd gave in, so turn the whole thing off, so I can put another keyboard over it.
     #udev.extraRules = if user.userFullName == "Valera" then ''
     #  ACTION=="add|change", KERNEL=="event0", ATTRS{name}=="AT Translated Set 2 keyboard", ENV{LIBINPUT_IGNORE_DEVICE}="1"
     #  	'' else
     #  "";
-
-
-    openssh = {
-      enable = true;
-      settings = {
-        KbdInteractiveAuthentication = true;
-        UseDns = true; # allows for using hostnames in authorized_keys
-        X11Forwarding =
-          true; # theoretically allows for use of graphical applications
-        PermitRootLogin = "yes"; # HACK: security risk
-      };
-      #openFirewall = true; # auto-open specified ports in the firewall. Seems to conflict with manual specification of eg `22` port
-    };
   };
   virtualisation = {
     docker = {
@@ -109,167 +61,15 @@ in {
     };
   };
   programs = {
-    fish.enable =
-      true; # HACK: things break if I remove it here. However, `hm` does `fish.enable` already. Conundrum.
-
-    # conflicts with gnupg agent on which I have ssh support. TODO: figure out which one I want
-		# hosts are specified through hm
-    ssh = {
-      startAgent =
-        true; # openssh remembers private keys; `ssh-add` adds a key to the agent
-      enableAskPassword = true;
-      extraConfig = ''
-        PasswordAuthentication = yes
-      '';
-    };
-    rust-motd.enableMotdInSSHD = true; # better ssh greeter
-    mtr.enable = true;
     #steam.enable = true; # brings steam-run # currently fails due to ocaml5 (2025/04/27)
-    gnupg.agent = {
-      enable = true; # conflicts with ssh-agent
-      enableSSHSupport = false;
-    };
-    nh = {
-      enable = true;
-      clean = {
-        enable = true;
-        dates = "weekly";
-        extraArgs = "--keep-since 7d";
-      };
-    };
-    #MOVE
-    git = {
-      enable = true;
-      config = {
-        user = {
-          name = user.userFullName;
-          email = user.masterUserEmail;
-          token =
-            "$GITHUB_KEY"; # can't name `GITHUB_TOKEN`, as `gh` gets confused
-        };
-
-        credential.helper = "store";
-
-        pull = { rebase = true; };
-
-        safe = {
-          directory = "*"; # says it's okay to write anywhere
-        };
-
-        help = { autocorrect = 5; };
-
-        pager = { difftool = true; };
-
-        filter = {
-          "lfs" = {
-            clean = "git-lfs clean -- %f";
-            smudge = "git-lfs smudge -- %f";
-            process = "git-lfs filter-process";
-            required = true;
-          };
-        };
-
-        fetch = {
-          prune =
-            true; # when deleting file locally, delete pointers on the remote
-        };
-
-        diff = {
-          colorMoved =
-            "zebra"; # copy/pastes are colored differently than actual removes/additions
-          colormovedws = "allow-indentation-change";
-          external =
-            "difft --color auto --background light --display side-by-side";
-        };
-
-        advice = {
-          detachedHead =
-            true; # warn when pointing to a commit instead of branch
-          addIgnoredFile = false;
-        };
-
-        alias = let
-          diff_ignore =
-            ":!package-lock.json :!yarn.lock :!Cargo.lock :!flake.lock"; # TODO: get this appendage to work "-I 'LoC-[0-9]\+-'"; (currently prevents showing a **bunch** of diffs. # LoC is for my `Lines of Code` badge in READMEs, because it's updated programmatically
-        in {
-          # NB: git "aliases" must be self-contained. Say `am = commit -am` won't work.
-          m = "merge";
-          r = "rebase";
-
-          d = "--no-pager diff -- ${diff_ignore}";
-          ds = "diff --staged -- ${diff_ignore}";
-          s = "diff --stat -- ${diff_ignore}";
-          sm = "diff --stat master -- ${diff_ignore}";
-          #diff = "diff -- ${diff_ignore}"; sadly, can't do anything for `Starship` integration, as it's hardcoded to be `git diff`, which I can't alias due to having to use it with differing args in other aliases.
-
-          l = "branch --list";
-          unstage =
-            "reset HEAD --"; # in case you did `git add .` before running `git diff`
-          last = "log -1 HEAD";
-
-          a = "add";
-          aa = "add -A";
-          au = "remote add upstream";
-          ao = "remote add origin";
-          su = "remote set-url upstream";
-          so = "remote set-url origin";
-
-          b = "branch";
-          c = "checkout";
-          cb = "checkout -b";
-          f = "push --force-with-lease";
-          p = "pull --rebase";
-          blame = "blame -w -C -C -C";
-          fp = "merge-base --fork-point HEAD"; # fork-point
-          ca = "commit -am";
-          ri = "rebase --autosquash -i master";
-          ra = "rebase --abort";
-          rc = "rebase --continue";
-          log = "-c diff.external=difft log -p --ext-diff";
-          stash = "stash --all";
-          hardupdate = ''
-            !git fetch && git reset --hard "origin/$(git rev-parse --abbrev-ref HEAD)"''; # stolen from Orion, but not yet tested
-          noedit = "commit -a --amend --no-edit";
-        };
-
-        url."git@gist.github.com:" = {
-          pushInsteadOf = "https://gist.github.com/";
-        };
-
-        # url."git@github.com:" = {
-        #   pushInsteadOf = "https://github.com/";
-        # };
-
-        url."git@gitlab.com:" = { pushInsteadOf = "https://gitlab.com/"; };
-
-        init = { defaultBranch = "master"; };
-
-        push = {
-          autoSetupRemote = true;
-          default = "current";
-        };
-
-        rerere = {
-          autoUpdate = true;
-          enabled = true;
-        };
-
-        branch = {
-          sort = "-committerdate";
-          autoSetupMerge = "simple";
-        };
-
-        rebase = { autosquash = true; };
-
-        merge = { conflictStyle = "zdiff3"; };
-      };
-    };
   };
 
   imports = [
     (mylib.relativeToRoot "home/config/fish/default.nix")
     ./shared
-    (if user.userFullName != "Server" then ./desktop else null)
+    ./shared-services.nix
+    ./shared-programs.nix
+    (if user.userFullName == "Server" then ./server.nix else ./desktop)
     (mylib.relativeToRoot "./hosts/${user.desktopHostName}/configuration.nix")
     (if builtins.pathExists "/etc/nixos/hardware-configuration.nix" then
       /etc/nixos/hardware-configuration.nix
@@ -533,13 +333,6 @@ in {
       LESSHISTFILE = "-";
       HISTCONTROL = "ignorespace";
 
-      #TODO: set port, user, etc too for postgres
-      ENCRYPTION_KEY =
-        "lwLC4GH5UnAYdmHVyfD9UClbMh/saKnRPS+5nILfV2k="; # 32-byte base64-encoded key, here only for `PostgressDB`, that can't live without it for some reason
-      POSTGRESQL_PORT = postgresqlPort;
-
-      REDIS_PORT = redisPort;
-      REDIS_DB = "0";
     };
 
     binsh = "${pkgs.dash}/bin/dash";

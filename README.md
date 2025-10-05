@@ -44,6 +44,11 @@ fhs
 
 Spawns an fhs-compatible shell
 
+### Server deployment
+```sh
+sudo nixos-rebuild switch -I nixos-config=/home/v/nix/os/nixos/server-configuration.nix
+```
+
 
 ## Dev
 Currently config is impure. For possibility of reversion, all known places that introduce impurities are marked with `#IMPURE`

@@ -43,12 +43,13 @@ in {
 			};
 			"vincent" = {
 				hostname = "192.168.5.204";
-				user = "valera";
+				user = "nixos";
 				identitiesOnly = true;
 				identityFile = [ "~/.ssh/id_ed25519" ];
 				extraOptions = {
 					PreferredAuthentications = "publickey,keyboard-interactive,password";
 					PubkeyAuthentication = "yes";
+					StrictHostKeyChecking = "accept-new";
 				};
 			};
 			"tima" = {
@@ -59,6 +60,7 @@ in {
 				extraOptions = {
 					PreferredAuthentications = "publickey,keyboard-interactive,password";
 					PubkeyAuthentication = "yes";
+					StrictHostKeyChecking = "accept-new";
 				};
 			};
 			"masha" = {
@@ -69,6 +71,7 @@ in {
 				extraOptions = {
 					PreferredAuthentications = "publickey,keyboard-interactive,password";
 					PubkeyAuthentication = "yes";
+					StrictHostKeyChecking = "accept-new";
 				};
 			};
 		};
