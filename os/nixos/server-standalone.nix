@@ -184,6 +184,32 @@ in {
       nix-daemon = {
         environment.TMPDIR = "/var/tmp";
       };
+      setup-nixos-configs = {
+        description = "Setup config files for nixos user";
+        wantedBy = [ "multi-user.target" ];
+        after = [ "local-fs.target" ];
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+          User = "root";
+        };
+        script = ''
+          # Create nixos user home directory structure
+          mkdir -p ${userHome}/.config
+
+          # Copy config directories
+          cp -r /etc/nixos-configs/fish ${userHome}/.config/
+          cp -r /etc/nixos-configs/nvim ${userHome}/.config/
+          cp -r /etc/nixos-configs/cargo ${userHome}/.config/
+          cp -r /etc/nixos-configs/helix ${userHome}/.config/
+          cp -r /etc/nixos-configs/nnn ${userHome}/.config/
+          cp -r /etc/nixos-configs/tmux ${userHome}/.config/
+          cp /etc/nixos-configs/lesskey ${userHome}/.lesskey
+
+          # Fix ownership
+          chown -R ${username}:users ${userHome}/.config ${userHome}/.lesskey
+        '';
+      };
     };
   };
 
@@ -393,33 +419,33 @@ in {
       cachix
     ];
 
-    # Link useful config files directly to user home
+    # Store config sources in /etc for systemd service to use
     etc = {
-      "${userHome}/.config/fish" = {
+      "nixos-configs/fish" = {
         source = ../../home/config/fish;
         recursive = true;
       };
-      "${userHome}/.config/nvim" = {
+      "nixos-configs/nvim" = {
         source = ../../home/config/nvim;
         recursive = true;
       };
-      "${userHome}/.config/cargo" = {
+      "nixos-configs/cargo" = {
         source = ../../home/config/cargo;
         recursive = true;
       };
-      "${userHome}/.config/helix" = {
+      "nixos-configs/helix" = {
         source = ../../home/config/helix;
         recursive = true;
       };
-      "${userHome}/.config/nnn" = {
+      "nixos-configs/nnn" = {
         source = ../../home/config/nnn;
         recursive = true;
       };
-      "${userHome}/.config/tmux" = {
+      "nixos-configs/tmux" = {
         source = ../../home/config/tmux;
         recursive = true;
       };
-      "${userHome}/.lesskey".source = ../../home/config/lesskey;
+      "nixos-configs/lesskey".source = ../../home/config/lesskey;
     };
   };
 
