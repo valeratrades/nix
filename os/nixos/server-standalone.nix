@@ -197,17 +197,17 @@ in {
           # Create nixos user home directory structure
           mkdir -p ${userHome}/.config
 
-          # Copy config directories
-          cp -r /etc/nixos-configs/fish ${userHome}/.config/
-          cp -r /etc/nixos-configs/nvim ${userHome}/.config/
-          cp -r /etc/nixos-configs/cargo ${userHome}/.config/
-          cp -r /etc/nixos-configs/helix ${userHome}/.config/
-          cp -r /etc/nixos-configs/nnn ${userHome}/.config/
-          cp -r /etc/nixos-configs/tmux ${userHome}/.config/
-          cp /etc/nixos-configs/lesskey ${userHome}/.lesskey
+          # Copy config directories only if they don't exist
+          [ ! -d ${userHome}/.config/fish ] && cp -r /etc/nixos-configs/fish ${userHome}/.config/
+          [ ! -d ${userHome}/.config/nvim ] && cp -r /etc/nixos-configs/nvim ${userHome}/.config/
+          [ ! -d ${userHome}/.config/cargo ] && cp -r /etc/nixos-configs/cargo ${userHome}/.config/
+          [ ! -d ${userHome}/.config/helix ] && cp -r /etc/nixos-configs/helix ${userHome}/.config/
+          [ ! -d ${userHome}/.config/nnn ] && cp -r /etc/nixos-configs/nnn ${userHome}/.config/
+          [ ! -d ${userHome}/.config/tmux ] && cp -r /etc/nixos-configs/tmux ${userHome}/.config/
+          [ ! -f ${userHome}/.lesskey ] && cp /etc/nixos-configs/lesskey ${userHome}/.lesskey
 
           # Fix ownership
-          chown -R ${username}:users ${userHome}/.config ${userHome}/.lesskey
+          chown -R ${username}:users ${userHome}/.config ${userHome}/.lesskey 2>/dev/null || true
         '';
       };
     };
