@@ -10,6 +10,7 @@ let
 in {
   imports = [
     <nixpkgs/nixos/modules/installer/cd-dvd/installation-cd-minimal-combined.nix>
+    ./desktop/remote-desktop/tailscale.nix
   ];
 
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
