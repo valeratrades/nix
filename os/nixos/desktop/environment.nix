@@ -5,7 +5,6 @@
     GDK_DEBUG = "portals";
     DEFAULT_BROWSER = "${pkgs.google-chrome}/bin/google-chrome-stable";
     WINEPREFIX = "/home/${user.username}/.wine";
-    PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig:${pkgs.alsa-lib.dev}/lib/pkgconfig:${pkgs.wayland-scanner.bin}/bin";
   };
 
   powerManagement = {

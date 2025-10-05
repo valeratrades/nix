@@ -518,7 +518,7 @@ in {
       DIRENV_WARN_TIMEOUT = "1h";
       # openssl hurdle
       PKG_CONFIG_PATH =
-        "${pkgs.openssl.dev}/lib/pkgconfig"; # :${pkgs.openssl}/lib"; # many of my rust scripts require it
+        "${pkgs.openssl.dev}/lib/pkgconfig" + (if user.userFullName != "Server" then ":${pkgs.alsa-lib.dev}/lib/pkgconfig:${pkgs.wayland-scanner.bin}/bin" else ""); # :${pkgs.openssl}/lib"; # many of my rust scripts require it
 
       STARSHIP_LOG = "error"; # disable the pesky [WARN] messages
 
