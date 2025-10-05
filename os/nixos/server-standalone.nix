@@ -421,30 +421,12 @@ in {
 
     # Store config sources in /etc for systemd service to use
     etc = {
-      "nixos-configs/fish" = {
-        source = ../../home/config/fish;
-        recursive = true;
-      };
-      "nixos-configs/nvim" = {
-        source = ../../home/config/nvim;
-        recursive = true;
-      };
-      "nixos-configs/cargo" = {
-        source = ../../home/config/cargo;
-        recursive = true;
-      };
-      "nixos-configs/helix" = {
-        source = ../../home/config/helix;
-        recursive = true;
-      };
-      "nixos-configs/nnn" = {
-        source = ../../home/config/nnn;
-        recursive = true;
-      };
-      "nixos-configs/tmux" = {
-        source = ../../home/config/tmux;
-        recursive = true;
-      };
+      "nixos-configs/fish".source = ../../home/config/fish;
+      "nixos-configs/nvim".source = ../../home/config/nvim;
+      "nixos-configs/cargo".source = ../../home/config/cargo;
+      "nixos-configs/helix".source = ../../home/config/helix;
+      "nixos-configs/nnn".source = ../../home/config/nnn;
+      "nixos-configs/tmux".source = ../../home/config/tmux;
       "nixos-configs/lesskey".source = ../../home/config/lesskey;
     };
   };
