@@ -217,7 +217,7 @@ in {
     tmp.useTmpfs = true;
     loader = {
       systemd-boot = { enable = true; };
-      timeout = 0;
+      timeout = lib.mkForce 0; # Override installation CD timeout
       efi.canTouchEfiVariables = true;
     };
     kernelParams = [
