@@ -456,6 +456,7 @@ in {
     };
 
     hostName = "server";
+    wireless.enable = false; # Disable wpa_supplicant to avoid conflict
     networkmanager = {
       dns = "none";
       enable = true;
