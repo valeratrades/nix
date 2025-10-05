@@ -215,11 +215,7 @@ in {
 
   boot = {
     tmp.useTmpfs = true;
-    loader = {
-      systemd-boot = { enable = true; };
-      timeout = lib.mkForce 0; # Override installation CD timeout
-      efi.canTouchEfiVariables = true;
-    };
+    loader.timeout = lib.mkForce 0; # Override installation CD timeout
     kernelParams = [
       "zswap.enabled=1"
       "mem_sleep_default=s2idle"
