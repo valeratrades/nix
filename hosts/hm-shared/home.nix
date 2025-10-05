@@ -8,6 +8,8 @@
         ./config_symlinks.nix
       else
         (import ./config_writes.nix { inherit self pkgs user; }))
+    # Import desktop services only for non-server users
+    (if user.userFullName != "Server" then ./desktop-services.nix else null)
   ];
   #dbg: look at comment in ./config_symlinks.nix
 
@@ -154,6 +156,14 @@
           element-desktop # GUI matrix client
           iamb # TUI matrix client (rust)
           zulip
+        ]
+        [
+          # Desktop/GUI packages moved from configuration.nix
+          libinput-gestures
+          displaylink
+          qt5.full
+          google-chrome
+          alacritty
         ]
         [
           # embedded dev

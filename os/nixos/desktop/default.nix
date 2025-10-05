@@ -20,6 +20,11 @@
       gcsfuse # mount google cloud storage
       wkhtmltopdf # HTML to PDF
 
+      # Desktop system packages
+      libinput-gestures
+      displaylink
+      qt5.full
+
       # Audio/Video/Image Utilities
       [
         pamixer

@@ -45,38 +45,10 @@ in {
   #};
 
   services = {
-		power-profiles-daemon.enable = true;
-		xserver.videoDrivers = [ "displaylink" "modesetting" "amdgpu" "nvidia" ];
 		fstrim.enable = true; #ref: https://www.reddit.com/r/NixOS/comments/rbzhb1/if_you_have_a_ssd_dont_forget_to_enable_fstrim/
     gnome.gnome-keyring.enable = lib.mkDefault
       false; # annoying // Supposed to be an extra layer of security for managed {ssh passwords, gpg, wifi, etc}
     getty.autologinUser = user.username;
-    # desktopManager.gnome.enable = true; # Disabled to avoid SSH agent conflict with programs.ssh.startAgent
-    xserver = {
-      # # somehow this fixed the audio problem. Like huh, what, why???
-      #displayManager.gdm.enable = true; #NB: if you enable `xserver`, _must_ enable this too. Otherwise it will use default `lightdm`, which will log you out.
-      enable = false;
-      displayManager.startx.enable = true;
-      #
-      autorun =
-        false; # no clue if it does anything if `enable = false`, but might as well keep it
-
-      xkb = {
-        options = "grp:win_space_toggle";
-        extraLayouts.semimak = {
-          description = "Semimak for both keyboard standards";
-          languages = [ "eng" ];
-          symbolsFile = mylib.relativeToRoot "home/xkb_symbols/semimak";
-        };
-        layout = "semimak,ru";
-        variant = (if user.kbd == "ansi" then "ansi,," else "iso,,");
-        #
-      };
-      autoRepeatDelay =
-        240; # doesn't do anything currently (could be reset by sway)
-      autoRepeatInterval =
-        70; # doesn't do anything currently (could be reset by sway)
-    };
 
     #TODO: also move `clickhouse` here, once they provide a nix-compatible package.
     redis.servers.default = {
@@ -117,22 +89,6 @@ in {
     #  	'' else
     #  "";
 
-    libinput = {
-      enable = true;
-      touchpad.tapping =
-        true; # doesn't do anything currently (could be reset by sway)
-    };
-
-    pipewire = {
-      enable = true;
-      alsa = {
-        enable = true;
-        support32Bit = true;
-      };
-      pulse.enable = false; # TEST
-      jack.enable = true;
-      wireplumber.enable = true;
-    };
 
     openssh = {
       enable = true;
@@ -145,11 +101,6 @@ in {
       };
       #openFirewall = true; # auto-open specified ports in the firewall. Seems to conflict with manual specification of eg `22` port
     };
-    blueman.enable = true;
-    gvfs.enable = true; # Mount, trash, and other functionalities
-    tumbler.enable = true; # Thumbnail support for images
-    geoclue2.enable = true; # Enable geolocation services.
-    printing.enable = true; # Enable CUPS to print documents.
   };
   virtualisation = {
     docker = {
@@ -158,13 +109,6 @@ in {
     };
   };
   programs = {
-    sway = {
-      enable = true;
-      wrapperFeatures.gtk = true;
-      extraSessionCommands =
-        "	export XDG_CURRENT_DESKTOP=\"sway\";\n	export GDK_BACKEND=\"wayland\";\n	export XDG_BACKEND=\"wayland\";\n	export QT_WAYLAND_FORCE_DPI=\"physical\";\n	export QT_QPA_PLATFORM=\"wayland-egl\";\n	export CLUTTER_BACKEND=\"wayland\";\n	export SDL_VIDEODRIVER=\"wayland\";\n	export BEMENU_BACKEND=\"wayland\";\n	export MOZ_ENABLE_WAYLAND=\"1\";\n	# QT (needs qt5.qtwayland in systemPackages)\n	export QT_QPA_PLATFORM=wayland-egl\n	export SDL_VIDEODRIVER=wayland\n";
-    };
-    sway.xwayland.enable = true;
     fish.enable =
       true; # HACK: things break if I remove it here. However, `hm` does `fish.enable` already. Conundrum.
 
@@ -321,18 +265,6 @@ in {
       };
     };
   };
-  xdg.portal = {
-    enable = true;
-    extraPortals = with pkgs; [
-      xdg-desktop-portal
-      xdg-desktop-portal-wlr
-      xdg-desktop-portal-gtk
-      xdg-desktop-portal-gnome
-      xdg-desktop-portal-shana
-      lxqt.xdg-desktop-portal-lxqt
-    ];
-    wlr.enable = true;
-  };
 
   imports = [
     (mylib.relativeToRoot "home/config/fish/default.nix")
@@ -348,25 +280,7 @@ in {
       "./hosts/${user.desktopHostName}/hardware-configuration.nix")
   ];
 	hardware = {
-		bluetooth.hsphfpd.enable =
-			false; # HACK: will prevent me from using bluetooth mics
 		enableAllFirmware = true; # Q: not sure if I need it
-		graphics = {
-			enable = true;
-			extraPackages = with pkgs; [ amdvlk ];
-		};
-		nvidia = {
-			modesetting.enable = true;
-			powerManagement = {
-				enable = true;
-				finegrained = false; #TEST
-			};
-			open = false;  # use the proprietary driver, not the open one
-		};
-		bluetooth = {
-			enable = true;
-			powerOnBoot = false;
-		};
 	};
 
   systemd = {
@@ -596,9 +510,6 @@ in {
 
       # Other specific environment variables
       GIT_CONFIG_HOME = "${userHome}/.config/git/config";
-      QT_QPA_PLATFORMTHEME = "flatpak";
-      GTK_USE_PORTAL = "1";
-      GDK_DEBUG = "portals";
 
       # Nix
       NIXOS_CONFIG = "${configRoot}";
@@ -607,12 +518,8 @@ in {
       DIRENV_WARN_TIMEOUT = "1h";
       # openssl hurdle
       PKG_CONFIG_PATH =
-        "${pkgs.openssl.dev}/lib/pkgconfig:${pkgs.alsa-lib.dev}/lib/pkgconfig:${pkgs.wayland-scanner.bin}/bin"; # :${pkgs.openssl}/lib"; # many of my rust scripts require it
+        "${pkgs.openssl.dev}/lib/pkgconfig"; # :${pkgs.openssl}/lib"; # many of my rust scripts require it
 
-      # apparently wine works better on 32-bit
-      #NB: when enabling, make sure the main monitor the wine will be displayed on starts at `0 0`
-      WINEPREFIX = "${userHome}/.wine";
-      #WINEARCH = "win32";
       STARSHIP_LOG = "error"; # disable the pesky [WARN] messages
 
       # home vars
@@ -621,7 +528,6 @@ in {
       EDITOR = "nvim";
       WAKETIME = "${user.wakeTime}";
       DAY_SECTION_BORDERS = "0.2:8.5:16";
-      DEFAULT_BROWSER = "${pkgs.google-chrome}/bin/google-chrome-stable";
       PAGER = "less";
       MANPAGER = "less";
       LESSHISTFILE = "-";
@@ -640,10 +546,7 @@ in {
 
     systemPackages = with pkgs;
       lib.lists.flatten [
-        libinput-gestures
         librsvg
-				displaylink #NB: reqs manually doing: nix-prefetch-url --name displaylink-610.zip https://www.synaptics.com/sites/default/files/exe_files/2024-10/DisplayLink%20USB%20Graphics%20Software%20for%20Ubuntu6.1-EXE.zip
-        pkgs.qt5.full
         age # secrets initial encoding
         sops # secrets mgmt
         nginx
@@ -770,7 +673,6 @@ in {
         # Terminals + Editors + Shells
         [
           starship
-          alacritty
 
           neovim
 					luajitPackages.luarocks-nix # install some lua plugins as isolated packages
@@ -821,7 +723,6 @@ in {
         # Web/Network Interaction
         [
           httpie
-          google-chrome
           wget
           aria2
         ]
@@ -850,20 +751,9 @@ in {
         ]
       ];
   };
-  # stupid hm can't even set mods to files
-  system.activationScripts.copyAlacrittyConfig = {
-    text = ''
-      # Copy the alacritty config and set permissions
-      cp /home/${user.username}/.config/alacritty/alacritty.toml.hm /home/${user.username}/.config/alacritty/alacritty.toml # already done by another part of the config
-      chmod 0666 /home/${user.username}/.config/alacritty/alacritty.toml
-    '';
-    deps = [ ];
-  };
 
   powerManagement = {
     enable = true;
-    powerUpCommands =
-      "	systemctl --user restart wlr-gamma\n	systemctl --user restart auto_redshift\n";
   };
 
   #TODO!: make specific to the host
