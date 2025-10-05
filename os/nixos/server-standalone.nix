@@ -51,15 +51,6 @@ in {
       enable = true;
     };
 
-    openssh = {
-      enable = true;
-      settings = {
-        KbdInteractiveAuthentication = true;
-        UseDns = true;
-        X11Forwarding = false; # Not needed on servers
-        PermitRootLogin = "yes";
-      };
-    };
   };
 
   virtualisation = {
@@ -71,13 +62,6 @@ in {
 
   programs = {
     fish.enable = true;
-    ssh = {
-      startAgent = true;
-      enableAskPassword = true;
-      extraConfig = ''
-        PasswordAuthentication = yes
-      '';
-    };
     rust-motd.enableMotdInSSHD = true;
     mtr.enable = true;
     gnupg.agent = {
@@ -248,16 +232,25 @@ in {
     };
   };
 
+
   users.users."${username}" = {
     isNormalUser = true;
     description = userFullName;
     shell = pkgs.fish;
     extraGroups = [ "networkmanager" "wheel" "audio" "video" "docker" "dialout" "postgres" ];
+    # Password: "hello"
+    hashedPassword = "$6$arn/15KCfagbdbIK$tf1Ho7mOopjRGOl0mwHjaau7izvUwgTG8WlIj8UsxNslEJrTFWzDB2dvArfd9LpmS5WztZFCkMpJaS2ygMIZe/";
     openssh.authorizedKeys.keys = [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEJA6PHRdXNysN/q8yYid3Vp3miFBB7a1441lOEHeOoZ valeratrades@gmail.com"
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIz2m3ZyGSMog5x8GaboPfZqsuNqUO6E/031wks5eicU root@v-laptop"
     ];
   };
+
+  # CRITICAL: Root user backup access with same SSH keys
+  users.users.root.openssh.authorizedKeys.keys = [
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEJA6PHRdXNysN/q8yYid3Vp3miFBB7a1441lOEHeOoZ valeratrades@gmail.com"
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIz2m3ZyGSMog5x8GaboPfZqsuNqUO6E/031wks5eicU root@v-laptop"
+  ];
 
   nixpkgs.config = {
     allowUnfree = true;
