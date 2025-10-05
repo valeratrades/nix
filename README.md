@@ -46,8 +46,10 @@ Spawns an fhs-compatible shell
 
 ### Server deployment
 ```sh
-sudo nixos-rebuild switch -I nixos-config=/home/v/nix/os/nixos/server-configuration.nix
+sudo nixos-rebuild switch -I nixos-config=/home/v/nix/os/nixos/server-standalone.nix
 ```
+
+Login as the `nixos` user - configs are automatically available.
 
 
 ## Dev
