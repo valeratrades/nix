@@ -27,9 +27,6 @@
 
 	# to get the id, do `blkid` for the partition, and take the `UUID` value
 	boot.resumeDevice = "/dev/disk/by-uuid/4fc0e3da-5640-4939-a5e2-e19ad7419e46"; # for hibernation. NB: make sure that it matches the swap partition. Must be updated if it changes
-	boot.kernelParams = lib.mkAfter [ "resume=UUID=4fc0e3da-5640-4939-a5e2-e19ad7419e46" ]; #dbg
-	#DEPRECATE: get rid of one of these, when the other works
-	#boot.resumeDevice = "/dev/nvme1n1p5"; # for hibernation. NB: make sure that it matches the swap partition. Must be updated if it changes
 	swapDevices = [ 
 		{ device = "/dev/disk/by-uuid/4fc0e3da-5640-4939-a5e2-e19ad7419e46"; }
 	];

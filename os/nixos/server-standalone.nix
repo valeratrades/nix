@@ -198,11 +198,13 @@ in {
     };
   };
 
+  #TODO!!!!!!!: just extend one from main configuration.nix
   boot = {
     tmp.useTmpfs = true;
     loader.timeout = lib.mkForce 0; # Override installation CD timeout
     kernelParams = [
       "zswap.enabled=1"
+      "nvidia-drm.modeset=1"
       "mem_sleep_default=s2idle"
     ];
     kernel.sysctl."vm.overcommit_memory" = lib.mkForce "1"; # Fix Redis conflict with installation CD

@@ -111,8 +111,6 @@ in {
 			"zswap.enabled=1"
 			"nvidia-drm.modeset=1"
 			"mem_sleep_default=s2idle"
-			"nouveau.blacklist=1"
-			"nvidia.NVreg_PreserveVideoMemoryAllocations=1"
 		];
 
     # # for obs's Virtual Camera
@@ -120,7 +118,7 @@ in {
     kernelModules = [
       "v4l2loopback"
       "binder-linux" # waydroid, nothing to do with obs (but I'm bad with nix, can't split them)
-			"evdi"
+			"evdi" # only needed with displaylink
     ];
     extraModprobeConfig = ''
             options v4l2loopback devices=1 video_nr=1 card_label="OBS Cam" exclusive_caps=1

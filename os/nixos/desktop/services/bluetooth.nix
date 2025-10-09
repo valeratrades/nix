@@ -5,7 +5,7 @@
     bluetooth.hsphfpd.enable = false;
     bluetooth = {
       enable = true;
-      powerOnBoot = false;
+      powerOnBoot = true;
     };
   };
 }
