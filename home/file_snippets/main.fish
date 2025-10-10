@@ -12,11 +12,26 @@ function shared_before
 	mkdir -p docs/.assets
 	cat "$FILE_SNIPPETS_PATH/docs/ARCHITECTURE.md" > docs/ARCHITECTURE.md
 
-	mkdir tests && cp -r "$FILE_SNIPPETS_PATH/tests/$lang"/* ./tests/ || "skipping tests initializiation, as no tests discovered in $FILE_SNIPPETS_PATH/tests/$lang"
+	mkdir tests
+	if test -d "$FILE_SNIPPETS_PATH/tests/$lang"
+		set -l test_files "$FILE_SNIPPETS_PATH/tests/$lang"/*
+		if test -e $test_files[1]
+			cp -r $test_files ./tests/
+		else
+			echo "skipping tests initialization, as no tests discovered in $FILE_SNIPPETS_PATH/tests/$lang"
+		end
+	else
+		echo "skipping tests initialization, as no tests directory found for $lang"
+	end
 	mkdir tmp
 
 	cp "$FILE_SNIPPETS_PATH/$lang/flake.nix" ./flake.nix # doesn't exist for all languages, for ex rust has this added in its own function, conditional on toolchain version. Good news is - this does nothing if source is not found. (but HACK: could lead to nasty logical errors)
-	echo "use flake" >> .envrc
+
+	if [ $lang = "py" ]
+		echo "use flake . --no-pure-eval" >> .envrc
+	else
+		echo "use flake" >> .envrc
+	end
 end
 
 function shared_after
@@ -46,13 +61,13 @@ end
 function can
 	### EX: `can --nightly --clap project_name`
 	set toolchain "--stable"
-	if test (string sub -s 1 -l 1 -- $argv[1]) = "-"
+	if [ (string sub -s 1 -l 1 -- $argv[1]) = "-" ]
 		set toolchain "$argv[1]"
 		set argv $argv[2..-1]
 	end
 	
 	set preset "--default"
-	if test (string sub -s 1 -l 1 -- $argv[1]) = "-"
+	if [ (string sub -s 1 -l 1 -- $argv[1]) = "-" ]
 		set preset "$argv[1]"
 		set argv $argv[2..-1]
 	end
@@ -113,7 +128,8 @@ function pyn
 	shared_before $argv[1] $lang
 
 	cp -r "$FILE_SNIPPETS_PATH/$lang/presets/default"/* ./
-	chmod u+x ./main.py
+	cp "$FILE_SNIPPETS_PATH/$lang/flake.nix" ./
+	cp "$FILE_SNIPPETS_PATH/$lang/pyproject.toml" ./
 
 	shared_after $argv[1] $lang
 end
