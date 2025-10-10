@@ -48,4 +48,5 @@ dev-dependencies = [
     "ruff>=0.1.0",
     "mypy>=1.0.0",
     "icecream>=2.1.8",
+    "loguru>=0.7.0",
 ]

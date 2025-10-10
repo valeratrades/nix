@@ -111,6 +111,16 @@
                   } ./.gitignore
 
                   cp -f ${readme} ./README.md
+
+                  if [ -f .devenv/state/venv/bin/activate ]; then
+                    source .devenv/state/venv/bin/activate
+                  else
+                    uv venv >/dev/null
+                    source .devenv/state/venv/bin/activate
+                  fi
+                  if [ -n uv.lock ]; then
+                    uv_sync
+                  fi
                 '';
               }
             ];

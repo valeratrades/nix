@@ -1,10 +1,10 @@
 import src
-import logging
+from loguru import logger
 
 
 def main():
-	logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
-	src.L = logging.getLogger(__name__)
+	logger.remove()
+	logger.add(lambda msg: print(msg, end=""), level="DEBUG", diagnose=True, backtrace=True)
 
 	src.run()
 
