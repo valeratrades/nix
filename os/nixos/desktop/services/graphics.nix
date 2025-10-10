@@ -6,15 +6,9 @@
 
 		xserver = {
 			enable = false;
-			displaylink.enable = true;
 			displayManager.startx.enable = true;
 			autorun = false;
 
-
-			#TEST {{{
-			displayManager.gdm.enable = true;
-			desktopManager.gnome.enable = true;
-			#,}}}
 
 			xkb = {
 				options = "grp:win_space_toggle";
@@ -39,7 +33,6 @@
 	hardware = {
 		graphics = {
 			enable = true;
-			extraPackages = with pkgs; [ amdvlk ];
 		};
 
 		nvidia = {
