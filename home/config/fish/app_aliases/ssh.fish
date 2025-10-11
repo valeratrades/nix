@@ -5,7 +5,7 @@ end
 
 function code_vincent
 	ssh-add ~/.ssh/id_ed25519
-	code --remote ssh-remote+vincent /home/valera/$argv[1]
+	code --remote ssh-remote+vincent /home/nixos/$argv[1]
 end
 
 # not sure abuot the name. Especially considering it's hardcoded. But whatever.
