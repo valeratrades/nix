@@ -48,6 +48,7 @@
             "normal_installed"; #dbg
         };
       }] ++ [
+				#NB: for extensions with just a hash, put it inside curly brackets
         (extension "ublock-origin"
           "uBlock0@raymondhill.net") # best adblocker today (2025/02/28)
         (extension "darkreader" "addon@darkreader.org")
@@ -58,7 +59,8 @@
         (extension "socialfocus" "{26b4f076-089c-4c69-8497-44b7e5c9faef}")
         (extension "ether-metamask" "webextension@metamask.io")
         (extension "tampermonkey" "firefox@tampermonkey.net")
-        (extension "sponsorblock" "	sponsorBlocker@ajay.app")
+        #(extension "sponsorblock" "sponsorBlocker@ajay.app")
+        (extension "sponsorblock" "{76383ca8-fe81-4645-b91f-d28e319619ad}")
         (extension "istilldontcareaboutcookies" "idcac-pub@guus.ninja")
         (extension "wakatime" "addons@wakatime.com")
         (extension "tab-rearranger" "{5968a446-b126-4279-8827-6889a180e3fa}")
