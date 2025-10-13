@@ -22,11 +22,10 @@
 
       # Desktop system packages
       libinput-gestures
-      qt5.full
 
       # Audio/Video/Image Utilities
       [
-        pamixer
+        #pamixer #TEST
         easyeffects
         imagemagick
         vlc
@@ -68,8 +67,8 @@
 
       # emulators
       [
-        waydroid
-        gnome-boxes # vm with linux distros
+        #waydroid #dbg: might be bringing in `webkitgtk`, which brings for like an hour; until resolved, comment out
+        #gnome-boxes # vm with linux distros #dbg: may be bringing in `webkitgtk`, which builds stupid long
         # Windows
         [
           wineWowPackages.stable

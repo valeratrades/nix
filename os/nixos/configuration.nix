@@ -117,15 +117,16 @@ in {
     extraModulePackages = with config.boot.kernelPackages; [ v4l2loopback ];
     kernelModules = [
       "v4l2loopback"
-      "binder-linux" # waydroid, nothing to do with obs (but I'm bad with nix, can't split them)
+      #"binder-linux" # waydroid, nothing to do with obs (but I'm bad with nix, can't split them) #dbg: disabled waydroid for a moment
 			"evdi" # only needed with displaylink
     ];
     extraModprobeConfig = ''
             options v4l2loopback devices=1 video_nr=1 card_label="OBS Cam" exclusive_caps=1
             options kvm_amd nested=1 # gnome-boxes require kvm
-      			options binder-linux devices=binder,hwbinder,vndbinder # waydroid wants this
-    '';
-    #
+						''
+			#dbg
+			#+ ''options binder-linux devices=binder,hwbinder,vndbinder # waydroid wants this ''
+			;
   };
 
   time.timeZone = "UTC";
@@ -352,7 +353,7 @@ in {
         [
           redis
 					clickhouse
-          awscli2
+          #awscli2 #dbg: builds long
           postgresql
         ]
 
@@ -421,8 +422,11 @@ in {
 					powertop
 					upower
           lm_sensors # System sensor monitoring
-          ltrace # Library call monitoring
+          #ltrace # Library call monitoring #TEST
           strace # System call monitoring
+          iftop # network monitoring
+          iotop # io monitoring
+          sysstat
         ]
 
         # Compression and Archiving
@@ -500,15 +504,6 @@ in {
           pandoc
           wkhtmltopdf
 					texliveTeTeX # theoretically adds extensions to pandoc
-        ]
-
-        # System Monitoring and Debugging
-        [
-          iftop # network monitoring
-          iotop # io monitoring
-          sysstat
-          ltrace
-          strace
         ]
 
         # Web/Network Interaction

@@ -1,7 +1,7 @@
 { pkgs, user, mylib, ... }: {
 	services = {
 		power-profiles-daemon.enable = true;
-		xserver.videoDrivers = [ "displaylink" "modesetting" "amdgpu" "nvidia" ];
+		xserver.videoDrivers = [ /*"displaylink"*/ "modesetting" "amdgpu" "nvidia" ];
 
 
 		xserver = {

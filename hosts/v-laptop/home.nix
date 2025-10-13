@@ -83,18 +83,19 @@ in {
       lib.lists.flatten [
         chromium
         code-cursor
-        en-croissant # chess analysis GUI
+        #en-croissant # chess analysis GUI #dbg: may be bringing in `webkitgtk`
         ncspot
         gitui
         lazygit
 				neofetch # main system info
 
 				# ProtonMail
-				[
-					protonmail-export # export my proton emails as `.eml` #DEPRECATE: not sure if I need it, bridge+himalaya could be covering this
-					protonmail-bridge # bridge to local e-mail client
-					protonmail-desktop #TODO: replace with himalaya
-				]
+				#dbg: was bringing `webkitgtk`
+				#[
+				#	protonmail-export # export my proton emails as `.eml` #DEPRECATE: not sure if I need it, bridge+himalaya could be covering this
+				#	protonmail-bridge # bridge to local e-mail client
+				#	protonmail-desktop #TODO: replace with himalaya
+				#]
 
         zed-editor-fhs
 				zed

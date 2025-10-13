@@ -345,7 +345,6 @@ in {
       powertop
       upower
       lm_sensors
-      ltrace
       strace
 
       # Compression

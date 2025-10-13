@@ -44,7 +44,8 @@
         name = "*";
         value = {
           installation_mode =
-            "blocked"; # will also uninstall extensions I remove from here, so this is always the sole source of truth.
+            #"blocked"; # will also uninstall extensions I remove from here, so this is always the sole source of truth. // To temporarily disable, switch to "normal_installed"
+            "normal_installed"; #dbg
         };
       }] ++ [
         (extension "ublock-origin"
