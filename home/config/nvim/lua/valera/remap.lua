@@ -79,6 +79,12 @@ K("n", "<C-w><C-h>", "<C-w><C-s><C-w>w", { desc = "windows: new horizontal" }) -
 
 K("n", "<C-w>k", "<cmd>tab sb<cr>", { desc = "C-w>t that is consistent with <C-w>v and <C-w>h" })
 K("n", "<C-w>K", function() MoveToNewTab() end, { desc = "windows: move to new tab" })
+
+--Q: is this the correct place for it?
+K('n', '<C-w>v', '<C-w>w', { desc = 'windows: literally <C-w>w' })
+K('n', '<C-w>V', '<cmd>tabprevious<cr>', { desc = 'windows: move to previously active tab' })
+
+K('n', '<C-w>x', '<cmd>tabclose<cr>', { desc = 'windows: tabclose' })
 --,}}}
 
 function MoveToNewTab()

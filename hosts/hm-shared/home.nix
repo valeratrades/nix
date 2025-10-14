@@ -252,7 +252,6 @@
       ".config/tg_admin.toml".source = "${self}/home/config/tg_admin.toml";
       ".config/auto_redshift.toml".source = "${self}/home/config/auto_redshift.toml";
       ".config/discretionary_engine.toml".source = "${self}/home/config/discretionary_engine.toml";
-      ".config/btc_line.toml".source = "${self}/home/config/btc_line.toml";
 
       ".lesskey".source = "${self}/home/config/lesskey";
       ".config/fish/conf.d/sway.fish".source =

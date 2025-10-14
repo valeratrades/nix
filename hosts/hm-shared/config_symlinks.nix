@@ -10,5 +10,8 @@
     sway = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       [ -e "$XDG_CONFIG_HOME/sway" ] || ln -sf "$NIXOS_CONFIG/home/config/sway" "$XDG_CONFIG_HOME/sway"
     '';
+		btc_line = lib.hm.dag.entryAfter ["writeBoundary" ] ''
+      [ -e "$XDG_CONFIG_HOME/btc_line.toml" ] || ln -sf "$NIXOS_CONFIG/home/config/btc_line.toml" "$XDG_CONFIG_HOME/btc_line.toml"
+		'';
   };
 }
