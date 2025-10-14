@@ -10,8 +10,4 @@ else
 	icon=""
 fi
 
-#if [ -n "$volume" ] && [ "$volume" -gt 40 ]; then
-#	volume="30"
-#fi
-
 echo "{\"content\": \"$volume\", \"icon\": \"$icon\"}"

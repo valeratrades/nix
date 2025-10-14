@@ -25,7 +25,7 @@
 
       # Audio/Video/Image Utilities
       [
-        #pamixer #TEST
+        pamixer
         easyeffects
         imagemagick
         vlc
