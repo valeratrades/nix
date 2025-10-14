@@ -1,6 +1,9 @@
-output = "eww"
 comparison_offset_h = 24
 label = false
+
+[outputs]
+eww = true
+pipes = true 
 
 [spy]
 alpaca_key = "PKTJYTJNKYSBHAZYT3CO"
