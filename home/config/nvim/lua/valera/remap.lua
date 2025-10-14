@@ -46,12 +46,6 @@ K("n", "<A-k>", "V:m '>-2<cr>gv=gv")
 K("i", "<A-j>", "<Esc>V:m '>+1<cr>gv=gv")
 K("i", "<A-k>", "<Esc>V:m '>-2<cr>gv=gv")
 
--- Windows
-K('n', '<C-w>s', '<C-W>h')
-K('n', '<C-w>r', '<C-W>j')
-K('n', '<C-w>n', '<C-W>k')
-K('n', '<C-w>t', '<C-W>l')
-
 -- -- Consequences
 K("n", "j", "nzzzv")
 K("n", "k", "Nzzzv")
@@ -63,19 +57,29 @@ K("", "L", "T")
 --
 --,}}}
 
--- Windows
+-- Windows {{{
+K('n', '<C-w>s', '<C-W>h')
+K('n', '<C-w>r', '<C-W>j')
+K('n', '<C-w>n', '<C-W>k')
+K('n', '<C-w>t', '<C-W>l')
+
+K('n', '<C-w>S', '<cmd>wincmd H<cr>', { desc = 'move window left' })
+K('n', '<C-w>R', '<cmd>wincmd J<cr>', { desc = 'move window down' })
+K('n', '<C-w>N', '<cmd>wincmd K<cr>', { desc = 'move window up' })
+K('n', '<C-w>T', '<cmd>wincmd L<cr>', { desc = 'move window right' })
+
 K("n", "<C-Right>", "<cmd>vertical resize -2<cr>", { desc = "windows: decrease width" })
 K("n", "<C-Down>", "<cmd>resize -2<cr>", { desc = "windows: decrease height" })
 K("n", "<C-Up>", "<cmd>resize +2<cr>", { desc = "windows: increase height" })
 K("n", "<C-Left>", "<cmd>vertical resize +2<cr>", { desc = "windows: increase width" })
-K("n", "<C-w>h", "<C-w><C-s><C-w>w", { desc = "windows: new horizontal" })
-K("n", "<C-w>v", "<C-w><C-v>", { desc = "windows: new vertical" })
-K("n", "<C-w><C-h>", "<C-w><C-s>", { desc = "windows: new horizontal" })
-K("n", "<C-w>f", "<cmd>tab split<cr>", { desc = "windows: focus current by `:tab split`" })
-K("n", "<C-w>T", "<cmd>tab sb<cr>", { desc = "C-w>t that is consistent with <C-w>v and <C-w>h" })
-K("n", "<C-w><C-t>", function() MoveToNewTab() end, { desc = "windows: move to new tab" })
 
-K("n", "<C-w>x", "<cmd>tabclose<cr>", { desc = "Close Tab" })
+K("n", "<C-w>o", "<C-w><C-s><C-w>w", { desc = "windows: new horizontal" })
+K("n", "<C-w>O", "<C-w><C-v>", { desc = "windows: new vertical" })
+K("n", "<C-w><C-h>", "<C-w><C-s><C-w>w", { desc = "windows: new horizontal" }) --
+
+K("n", "<C-w>k", "<cmd>tab sb<cr>", { desc = "C-w>t that is consistent with <C-w>v and <C-w>h" })
+K("n", "<C-w>K", function() MoveToNewTab() end, { desc = "windows: move to new tab" })
+--,}}}
 
 function MoveToNewTab()
 	local current_win = vim.api.nvim_get_current_win()
