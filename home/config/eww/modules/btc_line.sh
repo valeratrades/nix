@@ -4,54 +4,62 @@
 # Main line: show "None" if no changes in last 60s
 # Additional line: show "None" if no changes in last 15m
 
-PIPE_DIR="/tmp/btc_line"
-MAIN_PIPE="$PIPE_DIR/main"
-ADDITIONAL_PIPE="$PIPE_DIR/additional"
+STATE_DIR="$HOME/.local/state/btc_line"
+MAIN_FILE="$STATE_DIR/main"
+ADDITIONAL_FILE="$STATE_DIR/additional"
+TIMESTAMPS_FILE="$STATE_DIR/.timestamps"
 
 # Get current time
 CURRENT_TIME=$(date +%s)
 
-# Function to get file modification time
-get_mtime() {
-    if [ -e "$1" ]; then
-        stat -c %Y "$1" 2>/dev/null || echo 0
+# Function to get timestamp from .timestamps file
+get_timestamp() {
+    local name="$1"
+    if [ -f "$TIMESTAMPS_FILE" ]; then
+        # Extract timestamp for the given name
+        local line=$(grep "^${name}: " "$TIMESTAMPS_FILE")
+        if [ -n "$line" ]; then
+            # Split on ": " and get the datetime
+            local datetime=$(echo "$line" | cut -d':' -f2- | sed 's/^ //')
+            # Convert ISO8601 to unix timestamp
+            date -d "$datetime" +%s 2>/dev/null || echo 0
+        else
+            echo 0
+        fi
     else
         echo 0
     fi
 }
 
-# Function to safely read from pipe with timeout
-read_pipe() {
-    local pipe="$1"
-    if [ -p "$pipe" ]; then
-        # Try to read with timeout to avoid blocking
-        timeout 0.1 cat "$pipe" 2>/dev/null || echo ""
+# Function to read value from file
+read_file() {
+    local file="$1"
+    if [ -f "$file" ]; then
+        cat "$file" 2>/dev/null | tr -d '\n'
     else
         echo ""
     fi
 }
 
-# Check main pipe (60 seconds threshold)
-main_mtime=$(get_mtime "$MAIN_PIPE")
-main_age=$((CURRENT_TIME - main_mtime))
+# Check main (60 seconds threshold)
+main_timestamp=$(get_timestamp "main")
+main_age=$((CURRENT_TIME - main_timestamp))
 
 if [ $main_age -gt 60 ]; then
     main_value="None"
 else
-    # Try to read current value from pipe
-    main_value=$(read_pipe "$MAIN_PIPE")
+    main_value=$(read_file "$MAIN_FILE")
     [ -z "$main_value" ] && main_value=""
 fi
 
-# Check additional pipe (15 minutes = 900 seconds threshold)
-additional_mtime=$(get_mtime "$ADDITIONAL_PIPE")
-additional_age=$((CURRENT_TIME - additional_mtime))
+# Check additional (15 minutes = 900 seconds threshold)
+additional_timestamp=$(get_timestamp "additional")
+additional_age=$((CURRENT_TIME - additional_timestamp))
 
-if [ $additional_age -gt 1860 ]; then
+if [ $additional_age -gt 900 ]; then
     additional_value="None"
 else
-    # Try to read current value from pipe
-    additional_value=$(read_pipe "$ADDITIONAL_PIPE")
+    additional_value=$(read_file "$ADDITIONAL_FILE")
     [ -z "$additional_value" ] && additional_value=""
 fi
 
