@@ -226,7 +226,7 @@ bindsym $mod+Ctrl+g exec tg $(greenclip print | awk 'NR==1 {print}')
 
 #set $refresh_eww "eww kill; eww open bar; eww open btc_line_upper; eww open btc_line_lower" #TEST: trying to do this with a service
 #exec_always $refresh_eww
-bindsym $mod+e exec ~/.config/sway/eww_zoom_toggle.sh
+#bindsym $mod+e exec ~/.config/sway/eww_zoom_toggle.sh #dbg: works poorly, commented-out until fixed
 bindsym $mod+Shift+e exec ~/.config/sway/eww_visibility_toggle.sh
 bindsym $mod+Ctrl+e exec $refresh_eww
 
