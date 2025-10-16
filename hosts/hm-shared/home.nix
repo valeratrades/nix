@@ -117,10 +117,6 @@
     wakeTime = user.wakeTime;
   };
 
-	nix.settings = {
-		substituters = [ "https://devenv.cachix.org" ];
-	};
-
   home = {
     #FIXME: doesn't seem to work //Q: could it be because I have `fish.enable` inside the main configuration.nix, which overwrites this clean?
     sessionPath = [
