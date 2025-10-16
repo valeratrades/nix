@@ -55,8 +55,8 @@ exec bluetoothctl
 exec pipewire
 #HACK: some problem with runnig it as a service. Could be fixed. Some time later though
 exec wlr-gamma-service
-# can't start with a service, because it starts its own daemon (not continuous)
-exec eww open bar && eww open btc_line_lower && eww open btc_line_upper && eww open todo_blocker
+# Now managed by systemd user service (eww-widgets.service)
+#exec eww open bar && eww open btc_line_lower && eww open btc_line_upper && eww open todo_blocker
 exec pipewire-pulse
 exec wireplumber
 exec greenclip daemon

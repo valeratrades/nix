@@ -79,13 +79,14 @@
     Unit = {
       Description = "Start Eww Widgets";
       After = [ "graphical-session.target" ];
+      PartOf = [ "graphical-session.target" ];
     };
-    Install = { WantedBy = [ "default.target" ]; };
+    Install = { WantedBy = [ "graphical-session.target" ]; };
     Service = let eww = "${pkgs.eww}/bin/eww";
     in {
-      ExecStart =
-        "${eww} open bar && ${eww} open btc_line_lower && ${eww} open btc_line_upper && ${eww} open todo_blocker";
-      Restart = "on-failure";
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = "${pkgs.bash}/bin/bash -c '${eww} open bar && ${eww} open btc_line_lower && ${eww} open btc_line_upper && ${eww} open todo_blocker'";
     };
   };
 
