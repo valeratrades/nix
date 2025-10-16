@@ -82,12 +82,15 @@ in {
       builtins.trace "DEBUG: sourcing Valera-specific home.nix"
       lib.lists.flatten [
         chromium
-        code-cursor
         #en-croissant # chess analysis GUI #dbg: may be bringing in `webkitgtk`
         ncspot
+				neofetch # main system info
+        libinput
+        virt-viewer
+
+
         gitui
         lazygit
-				neofetch # main system info
 
 				# ProtonMail
 				#dbg: was bringing `webkitgtk`
@@ -99,17 +102,19 @@ in {
 
         zed-editor-fhs
 				zed
-
 				claude-code
 
-        libinput
+
+				simplescreenrecorder
+
         #flutterPackages-source.stable // errors
 
-        virt-viewer
-
-				ventoy-full-gtk # solution for multiple ISOs on same USB
-				woeusb # writing bootable USB, Windows-native solution
-				mediawriter # Fedora-approved USB burner
+				# ISOs
+				[
+					ventoy-full-gtk # solution for multiple ISOs on same USB
+					woeusb # writing bootable USB, Windows-native solution
+					mediawriter # Fedora-approved USB burner
+				]
 
       ]
 
