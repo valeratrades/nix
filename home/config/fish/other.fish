@@ -89,7 +89,6 @@ alias pfind="procs --tree | fzf"
 alias tree="fd . | as-tree"
 alias bak="XDG_CONFIG_HOME=/home/v/.dots/home/v/.config"
 alias as_term="script -qfc"
-alias bluetooth="blueman-manager"
 alias wget="aria2c -x16"
 alias disable_fan="echo 0 | sudo tee /sys/class/hwmon/hwmon6/pwm1"
 alias enable_fan="echo 2 | sudo tee /sys/class/hwmon/hwmon6/pwm1"
@@ -98,6 +97,64 @@ alias monkey="smassh"
 alias bbeats="sudo -Es nice -n -20 /etc/profiles/per-user/v/bin/bbeats" # otherwise any demanding process will produce bad breaks in sound
 alias workspaces="swaymsg -t get_tree" # shortcut for ease of remembrance by Ania and Tima
 alias q "ask_llm -f"
+
+
+# bluetooth {{{
+alias bluetooth="blueman-manager"
+
+function connect_headphones
+	# List of device name patterns to connect to (case-insensitive substring match)
+	set -l device_names \
+		"WH-1000XM4"
+
+	# Ensure Bluetooth is powered on
+	if not bluetoothctl show | grep -q "Powered: yes"
+		echo "Turning on Bluetooth..."
+		sudo rfkill unblock bluetooth 2>/dev/null
+		bluetoothctl power on 2>/dev/null
+
+		# Wait for adapter to be ready (up to 5 seconds)
+		for i in (seq 1 10)
+			if bluetoothctl show | grep -q "Powered: yes"
+				break
+			end
+			sleep 0.5
+		end
+
+		if not bluetoothctl show | grep -q "Powered: yes"
+			echo "Error: Failed to power on Bluetooth adapter"
+			return 1
+		end
+	end
+
+	# Get list of paired devices
+	set -l all_devices (bluetoothctl devices)
+
+	# Try to connect to each device by name
+	for name in $device_names
+		# Find device MAC by name (case-insensitive)
+		for device_line in $all_devices
+			set -l device_mac (echo $device_line | awk '{print $2}')
+			set -l device_name (echo $device_line | cut -d' ' -f3-)
+
+			if string match -qi "*$name*" "$device_name"
+				echo "Found $device_name ($device_mac), attempting to connect..."
+				if bluetoothctl connect $device_mac
+					echo "Successfully connected to $device_name"
+					return 0
+				else
+					echo "Failed to connect to $device_name"
+				end
+			end
+		end
+	end
+
+	echo "Could not connect to any known devices"
+	echo "Available paired devices:"
+	bluetoothctl devices
+	return 1
+end
+#,}}}
 
 function tge
 	q "answer concisely. Translate from german: $argv"

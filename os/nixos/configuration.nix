@@ -12,7 +12,14 @@ let
   redisPort = 49974;
   postgresqlPort = 52362;
 in {
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  nix.settings = {
+    experimental-features = [ "nix-command" "flakes" ];
+    trusted-substituters = [
+      "https://cache.nixos.org"
+      "https://nix-community.cachix.org"
+      "https://devenv.cachix.org"
+    ];
+  };
 
   #TODO!!!!!!: \
   #services.tg-server = builtins.trace "TRACE: sourcing my tg tool" {

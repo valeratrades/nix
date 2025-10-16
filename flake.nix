@@ -2,23 +2,23 @@
   description = "OS master";
 
   #TODO!: setup my [own cache server](<https://nixos-and-flakes.thiscute.world/nix-store/host-your-own-binary-cache-server>). Needed to avoid rebuilding on lower-performance machines, like Rapsberri Pi
-  nixConfig = {
-    # extra means system-level
-    extra-substituters = [
-      # can add a local mirror with these
-      #status: https://mirror.sjtu.edu.cn/
-      #"https://mirror.sjtu.edu.cn/nix-channels/store"
-      #status: https://mirrors.ustc.edu.cn/status/
-      #"https://mirrors.ustc.edu.cn/nix-channels/store"
-
-      "https://cache.nixos.org"
-      "https://nix-community.cachix.org" # nix community's cache server
-    ];
-    extra-trusted-public-keys = [
-      "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=" # nix community's cache server public key
-      "anyrun.cachix.org-1:pqBobmOjI7nKlsUMV25u9QHa9btJK65/C8vnO3p346s="
-    ];
-  };
+  #nixConfig = {
+  #  # extra means system-level
+  #  extra-substituters = [
+  #    # can add a local mirror with these
+  #    #status: https://mirror.sjtu.edu.cn/
+  #    #"https://mirror.sjtu.edu.cn/nix-channels/store"
+  #    #status: https://mirrors.ustc.edu.cn/status/
+  #    #"https://mirrors.ustc.edu.cn/nix-channels/store"
+  #
+  #    "https://cache.nixos.org"
+  #    "https://nix-community.cachix.org" # nix community's cache server
+  #  ];
+  #  extra-trusted-public-keys = [
+  #    "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=" # nix community's cache server public key
+  #    "anyrun.cachix.org-1:pqBobmOjI7nKlsUMV25u9QHa9btJK65/C8vnO3p346s="
+  #  ];
+  #};
 
   inputs = {
     nixpkgs = {
