@@ -24,6 +24,14 @@ in {
     token = config.sops.secrets.telegram_token_main.path;
   };
 
+  # Ensure tg-server waits for sops-nix secrets to be available
+  systemd.user.services.tg-server = {
+    Unit = {
+      After = lib.mkForce [ "network.target" "sops-nix.service" ];
+      Requires = [ "sops-nix.service" ];
+    };
+  };
+
 	# is coupled with ssh block in main `configuration.bix`
 	programs.ssh = {
 		enable = true; #Q: do I need this if `enableDefaultConfig = false`?
