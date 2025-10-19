@@ -75,6 +75,14 @@ async fn main() -> Result<()> {
         std::process::exit(1);
     }
 
+    // Copy original file to unpack directory (if not current directory)
+    if args.unpack_dir != Path::new(".") {
+        if let Some(filename) = args.file.file_name() {
+            let dest = args.unpack_dir.join(filename);
+            fs::copy(&args.file, &dest)?;
+        }
+    }
+
     // Get file extension and validate
     let ext = args.file.extension()
         .and_then(|e| e.to_str())
