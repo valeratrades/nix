@@ -32,12 +32,15 @@ use walkdir::WalkDir;
 
 #[derive(Parser, Debug)]
 struct Args {
-    #[arg(long = "wlimit")]
+    #[arg(short, long)]
     wlimit: String,
-    #[arg(long = "chapter-pattern", default_value = r"^Глава [0-9]+")]
+    #[arg(long, default_value = r"^Глава [0-9]+")]
     chapter_pattern: String,
-    #[arg(long = "max-jobs", default_value_t = 2)]
+    #[arg(long, default_value_t = 2)]
     max_jobs: usize,
+    /// Directory to unpack chapters into (defaults to current directory)
+    #[arg(short, long, default_value = ".")]
+    unpack_dir: PathBuf,
 }
 
 #[tokio::main(flavor = "multi_thread")]
@@ -45,16 +48,27 @@ async fn main() -> Result<()> {
     let args = Args::parse();
     let chapter_re = Regex::new(&args.chapter_pattern).unwrap();
 
-    fs::create_dir_all("chapters_split").unwrap();
-    fs::create_dir_all("chapters_de").unwrap();
-    fs::create_dir_all("chapters_ti").unwrap();
-    fs::create_dir_all("failed_book_parser").unwrap();
-    fs::create_dir_all("failed_translate").unwrap();
+    // Create unpack directory if it doesn't exist (without -p flag, so parent must exist)
+    if !args.unpack_dir.exists() {
+        fs::create_dir(&args.unpack_dir)?;
+    }
+
+    let chapters_split = args.unpack_dir.join("chapters_split");
+    let chapters_de = args.unpack_dir.join("chapters_de");
+    let chapters_ti = args.unpack_dir.join("chapters_ti");
+    let failed_book_parser = args.unpack_dir.join("failed_book_parser");
+    let failed_translate = args.unpack_dir.join("failed_translate");
+
+    fs::create_dir_all(&chapters_split).unwrap();
+    fs::create_dir_all(&chapters_de).unwrap();
+    fs::create_dir_all(&chapters_ti).unwrap();
+    fs::create_dir_all(&failed_book_parser).unwrap();
+    fs::create_dir_all(&failed_translate).unwrap();
 
     let input = find_first_txt(".").ok_or_else(|| eyre!("no .txt file found"))?;
-    split_into_chapters(&input, &chapter_re, Path::new("chapters_split"))?;
+    split_into_chapters(&input, &chapter_re, &chapters_split)?;
 
-    let mut chapters = collect_numbered("chapters_split", "chapter_", ".txt")?;
+    let mut chapters = collect_numbered(&chapters_split.to_string_lossy(), "chapter_", ".txt")?;
     chapters.sort_by_key(|(n, _)| *n);
 
     let sem = Semaphore::new(args.max_jobs);
@@ -63,44 +77,48 @@ async fn main() -> Result<()> {
         for (num, path) in &chapters {
             let num = *num;
             let path = path.clone();
+            let chapters_de = chapters_de.clone();
             let permit = sem.clone().acquire_owned().await.unwrap();
             tasks.push(tokio::spawn(async move {
                 let _p = permit;
-                run_book_parser(&path, num).await
+                run_book_parser(&path, num, &chapters_de).await
             }));
         }
         for t in tasks { t.await.unwrap()?; }
     }
 
-    let mut des = collect_numbered("chapters_de", "chapter_", ".txt")?;
+    let mut des = collect_numbered(&chapters_de.to_string_lossy(), "chapter_", ".txt")?;
     des.sort_by_key(|(n, _)| *n);
     {
         let mut tasks = Vec::new();
         for (num, _) in &des {
             let num = *num;
             let wlimit = args.wlimit.clone();
+            let chapters_de = chapters_de.clone();
+            let chapters_ti = chapters_ti.clone();
             let permit = sem.clone().acquire_owned().await.unwrap();
             tasks.push(tokio::spawn(async move {
                 let _p = permit;
-                run_translate(num, &wlimit).await
+                run_translate(num, &wlimit, &chapters_de, &chapters_ti).await
             }));
         }
         for t in tasks { t.await.unwrap()?; }
     }
 
     {
-        let fails = glob_simple("failed_book_parser", ".fail")?;
+        let fails = glob_simple(&failed_book_parser.to_string_lossy(), ".fail")?;
         if !fails.is_empty() {
             let mut tasks = Vec::new();
             for fail in fails {
                 let num: u32 = fs::read_to_string(&fail).unwrap().trim().parse().unwrap();
-                let _ = fs::remove_file(format!("chapters_de/chapter_{num}.txt"));
-                let _ = fs::remove_file(format!("chapters_ti/chapter_{num}.txt"));
-                let ch = format!("chapters_split/chapter_{num}.txt");
+                let _ = fs::remove_file(chapters_de.join(format!("chapter_{num}.txt")));
+                let _ = fs::remove_file(chapters_ti.join(format!("chapter_{num}.txt")));
+                let ch = chapters_split.join(format!("chapter_{num}.txt"));
+                let chapters_de = chapters_de.clone();
                 let permit = sem.clone().acquire_owned().await.unwrap();
                 tasks.push(tokio::spawn(async move {
                     let _p = permit;
-                    run_book_parser(Path::new(&ch), num).await
+                    run_book_parser(&ch, num, &chapters_de).await
                 }));
             }
             for t in tasks { t.await.unwrap()?; }
@@ -108,24 +126,27 @@ async fn main() -> Result<()> {
     }
 
     {
-        let fails = glob_simple("failed_translate", ".fail")?;
+        let fails = glob_simple(&failed_translate.to_string_lossy(), ".fail")?;
         if !fails.is_empty() {
             let mut tasks = Vec::new();
             for fail in fails {
                 let num: u32 = fs::read_to_string(&fail).unwrap().trim().parse().unwrap();
-                let _ = fs::remove_file(format!("chapters_ti/chapter_{num}.txt"));
+                let _ = fs::remove_file(chapters_ti.join(format!("chapter_{num}.txt")));
                 let wlimit = args.wlimit.clone();
+                let chapters_de = chapters_de.clone();
+                let chapters_ti = chapters_ti.clone();
                 let permit = sem.clone().acquire_owned().await.unwrap();
                 tasks.push(tokio::spawn(async move {
                     let _p = permit;
-                    run_translate(num, &wlimit).await
+                    run_translate(num, &wlimit, &chapters_de, &chapters_ti).await
                 }));
             }
             for t in tasks { t.await.unwrap()?; }
         }
     }
 
-    join_chapters_markdown("chapters_ti", "out.txt")?;
+    let out_path = args.unpack_dir.join("out.txt");
+    join_chapters_markdown(&chapters_ti.to_string_lossy(), &out_path.to_string_lossy())?;
     Ok(())
 }
 
@@ -160,26 +181,27 @@ fn split_into_chapters(input: &Path, chapter_re: &Regex, outdir: &Path) -> Resul
     Ok(())
 }
 
-async fn run_book_parser(ch: &Path, num: u32) -> Result<()> {
-    let de = format!("chapters_de/chapter_{num}.txt");
+async fn run_book_parser(ch: &Path, num: u32, chapters_de: &Path) -> Result<()> {
+    let de = chapters_de.join(format!("chapter_{num}.txt"));
     let status = Command::new("sh")
         .arg("-c")
-        .arg(format!("book_parser -l German -f '{}' > '{}'", ch.display(), de))
+        .arg(format!("book_parser -l German -f '{}' > '{}'", ch.display(), de.display()))
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .status()
         .await?;
     if !status.success() {
-        fs::write(format!("failed_book_parser/chapter_{num}.fail"), format!("{num}\n")).unwrap();
+        let failed_dir = chapters_de.parent().unwrap().join("failed_book_parser");
+        fs::write(failed_dir.join(format!("chapter_{num}.fail")), format!("{num}\n")).unwrap();
         return Err(eyre!("book_parser failed for chapter {num}"));
     }
     Ok(())
 }
 
-async fn run_translate(num: u32, wlimit: &str) -> Result<()> {
-    let de = format!("chapters_de/chapter_{num}.txt");
-    let ti = format!("chapters_ti/chapter_{num}.txt");
-    let cmd = format!("translate_infrequent -l de -w {} < '{}' > '{}'", shell_escape(wlimit), de, ti);
+async fn run_translate(num: u32, wlimit: &str, chapters_de: &Path, chapters_ti: &Path) -> Result<()> {
+    let de = chapters_de.join(format!("chapter_{num}.txt"));
+    let ti = chapters_ti.join(format!("chapter_{num}.txt"));
+    let cmd = format!("translate_infrequent -l de -w {} < '{}' > '{}'", shell_escape(wlimit), de.display(), ti.display());
     let status = Command::new("sh")
         .arg("-c")
         .arg(cmd)
@@ -188,7 +210,8 @@ async fn run_translate(num: u32, wlimit: &str) -> Result<()> {
         .status()
         .await?;
     if !status.success() {
-        fs::write(format!("failed_translate/chapter_{num}.fail"), format!("{num}\n")).unwrap();
+        let failed_dir = chapters_de.parent().unwrap().join("failed_translate");
+        fs::write(failed_dir.join(format!("chapter_{num}.fail")), format!("{num}\n")).unwrap();
         return Err(eyre!("translate_infrequent failed for chapter {num}"));
     }
     Ok(())

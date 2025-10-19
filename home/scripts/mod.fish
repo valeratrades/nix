@@ -12,5 +12,6 @@ alias 2fa="$fish_scripts_pdir/2fa.rs"
 alias timer="$fish_scripts_pdir/timer.rs"
 alias theme="$fish_scripts_pdir/theme_toggle.rs"
 alias mvd="$fish_scripts_pdir/mvd.rs"
+alias translate_book_txt="$fish_scripts_pdir/translate_book_txt.rs"
 
 alias choose_port="$fish_scripts_pdir/choose_port.sh"
