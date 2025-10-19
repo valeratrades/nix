@@ -84,6 +84,10 @@
       url = "github:valeratrades/bbeats";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    book_parser = {
+      url = "github:valeratrades/book_parser";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     prettify_log.url = "github:valeratrades/prettify_log";
     distributions = {
       url = "github:valeratrades/distributions";

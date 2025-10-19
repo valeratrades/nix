@@ -55,8 +55,10 @@ exec bluetoothctl
 exec pipewire
 #HACK: some problem with runnig it as a service. Could be fixed. Some time later though
 exec wlr-gamma-service
-# Now managed by systemd user service (eww-widgets.service)
+#DEPRECATE: once eww-widgets.service actually starts it up correctly
 #exec eww open bar && eww open btc_line_lower && eww open btc_line_upper && eww open todo_blocker
+#TEST: \
+exec ~/.config/sway/loop_bind_tablet_to_focused.sh
 exec pipewire-pulse
 exec wireplumber
 exec greenclip daemon

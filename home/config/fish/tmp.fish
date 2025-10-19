@@ -98,3 +98,78 @@ function load_pages
     echo "Successfully loaded all pages from $start to $last_page"
     return 0
 end
+
+function process_book --argument wlimit
+	mkdir -p chapters_split chapters_de chapters_ti failed_book_parser failed_translate
+	set file (fd -e txt | head -n1)
+
+	# split into chapters
+	awk -v outdir="chapters_split" '
+	/^Глава [0-9]+/ {
+	if (out) close(out)
+	match($0, /[0-9]+/)
+	out = sprintf("%s/chapter_%s.txt", outdir, substr($0, RSTART, RLENGTH))
+	}
+	{ if (out) print > out }
+	' "$file"
+
+	function run_book_parser --argument ch num
+		set de chapters_de/chapter_$num.txt
+		if not book_parser -l German -f $ch > $de
+			echo $num > failed_book_parser/chapter_$num.fail
+		end
+	end
+
+	function run_translate --argument num wlimit
+		set de chapters_de/chapter_$num.txt
+		set ti chapters_ti/chapter_$num.txt
+		if not cat $de | translate_infrequent -l de -w $wlimit > $ti
+			echo $num > failed_translate/chapter_$num.fail
+		end
+	end
+
+	for ch in (ls chapters_split/chapter_*.txt | sort -V)
+		set base (basename $ch)
+		set num (string replace -r 'chapter_([0-9]+)\.txt' '$1' $base)
+		mkdir -p chapters_de
+		run_book_parser $ch $num &
+		while test (count (jobs -p)) -ge 2
+			sleep 0.5
+		end
+	end
+	wait
+
+	for de in (ls chapters_de/chapter_*.txt | sort -V)
+		set base (basename $de)
+		set num (string replace -r 'chapter_([0-9]+)\.txt' '$1' $base)
+		mkdir -p chapters_ti
+		run_translate $num $wlimit &
+		while test (count (jobs -p)) -ge 2
+			sleep 0.5
+		end
+	end
+	wait
+
+	for fail in (ls failed_book_parser/*.fail ^/dev/null)
+		set num (cat $fail)
+		rm -f chapters_de/chapter_$num.txt chapters_ti/chapter_$num.txt
+		set ch chapters_split/chapter_$num.txt
+		run_book_parser $ch $num &
+		while test (count (jobs -p)) -ge 2
+			sleep 0.5
+		end
+	end
+	wait
+
+	for fail in (ls failed_translate/*.fail ^/dev/null)
+		set num (cat $fail)
+		rm -f chapters_ti/chapter_$num.txt
+		run_translate $num $wlimit &
+		while test (count (jobs -p)) -ge 2
+			sleep 0.5
+		end
+	end
+	wait
+
+	cat (fd -e txt chapters_ti | sort -V) > out.txt
+end

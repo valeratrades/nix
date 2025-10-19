@@ -82,11 +82,18 @@
       PartOf = [ "graphical-session.target" ];
     };
     Install = { WantedBy = [ "graphical-session.target" ]; };
-    Service = let eww = "${pkgs.eww}/bin/eww";
+    Service = let
+      eww = "${pkgs.eww}/bin/eww";
+      script = pkgs.writeShellScript "eww-widgets-start" ''
+        ${eww} open bar
+        ${eww} open btc_line_lower
+        ${eww} open btc_line_upper
+        ${eww} open todo_blocker
+      '';
     in {
       Type = "oneshot";
       RemainAfterExit = true;
-      ExecStart = "${pkgs.bash}/bin/bash -c '${eww} open bar && ${eww} open btc_line_lower && ${eww} open btc_line_upper && ${eww} open todo_blocker'";
+      ExecStart = "${script}";
     };
   };
 

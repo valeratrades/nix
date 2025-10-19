@@ -9,8 +9,6 @@ let
     "/home/${user.username}/nix"; # TODO!!!!!: have this be dynamic based on the actual dir where this config is currently located.
 
   modularHome = "${userHome}/.modular";
-  redisPort = 49974;
-  postgresqlPort = 52362;
 in {
   nix.settings = {
     experimental-features = [ "nix-command" "flakes" ];
@@ -21,45 +19,9 @@ in {
     ];
   };
 
-  #TODO!!!!!!: \
-  #services.tg-server = builtins.trace "TRACE: sourcing my tg tool" {
-  #  enable = true;
-  #  package = inputs.tg.packages.${pkgs.system}.default;
-  #};
-
-  #sops.secrets.telegram_token_main = {
-  #	sopsFile = "${userHome}/s/g/private/sops/creds.json"; #TODO: pass around sopsFile
-  #	type = "json";
-  #};
-
-  #TODO: combine with sops-nix or age-nix
-  #systemd.user.services.tg-server = {
-  #  enable = true;
-  #  description = "TG Server Service";
-  #  wantedBy = [ "default.target" ];
-  #  after = [ "network.target" ];
-  #
-  #  serviceConfig = {
-  #    Type = "simple";
-  #	LoadCredential = "tg_token:${config.sops.secrets.telegram_token_main.path}";
-  #    ExecStart = ''
-  #      /bin/sh -c '${
-  #        inputs.tg.packages.${pkgs.system}.default
-  #      }/bin/tg --token "$(cat %d/tg_token)" server'
-  #    '';
-  #    Restart = "on-failure";
-  #  };
-  #};
-
   services = {
     gnome.gnome-keyring.enable = lib.mkDefault
       false; # annoying // Supposed to be an extra layer of security for managed {ssh passwords, gpg, wifi, etc}
-
-    # a column on my laptop kbd gave in, so turn the whole thing off, so I can put another keyboard over it.
-    #udev.extraRules = if user.userFullName == "Valera" then ''
-    #  ACTION=="add|change", KERNEL=="event0", ATTRS{name}=="AT Translated Set 2 keyboard", ENV{LIBINPUT_IGNORE_DEVICE}="1"
-    #  	'' else
-    #  "";
   };
   virtualisation = {
     docker = {

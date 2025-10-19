@@ -24,11 +24,28 @@ in {
     token = config.sops.secrets.telegram_token_main.path;
   };
 
-  # Ensure tg-server waits for sops-nix secrets to be available
+  # Fix sops-nix.service to remain active after completion
+  # Without this, oneshot services exit immediately and can't satisfy Requires= dependencies
+  systemd.user.services.sops-nix = {
+    Service = {
+      RemainAfterExit = true;
+    };
+  };
+
+  #TODO: combine with sops-nix or age-nix
   systemd.user.services.tg-server = {
     Unit = {
       After = lib.mkForce [ "network.target" "sops-nix.service" ];
       Requires = [ "sops-nix.service" ];
+    };
+
+    Service = {
+      LoadCredential = "tg_token:${config.sops.secrets.telegram_token_main.path}";
+      ExecStart = lib.mkForce ''
+        ${pkgs.bash}/bin/bash -c '${
+          inputs.tg.packages.${pkgs.system}.default
+        }/bin/tg --token "$(${pkgs.coreutils}/bin/cat $CREDENTIALS_DIRECTORY/tg_token)" server'
+      '';
     };
   };
 
@@ -131,6 +148,7 @@ in {
         inputs.btc_line.packages.${pkgs.system}.default
         inputs.prettify_log.packages.${pkgs.system}.default
         inputs.distributions.packages.${pkgs.system}.default # ? shared?
+        inputs.book_parser.packages.${pkgs.system}.default
         inputs.rm_engine.packages.${pkgs.system}.default
         inputs.bad_apple_rs.packages.${pkgs.system}.default
         inputs.ask_llm.packages.${pkgs.system}.default
