@@ -16,11 +16,10 @@
 #! nix --command sh -c ``cargo -Zscript $0``
 
 [dependencies]
-clap = { version = "4", features = ["derive"] }
-regex = "1"
-eyre = "0.6"
-walkdir = "2"
-tokio = { version = "1", features = ["rt-multi-thread","macros","process","fs","io-util","time"] }
+clap = { version = "4.5.49", features = ["derive"] }
+regex = "1.12.2"
+eyre = "0.6.12"
+tokio = { version = "1.48.0", features = ["rt-multi-thread","macros","process","fs","io-util","time","sync"] }
 quick-xml = "0.36"
 ---
 
@@ -29,21 +28,23 @@ use eyre::{Result, eyre};
 use quick_xml::events::Event;
 use quick_xml::Reader;
 use regex::Regex;
-use std::{fs, io::{BufRead, BufReader, Write}, path::{Path, PathBuf}, process::Stdio};
+use std::{fs, io::{BufRead, BufReader, Read, Write}, path::{Path, PathBuf}, process::Stdio, sync::Arc};
 use tokio::{process::Command, sync::Semaphore};
-use walkdir::WalkDir;
 
 #[derive(Parser, Debug)]
 struct Args {
     #[arg(short, long)]
     wlimit: String,
+    /// Input book file (.txt or .fb2)
+    #[arg(short, long)]
+    file: PathBuf,
     /// Chapter pattern (only used for .txt files)
     #[arg(long)]
     chapter_pattern: Option<String>,
     #[arg(long, default_value_t = 2)]
     max_jobs: usize,
     /// Directory to unpack chapters into (defaults to current directory)
-    #[arg(short, long, default_value = ".")]
+    #[arg(short = 'd', long, default_value = ".")]
     unpack_dir: PathBuf,
 }
 
@@ -68,11 +69,14 @@ async fn main() -> Result<()> {
     fs::create_dir_all(&failed_book_parser).unwrap();
     fs::create_dir_all(&failed_translate).unwrap();
 
-    // Find input book file
-    let input = find_first_book(".").ok_or_else(|| eyre!("no .txt or .fb2 file found"))?;
+    // Validate input file exists
+    if !args.file.exists() {
+        eprintln!("Error: file '{}' does not exist", args.file.display());
+        std::process::exit(1);
+    }
 
     // Get file extension and validate
-    let ext = input.extension()
+    let ext = args.file.extension()
         .and_then(|e| e.to_str())
         .ok_or_else(|| eyre!("input file has no extension"))?;
 
@@ -83,14 +87,14 @@ async fn main() -> Result<()> {
                 .map(|s| s.as_str())
                 .unwrap_or(r"^Глава [0-9]+");
             let chapter_re = Regex::new(chapter_pattern)?;
-            split_into_chapters(&input, &chapter_re, &chapters_split)?;
+            split_into_chapters(&args.file, &chapter_re, &chapters_split)?;
         }
         "fb2" => {
             if args.chapter_pattern.is_some() {
                 eprintln!("Error: --chapter-pattern is not applicable to .fb2 files");
                 std::process::exit(1);
             }
-            split_fb2_into_chapters(&input, &chapters_split)?;
+            split_fb2_into_chapters(&args.file, &chapters_split)?;
         }
         _ => {
             eprintln!("Error: unsupported file extension '.{}'. Only .txt and .fb2 are supported.", ext);
@@ -101,7 +105,7 @@ async fn main() -> Result<()> {
     let mut chapters = collect_numbered(&chapters_split.to_string_lossy(), "chapter_", ".txt")?;
     chapters.sort_by_key(|(n, _)| *n);
 
-    let sem = Semaphore::new(args.max_jobs);
+    let sem = Arc::new(Semaphore::new(args.max_jobs));
     {
         let mut tasks = Vec::new();
         for (num, path) in &chapters {
@@ -180,20 +184,6 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-fn find_first_book(root: &str) -> Option<PathBuf> {
-    for e in WalkDir::new(root).into_iter().filter_map(|e| e.ok()) {
-        let p = e.path();
-        if p.is_file() {
-            if let Some(ext) = p.extension() {
-                if ext == "txt" || ext == "fb2" {
-                    return Some(p.to_path_buf());
-                }
-            }
-        }
-    }
-    None
-}
-
 fn split_into_chapters(input: &Path, chapter_re: &Regex, outdir: &Path) -> Result<()> {
     let f = fs::File::open(input)?;
     let r = BufReader::new(f);
@@ -223,7 +213,7 @@ fn split_fb2_into_chapters(input: &Path, outdir: &Path) -> Result<()> {
     let num_re = Regex::new(r"[0-9]+").unwrap();
     let mut buf = Vec::new();
     let mut in_body = false;
-    let mut section_depth = 0;
+    let mut section_depth: u32 = 0;
     let mut in_section = false;
     let mut in_title = false;
     let mut current_chapter: Option<(u32, fs::File)> = None;
