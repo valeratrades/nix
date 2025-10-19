@@ -13,7 +13,7 @@
 #! nix
 #! nix in toolchain
 #! nix ``
-#! nix --command sh -c ``cargo -Zscript $0``
+#! nix --command sh -c ``cargo -Zscript "$0" "$@"``
 
 [dependencies]
 clap = { version = "4.5.49", features = ["derive"] }
