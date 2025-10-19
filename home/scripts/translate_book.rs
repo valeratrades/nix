@@ -187,8 +187,20 @@ async fn main() -> Result<()> {
         }
     }
 
-    let out_path = args.unpack_dir.join("out.txt");
-    join_chapters_markdown(&chapters_ti.to_string_lossy(), &out_path.to_string_lossy())?;
+    // Generate output file with appropriate extension
+    let out_filename = match ext {
+        "txt" => "out.md",
+        "fb2" => "out.fb2",
+        _ => unreachable!(),
+    };
+    let out_path = args.unpack_dir.join(out_filename);
+
+    match ext {
+        "txt" => join_chapters_markdown(&chapters_ti.to_string_lossy(), &out_path.to_string_lossy())?,
+        "fb2" => join_chapters_fb2(&chapters_ti.to_string_lossy(), &out_path.to_string_lossy())?,
+        _ => unreachable!(),
+    }
+
     Ok(())
 }
 
@@ -378,6 +390,55 @@ fn join_chapters_markdown(dir: &str, out: &str) -> Result<()> {
         out_f.write_all(&buf)?;
     }
     Ok(())
+}
+
+fn join_chapters_fb2(dir: &str, out: &str) -> Result<()> {
+    let mut parts = collect_numbered(dir, "chapter_", ".txt")?;
+    parts.sort_by_key(|(n, _)| *n);
+    let mut out_f = fs::File::create(out)?;
+
+    // Write FB2 header
+    writeln!(out_f, r#"<?xml version="1.0" encoding="utf-8"?>"#)?;
+    writeln!(out_f, r#"<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">"#)?;
+    writeln!(out_f, "  <description>")?;
+    writeln!(out_f, "    <title-info>")?;
+    writeln!(out_f, "      <genre>prose</genre>")?;
+    writeln!(out_f, "      <author><first-name>Unknown</first-name><last-name>Author</last-name></author>")?;
+    writeln!(out_f, "      <book-title>Translated Book</book-title>")?;
+    writeln!(out_f, "      <lang>ti</lang>")?;
+    writeln!(out_f, "    </title-info>")?;
+    writeln!(out_f, "  </description>")?;
+    writeln!(out_f, "  <body>")?;
+
+    // Write each chapter as a section
+    for (num, path) in parts {
+        writeln!(out_f, "    <section>")?;
+        writeln!(out_f, "      <title><p>ምዕራፍ {}</p></title>", num)?;
+
+        let content = fs::read_to_string(path)?;
+        for line in content.lines() {
+            let trimmed = line.trim();
+            if !trimmed.is_empty() {
+                writeln!(out_f, "      <p>{}</p>", escape_xml(trimmed))?;
+            }
+        }
+
+        writeln!(out_f, "    </section>")?;
+    }
+
+    // Write FB2 footer
+    writeln!(out_f, "  </body>")?;
+    writeln!(out_f, "</FictionBook>")?;
+
+    Ok(())
+}
+
+fn escape_xml(s: &str) -> String {
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+        .replace('\'', "&apos;")
 }
 
 fn shell_escape(s: &str) -> String {
