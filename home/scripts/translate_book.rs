@@ -21,10 +21,13 @@ regex = "1"
 eyre = "0.6"
 walkdir = "2"
 tokio = { version = "1", features = ["rt-multi-thread","macros","process","fs","io-util","time"] }
+quick-xml = "0.36"
 ---
 
 use clap::Parser;
 use eyre::{Result, eyre};
+use quick_xml::events::Event;
+use quick_xml::Reader;
 use regex::Regex;
 use std::{fs, io::{BufRead, BufReader, Write}, path::{Path, PathBuf}, process::Stdio};
 use tokio::{process::Command, sync::Semaphore};
@@ -34,8 +37,9 @@ use walkdir::WalkDir;
 struct Args {
     #[arg(short, long)]
     wlimit: String,
-    #[arg(long, default_value = r"^Глава [0-9]+")]
-    chapter_pattern: String,
+    /// Chapter pattern (only used for .txt files)
+    #[arg(long)]
+    chapter_pattern: Option<String>,
     #[arg(long, default_value_t = 2)]
     max_jobs: usize,
     /// Directory to unpack chapters into (defaults to current directory)
@@ -46,7 +50,6 @@ struct Args {
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> Result<()> {
     let args = Args::parse();
-    let chapter_re = Regex::new(&args.chapter_pattern).unwrap();
 
     // Create unpack directory if it doesn't exist (without -p flag, so parent must exist)
     if !args.unpack_dir.exists() {
@@ -65,8 +68,35 @@ async fn main() -> Result<()> {
     fs::create_dir_all(&failed_book_parser).unwrap();
     fs::create_dir_all(&failed_translate).unwrap();
 
-    let input = find_first_txt(".").ok_or_else(|| eyre!("no .txt file found"))?;
-    split_into_chapters(&input, &chapter_re, &chapters_split)?;
+    // Find input book file
+    let input = find_first_book(".").ok_or_else(|| eyre!("no .txt or .fb2 file found"))?;
+
+    // Get file extension and validate
+    let ext = input.extension()
+        .and_then(|e| e.to_str())
+        .ok_or_else(|| eyre!("input file has no extension"))?;
+
+    // Validate chapter_pattern usage and split chapters based on file type
+    match ext {
+        "txt" => {
+            let chapter_pattern = args.chapter_pattern.as_ref()
+                .map(|s| s.as_str())
+                .unwrap_or(r"^Глава [0-9]+");
+            let chapter_re = Regex::new(chapter_pattern)?;
+            split_into_chapters(&input, &chapter_re, &chapters_split)?;
+        }
+        "fb2" => {
+            if args.chapter_pattern.is_some() {
+                eprintln!("Error: --chapter-pattern is not applicable to .fb2 files");
+                std::process::exit(1);
+            }
+            split_fb2_into_chapters(&input, &chapters_split)?;
+        }
+        _ => {
+            eprintln!("Error: unsupported file extension '.{}'. Only .txt and .fb2 are supported.", ext);
+            std::process::exit(1);
+        }
+    }
 
     let mut chapters = collect_numbered(&chapters_split.to_string_lossy(), "chapter_", ".txt")?;
     chapters.sort_by_key(|(n, _)| *n);
@@ -150,11 +180,15 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-fn find_first_txt(root: &str) -> Option<PathBuf> {
+fn find_first_book(root: &str) -> Option<PathBuf> {
     for e in WalkDir::new(root).into_iter().filter_map(|e| e.ok()) {
         let p = e.path();
-        if p.is_file() && p.extension().map(|x| x == "txt").unwrap_or(false) {
-            return Some(p.to_path_buf());
+        if p.is_file() {
+            if let Some(ext) = p.extension() {
+                if ext == "txt" || ext == "fb2" {
+                    return Some(p.to_path_buf());
+                }
+            }
         }
     }
     None
@@ -178,6 +212,84 @@ fn split_into_chapters(input: &Path, chapter_re: &Regex, outdir: &Path) -> Resul
             fh.write_all(b"\n")?;
         }
     }
+    Ok(())
+}
+
+fn split_fb2_into_chapters(input: &Path, outdir: &Path) -> Result<()> {
+    let content = fs::read_to_string(input)?;
+    let mut reader = Reader::from_str(&content);
+    reader.config_mut().trim_text(true);
+
+    let num_re = Regex::new(r"[0-9]+").unwrap();
+    let mut buf = Vec::new();
+    let mut in_body = false;
+    let mut section_depth = 0;
+    let mut in_section = false;
+    let mut in_title = false;
+    let mut current_chapter: Option<(u32, fs::File)> = None;
+    let mut current_text = String::new();
+
+    loop {
+        match reader.read_event_into(&mut buf) {
+            Ok(Event::Start(e)) => {
+                let name = e.name();
+                if name.as_ref() == b"body" {
+                    in_body = true;
+                } else if in_body && name.as_ref() == b"section" {
+                    section_depth += 1;
+                    if section_depth == 1 {
+                        in_section = true;
+                        current_text.clear();
+                    }
+                } else if in_section && name.as_ref() == b"title" {
+                    in_title = true;
+                } else if in_section && name.as_ref() == b"p" {
+                    // Start of paragraph
+                }
+            }
+            Ok(Event::End(e)) => {
+                let name = e.name();
+                if name.as_ref() == b"body" {
+                    in_body = false;
+                } else if name.as_ref() == b"section" {
+                    if section_depth == 1 {
+                        in_section = false;
+                        current_chapter = None;
+                    }
+                    section_depth = section_depth.saturating_sub(1);
+                } else if name.as_ref() == b"title" {
+                    in_title = false;
+                } else if in_section && name.as_ref() == b"p" {
+                    // End of paragraph - add newline
+                    if let Some((_, ref mut file)) = current_chapter {
+                        file.write_all(current_text.as_bytes())?;
+                        file.write_all(b"\n")?;
+                        current_text.clear();
+                    }
+                }
+            }
+            Ok(Event::Text(e)) => {
+                if in_section {
+                    let text = e.unescape().unwrap_or_default();
+                    if in_title && current_chapter.is_none() {
+                        // Try to extract chapter number from title
+                        if let Some(m) = num_re.find(&text) {
+                            let num: u32 = text[m.start()..m.end()].parse().unwrap();
+                            let file = fs::File::create(outdir.join(format!("chapter_{num}.txt")))?;
+                            current_chapter = Some((num, file));
+                        }
+                    } else if current_chapter.is_some() {
+                        current_text.push_str(&text);
+                    }
+                }
+            }
+            Ok(Event::Eof) => break,
+            Err(e) => return Err(eyre!("Error parsing FB2 at position {}: {:?}", reader.buffer_position(), e)),
+            _ => {}
+        }
+        buf.clear();
+    }
+
     Ok(())
 }
 
