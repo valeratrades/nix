@@ -100,6 +100,7 @@ function load_pages
 end
 
 function process_txt_book --argument wlimit --argument chapter_pattern
+	#HACK: for now just assumes german (because language provision standards for book_parser and translate_infrequent don't match)
 	# Set default chapter pattern if not provided
 	if test -z "$chapter_pattern"
 		set chapter_pattern '^Глава [0-9]+'
