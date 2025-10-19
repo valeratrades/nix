@@ -37,6 +37,8 @@ in {
     Unit = {
       After = lib.mkForce [ "network.target" "sops-nix.service" ];
       Requires = [ "sops-nix.service" ];
+      StartLimitIntervalSec = 60;
+      StartLimitBurst = 10;
     };
 
     Service = {
@@ -48,6 +50,7 @@ in {
       '';
       # Wait for the sops-nix secret file to exist before systemd tries to load it
       ExecStartPre = "${pkgs.bash}/bin/bash -c 'while [ ! -f ${config.sops.secrets.telegram_token_main.path} ]; do ${pkgs.coreutils}/bin/sleep 0.1; done'";
+      RestartSec = 5;
     };
   };
 
