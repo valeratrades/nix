@@ -32,7 +32,7 @@ in {
     };
   };
 
-  #TODO: combine with sops-nix or age-nix
+  # Ensure tg-server waits for sops-nix secrets to be available
   systemd.user.services.tg-server = {
     Unit = {
       After = lib.mkForce [ "network.target" "sops-nix.service" ];
@@ -46,6 +46,8 @@ in {
           inputs.tg.packages.${pkgs.system}.default
         }/bin/tg --token "$(${pkgs.coreutils}/bin/cat $CREDENTIALS_DIRECTORY/tg_token)" server'
       '';
+      # Wait for the sops-nix secret file to exist before systemd tries to load it
+      ExecStartPre = "${pkgs.bash}/bin/bash -c 'while [ ! -f ${config.sops.secrets.telegram_token_main.path} ]; do ${pkgs.coreutils}/bin/sleep 0.1; done'";
     };
   };
 

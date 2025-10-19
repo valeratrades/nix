@@ -99,13 +99,18 @@ function load_pages
     return 0
 end
 
-function process_book --argument wlimit
+function process_txt_book --argument wlimit --argument chapter_pattern
+	# Set default chapter pattern if not provided
+	if test -z "$chapter_pattern"
+		set chapter_pattern '^Глава [0-9]+'
+	end
+
 	mkdir -p chapters_split chapters_de chapters_ti failed_book_parser failed_translate
 	set file (fd -e txt | head -n1)
 
 	# split into chapters
-	awk -v outdir="chapters_split" '
-	/^Глава [0-9]+/ {
+	awk -v outdir="chapters_split" -v pattern="$chapter_pattern" '
+	$0 ~ pattern {
 	if (out) close(out)
 	match($0, /[0-9]+/)
 	out = sprintf("%s/chapter_%s.txt", outdir, substr($0, RSTART, RLENGTH))
@@ -171,5 +176,25 @@ function process_book --argument wlimit
 	end
 	wait
 
-	cat (fd -e txt chapters_ti | sort -V) > out.txt
+	# Join chapters with proper markdown formatting
+	set first true
+	for chapter in (fd -e txt chapters_ti | sort -V)
+		# Add blank lines between chapters (but not before the first one)
+		if test "$first" = true
+			set first false
+		else
+			echo "" >> out.txt
+			echo "" >> out.txt
+		end
+
+		# Get chapter number from filename
+		set base (basename $chapter)
+		set num (string replace -r 'chapter_([0-9]+)\.txt' '$1' $base)
+
+		# Add markdown chapter header
+		echo "# Глава $num" >> out.txt
+
+		# Append chapter content
+		cat $chapter >> out.txt
+	end
 end
