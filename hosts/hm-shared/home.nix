@@ -75,13 +75,24 @@
 
   #REF: example of working service setup here: https://github.com/nix-community/home-manager/blob/master/modules/services/polybar.nix
 
+  # Create a sway-session target that can be manually started
+  systemd.user.targets.sway-session = {
+    Unit = {
+      Description = "Sway compositor session";
+      Documentation = "man:systemd.special(7)";
+      BindsTo = [ "graphical-session.target" ];
+      Wants = [ "graphical-session-pre.target" ];
+      After = [ "graphical-session-pre.target" ];
+    };
+  };
+
   systemd.user.services.eww-widgets = {
     Unit = {
       Description = "Start Eww Widgets";
-      After = [ "graphical-session.target" ];
-      PartOf = [ "graphical-session.target" ];
+      After = [ "sway-session.target" ];
+      PartOf = [ "sway-session.target" ];
     };
-    Install = { WantedBy = [ "graphical-session.target" ]; };
+    Install = { WantedBy = [ "sway-session.target" ]; };
     Service = let
       eww = "${pkgs.eww}/bin/eww";
       script = pkgs.writeShellScript "eww-widgets-start" ''

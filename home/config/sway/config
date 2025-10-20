@@ -1,5 +1,6 @@
 exec systemctl --user import-environment
 exec dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=sway
+exec systemctl --user start sway-session.target
 exec /usr/lib/xdg-desktop-portal -r & exec /usr/lib/xdg-desktop-portal-wlr
 exec mkdir -p ~/tmp/Screenshots
 
@@ -58,7 +59,7 @@ exec wlr-gamma-service
 #DEPRECATE: once eww-widgets.service actually starts it up correctly
 #exec eww open bar && eww open btc_line_lower && eww open btc_line_upper && eww open todo_blocker
 #TEST: \
-exec ~/.config/sway/loop_bind_tablet_to_focused.sh
+exec ~/.config/sway/eww_open.sh
 exec pipewire-pulse
 exec wireplumber
 exec greenclip daemon
