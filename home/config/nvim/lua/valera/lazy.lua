@@ -217,7 +217,8 @@ return require('lazy').setup({
 		event = "VeryLazy",
 	},
 	{
-		'kaarmu/typst.vim',
+		--'kaarmu/typst.vim',
+		'valeratrades/typst.vim',
 		--XXX: does not work. Idea is to switch it from generating the pdf next to the source, to having it litter somewhere in /tmp/typ
 		config = function()
 			vim.schedule(function()
@@ -447,4 +448,3 @@ return require('lazy').setup({
 	},
 })
 --}, plugin_specs))
-

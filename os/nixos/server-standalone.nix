@@ -89,6 +89,7 @@ in
     dig
     perl
     rustup
+		miniupnpc
     nil
     whois
     niv # nix build dep management

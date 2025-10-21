@@ -50,6 +50,9 @@ o.updatetime = 50
 o.title = true
 o.titlestring = "nvim: %F"
 
+-- typst.vim
+vim.g.typst_output_dir = true
+
 vim.g.autoformat = true
 o.sessionoptions = { "buffers", "curdir", "tabpages", "winsize", "help", "globals", "skiprtp" }
 o.showmode = false

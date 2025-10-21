@@ -71,7 +71,15 @@ function cnix_release
 		end
 	end
 
-	git checkout master; git branch -f release || return 1
+	set -l cur_branch (git symbolic-ref --short HEAD 2>/dev/null)
+	or set cur_branch master
+
+	if not git show-ref --verify --quiet refs/heads/master
+		echo "error: no master branch"; return 1
+	end
+
+	git checkout master || return 1
+	git branch -f release master || return 1
 	git checkout release || return 1
 	~/s/g/github/.github/workflows/pre_ci_sed_deps.rs ./ || return 1 # will rewrite `Cargo.toml`s in-place
 
@@ -83,9 +91,10 @@ function cnix_release
 		echo "Fast mode enabled: Skipping tests and build steps"
 	end
 
-	git commit -am "upload" || return 1
-	git push --force || return 1 # got some "stale refs" error last time running `git push --force-with-lease, don't care to debug"
-	git checkout master
+	git add -A
+	git commit -m "upload" 2>/dev/null
+	git push --force origin release || return 1
+	git checkout master || git checkout $cur_branch || return 1
 end
 
 # Pause resource-hungry apps
