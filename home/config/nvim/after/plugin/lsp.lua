@@ -111,7 +111,6 @@ end
 --
 
 
---TODO!: add {zz, zt} after some search commands (just appending to the cmd string doesn't work)
 local on_attach = function(client, bufnr)
 	local telescope_builtin = require("telescope.builtin")
 
@@ -212,7 +211,6 @@ lsp_zero.on_attach(on_attach)
 
 -- Language setup //? Do I still need this? Maybe it's possible to get rid of `lsp_zero` altogether
 local lspconfig_servers = { 'ruff', 'lua_ls', 'gopls', 'bashls', 'clangd',
-	'jedi_language_server',
 	'jsonls', 'marksman', 'nil_ls', 'ocamllsp' }
 lsp_zero.setup_servers(lspconfig_servers)
 lsp_zero.setup()
@@ -348,37 +346,29 @@ lspconfig.gopls.setup({
 })
 
 
--- not ready yet. Would be great to start using once it is.
---lspconfig.ty.setup({
+
+-- DEPRECATE: if `ty` ends up being sufficient {{{
+-- Apparently ruff's lsp doesn't provide goto-definition functionality, and is meant to be used in tandem
+--lspconfig.jedi_language_server.setup({
 --	on_attach = lsp_zero.default_setup,
 --	settings = {
---		cmd = { "ty", "server" },
---		filetypes = { "python" },
---		root_markers = {"pyproject.toml", ".git"}
---	}
+--		jedi_language_server = {
+--			diagnostics = {
+--				enable = false,
+--			},
+--			hover = {
+--				enable = true,
+--			},
+--			--TODO!!!!!!!!!: disable `reportRedeclaration`
+--			jediSettings = {
+--				autoImportModules = {},
+--				caseInsensitiveCompletion = true,
+--				debug = false,
+--			},
+--		},
+--	},
 --})
-
-
--- Apparently ruff's lsp doesn't provide goto-definition functionality, and is meant to be used in tandem
-lspconfig.jedi_language_server.setup({
-	on_attach = lsp_zero.default_setup,
-	settings = {
-		jedi_language_server = {
-			diagnostics = {
-				enable = false,
-			},
-			hover = {
-				enable = true,
-			},
-			--TODO!!!!!!!!!: disable `reportRedeclaration`
-			jediSettings = {
-				autoImportModules = {},
-				caseInsensitiveCompletion = true,
-				debug = false,
-			},
-		},
-	},
-})
+--,}}}
 
 -- typst
 lspconfig.tinymist.setup({
