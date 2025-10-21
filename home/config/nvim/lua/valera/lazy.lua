@@ -12,18 +12,6 @@ end
 vim.opt.rtp:prepend(lazypath)
 vim.g.mapleader = ' ' -- ensure mappings are correct
 
--- dancing with a buben, to not have to move out the plugins from existing table
---TODO!!!: \
---local plugin_path = debug.getinfo(1, 'S').source:sub(2):match("(.*/)")
---local plugin_specs = {}
---for _, file in ipairs(vim.fn.glob(plugin_path .. "plugins/*.lua", true, true)) do
---	local spec = dofile(file)
---	if type(spec) == "table" then
---		table.insert(plugin_specs, spec)
---	end
---end
-
-
 --return require('lazy').setup(vim.tbl_extend("force", {
 return require('lazy').setup({
 	-- Cornerstone
@@ -116,8 +104,8 @@ return require('lazy').setup({
 	{ -- Dap
 		'mfussenegger/nvim-dap',
 		'leoluz/nvim-dap-go',
-		{ 'mfussenegger/nvim-dap-python', rocks = { enabled = false } },
-		{ 'rcarriga/nvim-dap-ui', name = 'dapui' },
+		{ 'mfussenegger/nvim-dap-python', build = false },
+		{ 'rcarriga/nvim-dap-ui',         name = 'dapui' },
 		'nvim-neotest/nvim-nio',
 		'theHamsta/nvim-dap-virtual-text',
 		'nvim-telescope/telescope-dap.nvim',
@@ -145,7 +133,7 @@ return require('lazy').setup({
 			'neovim/nvim-lspconfig',
 			'nvim-lua/plenary.nvim',
 		},
-		rocks = { enabled = false },
+		build = false,
 	},
 	{ -- Colorschemes
 		{ 'rose-pine/neovim',      name = 'rose-pine' },
@@ -453,9 +441,10 @@ return require('lazy').setup({
 		end,
 	},
 }, {
+	-- atm prefer to just install them through systemPackages, natively to nix
 	rocks = {
-		enabled = true,
-		hererocks = true,
+		enabled = false,
 	},
 })
 --}, plugin_specs))
+

@@ -1,4 +1,24 @@
-#!/usr/bin/env -S cargo +nightly -Zscript -q
+#!/usr/bin/env nix
+---cargo
+#! nix shell --impure --expr ``
+#! nix let rust_flake = builtins.getFlake ''github:oxalica/rust-overlay'';
+#! nix     nixpkgs_flake = builtins.getFlake ''nixpkgs'';
+#! nix     pkgs = import nixpkgs_flake {
+#! nix       system = builtins.currentSystem;
+#! nix       overlays = [rust_flake.overlays.default];
+#! nix     };
+#! nix     toolchain = pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default.override {
+#! nix       extensions = ["rust-src"];
+#! nix     });
+#! nix
+#! nix in toolchain
+#! nix ``
+#! nix --command sh -c ``cargo -Zscript "$0" "$@"``
+
+[dependencies]
+clap = { version = "4.5.49", features = ["derive"] }
+---
+//TODO!!!: rewrite with clap
 
 use std::{env, path::PathBuf, process::Command};
 

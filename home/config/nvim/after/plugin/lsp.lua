@@ -4,6 +4,8 @@ local rustaceanvim = require("rustaceanvim")
 local utils = require("valera.utils")
 local actions = require("telescope.actions")
 
+--TODO: rewrite without lsp_zero (on_attach) can be ran once, then everything else is configured with just .enable()
+
 vim.diagnostic.config({
 	virtual_text = false,
 	-- if line has say both a .HINT and .WARNING, the "worst" will be shown (as a sign on the left)
@@ -402,3 +404,5 @@ lspconfig.ocamllsp.setup({
 		formatter = { command = { "ocamlformat" } },
 	},
 })
+
+vim.lsp.enable('ty')

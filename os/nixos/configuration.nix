@@ -147,7 +147,7 @@ in {
     description = "${user.userFullName}";
     shell = pkgs.fish;
     extraGroups =
-      [ "networkmanager" "wheel" "keyd" "audio" "video" "docker" "dialout" "postgres" "nginx" ];
+      [ "networkmanager" "wheel" "keyd" "audio" "video" "docker" "dialout" "postgres" ];
     openssh.authorizedKeys.keys = user.sshAuthorizedKeys;
   };
 
@@ -245,6 +245,9 @@ in {
   };
 
   nix.settings.download-buffer-size = "50G";
+	programs.neovim = {
+		package = pkgs.neovim-unwrapped.override { lua = pkgs.luajit; };
+	};
 
   #	neovim = import "${neovim-nightly}/flake/packages/neovim.nix" {
   #  inherit lib pkgs;
@@ -438,8 +441,11 @@ in {
         [
           starship
 
-          neovim
+					neovim
 					luajitPackages.luarocks-nix # install some lua plugins as isolated packages
+					vimPlugins.nvim-dap-python
+					vimPlugins.luasnip
+					vimPlugins.lean-nvim
 
           fish
           dash
