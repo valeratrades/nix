@@ -18,41 +18,64 @@
 [dependencies]
 clap = { version = "4.5.49", features = ["derive"] }
 ---
-//TODO!!!: rewrite with clap
 
+use clap::Parser;
 use std::{env, path::PathBuf, process::Command};
 
-static HELP: &str = r#"
-mvd - move latest download
-Usage:
-  mvd PATH                          # moves to specified path directly
-  mvd [OPTION] [SUBPATH] [NEW_NAME] # moves to predefined location, optionally with subpath, optionally renaming
-Examples:
-  mvd ~/Documents/Books/tmp/ # moves directly to specified path
-  mvd -p research            # moves to $HOME/Documents/Papers/research
-  mvd -b                     # moves to $HOME/Documents/Books
-	mvd -b "" new_name.pdf     # because we don't have clap, 2nd arg will always be subpath - careful.
-Options:
-  -h, --help             Show this help message
-  -p, --paper            Move to Papers directory
-  -b, --book             Move to Books directory
-  -n, --notes            Move to Notes directory
-  -c, --courses          Move to Courses directory
-  -t, --twitter          Move to TwitterThreads directory
-  -w, --wine             Move to Wine downloads directory
-  -i, --images           Move to Images directory
-  --st, --screenshot-trading    Move to trading/strats directory
-  --si, --screenshot-images     Move to Images/Screenshots directory
-"#;
+/// Move latest download to a destination
+#[derive(Parser, Debug)]
+#[command(name = "mvd")]
+#[command(about = "Move latest download to predefined or custom locations")]
+struct Args {
+	/// Move to Papers directory
+	#[arg(short, long, group = "location")]
+	paper: bool,
+
+	/// Move to Books directory
+	#[arg(short, long, group = "location")]
+	book: bool,
+
+	/// Move to Notes directory
+	#[arg(short, long, group = "location")]
+	notes: bool,
+
+	/// Move to Courses directory
+	#[arg(short, long, group = "location")]
+	courses: bool,
+
+	/// Move to TwitterThreads directory
+	#[arg(short, long, group = "location")]
+	twitter: bool,
+
+	/// Move to Wine downloads directory
+	#[arg(short, long, group = "location")]
+	wine: bool,
+
+	/// Move to Images directory
+	#[arg(short, long, group = "location")]
+	images: bool,
+
+	/// Move screenshots to trading/strats directory
+	#[arg(long, group = "location")]
+	screenshot_trading: bool,
+
+	/// Move screenshots to Images directory
+	#[arg(long, group = "location")]
+	screenshot_images: bool,
+
+	/// Direct path to move to (if no flag is specified)
+	#[arg(group = "location")]
+	path: Option<PathBuf>,
+
+	/// Subdirectory within the destination (only for flagged locations)
+	subpath: Option<String>,
+
+	/// New name for the file
+	new_name: Option<String>,
+}
 
 fn main() {
-	let mut args = env::args().skip(1)/*discard exe name*/;
-	if args.len() == 0 {
-		eprintln!("Usage: mvd [OPTION] [SUBPATH] or mvd PATH");
-		eprintln!("Try 'mvd --help' for more information.");
-		std::process::exit(1);
-	}
-	dbg!(&args);
+	let args = Args::parse();
 
 	let home = match env::var("HOME") {
 		Ok(val) => PathBuf::from(val),
@@ -62,60 +85,40 @@ fn main() {
 		}
 	};
 
-	let (from, to_dir) = match args.next().expect("checked earlier").as_str() {
-		"-h" | "--help" => {
-			println!("{HELP}");
-			std::process::exit(0);
+	let (from, mut to_dir) = if args.paper {
+		(home.join("Downloads"), home.join("Documents/Papers"))
+	} else if args.book {
+		(home.join("Downloads"), home.join("Documents/Books"))
+	} else if args.notes {
+		(home.join("Downloads"), home.join("Documents/Notes"))
+	} else if args.courses {
+		(home.join("Downloads"), home.join("Documents/Courses"))
+	} else if args.twitter {
+		(home.join("Downloads"), home.join("Documents/TwitterThreads"))
+	} else if args.wine {
+		(home.join("Downloads"), home.join(".wine/drive_c/users/v/Downloads"))
+	} else if args.images {
+		(home.join("Downloads"), home.join("Images"))
+	} else if args.screenshot_trading {
+		(home.join("tmp/Screenshots"), home.join("trading/strats"))
+	} else if args.screenshot_images {
+		(home.join("tmp/Screenshots"), home.join("Images"))
+	} else if let Some(path) = args.path {
+		let mut to_dir = path;
+		if !to_dir.is_absolute() {
+			to_dir = home.join(to_dir);
 		}
-		"-p" | "--paper" => {
-			let subfolder = args.next().unwrap_or_default();
-			(home.join("Downloads"), home.join("Documents/Papers").join(subfolder))
-		}
-		"-b" | "--book" => {
-			let subfolder = args.next().unwrap_or_default();
-			(home.join("Downloads"), home.join("Documents/Books").join(subfolder))
-		}
-		"-n" | "--notes" => {
-			let subfolder = args.next().unwrap_or_default();
-			(home.join("Downloads"), home.join("Documents/Notes").join(subfolder))
-		}
-		"-c" | "--courses" => {
-			let subfolder = args.next().unwrap_or_default();
-			(home.join("Downloads"), home.join("Documents/Courses").join(subfolder))
-		}
-		"-t" | "--twitter" => {
-			let subfolder = args.next().unwrap_or_default();
-			(home.join("Downloads"), home.join("Documents/TwitterThreads").join(subfolder))
-		}
-		"-w" | "--wine" => {
-			let subfolder = args.next().unwrap_or_default();
-			(home.join("Downloads"), home.join(".wine/drive_c/users/v/Downloads").join(subfolder))
-		}
-		"-i" | "--images" => {
-			let subfolder = args.next().unwrap_or_default();
-			(home.join("Downloads"), home.join("Images").join(subfolder))
-		}
-		"-s" | "--screenshot" => {
-			let subfolder = args.next().unwrap_or_default();
-			(home.join("tmp/Screenshots"), home.join("trading/strats").join(subfolder))
-		}
-		"--st" | "--screenshot-trading" => {
-			let subfolder = args.next().unwrap_or_default();
-			(home.join("tmp/Screenshots"), home.join("trading/strats").join(subfolder))
-		}
-		"--si" | "--screenshot-images" => {
-			let subfolder = args.next().unwrap_or_default();
-			(home.join("tmp/Screenshots"), home.join(subfolder))
-		}
-		path => {
-			// treat as direct path
-			let mut to_dir = PathBuf::from(path);
-			if !to_dir.is_absolute() {
-				to_dir = home.join(path);
-			}
-			(home.join("Downloads"), to_dir)
-		}
+		(home.join("Downloads"), to_dir)
+	} else {
+		eprintln!("Error: No destination specified");
+		std::process::exit(1);
 	};
+
+	// Add subpath if provided
+	if let Some(subpath) = args.subpath {
+		to_dir = to_dir.join(subpath);
+	}
+
 	if !to_dir.exists() {
 		eprintln!("Error: Directory {:?} does not exist", to_dir);
 		std::process::exit(1);
@@ -140,11 +143,10 @@ fn main() {
 		Some(from.join(first_line))
 	};
 
-	let destination = match args.next() {
+	let destination = match args.new_name {
 		Some(fname) => to_dir.join(fname),
 		None => to_dir,
 	};
-	dbg!(&destination);
 
 	match latest_file {
 		Some(from_path) => {
