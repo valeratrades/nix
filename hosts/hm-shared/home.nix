@@ -241,6 +241,7 @@
         inputs.auto_redshift.packages.${pkgs.system}.default # good idea for everyone
         inputs.todo.packages.${pkgs.system}.default # here, because eww depends on it, otherwise meant for my use exclusively
         inputs.bbeats.packages.${pkgs.system}.default
+        inputs.math_tools.packages.${pkgs.system}.default # could be useful to all people currently using my distro
         inputs.reasonable_envsubst.packages.${pkgs.system}.default # have scripts depending on it, and they are currently part of the shared config.
         inputs.booktyping.packages.${pkgs.system}.default
       ];

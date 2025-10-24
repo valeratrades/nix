@@ -85,6 +85,9 @@ fn main() {
 		}
 	};
 
+	// Extract filename from path if it looks like a file
+	let mut extracted_filename: Option<String> = None;
+
 	let (from, mut to_dir) = if args.paper {
 		(home.join("Downloads"), home.join("Documents/Papers"))
 	} else if args.book {
@@ -108,6 +111,18 @@ fn main() {
 		if !to_dir.is_absolute() {
 			to_dir = home.join(to_dir);
 		}
+
+		// If the path appears to be a file (has an extension), extract the directory
+		// This allows users to specify the full destination path including filename
+		if to_dir.extension().is_some() {
+			if let Some(filename) = to_dir.file_name() {
+				extracted_filename = Some(filename.to_string_lossy().to_string());
+			}
+			if let Some(parent) = to_dir.parent() {
+				to_dir = parent.to_path_buf();
+			}
+		}
+
 		(home.join("Downloads"), to_dir)
 	} else {
 		eprintln!("Error: No destination specified");
@@ -143,7 +158,8 @@ fn main() {
 		Some(from.join(first_line))
 	};
 
-	let destination = match args.new_name {
+	// Determine the final filename: prioritize explicit new_name, then extracted_filename, then directory
+	let destination = match args.new_name.or(extracted_filename) {
 		Some(fname) => to_dir.join(fname),
 		None => to_dir,
 	};
