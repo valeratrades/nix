@@ -260,8 +260,11 @@
       "g/README.md".source = "${self}/home/fs/g/README.md$";
       "s/g/README.md".source = "${self}/home/fs/s/g/README.md";
       "s/l/README.md".source = "${self}/home/fs/s/l/README.md";
-      "s/tmp/README.md".source = "${self}/home/fs/s/l/README.md";
-      "tmp/README.md".source = "${self}/home/fs/tmp/README.md";
+      "s/tmp/README.md".source = "${self}/home/fs/s/tmp/README.md";
+      "tmp" = {
+				source = "${self}/home/fs/tmp";
+				recursive = true;
+			};
       #
 
       ".config/tg.toml".source = "${self}/home/config/tg.toml";
