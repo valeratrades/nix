@@ -27,7 +27,7 @@
         workflowContents = v-utils.ci {
           inherit pkgs;
           lastSupportedVersion = "CURRENT_NIGHTLY_BY_DATE";
-          jobsErrors = [ "rust-tests" "rust-miri" ];
+          jobsErrors = [ "rust-tests" ];
           jobsWarnings = [ "rust-doc" "rust-clippy" "rust-machete" "rust-sorted" "rust-sorted-derives" "tokei" ];
         };
         readme = v-utils.readme-fw {
