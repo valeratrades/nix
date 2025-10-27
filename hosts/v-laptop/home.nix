@@ -122,6 +122,11 @@ in {
         gitui
         lazygit
 
+        # Windows
+        [
+          winboat
+        ]
+
 				# ProtonMail
 				#dbg: was bringing `webkitgtk`
 				#[
