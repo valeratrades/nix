@@ -336,6 +336,13 @@ mode "move_or_resize" {
 	bindsym Shift+$up move up
 	bindsym Shift+$right move right
 
+	# set to 2/3 the screen
+	bindsym 3 move left; move left; move left; resize set 66ppt height 100ppt
+	# set to 3/5 the screen
+	bindsym 5 move left; move left; move left; resize set 60ppt height 100ppt
+	# set to 1/2 the screen
+	bindsym 2 move left; move left; move left; resize set 50ppt height 100ppt
+
 	bindsym $mod+k exec $switch_out
 	bindsym $mod+c exec $switch_out
 	bindsym $mod+q exec $switch_out

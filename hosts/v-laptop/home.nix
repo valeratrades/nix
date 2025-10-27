@@ -146,6 +146,10 @@ in {
 					mediawriter # Fedora-approved USB burner
 				]
 
+				# Browsers
+				[
+					tor-browser
+				]
       ]
 
       ++ [
