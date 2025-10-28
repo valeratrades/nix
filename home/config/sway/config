@@ -256,7 +256,7 @@ set $switch_out swaymsg mode \"default\" && eww update sway_mode=default
 #output $output_monitor pos 0 0 scale 0.75
 #output $output_laptop pos 560 1466
 # is now
-output $output_monitor pos 0 0 scale 1
+output $output_monitor pos 0 0 scale 0.75
 output $output_laptop pos 0 1080
 
 exec_always "sh -c -- pkill -f 'todo monitor'; todo monitor"

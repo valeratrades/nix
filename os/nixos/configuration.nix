@@ -34,6 +34,7 @@ in {
   };
 
   imports = [
+		"${builtins.fetchGit { url = "https://github.com/NixOS/nixos-hardware.git"; }}/lenovo/legion/16ach6h/hybrid"
     (mylib.relativeToRoot "home/config/fish/default.nix")
     ./shared
     ./shared-services.nix

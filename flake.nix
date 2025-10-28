@@ -89,7 +89,7 @@
       url = "github:valeratrades/book_parser";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    prettify_log.url = "github:valeratrades/prettify_log";
+    prettify_log.url = "github:valeratrades/prettify_log?ref=release";
     distributions = {
       url = "github:valeratrades/distributions";
       inputs.nixpkgs.follows = "nixpkgs";
