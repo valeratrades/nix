@@ -133,17 +133,16 @@ bindsym $mod+Shift+Ctrl+F6 exec gdbus call -e -d net.zoidplex.wlr_gamma_service 
 
 # Workspaces {{{
 set $output_laptop "eDP-1"
-set $output_monitor "DP-1"
-# "HDMI-A-1" # can't have a list here, because sway. Need to update manually when switching connection method.
+set $output_monitor "HDMI-A-1"
+set $all_possible_output_monitors "HDMI-A-1" "DP-1"
 # sway circles through this space-delimited list when the first element is not found.
-set $primary "DP-1" "HDMI-A-1" "eDP-1"
+set $primary $all_possible_output_monitors $output_laptop
 mode "monitors" {
-# not sure if any of this works
-	bindsym a exec $switch_out && 'set $primary "DP-1" "HDMI-A-1" "eDP-1"'
-	bindsym s exec $switch_out && 'set $primary "eDP-1"'
-	bindsym l exec $switch_out && 'set $primary "HDMI-A-1" "eDP-1"'
+	# in the perfect world would have primary set 
+	bindsym a exec $switch_out && 'set $primary $all_possible_output_monitors $output_laptop'
+	bindsym s exec $switch_out && 'set $primary $output_laptop'
 
-	bindsym t exec $switch_out &&  swaymsg 'output DP-1 toggle'
+	bindsym t exec $switch_out &&  swaymsg 'output $output_monitor toggle'
 
 	bindsym $mod+k exec $switch_out
 	bindsym $mod+c exec $switch_out
@@ -255,9 +254,18 @@ set $switch_out swaymsg mode \"default\" && eww update sway_mode=default
 #NB: anything but `0 0` will break `wine`
 #output $output_monitor pos 0 0 scale 0.75
 #output $output_laptop pos 560 1466
-# is now
-output $output_monitor pos 0 0 scale 0.75
+#NB: for laptop monitor, want: y = monitor_height / monitor_scale, x = (monitor_width / monitor_scale - laptop_width) / 2
+
+## with 0.75 scale: {{{
+#output $output_monitor pos 0 0 scale 0.75
+#output $output_laptop pos 0 1440
+##,}}}
+
+# with 1.0 scale: {{{
+## atm the only reason I'm using this is - chrome-based browsers are having trouble resizing with my current setup
+output $output_monitor pos 320 0 scale 1
 output $output_laptop pos 0 1080
+#,}}}
 
 exec_always "sh -c -- pkill -f 'todo monitor'; todo monitor"
 
