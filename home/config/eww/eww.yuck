@@ -163,7 +163,7 @@
 (defpoll microphone_poll :initial "{}" :interval "100ms" "./modules/microphone.sh")
 (defwidget microphone []
 	(box
-		:class {microphone_poll.content < 10 ? "warn" : microphone_poll.content == "" ? "warn" : ""}
+		:class {microphone_poll.content < 10 ? || microphone_poll.content == "" ? "warn" : ""}
 		"${microphone_poll.icon}${microphone_poll.content}"
 	)
 )
