@@ -40,9 +40,9 @@ local function commentExtraReimplementation(insert_leader)
 	end
 end
 
-K('n', 'gcO', commentExtraReimplementation('O'), { desc = "comment: reimplement `gcO`" })
-K('n', 'gco', commentExtraReimplementation('o'), { desc = "comment: reimplement `gco`" })
-K('n', 'gcA', commentExtraReimplementation('A '), { desc = "comment: reimplement `gcA`" })
+K('n', 'gcO', commentExtraReimplementation('O'), { desc = "comment: reimplement `gcO`", overwrite = true })
+K('n', 'gco', commentExtraReimplementation('o'), { desc = "comment: reimplement `gco`", overwrite = true })
+K('n', 'gcA', commentExtraReimplementation('A '), { desc = "comment: reimplement `gcA`", overwrite = true })
 --
 
 -- -- Surround Block Comments
