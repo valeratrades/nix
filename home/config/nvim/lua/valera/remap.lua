@@ -165,7 +165,7 @@ local function selectAll()
 		end,
 	})
 end
-vim.keymap.set("n", "<C-A>", selectAll)
+vim.keymap.set("n", "<C-a>", function() selectAll() end)
 -- Consequences
 K('', '<C-z>', '<C-a>')
 --
