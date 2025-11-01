@@ -31,6 +31,7 @@
     ".config/discretionary_engine.toml".source =
       "${self}/home/config/discretionary_engine.toml";
     ".config/btc_line.toml".source = "${self}/home/config/btc_line.toml";
+    ".config/social_networks.toml".source = "${self}/home/config/social_networks.toml";
 	}
 		// pkgs.lib.optionalAttrs (user.kbd != "ansi") (
 			let
