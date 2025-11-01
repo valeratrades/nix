@@ -342,16 +342,19 @@
 
 			".claude/settings.json".source =
 				(pkgs.formats.json { }).generate "claude.json" {
-					#TODO: this or from https://www.reddit.com/r/ClaudeAI/comments/1lfvz30/simple_way_to_get_notified_when_claude_code/
-					completion_signal = {
-						command = "notify-send %s";
-						enabled = true;
-						format = "{task_description}";
-					};
-					user_preferences = {
-						notify_on_task_completion = true;
-					};
 					alwaysThinkingEnabled = false;
+					hooks = {
+						Stop = [
+							{
+								hooks = [
+									{
+										type = "command";
+										command = "/usr/bin/env fish -c 'read input; set transcript_path (echo $input | jq -r .transcript_path); set chat_name (head -1 $transcript_path | jq -r .summary); beep \"CC: response on:\n$chat_name\"'";
+									}
+								];
+							}
+						];
+					};
 				};
 
       # configured via hm, can't just symlink it in my host's config
