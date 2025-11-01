@@ -44,12 +44,14 @@ function shared_after
 	set current_nightly_by_date "nightly-"(date -d '-1 day' +%Y-%m-%d)
 	set nixpkgs_version (git ls-remote --heads https://github.com/NixOS/nixpkgs | grep -o 'refs/heads/nixos-[0-9][0-9]\.[0-9][0-9]' | cut -d'/' -f3 | tail -n 1) # there is no simpler way to get the latest version that will have associated `.tar.gz` in the repo
 	set python_version (python -V | cut -d' ' -f2)
+
 	fd --type f --exclude .git --exclude .gitignore | while read -l file
 		sed -i "s/PROJECT_NAME_PLACEHOLDER/$project_name/g" "$file"
 		sed -i "s/RUSTC_CURRENT_VERSION/$rustc_current_version/g" "$file"
 		sed -i "s/CURRENT_NIGHTLY_BY_DATE/$current_nightly_by_date/g" "$file"
 		sed -i "s/NIXPKGS_VERSION/$nixpkgs_version/g" "$file"
 		sed -i "s/PYTHON_VERSION/$python_version/g" "$file"
+		sed -i "s/GITHUB_USER/$GITHUB_USER/g" "$file"
 	end
 
 	git add -A

@@ -6,13 +6,13 @@ readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
 authors = [
-    { name = "Your Name", email = "your.email@example.com" },
+    { name = "TODO", email = "TODO@example.com" },
 ]
 
 [project.urls]
-Documentation = "https://github.com/unknown/PROJECT_NAME_PLACEHOLDER#readme"
-Issues = "https://github.com/unknown/PROJECT_NAME_PLACEHOLDER/issues"
-Source = "https://github.com/unknown/PROJECT_NAME_PLACEHOLDER"
+Documentation = "https://github.com/GITHUB_USER/PROJECT_NAME_PLACEHOLDER#readme"
+Issues = "https://github.com/GITHUB_USER/PROJECT_NAME_PLACEHOLDER/issues"
+Source = "https://github.com/GITHUB_USER/PROJECT_NAME_PLACEHOLDER"
 
 [tool.ruff]
 indent-width = 2
