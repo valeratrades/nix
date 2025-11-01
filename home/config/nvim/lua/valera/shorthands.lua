@@ -1,24 +1,51 @@
 G = vim.api.nvim_set_var
 
+-- Common vim default keys that are often remapped
+local VIM_DEFAULTS = {
+	n = { "h", "j", "k", "l", "s", "S", "r", "R", "n", "N", "t", "T", "c", "C", "d", "D", "y", "Y", "x", "X", "H", "M", "L", "J", "gf", "gF", "U", "<tab>", ";", ":", "<C-d>", "<C-u>", "<C-o>", "<C-i>", "<C-r>", "<C-a>", "<C-x>" },
+	v = { "h", "j", "k", "l", "s", "S", "r", "R", "n", "N", "t", "T", "c", "C", "d", "D", "y", "Y", "x", "X", ";", ":", "<C-d>", "<C-u>", "<C-o>", "<C-i>", "<C-r>", "<C-a>", "<C-x>" },
+	s = { "h", "j", "k", "l", "c", "C", "d", "D", "y", "Y", "x", "X" },
+	o = { "h", "j", "k", "l", "t", "T" },
+}
+
 function K(mode, lhs, rhs, opts)
 	opts = opts or {}
 	if opts.noremap == nil then
 		opts.noremap = true
 	end
 
-	-- Check if mapping already exists
+	-- Expand "" mode to the modes it actually applies to
 	local modes = type(mode) == "table" and mode or { mode }
-	local found_existing = false
+	local expanded_modes = {}
 	for _, m in ipairs(modes) do
+		if m == "" then
+			-- "" applies to normal, visual, select, and operator-pending
+			vim.list_extend(expanded_modes, { "n", "v", "s", "o" })
+		else
+			table.insert(expanded_modes, m)
+		end
+	end
+
+	-- Check if mapping already exists (user-defined or vim default)
+	local found_existing = false
+	for _, m in ipairs(expanded_modes) do
+		-- Check user-defined mappings
 		local existing = vim.fn.maparg(lhs, m, false, true)
-		if existing and existing.lhs == lhs then
+		local is_user_mapped = existing and existing.lhs == lhs
+
+		-- Check vim defaults
+		local defaults_for_mode = VIM_DEFAULTS[m] or {}
+		local is_vim_default = vim.tbl_contains(defaults_for_mode, lhs)
+
+		if is_user_mapped or is_vim_default then
 			found_existing = true
 			if not opts.overwrite then
 				-- Get caller info
 				local info = debug.getinfo(2, "Sl")
 				local file = info.source:gsub("^@", ""):gsub(".*/", "")
+				local source = is_user_mapped and "user mapping" or "vim default"
 				vim.notify(
-					string.format("[%s:%d] Keymap conflict: '%s' (mode '%s') already mapped", file, info.currentline, lhs, m),
+					string.format("[%s:%d] Keymap conflict: '%s' (mode '%s') overwrites %s", file, info.currentline, lhs, m, source),
 					vim.log.levels.WARN
 				)
 			end
@@ -29,9 +56,9 @@ function K(mode, lhs, rhs, opts)
 	if opts.overwrite and not found_existing then
 		local info = debug.getinfo(2, "Sl")
 		local file = info.source:gsub("^@", ""):gsub(".*/", "")
+		local mode_str = type(mode) == "table" and table.concat(mode, ",") or mode
 		vim.notify(
-			string.format("[%s:%d] Unnecessary overwrite=true: '%s' (mode '%s') has no existing mapping", file,
-				info.currentline, lhs, table.concat(modes, ",")),
+			string.format("[%s:%d] Unnecessary overwrite=true: '%s' (mode '%s') has no existing mapping", file, info.currentline, lhs, mode_str),
 			vim.log.levels.WARN
 		)
 	end

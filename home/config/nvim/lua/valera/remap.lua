@@ -12,14 +12,14 @@ K("i", "<Esc>", "<Esc><Esc><cmd>lua CommentCopilotEsc()<cr>",
 
 K("", "<C-e>", "<nop>") -- used as prefix in my tmux
 --K("", "s", multiplySidewaysMovements('h'), { silent = true })
-K("", "s", "h", { silent = true })
-K("", "r", "v:count == 0 ? 'gj' : 'j'", { expr = true, silent = true })
-K("", "n", "v:count == 0 ? 'gk' : 'k'", { expr = true, silent = true })
+K("", "s", "h", { silent = true, overwrite = true })
+K("", "r", "v:count == 0 ? 'gj' : 'j'", { expr = true, silent = true, overwrite = true })
+K("", "n", "v:count == 0 ? 'gk' : 'k'", { expr = true, silent = true, overwrite = true })
 --K("", "t", multiplySidewaysMovements('l'), { silent = true })
-K("", "t", "l", { silent = true })
-K("n", "h", "r")
-K("n", "H", "R")
-K("n", "gf", "gF")
+K("", "t", "l", { silent = true, overwrite = true })
+K("n", "h", "r", { overwrite = true })
+K("n", "H", "R", { overwrite = true })
+K("n", "gf", "gF", { overwrite = true })
 K("", "<MiddleMouse>", "<nop>")
 
 -- Useful Enter key
@@ -30,8 +30,8 @@ K("i", "<C-CR>", "<Esc>O")
 -- Jumps
 --K("", "R", "<C-d>zz")
 --K("", "N", "<C-u>zz")
-K("", "<C-d>", "<C-d>zz")
-K("", "<C-u>", "<C-u>zz")
+K("", "<C-d>", "<C-d>zz", { overwrite = true })
+K("", "<C-u>", "<C-u>zz", { overwrite = true })
 
 -- Move line
 K("v", "<A-j>", ":m '>+1<cr>gv=gv")
@@ -42,12 +42,12 @@ K("i", "<A-j>", "<Esc>V:m '>+1<cr>gv=gv")
 K("i", "<A-k>", "<Esc>V:m '>-2<cr>gv=gv")
 
 -- -- Consequences
-K("n", "j", "nzzzv")
-K("n", "k", "Nzzzv")
-K("n", "N", "*Ncgn", { silent = true }) -- weird sub of `s` which is not even `s` with semimak.
+K("n", "j", "nzzzv", { overwrite = true })
+K("n", "k", "Nzzzv", { overwrite = true })
+K("n", "N", "*Ncgn", { silent = true, overwrite = true }) -- weird sub of `s` which is not even `s` with semimak.
 
-K("", "l", "t")
-K("", "L", "T")
+K("", "l", "t", { overwrite = true })
+K("", "L", "T", { overwrite = true })
 --
 --,}}}
 
@@ -159,7 +159,7 @@ function SelectAll()
 	})
 end
 
-K("n", "<C-a>", SelectAll, { desc = "select all" })
+K("n", "<C-a>", SelectAll, { desc = "select all", overwrite = true })
 -- --
 
 local function getPopups()
@@ -207,10 +207,10 @@ K({ "", "i" }, "<A-a>", saveSessionIfOpen('qa!', 'wa!'), { desc = "save everythi
 K({ "", "i" }, "<A-;>", '<cmd>qa!<cr>')
 K({ "", "i" }, "<A-w>", saveSessionIfOpen('w!'))
 
-K("", ";", ":")
-K("", ":", ";")
+K("", ";", ":", { overwrite = true })
+K("", ":", ";", { overwrite = true })
 
-K("n", "J", "mzJ`z")
+K("n", "J", "mzJ`z", { overwrite = true })
 
 K("n", "<space>y", "\"+y")
 K("v", "<space>y", "\"+y")
@@ -218,10 +218,10 @@ K("n", "<space>Y", "\"+Y")
 K("x", "<space>p", "\"_dP")
 
 K({ "n", "v" }, "<space>d", "\"_d")
-K("n", "x", "\"_x")
-K("n", "X", "\"_X")
-K("", "c", "\"_c")
-K("", "C", "\"_C")
+K("n", "x", "\"_x", { overwrite = true })
+K("n", "X", "\"_X", { overwrite = true })
+K("", "c", "\"_c", { overwrite = true })
+K("", "C", "\"_C", { overwrite = true })
 
 --K("n", "<C-F>", "<cmd>silent !tmux neww tmux-sessionizer<cr>")
 
@@ -233,7 +233,7 @@ K("n", "gp", function()
 end, { expr = true })
 
 K("n", "H", "H^", { overwrite = true })
-K("n", "M", "M^")
+K("n", "M", "M^", { overwrite = true })
 K("n", "L", "L^", { overwrite = true })
 
 -- Tries to correct spelling of the word under the cursor
@@ -257,9 +257,8 @@ K('', '<space>.', '<cmd>tabe .<cr>')
 -- zero width space digraph
 vim.cmd.digraph("zs " .. 0x200b)
 
-K('n', 'U', '<C-r>', { desc = "helix: redo" })
-K('', '<C-r>', '<nop>') -- later changed to `lsp refresh` in lsp.lua
-K('n', '<tab>', 'i<tab>')
+K('n', 'U', '<C-r>', { desc = "helix: redo", overwrite = true }) -- '<C-r>` is then used by lsp for `refresh` action
+K('n', '<tab>', 'i<tab>', { overwrite = true })
 
 -- trying out:
 K("i", "<c-r><c-r>", "<c-r>\"");
@@ -280,8 +279,8 @@ K("n", "<Space>gf", forceGoFile);
 
 K("", "<M-o>", "<C-o>zt", { desc = "Because <C-i> doesn't work with tmux", overwrite = true })
 K("", "<M-i>", "<C-i>zt", { desc = "Because <C-i> doesn't work with tmux" })
-K("", "<C-o>", "<C-o>zz")
-K("", "<C-i>", "<C-i>zz")
+K("", "<C-o>", "<C-o>zz", { overwrite = true })
+K("", "<C-i>", "<C-i>zz", { overwrite = true })
 
 -- -- Built-in Terminal (complete shit btw, hardly a reason to use it)
 K("t", "<Esc><Esc>", "<C-\\><C-n>")
