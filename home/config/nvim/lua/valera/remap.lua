@@ -88,15 +88,15 @@ function MoveToNewTab()
 end
 
 -- execute any `g` command in a new vsplit
-vim.keymap.set('n', 'gw', function()
+K('n', 'gw', function()
 	vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<C-w><C-v>', true, false, true), 'n', false)
 	vim.api.nvim_feedkeys('g', 'm', false)
-end, { silent = true })
+end, { silent = true, overwrite = true })
 
 -- <C-w>= for normalizing
 --
 
-vim.keymap.set('n', '<Space>p', '"+p', { desc = "paste from system clipboard" })
+K('n', '<Space>p', '"+p', { desc = "paste from system clipboard" })
 
 
 -- Toggle Options

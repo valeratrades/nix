@@ -12,24 +12,24 @@ gs.setup({
 	numhl = false,
 })
 
-vim.keymap.set('n', '<Space>gg', "<cmd>!git add -A && git commit -m '_' && git push<cr><cr>",
+K('n', '<Space>gg', "<cmd>!git add -A && git commit -m '_' && git push<cr><cr>",
 	{ desc = "Git: just push", silent = true })
-vim.keymap.set('n', '<Space>gp', "<cmd>!git pull<cr><cr>", { desc = "Git: pull", silent = true })
-vim.keymap.set('n', '<Space>gr', "<cmd>!git reset --hard<cr><cr>", { desc = "Git: reset --hard", silent = true })
+K('n', '<Space>gp', "<cmd>!git pull<cr><cr>", { desc = "Git: pull", silent = true })
+K('n', '<Space>gr', "<cmd>!git reset --hard<cr><cr>", { desc = "Git: reset --hard", silent = true })
 -- this assumes we correctly did `vim.fn.chdir(vim.env.PWD)` in an autocmd earlier. Otherwise this will often try to execute commands one level in the filetree above.
-vim.keymap.set('n', '<Space>gd', gs.diffthis, { desc = "Git: diff this" })
-vim.keymap.set('n', '<Space>gu', gs.undo_stage_hunk, { desc = "Git: undo stage hunk" })
-vim.keymap.set('n', '<Space>gS', gs.stage_buffer, { desc = "Git: stage buffer" })
-vim.keymap.set('n', '<Space>gb', gs.blame_line, { desc = "Git: blame line" })
-vim.keymap.set('n', '<Space>gv', gs.preview_hunk_inline, { desc = "Git: preview hunk" })
-vim.keymap.set('n', '<Space>gU', "<cmd>Gitsigns reset_hunk<cr>", { desc = "Git: reset hunk" })
-vim.keymap.set('n', '<Space>gs', "<cmd>Gitsigns stage_hunk<cr>", { desc = "Git: stage hunk" })
-vim.keymap.set('n', '<Space>gf', "<cmd>Telescope git_status<cr>", { desc = "Git: find modifications" })
+K('n', '<Space>gd', gs.diffthis, { desc = "Git: diff this" })
+K('n', '<Space>gu', gs.undo_stage_hunk, { desc = "Git: undo stage hunk" })
+K('n', '<Space>gS', gs.stage_buffer, { desc = "Git: stage buffer" })
+K('n', '<Space>gb', gs.blame_line, { desc = "Git: blame line" })
+K('n', '<Space>gv', gs.preview_hunk_inline, { desc = "Git: preview hunk" })
+K('n', '<Space>gU', "<cmd>Gitsigns reset_hunk<cr>", { desc = "Git: reset hunk" })
+K('n', '<Space>gs', "<cmd>Gitsigns stage_hunk<cr>", { desc = "Git: stage hunk" })
+K('n', '<Space>gm', "<cmd>Telescope git_status<cr>", { desc = "Git: find modifications" })
 
 
 
 -- -- [LazyGit](<https://github.com/kdheepak/lazygit.nvim>)
-vim.keymap.set('n', "<space>gl", "<cmd>LazyGit<cr>", { desc = "LazyGit" })
+K('n', "<space>gl", "<cmd>LazyGit<cr>", { desc = "LazyGit" })
 
 vim.g.lazygit_floating_window_winblend = 0 -- transparency of floating window
 vim.g.lazygit_floating_window_scaling_factor = 0.9 -- scaling factor for floating window
@@ -44,13 +44,13 @@ vim.g.lazygit_config_file_path = {} -- table of custom config file paths
 --
 
 -- hunks {{{
-vim.keymap.set('n', ']c', function()
+K('n', ']c', function()
 	if vim.wo.diff then return ']c' end
 	vim.schedule(function() gs.next_hunk() end)
 	return '<Ignore>'
 end, { expr = true, desc = 'Git: next hunk' })
 
-vim.keymap.set('n', '[c', function()
+K('n', '[c', function()
 	if vim.wo.diff then return '[c' end
 	vim.schedule(function() gs.prev_hunk() end)
 	return '<Ignore>'

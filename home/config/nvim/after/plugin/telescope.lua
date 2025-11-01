@@ -2,24 +2,24 @@ local builtin = require('telescope.builtin')
 local actions = require('telescope.actions')
 local gs = { hidden = true, no_ignore = true, file_ignore_patterns = { ".git/", "target/", "%.lock" } } -- `^` and `.` in file ignore patterns don't really work
 
-vim.keymap.set('n', '<space>f', function() builtin.find_files(gs) end, { desc = "Search files" })
-vim.keymap.set('n', '<space>z', function() builtin.live_grep(gs) end, { desc = "Live grep" })
-vim.keymap.set({ 'n', 'v' }, '<space>ss', function() builtin.grep_string(gs) end,
+K('n', '<space>f', function() builtin.find_files(gs) end, { desc = "Search files" })
+K('n', '<space>z', function() builtin.live_grep(gs) end, { desc = "Live grep" })
+K({ 'n', 'v' }, '<space>ss', function() builtin.grep_string(gs) end,
 	{ desc = "Grep visual selection or word under cursor" })
-vim.keymap.set('n', '<space>sk', function() builtin.keymaps(gs) end, { desc = "Keymaps" })
-vim.keymap.set('n', '<space>sg', function() builtin.git_files(gs) end, { desc = "Git files" })
-vim.keymap.set('n', '<space>sp', "<cmd>Telescope persisted<cr>", { desc = "Persisted: sessions" })
-vim.keymap.set('n', '<space>sb', function() builtin.buffers(gs) end, { desc = "Find buffers" })
-vim.keymap.set('n', '<space>sh', function() builtin.help_tags(gs) end, { desc = "Neovim documentation" })
-vim.keymap.set('n', '<space>sl', function() builtin.loclist(gs) end, { desc = "Telescope loclist" })
-vim.keymap.set('n', '<space>sn', function() builtin.find_files({ hidden = true, no_ignore_parent = true }) end,
+K('n', '<space>sk', function() builtin.keymaps(gs) end, { desc = "Keymaps" })
+K('n', '<space>sg', function() builtin.git_files(gs) end, { desc = "Git files" })
+K('n', '<space>sp', "<cmd>Telescope persisted<cr>", { desc = "Persisted: sessions" })
+K('n', '<space>sb', function() builtin.buffers(gs) end, { desc = "Find buffers" })
+K('n', '<space>sh', function() builtin.help_tags(gs) end, { desc = "Neovim documentation" })
+K('n', '<space>sl', function() builtin.loclist(gs) end, { desc = "Telescope loclist" })
+K('n', '<space>sn', function() builtin.find_files({ hidden = true, no_ignore_parent = true }) end,
 	{ desc = "No_ignore_parent" })
-vim.keymap.set('n', '<space>st', function()
+K('n', '<space>st', function()
 	FindTodo()
 	require('telescope.builtin').quickfix({ wrap_results = true, fname_width = 999 })
 end, { desc = "Project's TODOs" })
-vim.keymap.set('n', '<space>si', "<cmd>Telescope media_files<cr>", { desc = "Media files" })
-vim.keymap.set("n", "<C-f>", "<cmd>Telescope current_buffer_fuzzy_find<cr>", { desc = "Effectively Ctrl+f" })
+K('n', '<space>si', "<cmd>Telescope media_files<cr>", { desc = "Media files" })
+K("n", "<C-f>", "<cmd>Telescope current_buffer_fuzzy_find<cr>", { desc = "Effectively Ctrl+f", overwrite = true })
 
 local telescope = require("telescope")
 --TODO!!!!: package it properly for nix, then provide to the nvim wrapper
@@ -101,7 +101,7 @@ require("telescope").load_extension("media_files")
 require("telescope").load_extension("ui-select")
 
 --Q: should probably split by priority. Where "dbg" and "TEST" are actually the highest ones. Just include in the same `!` framework, have them wegh 11 and 10 respectively.
-vim.keymap.set('n', '<space>sd', function()
+K('n', '<space>sd', function()
 	local gs_ext = vim.tbl_extend("force", gs, {
 		default_text = [[#\s*TEST|#\s*dbg|dbg!\(|#\s*Q|#\s*DEPRECATE|#\sDO|#\s*TODO|dbg]],
 		additional_args = function()

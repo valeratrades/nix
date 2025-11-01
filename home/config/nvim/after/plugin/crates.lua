@@ -158,5 +158,5 @@ require('crates').setup {
 	on_attach = function(bufnr) end,
 }
 
-vim.keymap.set('n', '<Space>ca', "<cmd>lua require('crates').upgrade_all_crates()<CR>", { desc = "Crates: Upgrade All" })
-vim.keymap.set('n', '<Space>cu', "<cmd>lua require('crates').upgrade_crate()<CR>", { desc = "Crates: Upgrade Crate" })
+K('n', '<Space>ca', "<cmd>lua require('crates').upgrade_all_crates()<CR>", { desc = "Crates: Upgrade All" })
+K('n', '<Space>cu', "<cmd>lua require('crates').upgrade_crate()<CR>", { desc = "Crates: Upgrade Crate" })

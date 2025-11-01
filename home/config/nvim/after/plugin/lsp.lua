@@ -159,7 +159,7 @@ local on_attach = function(client, bufnr)
 		opts.buffer = bufnr
 		opts.desc = desc
 		opts.silent = true -- doesn't work, telescope still warns when no searches were shown given query
-		vim.keymap.set('n', keymap, function() telescope_builtin.lsp_dynamic_workspace_symbols({ symbols = symbols }) end,
+		K('n', keymap, function() telescope_builtin.lsp_dynamic_workspace_symbols({ symbols = symbols }) end,
 			opts)
 	end
 	--REF:
