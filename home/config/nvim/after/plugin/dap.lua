@@ -2,44 +2,38 @@ local dap = require('dap')
 local dapui = require('dapui')
 local dap_go = require('dap-go')
 local dap_python = require('dap-python')
-local wk = require('which-key')
 require("telescope").load_extension("dap")
 dap_python.test_runner = "pytest"
 
-wk.add({
-	{ "<Space>d",   group = "DAP" },
+-- breakpoints
+K("n", "<Space>db", function() dap.toggle_breakpoint() end, { desc = "DAP: Toggle Breakpoint" })
+K("n", "<Space>dB", function() dap.set_breakpoint(vim.fn.input('Breakpoint condition: ')) end, { desc = "DAP: Input Breakpoint" })
+K("n", "<leader>dc", function() require('dap').clear_breakpoints() end, { desc = "DAP: Clear All Breakpoints" })
 
-	-- breakpoints
-	{ "<Space>db",  function() dap.toggle_breakpoint() end,                                    desc = "DAP: Toggle Breakpoint" },
-	{ "<Space>dB",  function() dap.set_breakpoint(vim.fn.input('Breakpoint condition: ')) end, desc = "DAP: Input Breakpoint" },
-	{ "<leader>dc", function() require('dap').clear_breakpoints() end,                         desc = "DAP: Clear All Breakpoints" },
+-- UI
+K("n", "<Space>dr", function() dapui.open({ reset = true }) end, { desc = "DAP: Default Pane Layout" })
+K("n", "<F6>", function() dapui.toggle() end, { desc = "DAP: Toggle UI" })
 
-	-- UI
-	{ "<Space>dr",  function() dapui.open({ reset = true }) end,                               desc = "DAP: Default Pane Layout" },
-	{ "<F6>",       function() dapui.toggle() end,                                             desc = "DAP: Toggle UI" },
+-- start/stop
+K("n", "<Space>di", function() dap.repl.open() end, { desc = "DAP: Repl Open" })
+K("n", "<Space>dd", function() vim.cmd('RustLsp debug') end, { desc = "DAP: Start (RustLsp)" })
+K("n", "<F5>", function() dap.continue() end, { desc = "DAP: Start/Continue" })
 
-	-- start/stop
-	{ "<Space>di",  function() dap.repl.open() end,                                            desc = "DAP: Repl Open" },
-	{ "<Space>dd",  function() vim.cmd('RustLsp debug') end,                                   desc = "DAP: Start (RustLsp)" },
-	{ "<F5>",       function() dap.continue() end,                                             desc = "DAP: Start/Continue" },
+-- steps
+K("n", "<F2>", function() dap.step_into() end, { desc = "DAP: Step Into" })
+K("n", "<F3>", function() dap.step_over() end, { desc = "DAP: Step Over" })
+K("n", "<F4>", function() dap.step_out() end, { desc = "DAP: Step Out" })
 
-	-- steps
-	{ "<F2>",       function() dap.step_into() end,                                            desc = "DAP: Step Into" },
-	{ "<F3>",       function() dap.step_over() end,                                            desc = "DAP: Step Over" },
-	{ "<F4>",       function() dap.step_out() end,                                             desc = "DAP: Step Out" },
+-- interact with session
+K("n", "<Space>de", function() dapui.eval() end, { desc = "DAP: Eval" })
+K("n", "<Space>dE", function() dapui.eval(vim.fn.input('[DAP] Expression > ')) end, { desc = "DAP: Input Expression" })
 
-	-- interact with session
-	{ "<Space>de",  function() dapui.eval() end,                                               desc = "DAP: Eval" },
-	{ "<Space>dE",  function() dapui.eval(vim.fn.input('[DAP] Expression > ')) end,            desc = "DAP: Input Expression" },
-
-	-- search
-	{ "<Space>td",  group = "DAP + Telescope" },
-	{ "<Space>tdc", "<cmd>Telescope dap commands<cr>",                                         desc = "Telescope DAP: Commands" },
-	{ "<Space>tdg", "<cmd>Telescope dap configurations<cr>",                                   desc = "Telescope DAP: Configurations" },
-	{ "<Space>tdb", "<cmd>Telescope dap list_breakpoints<cr>",                                 desc = "Telescope DAP: Breakpoints" },
-	{ "<Space>tdv", "<cmd>Telescope dap variables<cr>",                                        desc = "Telescope DAP: Variables" },
-	{ "<Space>tdf", "<cmd>Telescope dap frames<cr>",                                           desc = "Telescope DAP: Frames" },
-})
+-- search
+K("n", "<Space>tdc", "<cmd>Telescope dap commands<cr>", { desc = "Telescope DAP: Commands" })
+K("n", "<Space>tdg", "<cmd>Telescope dap configurations<cr>", { desc = "Telescope DAP: Configurations" })
+K("n", "<Space>tdb", "<cmd>Telescope dap list_breakpoints<cr>", { desc = "Telescope DAP: Breakpoints" })
+K("n", "<Space>tdv", "<cmd>Telescope dap variables<cr>", { desc = "Telescope DAP: Variables" })
+K("n", "<Space>tdf", "<cmd>Telescope dap frames<cr>", { desc = "Telescope DAP: Frames" })
 
 -- Symbols
 vim.fn.sign_define("DapBreakpoint", { text = "ß", texthl = "Breakpoint", linehl = "", numhl = "" })

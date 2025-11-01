@@ -340,18 +340,19 @@
            enter_accept = true;
          };
 
-			#TEST: not certain, but it feels like this is somehow messing with it being able to persist `/login` state
-			#".config/claude/config.json".source =
-			#	(pkgs.formats.json { }).generate "claude.json" {
-			#		completion_signal = {
-			#			command = "notify-send %s";
-			#			enabled = true;
-			#			format = "{task_description}";
-			#		};
-			#		user_preferences = {
-			#			notify_on_task_completion = true;
-			#		};
-			#	};
+			".claude/settings.json".source =
+				(pkgs.formats.json { }).generate "claude.json" {
+					#TODO: this or from https://www.reddit.com/r/ClaudeAI/comments/1lfvz30/simple_way_to_get_notified_when_claude_code/
+					completion_signal = {
+						command = "notify-send %s";
+						enabled = true;
+						format = "{task_description}";
+					};
+					user_preferences = {
+						notify_on_task_completion = true;
+					};
+					alwaysThinkingEnabled = false;
+				};
 
       # configured via hm, can't just symlink it in my host's config
       ".config/tmux" = {

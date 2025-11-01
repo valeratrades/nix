@@ -4,58 +4,57 @@ local utils = require('valera.utils')
 -- 1) never use ':lua', instead use '<cmd>lua', for ':lua' forces us to normal mode.
 
 vim.g.mapleader = " "
-K({ "n", "v" }, "-", "<cmd>Oil<cr>")
+K({ "n", "v" }, "-", "<cmd>Oil<cr>", { desc = "Open Oil" })
 
 -- only want copilot enable if it was temporarely suspended by writing a comment.
 K("i", "<Esc>", "<Esc><Esc><cmd>lua CommentCopilotEsc()<cr>",
-	{ desc = "Allow quick exit from cmp suggestions by doubling <Esc>", overwrite = true })
+	{ desc = "Exit cmp suggestions", overwrite = true })
 
-K("", "<C-e>", "<nop>", { overwrite = true }) -- used as prefix in my tmux
+K("", "<C-e>", "<nop>", { desc = "Nop (tmux prefix)", overwrite = true })
 --K("", "s", multiplySidewaysMovements('h'), { silent = true })
-K("", "s", "h", { silent = true, overwrite = true })
-K("", "r", "v:count == 0 ? 'gj' : 'j'", { expr = true, silent = true, overwrite = true })
-K("", "n", "v:count == 0 ? 'gk' : 'k'", { expr = true, silent = true, overwrite = true })
+K("", "s", "h", { desc = "Left", silent = true, overwrite = true })
+K("", "r", "v:count == 0 ? 'gj' : 'j'", { desc = "Down (display line)", expr = true, silent = true, overwrite = true })
+K("", "n", "v:count == 0 ? 'gk' : 'k'", { desc = "Up (display line)", expr = true, silent = true, overwrite = true })
 --K("", "t", multiplySidewaysMovements('l'), { silent = true })
-K("", "t", "l", { silent = true, overwrite = true })
-K("n", "h", "r", { overwrite = true })
-K("n", "H", "R", { overwrite = true })
-K("n", "gf", "gF", { overwrite = true })
-K("", "<MiddleMouse>", "<nop>")
+K("", "t", "l", { desc = "Right", silent = true, overwrite = true })
+K("n", "h", "r", { desc = "Replace char", overwrite = true })
+K("n", "H", "R", { desc = "Replace mode", overwrite = true })
+K("n", "gf", "gF", { desc = "Go to file (with line)", overwrite = true })
+K("", "<MiddleMouse>", "<nop>", { desc = "Nop" })
 
 -- Useful Enter key
 --K("", "<CR>", "o<Esc>")
-K("", "<C-CR>", "O<Esc>")
-K("i", "<C-CR>", "<Esc>O")
+K("", "<C-CR>", "O<Esc>", { desc = "Insert line above" })
+K("i", "<C-CR>", "<Esc>O", { desc = "Insert line above" })
 
 -- Jumps
 --K("", "R", "<C-d>zz")
 --K("", "N", "<C-u>zz")
-K("", "<C-d>", "<C-d>zz", { overwrite = true })
-K("", "<C-u>", "<C-u>zz", { overwrite = true })
+K("", "<C-d>", "<C-d>zz", { desc = "Page down (centered)", overwrite = true })
+K("", "<C-u>", "<C-u>zz", { desc = "Page up (centered)", overwrite = true })
 
 -- Move line
-K("v", "<A-j>", ":m '>+1<cr>gv=gv")
-K("v", "<A-k>", ":m '<-2<cr>gv=gv")
-K("n", "<A-j>", "V:m '>+1<cr>gv=gv")
-K("n", "<A-k>", "V:m '>-2<cr>gv=gv")
-K("i", "<A-j>", "<Esc>V:m '>+1<cr>gv=gv")
-K("i", "<A-k>", "<Esc>V:m '>-2<cr>gv=gv")
+K("v", "<A-j>", ":m '>+1<cr>gv=gv", { desc = "Move line down" })
+K("v", "<A-k>", ":m '<-2<cr>gv=gv", { desc = "Move line up" })
+K("n", "<A-j>", "V:m '>+1<cr>gv=gv", { desc = "Move line down" })
+K("n", "<A-k>", "V:m '>-2<cr>gv=gv", { desc = "Move line up" })
+K("i", "<A-j>", "<Esc>V:m '>+1<cr>gv=gv", { desc = "Move line down" })
+K("i", "<A-k>", "<Esc>V:m '>-2<cr>gv=gv", { desc = "Move line up" })
 
 -- -- Consequences
-K("n", "j", "nzzzv", { overwrite = true })
-K("n", "k", "Nzzzv", { overwrite = true })
-K("n", "N", "*Ncgn", { silent = true, overwrite = true }) -- weird sub of `s` which is not even `s` with semimak.
+K("n", "j", "nzzzv", { desc = "Next search (centered)", overwrite = true })
+K("n", "k", "Nzzzv", { desc = "Prev search (centered)", overwrite = true })
+K("n", "N", "*Ncgn", { desc = "Change next word", silent = true, overwrite = true })
 
-K("", "l", "t", { overwrite = true })
-K("", "L", "T", { overwrite = true })
+K("", "l", "t", { desc = "Till char", overwrite = true })
 --
 --,}}}
 
 -- Windows {{{
-K('n', '<C-w>s', '<C-W>h')
-K('n', '<C-w>r', '<C-W>j')
-K('n', '<C-w>n', '<C-W>k')
-K('n', '<C-w>t', '<C-W>l')
+K('n', '<C-w>s', '<C-W>h', { desc = 'Win left' })
+K('n', '<C-w>r', '<C-W>j', { desc = 'Win down' })
+K('n', '<C-w>n', '<C-W>k', { desc = 'Win up' })
+K('n', '<C-w>t', '<C-W>l', { desc = 'Win right' })
 
 K('n', '<C-w>S', '<cmd>wincmd H<cr>', { desc = 'move window left' })
 K('n', '<C-w>R', '<cmd>wincmd J<cr>', { desc = 'move window down' })
@@ -76,7 +75,7 @@ K("n", "<C-w>K", function() MoveToNewTab() end, { desc = "windows: move to new t
 --Q: is this the correct place for it?
 K('n', '<C-w>v', '<C-w>w', { desc = 'windows: literally <C-w>w' })
 K('n', '<C-w>V', '<cmd>tabprevious<cr>', { desc = 'windows: move to previously active tab' })
-K('n', "<C-w><C-v>", "<nop>")
+K('n', "<C-w><C-v>", "<nop>", { desc = 'Nop' })
 
 K('n', '<C-w>x', '<cmd>tabclose<cr>', { desc = 'windows: tabclose' })
 --,}}}
@@ -91,7 +90,7 @@ end
 K('n', 'gw', function()
 	vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<C-w><C-v>', true, false, true), 'n', false)
 	vim.api.nvim_feedkeys('g', 'm', false)
-end, { silent = true, overwrite = true })
+end, { desc = 'Execute g command in vsplit', silent = true, overwrite = true })
 
 -- <C-w>= for normalizing
 --
@@ -106,36 +105,36 @@ K('n', '<Space>p', '"+p', { desc = "paste from system clipboard" })
 --
 
 -- Tabs
-K("n", "gt", "<nop>", { overwrite = true })
-K("n", "gT", "<nop>", { overwrite = true })
-K({ "i", "" }, "<A-l>", "<Esc>gT")
-K({ "i", "" }, "<A-h>", "<Esc>gt")
-K({ "i", "" }, "<A-v>", "<Esc>g<Tab>")
-K({ "i", "" }, "<A-0>", "<Esc><cmd>tablast<cr>")
-K({ "i", "" }, "<A-9>", "<Esc><cmd>tablast<cr>") -- don't like it on 9, but want to keep compatibility with chrome
+K("n", "gt", "<nop>", { desc = "Nop (use Alt-h)", overwrite = true })
+K("n", "gT", "<nop>", { desc = "Nop (use Alt-l)", overwrite = true })
+K({ "i", "" }, "<A-l>", "<Esc>gT", { desc = "Tab prev" })
+K({ "i", "" }, "<A-h>", "<Esc>gt", { desc = "Tab next" })
+K({ "i", "" }, "<A-v>", "<Esc>g<Tab>", { desc = "Tab last visited" })
+K({ "i", "" }, "<A-0>", "<Esc><cmd>tablast<cr>", { desc = "Tab last" })
+K({ "i", "" }, "<A-9>", "<Esc><cmd>tablast<cr>", { desc = "Tab last" })
 for i = 1, 8 do
-	K("", '<A-' .. i .. '>', '<Esc><cmd>tabn ' .. i .. '<cr>', { silent = true })
+	K("", '<A-' .. i .. '>', '<Esc><cmd>tabn ' .. i .. '<cr>', { desc = 'Tab ' .. i, silent = true })
 end
 for i = 1, 8 do
-	K("i", '<A-' .. i .. '>', '<Esc><cmd>tabn ' .. i .. '<cr>', { silent = true })
+	K("i", '<A-' .. i .. '>', '<Esc><cmd>tabn ' .. i .. '<cr>', { desc = 'Tab ' .. i, silent = true })
 end
-K("", "<A-o>", "<nop>")
-K("", "<A-O>", "<nop>")
-K({ "i", "" }, "<A-u>", "<Esc><cmd>tabmove -<cr>")
-K({ "i", "" }, "<A-y>", "<Esc><cmd>tabmove +<cr>")
-K({ "i", "" }, "<A-U>", "<Esc><cmd>tabmove 0<cr>")
-K({ "i", "" }, "<A-Y>", "<Esc><cmd>tabmove $<cr>")
+K("", "<A-o>", "<nop>", { desc = "Nop" })
+K("", "<A-O>", "<nop>", { desc = "Nop" })
+K({ "i", "" }, "<A-u>", "<Esc><cmd>tabmove -<cr>", { desc = "Tab move left" })
+K({ "i", "" }, "<A-y>", "<Esc><cmd>tabmove +<cr>", { desc = "Tab move right" })
+K({ "i", "" }, "<A-U>", "<Esc><cmd>tabmove 0<cr>", { desc = "Tab move first" })
+K({ "i", "" }, "<A-Y>", "<Esc><cmd>tabmove $<cr>", { desc = "Tab move last" })
 --
 
 -- -- Standards and the Consequences
-K("", "<C-'>", "\"+ygv\"_d")
-K("", "<C-b>", "\"+y", { overwrite = true })
+K("", "<C-'>", "\"+ygv\"_d", { desc = "Cut to clipboard" })
+K("", "<C-b>", "\"+y", { desc = "Copy to clipboard", overwrite = true })
 
-K("i", "<C-del>", "X<Esc>ce") -- n mappings for <del> below rely on this
-K("v", "<bs>", "d")
-K("n", "<bs>", "i<bs>")
-K("n", "<del>", "i<del>")
-K("n", "<C-del>", "a<C-del>", { remap = true })
+K("i", "<C-del>", "X<Esc>ce", { desc = "Delete word forward" })
+K("v", "<bs>", "d", { desc = "Delete selection" })
+K("n", "<bs>", "i<bs>", { desc = "Backspace" })
+K("n", "<del>", "i<del>", { desc = "Delete" })
+K("n", "<C-del>", "a<C-del>", { desc = "Delete word forward", remap = true })
 
 function SelectAll()
 	-- `ggVG`, but nothing is added to jumplist, and cursor position is restored on exit from visual mode
@@ -177,10 +176,10 @@ K("n", "<Esc>", function()
 	killPopups()
 	--vim.cmd("PeekClose")
 	print(" ")
-end)
+end, { desc = "Clear search and popups" })
 
-K('n', '<C-z>', '<Nop>')
-K('n', "<Space><C-z>", "<C-z>")
+K('n', '<C-z>', '<Nop>', { desc = "Nop (use Space+C-z)" })
+K('n', "<Space><C-z>", "<C-z>", { desc = "Suspend" })
 
 local function saveSessionIfOpen(cmd, hook_before)
 	hook_before = hook_before or ""
@@ -201,69 +200,69 @@ local function saveSessionIfOpen(cmd, hook_before)
 	end
 end
 
-K({ "", "i" }, "<A-c>", "<cmd>q!<cr>")
-K({ "", "i" }, "<A-C>", "<cmd>tabdo bd<cr>")
-K({ "", "i" }, "<A-a>", saveSessionIfOpen('qa!', 'wa!'), { desc = "save everything and exit" })
-K({ "", "i" }, "<A-;>", '<cmd>qa!<cr>')
-K({ "", "i" }, "<A-w>", saveSessionIfOpen('w!'))
+K({ "", "i" }, "<A-c>", "<cmd>q!<cr>", { desc = "Quit window" })
+K({ "", "i" }, "<A-C>", "<cmd>tabdo bd<cr>", { desc = "Close all buffers" })
+K({ "", "i" }, "<A-a>", saveSessionIfOpen('qa!', 'wa!'), { desc = "Save and quit all" })
+K({ "", "i" }, "<A-;>", '<cmd>qa!<cr>', { desc = "Quit all" })
+K({ "", "i" }, "<A-w>", saveSessionIfOpen('w!'), { desc = "Save" })
 
-K("", ";", ":", { overwrite = true })
-K("", ":", ";", { overwrite = true })
+K("", ";", ":", { desc = "Command mode", overwrite = true })
+K("", ":", ";", { desc = "Repeat f/t", overwrite = true })
 
-K("n", "J", "mzJ`z", { overwrite = true })
+K("n", "J", "mzJ`z", { desc = "Join lines (keep cursor)", overwrite = true })
 
-K("n", "<space>y", "\"+y")
-K("v", "<space>y", "\"+y")
-K("n", "<space>Y", "\"+Y")
-K("x", "<space>p", "\"_dP")
+K("n", "<space>y", "\"+y", { desc = "Yank to clipboard" })
+K("v", "<space>y", "\"+y", { desc = "Yank to clipboard" })
+K("n", "<space>Y", "\"+Y", { desc = "Yank line to clipboard" })
+K("x", "<space>p", "\"_dP", { desc = "Paste (preserve register)" })
 
-K({ "n", "v" }, "<space>d", "\"_d")
-K("n", "x", "\"_x", { overwrite = true })
-K("n", "X", "\"_X", { overwrite = true })
-K("", "c", "\"_c", { overwrite = true })
-K("", "C", "\"_C", { overwrite = true })
+K({ "n", "v" }, "<space>d", "\"_d", { desc = "Delete (to void)" })
+K("n", "x", "\"_x", { desc = "Delete char (to void)", overwrite = true })
+K("n", "X", "\"_X", { desc = "Delete char back (to void)", overwrite = true })
+K("", "c", "\"_c", { desc = "Change (to void)", overwrite = true })
+K("", "C", "\"_C", { desc = "Change to EOL (to void)", overwrite = true })
 
 --K("n", "<C-F>", "<cmd>silent !tmux neww tmux-sessionizer<cr>")
 
-K("n", "<space><space>n", ":%s/\\<<C-r><C-w>\\>/<C-r><C-w>/gI<Left><Left><Left>")
+K("n", "<space><space>n", ":%s/\\<<C-r><C-w>\\>/<C-r><C-w>/gI<Left><Left><Left>", { desc = "Substitute word" })
 
 -- select the pasted
 K("n", "gp", function()
 	return "`[" .. vim.fn.strpart(vim.fn.getregtype(), 0, 1) .. "`]"
-end, { expr = true, overwrite = true })
+end, { desc = "Select pasted text", expr = true, overwrite = true })
 
-K("n", "H", "H^", { overwrite = true })
-K("n", "M", "M^", { overwrite = true })
-K("n", "L", "L^", { overwrite = true })
+K("n", "H", "H^", { desc = "Top of screen (first char)", overwrite = true })
+K("n", "M", "M^", { desc = "Middle of screen (first char)", overwrite = true })
+K("n", "L", "L^", { desc = "Bottom of screen (first char)", overwrite = true })
 
 -- Tries to correct spelling of the word under the cursor
-K("n", "z1", "mx1z=`x", { silent = true })
-K("n", "z2", "u2z=`x", { silent = true })
-K("n", "z3", "u3z=`x", { silent = true })
-K("n", "z4", "u4z=`x", { silent = true })
-K("n", "z5", "u5z=`x", { silent = true })
-K("n", "z6", "u6z=`x", { silent = true })
-K("n", "z7", "u7z=`x", { silent = true })
-K("n", "z8", "u8z=`x", { silent = true })
-K("n", "z9", "u9z=`x", { silent = true })
+K("n", "z1", "mx1z=`x", { desc = "Fix spelling (1st suggestion)", silent = true })
+K("n", "z2", "u2z=`x", { desc = "Fix spelling (2nd suggestion)", silent = true })
+K("n", "z3", "u3z=`x", { desc = "Fix spelling (3rd suggestion)", silent = true })
+K("n", "z4", "u4z=`x", { desc = "Fix spelling (4th suggestion)", silent = true })
+K("n", "z5", "u5z=`x", { desc = "Fix spelling (5th suggestion)", silent = true })
+K("n", "z6", "u6z=`x", { desc = "Fix spelling (6th suggestion)", silent = true })
+K("n", "z7", "u7z=`x", { desc = "Fix spelling (7th suggestion)", silent = true })
+K("n", "z8", "u8z=`x", { desc = "Fix spelling (8th suggestion)", silent = true })
+K("n", "z9", "u9z=`x", { desc = "Fix spelling (9th suggestion)", silent = true })
 
 K('n', '<space>clr', 'vi""8di\\033[31m<Esc>"8pa\\033[0m<Esc>', { desc = "add red escapecode" })
 K('n', '<space>clg', 'vi""8di\\033[32m<Esc>"8pa\\033[0m<Esc>', { desc = "add green escapecode" })
 K('n', '<space>cly', 'vi""8di\\033[33m<Esc>"8pa\\033[0m<Esc>', { desc = "add yellow escapecode" })
 K('n', '<space>clb', 'vi""8di\\033[34m<Esc>"8pa\\033[0m<Esc>', { desc = "add blue escapecode" })
 
-K('', '<space>.', '<cmd>tabe .<cr>')
+K('', '<space>.', '<cmd>tabe .<cr>', { desc = "Open . in new tab" })
 
 -- zero width space digraph
 vim.cmd.digraph("zs " .. 0x200b)
 
 K('n', 'U', '<C-r>', { desc = "helix: redo", overwrite = true }) -- '<C-r>` is then used by lsp for `refresh` action
-K('n', '<tab>', 'i<tab>', { overwrite = true })
+K('n', '<tab>', 'i<tab>', { desc = "Insert tab", overwrite = true })
 
 -- trying out:
-K("i", "<c-r><c-r>", "<c-r>\"");
-K("n", "<space>`", "~hi");
-K("v", "<space>`", "~gvI");
+K("i", "<c-r><c-r>", "<c-r>\"", { desc = "Paste unnamed register" });
+K("n", "<space>`", "~hi", { desc = "Toggle case, insert" });
+K("v", "<space>`", "~gvI", { desc = "Toggle case, insert start" });
 
 -- gf and if it doesn't exist, create it
 local function forceGoFile()
@@ -274,21 +273,21 @@ local function forceGoFile()
 	end
 	vim.cmd.norm("gf")
 end
-K("n", "<Space>gf", forceGoFile);
+K("n", "<Space>gf", forceGoFile, { desc = "Go to file (create if missing)" });
 
 
-K("", "<M-o>", "<C-o>zt", { desc = "Because <C-i> doesn't work with tmux", overwrite = true })
-K("", "<M-i>", "<C-i>zt", { desc = "Because <C-i> doesn't work with tmux" })
-K("", "<C-o>", "<C-o>zz", { overwrite = true })
-K("", "<C-i>", "<C-i>zz", { overwrite = true })
+K("", "<M-o>", "<C-o>zt", { desc = "Jump back (top)", overwrite = true })
+K("", "<M-i>", "<C-i>zt", { desc = "Jump forward (top)" })
+K("", "<C-o>", "<C-o>zz", { desc = "Jump back (center)", overwrite = true })
+K("", "<C-i>", "<C-i>zz", { desc = "Jump forward (center)", overwrite = true })
 
 -- -- Built-in Terminal (complete shit btw, hardly a reason to use it)
-K("t", "<Esc><Esc>", "<C-\\><C-n>")
+K("t", "<Esc><Esc>", "<C-\\><C-n>", { desc = "Exit terminal mode" })
 --K("t", "<Esc>", "<C-\\><C-n>")
-K("t", "<C-w>s", "<C-\\><C-N><C-w>h")
-K("t", "<C-w>r", "<C-\\><C-N><C-w>j")
-K("t", "<C-w>n", "<C-\\><C-N><C-w>k")
-K("t", "<C-w>t", "<C-\\><C-N><C-w>l")
+K("t", "<C-w>s", "<C-\\><C-N><C-w>h", { desc = "Win left from terminal" })
+K("t", "<C-w>r", "<C-\\><C-N><C-w>j", { desc = "Win down from terminal" })
+K("t", "<C-w>n", "<C-\\><C-N><C-w>k", { desc = "Win up from terminal" })
+K("t", "<C-w>t", "<C-\\><C-N><C-w>l", { desc = "Win right from terminal" })
 --
 
 local function copyFileLineCol()

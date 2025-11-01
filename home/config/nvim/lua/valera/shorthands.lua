@@ -65,6 +65,17 @@ local VIM_DEFAULTS = {
 
 function K(mode, lhs, rhs, opts)
 	opts = opts or {}
+
+	-- Warn if description is missing (required for which-key integration)
+	if not opts.desc then
+		local info = debug.getinfo(2, "Sl")
+		local file = info.source:gsub("^@", ""):gsub(".*/", "")
+		vim.notify(
+			string.format("[%s:%d] Keymap '%s' missing desc (required for which-key)", file, info.currentline, lhs),
+			vim.log.levels.WARN
+		)
+	end
+
 	if opts.noremap == nil then
 		opts.noremap = true
 	end

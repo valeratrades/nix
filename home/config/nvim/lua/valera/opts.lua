@@ -61,10 +61,10 @@ o.winminwidth = 5
 o.modifiable = true
 
 -- Add undo break-points
-K("i", "^M", "^M<c-g>u")
-K("i", ",", ",<c-g>u")
-K("i", ".", ".<c-g>u")
-K("i", ";", ";<c-g>u")
+K("i", "^M", "^M<c-g>u", { desc = "Enter with undo break" })
+K("i", ",", ",<c-g>u", { desc = "Comma with undo break" })
+K("i", ".", ".<c-g>u", { desc = "Period with undo break" })
+K("i", ";", ";<c-g>u", { desc = "Semicolon with undo break" })
 --
 
 o.showmatch = true

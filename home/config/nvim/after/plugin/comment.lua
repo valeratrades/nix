@@ -128,8 +128,8 @@ end
 --K("n", "!", [[v:count == 0 ? '!' : ':lua AddTodoComment(' . v:count . ')<cr>']],
 K("n", "!", [[v:count == 0 ? ':lua AddTodoComment(3)<cr>' : ':lua AddTodoComment(' . v:count . ')<cr>']], -- default level
 	--K("n", "!", [[':lua AddTodoComment(' . v:count . ')<cr>']],
-	{ expr = true, silent = true, overwrite = true })
-K('n', '<space>1', '<cmd>lua AddTodoComment(0)<cr>')
+	{ desc = "Add TODO comment", expr = true, silent = true, overwrite = true })
+K('n', '<space>1', '<cmd>lua AddTodoComment(0)<cr>', { desc = "Add TODO comment (no !)" })
 
 local function escape(buffer)
 	return string.gsub(buffer, "[%(%)%.%%%+%-%*%?%[%^%$%]]", "%%%1")

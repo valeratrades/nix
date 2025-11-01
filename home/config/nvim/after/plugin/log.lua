@@ -1,6 +1,5 @@
 -- Currently is specifically made for [rust](<https://github.com/rust-lang/rust>) and [tracing](<https://crates.io/crates/tracing>).
 local utils = require("valera.utils")
-local wk = require("which-key")
 
 
 --- Parses a log line, assuming one of the following formats:
@@ -74,17 +73,7 @@ local function popupSelectedLog()
 	popupLogContents(selection)
 end
 
-
-wk.add({
-	--Named "Tracing" because 'l' for "log" is already taken by lsp
-	group = "Tracing",
-	{
-		mode = "n",
-		{ "<Space>ty", function() copyDestination() end,  desc = "+y log-line's destination" },
-		{ "<Space>tp", function() popupExpandedLog() end, desc = "Popup with prettified log line" },
-	},
-	{
-		mode = "v",
-		{ "<Space>tp", function() popupSelectedLog() end, desc = "Popup selection as prettyfied log" },
-	}
-})
+-- Named "Tracing" because 'l' for "log" is already taken by lsp
+K("n", "<Space>ty", function() copyDestination() end, { desc = "Tracing: yank destination" })
+K("n", "<Space>tp", function() popupExpandedLog() end, { desc = "Tracing: prettify log line" })
+K("v", "<Space>tp", function() popupSelectedLog() end, { desc = "Tracing: prettify selection" })
