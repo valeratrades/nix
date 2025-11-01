@@ -1,6 +1,6 @@
 G = vim.api.nvim_set_var
 
-K = function(mode, lhs, rhs, opts)
+function K(mode, lhs, rhs, opts)
 	opts = opts or {}
 	if opts.noremap == nil then
 		opts.noremap = true
@@ -14,14 +14,26 @@ K = function(mode, lhs, rhs, opts)
 		if existing and existing.lhs == lhs then
 			found_existing = true
 			if not opts.overwrite then
-				error(string.format("Keymap conflict: %s already mapped in mode '%s' to: %s", lhs, m, vim.inspect(existing)))
+				-- Get caller info
+				local info = debug.getinfo(2, "Sl")
+				local file = info.source:gsub("^@", ""):gsub(".*/", "")
+				vim.notify(
+					string.format("[%s:%d] Keymap conflict: '%s' (mode '%s') already mapped", file, info.currentline, lhs, m),
+					vim.log.levels.WARN
+				)
 			end
 		end
 	end
 
-	-- If overwrite was specified but nothing was actually overwritten, error
+	-- If overwrite was specified but nothing was actually overwritten, warn
 	if opts.overwrite and not found_existing then
-		error(string.format("overwrite = true specified but no existing mapping found for %s in mode(s) %s", lhs, vim.inspect(modes)))
+		local info = debug.getinfo(2, "Sl")
+		local file = info.source:gsub("^@", ""):gsub(".*/", "")
+		vim.notify(
+			string.format("[%s:%d] Unnecessary overwrite=true: '%s' (mode '%s') has no existing mapping", file,
+				info.currentline, lhs, table.concat(modes, ",")),
+			vim.log.levels.WARN
+		)
 	end
 
 	-- Remove overwrite from opts before passing to vim.keymap.set

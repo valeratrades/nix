@@ -126,7 +126,7 @@ local on_attach = function(client, bufnr)
 	local function buf_set_keymap(mode, lhs, rhs, opts)
 		opts = opts or {}
 		opts.buffer = bufnr
-		vim.keymap.set(mode, lhs, rhs, opts)
+		K(mode, lhs, rhs, opts)
 	end
 
 	buf_set_keymap('n', 'K', vim.lsp.buf.hover, { desc = "Hover Info" })

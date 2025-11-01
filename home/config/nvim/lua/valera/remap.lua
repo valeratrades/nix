@@ -11,20 +11,15 @@ K("i", "<Esc>", "<Esc><Esc><cmd>lua CommentCopilotEsc()<cr>",
 	{ desc = "Allow quick exit from cmp suggestions by doubling <Esc>" })
 
 K("", "<C-e>", "<nop>") -- used as prefix in my tmux
-K("", "j", "<nop>")
-K("", "k", "<nop>")
-K("", "l", "<nop>")
-K("", "h", "<nop>")
 --K("", "s", multiplySidewaysMovements('h'), { silent = true })
-K("", "s", "h", { silent = true })
-K("", "r", "v:count == 0 ? 'gj' : 'j'", { expr = true, silent = true })
-K("", "n", "v:count == 0 ? 'gk' : 'k'", { expr = true, silent = true })
+K("", "s", "h", { silent = true, overwrite = true })
+K("", "r", "v:count == 0 ? 'gj' : 'j'", { expr = true, silent = true, overwrite = true })
+K("", "n", "v:count == 0 ? 'gk' : 'k'", { expr = true, silent = true, overwrite = true })
 --K("", "t", multiplySidewaysMovements('l'), { silent = true })
-K("", "t", "l", { silent = true })
-K("n", "h", "r")
-K("n", "H", "<nop>")
-K("n", "H", "R")
-K("n", "gf", "gF")
+K("", "t", "l", { silent = true, overwrite = true })
+K("n", "h", "r", { overwrite = true })
+K("n", "H", "R", { overwrite = true })
+K("n", "gf", "gF", { overwrite = true })
 K("", "<MiddleMouse>", "<nop>")
 
 -- Useful Enter key
@@ -35,8 +30,8 @@ K("i", "<C-CR>", "<Esc>O")
 -- Jumps
 --K("", "R", "<C-d>zz")
 --K("", "N", "<C-u>zz")
-K("", "<C-d>", "<C-d>zz")
-K("", "<C-u>", "<C-u>zz")
+K("", "<C-d>", "<C-d>zz", { overwrite = true })
+K("", "<C-u>", "<C-u>zz", { overwrite = true })
 
 -- Move line
 K("v", "<A-j>", ":m '>+1<cr>gv=gv")
@@ -47,13 +42,12 @@ K("i", "<A-j>", "<Esc>V:m '>+1<cr>gv=gv")
 K("i", "<A-k>", "<Esc>V:m '>-2<cr>gv=gv")
 
 -- -- Consequences
-K("n", "j", "nzzzv")
-K("n", "k", "Nzzzv")
-K("n", "N", "*Ncgn", { noremap = true, silent = true }) -- weird sub of `s` which is not even `s` with semimak.
+K("n", "j", "nzzzv", { overwrite = true })
+K("n", "k", "Nzzzv", { overwrite = true })
+K("n", "N", "*Ncgn", { silent = true, overwrite = true }) -- weird sub of `s` which is not even `s` with semimak.
 
-K("", "L", "<nop>")
-K("", "l", "t")
-K("", "L", "T")
+K("", "l", "t", { overwrite = true })
+K("", "L", "T", { overwrite = true })
 --
 --,}}}
 
@@ -97,7 +91,7 @@ end
 vim.keymap.set('n', 'gw', function()
 	vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<C-w><C-v>', true, false, true), 'n', false)
 	vim.api.nvim_feedkeys('g', 'm', false)
-end, { noremap = true, silent = true })
+end, { silent = true })
 
 -- <C-w>= for normalizing
 --
@@ -120,10 +114,10 @@ K({ "i", "" }, "<A-v>", "<Esc>g<Tab>")
 K({ "i", "" }, "<A-0>", "<Esc><cmd>tablast<cr>")
 K({ "i", "" }, "<A-9>", "<Esc><cmd>tablast<cr>") -- don't like it on 9, but want to keep compatibility with chrome
 for i = 1, 8 do
-	K("", '<A-' .. i .. '>', '<Esc><cmd>tabn ' .. i .. '<cr>', { noremap = true, silent = true })
+	K("", '<A-' .. i .. '>', '<Esc><cmd>tabn ' .. i .. '<cr>', { silent = true })
 end
 for i = 1, 8 do
-	K("i", '<A-' .. i .. '>', '<Esc><cmd>tabn ' .. i .. '<cr>', { noremap = true, silent = true })
+	K("i", '<A-' .. i .. '>', '<Esc><cmd>tabn ' .. i .. '<cr>', { silent = true })
 end
 K("", "<A-o>", "<nop>")
 K("", "<A-O>", "<nop>")
@@ -165,7 +159,7 @@ function SelectAll()
 	})
 end
 
-K("n", "<C-a>", SelectAll, { noremap = true, desc = "select all" })
+K("n", "<C-a>", SelectAll, { desc = "select all", overwrite = true })
 -- --
 
 local function getPopups()
@@ -213,10 +207,10 @@ K({ "", "i" }, "<A-a>", saveSessionIfOpen('qa!', 'wa!'), { desc = "save everythi
 K({ "", "i" }, "<A-;>", '<cmd>qa!<cr>')
 K({ "", "i" }, "<A-w>", saveSessionIfOpen('w!'))
 
-K("", ";", ":")
-K("", ":", ";")
+K("", ";", ":", { overwrite = true })
+K("", ":", ";", { overwrite = true })
 
-K("n", "J", "mzJ`z")
+K("n", "J", "mzJ`z", { overwrite = true })
 
 K("n", "<space>y", "\"+y")
 K("v", "<space>y", "\"+y")
@@ -224,10 +218,10 @@ K("n", "<space>Y", "\"+Y")
 K("x", "<space>p", "\"_dP")
 
 K({ "n", "v" }, "<space>d", "\"_d")
-K("n", "x", "\"_x")
-K("n", "X", "\"_X")
-K("", "c", "\"_c")
-K("", "C", "\"_C")
+K("n", "x", "\"_x", { overwrite = true })
+K("n", "X", "\"_X", { overwrite = true })
+K("", "c", "\"_c", { overwrite = true })
+K("", "C", "\"_C", { overwrite = true })
 
 --K("n", "<C-F>", "<cmd>silent !tmux neww tmux-sessionizer<cr>")
 
@@ -238,9 +232,9 @@ K("n", "gp", function()
 	return "`[" .. vim.fn.strpart(vim.fn.getregtype(), 0, 1) .. "`]"
 end, { expr = true })
 
-K("n", "H", "H^")
-K("n", "M", "M^")
-K("n", "L", "L^")
+K("n", "H", "H^", { overwrite = true })
+K("n", "M", "M^", { overwrite = true })
+K("n", "L", "L^", { overwrite = true })
 
 -- Tries to correct spelling of the word under the cursor
 K("n", "z1", "mx1z=`x", { silent = true })
@@ -263,9 +257,9 @@ K('', '<space>.', '<cmd>tabe .<cr>')
 -- zero width space digraph
 vim.cmd.digraph("zs " .. 0x200b)
 
-K('n', 'U', '<C-r>', { noremap = true, desc = "helix: redo" })
+K('n', 'U', '<C-r>', { desc = "helix: redo", overwrite = true })
 K('', '<C-r>', '<nop>') -- later changed to `lsp refresh` in lsp.lua
-K('n', '<tab>', 'i<tab>')
+K('n', '<tab>', 'i<tab>', { overwrite = true })
 
 -- trying out:
 K("i", "<c-r><c-r>", "<c-r>\"");
@@ -286,8 +280,8 @@ K("n", "<Space>gf", forceGoFile);
 
 K("", "<M-o>", "<C-o>zt", { desc = "Because <C-i> doesn't work with tmux" })
 K("", "<M-i>", "<C-i>zt", { desc = "Because <C-i> doesn't work with tmux" })
-K("", "<C-o>", "<C-o>zz")
-K("", "<C-i>", "<C-i>zz")
+K("", "<C-o>", "<C-o>zz", { overwrite = true })
+K("", "<C-i>", "<C-i>zz", { overwrite = true })
 
 -- -- Built-in Terminal (complete shit btw, hardly a reason to use it)
 K("t", "<Esc><Esc>", "<C-\\><C-n>")
