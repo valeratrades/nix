@@ -215,7 +215,11 @@ local lspconfig_servers = { 'ruff', 'lua_ls', 'gopls', 'bashls', 'clangd',
 lsp_zero.setup_servers(lspconfig_servers)
 lsp_zero.setup()
 
+-- these set a bunch of indent presets in a very weird manner; making consequences very difficult to debug {{{
 vim.g.rust_recommended_style = false
+vim.g.python_recommended_style = false
+vim.g.golang_recommended_style = false
+--,}}}
 
 local lua_opts = lsp_zero.nvim_lua_ls()
 lspconfig.lua_ls.setup(lua_opts)
