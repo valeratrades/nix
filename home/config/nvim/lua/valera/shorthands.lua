@@ -1,11 +1,66 @@
 G = vim.api.nvim_set_var
 
--- Common vim default keys that are often remapped
+-- dict of default vim keymaps. HACK: incomplete by nature
+-- Compiled from :help index and vim.rtorr.com
 local VIM_DEFAULTS = {
-	n = { "h", "j", "k", "l", "s", "S", "r", "R", "n", "N", "t", "T", "c", "C", "d", "D", "y", "Y", "x", "X", "H", "M", "L", "J", "gf", "gF", "U", "<tab>", ";", ":", "<C-d>", "<C-u>", "<C-o>", "<C-i>", "<C-r>", "<C-a>", "<C-x>" },
-	v = { "h", "j", "k", "l", "s", "S", "r", "R", "n", "N", "t", "T", "c", "C", "d", "D", "y", "Y", "x", "X", ";", ":", "<C-d>", "<C-u>", "<C-o>", "<C-i>", "<C-r>", "<C-a>", "<C-x>" },
-	s = { "h", "j", "k", "l", "c", "C", "d", "D", "y", "Y", "x", "X" },
-	o = { "h", "j", "k", "l", "t", "T" },
+	n = {
+		-- Movement
+		"h", "j", "k", "l", "gj", "gk", "H", "M", "L", "w", "W", "e", "E", "b", "B", "ge", "gE",
+		"%", "0", "^", "$", "g_", "gg", "G", "gd", "gD", "f", "F", "t", "T", ";", ",", "}", "{",
+		"(", ")", "[", "]", "zz", "zt", "zb",
+		"<C-e>", "<C-y>", "<C-b>", "<C-f>", "<C-d>", "<C-u>",
+		-- Editing
+		"r", "R", "J", "gJ", "g~", "gu", "gU", "s", "S", "u", "U", "<C-r>", ".",
+		-- Marks/Jumps
+		"m", "`", "'", "<C-i>", "<C-o>", "<C-]>", "g,", "g;",
+		-- Yank/Delete/Paste operators
+		"y", "d", "c", "p", "P", "gp", "gP", "x", "X", "Y", "D", "C",
+		-- Indent
+		">", "<", "=",
+		-- Search
+		"/", "?", "n", "N", "#", "*", "g*", "g#",
+		-- Tabs/Windows
+		"gt", "gT", "<C-w>",
+		-- Text entry
+		"a", "i", "o", "O", "I", "A",
+		-- Visual
+		"v", "V", "<C-v>",
+		-- Folds
+		"za", "zo", "zc", "zr", "zm", "zi", "zf", "zd",
+		-- Other
+		"K", "q", "@", "~", "!", ":", "<tab>", "<CR>", "gf", "gF", "<C-a>", "<C-x>", "ga", "gv", "gw",
+	},
+	v = {
+		-- Movements (most normal mode movements work)
+		"h", "j", "k", "l", "w", "W", "e", "E", "b", "B", "0", "^", "$",
+		"gg", "G", "f", "F", "t", "T", ";", ",", "}", "{", "(", ")",
+		"<C-d>", "<C-u>", "<C-f>", "<C-b>",
+		-- Visual mode control
+		"v", "V", "<C-v>", "o", "O",
+		-- Text objects
+		"aw", "ab", "aB", "at", "ib", "iB", "it", "a", "i",
+		-- Operations
+		">", "<", "y", "d", "c", "~", "u", "U", "r", "s", "x", "J", "gJ",
+		"p", "P", ":", "n", "N", "*", "#",
+	},
+	s = {
+		-- Select mode (similar to visual but more limited)
+		"<C-g>", "c", "C", "d", "D", "y", "Y", "x", "X",
+	},
+	o = {
+		-- Operator-pending mode (after d, c, y, etc.)
+		"h", "j", "k", "l", "w", "W", "e", "E", "b", "B",
+		"f", "F", "t", "T", ";", ",", "0", "^", "$",
+		"gg", "G", "}", "{", "(", ")", "[", "]",
+		"a", "i",        -- text objects
+		"v", "V", "<C-v>", -- force motion type
+	},
+	i = {
+		-- Insert mode
+		"<C-h>", "<C-w>", "<C-j>", "<C-t>", "<C-d>", "<C-n>", "<C-p>",
+		"<C-r>", "<C-o>", "<C-a>", "<C-x>", "<C-e>", "<C-y>",
+		"<Esc>", "<C-c>", "<C-[>",
+	},
 }
 
 function K(mode, lhs, rhs, opts)
@@ -58,7 +113,8 @@ function K(mode, lhs, rhs, opts)
 		local file = info.source:gsub("^@", ""):gsub(".*/", "")
 		local mode_str = type(mode) == "table" and table.concat(mode, ",") or mode
 		vim.notify(
-			string.format("[%s:%d] Unnecessary overwrite=true: '%s' (mode '%s') has no existing mapping", file, info.currentline, lhs, mode_str),
+			string.format("[%s:%d] Unnecessary overwrite=true: '%s' (mode '%s') has no existing mapping", file,
+				info.currentline, lhs, mode_str),
 			vim.log.levels.WARN
 		)
 	end
