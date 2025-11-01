@@ -8,9 +8,9 @@ K({ "n", "v" }, "-", "<cmd>Oil<cr>")
 
 -- only want copilot enable if it was temporarely suspended by writing a comment.
 K("i", "<Esc>", "<Esc><Esc><cmd>lua CommentCopilotEsc()<cr>",
-	{ desc = "Allow quick exit from cmp suggestions by doubling <Esc>" })
+	{ desc = "Allow quick exit from cmp suggestions by doubling <Esc>", overwrite = true })
 
-K("", "<C-e>", "<nop>") -- used as prefix in my tmux
+K("", "<C-e>", "<nop>", { overwrite = true }) -- used as prefix in my tmux
 --K("", "s", multiplySidewaysMovements('h'), { silent = true })
 K("", "s", "h", { silent = true, overwrite = true })
 K("", "r", "v:count == 0 ? 'gj' : 'j'", { expr = true, silent = true, overwrite = true })
@@ -106,8 +106,8 @@ vim.keymap.set('n', '<Space>p', '"+p', { desc = "paste from system clipboard" })
 --
 
 -- Tabs
-K("n", "gt", "<nop>")
-K("n", "gT", "<nop>")
+K("n", "gt", "<nop>", { overwrite = true })
+K("n", "gT", "<nop>", { overwrite = true })
 K({ "i", "" }, "<A-l>", "<Esc>gT")
 K({ "i", "" }, "<A-h>", "<Esc>gt")
 K({ "i", "" }, "<A-v>", "<Esc>g<Tab>")
@@ -129,7 +129,7 @@ K({ "i", "" }, "<A-Y>", "<Esc><cmd>tabmove $<cr>")
 
 -- -- Standards and the Consequences
 K("", "<C-'>", "\"+ygv\"_d")
-K("", "<C-b>", "\"+y")
+K("", "<C-b>", "\"+y", { overwrite = true })
 
 K("i", "<C-del>", "X<Esc>ce") -- n mappings for <del> below rely on this
 K("v", "<bs>", "d")
@@ -230,7 +230,7 @@ K("n", "<space><space>n", ":%s/\\<<C-r><C-w>\\>/<C-r><C-w>/gI<Left><Left><Left>"
 -- select the pasted
 K("n", "gp", function()
 	return "`[" .. vim.fn.strpart(vim.fn.getregtype(), 0, 1) .. "`]"
-end, { expr = true })
+end, { expr = true, overwrite = true })
 
 K("n", "H", "H^", { overwrite = true })
 K("n", "M", "M^", { overwrite = true })

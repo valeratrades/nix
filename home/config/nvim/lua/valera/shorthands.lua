@@ -100,7 +100,9 @@ function K(mode, lhs, rhs, opts)
 				local file = info.source:gsub("^@", ""):gsub(".*/", "")
 				local source = is_user_mapped and "user mapping" or "vim default"
 				vim.notify(
-					string.format("[%s:%d] Keymap conflict: '%s' (mode '%s') overwrites %s", file, info.currentline, lhs, m, source),
+					string.format(
+						"[%s:%d] Keymap conflict: '%s' (mode '%s') overwrites %s. Pass `overwrite = true` if intentional.", file,
+						info.currentline, lhs, m, source),
 					vim.log.levels.WARN
 				)
 			end
