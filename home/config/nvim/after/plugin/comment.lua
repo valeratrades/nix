@@ -28,7 +28,7 @@ local config = {
 require('Comment').setup(config)
 
 function CommentCopilotEsc()
-	vim.b.copilot_enabled = nil
+	vim.b.copilot_enabled = false
 end
 
 -- -- `extra` reimplementation

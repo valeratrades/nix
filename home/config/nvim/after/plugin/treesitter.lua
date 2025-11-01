@@ -1,4 +1,4 @@
-vim.g.maplocalleader = "\\"
+--vim.g.maplocalleader = "\\"
 
 require('nvim-treesitter.configs').setup {
 	sync_install = true, -- not sure what should this be on nixos

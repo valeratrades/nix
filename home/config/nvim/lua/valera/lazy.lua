@@ -20,7 +20,7 @@ return require('lazy').setup({
 	'L3MON4D3/LuaSnip',
 	"lewis6991/gitsigns.nvim",
 	'lukas-reineke/indent-blankline.nvim',
-	"zbirenbaum/copilot.lua",
+	{ import = "valera.plugins.copilot" },
 	--"github/copilot.vim",
 	{ -- Treesitter
 		{ 'nvim-treesitter/nvim-treesitter', build = ':TSUpdate' },
@@ -394,7 +394,7 @@ return require('lazy').setup({
 	"stevearc/aerial.nvim",
 	"https://codeberg.org/FelipeLema/cmp-async-path",
 	"NMAC427/guess-indent.nvim",
-	{ 'wakatime/vim-wakatime', lazy = false },
+	{ 'wakatime/vim-wakatime',          lazy = false },
 	--{ "tjdevries/ocaml.nvim",  build = "make" }, -- requires 3.17 dune, but my nix only has 3.16
 	"folke/which-key.nvim",
 	--"pimalaya/himalaya-vim", --TODO: setup

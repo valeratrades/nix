@@ -75,7 +75,6 @@ K("n", "<C-Left>", "<cmd>vertical resize +2<cr>", { desc = "windows: increase wi
 
 K("n", "<C-w>o", "<C-w><C-s><C-w>w", { desc = "windows: new horizontal" })
 K("n", "<C-w>O", "<C-w><C-v>", { desc = "windows: new vertical" })
-K("n", "<C-w><C-h>", "<C-w><C-s><C-w>w", { desc = "windows: new horizontal" }) --
 
 K("n", "<C-w>k", "<cmd>tab sb<cr>", { desc = "C-w>t that is consistent with <C-w>v and <C-w>h" })
 K("n", "<C-w>K", function() MoveToNewTab() end, { desc = "windows: move to new tab" })
@@ -83,6 +82,7 @@ K("n", "<C-w>K", function() MoveToNewTab() end, { desc = "windows: move to new t
 --Q: is this the correct place for it?
 K('n', '<C-w>v', '<C-w>w', { desc = 'windows: literally <C-w>w' })
 K('n', '<C-w>V', '<cmd>tabprevious<cr>', { desc = 'windows: move to previously active tab' })
+K('n', "<C-w><C-v>", "<nop>")
 
 K('n', '<C-w>x', '<cmd>tabclose<cr>', { desc = 'windows: tabclose' })
 --,}}}
@@ -143,7 +143,29 @@ K("n", "<bs>", "i<bs>")
 K("n", "<del>", "i<del>")
 K("n", "<C-del>", "a<C-del>", { remap = true })
 
-K("n", "<C-A>", "ggVG")
+local function selectAll()
+	-- alternative to `ggVG`, - that doesn't add `gg` to jumplist (can't escape having the move to the bottom added)
+	local bufnr = 0
+	local end_line = vim.api.nvim_buf_line_count(bufnr)
+	local curpos = vim.api.nvim_win_get_cursor(0)
+
+	vim.fn.setpos("'<", { bufnr, 1, 1, 0 })
+	vim.fn.setpos("'>", { bufnr, end_line, 1000000, 0 })
+
+	vim.cmd("normal! m'") -- add current position to jumplist
+	vim.cmd("normal! gv")
+
+	-- setup a hook to return to the same place after
+	vim.api.nvim_create_autocmd("ModeChanged", {
+		pattern = { "v:n", "V:n", ":n" }, -- all visual → normal exits
+		once = true,
+		callback = function()
+			vim.api.nvim_win_set_cursor(0, curpos)
+			vim.cmd("normal! g;") -- pop the bottom-of-selection jump from jumplist
+		end,
+	})
+end
+vim.keymap.set("n", "<C-A>", selectAll)
 -- Consequences
 K('', '<C-z>', '<C-a>')
 --

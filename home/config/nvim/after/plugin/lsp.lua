@@ -1,8 +1,17 @@
 local lspconfig = require("lspconfig")
 local lsp_zero = require("lsp-zero")
 local rustaceanvim = require("rustaceanvim")
-local utils = require("valera.utils")
-local actions = require("telescope.actions")
+
+--local capabilities = vim.lsp.protocol.make_client_capabilities()
+--capabilities.general.positionEncodings = { "utf-16" } -- atm copilot freaks out a bit with default utf-8 (2025/11/01)
+
+local capabilities = {
+	general = {
+		positionEncodings = {
+			"utf-16"
+		},
+	},
+}
 
 --TODO: rewrite without lsp_zero (on_attach) can be ran once, then everything else is configured with just .enable()
 
@@ -196,13 +205,6 @@ local on_attach = function(client, bufnr)
 			require('lsp-format').on_attach(client)
 		end
 	end
-
-	if vim.fn.expand('%:e') ~= 'py' then
-		vim.bo.tabstop = 2
-		vim.bo.softtabstop = 0
-		vim.bo.shiftwidth = 2
-		vim.bo.expandtab = false
-	end
 end
 
 
@@ -210,7 +212,7 @@ lsp_zero.on_attach(on_attach)
 
 
 -- Language setup //? Do I still need this? Maybe it's possible to get rid of `lsp_zero` altogether
-local lspconfig_servers = { 'ruff', 'lua_ls', 'gopls', 'bashls', 'clangd',
+local lspconfig_servers = { 'lua_ls', 'gopls', 'bashls', 'clangd',
 	'jsonls', 'marksman', 'nil_ls', 'ocamllsp' }
 lsp_zero.setup_servers(lspconfig_servers)
 lsp_zero.setup()
@@ -336,6 +338,7 @@ vim.g.rustaceanvim = {
 }
 
 lspconfig.gopls.setup({
+	capabilities = capabilities,
 	on_attach = lsp_zero.default_setup,
 	settings = {
 		gopls = {
@@ -376,6 +379,7 @@ lspconfig.gopls.setup({
 
 -- typst
 lspconfig.tinymist.setup({
+	capabilities = capabilities,
 	on_attach = lsp_zero.default_setup,
 	settings = {
 		--exportPdf = "onType",
@@ -385,6 +389,7 @@ lspconfig.tinymist.setup({
 })
 
 lspconfig.nil_ls.setup({
+	capabilities = capabilities,
 	on_attach = lsp_zero.default_setup,
 	settings = {
 		formatter = { command = { "nixpkgs-fmt" } },
@@ -392,6 +397,7 @@ lspconfig.nil_ls.setup({
 })
 
 lspconfig.ocamllsp.setup({
+	capabilities = capabilities,
 	on_attach = lsp_zero.default_setup,
 	cmd = { 'ocamllsp' },
 	settings = {
@@ -399,4 +405,33 @@ lspconfig.ocamllsp.setup({
 	},
 })
 
-vim.lsp.enable('ty')
+-- python {{{
+vim.lsp.enable('ty', true)
+vim.lsp.config('ty', {
+	capabilities = capabilities,
+	on_attach = lsp_zero.default_setup,
+	settings = {
+		ty = {
+			experimental = {
+				rename = true,
+			},
+		},
+	},
+})
+vim.lsp.enable('ruff', true)
+vim.lsp.config('ruff', {
+	capabilities = capabilities,
+})
+--,}}}
+
+vim.lsp.enable('lean', true)
+vim.lsp.config('lean', {
+	on_attach = function()
+		K("n", "<Space>ml", function() vim.cmd("Telescope loogle") end)
+		lsp_zero.default_setup()
+	end,
+	mappings = true,
+	init_options = {
+		editDelay = 250,
+	},
+})
