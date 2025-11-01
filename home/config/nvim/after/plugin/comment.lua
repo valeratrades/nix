@@ -46,26 +46,21 @@ K('n', 'gcA', commentExtraReimplementation('A '), { desc = "comment: reimplement
 --
 
 -- -- Surround Block Comments
-function FoldmarkerCommentBlock()
-	vim.b.copilot_enabled = false --? Am I sure about this one?
+function FoldmarkerCommentBlock(nesting_level)
+	nesting_level = nesting_level or 1
+	vim.b.copilot_enabled = false                 --? Am I sure about this one?
 	local cs = Cs()
-	F('o' .. cs .. ',}}}')
+	F('o' .. cs .. ',}}}' .. nesting_level)       --HACK: hardcodes nesting level
 	Ft('<Esc>`<')
-	F('O' .. cs .. '  ' .. '{{{') -- }}} because nvim is dumb
-	Ft('<Esc>hhhi')
+	F('O' .. cs .. '  ' .. '{{{' .. nesting_level) -- }}} because nvim is dumb
+	Ft('<Esc>hhhhi')
 end
 
-K("v", "gbf", "<esc>`><cmd>lua FoldmarkerCommentBlock()<cr>", { desc = "Add a fold marker around the selection" })
-
-function DoubleCommentBlock()
-	vim.b.copilot_enabled = false
-	local cs = Cs()
-	F('o' .. cs)
-	Ft('<Esc>`<')
-	F('O' .. cs .. ' ' .. cs .. ' ')
+for i = 1, 5 do
+	K("v", "gb" .. i .. "f", string.format("<esc>`><cmd>lua FoldmarkerCommentBlock(%d)<cr>", i), {
+		desc = string.format("Add a fold marker (nest %d) around selection", i),
+	})
 end
-
-K("v", "gbd", "<esc>`><cmd>lua DoubleCommentBlock()<cr>", { desc = "Double comment block" })
 --
 
 

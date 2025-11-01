@@ -1,5 +1,34 @@
-K = vim.keymap.set
 G = vim.api.nvim_set_var
+
+K = function(mode, lhs, rhs, opts)
+	opts = opts or {}
+	if opts.noremap == nil then
+		opts.noremap = true
+	end
+
+	-- Check if mapping already exists
+	local modes = type(mode) == "table" and mode or { mode }
+	local found_existing = false
+	for _, m in ipairs(modes) do
+		local existing = vim.fn.maparg(lhs, m, false, true)
+		if existing and existing.lhs == lhs then
+			found_existing = true
+			if not opts.overwrite then
+				error(string.format("Keymap conflict: %s already mapped in mode '%s' to: %s", lhs, m, vim.inspect(existing)))
+			end
+		end
+	end
+
+	-- If overwrite was specified but nothing was actually overwritten, error
+	if opts.overwrite and not found_existing then
+		error(string.format("overwrite = true specified but no existing mapping found for %s in mode(s) %s", lhs, vim.inspect(modes)))
+	end
+
+	-- Remove overwrite from opts before passing to vim.keymap.set
+	local final_opts = vim.tbl_extend("force", opts, {})
+	final_opts.overwrite = nil
+	vim.keymap.set(mode, lhs, rhs, final_opts)
+end
 
 function F(s, mode)
 	mode = mode or "n"

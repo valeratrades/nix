@@ -390,7 +390,7 @@ return require('lazy').setup({
 	"norcalli/nvim-colorizer.lua",
 	--"hiphish/rainbow-delimiters.nvim", -- alternate bracket colors
 	"Makaze/AnsiEsc",
-	"tpope/vim-speeddating",
+	{ import = "valera.plugins.speeddating" },
 	"stevearc/aerial.nvim",
 	"https://codeberg.org/FelipeLema/cmp-async-path",
 	"NMAC427/guess-indent.nvim",

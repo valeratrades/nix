@@ -6,9 +6,9 @@ return {
 	},
 	config = function()
 		require('copilot').setup({
-			nes = {
-				enabled = true,
-			},
+			--nes = {
+			--	enabled = true,
+			--},
 			panel = {
 				enabled = true,
 				auto_refresh = false,

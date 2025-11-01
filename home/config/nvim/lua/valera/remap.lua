@@ -143,32 +143,29 @@ K("n", "<bs>", "i<bs>")
 K("n", "<del>", "i<del>")
 K("n", "<C-del>", "a<C-del>", { remap = true })
 
-local function selectAll()
-	-- alternative to `ggVG`, - that doesn't add `gg` to jumplist (can't escape having the move to the bottom added)
+function SelectAll()
+	-- `ggVG`, but nothing is added to jumplist, and cursor position is restored on exit from visual mode
 	local bufnr = 0
 	local end_line = vim.api.nvim_buf_line_count(bufnr)
 	local curpos = vim.api.nvim_win_get_cursor(0)
+	local view = vim.fn.winsaveview() -- persist cursor position relative to view
 
 	vim.fn.setpos("'<", { bufnr, 1, 1, 0 })
 	vim.fn.setpos("'>", { bufnr, end_line, 1000000, 0 })
 
-	vim.cmd("normal! m'") -- add current position to jumplist
 	vim.cmd("normal! gv")
 
-	-- setup a hook to return to the same place after
 	vim.api.nvim_create_autocmd("ModeChanged", {
 		pattern = { "v:n", "V:n", ":n" }, -- all visual → normal exits
 		once = true,
 		callback = function()
 			vim.api.nvim_win_set_cursor(0, curpos)
-			vim.cmd("normal! g;") -- pop the bottom-of-selection jump from jumplist
+			vim.fn.winrestview(view)
 		end,
 	})
 end
-vim.keymap.set("n", "<C-a>", function() selectAll() end)
--- Consequences
-K('', '<C-z>', '<C-a>')
---
+
+K("n", "<C-a>", SelectAll, { noremap = true, desc = "select all" })
 -- --
 
 local function getPopups()
