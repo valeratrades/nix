@@ -818,15 +818,6 @@ hi(0, 'Question', { fg = '#89b4fb' })
 hi(0, 'QuickFixLine', { bg = '#45475b', bold = true })
 
 local rainbow_colors = {
-	--DEPRECATE: these are prof's original colors
-	--'#89b4fb',
-	--'#94e2d6',
-	--'#a6e3a2',
-	--'#fab388',
-	--'#f38ba9',
-	--'#cba6f8',
-	--'#f9e2b0',
-
 	-- shades of grey, generated procedurally {{{1
 	'#cccccc',
 	'#b3b3b3',
@@ -837,7 +828,6 @@ local rainbow_colors = {
 	'#333333',
 	--,}}}1
 }
-
 hi(0, 'RainbowRed', { fg = rainbow_colors[1] })
 hi(0, 'RainbowYellow', { fg = rainbow_colors[2] })
 hi(0, 'RainbowBlue', { fg = rainbow_colors[3] })
