@@ -349,7 +349,8 @@
 								hooks = [
 									{
 										type = "command";
-										command = "/usr/bin/env fish -c 'read input; set transcript_path (echo $input | jq -r .transcript_path); set chat_name (head -1 $transcript_path | jq -r .summary); beep -l 25 \"$chat_name\"'"; #atm chat name itself includes `Claude Code` prefix, so don't have to prefix further
+                    #dbg: temporarily writes input to a file for debugging, - as I'm not certain about some edge-cases (eg .summary being null at times)
+										command = "/usr/bin/env fish -c 'read input; echo $input > /tmp/dbg_claude_code_input.json; set transcript_path (echo $input | jq -r .transcript_path); set chat_name (head -1 $transcript_path | jq -r .summary); beep \"CC: response on:\n$chat_name\"'";
 									}
 								];
 							}
