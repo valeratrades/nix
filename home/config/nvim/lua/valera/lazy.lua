@@ -16,10 +16,10 @@ vim.g.mapleader = ' ' -- ensure mappings are correct
 return require('lazy').setup({
 	-- Cornerstone
 	--'theprimeagen/harpoon',
-	'mbbill/undotree',
+	{ import = "valera.plugins.undotree" },
 	'L3MON4D3/LuaSnip',
 	"lewis6991/gitsigns.nvim",
-	'lukas-reineke/indent-blankline.nvim',
+	{ import = "valera.plugins.blankline" },
 	{ import = "valera.plugins.copilot" },
 	--"github/copilot.vim",
 	{ -- Treesitter
@@ -55,20 +55,13 @@ return require('lazy').setup({
 			require('Comment').setup()
 		end
 	},
-	{
-		"ray-x/lsp_signature.nvim",
-		event = "VeryLazy",
-	},
-	{
-		'stevearc/oil.nvim',
-		dependencies = { "nvim-tree/nvim-web-devicons" },
-	},
+	{ import = "valera.plugins.signature" },
+	{ import = "valera.plugins.oil" },
+	{ import = "valera.plugins.webdevicons" },
 	{ -- Jake
-		-- 2q and then Q for recursive macro
-		'jake-stewart/recursive-macro.nvim',
-		-- helix for poor people
-		'jake-stewart/normon.nvim',
-		'jake-stewart/shnip.nvim',
+		{ import = "valera.plugins.recursive-macro" },
+		{ import = "valera.plugins.normon" },
+		{ import = "valera.plugins.shnip" },
 	},
 	{ -- https://github.com/tpope/vim-abolish/blob/master/doc/abolish.txt
 		'tpope/vim-abolish',
@@ -130,20 +123,12 @@ return require('lazy').setup({
 		{ "catppuccin/nvim",       name = "catppuccin" },
 		{ "folke/tokyonight.nvim", name = "tokyonight" },
 		{ "jdsimcoe/panic.vim",    name = "panic" }, -- perfect colors, bad mapping of color to element
-		"projekt0n/github-nvim-theme",
+		{ import = "valera.plugins.colors" },
 	},
 	{ -- Git
 		'tpope/vim-fugitive',
 	},
-	{ -- Testing
-		"nvim-neotest/neotest",
-		dependencies = {
-			"nvim-neotest/nvim-nio",
-			"nvim-lua/plenary.nvim",
-			"antoinemadec/FixCursorHold.nvim",
-			"nvim-treesitter/nvim-treesitter"
-		},
-	},
+	{ import = "valera.plugins.neotest" },
 	--
 
 	-- If something breaks, it's likely below here:
@@ -152,7 +137,7 @@ return require('lazy').setup({
 
 	'vim-test/vim-test',
 	'lervag/vimtex',
-	'olimorris/persisted.nvim',
+	{ import = "valera.plugins.sessions" },
 	'nvim-telescope/telescope-file-browser.nvim',
 	'nvim-telescope/telescope-media-files.nvim',
 	{
@@ -163,7 +148,7 @@ return require('lazy').setup({
 	"folke/persistence.nvim",
 	"folke/todo-comments.nvim",
 	'jbyuki/instant.nvim',
-	"andweeb/presence.nvim",
+	{ import = "valera.plugins.presence" },
 	{ import = "valera.plugins.rainbow_csv" },
 	{
 		"kdheepak/lazygit.nvim",
@@ -179,21 +164,13 @@ return require('lazy').setup({
 			"nvim-lua/plenary.nvim",
 		},
 	},
-	{
-		"kylechui/nvim-surround",
-		version = "*",
-		event = "VeryLazy",
-	},
+	{ import = "valera.plugins.surround" },
 	{ import = "valera.plugins.typst" },
 	{ import = "valera.plugins.leetcode" },
 	"nanotee/zoxide.vim",
 	{ import = "valera.plugins.color-picker" },
 	{ import = "valera.plugins.log-highlight" },
-	{
-		"toppair/peek.nvim",
-		event = { "VeryLazy" },
-		build = "deno task --quiet build:fast",
-	},
+	{ import = "valera.plugins.peek" },
 	--{
 	--	"iamcco/markdown-preview.nvim",
 	--	cmd = { "MarkdownPreviewToggle", "MarkdownPreview", "MarkdownPreviewStop" },
@@ -217,7 +194,7 @@ return require('lazy').setup({
 	{ import = "valera.plugins.speeddating" },
 	"stevearc/aerial.nvim",
 	"https://codeberg.org/FelipeLema/cmp-async-path",
-	"NMAC427/guess-indent.nvim",
+	{ import = "valera.plugins.guess-indent" },
 	{ 'wakatime/vim-wakatime',              lazy = false },
 	--{ "tjdevries/ocaml.nvim",  build = "make" }, -- requires 3.17 dune, but my nix only has 3.16
 	"folke/which-key.nvim",

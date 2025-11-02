@@ -25,6 +25,7 @@ require("valera.utils")
 
 require("valera.remap")
 require("valera.lazy")
+require("valera.lsp")
 require("valera.opts")
 --require("valera.temporary")
 require("valera.rooter")

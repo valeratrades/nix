@@ -1,27 +1,20 @@
-local lspconfig = require("lspconfig")
-local lsp_zero = require("lsp-zero")
 local rustaceanvim = require("rustaceanvim")
-
---local capabilities = vim.lsp.protocol.make_client_capabilities()
---capabilities.general.positionEncodings = { "utf-16" } -- atm copilot freaks out a bit with default utf-8 (2025/11/01)
 
 local capabilities = {
 	general = {
 		positionEncodings = {
-			"utf-16"
+			"utf-8",
+			"utf-16",
+			"utf-32"
 		},
 	},
 }
-
---TODO: rewrite without lsp_zero (on_attach) can be ran once, then everything else is configured with just .enable()
 
 vim.diagnostic.config({
 	virtual_text = false,
 	-- if line has say both a .HINT and .WARNING, the "worst" will be shown (as a sign on the left)
 	severity_sort = true,
 })
-
--- TODO: add [potentially better type-checker for python](<https://github.com/astral-sh/ty>), when it's ready
 
 function ToggleDiagnostics()
 	local state = vim.diagnostic.is_enabled()
@@ -208,28 +201,157 @@ local on_attach = function(client, bufnr)
 end
 
 
-lsp_zero.on_attach(on_attach)
-
-
--- Language setup //? Do I still need this? Maybe it's possible to get rid of `lsp_zero` altogether
-local lspconfig_servers = { 'lua_ls', 'gopls', 'bashls', 'clangd',
-	'jsonls', 'marksman', 'nil_ls', 'ocamllsp' }
-lsp_zero.setup_servers(lspconfig_servers)
-lsp_zero.setup()
-
 -- these set a bunch of indent presets in a very weird manner; making consequences very difficult to debug {{{
 vim.g.rust_recommended_style = false
 vim.g.python_recommended_style = false
 vim.g.golang_recommended_style = false
 --,}}}
 
-local lua_opts = lsp_zero.nvim_lua_ls()
-lspconfig.lua_ls.setup(lua_opts)
-lspconfig.tailwindcss.setup({
-	on_attach = lsp_zero.default_setup,
+-- lua_ls
+vim.lsp.config('lua_ls', {
+	capabilities = capabilities,
+	on_attach = on_attach,
+	settings = {
+		Lua = {
+			runtime = {
+				version = 'LuaJIT',
+			},
+			diagnostics = {
+				globals = { 'vim' },
+			},
+			workspace = {
+				library = vim.api.nvim_get_runtime_file("", true),
+				checkThirdParty = false,
+			},
+			telemetry = {
+				enable = false,
+			},
+		},
+	},
+})
+vim.lsp.enable('lua_ls')
+
+-- tailwindcss
+vim.lsp.config('tailwindcss', {
+	capabilities = capabilities,
+	on_attach = on_attach,
 	cmd = { 'tailwindcss-language-server', '--stdio' },
 })
+vim.lsp.enable('tailwindcss')
 
+-- gopls
+vim.lsp.config('gopls', {
+	capabilities = capabilities,
+	on_attach = on_attach,
+	settings = {
+		gopls = {
+			completeUnimported = true,
+			usePlaceholders = true,
+			analyses = {
+				unusedparams = true,
+			},
+			staticcheck = true,
+		},
+	},
+})
+vim.lsp.enable('gopls')
+
+-- bashls
+vim.lsp.config('bashls', {
+	capabilities = capabilities,
+	on_attach = on_attach,
+})
+vim.lsp.enable('bashls')
+
+-- clangd
+vim.lsp.config('clangd', {
+	capabilities = capabilities,
+	on_attach = on_attach,
+})
+vim.lsp.enable('clangd')
+
+-- jsonls
+vim.lsp.config('jsonls', {
+	capabilities = capabilities,
+	on_attach = on_attach,
+})
+vim.lsp.enable('jsonls')
+
+-- marksman
+vim.lsp.config('marksman', {
+	capabilities = capabilities,
+	on_attach = on_attach,
+})
+vim.lsp.enable('marksman')
+
+-- nil_ls
+vim.lsp.config('nil_ls', {
+	capabilities = capabilities,
+	on_attach = on_attach,
+	settings = {
+		formatter = { command = { "nixpkgs-fmt" } },
+	},
+})
+vim.lsp.enable('nil_ls')
+
+-- ocamllsp
+vim.lsp.config('ocamllsp', {
+	capabilities = capabilities,
+	on_attach = on_attach,
+	cmd = { 'ocamllsp' },
+	settings = {
+		formatter = { command = { "ocamlformat" } },
+	},
+})
+vim.lsp.enable('ocamllsp')
+
+-- typst
+vim.lsp.config('tinymist', {
+	capabilities = capabilities,
+	on_attach = on_attach,
+	settings = {
+		--exportPdf = "onType",
+		--outputPath = "/tmp/typ/$name", -- put PDFs in /tmp, instead of littering next to the source
+		exportPdf = 'never', -- currently always using `TypstWatch` of `typst.vim`
+	},
+})
+vim.lsp.enable('tinymist')
+
+-- python {{{
+vim.lsp.config('ty', {
+	capabilities = capabilities,
+	on_attach = on_attach,
+	settings = {
+		ty = {
+			experimental = {
+				rename = true,
+			},
+		},
+	},
+})
+vim.lsp.enable('ty')
+
+vim.lsp.config('ruff', {
+	capabilities = capabilities,
+	on_attach = on_attach,
+})
+vim.lsp.enable('ruff')
+--,}}}
+
+-- lean
+vim.lsp.config('lean', {
+	capabilities = capabilities,
+	on_attach = function(client, bufnr)
+		on_attach(client, bufnr)
+		K("n", "<Space>ml", function() vim.cmd("Telescope loogle") end, { buffer = bufnr })
+	end,
+	init_options = {
+		editDelay = 250,
+	},
+})
+vim.lsp.enable('lean')
+
+-- Rust configuration
 local function codelldb_adapter()
 	local extension_path = vim.env.HOME .. '/.vscode/extensions/vadimcn.vscode-lldb-1.10.0/'
 	local codelldb_path = extension_path .. 'adapter/codelldb'
@@ -279,6 +401,12 @@ vim.g.rustaceanvim = {
 		logfile = "/home/v/.local/state/nvim/rustaceanvim.log", --XXX: not user-agnostic
 		status_notify_level = rustaceanvim.disable,           -- doesn't work
 		on_attach = on_attach,
+		--XXX: does nothing. Atm can't get it to use anything but default "utf-8"
+		--capabilities = (function()
+		--	local caps = require('rustaceanvim.config.server').create_client_capabilities()
+		--	caps.general.positionEncodings = capabilities.general.positionEncodings
+		--	return caps
+		--end)(),
 		default_settings = {
 			['rust-analyzer'] = (function()
 				local settings = {
@@ -295,13 +423,11 @@ vim.g.rustaceanvim = {
 						runBuildScripts = true,
 						loadOutDirsFromCheck = true,
 						--allFeatures = true, -- will break on projects with incompatible features. If comes up, write a script to copy code before uploading to crates.io and sed `features = ["full"]` for `[]`
-						--extraEnv = { CARGO_TARGET_DIR = "target/analyzer" },
 					},
 					procMacro = {
 						enable = true,
 					},
 					completion = {
-						-- a vec (fuck lua)
 						excludeTraits = {
 							"owo_colors::FgColorDisplay",
 							"owo_colors::BgColorDisplay",
@@ -311,12 +437,10 @@ vim.g.rustaceanvim = {
 						enable = true,
 						--command = function() return vim.g.rust_check_with end, --doesn't work
 						command = vim.g
-								.rust_check_with --BUG: can't figure out how to make interactive. This is sourced only at the server init. So have to restart for this to apply.
+								.rust_check_with --HACK: can't figure out how to make interactive. This is sourced only at the server init. So have to restart for this to apply.
 					},
 				}
 				local cargo_exists = vim.fn.filereadable(vim.fn.getcwd() .. "/Cargo.toml") == 1
-				--vim.notify("Cargo.toml exists: " .. tostring(cargo_exists))
-				--vim.notify("Current directory: " .. vim.fn.getcwd())
 				if cargo_exists then
 					-- RA is being dumb, so on cargo-script projects touching workspaces leads to very annoying warnings
 					settings.workspace = {
@@ -330,108 +454,17 @@ vim.g.rustaceanvim = {
 				end
 				return settings
 			end)(),
-			--server = {
-			--	extraEnv = { CARGO_TARGET_DIR = "target/analyzer" },
-			--},
 		},
 	},
 }
 
-lspconfig.gopls.setup({
-	capabilities = capabilities,
-	on_attach = lsp_zero.default_setup,
-	settings = {
-		gopls = {
-			completeUnimported = true,
-			usePlaceholders = true,
-			analyses = {
-				unusedparams = true,
-			},
-			staticcheck = true,
-		},
-	},
-})
+-- Export for other modules
+local M = {}
 
+M.capabilities = capabilities
 
+M.get_preferred_encoding = function()
+	return capabilities.general.positionEncodings[1]
+end
 
--- DEPRECATE: if `ty` ends up being sufficient {{{
--- Apparently ruff's lsp doesn't provide goto-definition functionality, and is meant to be used in tandem
---lspconfig.jedi_language_server.setup({
---	on_attach = lsp_zero.default_setup,
---	settings = {
---		jedi_language_server = {
---			diagnostics = {
---				enable = false,
---			},
---			hover = {
---				enable = true,
---			},
---			--TODO!!!!!!!!!: disable `reportRedeclaration`
---			jediSettings = {
---				autoImportModules = {},
---				caseInsensitiveCompletion = true,
---				debug = false,
---			},
---		},
---	},
---})
---,}}}
-
--- typst
-lspconfig.tinymist.setup({
-	capabilities = capabilities,
-	on_attach = lsp_zero.default_setup,
-	settings = {
-		--exportPdf = "onType",
-		--outputPath = "/tmp/typ/$name", -- put PDFs in /tmp, instead of littering next to the source
-		exportPdf = 'never', -- currently always using `TypstWatch` of `typst.vim`
-	},
-})
-
-lspconfig.nil_ls.setup({
-	capabilities = capabilities,
-	on_attach = lsp_zero.default_setup,
-	settings = {
-		formatter = { command = { "nixpkgs-fmt" } },
-	},
-})
-
-lspconfig.ocamllsp.setup({
-	capabilities = capabilities,
-	on_attach = lsp_zero.default_setup,
-	cmd = { 'ocamllsp' },
-	settings = {
-		formatter = { command = { "ocamlformat" } },
-	},
-})
-
--- python {{{
-vim.lsp.enable('ty', true)
-vim.lsp.config('ty', {
-	capabilities = capabilities,
-	on_attach = lsp_zero.default_setup,
-	settings = {
-		ty = {
-			experimental = {
-				rename = true,
-			},
-		},
-	},
-})
-vim.lsp.enable('ruff', true)
-vim.lsp.config('ruff', {
-	capabilities = capabilities,
-})
---,}}}
-
-vim.lsp.enable('lean', true)
-vim.lsp.config('lean', {
-	on_attach = function()
-		K("n", "<Space>ml", function() vim.cmd("Telescope loogle") end)
-		lsp_zero.default_setup()
-	end,
-	mappings = true,
-	init_options = {
-		editDelay = 250,
-	},
-})
+return M

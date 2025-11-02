@@ -349,7 +349,7 @@
 								hooks = [
 									{
 										type = "command";
-										command = "/usr/bin/env fish -c 'read input; set transcript_path (echo $input | jq -r .transcript_path); set chat_name (head -1 $transcript_path | jq -r .summary); beep \"$chat_name\"'"; #atm chat name itself includes `Claude Code` prefix, so don't have to prefix further
+										command = "/usr/bin/env fish -c 'read input; set transcript_path (echo $input | jq -r .transcript_path); set chat_name (head -1 $transcript_path | jq -r .summary); beep -l 25 \"$chat_name\"'"; #atm chat name itself includes `Claude Code` prefix, so don't have to prefix further
 									}
 								];
 							}

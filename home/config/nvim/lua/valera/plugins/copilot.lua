@@ -5,10 +5,15 @@ return {
 		"copilotlsp-nvim/copilot-lsp", -- (optional) for NES functionality
 	},
 	config = function()
+		local lsp_mod = require("valera.lsp")
+
 		require('copilot').setup({
 			--nes = {
 			--	enabled = true,
 			--},
+			server_opts_overrides = {
+				offset_encoding = lsp_mod.get_preferred_encoding(),
+			},
 			panel = {
 				enabled = true,
 				auto_refresh = false,
