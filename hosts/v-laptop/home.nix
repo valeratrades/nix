@@ -80,6 +80,7 @@ in {
 					PreferredAuthentications = "publickey,keyboard-interactive,password";
 					PubkeyAuthentication = "yes";
 					StrictHostKeyChecking = "accept-new";
+          WarnWeakCrypto = "no"; # silences https://www.openssh.org/pq.html
 				};
 			};
 			"tima" = {
