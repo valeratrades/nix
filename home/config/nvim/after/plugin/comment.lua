@@ -39,7 +39,7 @@ local function commentExtraReimplementation(insert_leader)
 	end
 end
 
---NB: this overwrites the default `extra` mappings from `Comment.nvim`; making this file necessary to be loaded in `after/`
+--NB: this overwrites the default `extra` mappings from `Comment.nvim`; making this file necessary to be loaded in the old style, as doing it through `lazy.nvim`'s `config` field would source the default mappings second, overwriting these.
 K('n', 'gcO', commentExtraReimplementation('O'), { desc = "comment: reimplement `gcO`" })
 K('n', 'gco', commentExtraReimplementation('o'), { desc = "comment: reimplement `gco`" })
 K('n', 'gcA', commentExtraReimplementation('A '), { desc = "comment: reimplement `gcA`" })
