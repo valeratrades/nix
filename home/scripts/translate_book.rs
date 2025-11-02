@@ -7,9 +7,9 @@
 #! nix       system = builtins.currentSystem;
 #! nix       overlays = [rust_flake.overlays.default];
 #! nix     };
-#! nix     toolchain = pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default.override {
+#! nix     toolchain = pkgs.rust-bin.nightly."2025-10-11".default.override {
 #! nix       extensions = ["rust-src"];
-#! nix     });
+#! nix     };
 #! nix
 #! nix in toolchain
 #! nix ``
