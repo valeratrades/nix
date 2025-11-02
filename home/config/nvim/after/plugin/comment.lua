@@ -61,6 +61,10 @@ for i = 1, 5 do
 		desc = string.format("Add a fold marker (nest %d) around selection", i),
 	})
 end
+-- gbf as alias for gb1f
+K("v", "gbf", "<esc>`><cmd>lua FoldmarkerCommentBlock(1)<cr>", {
+	desc = "Add a fold marker (nest 1) around selection",
+})
 --
 
 

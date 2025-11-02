@@ -817,20 +817,42 @@ hi(0, 'PreProc', { fg = '#f5c2e8' })
 hi(0, 'Question', { fg = '#89b4fb' })
 hi(0, 'QuickFixLine', { bg = '#45475b', bold = true })
 
-hi(0, 'RainbowBlue', { fg = '#89b4fb' })
-hi(0, 'RainbowCyan', { fg = '#94e2d6' })
-hi(0, 'RainbowGreen', { fg = '#a6e3a2' })
-hi(0, 'RainbowOrange', { fg = '#fab388' })
-hi(0, 'RainbowRed', { fg = '#f38ba9' })
-hi(0, 'RainbowViolet', { fg = '#cba6f8' })
-hi(0, 'RainbowYellow', { fg = '#f9e2b0' })
-hi(0, 'RainbowDelimiterBlue', { fg = '#89b4fb' })
-hi(0, 'RainbowDelimiterCyan', { fg = '#94e2d6' })
-hi(0, 'RainbowDelimiterGreen', { fg = '#a6e3a2' })
-hi(0, 'RainbowDelimiterOrange', { fg = '#fab388' })
-hi(0, 'RainbowDelimiterRed', { fg = '#f38ba9' })
-hi(0, 'RainbowDelimiterViolet', { fg = '#cba6f8' })
-hi(0, 'RainbowDelimiterYellow', { fg = '#f9e2b0' })
+local rainbow_colors = {
+	--DEPRECATE: these are prof's original colors
+	--'#89b4fb',
+	--'#94e2d6',
+	--'#a6e3a2',
+	--'#fab388',
+	--'#f38ba9',
+	--'#cba6f8',
+	--'#f9e2b0',
+
+	-- shades of grey, generated procedurally {{{1
+	'#cccccc',
+	'#b3b3b3',
+	'#999999',
+	'#808080',
+	'#666666',
+	'#4c4c4c',
+	'#333333',
+	--,}}}1
+}
+
+hi(0, 'RainbowRed', { fg = rainbow_colors[1] })
+hi(0, 'RainbowYellow', { fg = rainbow_colors[2] })
+hi(0, 'RainbowBlue', { fg = rainbow_colors[3] })
+hi(0, 'RainbowOrange', { fg = rainbow_colors[4] })
+hi(0, 'RainbowGreen', { fg = rainbow_colors[5] })
+hi(0, 'RainbowViolet', { fg = rainbow_colors[6] })
+hi(0, 'RainbowCyan', { fg = rainbow_colors[7] })
+hi(0, 'RainbowDelimiterRed', { fg = rainbow_colors[1] })
+hi(0, 'RainbowDelimiterYellow', { fg = rainbow_colors[2] })
+hi(0, 'RainbowDelimiterBlue', { fg = rainbow_colors[3] })
+hi(0, 'RainbowDelimiterOrange', { fg = rainbow_colors[4] })
+hi(0, 'RainbowDelimiterGreen', { fg = rainbow_colors[5] })
+hi(0, 'RainbowDelimiterViolet', { fg = rainbow_colors[6] })
+hi(0, 'RainbowDelimiterCyan', { fg = rainbow_colors[7] })
+
 hi(0, 'RenderMarkdownBullet', { fg = '#89dcec' })
 hi(0, 'RenderMarkdownCode', { bg = '#181826' })
 hi(0, 'RenderMarkdownCodeInline', { bg = '#313245' })

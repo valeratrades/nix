@@ -1,71 +1,89 @@
-#!/usr/bin/env -S rustup run nightly cargo -Zscript -q
-#![allow(clippy::len_zero)]
+#!/usr/bin/env nix
+---cargo
+#! nix shell --impure --expr ``
+#! nix let rust_flake = builtins.getFlake ''github:oxalica/rust-overlay'';
+#! nix     nixpkgs_flake = builtins.getFlake ''nixpkgs'';
+#! nix     pkgs = import nixpkgs_flake {
+#! nix       system = builtins.currentSystem;
+#! nix       overlays = [rust_flake.overlays.default];
+#! nix     };
+#! nix     toolchain = pkgs.rust-bin.nightly."2025-10-10".default.override {
+#! nix       extensions = ["rust-src"];
+#! nix     };
+#! nix
+#! nix in toolchain
+#! nix ``
+#! nix --command sh -c ``cargo -Zscript "$0" "$@"``
 
-//! ```cargo
-//! [dependencies]
-//! clap = { version = "4.2", features = ["derive"] }
-//! ```
+[dependencies]
+clap = { version = "4.5.49", features = ["derive"] }
+---
 
-//HACK: should be implemented with clap, but deps import doesn't yet work in cargo-script (2024/12/03)
+use clap::Parser;
 use std::process::Command;
-//use std::path::PathBuf;
-//use clap::Parser;
+use std::path::PathBuf;
 
-//#[derive(Parser, Debug)]
-//#[command(author, version, about, long_about = None)]
-//struct Cli {
-//    sound_file: PathBuf,
-//	#[arg(long, short)]
-//	loud: bool,
-//}
+/// Play a sound and show a notification
+#[derive(Parser, Debug)]
+#[command(name = "beep")]
+#[command(about = "Play a sound and show a notification")]
+struct Args {
+	/// Path to the sound file to play
+	sound_file: PathBuf,
 
-//BUG: the loudness arg can **only** be the second arg, because I can't use clap and neither can be bothered
-fn beep(mut args: Vec<String>) -> Result<(), String> {
-	if args.is_empty() {
-		return Err("No file path provided".to_string());
-	}
-	//let cli = Cli::parse();
+	/// Message to display in notification
+	message: Vec<String>,
 
-	let mut long = false;
-	let mut quiet = false;
-	// fucking hate not having `clap`
-	let mut i = 0;
-	for a in args.clone().iter() {
-		if a == "-l" || a == "--long" {
-			long = true;
-			args.remove(i);
-		} else if a == "-q" || a == "--quiet" {
-			quiet = true;
-			args.remove(i);
-		} else {
-			i += 1;
-		}
-	}
+	/// Show notification for a long time (10 minutes) or specific number of seconds
+	#[arg(short, long, value_name = "SECONDS")]
+	long: Option<Option<u32>>,
 
-	let message: String = if args.len() > 1 { args[1..].join(" ").to_owned() } else { "beep".to_owned() };
-
-	let file_path = &args[0];
-	match long {
-		true => {
-			Command::new("notify-send").args(["-t", "600000" /*10 min*/, &message]).status().map_err(|e| e.to_string())?;
-		}
-		false => {
-			Command::new("notify-send").arg(message).status().map_err(|e| e.to_string())?;
-		}
-	}
-	if !quiet {
-		Command::new("ffplay")
-			.args(["-nodisp", "-autoexit", "-loglevel", "quiet", file_path])
-			.output()
-			.map_err(|e| e.to_string())?;
-	}
-	Ok(())
+	/// Don't play sound, only show notification
+	#[arg(short, long)]
+	quiet: bool,
 }
 
 fn main() {
-	let args: Vec<String> = std::env::args().skip(1).collect();
-	if let Err(e) = beep(args) {
-		eprintln!("{e}");
+	let args = Args::parse();
+
+	let message = if args.message.is_empty() {
+		"beep".to_string()
+	} else {
+		args.message.join(" ")
+	};
+
+	// Determine notification timeout
+	let timeout_ms = match args.long {
+		Some(Some(seconds)) => seconds * 1000, // User specified exact seconds
+		Some(None) => 600000,                   // -l flag without value: 10 minutes
+		None => 5000,                           // No -l flag: default timeout (5 seconds for notify-send)
+	};
+
+	// Show notification
+	let notify_result = if args.long.is_some() {
+		Command::new("notify-send")
+			.args(["-t", &timeout_ms.to_string(), &message])
+			.status()
+	} else {
+		Command::new("notify-send")
+			.arg(&message)
+			.status()
+	};
+
+	if let Err(e) = notify_result {
+		eprintln!("Error showing notification: {}", e);
 		std::process::exit(1);
+	}
+
+	// Play sound unless quiet mode
+	if !args.quiet {
+		let sound_result = Command::new("ffplay")
+			.args(["-nodisp", "-autoexit", "-loglevel", "quiet", args.sound_file.to_str().unwrap()])
+			.output();
+
+		if let Err(e) = sound_result {
+			eprintln!("Error playing sound: {}", e);
+			std::process::exit(1);
+		}
 	}
 }
