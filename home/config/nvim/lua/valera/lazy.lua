@@ -185,20 +185,7 @@ return require('lazy').setup({
 		event = "VeryLazy",
 	},
 	{ import = "valera.plugins.typst" },
-	{
-		'kawre/leetcode.nvim',
-		build = ":TSUpdate html",
-		dependencies = {
-			"nvim-treesitter/nvim-treesitter",
-			"nvim-telescope/telescope.nvim",
-			"nvim-lua/plenary.nvim", -- required by telescope
-			"MunifTanjim/nui.nvim",
-
-			-- optional
-			"rcarriga/nvim-notify",
-			"nvim-tree/nvim-web-devicons",
-		},
-	},
+	{ import = "valera.plugins.leetcode" },
 	"nanotee/zoxide.vim",
 	{ import = "valera.plugins.color-picker" },
 	{ import = "valera.plugins.log-highlight" },
