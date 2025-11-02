@@ -1,4 +1,3 @@
-local api = require('Comment.api')
 local util = require('ts_context_commentstring.utils')
 local config = {
 	padding = false,
@@ -40,9 +39,10 @@ local function commentExtraReimplementation(insert_leader)
 	end
 end
 
-K('n', 'gcO', commentExtraReimplementation('O'), { desc = "comment: reimplement `gcO`", overwrite = true })
-K('n', 'gco', commentExtraReimplementation('o'), { desc = "comment: reimplement `gco`", overwrite = true })
-K('n', 'gcA', commentExtraReimplementation('A '), { desc = "comment: reimplement `gcA`", overwrite = true })
+--NB: this overwrites the default `extra` mappings from `Comment.nvim`; making this file necessary to be loaded in `after/`
+K('n', 'gcO', commentExtraReimplementation('O'), { desc = "comment: reimplement `gcO`" })
+K('n', 'gco', commentExtraReimplementation('o'), { desc = "comment: reimplement `gco`" })
+K('n', 'gcA', commentExtraReimplementation('A '), { desc = "comment: reimplement `gcA`" })
 --
 
 -- -- Surround Block Comments

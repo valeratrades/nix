@@ -22,38 +22,14 @@ return require('lazy').setup({
 	{ import = "valera.plugins.blankline" },
 	{ import = "valera.plugins.copilot" },
 	--"github/copilot.vim",
-	{ -- Treesitter
-		{ 'nvim-treesitter/nvim-treesitter', build = ':TSUpdate' },
-		"nvim-treesitter/nvim-treesitter-textobjects",
-		"nvim-treesitter/nvim-treesitter-context",
-		"JoosepAlviste/nvim-ts-context-commentstring",
-		"windwp/nvim-ts-autotag",
-		"windwp/nvim-autopairs",
-	},
+	{ import = "valera.plugins.treesitter" },
+	{ import = "valera.plugins.telescope" },
+	{ import = "valera.plugins.lualine" },
 	{
-		'nvim-telescope/telescope.nvim',
+		"numToStr/Comment.nvim",
 		dependencies = {
-			'nvim-lua/plenary.nvim',
-			"nvim-telescope/telescope-live-grep-args.nvim",
-			"nvim-telescope/telescope-fzf-native.nvim",
+			"JoosepAlviste/nvim-ts-context-commentstring",
 		},
-		opts = {
-			extensions_list = { "fzf", "terms", "themes" },
-		},
-	},
-	{
-		'nvim-lualine/lualine.nvim',
-		dependencies = {
-			{ 'nvim-tree/nvim-web-devicons', lazy = true },
-			"lewis6991/gitsigns.nvim",
-			"nvim-lua/lsp-status.nvim",
-		}
-	},
-	{
-		'numToStr/Comment.nvim',
-		config = function()
-			require('Comment').setup()
-		end
 	},
 	{ import = "valera.plugins.signature" },
 	{ import = "valera.plugins.oil" },
@@ -74,25 +50,8 @@ return require('lazy').setup({
 	{ import = "valera.plugins.wordmotion" },
 	-- similar to helix's match
 	"wellle/targets.vim",
-	{ -- Cmp
-		'hrsh7th/nvim-cmp',
-		'hrsh7th/cmp-nvim-lsp',
-		'hrsh7th/cmp-buffer',
-		'hrsh7th/cmp-path',
-		'hrsh7th/cmp-cmdline',
-		'saadparwaiz1/cmp_luasnip',
-		'hrsh7th/cmp-nvim-lua',
-	},
-	{ -- Dap
-		'mfussenegger/nvim-dap',
-		'leoluz/nvim-dap-go',
-		{ 'mfussenegger/nvim-dap-python', build = false },
-		{ 'rcarriga/nvim-dap-ui',         name = 'dapui' },
-		'nvim-neotest/nvim-nio',
-		'theHamsta/nvim-dap-virtual-text',
-		'nvim-telescope/telescope-dap.nvim',
-		'jay-babu/mason-nvim-dap.nvim', -- don't use it because nix, but still must be here as a dep, because lua
-	},
+	{ import = "valera.plugins.cmp" },
+	{ import = "valera.plugins.dap" },
 	{                               -- Lsp
 		'VonHeikemen/lsp-zero.nvim',
 		branch = 'v3.x',
@@ -106,7 +65,7 @@ return require('lazy').setup({
 		}
 	},
 	{ -- Rust
-		'Saecki/crates.nvim',
+		{ import = "valera.plugins.crates" },
 		{ import = "valera.plugins.rustaceanvim" },
 	},
 	{ -- Math
@@ -127,6 +86,7 @@ return require('lazy').setup({
 	},
 	{ -- Git
 		'tpope/vim-fugitive',
+		{ import = "valera.plugins.git" },
 	},
 	{ import = "valera.plugins.neotest" },
 	--
