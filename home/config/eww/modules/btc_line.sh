@@ -7,6 +7,7 @@
 STATE_DIR="$HOME/.local/state/btc_line"
 MAIN_FILE="$STATE_DIR/main"
 ADDITIONAL_FILE="$STATE_DIR/additional"
+SPY_FILE="$STATE_DIR/spy"
 TIMESTAMPS_FILE="$STATE_DIR/.timestamps"
 
 # Get current time
@@ -40,6 +41,38 @@ read_file() {
         echo ""
     fi
 }
+
+# Function to restore value if needed
+# Args: line_name, max_age_seconds, file_path
+restore_if_needed() {
+    local name="$1"
+    local max_age="$2"
+    local file="$3"
+
+    # Get timestamp and check freshness
+    local timestamp=$(get_timestamp "$name")
+    local age=$((CURRENT_TIME - timestamp))
+
+    # Only proceed if data is fresh enough
+    if [ $age -le $max_age ]; then
+        # Check if eww variable is empty
+        local eww_var="btc_line_${name}_str"
+        local current_value=$(eww get "$eww_var" 2>/dev/null)
+
+        # If empty, restore from file
+        if [ -z "$current_value" ] && [ -f "$file" ]; then
+            local file_value=$(read_file "$file")
+            if [ -n "$file_value" ]; then
+                eww update "${eww_var}=${file_value}"
+            fi
+        fi
+    fi
+}
+
+# Restore values on startup if they're fresh and not already set
+restore_if_needed "main" 60 "$MAIN_FILE"
+restore_if_needed "additional" 900 "$ADDITIONAL_FILE"
+restore_if_needed "spy" 60 "$SPY_FILE"
 
 # Check main (60 seconds threshold)
 main_timestamp=$(get_timestamp "main")
