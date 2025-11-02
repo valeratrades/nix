@@ -74,6 +74,21 @@ struct Args {
 	new_name: Option<String>,
 }
 
+fn sanitize_filename(filename: &str) -> String {
+	// Hardcoded patterns to remove from filenames
+	let patterns_to_remove = [
+		"SpotiDown.App - ",
+	];
+
+	let mut result = filename.to_string();
+	for pattern in &patterns_to_remove {
+		result = result.replace(pattern, "");
+	}
+
+	// Replace spaces with underscores
+	result.replace(' ', "_")
+}
+
 fn main() {
 	let args = Args::parse();
 
@@ -158,18 +173,27 @@ fn main() {
 		Some(from.join(first_line))
 	};
 
-	// Determine the final filename: prioritize explicit new_name, then extracted_filename, then directory
-	let destination = match args.new_name.or(extracted_filename) {
-		Some(fname) => to_dir.join(fname),
-		None => to_dir,
-	};
-
 	match latest_file {
 		Some(from_path) => {
-			let status = Command::new("mv").arg(&from_path).arg(&destination).status().expect("Failed to execute mv command");
+			// Determine the final destination with filename
+			let final_destination = match args.new_name.or(extracted_filename) {
+				// If explicit filename provided, use it as-is (don't sanitize)
+				Some(fname) => to_dir.join(fname),
+				// If no explicit filename, sanitize the original filename
+				None => {
+					if let Some(original_filename) = from_path.file_name() {
+						let sanitized_name = sanitize_filename(&original_filename.to_string_lossy());
+						to_dir.join(sanitized_name)
+					} else {
+						to_dir
+					}
+				}
+			};
+
+			let status = Command::new("mv").arg(&from_path).arg(&final_destination).status().expect("Failed to execute mv command");
 
 			if status.success() {
-				println!("Moved {from_path:?} to {destination:?}");
+				println!("Moved {from_path:?} to {final_destination:?}");
 			} else {
 				eprintln!("Error moving file. mv command failed with status: {}", status);
 				std::process::exit(1);

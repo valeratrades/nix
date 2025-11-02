@@ -20,7 +20,7 @@ in {
 
   tg = {
     enable = true;
-    package = inputs.tg.packages.${pkgs.system}.default;
+    package = inputs.tg.packages.${pkgs.stdenv.hostPlatform.system}.default;
     token = config.sops.secrets.telegram_token_main.path;
   };
 
@@ -45,7 +45,7 @@ in {
       LoadCredential = "tg_token:${config.sops.secrets.telegram_token_main.path}";
       ExecStart = lib.mkForce ''
         ${pkgs.bash}/bin/bash -c '${
-          inputs.tg.packages.${pkgs.system}.default
+          inputs.tg.packages.${pkgs.stdenv.hostPlatform.system}.default
         }/bin/tg --token "$(${pkgs.coreutils}/bin/cat /run/user/1000/credentials/tg-server.service/tg_token)" server'
       '';
       # Wait for the sops-nix secret file to exist before systemd tries to load it
@@ -160,18 +160,18 @@ in {
 
       ++ [
         # some of my own packages are in shared, not everything is here
-        inputs.btc_line.packages.${pkgs.system}.default
-        inputs.prettify_log.packages.${pkgs.system}.default
-        inputs.distributions.packages.${pkgs.system}.default # ? shared?
-        inputs.book_parser.packages.${pkgs.system}.default
-        inputs.rm_engine.packages.${pkgs.system}.default
-        inputs.bad_apple_rs.packages.${pkgs.system}.default
-        inputs.ask_llm.packages.${pkgs.system}.default
-        inputs.translate_infrequent.packages.${pkgs.system}.default
-        inputs.cargo_sort_derives.packages.${pkgs.system}.default
+        inputs.btc_line.packages.${pkgs.stdenv.hostPlatform.system}.default
+        inputs.prettify_log.packages.${pkgs.stdenv.hostPlatform.system}.default
+        inputs.distributions.packages.${pkgs.stdenv.hostPlatform.system}.default # ? shared?
+        inputs.book_parser.packages.${pkgs.stdenv.hostPlatform.system}.default
+        inputs.rm_engine.packages.${pkgs.stdenv.hostPlatform.system}.default
+        inputs.bad_apple_rs.packages.${pkgs.stdenv.hostPlatform.system}.default
+        inputs.ask_llm.packages.${pkgs.stdenv.hostPlatform.system}.default
+        inputs.translate_infrequent.packages.${pkgs.stdenv.hostPlatform.system}.default
+        inputs.cargo_sort_derives.packages.${pkgs.stdenv.hostPlatform.system}.default
 
-        #inputs.aggr_orderbook.packages.${pkgs.system}.default
-        #inputs.orderbook_3d.packages.${pkgs.system}.default
+        #inputs.aggr_orderbook.packages.${pkgs.stdenv.hostPlatform.system}.default
+        #inputs.orderbook_3d.packages.${pkgs.stdenv.hostPlatform.system}.default
       ];
     #TODO: himalaya. Problems: (gmail requires oauth2, proton requires redirecting to it (also struggling with it))
     file = {

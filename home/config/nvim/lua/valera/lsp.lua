@@ -352,19 +352,24 @@ vim.lsp.enable('ruff')
 --})
 --vim.lsp.enable('lean')
 
---dbg: direct lsp setup still doesn't work (2025/11/02) {{{1
+-- lean
 require('lean').setup {
 	--TODO: write all keys explicitly
 	mappings = true, --HACK: sets a bunch of stuff over maplocalleader
-	lsp = {
-		init_options = {
-			editDelay = 250,
-		},
-	},
+	lsp = false, -- disable deprecated lsp setup
 }
 
-K("n", "<Space>ml", function() vim.cmd("Telescope loogle") end, { desc = "Lean: Loogle" })
---,}}}1
+vim.lsp.config('leanls', {
+	capabilities = capabilities,
+	on_attach = function(client, bufnr)
+		on_attach(client, bufnr)
+		K("n", "<Space>ml", function() vim.cmd("Telescope loogle") end, { buffer = bufnr, desc = "Lean: Loogle" })
+	end,
+	init_options = {
+		editDelay = 250,
+	},
+})
+vim.lsp.enable('leanls')
 
 -- Rust configuration
 local function codelldb_adapter()

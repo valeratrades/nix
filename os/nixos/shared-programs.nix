@@ -26,6 +26,7 @@
     };
     git = {
       enable = true;
+      lfs.enable = true;
       config = {
         user = {
           name = user.userFullName;

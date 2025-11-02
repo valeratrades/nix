@@ -320,7 +320,19 @@ function where
 
     if test "$kind" = file
         echo "brought in by:"
-        nix-store --query --references (command -v $cmd)
+        set lines (nix-store --query --references (command -v $cmd))
+        set line_count (count $lines)
+        if test $line_count -gt 5
+            for i in (seq 3)
+                echo $lines[$i]
+            end
+            echo "..."
+            for i in (seq (math $line_count - 1) $line_count)
+                echo $lines[$i]
+            end
+        else
+            printf '%s\n' $lines
+        end
     end
 end
 

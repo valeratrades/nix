@@ -218,7 +218,7 @@ in {
           # noto
           noto-fonts
           noto-fonts-cjk-sans
-          noto-fonts-emoji
+          noto-fonts-color-emoji
         ]
         #ocamlPackages.codicons #dbg: breaking fucking retarded rebuild evaluator with `error: Package 'ocaml5.3.0-virtual_dom-0.17.0' in /nix/store/707m8gfbdyxhg1sgkiw5x9zh84ya012r-source/pkgs/development/ocaml-modules/janestreet/0.17.nix:1977 is marked as broken, refusing to evaluate.`
         powerline-fonts
@@ -233,7 +233,7 @@ in {
           texlivePackages.fontawesome5
 					#texlivePackages.newcomputermodern # many papers use it #TEST: may be breaking eww
         ]
-        ubuntu_font_family
+        ubuntu-classic
       ];
     fontconfig.enable = true;
   };
@@ -407,7 +407,7 @@ in {
           atool
           libjxl # jpeg-xl tools
           p7zip
-          poppler_utils
+          poppler-utils
           unzip
           zip
           xz
