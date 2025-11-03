@@ -1,10 +1,44 @@
-#!/usr/bin/env -S cargo +nightly -Zscript -q
+#!/usr/bin/env nix
+---cargo
+#! nix shell --impure --expr ``
+#! nix let rust_flake = builtins.getFlake ''github:oxalica/rust-overlay'';
+#! nix     nixpkgs_flake = builtins.getFlake ''nixpkgs'';
+#! nix     pkgs = import nixpkgs_flake {
+#! nix       system = builtins.currentSystem;
+#! nix       overlays = [rust_flake.overlays.default];
+#! nix     };
+#! nix     toolchain = pkgs.rust-bin.nightly."2025-10-10".default.override {
+#! nix       extensions = ["rust-src"];
+#! nix     };
+#! nix
+#! nix in toolchain
+#! nix ``
+#! nix --command sh -c ``cargo -Zscript "$0" "$@"``
 
+[dependencies]
+clap = { version = "4.5.49", features = ["derive"] }
+---
+
+use clap::{Parser, ValueEnum};
 use std::{env, fs, process::Command};
 
+#[derive(Debug, Clone, Copy, ValueEnum)]
 enum ThemeMode {
 	Light,
 	Dark,
+}
+
+/// Switch between light and dark themes
+#[derive(Parser, Debug)]
+#[command(name = "theme-switcher")]
+#[command(about = "Switch between light and dark themes")]
+struct Args {
+	/// Theme mode (light or dark)
+	mode: ThemeMode,
+
+	/// Also change the wallpaper
+	#[arg(short, long)]
+	wallpaper: bool,
 }
 
 struct Config {
@@ -16,48 +50,17 @@ struct Config {
 	dark_wallpaper: String,
 }
 
-fn print_usage() {
-	println!("Usage: theme-switcher [light|dark] [-w|--wallpaper]");
-	println!("\nArguments:");
-	println!("  light|dark          Required: Set the theme to light or dark mode");
-	println!("  -w, --wallpaper     Optional: Also change the wallpaper");
-	println!("\nExample:");
-	println!("  theme-switcher dark -w    # Switch to dark theme with wallpaper");
-}
-
-fn parse_args() -> Result<Config, String> {
-	let args: Vec<String> = env::args().skip(1).collect();
-
-	if args.is_empty() {
-		return Err("No arguments provided. You must specify 'light' or 'dark'.".to_string());
-	}
-
-	let mut mode = None;
-	let mut change_wallpaper = false;
-
-	for arg in &args {
-		match arg.as_str() {
-			"light" => mode = Some(ThemeMode::Light),
-			"dark" => mode = Some(ThemeMode::Dark),
-			"-w" | "--wallpaper" => change_wallpaper = true,
-			"-h" | "--help" | "help" => {
-				print_usage();
-				std::process::exit(0);
-			}
-			_ => return Err(format!("Unknown argument: {}", arg)),
+impl From<Args> for Config {
+	fn from(args: Args) -> Self {
+		Config {
+			mode: args.mode,
+			change_wallpaper: args.wallpaper,
+			light_theme_alacritty: "github_light_high_contrast".to_string(),
+			dark_theme_alacritty: "github_dark".to_string(),
+			light_wallpaper: "~/Wallpapers/AndreySakharov.jpg".to_string(),
+			dark_wallpaper: "~/Wallpapers/girl_with_a_perl_earring.jpg".to_string(),
 		}
 	}
-
-	let mode = mode.ok_or_else(|| "You must specify either 'light' or 'dark' as the theme.".to_string())?;
-
-	Ok(Config {
-		mode,
-		change_wallpaper,
-		light_theme_alacritty: "github_light_high_contrast".to_string(),
-		dark_theme_alacritty: "github_dark".to_string(),
-		light_wallpaper: "~/Wallpapers/AndreySakharov.jpg".to_string(),
-		dark_wallpaper: "~/Wallpapers/girl_with_a_perl_earring.jpg".to_string(),
-	})
 }
 
 fn set_theme(config: &Config) -> Result<(), String> {
@@ -145,16 +148,11 @@ fn set_theme(config: &Config) -> Result<(), String> {
 }
 
 fn main() {
-	match parse_args() {
-		Ok(config) =>
-			if let Err(e) = set_theme(&config) {
-				eprintln!("Error: {}", e);
-				std::process::exit(1);
-			},
-		Err(e) => {
-			eprintln!("Error: {}", e);
-			print_usage();
-			std::process::exit(1);
-		}
+	let args = Args::parse();
+	let config = Config::from(args);
+
+	if let Err(e) = set_theme(&config) {
+		eprintln!("Error: {}", e);
+		std::process::exit(1);
 	}
 }

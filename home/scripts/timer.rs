@@ -1,33 +1,57 @@
-#!/usr/bin/env -S rustup run nightly cargo -Zscript -q
+#!/usr/bin/env nix
+---cargo
+#! nix shell --impure --expr ``
+#! nix let rust_flake = builtins.getFlake ''github:oxalica/rust-overlay'';
+#! nix     nixpkgs_flake = builtins.getFlake ''nixpkgs'';
+#! nix     pkgs = import nixpkgs_flake {
+#! nix       system = builtins.currentSystem;
+#! nix       overlays = [rust_flake.overlays.default];
+#! nix     };
+#! nix     toolchain = pkgs.rust-bin.nightly."2025-10-10".default.override {
+#! nix       extensions = ["rust-src"];
+#! nix     };
+#! nix
+#! nix in toolchain
+#! nix ``
+#! nix --command sh -c ``cargo -Zscript "$0" "$@"``
+
+[dependencies]
+clap = { version = "4.5.49", features = ["derive"] }
+---
 
 //TODO!: switch to using v_utils::Timelike for time parsing
-use std::{env, process::Command, thread::sleep, time::Duration};
+use clap::Parser;
+use std::{process::Command, thread::sleep, time::Duration};
 
-fn timer(args: &[String]) -> Result<(), String> {
-	if args.contains(&"-h".to_string()) || args.contains(&"--help".to_string()) || args.contains(&"help".to_string()) {
-		println!("Usage: timer [time] [-q]\n\nArguments:\n\ttime: time in seconds or in format \"mm:ss\".\n\t-q: quiet mode, shows forever notif instead of beeping.");
-		return Ok(());
-	}
+/// Countdown timer with visual feedback and notifications
+#[derive(Parser, Debug)]
+#[command(name = "timer")]
+#[command(about = "Countdown timer with visual feedback and notifications")]
+struct Args {
+	/// Time in seconds or in format "mm:ss"
+	time: String,
 
-	let mut beep = true;
-	let mut input = "";
+	/// Quiet mode (shows persistent notification instead of beeping)
+	#[arg(short, long)]
+	quiet: bool,
+}
 
-	for arg in args {
-		if arg == "-q" {
-			beep = false;
-		} else {
-			input = arg;
-		}
-	}
-
-	let mut left = if input.contains(':') {
+fn parse_time(input: &str) -> Result<i32, String> {
+	if input.contains(':') {
 		let parts: Vec<&str> = input.split(':').collect();
+		if parts.len() != 2 {
+			return Err("Time format must be mm:ss".to_string());
+		}
 		let mins: i32 = parts[0].parse::<i32>().map_err(|e| e.to_string())?;
 		let secs: i32 = parts[1].parse::<i32>().map_err(|e| e.to_string())?;
-		mins * 60 + secs
+		Ok(mins * 60 + secs)
 	} else {
-		input.parse::<i32>().map_err(|e| e.to_string())?
-	};
+		input.parse::<i32>().map_err(|e| e.to_string())
+	}
+}
+
+fn timer(args: &Args) -> Result<(), String> {
+	let mut left = parse_time(&args.time)?;
 
 	while left > 0 {
 		let mins = left / 60;
@@ -46,17 +70,17 @@ fn timer(args: &[String]) -> Result<(), String> {
         .status()
         .map_err(|e| e.to_string())?;
 
-	if beep {
-		Command::new("fish").args(["-c", "beep --long time"]).status().map_err(|e| e.to_string())?;
-	} else {
+	if args.quiet {
 		Command::new("notify-send").args(["timer finished", "-t", "2147483647"]).status().map_err(|e| e.to_string())?;
+	} else {
+		Command::new("fish").args(["-c", "beep --long time"]).status().map_err(|e| e.to_string())?;
 	}
 
 	Ok(())
 }
 
 fn main() {
-	let args: Vec<String> = env::args().skip(1).collect();
+	let args = Args::parse();
 	if let Err(e) = timer(&args) {
 		eprintln!("{e}");
 		std::process::exit(1);

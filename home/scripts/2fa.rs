@@ -1,37 +1,56 @@
-#!/usr/bin/env -S rustup run nightly cargo -Zscript -q
+#!/usr/bin/env nix
+---cargo
+#! nix shell --impure --expr ``
+#! nix let rust_flake = builtins.getFlake ''github:oxalica/rust-overlay'';
+#! nix     nixpkgs_flake = builtins.getFlake ''nixpkgs'';
+#! nix     pkgs = import nixpkgs_flake {
+#! nix       system = builtins.currentSystem;
+#! nix       overlays = [rust_flake.overlays.default];
+#! nix     };
+#! nix     toolchain = pkgs.rust-bin.nightly."2025-10-10".default.override {
+#! nix       extensions = ["rust-src"];
+#! nix     };
+#! nix
+#! nix in toolchain
+#! nix ``
+#! nix --command sh -c ``cargo -Zscript "$0" "$@"``
 
+[dependencies]
+clap = { version = "4.5.49", features = ["derive"] }
+---
+
+use clap::Parser;
 use std::env;
 use std::io::Write;
 use std::process::{Command, Stdio};
 
+/// Generate TOTP codes from environment variables
+#[derive(Parser, Debug)]
+#[command(name = "2fa")]
+#[command(about = "Generate TOTP codes from environment variables")]
+struct Args {
+    /// Application name (reads {APP_NAME}_TOTP environment variable)
+    app_name: String,
+
+    /// Number of digits in the code (4-10)
+    #[arg(default_value_t = 6)]
+    digits: u32,
+
+    /// Copy the code to clipboard
+    #[arg(short, long)]
+    copy: bool,
+}
+
 fn main() {
-    let mut copy = false;
-    let mut pos: Vec<String> = Vec::new();
+    let args = Args::parse();
 
-    for a in env::args().skip(1) {
-        match a.as_str() {
-            "-c" | "--copy" => copy = true,
-            _ => pos.push(a),
-        }
-    }
-
-    if pos.len() < 1 || pos.len() > 2 {
-        eprintln!("Usage: 2fa [-c|--copy] <app_name> [digits]");
+    if !(4..=10).contains(&args.digits) {
+        eprintln!("Invalid digits value. Use an integer between 4 and 10.");
         std::process::exit(1);
     }
 
-    let app = &pos[0];
-    let digits = if pos.len() == 2 {
-        match pos[1].parse::<u32>() {
-            Ok(d) if (4..=10).contains(&d) => d,
-            _ => {
-                eprintln!("Invalid digits value. Use an integer between 4 and 10.");
-                std::process::exit(1);
-            }
-        }
-    } else {
-        6
-    };
+    let app = &args.app_name;
+    let digits = args.digits;
 
     let var = format!("{}_TOTP", app.to_uppercase());
     let mut secret = match env::var(&var) {
@@ -62,7 +81,7 @@ fn main() {
 
     let code = String::from_utf8_lossy(&out.stdout).trim().to_string();
 
-    if copy {
+    if args.copy {
         let mut child = match Command::new("wl-copy").stdin(Stdio::piped()).spawn() {
             Ok(c) => c,
             Err(e) => {

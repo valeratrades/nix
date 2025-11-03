@@ -82,17 +82,13 @@ in {
   nixosConfigurations = lib.listToAttrs (map (user: {
     name = user.desktopHostName;
     value = nixpkgs.lib.nixosSystem {
+      system = "x64_64-linux"; #Q: should this be `user.system`?
       specialArgs = {
         inherit inputs self;
         inherit mylib user;
-        pkgs = import nixpkgs {
-          system = "x86_64-linux";
-          config = common_pkgs_config;
-        };
       };
 
       modules = [
-        { nixpkgs.hostPlatform = "x86_64-linux"; }
         (mylib.relativeToRoot "os/nixos/configuration.nix")
         (mylib.relativeToRoot "machines/modules/default.nix")
 

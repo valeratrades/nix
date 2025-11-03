@@ -22,9 +22,6 @@ K("n", "H", "R", { desc = "Replace mode", overwrite = true })
 K("n", "gf", "gF", { desc = "Go to file (with line)", overwrite = true })
 K("", "<MiddleMouse>", "<nop>", { desc = "Nop" })
 
--- Useful Enter key
---K("", "<CR>", "o<Esc>")
-K("", "<C-CR>", "O<Esc>", { desc = "Insert line above" })
 K("i", "<C-CR>", "<Esc>O", { desc = "Insert line above" })
 
 -- Jumps
@@ -51,10 +48,10 @@ K("", "l", "t", { desc = "Till char", overwrite = true })
 --,}}}
 
 -- Windows {{{
-K('n', '<C-w>s', '<C-W>h', { desc = 'Win left' })
-K('n', '<C-w>r', '<C-W>j', { desc = 'Win down' })
-K('n', '<C-w>n', '<C-W>k', { desc = 'Win up' })
-K('n', '<C-w>t', '<C-W>l', { desc = 'Win right' })
+K('n', '<C-w>s', '<C-w>h', { desc = 'Win left' })
+K('n', '<C-w>r', '<C-w>j', { desc = 'Win down' })
+K('n', '<C-w>n', '<C-w>k', { desc = 'Win up' })
+K('n', '<C-w>t', '<C-w>l', { desc = 'Win right' })
 
 K('n', '<C-w>S', '<cmd>wincmd H<cr>', { desc = 'move window left' })
 K('n', '<C-w>R', '<cmd>wincmd J<cr>', { desc = 'move window down' })

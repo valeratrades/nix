@@ -11,7 +11,17 @@ return {
 	config = function()
 		local builtin = require('telescope.builtin')
 		local actions = require('telescope.actions')
+		local action_state = require('telescope.actions.state')
 		local gs = { hidden = true, no_ignore = true, file_ignore_patterns = { ".git/", "target/", "%.lock" } } -- `^` and `.` in file ignore patterns don't really work
+
+		-- Custom action to send to quickfix and open replacer
+		local function send_to_qf_and_replacer(prompt_bufnr)
+			actions.send_to_qflist(prompt_bufnr)
+			actions.open_qflist(prompt_bufnr)
+			vim.defer_fn(function()
+				require('replacer').run()
+			end, 50)
+		end
 
 		K('n', '<space>f', function() builtin.find_files(gs) end, { desc = "Search files" })
 		K('n', '<space>z', function() builtin.live_grep(gs) end, { desc = "Live grep" })
@@ -89,13 +99,15 @@ return {
 						["<C-t>"] = actions.select_tab + actions.center,
 						["<C-l>"] = actions.select_all + actions.add_selected_to_loclist,
 						["<c-f>"] = actions.to_fuzzy_refine,
+						["<C-r>"] = send_to_qf_and_replacer,
 					},
 					n = {
 						["<CR>"] = actions.select_default + actions.center,
 						["<C-x>"] = actions.select_horizontal + actions.center,
 						["<C-v>"] = actions.select_vertical + actions.center,
 						["<C-t>"] = actions.select_tab + actions.center,
-						["<C-l>"] = actions.select_all + actions.add_selected_to_loclist
+						["<C-l>"] = actions.select_all + actions.add_selected_to_loclist,
+						["<C-r>"] = send_to_qf_and_replacer,
 					}
 				},
 				layout_config = {

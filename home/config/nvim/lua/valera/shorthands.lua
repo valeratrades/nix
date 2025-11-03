@@ -92,16 +92,28 @@ function K(mode, lhs, rhs, opts)
 		end
 	end
 
+	-- Normalize key notation for case-insensitive comparison
+	local function normalize_key(key)
+		return key:gsub("<[Cc]%-", "<c-"):gsub("<[Cc][Rr]>", "<cr>")
+	end
+
 	-- Check if mapping already exists (user-defined or vim default)
 	local found_existing = false
+	local normalized_lhs = normalize_key(lhs)
 	for _, m in ipairs(expanded_modes) do
 		-- Check user-defined mappings
 		local existing = vim.fn.maparg(lhs, m, false, true)
 		local is_user_mapped = existing and existing.lhs == lhs
 
-		-- Check vim defaults
+		-- Check vim defaults (with normalized comparison)
 		local defaults_for_mode = VIM_DEFAULTS[m] or {}
-		local is_vim_default = vim.tbl_contains(defaults_for_mode, lhs)
+		local is_vim_default = false
+		for _, default_key in ipairs(defaults_for_mode) do
+			if normalize_key(default_key) == normalized_lhs then
+				is_vim_default = true
+				break
+			end
+		end
 
 		if is_user_mapped or is_vim_default then
 			found_existing = true

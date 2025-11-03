@@ -117,7 +117,7 @@
     Service = {
       Type = "simple";
       ExecStart = "${
-          self.packages.${pkgs.stdenv.hostPlatform.system}.wlr-gamma-service
+          self.packages.${pkgs.system}.wlr-gamma-service
         }/bin/wlr-gamma-service";
     };
   };
@@ -238,12 +238,12 @@
         pdfgrep
         xournalpp # draw on PDFs
       ] ++ [
-        inputs.auto_redshift.packages.${pkgs.stdenv.hostPlatform.system}.default # good idea for everyone
-        inputs.todo.packages.${pkgs.stdenv.hostPlatform.system}.default # here, because eww depends on it, otherwise meant for my use exclusively
-        inputs.bbeats.packages.${pkgs.stdenv.hostPlatform.system}.default
-        inputs.math_tools.packages.${pkgs.stdenv.hostPlatform.system}.default # could be useful to all people currently using my distro
-        inputs.reasonable_envsubst.packages.${pkgs.stdenv.hostPlatform.system}.default # have scripts depending on it, and they are currently part of the shared config.
-        inputs.booktyping.packages.${pkgs.stdenv.hostPlatform.system}.default
+        inputs.auto_redshift.packages.${pkgs.system}.default # good idea for everyone
+        inputs.todo.packages.${pkgs.system}.default # here, because eww depends on it, otherwise meant for my use exclusively
+        inputs.bbeats.packages.${pkgs.system}.default
+        inputs.math_tools.packages.${pkgs.system}.default # could be useful to all people currently using my distro
+        inputs.reasonable_envsubst.packages.${pkgs.system}.default # have scripts depending on it, and they are currently part of the shared config.
+        inputs.booktyping.packages.${pkgs.system}.default
       ];
 
     activation = {
