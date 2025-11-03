@@ -192,6 +192,10 @@
             go
             gopls
           ]
+          # C#
+          [
+            vscode-extensions.ms-dotnettools.csharp
+          ]
           # rust
           [
             # cargo, rustcs, etc are brought in by fenix.nix

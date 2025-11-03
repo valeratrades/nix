@@ -205,6 +205,7 @@ end
 vim.g.rust_recommended_style = false
 vim.g.python_recommended_style = false
 vim.g.golang_recommended_style = false
+vim.g.cpp_recommended_style = false
 --,}}}
 
 -- lua_ls
@@ -317,6 +318,17 @@ vim.lsp.config('tinymist', {
 })
 vim.lsp.enable('tinymist')
 
+vim.lsp.config('csharp_ls', {
+	capabilities = capabilities,
+	on_attach = on_attach,
+	settings = {
+		csharp = {
+			AutomaticWorkspaceInit = true,
+		},
+	},
+})
+vim.lsp.enable('csharp_ls')
+
 -- python {{{
 vim.lsp.config('ty', {
 	capabilities = capabilities,
@@ -356,7 +368,7 @@ vim.lsp.enable('ruff')
 require('lean').setup {
 	--TODO: write all keys explicitly
 	mappings = true, --HACK: sets a bunch of stuff over maplocalleader
-	lsp = false, -- disable deprecated lsp setup
+	lsp = false,    -- disable deprecated lsp setup
 }
 
 vim.lsp.config('leanls', {

@@ -29,7 +29,7 @@ function e
 			set full_command "$nvim_evocation $argv ."
 		else
 			set -l could_fix 0
-			set -l try_extensions "" .sh .rs .go .py .fish .json .txt .md .typ .tex .html .js .toml .conf
+			set -l try_extensions "" .sh .rs .go .py .fish .json .txt .md .typ .tex .html .js .toml .conf .cs .cpp .yaml .yml .xml .ini .env .log
 			# note that indexing starts at 1, as we're in a piece of shit zsh.
 			for ext in $try_extensions
 				set -l try_path "$argv[1]$ext"

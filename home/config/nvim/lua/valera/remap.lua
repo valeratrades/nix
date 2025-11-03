@@ -219,8 +219,6 @@ K("n", "X", "\"_X", { desc = "Delete char back (to void)", overwrite = true })
 K("", "c", "\"_c", { desc = "Change (to void)", overwrite = true })
 K("", "C", "\"_C", { desc = "Change to EOL (to void)", overwrite = true })
 
---K("n", "<C-F>", "<cmd>silent !tmux neww tmux-sessionizer<cr>")
-
 K("n", "<space><space>n", ":%s/\\<<C-r><C-w>\\>/<C-r><C-w>/gI<Left><Left><Left>", { desc = "Substitute word" })
 
 -- select the pasted
