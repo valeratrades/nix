@@ -16,16 +16,16 @@
 #! nix --command sh -c ``cargo -Zscript -q "$0" "$@"``
 
 [dependencies]
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-chrono = "0.4"
+serde = { version = "^1.0.228", features = ["derive"] }
+serde_json = "^1.0.145"
+jiff = "^0.2.15"
 ---
 
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
 use std::time::{SystemTime, UNIX_EPOCH};
-use chrono::DateTime;
+use jiff::Timestamp;
 use serde::Serialize;
 
 #[derive(Serialize)]
@@ -72,6 +72,7 @@ fn main() {
     // Restore values if needed
     for line in &lines {
         restore_if_needed(line, &timestamps_file, current_time);
+        print_status(line, &timestamps_file, current_time);
     }
 
     // Check and output main and additional values
@@ -91,9 +92,9 @@ fn get_timestamp(timestamps_file: &PathBuf, name: &str) -> Option<u64> {
 
     for line in content.lines() {
         if let Some(rest) = line.strip_prefix(&format!("{}: ", name)) {
-            if let Ok(dt) = DateTime::parse_from_rfc3339(rest) {
-                return Some(dt.timestamp() as u64);
-            }
+            let ts = rest.trim().parse::<Timestamp>()
+                .unwrap_or_else(|e| panic!("Failed to parse timestamp for '{}': '{}' - {}", name, rest, e));
+            return Some(ts.as_second() as u64);
         }
     }
 
@@ -110,6 +111,14 @@ fn read_file(path: &PathBuf) -> Option<String> {
 fn restore_if_needed(line: &LineConfig, timestamps_file: &PathBuf, current_time: u64) {
     // Get timestamp and check freshness
     let timestamp = get_timestamp(timestamps_file, line.name).unwrap_or(0);
+
+    if timestamp > current_time && timestamp != 0 {
+        panic!(
+            "Timestamp for '{}' is in the future! ts: {} > now: {}",
+            line.name, timestamp, current_time
+        );
+    }
+
     let age = current_time.saturating_sub(timestamp);
 
     // Only proceed if data is fresh enough
@@ -127,7 +136,7 @@ fn restore_if_needed(line: &LineConfig, timestamps_file: &PathBuf, current_time:
             if current_value.is_empty() {
                 if let Some(file_value) = read_file(&line.file) {
                     let _ = Command::new("eww")
-                        .args(["update", &format!("{}={}", eww_var, file_value)])
+                        .args(["update", &format!("{eww_var}={file_value}")])
                         .status();
                 }
             }
@@ -135,8 +144,54 @@ fn restore_if_needed(line: &LineConfig, timestamps_file: &PathBuf, current_time:
     }
 }
 
+fn format_duration(secs: u64) -> String {
+    if secs == 0 {
+        return "never".to_string();
+    }
+
+    let hours = secs / 3600;
+    let minutes = (secs % 3600) / 60;
+    let seconds = secs % 60;
+
+    if hours > 0 {
+        format!("{}h{}m{}s", hours, minutes, seconds)
+    } else if minutes > 0 {
+        format!("{}m{}s", minutes, seconds)
+    } else {
+        format!("{}s", seconds)
+    }
+}
+
+fn print_status(line: &LineConfig, timestamps_file: &PathBuf, current_time: u64) {
+    let timestamp = get_timestamp(timestamps_file, line.name).unwrap_or(0);
+
+    if timestamp > current_time && timestamp != 0 {
+        panic!(
+            "Timestamp for '{}' is in the future! ts: {} > now: {}",
+            line.name, timestamp, current_time
+        );
+    }
+
+    let age = current_time.saturating_sub(timestamp);
+
+    eprintln!(
+        "{}: {} / {} max",
+        line.name,
+        format_duration(age),
+        format_duration(line.max_age_secs)
+    );
+}
+
 fn get_value_or_none(line: &LineConfig, timestamps_file: &PathBuf, current_time: u64) -> String {
     let timestamp = get_timestamp(timestamps_file, line.name).unwrap_or(0);
+
+    if timestamp > current_time && timestamp != 0 {
+        panic!(
+            "Timestamp for '{}' is in the future! ts: {} > now: {}",
+            line.name, timestamp, current_time
+        );
+    }
+
     let age = current_time.saturating_sub(timestamp);
 
     if age > line.max_age_secs {
