@@ -208,7 +208,7 @@
 (defvar btc_line_additional_str "")
 (defvar btc_line_spy_str "")
 
-(defpoll btc_line_poll :initial "{\"main\": \"\", \"additional\": \"\"}" :interval "5s" "./modules/btc_line.sh")
+(defpoll btc_line_poll :initial "{\"main\": \"\", \"additional\": \"\"}" :interval "5s" "./modules/btc_line.rs")
 
 (defwindow btc_line_upper
 	:monitor 0
