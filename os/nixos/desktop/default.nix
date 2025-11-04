@@ -12,7 +12,7 @@
     with pkgs;
     lib.lists.flatten [
       flatpak
-      self.packages.${pkgs.system}.wlr-gamma-service
+      self.packages.${pkgs.stdenv.hostPlatform.system}.wlr-gamma-service
       keyd
       haskellPackages.greenclip
       granted # access cloud

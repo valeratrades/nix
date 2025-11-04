@@ -18,15 +18,34 @@ function nsync
 end
 
 function nb
-	sudo nixos-rebuild switch --impure --no-reexec --flake ~/nix#$(hostname)
-	if [ (count $argv) != 0 ]
-		if [ $argv[1] = "-b" ] || [ $argv[1] = "--beep" ]
-			beep "nix rb $status"
+	set -l extra_flags ""
+	set -l do_beep 0
+
+	if test (count $argv) -gt 0
+		if test $argv[1] = "-b" -o $argv[1] = "--beep"
+			beep "nix rb"
+			set do_beep 1
+			set argv $argv[2..-1]
 		end
-		set hostName $argv[1]
 	end
-	return $status
+
+	if test (count $argv) -gt 0
+		if test $argv[1] = "-D"
+			set extra_flags "--show-trace --option --abort-on-warn true"
+			set argv $argv[2..-1]
+		end
+	end
+
+	sudo nixos-rebuild switch --impure --no-reexec --flake ~/nix#(hostname) $extra_flags
+	set -l status_code $status
+
+	if test $do_beep -eq 1
+		beep "nix rb $status_code"
+	end
+
+	return $status_code
 end
+
 
 function nbg
 	set hostName (hostname)
