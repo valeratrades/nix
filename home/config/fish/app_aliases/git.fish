@@ -51,7 +51,7 @@ alias ggp="gg -p perf"
 alias ggd="gg -p docs"
 alias ggi="gg -p ci"
 alias ggm="gg -p move"
-alias ggn="gg -p nuke"
+alias ggn="gg -p nuke" # important to have this here, as it additionally promotes simplification whenever possible
 alias ggw="gg -p wip"
 
 alias gup="git commit -a --fixup (git rev-parse HEAD)"
