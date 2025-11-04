@@ -82,7 +82,6 @@ in {
   nixosConfigurations = lib.listToAttrs (map (user: {
     name = user.desktopHostName;
     value = nixpkgs.lib.nixosSystem {
-      system = "x64_64-linux"; #Q: should this be `user.system`?
       specialArgs = {
         inherit inputs self;
         inherit mylib user;
