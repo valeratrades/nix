@@ -1,8 +1,3 @@
-local utils = require('valera.utils')
---TODO: switch all `K`s to whichkey
--- Notes for all mappings:
--- 1) never use ':lua', instead use '<cmd>lua', for ':lua' forces us to normal mode.
-
 vim.g.mapleader = " "
 K({ "n", "v" }, "-", "<cmd>Oil<cr>", { desc = "Open Oil" })
 
