@@ -29,21 +29,22 @@ fn find_todo_impl() {
     let mut qf_entries = Vec::new();
 
     for line in stdout.lines() {
-        let parts: Vec<&str> = line.splitn(5, ':').collect();
-        if parts.len() >= 5 {
+        let parts: Vec<&str> = line.splitn(4, ':').collect();
+
+        if parts.len() >= 4 {
             // parts[0] = count of '!' from awk (not used in quickfix)
             // parts[1] = filename
             // parts[2] = line number
-            // parts[3] = column (from rg)
-            // parts[4] = content
+            // parts[3] = content (everything after line number, includes column + text)
 
             let filename = parts[1].to_string();
             let lnum = parts[2].parse::<i64>().unwrap_or(0);
-            let text = parts[4].to_string();
+            let text = parts[3].to_string();
 
             let entry = Dictionary::from_iter([
                 ("filename", Object::from(filename)),
                 ("lnum", Object::from(lnum)),
+                ("col", Object::from(0_i64)),
                 ("text", Object::from(text)),
             ]);
 
@@ -51,11 +52,23 @@ fn find_todo_impl() {
         }
     }
 
-    // Set the quickfix list using vim.fn.setqflist
+    // Debug: print the first entry to see what we're passing
+    if !qf_entries.is_empty() {
+        let _ = api::err_writeln(&format!("DEBUG: First entry object: {:?}", qf_entries[0]));
+    }
+
+    // Set the quickfix list using vim.fn.setqflist (no second argument, just the list)
     let qf_array = Array::from_iter(qf_entries);
-    if let Err(e) = api::call_function::<_, ()>("setqflist", (qf_array, "r")) {
-        let _ = api::err_writeln(&format!("Error setting quickfix list: {}", e));
-        return;
+
+    // Try calling it and see exactly what the error is
+    match api::call_function::<_, i64>("setqflist", (qf_array,)) {
+        Ok(result) => {
+            let _ = api::err_writeln(&format!("DEBUG: setqflist returned: {}", result));
+        }
+        Err(e) => {
+            let _ = api::err_writeln(&format!("Error setting quickfix list: {}", e));
+            return;
+        }
     }
 
     // Set mark 'T' to allow jumping back

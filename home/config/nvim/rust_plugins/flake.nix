@@ -70,15 +70,6 @@
             cp -f ${(v-utils.files.rust.rustfmt {inherit pkgs;})} ./rustfmt.toml
             cp -f ${(v-utils.hooks.treefmt) { inherit pkgs; }} ./.treefmt.toml
 
-
-            # Post-build function: copy .so to lua directory after successful build
-            build() {
-              cargo build --release && \
-              cp target/release/librust_plugins.so ../lua/rust_plugins.so && \
-              echo "✓ Plugin installed to ../lua/rust_plugins.so"
-            }
-            export -f build
-
             echo "Rust plugin dev environment loaded"
             echo "Run 'nix build' to compile and install the plugin"
           '';
