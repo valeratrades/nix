@@ -36,7 +36,7 @@ return {
 		K('n', '<space>sn', function() builtin.find_files({ hidden = true, no_ignore_parent = true }) end,
 			{ desc = "No_ignore_parent" })
 		K('n', '<space>st', function()
-			FindTodo()
+			require('rust_plugins').find_todo()
 			require('telescope.builtin').quickfix({ wrap_results = true, fname_width = 999 })
 		end, { desc = "Project's TODOs" })
 		K('n', '<space>si', "<cmd>Telescope media_files<cr>", { desc = "Media files" })

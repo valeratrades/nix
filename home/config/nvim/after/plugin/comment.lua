@@ -150,8 +150,8 @@ end
 --- The main keymap is in telescope.lua (`<space>st`)
 --- for navigation I'm just typing `:cp` and `:cn`. Can't do much better than that.
 --- To jump back, I do `T
+--DEPRECATE: once rust version is working
 --TODO!!!!: fix \
---Q: could I riir?
 function FindTodo()
 	--local regex = vim.fn.shellescape(Cs() .. "TOD" .. "O") -- split the word to avoid matching this file
 	local regex = vim.fn.shellescape("TODO")
@@ -172,11 +172,15 @@ function FindTodo()
 
 	local qflist = vim.fn.map(results, function(_, x)
 		local parts = split(x, ":")
+		-- parts[1] is the count of '!' from awk
+		-- parts[2] is filename
+		-- parts[3] is line number
+		-- parts[4] onwards is the content
 		return {
 			filename = parts[2],
 			lnum = parts[3],
 			col = 0,
-			text = table.concat(parts, ":", 5):gsub("\r$", "")
+			text = table.concat(parts, ":", 4):gsub("\r$", "")
 		}
 	end)
 	vim.fn.setqflist(qflist)
