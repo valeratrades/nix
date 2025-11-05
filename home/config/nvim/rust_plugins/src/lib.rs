@@ -1,5 +1,8 @@
 use nvim_oxi::{api, Array, Dictionary, Function, Object};
 use std::process::Command;
+use std::fs;
+use std::path::{Path, PathBuf};
+use std::time::SystemTime;
 
 /// Find all TODO comments in the project, sorted by number of '!' signs (descending)
 fn find_todo_impl() {
@@ -77,9 +80,143 @@ fn find_todo_impl() {
     }
 }
 
+/// Check if Rust plugins need rebuilding
+fn should_rebuild() -> bool {
+    let config_dir = match std::env::var("XDG_CONFIG_HOME")
+        .or_else(|_| std::env::var("HOME").map(|h| format!("{}/.config", h))) {
+        Ok(dir) => PathBuf::from(dir).join("nvim/rust_plugins"),
+        Err(_) => return true, // If can't determine, rebuild to be safe
+    };
+
+    let state_dir = match std::env::var("XDG_STATE_HOME")
+        .or_else(|_| std::env::var("HOME").map(|h| format!("{}/.local/state", h))) {
+        Ok(dir) => PathBuf::from(dir).join("nvim/rust_plugins"),
+        Err(_) => return true,
+    };
+
+    let timestamp_file = state_dir.join("last_build");
+
+    // Create state directory if needed
+    let _ = fs::create_dir_all(&state_dir);
+
+    // Get last build time
+    let last_build_time = match fs::read_to_string(&timestamp_file) {
+        Ok(contents) => match contents.trim().parse::<u64>() {
+            Ok(time) => SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(time),
+            Err(_) => return true,
+        },
+        Err(_) => return true, // No timestamp file, need to build
+    };
+
+    // Check if any files in rust_plugins were modified since last build
+    fn check_dir_modified(dir: &Path, since: SystemTime) -> bool {
+        if let Ok(entries) = fs::read_dir(dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+
+                // Skip target directory and hidden files
+                if path.file_name().and_then(|n| n.to_str())
+                    .map(|n| n == "target" || n.starts_with('.'))
+                    .unwrap_or(false) {
+                    continue;
+                }
+
+                if path.is_file() {
+                    if let Ok(metadata) = fs::metadata(&path) {
+                        if let Ok(modified) = metadata.modified() {
+                            if modified > since {
+                                return true;
+                            }
+                        }
+                    }
+                } else if path.is_dir() {
+                    if check_dir_modified(&path, since) {
+                        return true;
+                    }
+                }
+            }
+        }
+        false
+    }
+
+    check_dir_modified(&config_dir, last_build_time)
+}
+
+/// Trigger rebuild of Rust plugins if needed
+fn rebuild_if_needed() {
+    if !should_rebuild() {
+        return;
+    }
+
+    let config_dir = match std::env::var("XDG_CONFIG_HOME")
+        .or_else(|_| std::env::var("HOME").map(|h| format!("{}/.config", h))) {
+        Ok(dir) => PathBuf::from(dir).join("nvim/rust_plugins"),
+        Err(_) => return,
+    };
+
+    let state_dir = match std::env::var("XDG_STATE_HOME")
+        .or_else(|_| std::env::var("HOME").map(|h| format!("{}/.local/state", h))) {
+        Ok(dir) => PathBuf::from(dir).join("nvim/rust_plugins"),
+        Err(_) => return,
+    };
+
+    let log_file = state_dir.join("build.log");
+    let timestamp_file = state_dir.join("last_build");
+
+    let start = std::time::Instant::now();
+
+    // Run nix build
+    let output = Command::new("sh")
+        .arg("-c")
+        .arg(format!("cd {} && nix build 2>&1", config_dir.display()))
+        .output();
+
+    let elapsed_ms = start.elapsed().as_millis();
+    let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
+
+    match output {
+        Ok(result) if result.status.success() => {
+            // Log success
+            let log_entry = format!("[{}] Rust plugin build SUCCESS ({}ms)\n", timestamp, elapsed_ms);
+            let _ = fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(log_file)
+                .and_then(|mut f| {
+                    use std::io::Write;
+                    f.write_all(log_entry.as_bytes())
+                });
+
+            // Update timestamp
+            let _ = fs::write(timestamp_file, format!("{}", SystemTime::now()
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .unwrap()
+                .as_secs()));
+        }
+        _ => {
+            // Log failure
+            let log_entry = format!("[{}] Rust plugin build FAILED ({}ms)\n", timestamp, elapsed_ms);
+            let _ = fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(log_file)
+                .and_then(|mut f| {
+                    use std::io::Write;
+                    f.write_all(log_entry.as_bytes())
+                });
+        }
+    }
+}
+
 #[nvim_oxi::plugin]
 fn rust_plugins() -> nvim_oxi::Result<Dictionary> {
     let find_todo = Function::from_fn(|()| find_todo_impl());
+    let should_rebuild_fn = Function::from_fn(|()| should_rebuild());
+    let rebuild_if_needed_fn = Function::from_fn(|()| rebuild_if_needed());
 
-    Ok(Dictionary::from_iter([("find_todo", Object::from(find_todo))]))
+    Ok(Dictionary::from_iter([
+        ("find_todo", Object::from(find_todo)),
+        ("should_rebuild", Object::from(should_rebuild_fn)),
+        ("rebuild_if_needed", Object::from(rebuild_if_needed_fn)),
+    ]))
 }
