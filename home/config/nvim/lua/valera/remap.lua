@@ -373,3 +373,10 @@ end, {
 })
 
 K("n", "<Space>c", "f}i<Cr><Esc>kA<Cr>", { desc = "multi-line clenched curlies" }) -- bigram chosen for "Space the curlies"
+
+-- Add undo break-points {{{1
+K("i", "^M", "^M<c-g>u", { desc = "Enter with undo break" })
+K("i", ",", ",<c-g>u", { desc = "Comma with undo break" })
+K("i", ".", ".<c-g>u", { desc = "Period with undo break" })
+K("i", ";", ";<c-g>u", { desc = "Semicolon with undo break" })
+--,}}}1

@@ -52,7 +52,7 @@ return require('lazy').setup({
 	"wellle/targets.vim",
 	{ import = "valera.plugins.cmp" },
 	{ import = "valera.plugins.dap" },
-	{                               -- Lsp
+	{ -- Lsp
 		'VonHeikemen/lsp-zero.nvim',
 		branch = 'v3.x',
 		dependencies = {
@@ -78,10 +78,10 @@ return require('lazy').setup({
 		build = false,
 	},
 	{ -- Colorschemes
-		{ 'rose-pine/neovim',      name = 'rose-pine' },
-		{ "catppuccin/nvim",       name = "catppuccin" },
-		{ "folke/tokyonight.nvim", name = "tokyonight" },
-		{ "jdsimcoe/panic.vim",    name = "panic" }, -- perfect colors, bad mapping of color to element
+		{ 'rose-pine/neovim',              name = 'rose-pine' },
+		{ "catppuccin/nvim",               name = "catppuccin" },
+		{ "folke/tokyonight.nvim",         name = "tokyonight" },
+		{ "jdsimcoe/panic.vim",            name = "panic" }, -- perfect colors, bad mapping of color to element
 		{ import = "valera.plugins.colors" },
 	},
 	{ -- Git
@@ -125,7 +125,7 @@ return require('lazy').setup({
 		},
 	},
 	{ import = "valera.plugins.surround" },
-	{ import = "valera.plugins.typst" },
+	"valeratrades/typst.vim",
 	{ import = "valera.plugins.leetcode" },
 	"nanotee/zoxide.vim",
 	{ import = "valera.plugins.color-picker" },
@@ -155,7 +155,7 @@ return require('lazy').setup({
 	"stevearc/aerial.nvim",
 	"https://codeberg.org/FelipeLema/cmp-async-path",
 	{ import = "valera.plugins.guess-indent" },
-	{ 'wakatime/vim-wakatime',              lazy = false },
+	{ 'wakatime/vim-wakatime',               lazy = false },
 	--{ "tjdevries/ocaml.nvim",  build = "make" }, -- requires 3.17 dune, but my nix only has 3.16
 	"folke/which-key.nvim",
 	--"pimalaya/himalaya-vim", --TODO: setup
