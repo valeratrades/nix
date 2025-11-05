@@ -3,6 +3,7 @@ use std::process::Command;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
+use std::io::Write;
 
 /// Find all TODO comments in the project, sorted by number of '!' signs (descending)
 fn find_todo_impl() {
@@ -208,15 +209,100 @@ fn rebuild_if_needed() {
     }
 }
 
+/// Parse a log line and extract destination and contents
+/// Supports formats:
+/// - `[indent] in [destination] with [contents]`
+/// - `[indent] at [destination]`
+/// - `[datetime] [LEVEL] [destination]: [contents]`
+fn parse_log_line(log_line: String) -> (Option<String>, Option<String>) {
+    // Pattern: "in [destination] with [contents]"
+    if let Some(caps) = regex::Regex::new(r"in\s+([\w_:]+)\s+with\s+(.+)")
+        .ok()
+        .and_then(|re| re.captures(&log_line))
+    {
+        return (
+            caps.get(1).map(|m| m.as_str().to_string()),
+            caps.get(2).map(|m| m.as_str().to_string()),
+        );
+    }
+
+    // Pattern: "at [destination.rs:line]"
+    if let Some(caps) = regex::Regex::new(r"at\s+([\w_/]+\.rs:\d+)")
+        .ok()
+        .and_then(|re| re.captures(&log_line))
+    {
+        return (caps.get(1).map(|m| m.as_str().to_string()), None);
+    }
+
+    // Pattern: "YYYY-MM-DDTHH:MM:SS.sssZ LEVEL [destination]: [contents]"
+    if let Some(caps) = regex::Regex::new(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z\s+[A-Z]+\s+([\w_:]+):\s+(.+)")
+        .ok()
+        .and_then(|re| re.captures(&log_line))
+    {
+        return (
+            caps.get(1).map(|m| m.as_str().to_string()),
+            caps.get(2).map(|m| m.as_str().to_string()),
+        );
+    }
+
+    (None, None)
+}
+
+/// Prettify log contents using prettify_log and show in popup
+fn popup_log_contents(contents: String) {
+    // Check if prettify_log is available
+    let check = Command::new("sh")
+        .arg("-c")
+        .arg("command -v prettify_log")
+        .output();
+
+    if check.map(|o| o.stdout.is_empty()).unwrap_or(true) {
+        let _ = api::err_writeln("prettify_log not found in PATH. Install it from https://github.com/valeratrades/prettify_log");
+        return;
+    }
+
+    // Escape single quotes in contents
+    let escaped_contents = contents.replace("'", "'\\''");
+    let prettify_cmd = format!(
+        "sh -c 'cat <<EOF | prettify_log - --maybe-colon-nested\n{}\nEOF'",
+        escaped_contents
+    );
+
+    let output = Command::new("sh")
+        .arg("-c")
+        .arg(&prettify_cmd)
+        .output();
+
+    match output {
+        Ok(result) if result.status.success() => {
+            let prettified = String::from_utf8_lossy(&result.stdout);
+            let as_rust_block = format!("```rs\n{}```", prettified);
+
+            // Call ShowMarkdownPopup via Lua
+            let _ = api::call_function::<_, ()>(
+                "luaeval",
+                ("require('valera.utils').ShowMarkdownPopup(_A)", as_rust_block),
+            );
+        }
+        _ => {
+            let _ = api::err_writeln("Failed to run prettify_log");
+        }
+    }
+}
+
 #[nvim_oxi::plugin]
 fn rust_plugins() -> nvim_oxi::Result<Dictionary> {
     let find_todo = Function::from_fn(|()| find_todo_impl());
     let should_rebuild_fn = Function::from_fn(|()| should_rebuild());
     let rebuild_if_needed_fn = Function::from_fn(|()| rebuild_if_needed());
+    let parse_log_line_fn = Function::from_fn(|(line,)| parse_log_line(line));
+    let popup_log_contents_fn: Function<(String,), ()> = Function::from_fn(|(contents,)| popup_log_contents(contents));
 
     Ok(Dictionary::from_iter([
         ("find_todo", Object::from(find_todo)),
         ("should_rebuild", Object::from(should_rebuild_fn)),
         ("rebuild_if_needed", Object::from(rebuild_if_needed_fn)),
+        ("parse_log_line", Object::from(parse_log_line_fn)),
+        ("popup_log_contents", Object::from(popup_log_contents_fn)),
     ]))
 }
