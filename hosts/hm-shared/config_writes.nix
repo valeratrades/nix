@@ -15,8 +15,11 @@
     ".config/auto_redshift.toml".source =
       "${self}/home/config/auto_redshift.toml";
     ".config/todo.toml".text = ''
-      github_token = { env = "GITHUB_KEY" }
+      [manual_stats]
       date_format = "%Y-%m-%d"
+
+      [milestones]
+      github_token = { env = "GITHUB_KEY" }
 
       [todos]
       path = "~/s/g/todos/"
@@ -24,14 +27,7 @@
 
       [timer]
       hard_stop_coeff = 1.5
-
-      [activity_monitor]
-      delimitor = " - "
-    ''; # my own config relies on some env vars, this is a trimmed-down version
-    ".config/discretionary_engine.toml".source =
-      "${self}/home/config/discretionary_engine.toml";
-    ".config/btc_line.toml".source = "${self}/home/config/btc_line.toml";
-    ".config/social_networks.toml".source = "${self}/home/config/social_networks.toml";
+    '';
 	}
 		// pkgs.lib.optionalAttrs (user.kbd != "ansi") (
 			let

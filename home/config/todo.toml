@@ -10,10 +10,3 @@ n_tasks_to_show = 3
 
 [timer]
 hard_stop_coeff = 1.5
-
-[activity_monitor]
-delimitor = " - "
-calendar_id = "a6de8d596cfe20787939361423a90d516c8187eaa86e13b4d587ba23d1a7c1f6@group.calendar.google.com"
-google_client_id = { env = "GOOGLE_CLIENT_ID" } 
-google_client_secret = { env = "GOOGLE_CLIENT_SECRET" } 
-google_calendar_refresh_token = { env = "GOOGLE_CALENDAR_REFRESH_TOKEN" }
