@@ -36,15 +36,15 @@
 		};
 
 		#DEPRECATE: switched in favor of https://github.com/NixOS/nixos-hardware/blob/master/lenovo/legion/16ach6h/hybrid/default.nix
-		#nvidia = {
+		nvidia = {
 		#	modesetting.enable = true;
-		#	powerManagement.enable = true;
+			#powerManagement.enable = true; #TEST
 		#	open = true;
 		#	prime = {
 		#		sync.enable = true;
 		#		amdgpuBusId = "PCI:5:0:0";   # from 05:00.0
-		#		nvidiaBusId = "PCI:1:0:0";   # from 01:00.0
+		#		nvidiaBusId = "PCI:1:0:0";  
 		#	};
-		#};
+		};
 	};
 }

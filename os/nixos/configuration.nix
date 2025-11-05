@@ -81,6 +81,7 @@ in {
 			"zswap.enabled=1"
 			"nvidia-drm.modeset=1"
 			"mem_sleep_default=s2idle"
+			"nvidia.NVreg_PreserveVideoMemoryAllocations=0" #TEST: Override to allow hibernation (nixos-hardware sets it to 1)
 		];
 
     # # for obs's Virtual Camera
