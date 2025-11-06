@@ -1,0 +1,7 @@
+{
+  "workspace.library": [],
+  "workspace.ignoreDir": [
+    "rust_plugins/target",
+    "rust_plugins/.direnv"
+  ]
+}

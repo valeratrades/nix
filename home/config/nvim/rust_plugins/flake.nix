@@ -50,11 +50,6 @@
                 mkdir -p $out/lib
                 cp target/release/librust_plugins.so $out/lib/rust_plugins.so
 
-                # Also install to the lua directory if we're in the source tree
-                if [ -d "../lua" ]; then
-                  cp target/release/librust_plugins.so ../lua/rust_plugins.so #HACK: creates files outside of current directory
-                  echo "✓ Plugin installed to ../lua/rust_plugins.so"
-                fi
                 runHook postInstall
               '';
 
@@ -69,6 +64,9 @@
             # Copy v-utils config files (excluding .cargo/config.toml which has nightly flags)
             cp -f ${(v-utils.files.rust.rustfmt {inherit pkgs;})} ./rustfmt.toml
             cp -f ${(v-utils.hooks.treefmt) { inherit pkgs; }} ./.treefmt.toml
+
+            echo "dummy" > $out/lib/rust_plugins.so #HACK: creates file to satisfy symlink
+            ln -sf $out/lib/rust_plugins.so ../lua/rust_plugins.so #HACK: creates files outside of current directory
 
             echo "Rust plugin dev environment loaded"
             echo "Run 'nix build' to compile and install the plugin"

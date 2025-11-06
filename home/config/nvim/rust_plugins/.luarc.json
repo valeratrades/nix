@@ -1,0 +1,7 @@
+{
+  "workspace.library": [],
+  "workspace.ignoreDir": [
+    "target",
+    ".direnv"
+  ]
+}

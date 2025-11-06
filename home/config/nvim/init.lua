@@ -18,4 +18,14 @@ else
 	end, 0)
 end
 
+-- Create symlink to rust_plugins.so if it doesn't exist or is a regular file
+local lua_so_path = vim.fn.stdpath('config') .. '/lua/rust_plugins.so'
+local result_so_path = vim.fn.stdpath('config') .. '/rust_plugins/result/lib/rust_plugins.so'
+local is_symlink = vim.fn.getftype(lua_so_path) == 'link'
+local exists = vim.fn.filereadable(lua_so_path) == 1
+
+if not is_symlink and (not exists or vim.fn.getftype(lua_so_path) == 'file') then
+	vim.fn.system(string.format('ln -sf %s %s', result_so_path, lua_so_path))
+end
+
 require("valera")

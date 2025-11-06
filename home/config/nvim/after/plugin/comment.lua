@@ -48,12 +48,7 @@ K('n', 'gcA', commentExtraReimplementation('A '), { desc = "comment: reimplement
 -- -- Surround Block Comments
 function FoldmarkerCommentBlock(nesting_level)
 	nesting_level = nesting_level or 1
-	vim.b.copilot_enabled = false                 --? Am I sure about this one?
-	local cs = Cs()
-	F('o' .. cs .. ',}}}' .. nesting_level)       --HACK: hardcodes nesting level
-	Ft('<Esc>`<')
-	F('O' .. cs .. '  ' .. '{{{' .. nesting_level) -- }}} because nvim is dumb
-	Ft('<Esc>hhhhi')
+	require('rust_plugins').foldmarker_comment_block(nesting_level)
 end
 
 for i = 1, 5 do
@@ -70,11 +65,7 @@ K("v", "gbf", "<esc>`><cmd>lua FoldmarkerCommentBlock(1)<cr>", {
 
 -- -- Draw a line thingie
 function DrawABigBeautifulLine(symbol)
-	local cs = Cs()
-	local prefix = (#cs == 1 and cs .. symbol or cs)
-	local line = string.rep(symbol, 77)
-	F(prefix .. line)
-	Ft('<Esc>0')
+	require('rust_plugins').draw_a_big_beautiful_line(symbol)
 end
 
 K('n', 'gc-i', "i<cmd>lua DrawABigBeautifulLine('-')<cr>", { desc = "comment: draw a '-' line here" })
@@ -88,12 +79,7 @@ K('n', 'gc=O', "O<cmd>lua DrawABigBeautifulLine('=')<cr>", { desc = "comment: dr
 
 -- -- Remove end of line comment
 local function removeEndOfLineComment()
-	local save_cursor = vim.api.nvim_win_get_cursor(0)
-	Ft("$?" .. " " .. Cs() .. "<cr>")
-	Ft("vg_d")
-	vim.defer_fn(function() vim.cmd([[s/\s\+$//e]]) end, 1)
-	vim.defer_fn(function() vim.api.nvim_win_set_cursor(0, save_cursor) end, 2)
-	vim.defer_fn(function() vim.cmd.noh() end, 3)
+	require('rust_plugins').remove_end_of_line_comment()
 end
 -- Note that if no `<space>{comment_string}` found on the current line, it will go searching through the rest of the file with `?`
 K('n', 'gcr', function() removeEndOfLineComment() end, { desc = "comment: remove end-of-line comment" })
@@ -102,20 +88,7 @@ K('n', 'gcr', function() removeEndOfLineComment() end, { desc = "comment: remove
 -- -- `//dbg` Commments
 local function debugComment(action)
 	return function()
-		local cs = Cs()
-		if action == 'add' then
-			--PersistCursor(Ft, 'A ' .. cs .. 'dbg' .. '<esc>')
-			local dbg_comment = " " .. Cs() .. "dbg"
-			F(':')
-			F("s/$/" .. dbg_comment .. "/g")
-			PersistCursor(Ft, "<cr>")
-			vim.defer_fn(function() vim.cmd.noh() end, 3)
-			vim.defer_fn(function() Echo("") end, 4) -- can't make silent, so just overwrite the output
-		elseif action == 'remove' then
-			vim.cmd("g/" .. " " .. cs .. "dbg$/d")
-			vim.cmd([[g/\sdbg!(/d]])
-			vim.cmd.noh()
-		end
+		require('rust_plugins').debug_comment(action)
 	end
 end
 K({ 'n', 'v' }, '<space>cda', debugComment('add'), { desc = "comment: add dbg comment", silent = true })
@@ -125,8 +98,7 @@ K('n', '<space>cdr', debugComment('remove'), { desc = "comment: remove all debug
 
 -- -- `TODO{!*n}` Comments
 function AddTodoComment(n)
-	vim.b.copilot_enabled = false
-	F('O' .. Cs() .. 'TODO' .. string.rep('!', n) .. ': ')
+	require('rust_plugins').add_todo_comment(n)
 end
 
 --K("n", "!", [[v:count == 0 ? '!' : ':lua AddTodoComment(' . v:count . ')<cr>']],
@@ -135,73 +107,8 @@ K("n", "!", [[v:count == 0 ? ':lua AddTodoComment(3)<cr>' : ':lua AddTodoComment
 	{ desc = "Add TODO comment", expr = true, silent = true, overwrite = true })
 K('n', '<space>1', '<cmd>lua AddTodoComment(0)<cr>', { desc = "Add TODO comment (no !)" })
 
-local function escape(buffer)
-	return string.gsub(buffer, "[%(%)%.%%%+%-%*%?%[%^%$%]]", "%%%1")
+function ToggleCommentsVisibility()
+	require('rust_plugins').toggle_comments_visibility()
 end
 
-local function split(s, delimiter)
-	local result = {};
-	for match in (s .. escape(delimiter)):gmatch("(.-)" .. delimiter) do
-		table.insert(result, match);
-	end
-	return result;
-end
-
---- The main keymap is in telescope.lua (`<space>st`)
---- for navigation I'm just typing `:cp` and `:cn`. Can't do much better than that.
---- To jump back, I do `T
---DEPRECATE: once rust version is working
---TODO!!!!: fix \
-function FindTodo()
-	--local regex = vim.fn.shellescape(Cs() .. "TOD" .. "O") -- split the word to avoid matching this file
-	local regex = vim.fn.shellescape("TODO")
-	local results = vim.fn.systemlist(
-		"rg --line-number -rn -- " .. regex
-		.. " | awk -F: -v OFS=: '{print gsub(/!/, \"&\"), $0}'"
-		.. " | sort -rn"
-	)
-	if vim.v.shell_error > 0 then
-		print("No TOD" .. "Os found")
-		return
-	end
-	-- default importance is 3 bangs
-	--DO: MOVE comments are parsed as default-importance todos
-	--DO: `todo!()` in rust are parsed as default-importance todos
-	--TODO: switch to parsing todos everywhere, not just after comment strings. false hits are acceptable.
-	--TODO: properly parse `\`, `/` and `.` after todo comments // which indicate number of lines to be added to Telescope view
-
-	local qflist = vim.fn.map(results, function(_, x)
-		local parts = split(x, ":")
-		-- parts[1] is the count of '!' from awk
-		-- parts[2] is filename
-		-- parts[3] is line number
-		-- parts[4] onwards is the content
-		return {
-			filename = parts[2],
-			lnum = parts[3],
-			col = 0,
-			text = table.concat(parts, ":", 4):gsub("\r$", "")
-		}
-	end)
-	vim.fn.setqflist(qflist)
-	vim.cmd("mark T")
-end
-
---
-
-
-local on = 1
-local original
-
-function toggleCommentsVisibility()
-	on = 1 - on
-	if on == 0 then
-		original = vim.api.nvim_get_hl(0, { name = "Comment" })
-		local custom_group = vim.api.nvim_get_hl(0, { name = "CustomGroup" })
-		vim.api.nvim_set_hl(0, "Comment", { fg = custom_group.bg })
-	else
-		vim.api.nvim_set_hl(0, "Comment", original)
-	end
-end
-
-K('n', '<space>ch', '<cmd>lua toggleCommentsVisibility()<cr>', { desc = "comment: toggle" })
+K('n', '<space>ch', '<cmd>lua ToggleCommentsVisibility()<cr>', { desc = "comment: toggle" })
