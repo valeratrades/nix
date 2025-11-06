@@ -54,7 +54,9 @@ end
 
 --- Finds the best match in a list by querying the last word of each element.
 --- @param data table List of strings to search through, matching on the last word.
---- @return string|nil Best match or nil, string|nil error message.
+--- @param query string Query to search for
+--- @return string|nil Best match or nil
+--- @return string|nil error message
 function M.FzfBestMatch(data, query)
 	local function get_last_slice(str)
 		local slices = {}
@@ -79,6 +81,9 @@ function M.FzfBestMatch(data, query)
 
 		local items = table.concat(filtered_data, "\n")
 		local fzf = io.popen('echo "' .. items .. '" | fzf --filter="' .. query .. '"', 'r')
+		if not fzf then
+			return nil, "Failed to open fzf"
+		end
 		local result = fzf:read("*all")
 		fzf:close()
 

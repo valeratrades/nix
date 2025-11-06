@@ -14,16 +14,16 @@ return {
 		"nvim-tree/nvim-web-devicons",
 	},
 	opts = {
-		---@type lc.domain
+		---@type string
 		domain = "com", -- For now "com" is the only one supported
 
 		---@type string
 		arg = "leetcode.nvim",
 
-		---@type lc.lang
+		---@type string
 		lang = "cpp",
 
-		---@type lc.sql
+		---@type string
 		sql = "mysql",
 
 		---@type string
