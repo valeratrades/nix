@@ -1,6 +1,6 @@
 use nvim_oxi::api;
 use nvim_oxi::String as NvimString;
-use crate::shorthands::{infer_comment_string, f};
+use crate::shorthands::{infer_comment_string, f, ft};
 
 /// Add foldmarker comment block around selection
 pub fn foldmarker_comment_block(nesting_level: i64) {
@@ -9,17 +9,17 @@ pub fn foldmarker_comment_block(nesting_level: i64) {
     // Disable copilot
     let _ = api::set_var("b:copilot_enabled", false);
 
-    // Move to end of selection and add closing marker
-    let _ = api::feedkeys(&NvimString::from(format!("o{},}}}}}}}}{}", cs_str, nesting_level)), &NvimString::from("n"), false);
+    // Original Lua: F('o' .. cs .. ',}}}' .. nesting_level)
+    f(format!("o{},}}}{}}", cs_str, nesting_level), None);
 
-    // Move to start of selection
-    let _ = api::feedkeys(&NvimString::from("`<"), &NvimString::from("n"), false);
+    // Original Lua: Ft('<Esc>`<')
+    ft(format!("<Esc>`<"), None);
 
-    // Add opening marker
-    let _ = api::feedkeys(&NvimString::from(format!("O{}  {{{{{{{{{}", cs_str, nesting_level)), &NvimString::from("n"), false);
+    // Original Lua: F('O' .. cs .. '  ' .. '{{{' .. nesting_level)
+    f(format!("O{}  {{{}{}", cs_str, nesting_level), None);
 
-    // Position cursor
-    let _ = api::feedkeys(&NvimString::from("hhhhi"), &NvimString::from("n"), false);
+    // Original Lua: Ft('<Esc>hhhhi')
+    ft(format!("<Esc>hhhhi"), None);
 }
 
 /// Draw a big beautiful line with the given symbol

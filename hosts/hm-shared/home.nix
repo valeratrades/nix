@@ -350,7 +350,7 @@
 									{
 										type = "command";
                     #dbg: temporarily writes input to a file for debugging, - as I'm not certain about some edge-cases (eg .summary being null at times)
-										command = "/usr/bin/env fish -c 'read input; echo $input > /tmp/dbg_claude_code_input.json; set transcript_path (echo $input | jq -r .transcript_path); set chat_name (head -1 $transcript_path | jq -r .summary); beep \"CC: response on:\n$chat_name\"'";
+										command = "/usr/bin/env fish -c 'read input; echo $input > /tmp/dbg_claude_code_input.json; set transcript_path (echo $input | jq -r .transcript_path); set chat_name (head -1 $transcript_path | jq -r .summary); set tmux_session (tmux display-message -p \"#S\" 2>/dev/null || echo \"no session\"); beep \"CC: response on:\n$tmux_session\n$chat_name\"'";
 									}
 								];
 							}
