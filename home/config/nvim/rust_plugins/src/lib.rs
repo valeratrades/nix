@@ -141,24 +141,21 @@ fn rebuild_if_needed() {
     if !should_rebuild() {
         return;
     }
-
     let config_dir = match std::env::var("XDG_CONFIG_HOME")
         .or_else(|_| std::env::var("HOME").map(|h| format!("{}/.config", h))) {
         Ok(dir) => PathBuf::from(dir).join("nvim/rust_plugins"),
         Err(_) => return,
     };
-
     let state_dir = match std::env::var("XDG_STATE_HOME")
         .or_else(|_| std::env::var("HOME").map(|h| format!("{}/.local/state", h))) {
         Ok(dir) => PathBuf::from(dir).join("nvim/rust_plugins"),
         Err(_) => return,
     };
+    // Notify user that rebuild is starting
+    let _ = api::err_writeln("Rebuilding Rust plugins...");
 
     let log_file = state_dir.join("build.log");
     let timestamp_file = state_dir.join("last_build");
-
-    // Notify user that rebuild is starting
-    let _ = api::err_writeln("Rebuilding Rust plugins...");
 
     let start = std::time::Instant::now();
 
@@ -244,6 +241,112 @@ fn parse_log_line(log_line: String) -> (Option<String>, Option<String>) {
     (None, None)
 }
 
+/// Go to file:line:col or function symbol
+/// Supports formats:
+/// - file:line:col
+/// - file:line
+/// - file::mod::function (LSP symbol path)
+/// - file (just open the file)
+fn goto_file_line_column_or_function(file_line_or_func: String) {
+    use regex::Regex;
+
+    // Check for file:line:col pattern
+    if let Some(caps) = Regex::new(r"^([^:]+):(\d+):(\d+)$")
+        .ok()
+        .and_then(|re| re.captures(&file_line_or_func))
+    {
+        let file = caps.get(1).unwrap().as_str();
+        let line: i64 = caps.get(2).unwrap().as_str().parse().unwrap_or(1);
+        let col: i64 = caps.get(3).unwrap().as_str().parse().unwrap_or(1);
+
+        let _ = api::command(&format!("edit {}", file));
+        let _ = api::call_function::<_, ()>("cursor", (line, col));
+        let _ = api::command("normal! zz");
+        return;
+    }
+
+    // Check for file:line pattern (without col)
+    if let Some(caps) = Regex::new(r"^([^:]+):(\d+)$")
+        .ok()
+        .and_then(|re| re.captures(&file_line_or_func))
+    {
+        let file = caps.get(1).unwrap().as_str();
+        let line: i64 = caps.get(2).unwrap().as_str().parse().unwrap_or(1);
+
+        let _ = api::command(&format!("edit {}", file));
+        let _ = api::call_function::<_, ()>("cursor", (line, 1_i64));
+        let _ = api::command("normal! zz");
+        return;
+    }
+
+    // Check for LSP symbol path (contains "::")
+    if file_line_or_func.contains("::") {
+        // Extract the last segment as the function name
+        let function_name = file_line_or_func
+            .split("::")
+            .last()
+            .unwrap_or(&file_line_or_func);
+
+        // Check if LSP is active
+        let lsp_clients: Array = api::call_function("luaeval", ("vim.lsp.get_clients()",))
+            .unwrap_or_else(|_| Array::new());
+
+        if !lsp_clients.is_empty() {
+            // Use Telescope LSP workspace symbols
+            let lua_code = format!(
+                r#"
+                local builtin = require('telescope.builtin')
+                local actions = require('telescope.actions')
+                builtin.lsp_workspace_symbols({{
+                    query = '{}',
+                    symbols = {{ 'function', 'method' }},
+                    on_complete = {{
+                        function(picker)
+                            actions.select_default(picker.prompt_bufnr)
+                            vim.cmd("normal! zt")
+                            vim.defer_fn(function()
+                                vim.cmd("stopinsert")
+                            end, 30)
+                        end,
+                    }},
+                }})
+                "#,
+                function_name
+            );
+            let _ = api::call_function::<_, ()>("luaeval", (lua_code,));
+        } else {
+            let _ = api::err_writeln("No LSP clients found. Falling back to live_grep");
+            let lua_code = format!(
+                r#"
+                local builtin = require('telescope.builtin')
+                builtin.live_grep({{
+                    default_text = '{}\\(',
+                    hidden = true,
+                    no_ignore = true,
+                    file_ignore_patterns = {{ '.git/', 'target/', '%.lock' }}
+                }})
+                "#,
+                function_name
+            );
+            let _ = api::call_function::<_, ()>("luaeval", (lua_code,));
+        }
+        return;
+    }
+
+    // Just a file path
+    let expanded_file: String = api::call_function("expand", (file_line_or_func.clone(),))
+        .unwrap_or(file_line_or_func);
+
+    let is_readable: i64 = api::call_function("filereadable", (expanded_file.clone(),))
+        .unwrap_or(0);
+
+    if is_readable == 1 {
+        let _ = api::command(&format!("edit {}", expanded_file));
+    } else {
+        let _ = api::err_writeln("Invalid format. Expected: file:line:col or file:function_name");
+    }
+}
+
 /// Prettify log contents using prettify_log and show in popup
 fn popup_log_contents(contents: String) {
     // Check if prettify_log is available
@@ -309,6 +412,7 @@ fn rust_plugins() -> nvim_oxi::Result<Dictionary> {
     let debug_comment_fn = Function::from_fn(|(action,): (String,)| comment::debug_comment(&action));
     let add_todo_comment_fn = Function::from_fn(|(n,)| comment::add_todo_comment(n));
     let toggle_comments_fn = Function::from_fn(|()| comment::toggle_comments_visibility());
+    let goto_file_line_column_or_function_fn = Function::from_fn(|(arg,): (String,)| goto_file_line_column_or_function(arg));
 
     Ok(Dictionary::from_iter([
         ("find_todo", Object::from(find_todo)),
@@ -325,5 +429,6 @@ fn rust_plugins() -> nvim_oxi::Result<Dictionary> {
         ("debug_comment", Object::from(debug_comment_fn)),
         ("add_todo_comment", Object::from(add_todo_comment_fn)),
         ("toggle_comments_visibility", Object::from(toggle_comments_fn)),
+        ("goto_file_line_column_or_function", Object::from(goto_file_line_column_or_function_fn)),
     ]))
 }

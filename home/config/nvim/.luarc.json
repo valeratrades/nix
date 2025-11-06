@@ -1,9 +1,12 @@
 {
   "runtime.version": "LuaJIT",
-  "diagnostics.globals": ["vim"],
+  "diagnostics.globals": [
+    "vim"
+  ],
   "workspace.library": [],
   "workspace.ignoreDir": [
     "rust_plugins/target",
-    "rust_plugins/.direnv"
+    "rust_plugins/.direnv",
+    "rust_plugins/result"
   ]
 }

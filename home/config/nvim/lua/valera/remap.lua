@@ -292,67 +292,13 @@ K("", "<Space>ay", function() vim.fn.setreg('"', copyFileLineCol()) end, { desc 
 K("", "<Space>a<Space>y", function() vim.fn.setreg('+', copyFileLineCol()) end,
 	{ desc = "copy file:line:col to + buffer" })
 
-local function goto_file_line_column_or_function(file_line_or_func)
-	if string.match(file_line_or_func, "([^:]+):(%d+):(%d+)") then -- file:line:col
-		local file, line, col = string.match(file_line_or_func, "([^:]+):(%d+):(%d+)")
-		vim.cmd('edit ' .. file)
-		vim.fn.cursor(tonumber(line), tonumber(col))
-		vim.cmd("normal! zz")
-	elseif string.match(file_line_or_func, "([^:]+):(%d+)") then -- file:line (without col)
-		local file, line = string.match(file_line_or_func, "([^:]+):(%d+)")
-		vim.cmd("edit " .. file)
-		vim.fn.cursor(tonumber(line), 1)
-		vim.cmd("normal! zz")
-	elseif string.match(file_line_or_func, "::") then -- file::mod::another_mod::function_name (LSP symbol path)
-		local function_name
-		for segment in string.gmatch(file_line_or_func, "([^:]+)") do
-			function_name = segment
-		end
-
-		local builtin = require('telescope.builtin')
-		-- Use LSP to find the function location if available
-		local lsp_active = #vim.lsp.get_clients() > 0
-		if lsp_active then
-			local actions = require('telescope.actions')
-			builtin.lsp_workspace_symbols({
-				query = function_name,
-				symbols = { "function", "method" },
-				on_complete = {
-					--FUCK: puts me in insert
-					function(picker)
-						--actions.file_edit(picker.prompt_bufnr)
-						actions.select_default(picker.prompt_bufnr)
-						vim.cmd("normal! zt")
-						--HACK
-						vim.defer_fn(function()
-							vim.cmd("stopinsert")
-						end, 30)
-					end,
-				},
-			})
-		else
-			print("No LSP clients found. Falling back to live_grep")
-			builtin.live_grep({ default_text = function_name .. [[\(]], hidden = true, no_ignore = true, file_ignore_patterns = { ".git/", "target/", "%.lock" } })
-		end
-	else -- file only
-		local file = file_line_or_func
-		local expanded_file = vim.fn.expand(file)
-		if vim.fn.filereadable(expanded_file) == 1 then
-			vim.cmd("edit " .. expanded_file)
-		else
-			print("Invalid format. Expected: file:line:col or file:function_name")
-		end
-	end
-end
-
-
 vim.api.nvim_create_user_command("Gf", function(opts)
 	local arg = opts.fargs[1]
 	-- If no argument is passed, get the system clipboard contents
 	if not arg then
 		arg = vim.fn.getreg("+")
 	end
-	goto_file_line_column_or_function(arg)
+	require('rust_plugins').goto_file_line_column_or_function(arg)
 end, {
 	nargs = "*",
 	complete = function(_, line)
