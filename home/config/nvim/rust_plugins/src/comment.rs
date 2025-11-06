@@ -1,6 +1,17 @@
-use nvim_oxi::api;
+use nvim_oxi::{api, Function, Object};
 use nvim_oxi::String as NvimString;
 use crate::shorthands::{infer_comment_string, f, ft};
+
+/// Helper to defer a Rust callback using vim.defer_fn
+fn defer_fn<F>(delay_ms: i64, callback: F)
+where
+    F: Fn() + Send + 'static,
+{
+    let func = Function::from_fn(move |()| {
+        callback();
+    });
+    let _ = api::call_function::<_, ()>("defer_fn", (Object::from(func), delay_ms));
+}
 
 /// Add foldmarker comment block around selection
 pub fn foldmarker_comment_block(nesting_level: i64) {
@@ -47,23 +58,31 @@ pub fn remove_end_of_line_comment() {
 
     let cs_str = infer_comment_string();
 
-    // Search backwards for " {comment_string}"
-    let search_pattern = format!(" {} ", cs_str);
-    let _ = api::feedkeys(&NvimString::from(format!("?{}", search_pattern)), &NvimString::from("t"), false);
-    let _ = api::feedkeys(&NvimString::from("<cr>"), &NvimString::from("t"), false);
+    // Search backwards for " {comment_string}" from end of line
+    // Original Lua: Ft("$?" .. " " .. Cs() .. "<cr>")
+    ft(format!("$? {}<cr>", cs_str), None);
 
     // Delete from cursor to end of line (excluding trailing whitespace)
-    let _ = api::feedkeys(&NvimString::from("vg_d"), &NvimString::from("t"), false);
+    // Original Lua: Ft("vg_d")
+    ft("vg_d".to_string(), None);
 
-    // Remove trailing whitespace
-    api::command("s/\\s\\+$//e").ok();
+    // Remove trailing whitespace (with defer)
+    // Original Lua: vim.defer_fn(function() vim.cmd([[s/\s\+$//e]]) end, 1)
+    defer_fn(1, || {
+        let _ = api::command("s/\\s\\+$//e");
+    });
 
-    // Restore cursor position
-    let mut win = api::get_current_win();
-    let _ = win.set_cursor(save_cursor.0, save_cursor.1);
+    // Restore cursor position (with defer)
+    // Original Lua: vim.defer_fn(function() vim.api.nvim_win_set_cursor(0, save_cursor) end, 2)
+    defer_fn(2, move || {
+        let _ = api::get_current_win().set_cursor(save_cursor.0, save_cursor.1);
+    });
 
-    // Clear search highlight
-    let _ = api::command("noh");
+    // Clear search highlight (with defer)
+    // Original Lua: vim.defer_fn(function() vim.cmd.noh() end, 3)
+    defer_fn(3, || {
+        let _ = api::command("noh");
+    });
 }
 
 /// Add or remove debug comments
@@ -72,18 +91,45 @@ pub fn debug_comment(action: &str) {
 
     match action {
         "add" => {
+            // Original Lua: local dbg_comment = " " .. Cs() .. "dbg"
             let dbg_comment = format!(" {}dbg", cs_str);
-            let _ = api::feedkeys(&NvimString::from(":"), &NvimString::from("n"), false);
-            let _ = api::feedkeys(&NvimString::from(format!("s/$/{}/g", dbg_comment)), &NvimString::from("n"), false);
-            let _ = api::feedkeys(&NvimString::from("cr"), &NvimString::from("t"), false);
 
-            // Clear highlight and message
-            std::thread::sleep(std::time::Duration::from_millis(3));
-            let _ = api::command("noh");
+            // Original Lua: F(':')
+            f(":".to_string(), None);
+
+            // Original Lua: F("s/$/" .. dbg_comment .. "/g")
+            f(format!("s/$/{}/g", dbg_comment), None);
+
+            // Original Lua: PersistCursor(Ft, "<cr>")
+            // PersistCursor saves cursor, calls function, then restores cursor with defer_fn
+            let cursor_position = api::get_current_win()
+                .get_cursor()
+                .unwrap_or((1, 0));
+            ft("<cr>".to_string(), None);
+
+            // Restore cursor (with defer_fn timing of 1ms like PersistCursor)
+            defer_fn(1, move || {
+                let _ = api::get_current_win().set_cursor(cursor_position.0, cursor_position.1);
+            });
+
+            // Original Lua: vim.defer_fn(function() vim.cmd.noh() end, 3)
+            defer_fn(3, || {
+                let _ = api::command("noh");
+            });
+
+            // Original Lua: vim.defer_fn(function() Echo("") end, 4)
+            defer_fn(4, || {
+                crate::lsp::echo("".to_string(), None);
+            });
         }
         "remove" => {
+            // Original Lua: vim.cmd("g/" .. " " .. cs .. "dbg$/d")
             let _ = api::command(&format!("g/ {}dbg$/d", cs_str));
+
+            // Original Lua: vim.cmd([[g/\sdbg!(/d]])
             let _ = api::command("g/\\sdbg!(/d");
+
+            // Original Lua: vim.cmd.noh()
             let _ = api::command("noh");
         }
         _ => {}
@@ -102,37 +148,37 @@ pub fn add_todo_comment(n: i64) {
     let _ = api::feedkeys(&NvimString::from(todo_line), &NvimString::from("n"), false);
 }
 
-// Global state for toggle comments visibility
-static mut COMMENTS_ON: bool = true;
-
 /// Toggle comments visibility
 pub fn toggle_comments_visibility() {
-    unsafe {
-        COMMENTS_ON = !COMMENTS_ON;
+    // Get current state from Lua global variables
+    // Original Lua uses: local on = 1, local original
+    let on: i64 = api::get_var("_rust_toggle_comments_on")
+        .unwrap_or(1);
 
-        if !COMMENTS_ON {
-            // Hide comments by setting fg to background color
-            let _ = api::exec2(
-                r#"
-                let s:original_hl = nvim_get_hl(0, {'name': 'Comment'})
-                let l:custom = nvim_get_hl(0, {'name': 'CustomGroup'})
-                if has_key(l:custom, 'bg')
-                    call nvim_set_hl(0, 'Comment', {'fg': l:custom.bg})
-                endif
-                "#,
-                &Default::default(),
-            );
-        } else {
-            // Restore original highlight
-            let _ = api::exec2(
-                r#"
-                if exists('s:original_hl')
-                    call nvim_set_hl(0, 'Comment', s:original_hl)
-                endif
-                "#,
-                &Default::default(),
-            );
-        }
+    // Toggle: on = 1 - on
+    let new_on = 1 - on;
+    let _ = api::set_var("_rust_toggle_comments_on", new_on);
+
+    if new_on == 0 {
+        // Hide comments by setting fg to background color
+        // Original Lua: original = vim.api.nvim_get_hl(0, { name = "Comment" })
+        let lua_code = r#"
+            local original = vim.api.nvim_get_hl(0, { name = "Comment" })
+            vim.g._rust_toggle_comments_original = original
+            local custom_group = vim.api.nvim_get_hl(0, { name = "CustomGroup" })
+            vim.api.nvim_set_hl(0, "Comment", { fg = custom_group.bg })
+        "#;
+        let _ = api::call_function::<_, ()>("luaeval", (lua_code,));
+    } else {
+        // Restore original highlight
+        // Original Lua: vim.api.nvim_set_hl(0, "Comment", original)
+        let lua_code = r#"
+            local original = vim.g._rust_toggle_comments_original
+            if original then
+                vim.api.nvim_set_hl(0, "Comment", original)
+            end
+        "#;
+        let _ = api::call_function::<_, ()>("luaeval", (lua_code,));
     }
 }
 

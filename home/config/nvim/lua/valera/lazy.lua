@@ -25,6 +25,7 @@ return require('lazy').setup({
 	{ import = "valera.plugins.treesitter" },
 	{ import = "valera.plugins.telescope" },
 	{ import = "valera.plugins.lualine" },
+	{ import = "valera.plugins.comment" },
 	{
 		"numToStr/Comment.nvim",
 		dependencies = {

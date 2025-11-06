@@ -249,7 +249,7 @@ K("", "<C-i>", "<C-i>zz", { desc = "Jump forward (center)", overwrite = true })
 -- -- Built-in Terminal (complete shit btw, hardly a reason to use it)
 K("t", "<Esc><Esc>", "<C-\\><C-n>", { desc = "Exit terminal mode" })
 --K("t", "<Esc>", "<C-\\><C-n>")
-K("t", "<C-w>s", "<C-\\><C-N><C-w>h", { desc = "Win left from terminal", overwrite = true }) --dbg
+K("t", "<C-w>s", "<C-\\><C-N><C-w>h", { desc = "Win left from terminal", overwrite = true })
 K("t", "<C-w>r", "<C-\\><C-N><C-w>j", { desc = "Win down from terminal" })
 K("t", "<C-w>n", "<C-\\><C-N><C-w>k", { desc = "Win up from terminal" })
 K("t", "<C-w>t", "<C-\\><C-N><C-w>l", { desc = "Win right from terminal" })
