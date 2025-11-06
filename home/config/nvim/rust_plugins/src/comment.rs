@@ -10,13 +10,13 @@ pub fn foldmarker_comment_block(nesting_level: i64) {
     let _ = api::set_var("b:copilot_enabled", false);
 
     // Original Lua: F('o' .. cs .. ',}}}' .. nesting_level)
-    f(format!("o{},}}}{}}", cs_str, nesting_level), None);
+    f(format!("o{},}}}}{}", cs_str, nesting_level), None);
 
     // Original Lua: Ft('<Esc>`<')
     ft(format!("<Esc>`<"), None);
 
     // Original Lua: F('O' .. cs .. '  ' .. '{{{' .. nesting_level)
-    f(format!("O{}  {{{}{}", cs_str, nesting_level), None);
+    f(String::from("O") + &cs_str + "  {{{" + &nesting_level.to_string(), None);
 
     // Original Lua: Ft('<Esc>hhhhi')
     ft(format!("<Esc>hhhhi"), None);
@@ -48,9 +48,9 @@ pub fn remove_end_of_line_comment() {
     let cs_str = infer_comment_string();
 
     // Search backwards for " {comment_string}"
-    let search_pattern = format!("$ {} ", cs_str);
+    let search_pattern = format!(" {} ", cs_str);
     let _ = api::feedkeys(&NvimString::from(format!("?{}", search_pattern)), &NvimString::from("t"), false);
-    let _ = api::feedkeys(&NvimString::from("cr"), &NvimString::from("t"), false);
+    let _ = api::feedkeys(&NvimString::from("<cr>"), &NvimString::from("t"), false);
 
     // Delete from cursor to end of line (excluding trailing whitespace)
     let _ = api::feedkeys(&NvimString::from("vg_d"), &NvimString::from("t"), false);

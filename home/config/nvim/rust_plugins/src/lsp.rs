@@ -1,5 +1,4 @@
 use nvim_oxi::api;
-use nvim_oxi::String as NvimString;
 
 /// Echo a message with a highlight type
 pub fn echo(text: String, hl_type: Option<String>) {
@@ -31,78 +30,114 @@ pub fn echo(text: String, hl_type: Option<String>) {
 /// direction: 1 for next, -1 for prev
 /// request_severity: "all" to include all severities, otherwise only errors
 pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
-    // Original Lua: pcall(function() ... end)
-    let lua_code = format!(
-        r#"
-        pcall(function()
-            local bufnr = vim.api.nvim_get_current_buf()
-            local diagnostics = vim.diagnostic.get(bufnr)
-            if #diagnostics == 0 then
-                vim.api.nvim_echo({{{{ 'no diagnostics in 0', 'Comment' }}}}, false, {{}})
-            end
-            local line = vim.fn.line(".") - 1
-            -- severity is [1:4], the lower the "worse"
-            local allSeverity = {{ 1, 2, 3, 4 }}
-            local targetSeverity = allSeverity
-            local floatOpts = {{
-                format = function(diagnostic)
-                    return vim.split(diagnostic.message, "\n")[1]
-                end,
-                focusable = true,
-                header = ""
-            }}
-            local function BoolPopupOpen()
-                local wins = vim.api.nvim_list_wins()
-                local popups = {{}}
-                for _, win_id in ipairs(wins) do
-                    local config = vim.api.nvim_win_get_config(win_id)
-                    if config.relative ~= "" then
-                        table.insert(popups, win_id)
-                    end
-                end
-                return #popups > 0
-            end
-            for _, d in pairs(diagnostics) do
-                if d.lnum == line and not BoolPopupOpen() then -- meaning we selected casually
-                    vim.diagnostic.open_float(floatOpts)
-                    return
-                end
-                -- navigate exclusively between errors, if there are any
-                if d.severity == 1 and "{}" ~= 'all' then
-                    targetSeverity = {{ 1 }}
-                end
-            end
+    let _ = std::panic::catch_unwind(|| {
+        // Get diagnostics for current buffer
+        let diagnostics: Vec<nvim_oxi::Dictionary> = api::call_function(
+            "luaeval",
+            ("vim.diagnostic.get(0)",)
+        ).unwrap_or_else(|_| vec![]);
 
-            local go_action = {} == 1 and "goto_next" or "goto_prev"
-            local get_action = {} == 1 and "get_next" or "get_prev"
-            if targetSeverity[1] == 1 and #targetSeverity == 1 then
-                vim.diagnostic[go_action]({{ float = floatOpts, severity = targetSeverity }})
-                return
-            else
-                -- jump over all on current line
+        if diagnostics.is_empty() {
+            echo("no diagnostics in 0".to_string(), Some("Comment".to_string()));
+        }
+
+        // Get current line (0-indexed)
+        let line: i64 = api::call_function("line", (".",))
+            .unwrap_or(1);
+        let line = line - 1;
+
+        // Check if we're on a line with a diagnostic and no popup is open
+        let popups = crate::remap::get_popups();
+        for diag in &diagnostics {
+            if let Some(lnum_obj) = diag.get("lnum") {
+                let lnum: i64 = lnum_obj.clone().try_into().unwrap_or(-1);
+                if lnum == line && popups.is_empty() {
+                    // Open float at current position
+                    let lua_code = r#"
+                        vim.diagnostic.open_float({
+                            format = function(diagnostic)
+                                return vim.split(diagnostic.message, "\n")[1]
+                            end,
+                            focusable = true,
+                            header = ""
+                        })
+                    "#;
+                    let _: () = api::call_function("luaeval", (lua_code,)).unwrap_or(());
+                    return;
+                }
+            }
+        }
+
+        // Check if there are any errors (severity 1)
+        let mut has_errors = false;
+        for diag in &diagnostics {
+            if let Some(sev_obj) = diag.get("severity") {
+                let sev: i64 = sev_obj.clone().try_into().unwrap_or(4);
+                if sev == 1 && request_severity != "all" {
+                    has_errors = true;
+                    break;
+                }
+            }
+        }
+
+        let go_action = if direction == 1 { "goto_next" } else { "goto_prev" };
+        let get_action = if direction == 1 { "get_next" } else { "get_prev" };
+
+        if has_errors {
+            // Navigate only between errors
+            let lua_code = format!(
+                r#"
+                vim.diagnostic.{}({{
+                    float = {{
+                        format = function(diagnostic)
+                            return vim.split(diagnostic.message, "\n")[1]
+                        end,
+                        focusable = true,
+                        header = ""
+                    }},
+                    severity = {{ 1 }}
+                }})
+                "#,
+                go_action
+            );
+            let _: () = api::call_function("luaeval", (lua_code,)).unwrap_or(());
+            return;
+        } else {
+            // Jump over all diagnostics on current line
+            let lua_code = format!(
+                r#"
+                local line = {}
                 local nextOnAnotherLine = false
+                local diagnostics_count = {}
                 while not nextOnAnotherLine do
-                    local d = vim.diagnostic[get_action]({{ severity = allSeverity }})
-                    -- this piece of shit is waiting until the end of the function before execution for some reason
+                    local d = vim.diagnostic.{}({{ severity = {{ 1, 2, 3, 4 }} }})
+                    if not d then break end
                     vim.api.nvim_win_set_cursor(0, {{ d.lnum + 1, d.col }})
                     if d.lnum ~= line then
                         nextOnAnotherLine = true
                         break
                     end
-                    if #diagnostics == 1 then
+                    if diagnostics_count == 1 then
                         return
                     end
                 end
-                -- if not, nvim_win_set_cursor will execute after it.
-                vim.defer_fn(function() vim.diagnostic.open_float(floatOpts) end, 1)
-                return
-            end
-        end)
-        "#,
-        request_severity, direction, direction
-    );
-
-    let _: () = api::call_function("luaeval", (lua_code,)).unwrap_or(());
+                vim.defer_fn(function()
+                    vim.diagnostic.open_float({{
+                        format = function(diagnostic)
+                            return vim.split(diagnostic.message, "\n")[1]
+                        end,
+                        focusable = true,
+                        header = ""
+                    }})
+                end, 1)
+                "#,
+                line,
+                diagnostics.len(),
+                get_action
+            );
+            let _: () = api::call_function("luaeval", (lua_code,)).unwrap_or(());
+        }
+    });
 }
 
 /// Yank the contents of the diagnostic popup to system clipboard

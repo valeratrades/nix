@@ -9,9 +9,17 @@ else
 	-- Plugin exists, check if rebuild needed (async)
 	vim.defer_fn(function()
 		if rust_plugins.rebuild_if_needed then
-			vim.fn.jobstart('true', {
-				on_exit = function()
-					rust_plugins.rebuild_if_needed()
+			-- Run rebuild in background thread
+			local config_path = vim.fn.stdpath('config')
+			vim.fn.jobstart({'sh', '-c', 'cd ' .. config_path .. '/rust_plugins && nix build 2>&1'}, {
+				on_exit = function(_, exit_code)
+					if exit_code == 0 then
+						vim.schedule(function()
+							-- Reload the plugin after successful rebuild
+							package.loaded['rust_plugins'] = nil
+							require('rust_plugins')
+						end)
+					end
 				end
 			})
 		end
