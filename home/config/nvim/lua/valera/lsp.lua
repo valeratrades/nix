@@ -39,77 +39,6 @@ function ToggleVirtualText()
 	end
 end
 
--- -- Open popup or jump to next problem
-local floatOpts = {
-	format = function(diagnostic)
-		return vim.split(diagnostic.message, "\n")[1]
-	end,
-	focusable = true,
-	header = ""
-}
---TODO: remove duplicated lines from the popups
-function JumpToDiagnostic(direction, requestSeverity)
-	pcall(function()
-		local bufnr = vim.api.nvim_get_current_buf()
-		local diagnostics = vim.diagnostic.get(bufnr)
-		if #diagnostics == 0 then
-			Echo("no diagnostics in 0", "Comment")
-		end
-		local line = vim.fn.line(".") - 1
-		-- severity is [1:4], the lower the "worse"
-		local allSeverity = { 1, 2, 3, 4 }
-		local targetSeverity = allSeverity
-		for _, d in pairs(diagnostics) do
-			if d.lnum == line and not BoolPopupOpen() then -- meaning we selected casually
-				vim.diagnostic.open_float(floatOpts)
-				return
-			end
-			-- navigate exclusively between errors, if there are any
-			if d.severity == 1 and requestSeverity ~= 'all' then
-				targetSeverity = { 1 }
-			end
-		end
-
-		local go_action = direction == 1 and "goto_next" or "goto_prev"
-		local get_action = direction == 1 and "get_next" or "get_prev"
-		if targetSeverity ~= allSeverity then
-			vim.diagnostic[go_action]({ float = floatOpts, severity = targetSeverity })
-			return
-		else
-			-- jump over all on current line
-			local nextOnAnotherLine = false
-			while not nextOnAnotherLine do
-				local d = vim.diagnostic[get_action]({ severity = allSeverity })
-				-- this piece of shit is waiting until the end of the function before execution for some reason
-				vim.api.nvim_win_set_cursor(0, { d.lnum + 1, d.col })
-				if d.lnum ~= line then
-					nextOnAnotherLine = true
-					break
-				end
-				if #diagnostics == 1 then
-					return
-				end
-			end
-			-- if not, nvim_win_set_cursor will execute after it.
-			vim.defer_fn(function() vim.diagnostic.open_float(floatOpts) end, 1)
-			return
-		end
-	end)
-end
-
-function YankDiagnosticPopup()
-	local popups = GetPopups()
-	if #popups == 1 then
-		local popup_id = popups[1]
-		local bufnr = vim.api.nvim_win_get_buf(popup_id)
-		local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-		local content = table.concat(lines, "\n")
-		vim.fn.setreg('+', content)
-	else
-		return
-	end
-end
-
 --
 
 
@@ -128,10 +57,10 @@ local on_attach = function(client, bufnr)
 	buf_set_keymap('n', '<space>lh', function() vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled()) end,
 		{ desc = "Toggle Inlay Hints" })
 
-	buf_set_keymap('n', '<C-r>', function() JumpToDiagnostic(1, 'max') end, { desc = "Next Error", overwrite = true })
-	buf_set_keymap('n', '<C-n>', function() JumpToDiagnostic(-1, 'max') end, { desc = "Previous Error" })
-	buf_set_keymap('n', '<C-A-r>', function() JumpToDiagnostic(1, 'all') end, { desc = "Next Diagnostic" })
-	buf_set_keymap('n', '<C-A-n>', function() JumpToDiagnostic(-1, 'all') end, { desc = "Previous Diagnostic" })
+	buf_set_keymap('n', '<C-r>', function() require('rust_plugins').jump_to_diagnostic(1, 'max') end, { desc = "Next Error", overwrite = true })
+	buf_set_keymap('n', '<C-n>', function() require('rust_plugins').jump_to_diagnostic(-1, 'max') end, { desc = "Previous Error" })
+	buf_set_keymap('n', '<C-A-r>', function() require('rust_plugins').jump_to_diagnostic(1, 'all') end, { desc = "Next Diagnostic" })
+	buf_set_keymap('n', '<C-A-n>', function() require('rust_plugins').jump_to_diagnostic(-1, 'all') end, { desc = "Previous Diagnostic" })
 
 	buf_set_keymap('n', '<space>lD', vim.lsp.buf.declaration, { desc = "Declaration" })
 	buf_set_keymap('n', '<space>lt', vim.lsp.buf.type_definition, { desc = "Type Definition" })
@@ -176,7 +105,7 @@ local on_attach = function(client, bufnr)
 	buf_set_keymap('n', '<space>lZ', '<cmd>Telescope lsp_outgoing_calls<CR>', { desc = "Outgoing Calls" })
 	buf_set_keymap('n', '<space>lf', function() vim.lsp.buf.format({ async = true }) end, { desc = "Format" })
 	buf_set_keymap({ 'n', 'v' }, '<space>la', vim.lsp.buf.code_action, { desc = "Code Action" })
-	buf_set_keymap('n', '<space>ly', YankDiagnosticPopup, { desc = "Yank Diagnostic Popup" })
+	buf_set_keymap('n', '<space>ly', function() require('rust_plugins').yank_diagnostic_popup() end, { desc = "Yank Diagnostic Popup" })
 	buf_set_keymap('n', '<space>ls', ToggleDiagnostics, { desc = "Toggle Diagnostics" })
 	buf_set_keymap('n', '<space>lv', ToggleVirtualText, { desc = "Toggle Virtual Text" })
 	buf_set_keymap('n', '<space>l2',

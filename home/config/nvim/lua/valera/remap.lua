@@ -153,19 +153,9 @@ end
 K("n", "<C-a>", SelectAll, { desc = "select all", overwrite = true })
 -- --
 
-local function getPopups()
-	return vim.fn.filter(vim.api.nvim_tabpage_list_wins(0),
-		function(_, e) return vim.api.nvim_win_get_config(e).zindex end)
-end
-local function killPopups()
-	vim.fn.map(getPopups(), function(_, e)
-		vim.api.nvim_win_close(e, false)
-	end)
-end
-
 K("n", "<Esc>", function()
 	vim.cmd.noh()
-	killPopups()
+	require('rust_plugins').kill_popups()
 	--vim.cmd("PeekClose")
 	print(" ")
 end, { desc = "Clear search and popups" })
@@ -173,30 +163,15 @@ end, { desc = "Clear search and popups" })
 K('n', '<C-z>', '<Nop>', { desc = "Nop (use Space+C-z)" })
 K('n', "<Space><C-z>", "<C-z>", { desc = "Suspend" })
 
-local function saveSessionIfOpen(cmd, hook_before)
-	hook_before = hook_before or ""
-	return function()
-		if vim.g.persisting then
-			vim.cmd("SessionSave")
-		end
-		local mode = vim.api.nvim_get_mode().mode
-		if mode == 'i' then
-			Ft("<Esc>l")
-		end
-		vim.cmd.noh()
-		killPopups()
-		if hook_before ~= "" then
-			vim.cmd("wa!")
-		end
-		vim.cmd(cmd)
-	end
-end
-
 K({ "", "i" }, "<A-c>", "<cmd>q!<cr>", { desc = "Quit window" })
 K({ "", "i" }, "<A-C>", "<cmd>tabdo bd<cr>", { desc = "Close all buffers" })
-K({ "", "i" }, "<A-a>", saveSessionIfOpen('qa!', 'wa!'), { desc = "Save and quit all" })
+K({ "", "i" }, "<A-a>", function()
+	require('rust_plugins').save_session_if_open('qa!', 'wa!')
+end, { desc = "Save and quit all" })
 K({ "", "i" }, "<A-;>", '<cmd>qa!<cr>', { desc = "Quit all" })
-K({ "", "i" }, "<A-w>", saveSessionIfOpen('w!'), { desc = "Save" })
+K({ "", "i" }, "<A-w>", function()
+	require('rust_plugins').save_session_if_open('w!', nil)
+end, { desc = "Save" })
 
 K("", ";", ":", { desc = "Command mode", overwrite = true })
 K("", ":", ";", { desc = "Repeat f/t", overwrite = true })

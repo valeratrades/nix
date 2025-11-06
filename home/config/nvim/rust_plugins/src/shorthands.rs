@@ -1,6 +1,21 @@
-use nvim_oxi::{api, Array, Dictionary, Object};
+use nvim_oxi::{api, Array, Dictionary, Object, String as NvimString};
 use std::collections::HashMap;
 use std::fs;
+
+/// Feedkeys wrapper
+/// Equivalent to `vim.api.nvim_feedkeys(s, mode, false)`
+pub fn f(s: String, mode: Option<String>) {
+    let mode_str = mode.unwrap_or_else(|| "n".to_string());
+    let _ = api::feedkeys(&NvimString::from(s), &NvimString::from(mode_str), false);
+}
+
+/// Feedkeys with termcode replacement
+/// Equivalent to `vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(s, true, true, true), mode, false)`
+pub fn ft(s: String, mode: Option<String>) {
+    let termcodes = api::replace_termcodes(s, true, true, true);
+    let termcodes_str = termcodes.to_string_lossy().into_owned();
+    f(termcodes_str, mode);
+}
 
 /// Get comment string for current buffer
 pub fn infer_comment_string() -> String {

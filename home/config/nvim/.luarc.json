@@ -3,6 +3,9 @@
   "diagnostics.globals": [
     "vim"
   ],
+  "format.defaultConfig": {
+    "max_line_length": "250"
+  },
   "workspace.library": [],
   "workspace.ignoreDir": [
     "rust_plugins/target",

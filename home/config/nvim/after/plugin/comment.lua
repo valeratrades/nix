@@ -30,19 +30,16 @@ function CommentCopilotEsc()
 	vim.b.copilot_enabled = false
 end
 
--- -- `extra` reimplementation
-local function commentExtraReimplementation(insert_leader)
-	return function()
-		vim.b.copilot_enabled = false
-		F(insert_leader)
-		F(Cs() .. ' ')
-	end
-end
-
 --NB: this overwrites the default `extra` mappings from `Comment.nvim`; making this file necessary to be loaded in the old style, as doing it through `lazy.nvim`'s `config` field would source the default mappings second, overwriting these.
-K('n', 'gcO', commentExtraReimplementation('O'), { desc = "comment: reimplement `gcO`" })
-K('n', 'gco', commentExtraReimplementation('o'), { desc = "comment: reimplement `gco`" })
-K('n', 'gcA', commentExtraReimplementation('A '), { desc = "comment: reimplement `gcA`" })
+K('n', 'gcO', function()
+	require('rust_plugins').comment_extra_reimplementation('O')
+end, { desc = "comment: reimplement `gcO`" })
+K('n', 'gco', function()
+	require('rust_plugins').comment_extra_reimplementation('o')
+end, { desc = "comment: reimplement `gco`" })
+K('n', 'gcA', function()
+	require('rust_plugins').comment_extra_reimplementation('A ')
+end, { desc = "comment: reimplement `gcA`" })
 --
 
 -- -- Surround Block Comments

@@ -9,15 +9,6 @@ function K(mode, lhs, rhs, opts)
 	require('rust_plugins').smart_keymap(mode, lhs, rhs, opts)
 end
 
-function F(s, mode)
-	mode = mode or "n"
-	vim.api.nvim_feedkeys(s, mode, false)
-end
-
-function Ft(s, mode)
-	F(vim.api.nvim_replace_termcodes(s, true, true, true), mode)
-end
-
 function Cs()
 	return require('rust_plugins').infer_comment_string()
 end
@@ -30,30 +21,6 @@ function PersistCursor(fn, ...)
 	vim.defer_fn(function() vim.api.nvim_win_set_cursor(0, cursor_position) end, 1)
 	return result
 end
-
-function Echo(text, type)
-	type = type or "Comment"
-	type = (type:gsub("^%l", string.upper)) -- in case I forget they start from capital letter
-	vim.api.nvim_echo({ { text, type } }, false, {})
-end
-
--- -- popups
-function GetPopups()
-	return vim.fn.filter(vim.api.nvim_tabpage_list_wins(0),
-		function(_, e) return vim.api.nvim_win_get_config(e).zindex end)
-end
-
-function KillPopups()
-	vim.fn.map(GetPopups(), function(_, e)
-		vim.api.nvim_win_close(e, false)
-	end)
-end
-
-function BoolPopupOpen()
-	return #GetPopups() > 0
-end
-
---
 
 function PrintQuickfixList()
 	local qf_list = vim.fn.getqflist()

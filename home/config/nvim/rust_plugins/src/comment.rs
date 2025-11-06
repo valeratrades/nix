@@ -1,6 +1,6 @@
 use nvim_oxi::api;
 use nvim_oxi::String as NvimString;
-use crate::shorthands::infer_comment_string;
+use crate::shorthands::{infer_comment_string, f};
 
 /// Add foldmarker comment block around selection
 pub fn foldmarker_comment_block(nesting_level: i64) {
@@ -134,4 +134,18 @@ pub fn toggle_comments_visibility() {
             );
         }
     }
+}
+
+/// Comment extra reimplementation
+/// Disables copilot and inserts the given leader followed by comment string
+pub fn comment_extra_reimplementation(insert_leader: String) {
+    // Disable copilot
+    let _ = api::set_var("b:copilot_enabled", false);
+
+    // Feed the insert leader
+    f(insert_leader, None);
+
+    // Feed the comment string with a space
+    let cs = infer_comment_string();
+    f(format!("{} ", cs), None);
 }

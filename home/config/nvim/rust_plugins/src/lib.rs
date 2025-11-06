@@ -6,6 +6,8 @@ use std::time::SystemTime;
 
 mod comment;
 mod shorthands;
+mod remap;
+mod lsp;
 
 /// Find all TODO comments in the project, sorted by number of '!' signs (descending)
 ///
@@ -414,6 +416,31 @@ fn rust_plugins() -> nvim_oxi::Result<Dictionary> {
     let toggle_comments_fn = Function::from_fn(|()| comment::toggle_comments_visibility());
     let goto_file_line_column_or_function_fn = Function::from_fn(|(arg,): (String,)| goto_file_line_column_or_function(arg));
 
+    // Shorthands functions
+    let f_fn = Function::from_fn(|(s, mode): (String, Option<String>)| shorthands::f(s, mode));
+    let ft_fn = Function::from_fn(|(s, mode): (String, Option<String>)| shorthands::ft(s, mode));
+
+    // Remap functions
+    let get_popups_fn = Function::from_fn(|()| remap::get_popups());
+    let kill_popups_fn = Function::from_fn(|()| remap::kill_popups());
+    let save_session_if_open_fn = Function::from_fn(|(cmd, hook_before): (String, Option<String>)| {
+        remap::save_session_if_open(cmd, hook_before)
+    });
+
+    // Comment extra
+    let comment_extra_reimplementation_fn = Function::from_fn(|(insert_leader,): (String,)| {
+        comment::comment_extra_reimplementation(insert_leader)
+    });
+
+    // LSP functions
+    let echo_fn = Function::from_fn(|(text, hl_type): (String, Option<String>)| {
+        lsp::echo(text, hl_type)
+    });
+    let jump_to_diagnostic_fn = Function::from_fn(|(direction, request_severity): (i64, String)| {
+        lsp::jump_to_diagnostic(direction, request_severity)
+    });
+    let yank_diagnostic_popup_fn = Function::from_fn(|()| lsp::yank_diagnostic_popup());
+
     Ok(Dictionary::from_iter([
         ("find_todo", Object::from(find_todo)),
         ("should_rebuild", Object::from(should_rebuild_fn)),
@@ -430,5 +457,14 @@ fn rust_plugins() -> nvim_oxi::Result<Dictionary> {
         ("add_todo_comment", Object::from(add_todo_comment_fn)),
         ("toggle_comments_visibility", Object::from(toggle_comments_fn)),
         ("goto_file_line_column_or_function", Object::from(goto_file_line_column_or_function_fn)),
+        ("f", Object::from(f_fn)),
+        ("ft", Object::from(ft_fn)),
+        ("get_popups", Object::from(get_popups_fn)),
+        ("kill_popups", Object::from(kill_popups_fn)),
+        ("save_session_if_open", Object::from(save_session_if_open_fn)),
+        ("comment_extra_reimplementation", Object::from(comment_extra_reimplementation_fn)),
+        ("echo", Object::from(echo_fn)),
+        ("jump_to_diagnostic", Object::from(jump_to_diagnostic_fn)),
+        ("yank_diagnostic_popup", Object::from(yank_diagnostic_popup_fn)),
     ]))
 }
