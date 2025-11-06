@@ -1,17 +1,7 @@
-use nvim_oxi::{api, Function, Object};
+use nvim_oxi::api;
 use nvim_oxi::String as NvimString;
 use crate::shorthands::{infer_comment_string, f, ft};
-
-/// Helper to defer a Rust callback using vim.defer_fn
-fn defer_fn<F>(delay_ms: i64, callback: F)
-where
-    F: Fn() + Send + 'static,
-{
-    let func = Function::from_fn(move |()| {
-        callback();
-    });
-    let _ = api::call_function::<_, ()>("defer_fn", (Object::from(func), delay_ms));
-}
+use crate::utils::defer_fn;
 
 /// Add foldmarker comment block around selection
 pub fn foldmarker_comment_block(nesting_level: i64) {

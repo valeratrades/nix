@@ -8,6 +8,7 @@ mod comment;
 mod shorthands;
 mod remap;
 mod lsp;
+mod utils;
 
 /// Find all TODO comments in the project, sorted by number of '!' signs (descending)
 ///

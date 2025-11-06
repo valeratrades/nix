@@ -59,8 +59,9 @@ local on_attach = function(client, bufnr)
 
 	buf_set_keymap('n', '<C-r>', function() require('rust_plugins').jump_to_diagnostic(1, 'max') end, { desc = "Next Error", overwrite = true })
 	buf_set_keymap('n', '<C-n>', function() require('rust_plugins').jump_to_diagnostic(-1, 'max') end, { desc = "Previous Error" })
-	buf_set_keymap('n', '<C-A-r>', function() require('rust_plugins').jump_to_diagnostic(1, 'all') end, { desc = "Next Diagnostic" })
-	buf_set_keymap('n', '<C-A-n>', function() require('rust_plugins').jump_to_diagnostic(-1, 'all') end, { desc = "Previous Diagnostic" })
+	-- would prefer to put next two on the same keys but `Shift`ed, but vim doesn't understand it with Ctrl atm
+	buf_set_keymap('n', '<C-t>', function() require('rust_plugins').jump_to_diagnostic(1, 'all') end, { desc = "Next Diagnostic" })
+	buf_set_keymap('n', '<C-s>', function() require('rust_plugins').jump_to_diagnostic(-1, 'all') end, { desc = "Previous Diagnostic" })
 
 	buf_set_keymap('n', '<space>lD', vim.lsp.buf.declaration, { desc = "Declaration" })
 	buf_set_keymap('n', '<space>lt', vim.lsp.buf.type_definition, { desc = "Type Definition" })
