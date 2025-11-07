@@ -13,6 +13,7 @@ alias timer="$fish_scripts_pdir/timer.rs"
 alias theme="$fish_scripts_pdir/theme_toggle.rs"
 alias mvd="$fish_scripts_pdir/mvd.rs"
 alias translate_book="$fish_scripts_pdir/translate_book.rs"
+alias clipboard_to_keystrokes="$fish_scripts_pdir/clipboard_to_keystrokes.rs"
 
 alias choose_port="$fish_scripts_pdir/choose_port.sh"
 

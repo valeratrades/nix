@@ -232,8 +232,8 @@ bindsym $mod+Ctrl+g exec tg $(greenclip print | awk 'NR==1 {print}')
 bindsym $mod+Shift+e exec ~/.config/sway/eww_visibility_toggle.sh
 bindsym $mod+Ctrl+e exec $refresh_eww
 
-bindsym $mod+a exec echo "true" > /tmp/btc_line_additional_line
-bindsym $mod+Shift+a exec echo "false" > /tmp/btc_line_additional_line
+# paste clipboard contents through keystrokes
+bindsym $mod+Shift+p exec ~/${NIXOS_CONFIG}/home/scripts/clipboard_to_keystrokes.rs
 
 # check if any task was cut short during the last session
 exec_always sleep 3 && todo do continue_ongoing
