@@ -73,15 +73,31 @@ fn main() {
         exit(1);
     }
 
-    // Simply use wtype to type the text
-    // wtype handles all the complexity of key mapping for us
-    let status = Command::new("wtype")
-        .arg(&text)
-        .status()
+    // Use wtype with stdin (-) to type the text
+    // This avoids issues with special characters in shell arguments
+    use std::io::Write;
+    use std::process::Stdio;
+
+    let mut child = Command::new("wtype")
+        .arg("-")
+        .stdin(Stdio::piped())
+        .spawn()
         .unwrap_or_else(|e| {
             eprintln!("Failed to execute wtype: {}", e);
             exit(1)
         });
+
+    if let Some(mut stdin) = child.stdin.take() {
+        stdin.write_all(text.as_bytes()).unwrap_or_else(|e| {
+            eprintln!("Failed to write to wtype stdin: {}", e);
+            exit(1)
+        });
+    }
+
+    let status = child.wait().unwrap_or_else(|e| {
+        eprintln!("Failed to wait for wtype: {}", e);
+        exit(1)
+    });
 
     if !status.success() {
         eprintln!("wtype failed with exit code: {:?}", status.code());
