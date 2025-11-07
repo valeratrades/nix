@@ -154,6 +154,20 @@ function connect_headphones
 	bluetoothctl devices
 	return 1
 end
+
+function bluetooth_off
+	echo "Turning off Bluetooth..."
+	bluetoothctl power off 2>/dev/null
+	sudo rfkill block bluetooth 2>/dev/null
+
+	if not bluetoothctl show | grep -q "Powered: no"
+		echo "Error: Failed to power off Bluetooth adapter"
+		return 1
+	end
+
+	echo "Bluetooth powered off successfully"
+	return 0
+end
 #,}}}
 
 function tge
