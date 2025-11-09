@@ -102,3 +102,33 @@ function brb
     printf 'Will be\nright back' | figlet | $PAGER
     fontsize "$current_fontsize"
 end
+
+function print_phonetic
+    echo "+---+-----------++---+-----------+"
+    echo "┊ A ┊ Alfa      ┊┊ N ┊ November  ┊"
+    echo "┊---┊-----------┊┊---┊-----------┊"
+    echo "┊ B ┊ Bravo     ┊┊ O ┊ Oscar     ┊"
+    echo "┊---┊-----------┊┊---┊-----------┊"
+    echo "┊ C ┊ Charlie   ┊┊ P ┊ Papa      ┊"
+    echo "┊---┊-----------┊┊---┊-----------┊"
+    echo "┊ D ┊ Delta     ┊┊ Q ┊ Quebec    ┊"
+    echo "┊---┊-----------┊┊---┊-----------┊"
+    echo "┊ E ┊ Echo      ┊┊ R ┊ Romeo     ┊"
+    echo "┊---┊-----------┊┊---┊-----------┊"
+    echo "┊ F ┊ Foxtrot   ┊┊ S ┊ Sierra    ┊"
+    echo "┊---┊-----------┊┊---┊-----------┊"
+    echo "┊ G ┊ Golf      ┊┊ T ┊ Tango     ┊"
+    echo "┊---┊-----------┊┊---┊-----------┊"
+    echo "┊ H ┊ Hotel     ┊┊ U ┊ Uniform   ┊"
+    echo "┊---┊-----------┊┊---┊-----------┊"
+    echo "┊ I ┊ India     ┊┊ V ┊ Victor    ┊"
+    echo "┊---┊-----------┊┊---┊-----------┊"
+    echo "┊ J ┊ Juliett   ┊┊ W ┊ Whiskey   ┊"
+    echo "┊---┊-----------┊┊---┊-----------┊"
+    echo "┊ K ┊ Kilo      ┊┊ X ┊ Xray      ┊"
+    echo "┊---┊-----------┊┊---┊-----------┊"
+    echo "┊ L ┊ Lima      ┊┊ Y ┊ Yankee    ┊"
+    echo "┊---┊-----------┊┊---┊-----------┊"
+    echo "┊ M ┊ Mike      ┊┊ Z ┊ Zulu      ┊"
+    echo "+---+-----------++---+-----------+"
+end
