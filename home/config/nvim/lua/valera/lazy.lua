@@ -14,7 +14,7 @@ vim.g.mapleader = ' ' -- ensure mappings are correct
 
 --return require('lazy').setup(vim.tbl_extend("force", {
 return require('lazy').setup({
-	"jake-stewart/lazier.nvim", --Q: wait, it wraps known commands like `vim.keymap.set`, but I use custom stuff for those. So may be useless for me.
+	"valeratrades/lazier.nvim",
 	-- Cornerstone
 	{ import = "valera.plugins.undotree" },
 	'L3MON4D3/LuaSnip',
