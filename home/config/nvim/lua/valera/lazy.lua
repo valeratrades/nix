@@ -18,7 +18,6 @@ return require('lazy').setup({
 	-- Cornerstone
 	{ import = "valera.plugins.undotree" },
 	'L3MON4D3/LuaSnip',
-	"lewis6991/gitsigns.nvim",
 	{ import = "valera.plugins.blankline" },
 	{ import = "valera.plugins.copilot" },
 	--"github/copilot.vim",
@@ -26,12 +25,6 @@ return require('lazy').setup({
 	{ import = "valera.plugins.telescope" },
 	{ import = "valera.plugins.lualine" },
 	{ import = "valera.plugins.comment" },
-	{
-		"numToStr/Comment.nvim",
-		dependencies = {
-			"JoosepAlviste/nvim-ts-context-commentstring",
-		},
-	},
 	{ import = "valera.plugins.signature" },
 	{ import = "valera.plugins.oil" },
 	{ import = "valera.plugins.webdevicons" },
@@ -111,20 +104,6 @@ return require('lazy').setup({
 	'jbyuki/instant.nvim',
 	{ import = "valera.plugins.presence" },
 	{ import = "valera.plugins.rainbow_csv" },
-	{
-		"kdheepak/lazygit.nvim",
-		cmd = {
-			"LazyGit",
-			"LazyGitConfig",
-			"LazyGitCurrentFile",
-			"LazyGitFilter",
-			"LazyGitFilterCurrentFile",
-		},
-		-- optional for floating window border decoration
-		dependencies = {
-			"nvim-lua/plenary.nvim",
-		},
-	},
 	{ import = "valera.plugins.surround" },
 	"valeratrades/typst.vim",
 	{ import = "valera.plugins.leetcode" },

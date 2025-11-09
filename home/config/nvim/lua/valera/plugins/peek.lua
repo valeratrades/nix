@@ -1,4 +1,4 @@
-return {
+return require "lazier" {
 	"toppair/peek.nvim",
 	event = { "VeryLazy" },
 	build = "deno task --quiet build:fast",
@@ -23,7 +23,8 @@ return {
 			-- that has to pass before starting new render
 		})
 
-		vim.api.nvim_create_user_command("PeekOpen", require("peek").open, {})
-		vim.api.nvim_create_user_command("PeekClose", require("peek").close, {})
+		local peek = require("peek")
+		vim.api.nvim_create_user_command("PeekOpen", function() peek.open() end, {})
+		vim.api.nvim_create_user_command("PeekClose", function() peek.close() end, {})
 	end
 }

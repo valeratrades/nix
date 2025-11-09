@@ -1,5 +1,5 @@
 return {
-	{
+	require "lazier" {
 		"lewis6991/gitsigns.nvim",
 		config = function()
 			local gs = require("gitsigns")
@@ -45,7 +45,7 @@ return {
 			--,}}}
 		end,
 	},
-	{
+	require "lazier" {
 		"kdheepak/lazygit.nvim",
 		cmd = { "LazyGit", "LazyGitConfig", "LazyGitCurrentFile", "LazyGitFilter", "LazyGitFilterCurrentFile" },
 		dependencies = { "nvim-lua/plenary.nvim" },

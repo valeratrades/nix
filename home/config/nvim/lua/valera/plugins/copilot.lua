@@ -1,5 +1,5 @@
 --NB: to init, the first time must auth with `Copilot auth`
-return {
+return require "lazier" {
 	"zbirenbaum/copilot.lua",
 	dependencies = {
 		"copilotlsp-nvim/copilot-lsp", -- (optional) for NES functionality

@@ -1,4 +1,4 @@
-return {
+return require "lazier" {
 	"folke/trouble.nvim",
 	opts = {
 		modes = {

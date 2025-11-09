@@ -1,4 +1,4 @@
-return {
+return require "lazier" {
 	"projekt0n/github-nvim-theme",
 	config = function()
 		function SetThemeDark()

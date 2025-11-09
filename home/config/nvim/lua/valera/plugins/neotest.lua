@@ -1,4 +1,4 @@
-return {
+return require "lazier" {
 	"nvim-neotest/neotest",
 	dependencies = {
 		"nvim-neotest/nvim-nio",

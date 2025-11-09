@@ -1,4 +1,4 @@
-return { -- CamelCaseACRONYMWords_underscore1234
+return require "lazier" { -- CamelCaseACRONYMWords_underscore1234
 	--w --->w-->w----->w---->w-------->w->w
 	--e -->e-->e----->e--->e--------->e-->e
 	--b < ---b<--b<-----b<----b<--------b<-b

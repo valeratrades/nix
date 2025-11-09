@@ -1,4 +1,4 @@
-return {
+return require "lazier" {
 	"andweeb/presence.nvim",
 	config = function()
 		require("presence").setup({

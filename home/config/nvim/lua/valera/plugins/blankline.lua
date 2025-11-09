@@ -1,4 +1,4 @@
-return {
+return require "lazier" {
 	"lukas-reineke/indent-blankline.nvim",
 	config = function()
 		require("ibl").setup{

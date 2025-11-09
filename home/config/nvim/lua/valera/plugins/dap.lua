@@ -1,4 +1,4 @@
-return {
+return require "lazier" {
 	"mfussenegger/nvim-dap",
 	dependencies = {
 		"rcarriga/nvim-dap-ui",

@@ -1,4 +1,4 @@
-return {
+return require "lazier" {
 	"nvim-lualine/lualine.nvim",
 	dependencies = {
 		"nvim-lua/lsp-status.nvim",

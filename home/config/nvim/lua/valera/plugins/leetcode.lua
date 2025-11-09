@@ -1,6 +1,6 @@
 --TODO!: setup when I have the time.Seems amazing
 -- https://github.com/kawre/leetcode.nvim
-return {
+return require "lazier" {
 	"kawre/leetcode.nvim",
 	build = ":TSUpdate html",
 	dependencies = {

@@ -1,4 +1,4 @@
-return {
+return require "lazier" {
 	'cameron-wags/rainbow_csv.nvim',
 	config = true,
 	ft = {

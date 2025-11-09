@@ -1,4 +1,4 @@
-return {
+return require "lazier" {
 	"nvim-tree/nvim-web-devicons",
 	lazy = true,
 	config = function()

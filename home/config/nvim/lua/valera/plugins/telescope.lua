@@ -1,4 +1,4 @@
-return {
+return require "lazier" {
 	"nvim-telescope/telescope.nvim",
 	dependencies = {
 		"nvim-lua/plenary.nvim",

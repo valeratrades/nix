@@ -1,4 +1,4 @@
-return {
+return require "lazier" {
 	'gabrielpoca/replacer.nvim',
 	opts = {
 		rename_files = false,
