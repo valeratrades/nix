@@ -71,6 +71,10 @@ in {
 				identitiesOnly = true;
 				identityFile = [ "~/.ssh/id_ed25519" ];
 			};
+      "cloudzy_ubuntu" = {
+        hostname = "45.59.119.234";
+        user = "root";
+      };
 			"vincent" = {
 				hostname = "192.168.5.204";
 				user = "nixos";

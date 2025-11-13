@@ -13,5 +13,8 @@
 		btc_line = lib.hm.dag.entryAfter ["writeBoundary" ] ''
       [ -e "$XDG_CONFIG_HOME/btc_line.toml" ] || ln -sf "$NIXOS_CONFIG/home/config/btc_line.toml" "$XDG_CONFIG_HOME/btc_line.toml"
 		'';
+		social_networks = lib.hm.dag.entryAfter ["writeBoundary" ] ''
+      [ -e "$XDG_CONFIG_HOME/social_networks.toml" ] || ln -sf "$NIXOS_CONFIG/home/config/social_networks.toml" "$XDG_CONFIG_HOME/social_networks.toml"
+		'';
   };
 }
