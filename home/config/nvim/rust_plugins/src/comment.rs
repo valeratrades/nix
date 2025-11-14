@@ -23,22 +23,6 @@ pub fn foldmarker_comment_block(nesting_level: i64) {
     ft(format!("<Esc>hhhhi"), None);
 }
 
-/// Draw a big beautiful line with the given symbol
-pub fn draw_a_big_beautiful_line(symbol: char) {
-    let cs_str = infer_comment_string();
-    let prefix = if cs_str.len() == 1 {
-        format!("{}{}", cs_str, symbol)
-    } else {
-        cs_str.clone()
-    };
-
-    let line: String = std::iter::repeat(symbol).take(77).collect();
-    let full_line = format!("{}{}", prefix, line);
-
-    let _ = api::feedkeys(&NvimString::from(full_line), &NvimString::from("n"), false);
-    let _ = api::feedkeys(&NvimString::from("0"), &NvimString::from("t"), false);
-}
-
 /// Remove end-of-line comment
 pub fn remove_end_of_line_comment() {
     // Save cursor position

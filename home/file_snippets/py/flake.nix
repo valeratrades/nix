@@ -118,7 +118,7 @@
                     uv venv >/dev/null
                     source .devenv/state/venv/bin/activate
                   fi
-                  if [ -n uv.lock ]; then
+                  if [ ! -f uv.lock ]; then
                     uv_sync
                   fi
                 '';

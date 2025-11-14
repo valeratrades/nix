@@ -419,6 +419,7 @@ in {
         [
           dust # `du` in rust
           atuin
+          sudo-rs # `sudo` in rust, cause why not
           expect # automate things with interactive prompts
           tldr
           procs # `ps` in rust

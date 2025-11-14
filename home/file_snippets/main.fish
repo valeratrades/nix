@@ -27,6 +27,7 @@ function shared_before
 
 	cp "$FILE_SNIPPETS_PATH/$lang/flake.nix" ./flake.nix # doesn't exist for all languages, for ex rust has this added in its own function, conditional on toolchain version. Good news is - this does nothing if source is not found. (but HACK: could lead to nasty logical errors)
 
+	echo "export NIX_CONFIG=\"experimental-features = nix-command flakes\"" > .envrc # needed when direnving on the server
 	if [ $lang = "py" ]
 		echo "use flake . --no-pure-eval" >> .envrc
 	else

@@ -16,5 +16,12 @@
 		social_networks = lib.hm.dag.entryAfter ["writeBoundary" ] ''
       [ -e "$XDG_CONFIG_HOME/social_networks.toml" ] || ln -sf "$NIXOS_CONFIG/home/config/social_networks.toml" "$XDG_CONFIG_HOME/social_networks.toml"
 		'';
+		claude_code_global_CLAUDE_md = 
+      let
+        target_path = "$HOME/.claude/CLAUDE.md";
+      in
+      lib.hm.dag.entryAfter ["writeBoundary" ] ''
+      [ -e "${target_path}" ] || ln -sf "$NIXOS_CONFIG/home/config/claude/CLAUDE.md" "${target_path}"
+		'';
   };
 }

@@ -406,11 +406,6 @@ fn rust_plugins() -> nvim_oxi::Result<Dictionary> {
     let cs_fn = Function::from_fn(|()| shorthands::infer_comment_string());
     let infer_comment_string_fn = Function::from_fn(|()| shorthands::infer_comment_string());
     let foldmarker_comment_block_fn = Function::from_fn(|(n,)| comment::foldmarker_comment_block(n));
-    let draw_line_fn = Function::from_fn(|(symbol,): (String,)| {
-        if let Some(c) = symbol.chars().next() {
-            comment::draw_a_big_beautiful_line(c);
-        }
-    });
     let remove_eol_comment_fn = Function::from_fn(|()| comment::remove_end_of_line_comment());
     let debug_comment_fn = Function::from_fn(|(action,): (String,)| comment::debug_comment(&action));
     let add_todo_comment_fn = Function::from_fn(|(n,)| comment::add_todo_comment(n));
@@ -452,7 +447,6 @@ fn rust_plugins() -> nvim_oxi::Result<Dictionary> {
         ("cs", Object::from(cs_fn)),
         ("infer_comment_string", Object::from(infer_comment_string_fn)),
         ("foldmarker_comment_block", Object::from(foldmarker_comment_block_fn)),
-        ("draw_a_big_beautiful_line", Object::from(draw_line_fn)),
         ("remove_end_of_line_comment", Object::from(remove_eol_comment_fn)),
         ("debug_comment", Object::from(debug_comment_fn)),
         ("add_todo_comment", Object::from(add_todo_comment_fn)),
