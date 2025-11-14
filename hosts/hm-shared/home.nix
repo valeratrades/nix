@@ -357,7 +357,8 @@
 												set transcript_path (echo $input | jq -r .transcript_path)
 												set chat_name (head -1 $transcript_path | jq -r .summary)
 												set tmux_session (tmux display-message -p "#S" 2>/dev/null || echo "no session")
-												tmux rename-window "ai:$chat_name" 2>/dev/null; or true
+												set tmux_pane (tmux display-message -p "#D" 2>/dev/null)
+												tmux rename-window -t "$tmux_pane" "ai:$chat_name" 2>/dev/null; or true
 												beep "CC: response on:\n$tmux_session\n$chat_name"
 											'
 										'';

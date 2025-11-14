@@ -67,11 +67,8 @@ struct Args {
 	#[arg(group = "location")]
 	path: Option<PathBuf>,
 
-	/// Subdirectory within the destination (only for flagged locations)
-	subpath: Option<String>,
-
-	/// New name for the file
-	new_name: Option<String>,
+	/// Subdirectory within the destination (only for flagged locations) OR new filename (for direct paths)
+	extra_arg: Option<String>,
 }
 
 fn sanitize_filename(filename: &str) -> String {
@@ -102,6 +99,9 @@ fn main() {
 
 	// Extract filename from path if it looks like a file
 	let mut extracted_filename: Option<String> = None;
+
+	// Track whether we're using a direct path (for later logic)
+	let using_direct_path = args.path.is_some();
 
 	let (from, mut to_dir) = if args.paper {
 		(home.join("Downloads"), home.join("Documents/Papers"))
@@ -144,10 +144,17 @@ fn main() {
 		std::process::exit(1);
 	};
 
-	// Add subpath if provided
-	if let Some(subpath) = args.subpath {
-		to_dir = to_dir.join(subpath);
-	}
+	// Handle extra_arg based on whether we're using a flag or direct path
+	let explicit_filename = if using_direct_path {
+		// For direct paths, extra_arg is the new filename
+		args.extra_arg
+	} else {
+		// For flagged locations, extra_arg is a subdirectory
+		if let Some(subpath) = args.extra_arg {
+			to_dir = to_dir.join(subpath);
+		}
+		None
+	};
 
 	if !to_dir.exists() {
 		eprintln!("Error: Directory {:?} does not exist", to_dir);
@@ -176,7 +183,7 @@ fn main() {
 	match latest_file {
 		Some(from_path) => {
 			// Determine the final destination with filename
-			let final_destination = match args.new_name.or(extracted_filename) {
+			let final_destination = match explicit_filename.or(extracted_filename) {
 				// If explicit filename provided, use it as-is (don't sanitize)
 				Some(fname) => to_dir.join(fname),
 				// If no explicit filename, sanitize the original filename
