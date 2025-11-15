@@ -94,8 +94,10 @@
 
                 enterShell = ''
                   mkdir -p ./.github/workflows
-                  rm -f ./.github/workflows/errors.yml; cp ${workflowContents.errors} ./.github/workflows/errors.yml
-                  rm -f ./.github/workflows/warnings.yml; cp ${workflowContents.warnings} ./.github/workflows/warnings.yml
+                  cp ${workflowContents.errors} -f ./.github/workflows/errors.yml
+                  cp ${workflowContents.warnings} -f ./.github/workflows/warnings.yml
+                  cp ${workflowContents.other} -f ./.github/workflows/other.yml || :
+
 
                   cp -f ${v-utils.files.licenses.blue_oak} ./LICENSE
 
