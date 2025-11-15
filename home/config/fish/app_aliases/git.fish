@@ -335,7 +335,7 @@ function init_labels
 end
 
 ## git new repository
-#TODO!!!!!!: figure out how to sync the base labels settings across all repos
+#TODO!!!!: figure out how to sync the base labels settings across all repos
 function gn
 	if [ "$argv[1]" = "-h" ] || [ "$argv[1]" = "--help" ] || [ "$argv[1]" = "help" ]
 		printf """\
@@ -352,6 +352,19 @@ function gn
 		set repo_name (basename (pwd))
 	else
 		set argv $argv[2..-1]
+	end
+
+	# before running, ensure we have all the necessary env vars
+	if test -z "$GITHUB_NAME"
+		echo "ERROR: GITHUB_NAME is not set"
+		return 1
+	end
+	if test -z "$GITHUB_KEY"
+		echo "ERROR: GITHUB_KEY is not set"
+		return 1
+	end
+	if test -z "$GITHUB_LOC_GIST"
+		echo "WARNING: GITHUB_LOC_GIST is not set, loc_gist_token secret will not be created // in my setup it's used for LoC badge generation"
 	end
 
 	git init
@@ -395,6 +408,11 @@ function gn
 	"state":"open",
 	"description":"More and better"
 	}'
+
+	if test -n "$GITHUB_LOC_GIST"
+		echo "Setting loc_gist_token secret..."
+		gh secret set loc_gist_token --repo "$GTIHUB_NAME/$repo_name" --body "$GITHUB_LOC_GIST"
+	end
 end
 
 #TODO: make a file in main .github repo to store all additional labels defined for all repositories. Than change the label-manipulation commands to simply overwrite those. (or check for differences first, but that's more difficult, as some can have eg same name but outdated description)

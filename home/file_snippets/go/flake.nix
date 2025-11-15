@@ -35,6 +35,7 @@
             "go-gocritic"
             "go-security-audit"
           ];
+          jobsOther = [ "loc-badge" ];
         };
         readme = v-utils.readme-fw {
           inherit pkgs pname;
