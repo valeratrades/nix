@@ -6,10 +6,13 @@
   "format.defaultConfig": {
     "max_line_length": "250"
   },
-  "workspace.library": [],
+  "workspace.library": [
+    "lua",
+    "after"
+  ],
   "workspace.ignoreDir": [
-    "rust_plugins/target",
-    "rust_plugins/.direnv",
-    "rust_plugins/result"
+    "rust_plugins",
+    "spell",
+    ".git"
   ]
 }

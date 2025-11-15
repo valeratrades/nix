@@ -321,19 +321,11 @@ end
 K("n", "<space>rwl", function() rustCheckWith("clippy") end, { desc = "Rust: switch to checking with `clippy`" })
 K("n", "<space>rwe", function() rustCheckWith("check") end, { desc = "Rust: switch to checking with `check`" })
 
--- Ensure on_attach is called for Rust files via autocommand
+-- Call on_attach for all Rust files
 vim.api.nvim_create_autocmd("FileType", {
 	pattern = "rust",
 	callback = function(args)
-		local bufnr = args.buf
-		-- Find the rust-analyzer client
-		local clients = vim.lsp.get_clients({ bufnr = bufnr })
-		for _, client in ipairs(clients) do
-			if client.name == "rust-analyzer" or client.name == "rust_analyzer" then
-				on_attach(client, bufnr)
-				break
-			end
-		end
+		on_attach(nil, args.buf)
 	end,
 })
 
