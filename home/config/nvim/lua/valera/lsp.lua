@@ -138,10 +138,14 @@ vim.g.golang_recommended_style = false
 vim.g.cpp_recommended_style = false
 --,}}}
 
--- lua_ls
-vim.lsp.config('lua_ls', {
+-- Set default configuration for all LSP servers
+vim.lsp.config('*', {
 	capabilities = capabilities,
 	on_attach = on_attach,
+})
+
+-- lua_ls
+vim.lsp.config('lua_ls', {
 	settings = {
 		Lua = {
 			runtime = {
@@ -164,16 +168,12 @@ vim.lsp.enable('lua_ls')
 
 -- tailwindcss
 vim.lsp.config('tailwindcss', {
-	capabilities = capabilities,
-	on_attach = on_attach,
 	cmd = { 'tailwindcss-language-server', '--stdio' },
 })
 vim.lsp.enable('tailwindcss')
 
 -- gopls
 vim.lsp.config('gopls', {
-	capabilities = capabilities,
-	on_attach = on_attach,
 	settings = {
 		gopls = {
 			completeUnimported = true,
@@ -188,37 +188,23 @@ vim.lsp.config('gopls', {
 vim.lsp.enable('gopls')
 
 -- bashls
-vim.lsp.config('bashls', {
-	capabilities = capabilities,
-	on_attach = on_attach,
-})
+vim.lsp.config('bashls', {})
 vim.lsp.enable('bashls')
 
 -- clangd
-vim.lsp.config('clangd', {
-	capabilities = capabilities,
-	on_attach = on_attach,
-})
+vim.lsp.config('clangd', {})
 vim.lsp.enable('clangd')
 
 -- jsonls
-vim.lsp.config('jsonls', {
-	capabilities = capabilities,
-	on_attach = on_attach,
-})
+vim.lsp.config('jsonls', {})
 vim.lsp.enable('jsonls')
 
 -- marksman
-vim.lsp.config('marksman', {
-	capabilities = capabilities,
-	on_attach = on_attach,
-})
+vim.lsp.config('marksman', {})
 vim.lsp.enable('marksman')
 
 -- nil_ls
 vim.lsp.config('nil_ls', {
-	capabilities = capabilities,
-	on_attach = on_attach,
 	settings = {
 		formatter = { command = { "nixpkgs-fmt" } },
 	},
@@ -227,8 +213,6 @@ vim.lsp.enable('nil_ls')
 
 -- ocamllsp
 vim.lsp.config('ocamllsp', {
-	capabilities = capabilities,
-	on_attach = on_attach,
 	cmd = { 'ocamllsp' },
 	settings = {
 		formatter = { command = { "ocamlformat" } },
@@ -238,8 +222,6 @@ vim.lsp.enable('ocamllsp')
 
 -- typst
 vim.lsp.config('tinymist', {
-	capabilities = capabilities,
-	on_attach = on_attach,
 	settings = {
 		--exportPdf = "onType",
 		--outputPath = "/tmp/typ/$name", -- put PDFs in /tmp, instead of littering next to the source
@@ -249,8 +231,6 @@ vim.lsp.config('tinymist', {
 vim.lsp.enable('tinymist')
 
 vim.lsp.config('csharp_ls', {
-	capabilities = capabilities,
-	on_attach = on_attach,
 	settings = {
 		csharp = {
 			AutomaticWorkspaceInit = true,
@@ -261,8 +241,6 @@ vim.lsp.enable('csharp_ls')
 
 -- python {{{
 vim.lsp.config('ty', {
-	capabilities = capabilities,
-	on_attach = on_attach,
 	settings = {
 		ty = {
 			experimental = {
@@ -273,10 +251,7 @@ vim.lsp.config('ty', {
 })
 vim.lsp.enable('ty')
 
-vim.lsp.config('ruff', {
-	capabilities = capabilities,
-	on_attach = on_attach,
-})
+vim.lsp.config('ruff', {})
 vim.lsp.enable('ruff')
 --,}}}
 
@@ -302,7 +277,6 @@ require('lean').setup {
 }
 
 vim.lsp.config('leanls', {
-	capabilities = capabilities,
 	on_attach = function(client, bufnr)
 		on_attach(client, bufnr)
 		K("n", "<Space>ml", function() vim.cmd("Telescope loogle") end, { buffer = bufnr, desc = "Lean: Loogle" })
@@ -424,6 +398,7 @@ vim.g.rustaceanvim = {
 local M = {}
 
 M.capabilities = capabilities
+M.on_attach = on_attach
 
 M.get_preferred_encoding = function()
 	return capabilities.general.positionEncodings[1]
