@@ -321,6 +321,22 @@ end
 K("n", "<space>rwl", function() rustCheckWith("clippy") end, { desc = "Rust: switch to checking with `clippy`" })
 K("n", "<space>rwe", function() rustCheckWith("check") end, { desc = "Rust: switch to checking with `check`" })
 
+-- Ensure on_attach is called for Rust files via autocommand
+vim.api.nvim_create_autocmd("FileType", {
+	pattern = "rust",
+	callback = function(args)
+		local bufnr = args.buf
+		-- Find the rust-analyzer client
+		local clients = vim.lsp.get_clients({ bufnr = bufnr })
+		for _, client in ipairs(clients) do
+			if client.name == "rust-analyzer" or client.name == "rust_analyzer" then
+				on_attach(client, bufnr)
+				break
+			end
+		end
+	end,
+})
+
 vim.g.rustaceanvim = {
 	tools = {
 		-- Plugin configuration
@@ -336,7 +352,7 @@ vim.g.rustaceanvim = {
 	server = {
 		logfile = "/home/v/.local/state/nvim/rustaceanvim.log", --XXX: not user-agnostic
 		status_notify_level = rustaceanvim.disable,           -- doesn't work
-		on_attach = on_attach,
+		--on_attach = on_attach, //BUG: doesn't work
 		--XXX: does nothing. Atm can't get it to use anything but default "utf-8"
 		--capabilities = (function()
 		--	local caps = require('rustaceanvim.config.server').create_client_capabilities()
