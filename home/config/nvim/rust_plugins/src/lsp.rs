@@ -66,29 +66,23 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
             }
         }
 
-        // Determine which action to use
         let go_action = if direction == 1 { "goto_next" } else { "goto_prev" };
         let get_action = if direction == 1 { "get_next" } else { "get_prev" };
 
         if target_severity != all_severity {
-            // Use vim.diagnostic.goto_next/goto_prev with severity filter
+            // Use goto_next/goto_prev with float option - this handles everything
             let lua_code = format!(
-                r#"vim.diagnostic.{}({{ severity = {{ {} }} }})"#,
+                r#"vim.diagnostic.{}({{ float = {{ format = function(diagnostic) return vim.split(diagnostic.message, "\n")[1] end, focusable = true, header = "" }}, severity = {{ {} }} }})"#,
                 go_action,
                 target_severity.iter().map(|s| s.to_string()).collect::<Vec<_>>().join(", ")
             );
             let _ = api::call_function::<_, ()>("luaeval", (lua_code,));
-
-            // Open float after jump
-            crate::utils::defer_fn(1, || {
-                open_diagnostic_float();
-            });
             return;
         } else {
             // jump over all on current line
             let mut next_on_another_line = false;
             while !next_on_another_line {
-                // Get next diagnostic
+                // Get next diagnostic using get_next/get_prev
                 let lua_code = format!(
                     r#"vim.diagnostic.{}({{ severity = {{ 1, 2, 3, 4 }} }})"#,
                     get_action
@@ -98,9 +92,10 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
                     Err(_) => return,
                 };
 
-                // Set cursor position
                 let lnum: i64 = get_diagnostic_field(&d, "lnum").unwrap_or(0);
                 let col: i64 = get_diagnostic_field(&d, "col").unwrap_or(0);
+
+                // Set cursor position
                 let _ = api::call_function::<_, ()>("nvim_win_set_cursor", (0, Array::from_iter(vec![
                     Object::from(lnum + 1),
                     Object::from(col)
@@ -116,7 +111,7 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
                 }
             }
 
-            // if not, nvim_win_set_cursor will execute after it.
+            // Defer popup opening after cursor has moved
             crate::utils::defer_fn(1, || {
                 open_diagnostic_float();
             });
@@ -127,8 +122,8 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 
 /// Get diagnostics for a buffer
 fn get_buffer_diagnostics(_bufnr: nvim_oxi::api::Buffer) -> Vec<nvim_oxi::Dictionary> {
-    // Call vim.diagnostic.get(bufnr) - using 0 for current buffer
-    match api::call_function("luaeval", ("vim.diagnostic.get(0)",)) {
+    // Call vim.diagnostic.get(0) - 0 for current buffer
+    match api::call_function("vim.diagnostic.get", (0,)) {
         Ok(arr) => {
             let array: nvim_oxi::Array = arr;
             array.into_iter()
