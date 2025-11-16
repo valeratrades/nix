@@ -11,7 +11,7 @@ pub fn foldmarker_comment_block(nesting_level: i64) {
     let _ = api::set_var("b:copilot_enabled", false);
 
     // Original Lua: F('o' .. cs .. ',}}}' .. nesting_level)
-    f(format!("o{},}}}}{}", cs_str, nesting_level), None);
+    f(format!("o{},}}}}}}{}", cs_str, nesting_level), None);
 
     // Original Lua: Ft('<Esc>`<')
     ft(format!("<Esc>`<"), None);
