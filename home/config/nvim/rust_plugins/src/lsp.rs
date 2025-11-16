@@ -227,18 +227,18 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
         // Get current line (1-indexed)
         let current_line: i64 = api::call_function("line", (".",)).unwrap_or(1);
 
-        /// Check if a popup is currently open
-        let popup_open = {
-            let popups = crate::remap::get_popups();
-            !popups.is_empty()
-        };
-
-        // Check if we're casually on a diagnostic line (without popup open)
-        let on_diagnostic_line = interpreted_diags.iter().any(|d| d.start.0 == current_line);
-        if on_diagnostic_line && !popup_open {
-            // meaning we selected casually
-            open_diagnostic_float();
-            return;
+        // Check if we're casually on a diagnostic line (whlie no popup is open)
+        let on_diagnostic_line = interpreted_dgs.iter().any(|d| d.start.0 == current_line);
+        if on_diagnostic_line {
+            let is_popup_open = {
+                let popups = crate::remap::get_popups();
+                !popups.is_empty()
+            };
+            if !is_popup_open {
+                // we're already on the correct line, but haven't yet shown the diagnostic. So just show it and return.
+                open_diagnostic_float();
+                return;
+            }
         }
 
         // Check if we should navigate exclusively between errors
@@ -247,9 +247,7 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
             severity == Some(1)
         });
         let filter_errors_only = has_errors && request_severity != "all";
-
-        // Filter diagnostics for navigation (errors-only if needed)
-        let nav_diags: Vec<&InterpretedDiagnostic> = if filter_errors_only {
+        let nav_diagnostics: Vec<&InterpretedDiagnostic> = if filter_errors_only {
             // TODO: We need severity in InterpretedDiagnostic to filter properly
             // For now, use old behavior
             let go_action = if direction == 1 { "goto_next" } else { "goto_prev" };
@@ -260,41 +258,41 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
             let _ = api::call_function::<_, ()>("luaeval", (lua_code,));
             return;
         } else {
-            interpreted_diags.iter().collect()
+            interpreted_diagnostics.iter().collect()
         };
 
         // Get all unique lines with diagnostics
         use std::collections::HashSet;
-        let mut lines_with_diags: Vec<i64> = nav_diags.iter()
+        let mut lines_with_diagnostics: Vec<i64> = nav_diagnostics.iter()
             .map(|d| d.start.0)
             .collect::<HashSet<_>>()
             .into_iter()
             .collect();
-        lines_with_diags.sort_unstable();
+        lines_with_diagnostics.sort_unstable();
 
         // Find next/prev line to jump to
         let target_line = if direction == 1 {
             // Next: find first line > current_line, or wrap to first
-            lines_with_diags.iter()
+            lines_with_diagnostics.iter()
                 .find(|&&l| l > current_line)
                 .copied()
-                .unwrap_or(*lines_with_diags.first().unwrap_or(&current_line))
+                .unwrap_or(*lines_with_diagnostics.first().unwrap_or(&current_line))
         } else {
             // Prev: find last line < current_line, or wrap to last
-            lines_with_diags.iter()
+            lines_with_diagnostics.iter()
                 .rev()
                 .find(|&&l| l < current_line)
                 .copied()
-                .unwrap_or(*lines_with_diags.last().unwrap_or(&current_line))
+                .unwrap_or(*lines_with_diagnostics.last().unwrap_or(&current_line))
         };
 
         // Get all diagnostics on the target line, sorted by column
-        let mut diags_on_target: Vec<&InterpretedDiagnostic> = interpreted_diags.iter()
+        let mut diagnostics_on_target: Vec<&InterpretedDiagnostic> = interpreted_diagnostics.iter()
             .filter(|d| d.start.0 == target_line)
             .collect();
-        diags_on_target.sort_by_key(|d| d.start.1);
+        diagnostics_on_target.sort_by_key(|d| d.start.1);
 
-        if let Some(last_diag) = diags_on_target.last() {
+        if let Some(last_diag) = diagnostics_on_target.last() {
             // Jump to the last diagnostic on the target line
             let _ = api::call_function::<_, ()>("nvim_win_set_cursor", (0, Array::from_iter(vec![
                 Object::from(last_diag.start.0),
@@ -302,7 +300,7 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
             ])));
 
             debug_log(format!("\n=== OPENING FLOAT ===\nJumped to line {}, {} diagnostics on line",
-                target_line, diags_on_target.len()));
+                target_line, diagnostics_on_target.len()));
 
             // Defer popup opening after cursor has moved
             crate::utils::defer_fn(1, || {
