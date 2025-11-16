@@ -31,7 +31,7 @@ pub fn kill_popups() {
 /// If hook_before is provided, execute it before the command
 pub fn save_session_if_open(cmd: String, hook_before: Option<String>) {
     // Save session if persisting is enabled
-    let persisting: bool = api::call_function("luaeval", ("vim.g.persisting",))
+    let persisting: bool = api::call_function("nvim_get_var", ("persisting",))
         .unwrap_or(false);
 
     if persisting {

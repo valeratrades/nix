@@ -32,53 +32,101 @@ pub fn echo(text: String, hl_type: Option<String>) {
 /// request_severity: "all" to include all severities, otherwise only errors
 pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
     let _ = std::panic::catch_unwind(|| {
-        // Get diagnostics for current buffer
         let bufnr = api::get_current_buf();
         let diagnostics = get_buffer_diagnostics(bufnr);
 
         if diagnostics.is_empty() {
-            echo("no diagnostics in buffer".to_string(), Some("Comment".to_string()));
+            echo("no diagnostics in 0".to_string(), Some("Comment".to_string()));
             return;
         }
 
-        // Get current cursor position (0-indexed line)
-        let cursor = api::get_current_win().get_cursor().unwrap_or((1, 0));
-        let current_line = (cursor.0 as i64) - 1;
+        // Get current line (0-indexed)
+        let line: i64 = api::call_function("line", (".",)).unwrap_or(1);
+        let line = line - 1;
 
-        // Check if we're on a diagnostic line and no popup is open
-        let popups = crate::remap::get_popups();
-        for diag in &diagnostics {
-            if let Some(lnum) = get_diagnostic_field::<i64>(diag, "lnum") {
-                if lnum == current_line && popups.is_empty() {
-                    open_diagnostic_float();
-                    return;
-                }
+        // severity is [1:4], the lower the "worse"
+        let all_severity = vec![1, 2, 3, 4];
+        let mut target_severity = all_severity.clone();
+
+        // Check if we're on a diagnostic line and popup is not open
+        let popup_open = bool_popup_open();
+
+        for d in &diagnostics {
+            let lnum: Option<i64> = get_diagnostic_field(d, "lnum");
+            if lnum == Some(line) && !popup_open {
+                // meaning we selected casually
+                open_diagnostic_float();
+                return;
+            }
+
+            // navigate exclusively between errors, if there are any
+            let severity: Option<i64> = get_diagnostic_field(d, "severity");
+            if severity == Some(1) && request_severity != "all" {
+                target_severity = vec![1];
             }
         }
 
-        // Determine target severity
-        let only_errors = request_severity != "all" && diagnostics.iter().any(|d| {
-            get_diagnostic_field::<i64>(d, "severity").map(|s| s == 1).unwrap_or(false)
-        });
+        // Determine which action to use
+        let go_action = if direction == 1 { "goto_next" } else { "goto_prev" };
+        let get_action = if direction == 1 { "get_next" } else { "get_prev" };
 
-        if only_errors {
-            // Navigate only to errors (severity 1)
-            if let Some(next_diag) = find_next_diagnostic(&diagnostics, current_line, direction, Some(1)) {
-                jump_to_diagnostic_position(&next_diag);
+        if target_severity != all_severity {
+            // Use vim.diagnostic.goto_next/goto_prev with severity filter
+            let lua_code = format!(
+                r#"vim.diagnostic.{}({{ severity = {{ {} }} }})"#,
+                go_action,
+                target_severity.iter().map(|s| s.to_string()).collect::<Vec<_>>().join(", ")
+            );
+            let _ = api::call_function::<_, ()>("luaeval", (lua_code,));
+
+            // Open float after jump
+            crate::utils::defer_fn(1, || {
                 open_diagnostic_float();
-            }
+            });
+            return;
         } else {
-            // Navigate to all diagnostics, skipping any on current line
-            if let Some(next_diag) = find_next_diagnostic_skip_current_line(&diagnostics, current_line, direction) {
-                jump_to_diagnostic_position(&next_diag);
-                open_diagnostic_float();
+            // jump over all on current line
+            let mut next_on_another_line = false;
+            while !next_on_another_line {
+                // Get next diagnostic
+                let lua_code = format!(
+                    r#"vim.diagnostic.{}({{ severity = {{ 1, 2, 3, 4 }} }})"#,
+                    get_action
+                );
+                let d: nvim_oxi::Dictionary = match api::call_function("luaeval", (lua_code,)) {
+                    Ok(d) => d,
+                    Err(_) => return,
+                };
+
+                // Set cursor position
+                let lnum: i64 = get_diagnostic_field(&d, "lnum").unwrap_or(0);
+                let col: i64 = get_diagnostic_field(&d, "col").unwrap_or(0);
+                let _ = api::call_function::<_, ()>("nvim_win_set_cursor", (0, Array::from_iter(vec![
+                    Object::from(lnum + 1),
+                    Object::from(col)
+                ])));
+
+                if lnum != line {
+                    next_on_another_line = true;
+                    break;
+                }
+
+                if diagnostics.len() == 1 {
+                    return;
+                }
             }
+
+            // if not, nvim_win_set_cursor will execute after it.
+            crate::utils::defer_fn(1, || {
+                open_diagnostic_float();
+            });
+            return;
         }
     });
 }
 
 /// Get diagnostics for a buffer
-fn get_buffer_diagnostics(bufnr: nvim_oxi::api::Buffer) -> Vec<nvim_oxi::Dictionary> {
+fn get_buffer_diagnostics(_bufnr: nvim_oxi::api::Buffer) -> Vec<nvim_oxi::Dictionary> {
     // Call vim.diagnostic.get(bufnr) - using 0 for current buffer
     match api::call_function("luaeval", ("vim.diagnostic.get(0)",)) {
         Ok(arr) => {
@@ -97,87 +145,10 @@ fn get_diagnostic_field<T: TryFrom<Object>>(diag: &nvim_oxi::Dictionary, field: 
         .and_then(|obj| T::try_from(obj.clone()).ok())
 }
 
-/// Find next diagnostic with optional severity filter
-fn find_next_diagnostic(
-    diagnostics: &[nvim_oxi::Dictionary],
-    current_line: i64,
-    direction: i64,
-    severity_filter: Option<i64>,
-) -> Option<nvim_oxi::Dictionary> {
-    let filtered: Vec<_> = diagnostics.iter()
-        .filter(|d| {
-            if let Some(sev) = severity_filter {
-                get_diagnostic_field::<i64>(d, "severity").map(|s| s == sev).unwrap_or(false)
-            } else {
-                true
-            }
-        })
-        .collect();
-
-    if filtered.is_empty() {
-        return None;
-    }
-
-    // Sort by line number
-    let mut sorted: Vec<_> = filtered.iter().map(|d| (*d).clone()).collect();
-    sorted.sort_by_key(|d| get_diagnostic_field::<i64>(d, "lnum").unwrap_or(0));
-
-    if direction > 0 {
-        // Find next
-        let first = sorted.first().cloned();
-        sorted.into_iter()
-            .find(|d| get_diagnostic_field::<i64>(d, "lnum").unwrap_or(0) > current_line)
-            .or(first)
-    } else {
-        // Find previous
-        sorted.reverse();
-        let first = sorted.first().cloned();
-        sorted.into_iter()
-            .find(|d| get_diagnostic_field::<i64>(d, "lnum").unwrap_or(0) < current_line)
-            .or(first)
-    }
-}
-
-/// Find next diagnostic, skipping any on current line
-fn find_next_diagnostic_skip_current_line(
-    diagnostics: &[nvim_oxi::Dictionary],
-    current_line: i64,
-    direction: i64,
-) -> Option<nvim_oxi::Dictionary> {
-    let mut sorted: Vec<_> = diagnostics.to_vec();
-    sorted.sort_by_key(|d| get_diagnostic_field::<i64>(d, "lnum").unwrap_or(0));
-
-    if direction > 0 {
-        sorted.into_iter()
-            .find(|d| get_diagnostic_field::<i64>(d, "lnum").unwrap_or(0) > current_line)
-            .or_else(|| {
-                // Wrap around to first diagnostic not on current line
-                diagnostics.iter()
-                    .find(|d| get_diagnostic_field::<i64>(d, "lnum").unwrap_or(0) != current_line)
-                    .cloned()
-            })
-    } else {
-        sorted.reverse();
-        sorted.into_iter()
-            .find(|d| get_diagnostic_field::<i64>(d, "lnum").unwrap_or(0) < current_line)
-            .or_else(|| {
-                // Wrap around to last diagnostic not on current line
-                diagnostics.iter()
-                    .rev()
-                    .find(|d| get_diagnostic_field::<i64>(d, "lnum").unwrap_or(0) != current_line)
-                    .cloned()
-            })
-    }
-}
-
-/// Jump cursor to diagnostic position
-fn jump_to_diagnostic_position(diag: &nvim_oxi::Dictionary) {
-    if let (Some(lnum), Some(col)) = (
-        get_diagnostic_field::<i64>(diag, "lnum"),
-        get_diagnostic_field::<i64>(diag, "col"),
-    ) {
-        let _ = api::get_current_win().set_cursor((lnum + 1) as usize, col as usize);
-    }
+/// Check if a popup is currently open
+fn bool_popup_open() -> bool {
+    let popups = crate::remap::get_popups();
+    !popups.is_empty()
 }
 
 /// Helper to open diagnostic float with standard options

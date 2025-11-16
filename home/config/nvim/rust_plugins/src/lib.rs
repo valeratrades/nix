@@ -380,11 +380,8 @@ fn popup_log_contents(contents: String) {
             let prettified = String::from_utf8_lossy(&result.stdout);
             let as_rust_block = format!("```rs\n{}```", prettified);
 
-            // Call ShowMarkdownPopup via Lua
-            let _ = api::call_function::<_, ()>(
-                "luaeval",
-                ("require('valera.utils').ShowMarkdownPopup(_A)", as_rust_block),
-            );
+            // Call show_markdown_popup from utils
+            utils::show_markdown_popup(as_rust_block.to_string());
         }
         _ => {
             let _ = api::err_writeln("Failed to run prettify_log");
@@ -436,6 +433,7 @@ fn rust_plugins() -> nvim_oxi::Result<Dictionary> {
         lsp::jump_to_diagnostic(direction, request_severity)
     });
     let yank_diagnostic_popup_fn = Function::from_fn(|()| lsp::yank_diagnostic_popup());
+    let show_markdown_popup_fn = Function::from_fn(|(text,): (String,)| utils::show_markdown_popup(text));
 
     Ok(Dictionary::from_iter([
         ("find_todo", Object::from(find_todo)),
@@ -461,5 +459,6 @@ fn rust_plugins() -> nvim_oxi::Result<Dictionary> {
         ("echo", Object::from(echo_fn)),
         ("jump_to_diagnostic", Object::from(jump_to_diagnostic_fn)),
         ("yank_diagnostic_popup", Object::from(yank_diagnostic_popup_fn)),
+        ("show_markdown_popup", Object::from(show_markdown_popup_fn)),
     ]))
 }
