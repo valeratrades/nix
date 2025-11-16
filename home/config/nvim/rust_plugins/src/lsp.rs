@@ -52,6 +52,7 @@ struct InterpretedDiagnostic {
     start: (i64, i64),
     /// NB: (line, col) where line is 1-indexed
     end: (i64, i64),
+    severity: i64,  // 1=error, 2=warning, 3=info, 4=hint
 }
 
 impl From<Diagnostic> for InterpretedDiagnostic {
@@ -80,6 +81,7 @@ impl From<Diagnostic> for InterpretedDiagnostic {
             message: diag.message,
             start,
             end,
+            severity: diag.severity,
         }
     }
 }
@@ -174,7 +176,7 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
         debug_log(format!("File has {} lines, last line ends at col {}", line_count, last_line_col));
 
         // Parse and interpret all diagnostics first
-        let mut interpreted_diags: Vec<InterpretedDiagnostic> = Vec::new();
+        let mut interpreted_diagnostics: Vec<InterpretedDiagnostic> = Vec::new();
         for i in 0..diagnostics.len() {
             let lua_code = format!("vim.fn.json_encode(vim.diagnostic.get({})[{}])", bufnr_handle, i);
             if let Ok(json_str) = api::call_function::<_, String>("luaeval", (lua_code,)) {
@@ -193,7 +195,7 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
                         interpreted.end = (line_count, last_line_col);
                     }
 
-                    interpreted_diags.push(interpreted);
+                    interpreted_diagnostics.push(interpreted);
                 }
             }
         }
@@ -203,7 +205,7 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
             // Group by line (1-indexed now)
             use std::collections::HashMap;
             let mut by_line: HashMap<i64, Vec<&InterpretedDiagnostic>> = HashMap::new();
-            for diag in &interpreted_diags {
+            for diag in &interpreted_diagnostics {
                 by_line.entry(diag.start.0).or_insert_with(Vec::new).push(diag);
             }
 
@@ -228,7 +230,7 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
         let current_line: i64 = api::call_function("line", (".",)).unwrap_or(1);
 
         // Check if we're casually on a diagnostic line (whlie no popup is open)
-        let on_diagnostic_line = interpreted_dgs.iter().any(|d| d.start.0 == current_line);
+        let on_diagnostic_line = interpreted_diagnostics.iter().any(|d| d.start.0 == current_line);
         if on_diagnostic_line {
             let is_popup_open = {
                 let popups = crate::remap::get_popups();
@@ -242,21 +244,10 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
         }
 
         // Check if we should navigate exclusively between errors
-        let has_errors = diagnostics.iter().any(|d| {
-            let severity: Option<i64> = get_diagnostic_field(d, "severity");
-            severity == Some(1)
-        });
+        let has_errors = interpreted_diagnostics.iter().any(|d| d.severity == 1);
         let filter_errors_only = has_errors && request_severity != "all";
         let nav_diagnostics: Vec<&InterpretedDiagnostic> = if filter_errors_only {
-            // TODO: We need severity in InterpretedDiagnostic to filter properly
-            // For now, use old behavior
-            let go_action = if direction == 1 { "goto_next" } else { "goto_prev" };
-            let lua_code = format!(
-                r#"vim.diagnostic.{}({{ float = {{ format = function(diagnostic) return vim.split(diagnostic.message, "\n")[1] end, focusable = true, header = "" }}, severity = {{ 1 }} }})"#,
-                go_action
-            );
-            let _ = api::call_function::<_, ()>("luaeval", (lua_code,));
-            return;
+            interpreted_diagnostics.iter().filter(|d| d.severity == 1).collect()
         } else {
             interpreted_diagnostics.iter().collect()
         };
@@ -287,12 +278,13 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
         };
 
         // Get all diagnostics on the target line, sorted by column
-        let mut diagnostics_on_target: Vec<&InterpretedDiagnostic> = interpreted_diagnostics.iter()
-            .filter(|d| d.start.0 == target_line)
+        let mut diagnostics_on_target_line: Vec<&InterpretedDiagnostic> = interpreted_diagnostics.iter()
+            .filter(|&&d| d.start.0 == target_line)
+            .copied()
             .collect();
-        diagnostics_on_target.sort_by_key(|d| d.start.1);
+        diagnostics_on_target_line.sort_by_key(|d| d.start.1);
 
-        if let Some(last_diag) = diagnostics_on_target.last() {
+        if let Some(last_diag) = diagnostics_on_target_line.last() {
             // Jump to the last diagnostic on the target line
             let _ = api::call_function::<_, ()>("nvim_win_set_cursor", (0, Array::from_iter(vec![
                 Object::from(last_diag.start.0),
@@ -300,7 +292,7 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
             ])));
 
             debug_log(format!("\n=== OPENING FLOAT ===\nJumped to line {}, {} diagnostics on line",
-                target_line, diagnostics_on_target.len()));
+                target_line, diagnostics_on_target_line.len()));
 
             // Defer popup opening after cursor has moved
             crate::utils::defer_fn(1, || {
