@@ -157,6 +157,10 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
         let bufnr = api::get_current_buf();
         let bufnr_handle = bufnr.handle();
         let diagnostics = get_buffer_diagnostics(bufnr);
+        if diagnostics.is_empty() {
+            echo("no diagnostics in 0".to_string(), Some("Comment".to_string()));
+            return;
+        }
 
         debug_log(format!("\n=== DIAGNOSTICS ({} total) ===", diagnostics.len()));
 
@@ -194,132 +198,118 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
             }
         }
 
-        // Group by line (1-indexed now)
-        use std::collections::HashMap;
-        let mut by_line: HashMap<i64, Vec<&InterpretedDiagnostic>> = HashMap::new();
-        for diag in &interpreted_diags {
-            by_line.entry(diag.start.0).or_insert_with(Vec::new).push(diag);
-        }
-
-        // Sort lines and display
-        let mut lines: Vec<_> = by_line.keys().copied().collect();
-        lines.sort_unstable();
-
-        for line_num in lines {
-            let diags_on_line = &by_line[&line_num];
-            debug_log(format!("\n--- Line {} ({} diagnostics) ---", line_num, diags_on_line.len()));
-
-            for diag in diags_on_line {
-                debug_log(format!("  start: {:?}\n  end: {:?}\n  code: {:?}\n  message: {}\n",
-                    diag.start, diag.end, diag.code, diag.message));
+        // log diagnostics state
+        {
+            // Group by line (1-indexed now)
+            use std::collections::HashMap;
+            let mut by_line: HashMap<i64, Vec<&InterpretedDiagnostic>> = HashMap::new();
+            for diag in &interpreted_diags {
+                by_line.entry(diag.start.0).or_insert_with(Vec::new).push(diag);
             }
-        }
-        debug_log("-----------------------------------------------------------------".to_string());
 
-        if diagnostics.is_empty() {
-            echo("no diagnostics in 0".to_string(), Some("Comment".to_string()));
+            // Sort lines and display
+            let mut lines: Vec<_> = by_line.keys().copied().collect();
+            lines.sort_unstable();
+
+            for line_num in lines {
+                let diags_on_line = &by_line[&line_num];
+                debug_log(format!("\n--- Line {} ({} diagnostics) ---", line_num, diags_on_line.len()));
+
+                for diag in diags_on_line {
+                    debug_log(format!("  start: {:?}\n  end: {:?}\n  code: {:?}\n  message: {}\n",
+                        diag.start, diag.end, diag.code, diag.message));
+                }
+            }
+            debug_log("-----------------------------------------------------------------".to_string());
+        }
+
+
+        // Get current line (1-indexed)
+        let current_line: i64 = api::call_function("line", (".",)).unwrap_or(1);
+
+        /// Check if a popup is currently open
+        let popup_open = {
+            let popups = crate::remap::get_popups();
+            !popups.is_empty()
+        };
+
+        // Check if we're casually on a diagnostic line (without popup open)
+        let on_diagnostic_line = interpreted_diags.iter().any(|d| d.start.0 == current_line);
+        if on_diagnostic_line && !popup_open {
+            // meaning we selected casually
+            open_diagnostic_float();
             return;
         }
 
-        // Get current line (0-indexed)
-        let line: i64 = api::call_function("line", (".",)).unwrap_or(1);
-        let line = line - 1;
-
-        // severity is [1:4], the lower the "worse"
-        let all_severity = vec![1, 2, 3, 4];
-        let mut target_severity = all_severity.clone();
-
-        // Check if we're on a diagnostic line and popup is not open
-        let popup_open = bool_popup_open();
-
-        for d in &diagnostics {
-            let lnum: Option<i64> = get_diagnostic_field(d, "lnum");
-            if lnum == Some(line) && !popup_open {
-                // meaning we selected casually
-                open_diagnostic_float();
-                return;
-            }
-
-            // navigate exclusively between errors, if there are any
+        // Check if we should navigate exclusively between errors
+        let has_errors = diagnostics.iter().any(|d| {
             let severity: Option<i64> = get_diagnostic_field(d, "severity");
-            if severity == Some(1) && request_severity != "all" {
-                target_severity = vec![1];
-            }
-        }
+            severity == Some(1)
+        });
+        let filter_errors_only = has_errors && request_severity != "all";
 
-        let go_action = if direction == 1 { "goto_next" } else { "goto_prev" };
-        let get_action = if direction == 1 { "get_next" } else { "get_prev" };
-
-        if target_severity != all_severity {
-            // Use goto_next/goto_prev with float option - this handles everything
+        // Filter diagnostics for navigation (errors-only if needed)
+        let nav_diags: Vec<&InterpretedDiagnostic> = if filter_errors_only {
+            // TODO: We need severity in InterpretedDiagnostic to filter properly
+            // For now, use old behavior
+            let go_action = if direction == 1 { "goto_next" } else { "goto_prev" };
             let lua_code = format!(
-                r#"vim.diagnostic.{}({{ float = {{ format = function(diagnostic) return vim.split(diagnostic.message, "\n")[1] end, focusable = true, header = "" }}, severity = {{ {} }} }})"#,
-                go_action,
-                target_severity.iter().map(|s| s.to_string()).collect::<Vec<_>>().join(", ")
+                r#"vim.diagnostic.{}({{ float = {{ format = function(diagnostic) return vim.split(diagnostic.message, "\n")[1] end, focusable = true, header = "" }}, severity = {{ 1 }} }})"#,
+                go_action
             );
             let _ = api::call_function::<_, ()>("luaeval", (lua_code,));
             return;
         } else {
-            // jump over all on current line
-            let mut next_on_another_line = false;
-            while !next_on_another_line {
-                // Get next diagnostic using get_next/get_prev
-                let lua_code = format!(
-                    r#"vim.diagnostic.{}({{ severity = {{ 1, 2, 3, 4 }} }})"#,
-                    get_action
-                );
-                let d: nvim_oxi::Dictionary = match api::call_function("luaeval", (lua_code,)) {
-                    Ok(d) => d,
-                    Err(_) => return,
-                };
+            interpreted_diags.iter().collect()
+        };
 
-                let lnum: i64 = get_diagnostic_field(&d, "lnum").unwrap_or(0);
-                let col: i64 = get_diagnostic_field(&d, "col").unwrap_or(0);
+        // Get all unique lines with diagnostics
+        use std::collections::HashSet;
+        let mut lines_with_diags: Vec<i64> = nav_diags.iter()
+            .map(|d| d.start.0)
+            .collect::<HashSet<_>>()
+            .into_iter()
+            .collect();
+        lines_with_diags.sort_unstable();
 
-                // Set cursor position
-                let _ = api::call_function::<_, ()>("nvim_win_set_cursor", (0, Array::from_iter(vec![
-                    Object::from(lnum + 1),
-                    Object::from(col)
-                ])));
+        // Find next/prev line to jump to
+        let target_line = if direction == 1 {
+            // Next: find first line > current_line, or wrap to first
+            lines_with_diags.iter()
+                .find(|&&l| l > current_line)
+                .copied()
+                .unwrap_or(*lines_with_diags.first().unwrap_or(&current_line))
+        } else {
+            // Prev: find last line < current_line, or wrap to last
+            lines_with_diags.iter()
+                .rev()
+                .find(|&&l| l < current_line)
+                .copied()
+                .unwrap_or(*lines_with_diags.last().unwrap_or(&current_line))
+        };
 
-                if lnum != line {
-                    next_on_another_line = true;
-                    break;
-                }
+        // Get all diagnostics on the target line, sorted by column
+        let mut diags_on_target: Vec<&InterpretedDiagnostic> = interpreted_diags.iter()
+            .filter(|d| d.start.0 == target_line)
+            .collect();
+        diags_on_target.sort_by_key(|d| d.start.1);
 
-                if diagnostics.len() == 1 {
-                    return;
-                }
-            }
+        if let Some(last_diag) = diags_on_target.last() {
+            // Jump to the last diagnostic on the target line
+            let _ = api::call_function::<_, ()>("nvim_win_set_cursor", (0, Array::from_iter(vec![
+                Object::from(last_diag.start.0),
+                Object::from(last_diag.start.1)
+            ])));
 
-            // Log diagnostics at cursor before opening float
-            let current_line: i64 = api::call_function("line", (".",)).unwrap_or(0) - 1;
-            let current_col: i64 = api::call_function("col", (".",)).unwrap_or(0);
-            let diags_at_cursor: Vec<String> = diagnostics.iter()
-                .filter_map(|d| {
-                    let lnum: Option<i64> = get_diagnostic_field(d, "lnum");
-                    let col: Option<i64> = get_diagnostic_field(d, "col");
-                    if lnum == Some(current_line) {
-                        let msg: Option<String> = d.get("message")
-                            .and_then(|obj| nvim_oxi::String::try_from(obj.clone()).ok())
-                            .map(|s| s.to_string_lossy().to_string());
-                        let code: Option<String> = d.get("code")
-                            .and_then(|obj| nvim_oxi::String::try_from(obj.clone()).ok())
-                            .map(|s| s.to_string_lossy().to_string());
-                        Some(format!("  col={}, code={:?}, msg={}", col.unwrap_or(-1), code, msg.unwrap_or_default()))
-                    } else {
-                        None
-                    }
-                })
-                .collect();
-            debug_log(format!("\n=== OPENING FLOAT ===\nDiagnostics on line {}:\n{}", current_line + 1, diags_at_cursor.join("\n")));
+            debug_log(format!("\n=== OPENING FLOAT ===\nJumped to line {}, {} diagnostics on line",
+                target_line, diags_on_target.len()));
 
             // Defer popup opening after cursor has moved
             crate::utils::defer_fn(1, || {
                 open_diagnostic_float();
             });
-            return;
         }
+        return;
     });
 }
 
@@ -347,11 +337,6 @@ fn get_diagnostic_field<T: TryFrom<Object>>(diag: &nvim_oxi::Dictionary, field: 
         .and_then(|obj| T::try_from(obj.clone()).ok())
 }
 
-/// Check if a popup is currently open
-fn bool_popup_open() -> bool {
-    let popups = crate::remap::get_popups();
-    !popups.is_empty()
-}
 
 /// Helper to open diagnostic float with standard options
 fn open_diagnostic_float() {
