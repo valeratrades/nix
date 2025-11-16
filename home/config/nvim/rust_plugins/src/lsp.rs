@@ -121,16 +121,20 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 }
 
 /// Get diagnostics for a buffer
-fn get_buffer_diagnostics(_bufnr: nvim_oxi::api::Buffer) -> Vec<nvim_oxi::Dictionary> {
-    // Call vim.diagnostic.get(0) - 0 for current buffer
-    match api::call_function("vim.diagnostic.get", (0,)) {
+fn get_buffer_diagnostics(bufnr: nvim_oxi::api::Buffer) -> Vec<nvim_oxi::Dictionary> {
+    // Use luaeval to call vim.diagnostic.get
+    let lua_code = format!("vim.diagnostic.get({})", bufnr.handle());
+    match api::call_function("luaeval", (lua_code,)) {
         Ok(arr) => {
             let array: nvim_oxi::Array = arr;
             array.into_iter()
                 .filter_map(|obj| nvim_oxi::Dictionary::try_from(obj).ok())
                 .collect()
         }
-        Err(_) => vec![]
+        Err(e) => {
+            echo(format!("Error getting diagnostics: {}", e), Some("ErrorMsg".to_string()));
+            vec![]
+        }
     }
 }
 
