@@ -243,8 +243,7 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 		lines_with_diagnostics.sort_unstable();
 
 		// Find next/prev line to jump to
-		//TODO!!!!!!!!!!: write correct logic myself
-		//XXX: doesn't wrap around
+		//TODO!!!!!: write correct logic myself, - should be for exact next diagnostic, not whole line
 		let target_line = if direction == 1 {
 			// Next: find first line > current_line, or wrap to first
 			lines_with_diagnostics
@@ -264,7 +263,7 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 
 		// Get all diagnostics on the target line, sorted by column
 		let mut diagnostics_on_target_line: Vec<&InterpretedDiagnostic> = interpreted_diagnostics.iter().filter(|d| d.start.0 == target_line).collect();
-		//diagnostics_on_target_line.sort_by_key(|d| d.start.1); //Q: think it's already sorted
+		diagnostics_on_target_line.sort_by_key(|d| d.severity);
 		let repr = diagnostics_on_target_line
 			.iter().enumerate()
 			.map(|(i,d)| format!("{}. {}{}", i+1, d.message, {
@@ -277,7 +276,7 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 			))
 			.collect::<Vec<String>>()
 			.join("\n");
-		crate::utils::show_markdown_popup(repr);
+		//crate::utils::show_markdown_popup(repr); //TODO: actually finish this. Rn biggest issue is window being in incorrect place
 
 		{
 			let last_diag = diagnostics_on_target_line.last().unwrap();

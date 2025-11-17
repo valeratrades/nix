@@ -68,6 +68,7 @@
             inherit stdenv;
             shellHook =
               pre-commit-check.shellHook
+              + workflowContents.shellHook
               + ''
                 mkdir -p ./.github/workflows
                 rm -f ./.github/workflows/errors.yml; cp ${workflowContents.errors} ./.github/workflows/errors.yml

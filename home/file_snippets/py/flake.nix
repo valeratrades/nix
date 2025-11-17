@@ -43,6 +43,7 @@
             lastSupportedVersion = "";
             jobsErrors = [ ];
             jobsWarnings = [ "tokei" ];
+            jobsOther = [ "loc-badge" ];
           };
           readme = v-utils.readme-fw {
             inherit pkgs pname;
@@ -92,13 +93,9 @@
                   mypy.enable = true;
                 };
 
-                enterShell = ''
-                  mkdir -p ./.github/workflows
-                  cp ${workflowContents.errors} -f ./.github/workflows/errors.yml
-                  cp ${workflowContents.warnings} -f ./.github/workflows/warnings.yml
-                  cp ${workflowContents.other} -f ./.github/workflows/other.yml || :
-
-
+                enterShell =
+                  workflowContents.shellHook +
+                  ''
                   cp -f ${v-utils.files.licenses.blue_oak} ./LICENSE
 
                   cargo -Zscript -q ${v-utils.hooks.appendCustom} ./.git/hooks/pre-commit

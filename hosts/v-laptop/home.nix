@@ -134,8 +134,7 @@ in {
 
         # vpn
         [
-          mullvad-vpn # incredibly minimalistic. TODO: switch to it
-          mullvad
+          mullvad # incredibly minimalistic. TODO: switch to it
           #dbg: was bringing `webkitgtk`
           #	protonmail-export # export my proton emails as `.eml` #DEPRECATE: not sure if I need it, bridge+himalaya could be covering this
           #	protonmail-bridge # bridge to local e-mail client
