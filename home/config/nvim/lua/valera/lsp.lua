@@ -344,7 +344,6 @@ vim.g.rustaceanvim = {
 	server = {
 		logfile = "/home/v/.local/state/nvim/rustaceanvim.log", --XXX: not user-agnostic
 		status_notify_level = rustaceanvim.disable,           -- doesn't work
-		--on_attach = on_attach, //BUG: doesn't work
 		--XXX: does nothing. Atm can't get it to use anything but default "utf-8"
 		--capabilities = (function()
 		--	local caps = require('rustaceanvim.config.server').create_client_capabilities()
@@ -352,6 +351,7 @@ vim.g.rustaceanvim = {
 		--	return caps
 		--end)(),
 		default_settings = {
+			on_attach = on_attach, --XXX: pretty sure it doesn't work
 			['rust-analyzer'] = (function()
 				local settings = {
 					dap = {
