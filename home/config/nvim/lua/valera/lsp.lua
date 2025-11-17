@@ -123,7 +123,7 @@ local on_attach = function(client, bufnr)
 		{ desc = "Reset Tab Settings" })
 
 
-	if client.supports_method('textDocument/formatting') then
+	if client and client.supports_method('textDocument/formatting') then
 		if vim.fn.expand('%:e') ~= 'py' and vim.fn.expand('%:e') ~= 'nix' then
 			require('lsp-format').on_attach(client)
 		end
@@ -321,13 +321,7 @@ end
 K("n", "<space>rwl", function() rustCheckWith("clippy") end, { desc = "Rust: switch to checking with `clippy`" })
 K("n", "<space>rwe", function() rustCheckWith("check") end, { desc = "Rust: switch to checking with `check`" })
 
--- Call on_attach for all Rust files
-vim.api.nvim_create_autocmd("FileType", {
-	pattern = "rust",
-	callback = function(args)
-		on_attach(nil, args.buf)
-	end,
-})
+-- Removed autocmd - rustaceanvim handles on_attach via vim.g.rustaceanvim.server.on_attach
 
 vim.g.rustaceanvim = {
 	tools = {
@@ -350,8 +344,8 @@ vim.g.rustaceanvim = {
 		--	caps.general.positionEncodings = capabilities.general.positionEncodings
 		--	return caps
 		--end)(),
+		on_attach = on_attach, --BUG: doesn't work
 		default_settings = {
-			on_attach = on_attach, --XXX: pretty sure it doesn't work
 			['rust-analyzer'] = (function()
 				local settings = {
 					dap = {

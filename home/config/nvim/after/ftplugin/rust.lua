@@ -30,8 +30,8 @@ K('n', '<Space>rd', function()
 end, { desc = "Rustacean: Render Diagnostic", buffer = bufnr })
 
 K('n', '<Space>rl', function()
-	vim.cmd.RustLsp('relatedDiagnostics')
-end,
+		vim.cmd.RustLsp('relatedDiagnostics')
+	end,
 	{ desc = "Rustacean: Related Diagnostic (for when you break the callsite by changing an object and a hint appears)", buffer = bufnr })
 
 K('n', '<Space>rc', function()
