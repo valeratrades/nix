@@ -187,6 +187,17 @@ fn vim_defaults() -> HashMap<&'static str, Vec<&'static str>> {
 }
 
 /// Smart keymap that validates mappings and warns about conflicts
+///
+/// # Options
+///
+/// * `overwrite` - `Option<bool>`:
+///   - `Some(true)`: Explicitly allow overwriting existing mappings (skips conflict warnings)
+///   - `Some(false)`: Warn about conflicts with existing mappings
+///   - `None`: Skip the overwrite evaluation entirely (useful for performance)
+///
+///   **WARNING**: Using `overwrite = nil` should be avoided if possible, as it bypasses
+///   safety checks that prevent accidental keymap conflicts. Only use when you're certain
+///   the mapping doesn't conflict or when performance is critical.
 pub fn smart_keymap(mode: Object, lhs: nvim_oxi::String, rhs: Object, opts: Object) {
     let lhs_str = lhs.to_string_lossy();
 
@@ -247,68 +258,73 @@ pub fn smart_keymap(mode: Object, lhs: nvim_oxi::String, rhs: Object, opts: Obje
         }
     }
 
-    // Get overwrite flag - check the string representation
-    let overwrite = opts_dict.get("overwrite")
+    // Get overwrite flag - now Option<bool>
+    // None (nil in Lua) means skip the evaluation entirely
+    // Some(true) means explicitly allow overwriting
+    // Some(false) means warn about conflicts (default behavior)
+    let overwrite: Option<bool> = opts_dict.get("overwrite")
         .map(|o| {
             // The Object debug format shows "true" or "false" for booleans
             let debug_str = format!("{:?}", o);
             debug_str == "true"
-        })
-        .unwrap_or(false);
+        });
 
-    // Check for conflicts
-    let vim_defs = vim_defaults();
-    let normalized_lhs = normalize_key(&lhs_str);
-    let mut found_existing = false;
+    // Check for conflicts (skip if overwrite is None/nil)
+    if let Some(overwrite_value) = overwrite {
+        let vim_defs = vim_defaults();
+        let normalized_lhs = normalize_key(&lhs_str);
+        let mut found_existing = false;
 
-    for mode_name in &expanded_modes {
-        // Check user-defined mappings (maparg returns dict if mapping exists)
-        let maparg_result: Dictionary = api::call_function(
-            "maparg",
-            (lhs.clone(), &mode_name[..], false, true)
-        ).unwrap_or_else(|_| Dictionary::new());
+        for mode_name in &expanded_modes {
+            // Check user-defined mappings (maparg returns dict if mapping exists)
+            let maparg_result: Dictionary = api::call_function(
+                "maparg",
+                (lhs.clone(), &mode_name[..], false, true)
+            ).unwrap_or_else(|_| Dictionary::new());
 
-        // Check if there's an existing user/plugin mapping
-        // maparg returns non-empty dict with lhs field if mapping exists
-        let is_user_mapped = !maparg_result.is_empty() &&
-            maparg_result.get("lhs")
-                .and_then(|o| {
-                    let s: Result<nvim_oxi::String, _> = o.clone().try_into();
-                    s.ok()
-                })
-                .map(|s: nvim_oxi::String| s.to_string_lossy() == lhs_str)
-                .unwrap_or(false);
+            // Check if there's an existing user/plugin mapping
+            // maparg returns non-empty dict with lhs field if mapping exists
+            let is_user_mapped = !maparg_result.is_empty() &&
+                maparg_result.get("lhs")
+                    .and_then(|o| {
+                        let s: Result<nvim_oxi::String, _> = o.clone().try_into();
+                        s.ok()
+                    })
+                    .map(|s: nvim_oxi::String| s.to_string_lossy() == lhs_str)
+                    .unwrap_or(false);
 
-        // Check vim defaults (with normalized comparison)
-        let empty_vec = vec![];
-        let defaults_for_mode = vim_defs.get(&mode_name[..]).unwrap_or(&empty_vec);
-        let is_vim_default = defaults_for_mode.iter()
-            .any(|key| normalize_key(key) == normalized_lhs);
+            // Check vim defaults (with normalized comparison)
+            let empty_vec = vec![];
+            let defaults_for_mode = vim_defs.get(&mode_name[..]).unwrap_or(&empty_vec);
+            let is_vim_default = defaults_for_mode.iter()
+                .any(|key| normalize_key(key) == normalized_lhs);
 
-        if is_user_mapped || is_vim_default {
-            found_existing = true;
-            log_keymap(&format!("Found existing mapping for '{}' in mode '{}': is_user_mapped={}, is_vim_default={}, overwrite={}",
-                lhs_str, mode_name, is_user_mapped, is_vim_default, overwrite));
-            if !overwrite {
-                let source = if is_user_mapped { "user mapping" } else { "vim default" };
-                let msg = format!(
-                    "[{}] Keymap conflict: '{}' (mode '{}') overwrites {}. Pass overwrite = true if intentional.",
-                    caller_info, lhs_str, mode_name, source
-                );
-                log_keymap(&msg);
-                let _ = api::err_writeln(&msg);
+            if is_user_mapped || is_vim_default {
+                found_existing = true;
+                log_keymap(&format!("Found existing mapping for '{}' in mode '{}': is_user_mapped={}, is_vim_default={}, overwrite={}",
+                    lhs_str, mode_name, is_user_mapped, is_vim_default, overwrite_value));
+                if !overwrite_value {
+                    let source = if is_user_mapped { "user mapping" } else { "vim default" };
+                    let msg = format!(
+                        "[{}] Keymap conflict: '{}' (mode '{}') overwrites {}. Pass overwrite = true if intentional.",
+                        caller_info, lhs_str, mode_name, source
+                    );
+                    log_keymap(&msg);
+                    let _ = api::err_writeln(&msg);
+                }
             }
         }
-    }
 
-    // Warn if overwrite=true but nothing exists
-    if overwrite && !found_existing {
-        let mode_str = expanded_modes.join(",");
-        let _ = api::err_writeln(&format!(
-            "[{}] Unnecessary overwrite=true: '{}' (mode '{}') has no existing mapping",
-            caller_info, lhs_str, mode_str
-        ));
+        // Warn if overwrite=true but nothing exists
+        if overwrite_value && !found_existing {
+            let mode_str = expanded_modes.join(",");
+            let _ = api::err_writeln(&format!(
+                "[{}] Unnecessary overwrite=true: '{}' (mode '{}') has no existing mapping",
+                caller_info, lhs_str, mode_str
+            ));
+        }
     }
+    // If overwrite is None, we skip the entire conflict evaluation
 
     // Build final opts - remove overwrite and _caller, set noremap default
     let mut final_opts = Dictionary::new();
