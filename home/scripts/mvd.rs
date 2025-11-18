@@ -63,12 +63,11 @@ struct Args {
 	#[arg(long, group = "location")]
 	screenshot_images: bool,
 
-	/// Direct path to move to (if no flag is specified)
-	#[arg(group = "location")]
-	path: Option<PathBuf>,
-
-	/// Subdirectory within the destination (only for flagged locations) OR new filename (for direct paths)
-	extra_arg: Option<String>,
+	/// Direct path to move to (if no flag is specified), or additional arguments
+	/// When using a flag: [subdir] [new_filename]
+	/// When using direct path: <path> [new_filename]
+	#[arg(trailing_var_arg = true)]
+	args: Vec<String>,
 }
 
 fn sanitize_filename(filename: &str) -> String {
@@ -97,11 +96,13 @@ fn main() {
 		}
 	};
 
+	// Determine if we're using a flag or direct path
+	let using_flag = args.paper || args.book || args.notes || args.courses
+		|| args.twitter || args.wine || args.images
+		|| args.screenshot_trading || args.screenshot_images;
+
 	// Extract filename from path if it looks like a file
 	let mut extracted_filename: Option<String> = None;
-
-	// Track whether we're using a direct path (for later logic)
-	let using_direct_path = args.path.is_some();
 
 	let (from, mut to_dir) = if args.paper {
 		(home.join("Downloads"), home.join("Documents/Papers"))
@@ -121,8 +122,9 @@ fn main() {
 		(home.join("tmp/Screenshots"), home.join("trading/strats"))
 	} else if args.screenshot_images {
 		(home.join("tmp/Screenshots"), home.join("Images"))
-	} else if let Some(path) = args.path {
-		let mut to_dir = path;
+	} else if !args.args.is_empty() {
+		// Direct path mode - first arg is the path
+		let mut to_dir = PathBuf::from(&args.args[0]);
 		if !to_dir.is_absolute() {
 			to_dir = home.join(to_dir);
 		}
@@ -144,16 +146,19 @@ fn main() {
 		std::process::exit(1);
 	};
 
-	// Handle extra_arg based on whether we're using a flag or direct path
-	let explicit_filename = if using_direct_path {
-		// For direct paths, extra_arg is the new filename
-		args.extra_arg
-	} else {
-		// For flagged locations, extra_arg is a subdirectory
-		if let Some(subpath) = args.extra_arg {
-			to_dir = to_dir.join(subpath);
+	// Handle args based on whether we're using a flag or direct path
+	let explicit_filename = if using_flag {
+		// For flagged locations:
+		// - First arg (if present) is subdirectory
+		// - Second arg (if present) is new filename
+		if !args.args.is_empty() {
+			to_dir = to_dir.join(&args.args[0]);
 		}
-		None
+		args.args.get(1).map(|s| s.to_string())
+	} else {
+		// For direct paths, second arg (if present) is the new filename
+		// (first arg was already consumed as the path)
+		args.args.get(1).map(|s| s.to_string())
 	};
 
 	if !to_dir.exists() {
