@@ -18,22 +18,22 @@
     in
     [
     {
-      name = "binance";
+      exch_name = "binance";
       key.env = "${binance_tiger}_PUBKEY";
       secret.env = "${binance_tiger}_SECRET";
     }
     {
-      name = "bybit";
+      exch_name = "bybit";
       key.env = "QUANTM_BYBIT_SUB_PUBKEY";
       secret.env = "QUANTM_BYBIT_SUB_SECRET";
     }
     {
-      name = "mexc";
+      exch_name = "mexc";
       key.env = "MEXC_READ_PUBKEY";
       secret.env = "MEXC_READ_SECRET";
     }
     {
-      name = "kucoin";
+      exch_name = "kucoin";
       key.env = "KUCOIN_API_PUBKEY";
       secret.env = "KUCOIN_API_SECRET";
       passphrase.env = "KUCOIN_API_PASSPHRASE";
