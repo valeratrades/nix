@@ -321,7 +321,15 @@ end
 K("n", "<space>rwl", function() rustCheckWith("clippy") end, { desc = "Rust: switch to checking with `clippy`" })
 K("n", "<space>rwe", function() rustCheckWith("check") end, { desc = "Rust: switch to checking with `check`" })
 
--- Removed autocmd - rustaceanvim handles on_attach via vim.g.rustaceanvim.server.on_attach
+-- LspAttach hook for rustaceanvim - must be set up BEFORE vim.g.rustaceanvim
+vim.api.nvim_create_autocmd('LspAttach', {
+	callback = function(args)
+		local client = vim.lsp.get_client_by_id(args.data.client_id)
+		if client and client.name == 'rust-analyzer' then
+			on_attach(client, args.buf)
+		end
+	end,
+})
 
 vim.g.rustaceanvim = {
 	tools = {
@@ -344,7 +352,7 @@ vim.g.rustaceanvim = {
 		--	caps.general.positionEncodings = capabilities.general.positionEncodings
 		--	return caps
 		--end)(),
-		on_attach = on_attach, --BUG: inconsistent for some reason
+		on_attach = on_attach, --BUG: doesn't work. --HACK: Handled by LspAttach autocmd above rn
 		default_settings = {
 			['rust-analyzer'] = (function()
 				local settings = {

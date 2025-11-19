@@ -108,6 +108,8 @@
     cargo_sort_derives.url =
       "github:valeratrades/cargo-sort-derives"; # TODO: switch to upstream once my PR is merged
 
+    wallpaper_carousel.url = "github:valeratrades/wallpaper_carousel?ref=release";
+
     #aggr_orderbook = {
     #	url = "github:valeratrades/aggr_orderbook";
     #	inputs.nixpkgs.follows = "nixpkgs";
