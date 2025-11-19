@@ -23,5 +23,19 @@
       lib.hm.dag.entryAfter ["writeBoundary" ] ''
       [ -e "${target_path}" ] || ln -sf "$NIXOS_CONFIG/home/config/claude/CLAUDE.md" "${target_path}"
 		'';
+		rm_engine = 
+      let
+        target_path_postfix = "rm_engine.toml";
+      in
+      lib.hm.dag.entryAfter ["writeBoundary" ] ''
+      [ -e "$XDG_CONFIG_HOME/${target_path_postfix}" ] || ln -sf "$NIXOS_CONFIG/home/config/${target_path_postfix}" "$XDG_CONFIG_HOME/${target_path_postfix}"
+		'';
+		wallpaper_carousel = 
+      let
+        target_path_postfix = "wallpaper_carousel.nix";
+      in
+      lib.hm.dag.entryAfter ["writeBoundary" ] ''
+      [ -e "$XDG_CONFIG_HOME/${target_path_postfix}" ] || ln -sf "$NIXOS_CONFIG/home/config/${target_path_postfix}" "$XDG_CONFIG_HOME/${target_path_postfix}"
+		'';
   };
 }

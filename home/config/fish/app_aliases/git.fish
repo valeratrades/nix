@@ -411,7 +411,7 @@ function gn
 
 	if test -n "$GITHUB_LOC_GIST"
 		echo "Setting loc_gist_token secret..."
-		gh secret set loc_gist_token --repo "$GTIHUB_NAME/$repo_name" --body "$GITHUB_LOC_GIST"
+		gh secret set loc_gist_token --repo "$GITHUB_NAME/$repo_name" --body "$GITHUB_LOC_GIST"
 	end
 end
 
