@@ -14,7 +14,7 @@
       flatpak
       self.packages.${pkgs.stdenv.hostPlatform.system}.wlr-gamma-service
       keyd
-      haskellPackages.greenclip
+      haskellPackages.greenclip #TODO: replace with something that works consistently
       granted # access cloud
       nerdfix # fixes illegal font codepoints https://discourse.nixos.org/t/nerd-fonts-only-see-half-the-icon-set/27513
       gcsfuse # mount google cloud storage

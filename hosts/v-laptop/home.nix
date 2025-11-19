@@ -134,6 +134,7 @@ in {
         libinput
         virt-viewer
 
+        ringboard-wayland #TEST
 
         gitui
         lazygit
