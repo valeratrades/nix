@@ -32,6 +32,17 @@ in {
     };
   };
 
+  #TEST: \
+  systemd.user.services.watch-monitors = {
+    Service = {
+      ExecStart = lib.mkForce ''
+        ${pkgs.bash}/bin/bash -c '${
+          inputs.todo.packages.${pkgs.stdenv.hostPlatform.system}.default
+        }/bin/todo watch-monitors'
+      '';
+    };
+  };
+
   # Ensure tg-server waits for sops-nix secrets to be available
   systemd.user.services.tg-server = {
     Unit = {

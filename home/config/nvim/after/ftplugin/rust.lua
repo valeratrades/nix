@@ -8,6 +8,30 @@ for _, keymap in ipairs(existing_keymaps) do
 	end
 end
 
+-- LspAttach hook to ensure on_attach is called if LSP keymaps aren't set
+vim.api.nvim_create_autocmd('LspAttach', {
+	buffer = bufnr,
+	callback = function(args)
+		-- Check if the main LSP keymap is already set
+		local has_lsp_keymap = false
+		local keymaps = vim.api.nvim_buf_get_keymap(bufnr, 'n')
+		for _, keymap in ipairs(keymaps) do
+			if keymap.lhs == '<Space>lD' then
+				has_lsp_keymap = true
+				break
+			end
+		end
+
+		-- If LSP keymaps aren't set, call on_attach
+		if not has_lsp_keymap then
+			local client = vim.lsp.get_client_by_id(args.data.client_id)
+			if client then
+				require('valera.lsp').on_attach(client, bufnr)
+			end
+		end
+	end,
+})
+
 K('n', '<Space>re', function()
 	vim.cmd.RustLsp('expandMacro')
 end, { desc = "Rustacean: Expand Macro", buffer = bufnr, overwrite = nil })

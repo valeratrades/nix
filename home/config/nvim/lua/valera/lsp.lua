@@ -344,7 +344,7 @@ vim.g.rustaceanvim = {
 		--	caps.general.positionEncodings = capabilities.general.positionEncodings
 		--	return caps
 		--end)(),
-		on_attach = on_attach, --BUG: doesn't work
+		on_attach = on_attach, --BUG: inconsistent for some reason
 		default_settings = {
 			['rust-analyzer'] = (function()
 				local settings = {

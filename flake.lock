@@ -1605,11 +1605,11 @@
     },
     "nixpkgs_33": {
       "locked": {
-        "lastModified": 1762156382,
-        "narHash": "sha256-Yg7Ag7ov5+36jEFC1DaZh/12SEXo6OO3/8rqADRxiqs=",
+        "lastModified": 1763191728,
+        "narHash": "sha256-esRhOS0APE6k40Hs/jjReXg+rx+J5LkWw7cuWFKlwYA=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "7241bcbb4f099a66aafca120d37c65e8dda32717",
+        "rev": "1d4c88323ac36805d09657d13a5273aea1b34f0c",
         "type": "github"
       },
       "original": {
@@ -2469,11 +2469,11 @@
         "v-utils": "v-utils_7"
       },
       "locked": {
-        "lastModified": 1763383024,
-        "narHash": "sha256-RKd3i8c928bcIdH+eMIY/jHxVuN9u4m+W41sSdAK9GQ=",
+        "lastModified": 1763471662,
+        "narHash": "sha256-p48kZ0POuW5DyKQ8S7zDPKt+Y/AiaeHXgUj95vPJqls=",
         "owner": "valeratrades",
         "repo": "todo",
-        "rev": "59ad1e0ba79b426a22d2c3e787c2944f5c8f903e",
+        "rev": "f3e16da18f5d0485d4b0730da43ea8cdf5d5710e",
         "type": "github"
       },
       "original": {
@@ -2616,11 +2616,11 @@
         "nixpkgs": "nixpkgs_33"
       },
       "locked": {
-        "lastModified": 1762264782,
-        "narHash": "sha256-nFaVSch8HpAlWN8C8DTkADDLU/MuDm8Sz6L0pn4t9GU=",
+        "lastModified": 1763413251,
+        "narHash": "sha256-zrHS6Amr49BEqKPSkH5fW9v6KXbeVekJEpigmYmTuuw=",
         "owner": "valeratrades",
         "repo": ".github",
-        "rev": "1c47e6f6a86d80d23b0e3f50d60c77779a77ca16",
+        "rev": "6289acaeb41283e2197c1acc73fb8c62fcfadc2b",
         "type": "github"
       },
       "original": {

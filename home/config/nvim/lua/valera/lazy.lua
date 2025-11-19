@@ -61,7 +61,10 @@ return require('lazy').setup({
 	},
 	{ -- Rust
 		{ import = "valera.plugins.crates" },
-		{ import = "valera.plugins.rustaceanvim" },
+		{
+			'mrcjkb/rustaceanvim',
+			ft = 'rust',
+		},
 	},
 	{ -- Math
 		'Julian/lean.nvim',
