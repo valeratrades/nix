@@ -8,6 +8,5 @@
   ];
   balance = {
     command = "rm_engine balance";
-    label = "Balance";
   };
 }

@@ -107,6 +107,7 @@ in {
             inputs.sops-nix.homeManagerModules.sops
             inputs.tg.homeManagerModules.tg
             inputs.auto_redshift.homeManagerModules.auto_redshift
+            inputs.wallpaper_carousel.homeManagerModules.wallpaper-carousel
           ];
 
           home-manager.users."${user.username}" = import

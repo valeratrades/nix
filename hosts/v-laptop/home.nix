@@ -24,6 +24,11 @@ in {
     token = config.sops.secrets.telegram_token_main.path;
   };
 
+  wallpaper-carousel = {
+    enable = true;
+    package = inputs.wallpaper_carousel.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  };
+
   # Fix sops-nix.service to remain active after completion
   # Without this, oneshot services exit immediately and can't satisfy Requires= dependencies
   systemd.user.services.sops-nix = {
@@ -157,6 +162,7 @@ in {
 				zed
 				claude-code
 
+        magic-wormhole # transfer files easily between computers
 
 				simplescreenrecorder
 
