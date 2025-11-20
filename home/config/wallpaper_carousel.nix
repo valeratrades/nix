@@ -4,6 +4,10 @@
 
     { text = "iteration speed"; author = "Alex Hormozi"; }
 
-    "fuck your feelings,\ndo the work"
+    "fuck your mood\nfollow the plan"
   ];
+  balance = {
+    command = "rm_engine balance";
+    label = "Balance";
+  };
 }

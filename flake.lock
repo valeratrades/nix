@@ -2843,11 +2843,11 @@
         "v-utils": "v-utils_10"
       },
       "locked": {
-        "lastModified": 1763550611,
-        "narHash": "sha256-k5X4dRvBiwcj6SXbCNwW1RlkaBMO1aOs6rG2NUIGBbY=",
+        "lastModified": 1763619371,
+        "narHash": "sha256-JVmvkUI+Uh/BvuR2x4fcCJEF5c2HSK4H9EFYVBN7Chw=",
         "owner": "valeratrades",
         "repo": "wallpaper_carousel",
-        "rev": "c37ce09157b2911c11e4c30d9a7d76f3bd68fadf",
+        "rev": "204d4216e16106edcf53b3866abb83e6a85d8217",
         "type": "github"
       },
       "original": {
