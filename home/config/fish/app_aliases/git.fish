@@ -80,7 +80,7 @@ end
 function grr
 	# Git really reset
 	# discards all changes, including untracked files
-	git reset --hard HEAD; git clean -fn; git stash clear
+	git reset --hard HEAD; git clean -fd; git stash clear
 end
 
 # GitHub aliases
