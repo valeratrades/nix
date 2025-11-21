@@ -28,16 +28,20 @@ if [ "$save" -eq 0 ]; then
   find . -maxdepth 3 -type f | sed 's|^\./||' > "$tmpfile"
 
   # Open nvim with mappings: q to quit without selecting, Enter to select
+  # In normal mode, <CR> selects current line; in visual mode, selects all highlighted lines
   alacritty -e nvim "$tmpfile" \
     -c 'nnoremap <CR> :.w!<CR>:qa!<CR>' \
-    -c 'nnoremap q :qa!<CR>'
+    -c 'vnoremap <CR> :w!<CR>:qa!<CR>' \
+    -c 'nnoremap q :qa!<CR>' \
+    -c 'vnoremap q <Esc>:qa!<CR>'
 
-  # Get the selected line (written by <CR> mapping)
-  selected=$(head -n 1 "$tmpfile" | tr -d '\n')
-  if [ -n "$selected" ]; then
-    # Make it an absolute path
-    realpath "$selected" > "$out"
-  fi
+  # Get all selected lines (written by <CR> mapping)
+  # Convert each line to absolute path, write all paths separated by newlines
+  while IFS= read -r line; do
+    if [ -n "$line" ]; then
+      realpath "$line"
+    fi
+  done < "$tmpfile" > "$out"
 
   rm -f "$tmpfile"
 else
