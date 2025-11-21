@@ -311,6 +311,18 @@
         org.freedesktop.impl.portal.FileChooser=termfilechooser
       '';
 
+      # Terminal file chooser wrapper script (for nnn backup)
+      ".config/nnn/termfilechooser.sh".source = ../../home/config/nnn/termfilechooser.sh;
+
+      # xdg-desktop-portal-termfilechooser wrapper script
+      ".config/xdg-desktop-portal-termfilechooser/termfilechooser.sh".source = ../../home/config/nnn/termfilechooser.sh;
+
+      # xdg-desktop-portal-termfilechooser config
+      ".config/xdg-desktop-portal-termfilechooser/config".text = ''
+        [filechooser]
+        cmd = termfilechooser.sh
+      '';
+
       #TODO: figure out  (they have some bug on their side at the moment)
       #".config/direnv/direnv.toml".source = (pkgs.formats.toml { }).generate "" {
       #  global = {

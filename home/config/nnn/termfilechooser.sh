@@ -1,11 +1,7 @@
 #!/bin/sh
 # File chooser wrapper for xdg-desktop-portal-termfilechooser
-# This is called by the portal with these arguments:
-# $1 = directory (optional)
-# $2 = multiple selection (0 or 1)
-# $3 = save mode (0 = open, 1 = save)
-# $4 = suggestion (filename when saving)
-# $5 = output file path
+# Arguments from portal: $1=dir, $2=multiple, $3=save, $4=suggestion, $5=output_file
+# save=0 means OPEN, save=1 means SAVE
 
 dir="${1:-$HOME}"
 multiple="$2"
@@ -13,10 +9,14 @@ save="$3"
 suggestion="$4"
 out="$5"
 
-# Debug notifications (comment out if annoying)
-# notify-send "termfilechooser" "save: $save, dir: $dir, suggestion: $suggestion"
+# Debug notifications (uncomment to debug)
+# notify-send "termfilechooser" "save: $save, dir: $dir, suggestion: $suggestion, out: $out"
 
-if [ "$save" -eq 1 ]; then
+if [ "$save" -eq 0 ]; then
+  # Open mode: use yazi for file selection
+  # yazi --chooser-file writes selected file path(s) to the output file
+  alacritty -e sh -c "cd '$dir' && yazi --chooser-file='$out'"
+else
   # Save mode: let user edit the filename directly in nvim
   if [ -n "$suggestion" ]; then
     echo "$suggestion" > "$out"
@@ -24,8 +24,4 @@ if [ "$save" -eq 1 ]; then
     echo "$dir/newfile" > "$out"
   fi
   alacritty -e nvim "$out"
-else
-  # Open mode: use yazi for file selection
-  # yazi outputs selected file(s) to stdout when using --chooser-file
-  alacritty -e sh -c "cd '$dir' && yazi --chooser-file='$out'"
 fi

@@ -8,8 +8,8 @@
     DEFAULT_BROWSER = "${pkgs.google-chrome}/bin/google-chrome-stable";
     WINEPREFIX = "${config.home.homeDirectory}/.wine";
     PKG_CONFIG_PATH = "${pkgs.alsa-lib.dev}/lib/pkgconfig:${pkgs.wayland-scanner.bin}/bin";
-    # Tell xdg-desktop-portal-termfilechooser which script to use
-    FILE_CHOOSER_WRAPPER = "${config.home.homeDirectory}/.config/nnn/termfilechooser.sh";
+    # Terminal emulator for xdg-desktop-portal-termfilechooser
+    TERMCMD = "alacritty -t termfilechooser -e";
   };
 
   home.activation = {

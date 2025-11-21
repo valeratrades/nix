@@ -188,7 +188,7 @@ in {
         agave
         corefonts
         dina-font
-        emojione
+        noto-fonts-color-emoji # emoji font (replaces archived emojione)
         fira-code-symbols
         [
           # awesome

@@ -107,7 +107,7 @@
         toml-cli
         bash-language-server
         tailwindcss-language-server
-        jdk23 # java dev kit (pray for my sanity)
+        jdk # java dev kit (pray for my sanity)
         htmx-lsp
         watchexec # like cargo-watch, but general and mantained
 
@@ -149,8 +149,7 @@
           [
             typst
             tinymist # lsp; also comes with `typlite`, - typst to latex converter
-            typstyle # formatter
-            typstfmt # only formats codeblocks
+            typstyle # formatter (also formats codeblocks)
           ]
           # nix
           [

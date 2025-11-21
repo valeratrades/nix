@@ -145,9 +145,9 @@ in {
         lazygit
 
         # Windows
-        [
-          winboat
-        ]
+        #[
+        #  winboat
+        #]
 
         # vpn
         [
