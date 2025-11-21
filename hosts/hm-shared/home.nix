@@ -304,23 +304,12 @@
         };
       };
 
-      #".config/xdg-desktop-portal-shana/config.toml".source =
-      #  (pkgs.formats.toml { }).generate
-      #    "" {
-      #      open_file = "org.freedesktop.desktop.impl.lxqt";
-      #      save_file = "org.freedesktop.desktop.impl.lxqt";
-      #    };
-      #".config/xdg-desktop-portal/sway.conf".text = ''
-      #  [preferred]
-      #  default=dolphin
-      #  org.freedesktop.impl.portal.Settings=dolphin
-      #  #;gtk
-      #  org.freedesktop.impl.portal.FileChooser=shana
-      #  '';
-      #        [portal]
-      #DBusName=org.freedesktop.impl.portal.desktop.termfilechooser
-      #Interfaces=org.freedesktop.impl.portal.FileChooser;
-      #UseIn=i3;wlroots;sway;Wayfire;river;mate;lxde;openbox;unity;pantheon
+      # Configure xdg-desktop-portal to use termfilechooser
+      ".config/xdg-desktop-portal/sway-portals.conf".text = ''
+        [preferred]
+        default=gtk
+        org.freedesktop.impl.portal.FileChooser=termfilechooser
+      '';
 
       #TODO: figure out  (they have some bug on their side at the moment)
       #".config/direnv/direnv.toml".source = (pkgs.formats.toml { }).generate "" {

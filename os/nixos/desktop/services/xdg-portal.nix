@@ -8,6 +8,7 @@
       #xdg-desktop-portal-gnome #dbg: may be bringning in `webkitgtk`
       xdg-desktop-portal-shana
       lxqt.xdg-desktop-portal-lxqt
+      xdg-desktop-portal-termfilechooser
     ];
     wlr.enable = true;
   };

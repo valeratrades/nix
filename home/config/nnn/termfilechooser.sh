@@ -1,25 +1,31 @@
 #!/bin/sh
-#dbg
-notify-send "save: $3"
-notify-send "suggestion: $4"
-notify-send "out: $5"
+# File chooser wrapper for xdg-desktop-portal-termfilechooser
+# This is called by the portal with these arguments:
+# $1 = directory (optional)
+# $2 = multiple selection (0 or 1)
+# $3 = save mode (0 = open, 1 = save)
+# $4 = suggestion (filename when saving)
+# $5 = output file path
 
-# to see which xdg-desktop is being used, do:
-# dbus-monitor "interface=org.freedesktop.portal.FileChooser" | tee ~/xdg-portal.log
-
-# binary. If it's us sending, - `0`, otherwise `1`
+dir="${1:-$HOME}"
+multiple="$2"
 save="$3"
-# often present when saving; is a full filepath
 suggestion="$4"
-# out is always /tmp/termfilechooser
 out="$5"
 
-if [ "$save" -eq 0 ]; then
-  alacritty -e nnn -p "$out"
-else
-	echo "/home/v/Downloads/$(basename $suggestion)" > "$out"
+# Debug notifications (comment out if annoying)
+# notify-send "termfilechooser" "save: $save, dir: $dir, suggestion: $suggestion"
+
+if [ "$save" -eq 1 ]; then
+  # Save mode: let user edit the filename directly in nvim
+  if [ -n "$suggestion" ]; then
+    echo "$suggestion" > "$out"
+  else
+    echo "$dir/newfile" > "$out"
+  fi
   alacritty -e nvim "$out"
+else
+  # Open mode: use yazi for file selection
+  # yazi outputs selected file(s) to stdout when using --chooser-file
+  alacritty -e sh -c "cd '$dir' && yazi --chooser-file='$out'"
 fi
-
-
-#st -c picker sh -c "nnn -p - '$suggest' | awk '{ print system(\"[ -d '\''\"\$0\"'\'' ]\") ? \$0 : \$0\"/$file\" }' > '$out'"
