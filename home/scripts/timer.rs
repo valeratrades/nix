@@ -58,7 +58,7 @@ fn timer(args: &Args) -> Result<(), String> {
 		let secs = left % 60;
 		let formatted_secs = format!("{:02}", secs);
 		Command::new("eww")
-			.args(["update", &format!("timer={}:{}", mins, formatted_secs)])
+			.args(["update", &format!("timer={mins}:{formatted_secs}")])
 			.status()
 			.map_err(|e| e.to_string())?;
 		sleep(Duration::from_secs(1));

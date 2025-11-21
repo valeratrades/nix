@@ -144,6 +144,8 @@ in {
         gitui
         lazygit
 
+        powershell # for shit and giggles
+
         # Windows
         #[
         #  winboat
