@@ -13,9 +13,33 @@ out="$5"
 # notify-send "termfilechooser" "save: $save, dir: $dir, suggestion: $suggestion, out: $out"
 
 if [ "$save" -eq 0 ]; then
-  # Open mode: use yazi for file selection
-  # yazi --chooser-file writes selected file path(s) to the output file
-  alacritty -e sh -c "cd '$dir' && yazi --chooser-file='$out'"
+  # Open mode: use nvim to select a file
+  # Create a temp buffer with file listing, user edits to just the file path
+  tmpfile=$(mktemp)
+
+  # Generate file list in the directory
+  if [ -d "$suggestion" ]; then
+    cd "$suggestion"
+  else
+    cd "$dir"
+  fi
+
+  # List files and put in temp file
+  find . -maxdepth 3 -type f | sed 's|^\./||' > "$tmpfile"
+
+  # Open nvim with mappings: q to quit without selecting, Enter to select
+  alacritty -e nvim "$tmpfile" \
+    -c 'nnoremap <CR> :.w!<CR>:qa!<CR>' \
+    -c 'nnoremap q :qa!<CR>'
+
+  # Get the selected line (written by <CR> mapping)
+  selected=$(head -n 1 "$tmpfile" | tr -d '\n')
+  if [ -n "$selected" ]; then
+    # Make it an absolute path
+    realpath "$selected" > "$out"
+  fi
+
+  rm -f "$tmpfile"
 else
   # Save mode: let user edit the filename directly in nvim
   if [ -n "$suggestion" ]; then
@@ -23,5 +47,9 @@ else
   else
     echo "$dir/newfile" > "$out"
   fi
-  alacritty -e nvim "$out"
+
+  # Open with q mapped to just exit, Enter to confirm and save
+  alacritty -e nvim "$out" \
+    -c 'nnoremap <CR> :wq<CR>' \
+    -c 'nnoremap q :qa!<CR>'
 fi
