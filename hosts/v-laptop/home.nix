@@ -164,6 +164,7 @@ in {
 				zed
 				claude-code
 
+        ols
         magic-wormhole # transfer files easily between computers
 
 				simplescreenrecorder

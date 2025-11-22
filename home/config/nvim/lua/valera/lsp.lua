@@ -251,6 +251,15 @@ vim.lsp.config('ty', {
 })
 vim.lsp.enable('ty')
 
+vim.lsp.config('ols', {
+	settings = {
+		ols = {
+			organizeImports = true,
+		},
+	},
+})
+vim.lsp.enable('ols')
+
 vim.lsp.config('ruff', {})
 vim.lsp.enable('ruff')
 --,}}}
