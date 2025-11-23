@@ -12,7 +12,7 @@
 
 ;;TODO!: fix the thing with overlapping on myopia=true
 
-(defwindow bar 
+(defwindow bar
 	:monitor 0
 	:geometry (geometry :anchor "top right" :y 0 :width "0%" :height "17px")
 	(box

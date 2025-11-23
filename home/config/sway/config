@@ -232,6 +232,7 @@ bindsym $mod+Ctrl+g exec tg $(greenclip print | awk 'NR==1 {print}')
 #bindsym $mod+e exec ~/.config/sway/eww_zoom_toggle.sh #dbg: works poorly, commented-out until fixed
 bindsym $mod+Shift+e exec ~/.config/sway/eww_visibility_toggle.sh
 bindsym $mod+Ctrl+e exec $refresh_eww
+bindsym $mod+Ctrl+Shift+e exec ~/.config/eww/open_on_focused.sh
 
 # paste clipboard contents through keystrokes
 bindsym $mod+Shift+p exec ${NIXOS_CONFIG}/home/scripts/clipboard_to_keystrokes.rs
