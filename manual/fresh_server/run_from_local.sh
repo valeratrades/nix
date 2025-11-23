@@ -13,3 +13,4 @@ scp ~/.ssh/id_ed25519.pub $MAIN_SERVER_SSH_HOST:~/.ssh/
 # setup my scripts
 cat ~/.config/social_networks.toml | reasonable_envsubst - | ssh $MAIN_SERVER_SSH_HOST 'cat > ~/.config/social_networks.toml'
 cat ~/.config/site/config.toml | reasonable_envsubst - | ssh $MAIN_SERVER_SSH_HOST 'cat > ~/.config/site.toml'
+cat ~/.config/polymarket_mm.toml | reasonable_envsubst - | ssh $MAIN_SERVER_SSH_HOST 'cat > ~/.config/polymarket_mm.toml'
