@@ -23,24 +23,17 @@ return require "lazier" {
 			end, 50)
 		end
 
-		-- Custom action to open directories with oil.nvim
-		local function select_or_open_dir(prompt_bufnr)
+		-- Custom action to open parent directory of selected file
+		local function open_parent_dir(prompt_bufnr)
 			local entry = action_state.get_selected_entry()
 			if not entry then
-				actions.close(prompt_bufnr)
 				return
 			end
 
 			local path = entry.path or entry.filename or entry.value
-			local stat = vim.loop.fs_stat(path)
-
-			if stat and stat.type == "directory" then
-				actions.close(prompt_bufnr)
-				require('oil').open(path)
-			else
-				actions.select_default(prompt_bufnr)
-				actions.center(prompt_bufnr)
-			end
+			local parent = vim.fn.fnamemodify(path, ':h')
+			actions.close(prompt_bufnr)
+			vim.cmd('edit ' .. vim.fn.fnameescape(parent))
 		end
 
 		K('n', '<space>f', function() builtin.find_files(gs) end, { desc = "Search files" })
@@ -82,16 +75,6 @@ return require "lazier" {
 				lsp_dynamic_workspace_symbols = {
 					sorter = telescope.extensions.fzf.native_fzf_sorter(fzf_opts)
 				},
-				find_files = {
-					mappings = {
-						i = {
-							["<CR>"] = select_or_open_dir,
-						},
-						n = {
-							["<CR>"] = select_or_open_dir,
-						}
-					}
-				},
 			},
 			extensions = {
 				media_files = {
@@ -130,6 +113,7 @@ return require "lazier" {
 						["<C-l>"] = actions.select_all + actions.add_selected_to_loclist,
 						["<c-f>"] = actions.to_fuzzy_refine,
 						["<C-r>"] = send_to_qf_and_replacer,
+						["<C-o>"] = open_parent_dir,
 					},
 					n = {
 						["<CR>"] = actions.select_default + actions.center,
@@ -138,6 +122,7 @@ return require "lazier" {
 						["<C-t>"] = actions.select_tab + actions.center,
 						["<C-l>"] = actions.select_all + actions.add_selected_to_loclist,
 						["<C-r>"] = send_to_qf_and_replacer,
+						["<C-o>"] = open_parent_dir,
 					}
 				},
 				layout_config = {
