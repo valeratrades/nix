@@ -23,6 +23,26 @@ return require "lazier" {
 			end, 50)
 		end
 
+		-- Custom action to open directories with oil.nvim
+		local function select_or_open_dir(prompt_bufnr)
+			local entry = action_state.get_selected_entry()
+			if not entry then
+				actions.close(prompt_bufnr)
+				return
+			end
+
+			local path = entry.path or entry.filename or entry.value
+			local stat = vim.loop.fs_stat(path)
+
+			if stat and stat.type == "directory" then
+				actions.close(prompt_bufnr)
+				require('oil').open(path)
+			else
+				actions.select_default(prompt_bufnr)
+				actions.center(prompt_bufnr)
+			end
+		end
+
 		K('n', '<space>f', function() builtin.find_files(gs) end, { desc = "Search files" })
 		K('n', '<space>z', function() builtin.live_grep(gs) end, { desc = "Live grep" })
 		K({ 'n', 'v' }, '<space>ss', function() builtin.grep_string(gs) end,
@@ -61,6 +81,16 @@ return require "lazier" {
 			pickers = {
 				lsp_dynamic_workspace_symbols = {
 					sorter = telescope.extensions.fzf.native_fzf_sorter(fzf_opts)
+				},
+				find_files = {
+					mappings = {
+						i = {
+							["<CR>"] = select_or_open_dir,
+						},
+						n = {
+							["<CR>"] = select_or_open_dir,
+						}
+					}
 				},
 			},
 			extensions = {
