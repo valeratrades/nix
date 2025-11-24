@@ -15,7 +15,7 @@
       "lookahead": 5.0,
       "attack": 5.0,
       "release": 5.0,
-      "threshold": -32.0,
+      "threshold": -48.0,
       "sidechain-preamp": 0.0,
       "stereo-link": 100.0,
       "alr-attack": 5.0,

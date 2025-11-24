@@ -1,0 +1,211 @@
+#!/usr/bin/env bash
+# EasyEffects SPL Limiter Configuration Tool
+# Calculates and sets absolute SPL limits for specific headphone models
+
+set -euo pipefail
+
+# Headphone database: model_name -> max_spl_at_0dbfs
+declare -A HEADPHONE_DB=(
+    ["sony-wh-1000xm4"]="117"
+    ["sony-wh-1000xm5"]="117"
+    ["sony-wh-1000xm3"]="115"
+    ["airpods-pro"]="102"
+    ["airpods-max"]="108"
+    ["bose-qc35"]="110"
+    ["bose-qc45"]="110"
+    ["sennheiser-hd650"]="103"
+    ["sennheiser-hd600"]="97"
+    ["audio-technica-m50x"]="99"
+)
+
+PRESET_DIR="$HOME/.config/easyeffects/output"
+PRESET_FILE="$PRESET_DIR/headphone-safety-limiter.json"
+NIX_PRESET_DIR="$HOME/nix/home/config/easyeffects/output"
+NIX_PRESET_FILE="$NIX_PRESET_DIR/headphone-safety-limiter.json"
+
+show_usage() {
+    cat <<EOF
+Usage: $(basename "$0") [OPTIONS]
+
+Set absolute SPL limit for your headphones in EasyEffects.
+
+OPTIONS:
+    -m, --model MODEL       Headphone model (e.g., sony-wh-1000xm4)
+    -s, --spl SPL           Target SPL in dB (e.g., 85)
+    -M, --max-spl MAX       Manual max SPL if model not in database
+    -l, --list              List supported headphone models
+    -h, --help              Show this help
+
+EXAMPLES:
+    # Set 85 dB SPL limit for Sony WH-1000XM4
+    $(basename "$0") --model sony-wh-1000xm4 --spl 85
+
+    # Set 90 dB SPL limit for custom headphones with 110 dB max
+    $(basename "$0") --max-spl 110 --spl 90
+
+    # List supported models
+    $(basename "$0") --list
+
+SPL SAFETY GUIDE:
+    85 dB  - OSHA safe for 8+ hours (recommended)
+    88 dB  - Safe for 4 hours
+    90 dB  - Safe for 2 hours
+    95 dB  - Safe for 1 hour
+    100 dB - Safe for 15 minutes
+    110+ dB - Risk of immediate hearing damage
+
+EOF
+}
+
+list_models() {
+    echo "Supported Headphone Models:"
+    echo "============================"
+    for model in "${!HEADPHONE_DB[@]}"; do
+        printf "  %-30s Max SPL: %3d dB\n" "$model" "${HEADPHONE_DB[$model]}"
+    done | sort
+    echo ""
+    echo "Don't see your model? Use --max-spl to specify manually."
+}
+
+calculate_threshold() {
+    local max_spl="$1"
+    local target_spl="$2"
+    local threshold=$((target_spl - max_spl))
+
+    # Clamp to EasyEffects limiter range: -48 to 0
+    if ((threshold < -48)); then
+        echo "WARNING: Calculated threshold ($threshold dB) is below minimum (-48 dB). Using -48 dB." >&2
+        threshold=-48
+    elif ((threshold > 0)); then
+        echo "ERROR: Target SPL ($target_spl dB) exceeds headphone maximum ($max_spl dB)!" >&2
+        exit 1
+    fi
+
+    echo "$threshold"
+}
+
+update_preset() {
+    local threshold="$1"
+    local target_spl="$2"
+    local max_spl="$3"
+
+    # Create preset directory if it doesn't exist
+    mkdir -p "$PRESET_DIR"
+
+    # Generate the preset
+    cat > "$PRESET_FILE" <<EOF
+{
+  "output": {
+    "blocklist": [],
+    "plugins_order": [
+      "limiter#0"
+    ],
+    "limiter#0": {
+      "mode": "Herm Thin",
+      "oversampling": "None",
+      "dithering": "None",
+      "sidechain-type": "Internal",
+      "bypass": false,
+      "input-gain": 0.0,
+      "output-gain": 0.0,
+      "lookahead": 5.0,
+      "attack": 5.0,
+      "release": 5.0,
+      "threshold": $threshold.0,
+      "sidechain-preamp": 0.0,
+      "stereo-link": 100.0,
+      "alr-attack": 5.0,
+      "alr-release": 50.0,
+      "alr-knee": 0.0,
+      "alr": false,
+      "gain-boost": true,
+      "input-to-sidechain": 0.0,
+      "input-to-link": 0.0,
+      "sidechain-to-input": 0.0,
+      "sidechain-to-link": 0.0,
+      "link-to-input": 0.0,
+      "link-to-sidechain": 0.0
+    }
+  }
+}
+EOF
+
+    # Also update Nix preset if it exists
+    if [[ -d "$NIX_PRESET_DIR" ]]; then
+        cp "$PRESET_FILE" "$NIX_PRESET_FILE"
+        echo "✓ Also updated Nix preset at: $NIX_PRESET_FILE"
+    fi
+
+    echo "✓ Preset updated successfully!"
+    echo ""
+    echo "Configuration:"
+    echo "  Max SPL:      $max_spl dB (headphone maximum)"
+    echo "  Target SPL:   $target_spl dB (your limit)"
+    echo "  Threshold:    $threshold dB (digital reduction)"
+    echo ""
+    echo "To apply changes:"
+    echo "  easyeffects -l headphone-safety-limiter"
+}
+
+# Parse arguments
+MODEL=""
+TARGET_SPL=""
+MAX_SPL=""
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -m|--model)
+            MODEL="$2"
+            shift 2
+            ;;
+        -s|--spl)
+            TARGET_SPL="$2"
+            shift 2
+            ;;
+        -M|--max-spl)
+            MAX_SPL="$2"
+            shift 2
+            ;;
+        -l|--list)
+            list_models
+            exit 0
+            ;;
+        -h|--help)
+            show_usage
+            exit 0
+            ;;
+        *)
+            echo "ERROR: Unknown option: $1" >&2
+            show_usage
+            exit 1
+            ;;
+    esac
+done
+
+# Validate inputs
+if [[ -z "$TARGET_SPL" ]]; then
+    echo "ERROR: Target SPL (-s/--spl) is required!" >&2
+    show_usage
+    exit 1
+fi
+
+# Determine max SPL
+if [[ -n "$MODEL" ]]; then
+    if [[ -z "${HEADPHONE_DB[$MODEL]:-}" ]]; then
+        echo "ERROR: Model '$MODEL' not found in database!" >&2
+        echo "Use --list to see supported models, or use --max-spl to specify manually." >&2
+        exit 1
+    fi
+    MAX_SPL="${HEADPHONE_DB[$MODEL]}"
+    echo "Using model: $MODEL (Max SPL: $MAX_SPL dB)"
+elif [[ -n "$MAX_SPL" ]]; then
+    echo "Using custom max SPL: $MAX_SPL dB"
+else
+    echo "ERROR: Either --model or --max-spl must be specified!" >&2
+    show_usage
+    exit 1
+fi
+
+# Calculate and update
+THRESHOLD=$(calculate_threshold "$MAX_SPL" "$TARGET_SPL")
+update_preset "$THRESHOLD" "$TARGET_SPL" "$MAX_SPL"
