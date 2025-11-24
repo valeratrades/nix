@@ -1,0 +1,34 @@
+{
+  "output": {
+    "blocklist": [],
+    "plugins_order": [
+      "limiter#0"
+    ],
+    "limiter#0": {
+      "mode": "Herm Thin",
+      "oversampling": "None",
+      "dithering": "None",
+      "sidechain-type": "Internal",
+      "bypass": false,
+      "input-gain": 0.0,
+      "output-gain": 0.0,
+      "lookahead": 5.0,
+      "attack": 5.0,
+      "release": 5.0,
+      "threshold": -3.0,
+      "sidechain-preamp": 0.0,
+      "stereo-link": 100.0,
+      "alr-attack": 5.0,
+      "alr-release": 50.0,
+      "alr-knee": 0.0,
+      "alr": false,
+      "gain-boost": true,
+      "input-to-sidechain": 0.0,
+      "input-to-link": 0.0,
+      "sidechain-to-input": 0.0,
+      "sidechain-to-link": 0.0,
+      "link-to-input": 0.0,
+      "link-to-sidechain": 0.0
+    }
+  }
+}

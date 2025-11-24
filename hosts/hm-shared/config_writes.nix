@@ -10,6 +10,10 @@
       source = "${self}/home/config/eww";
       recursive = true;
     };
+    ".config/easyeffects/output" = {
+      source = "${self}/home/config/easyeffects/output";
+      recursive = true;
+    };
 
     # ind files
     ".config/auto_redshift.toml".source =
