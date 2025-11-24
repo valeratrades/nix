@@ -2,10 +2,13 @@
   # Desktop-specific home-manager services and programs
 
   # EasyEffects service for audio limiting/protection
-  services.easyeffects = {
-    enable = true;
-    preset = "headphone-safety-limiter";
-  };
+  # NOTE: Disabled because limiter plugin is not working correctly yet.
+  # Audio routing is broken - limiter doesn't apply any gain reduction.
+  # Use manually via: ~/nix/home/scripts/easyeffects-spl-limiter
+  # services.easyeffects = {
+  #   enable = true;
+  #   preset = "headphone-safety-limiter";
+  # };
 
   home.sessionVariables = {
     QT_QPA_PLATFORMTHEME = "flatpak";

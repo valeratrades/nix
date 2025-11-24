@@ -275,7 +275,6 @@
       ".lesskey".source = "${self}/home/config/lesskey";
       ".config/fish/conf.d/sway.fish".source =
         "${self}/home/config/fish/conf.d/sway.fish";
-      ".config/greenclip.toml".source = "${self}/home/config/greenclip.toml";
 
       ".config/iamb/config.toml".source = (pkgs.formats.toml { }).generate "" {
         default_profile = "master";
