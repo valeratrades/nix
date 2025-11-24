@@ -27,6 +27,7 @@
       [
         pamixer
         easyeffects
+        lsp-plugins  # LSP Limiter plugin for EasyEffects
         imagemagick
         vlc
         pavucontrol
