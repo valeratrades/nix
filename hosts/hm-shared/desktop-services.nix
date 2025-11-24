@@ -1,6 +1,12 @@
 { self, config, lib, pkgs, user, inputs, ... }: {
   # Desktop-specific home-manager services and programs
 
+  # EasyEffects service for audio limiting/protection
+  services.easyeffects = {
+    enable = true;
+    preset = "headphone-safety-limiter";
+  };
+
   home.sessionVariables = {
     QT_QPA_PLATFORMTHEME = "flatpak";
     GTK_USE_PORTAL = "1";

@@ -14,6 +14,10 @@
       source = "${self}/home/config/easyeffects/output";
       recursive = true;
     };
+    ".config/pipewire/pipewire.conf.d" = {
+      source = "${self}/home/config/pipewire/pipewire.conf.d";
+      recursive = true;
+    };
 
     # ind files
     ".config/auto_redshift.toml".source =
