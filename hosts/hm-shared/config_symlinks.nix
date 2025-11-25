@@ -37,5 +37,12 @@
       lib.hm.dag.entryAfter ["writeBoundary" ] ''
       [ -e "$XDG_CONFIG_HOME/${target_path_postfix}" ] || ln -sf "$NIXOS_CONFIG/home/config/${target_path_postfix}" "$XDG_CONFIG_HOME/${target_path_postfix}"
 		'';
+		discretionary_engine = 
+      let
+        target_path_postfix = "discretionary_engine.nix";
+      in
+      lib.hm.dag.entryAfter ["writeBoundary" ] ''
+      [ -e "$XDG_CONFIG_HOME/${target_path_postfix}" ] || ln -sf "$NIXOS_CONFIG/home/config/${target_path_postfix}" "$XDG_CONFIG_HOME/${target_path_postfix}"
+		'';
   };
 }
