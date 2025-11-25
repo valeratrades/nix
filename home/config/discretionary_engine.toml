@@ -1,18 +1,18 @@
 positions_dir = "~/s/g/positions"
 
 [exchanges.binance]
-pubkey = { env = "BINANCE_TIGER_FULL_PUBKEY" }
-secret = { env = "BINANCE_TIGER_FULL_SECRET" }
+api_pubkey = { env = "BINANCE_TIGER_FULL_PUBKEY" }
+api_secret = { env = "BINANCE_TIGER_FULL_SECRET" }
 
 [exchanges.bybit]
-pubkey = { env = "QUANTM_BYBIT_SUB_PUBKEY" }
-secret = { env = "QUANTM_BYBIT_SUB_SECRET" }
+api_pubkey = { env = "QUANTM_BYBIT_SUB_PUBKEY" }
+api_secret = { env = "QUANTM_BYBIT_SUB_SECRET" }
 
 [exchanges.mexc]
-pubkey = { env = "MEXC_READ_PUBKEY" }
-secret = { env = "MEXC_READ_SECRET" }
+api_pubkey = { env = "MEXC_READ_PUBKEY" }
+api_secret = { env = "MEXC_READ_SECRET" }
 
 [exchanges.kucoin]
-pubkey = { env = "KUCOIN_API_PUBKEY" }
-secret = { env = "KUCOIN_API_SECRET" }
-# Note: KuCoin also requires a passphrase, but we're not using it yet
+api_pubkey = { env = "KUCOIN_API_PUBKEY" }
+api_secret = { env = "KUCOIN_API_SECRET" }
+api_passphrase = { env = "KUCOIN_API_PASSPHRASE" }
