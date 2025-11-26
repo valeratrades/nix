@@ -2,11 +2,9 @@
 # Semimak Setup Script for Windows
 # Downloads and configures Kanata with Semimak layout
 #
-# Usage (from PowerShell with admin rights):
-#   irm https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/master/manual/windows/setup-semimak.ps1 | iex
-# Or download and run:
-#   Invoke-WebRequest -Uri "https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/master/manual/windows/setup-semimak.ps1" -OutFile "setup-semimak.ps1"
-#   .\setup-semimak.ps1
+# Usage (from Command Prompt as Administrator):
+#   curl -o setup-semimak.ps1 https://raw.githubusercontent.com/valeratrades/nix/master/manual/windows/setup-semimak.ps1
+#   powershell -ExecutionPolicy Bypass -File setup-semimak.ps1
 
 $ErrorActionPreference = "Stop"
 
@@ -43,12 +41,8 @@ try {
 }
 
 # Download Semimak config
-Write-Host "[3/4] Downloading Semimak configuration..." -ForegroundColor Green
-$configUrl = "https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/master/manual/windows/semimak.kbd"
+Write-Host "[3/4] Creating Semimak configuration..." -ForegroundColor Green
 $configPath = "$configDir\semimak.kbd"
-
-# TODO: Update this URL with your actual repository
-# For now, create the config inline
 $semimakConfig = @'
 ;; Semimak Layout for Kanata
 ;; Based on /home/xkb_symbols/semimak
