@@ -5,14 +5,12 @@
 Run this in PowerShell as Administrator:
 
 ```pwsh
-# Option 1: Direct execution (once pushed to GitHub)
-irm https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/master/manual/windows/setup-semimak.ps1 | iex
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/master/manual/windows/setup-semimak.ps1" -UseBasicParsing | Invoke-Expression
 ```
 
-Or download and run:
+Or download first:
 
 ```pwsh
-# Option 2: Download first, then run
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/master/manual/windows/setup-semimak.ps1" -OutFile "setup-semimak.ps1"
 .\setup-semimak.ps1
 ```
