@@ -2,32 +2,20 @@
 
 ## Automated Setup (Recommended)
 
-Run this in PowerShell as Administrator:
+Run this in Command Prompt (cmd.exe) as Administrator:
 
-```pwsh
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/master/manual/windows/setup-semimak.ps1" -UseBasicParsing | Invoke-Expression
-```
-
-Or download first:
-
-```pwsh
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/master/manual/windows/setup-semimak.ps1" -OutFile "setup-semimak.ps1"
-.\setup-semimak.ps1
+```cmd
+curl -o setup-semimak.ps1 https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/master/manual/windows/setup-semimak.ps1
+powershell -ExecutionPolicy Bypass -File setup-semimak.ps1
 ```
 
 ## Manual Setup
 
-If you prefer to install manually:
+If you prefer to install manually, run in Command Prompt as Administrator:
 
-```pwsh
-# 1. Install Kanata
+```cmd
 winget install --id=jtroo.kanata_gui -e
-
-# 2. Download the Semimak config
-$configDir = "$env:USERPROFILE\.config\kanata"
-New-Item -ItemType Directory -Force -Path $configDir
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/master/manual/windows/semimak.kbd" -OutFile "$configDir\semimak.kbd"
-
-# 3. Start Kanata with Semimak layout
-kanata --cfg "$configDir\semimak.kbd"
+mkdir "%USERPROFILE%\.config\kanata"
+curl -o "%USERPROFILE%\.config\kanata\semimak.kbd" https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/master/manual/windows/semimak.kbd
+kanata --cfg "%USERPROFILE%\.config\kanata\semimak.kbd"
 ```
