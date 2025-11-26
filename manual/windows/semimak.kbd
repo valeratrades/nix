@@ -1,10 +1,14 @@
 ;; Semimak Layout for Kanata
 ;; Based on /home/xkb_symbols/semimak
+;; For French AZERTY keyboard
 
 (defcfg
   process-unmapped-keys yes
 )
 
+;; French AZERTY physical layout
+;; Note: defsrc uses the scan codes, which are the same regardless of OS layout
+;; But we need to account for where keys physically are on an AZERTY keyboard
 (defsrc
   grv  1    2    3    4    5    6    7    8    9    0    -    =    bspc
   tab  q    w    e    r    t    y    u    i    o    p    [    ]    \
