@@ -55,7 +55,7 @@ in
   programs.nixcord = {
     enable = true; # also installs discord package
     discord.enable = true;
-    vesktop.enable = false; #dbg: currently broken (2025/11/03) #DEPRECATE: once working
+    vesktop.enable = true;
     discord.openASAR.enable = true;
 
     config = {
