@@ -71,16 +71,17 @@ in {
     loader = {
       systemd-boot = {
         enable = true;
-        extraEntries = {
-          "windows.conf" = ''
-            title Windows
-            efi /EFI/Microsoft/Boot/bootmgfw.efi
-          '';
+        edk2-uefi-shell.enable = true; # To find Windows EFI device handle
+        # Windows is on separate ESP (nvme1n1p4), chainloaded via device handle
+        # To find handle: boot EDK2 shell, run `map -c`, find the one with \EFI\Microsoft
+        # Then set: windows."windows".efiDeviceHandle = "HD1b"; # or whatever handle
+        windows."windows" = {
+          title = "Windows";
+          efiDeviceHandle = "HD1b"; # Likely HD1b for second NVMe partition 4 - verify in EDK2 shell!
         };
       };
       timeout = 0; # spam `Space` or `Shift` to bring the menu up when needed
       efi.canTouchEfiVariables = true;
-      #grub.useOsProber = true; # need to find alternative for systemd-boot
     };
 
     # from what I understand, zswap is an intermediate layer with 3-4.3x compression in-RAM, to which older blocks are saved before being written to disk swap. Zram is the same, but no writes to disk at all, it just stays in the compressed RAM block. Don't want the latter, but former sounds promising.
