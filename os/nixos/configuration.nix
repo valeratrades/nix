@@ -69,7 +69,15 @@ in {
   boot = {
     tmp.useTmpfs = true;
     loader = {
-      systemd-boot = { enable = true; };
+      systemd-boot = {
+        enable = true;
+        extraEntries = {
+          "windows.conf" = ''
+            title Windows
+            efi /EFI/Microsoft/Boot/bootmgfw.efi
+          '';
+        };
+      };
       timeout = 0; # spam `Space` or `Shift` to bring the menu up when needed
       efi.canTouchEfiVariables = true;
       #grub.useOsProber = true; # need to find alternative for systemd-boot
