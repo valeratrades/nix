@@ -14,11 +14,17 @@
   boot.extraModulePackages = [ ];
 
   fileSystems."/" =
+    # partition after windows install on the second disk
+    { device = "/dev/disk/by-uuid/d84a1591-c0fd-41b1-81aa-a8ff5090f598";
+      fsType = "ext4";
+    };
+
+  fileSystems."/home" =
+    # previously main partition; 890GB on first disk
     { device = "/dev/disk/by-uuid/271e936a-178b-4d50-96c8-16114b4022d3";
       fsType = "ext4";
     };
 
-  #NOTE: the more important, the closer to 0 on the partition table
   fileSystems."/boot" =
     { device = "/dev/disk/by-uuid/0BD8-E8BE";
       fsType = "vfat";
@@ -28,6 +34,7 @@
 	# to get the id, do `blkid` for the partition, and take the `UUID` value
 	boot.resumeDevice = "/dev/disk/by-uuid/4fc0e3da-5640-4939-a5e2-e19ad7419e46"; # for hibernation. NB: make sure that it matches the swap partition. Must be updated if it changes
 	swapDevices = [ 
+    # 64GB swap partition on first disk
 		{ device = "/dev/disk/by-uuid/4fc0e3da-5640-4939-a5e2-e19ad7419e46"; }
 	];
 
