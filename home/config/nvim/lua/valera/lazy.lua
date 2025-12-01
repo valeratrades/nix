@@ -139,7 +139,7 @@ return require('lazy').setup({
 	"stevearc/aerial.nvim",
 	"https://codeberg.org/FelipeLema/cmp-async-path",
 	{ import = "valera.plugins.guess-indent" },
-	{ 'wakatime/vim-wakatime',               lazy = false },
+	{ import = "valera.plugins.wakatime" },
 	--{ "tjdevries/ocaml.nvim",  build = "make" }, -- requires 3.17 dune, but my nix only has 3.16
 	"folke/which-key.nvim",
 	--"pimalaya/himalaya-vim", --TODO: setup

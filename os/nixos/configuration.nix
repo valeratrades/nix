@@ -69,17 +69,9 @@ in {
   boot = {
     tmp.useTmpfs = true;
     loader = {
-      systemd-boot = {
-        enable = true;
-        edk2-uefi-shell.enable = true; # To find Windows EFI device handle
-        # Windows is on separate ESP (nvme1n1p4), chainloaded via device handle
-        # To find handle: boot EDK2 shell, run `map -c`, find the one with \EFI\Microsoft
-        # Then set: windows."windows".efiDeviceHandle = "HD1b"; # or whatever handle
-        windows."windows" = {
-          title = "Windows";
-          efiDeviceHandle = "HD1b"; # Likely HD1b for second NVMe partition 4 - verify in EDK2 shell!
-        };
-      };
+      systemd-boot.enable = true;
+      # Windows bootloader at /boot/EFI/Microsoft/Boot/bootmgfw.efi is auto-detected
+      # Backup copy also on nvme1n1p4 in case Windows nukes this one
       timeout = 0; # spam `Space` or `Shift` to bring the menu up when needed
       efi.canTouchEfiVariables = true;
     };

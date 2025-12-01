@@ -37,10 +37,10 @@
     hideMounts = true;
     directories = [
       "/etc/NetworkManager/system-connections"
-      "/etc/ssh"
-      "/etc/nix/inputs"
+      #"/etc/ssh"
+      #"/etc/nix/inputs"
       "/etc/secureboot" # lanzaboote - secure boot
-      "/etc/agenix/" # secrets
+      #"/etc/agenix/" # secrets
 
       "/var/log"
       "/var/lib"

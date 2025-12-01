@@ -164,6 +164,8 @@ in {
 				zed
 				claude-code
 
+        libreoffice-still
+
         ols
         magic-wormhole # transfer files easily between computers
 
