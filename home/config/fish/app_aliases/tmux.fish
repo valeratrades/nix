@@ -69,9 +69,8 @@ function tmux_new_session_base
 	tmux split-window -v -t "$SESSION_NAME:window.0"
 	tmux select-pane -t "$SESSION_NAME:window.0"
 
-	# `ai` window // noways basically just Claude Code
-	tmux new-window -t "$SESSION_NAME" -n "ai"
-	tmux send-keys -t "$SESSION_NAME:cursor.0" "echo '`claude_all` or `cursor .` here'" Enter
+	tmux new-window -t "$SESSION_NAME" -n "claude"
+	tmux send-keys -t "$SESSION_NAME:cursor.0" "echo '`claude_all` here'" Enter
 
 	echo $SESSION_NAME
 	return 0
