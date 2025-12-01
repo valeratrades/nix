@@ -278,25 +278,22 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 		//	.join("\n");
 		//crate::utils::show_markdown_popup(repr); //TODO: actually finish this. Rn biggest issue is window being in incorrect place
 
-		// {
-		// 	let last_diag = diagnostics_on_target_line.last().unwrap();
-		// 	// Jump to the last diagnostic on the target line
-		// 	let _ = api::call_function::<_, ()>(
-		// 		"nvim_win_set_cursor",
-		// 		(0, Array::from_iter(vec![Object::from(last_diag.start.0), Object::from(last_diag.start.1)])),
-		// 	);
+		// Jump to the target line (first column for now)
+		let _ = api::call_function::<_, ()>(
+			"nvim_win_set_cursor",
+			(0, Array::from_iter(vec![Object::from(target_line), Object::from(0i64)])),
+		);
 
-		// 	debug_log(format!(
-		// 		"\n=== OPENING FLOAT ===\nJumped to line {}, {} diagnostics on line",
-		// 		target_line,
-		// 		diagnostics_on_target_line.len()
-		// 	));
+		// debug_log(format!(
+		// 	"\n=== OPENING FLOAT ===\nJumped to line {}, {} diagnostics on line",
+		// 	target_line,
+		// 	diagnostics_on_target_line.len()
+		// ));
 
-			// Defer popup opening after cursor has moved
-			crate::utils::defer_fn(1, || {
-				open_diagnostic_float();
-			});
-		// }
+		// Defer popup opening after cursor has moved
+		crate::utils::defer_fn(1, || {
+			open_diagnostic_float();
+		});
 		return;
 	});
 }
