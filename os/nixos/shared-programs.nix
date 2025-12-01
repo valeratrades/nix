@@ -34,6 +34,7 @@
           token = "$GITHUB_KEY";
         };
         credential.helper = "store";
+        core.attributesfile = "~/.gitattributes";
         pull = { rebase = true; };
         safe = { directory = "*"; };
         help = { autocorrect = 5; };
