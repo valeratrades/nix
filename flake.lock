@@ -2151,11 +2151,11 @@
         "v-utils": "v-utils_6"
       },
       "locked": {
-        "lastModified": 1763864171,
-        "narHash": "sha256-ytef/9vH5SJdEtMylOjvbPv1MNG9Y4ehGBJ0IAo/bPA=",
+        "lastModified": 1764620367,
+        "narHash": "sha256-vjP7rB8kl/q4bPvICSQdan8oo8X0d/nK43nNF7sUzHA=",
         "owner": "valeratrades",
         "repo": "rm_engine",
-        "rev": "162a5baf7764839586b258abb43e75ae518934fd",
+        "rev": "14a029d9d711ea7270c7a2874efedb9f18a6c427",
         "type": "github"
       },
       "original": {
