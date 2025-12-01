@@ -25,10 +25,6 @@ return {
 			['<C-s>'] = cmp_action.luasnip_supertab(),
 			['<C-y>'] = cmp.mapping.confirm({ select = true }),
 
-			-- impossible to overwrite the defaults. There is literally no way to make this work, - without cmp.mapping.preset.insert this is not registered at all.
-			--['<C-r>'] = cmp.mapping(cmp.mapping.select_next_item({ behavior = cmp.SelectBehavior.Select }), { 'i', 's', 'c' }),
-			--['<C-n>'] = cmp.mapping(cmp.mapping.select_prev_item({ behavior = cmp.SelectBehavior.Select }), { 'i', 's', 'c' }),
-
 			['<Down>'] = cmp.mapping(cmp.mapping.select_next_item({ behavior = cmp.SelectBehavior.Select }), { 'c' }),
 			['<Up>'] = cmp.mapping(cmp.mapping.select_prev_item({ behavior = cmp.SelectBehavior.Select }), { 'c' }),
 
@@ -164,7 +160,10 @@ return {
 			}
 		})
 		cmp.setup.cmdline(':', {
-			--mapping = cmp.mapping.preset.cmdline(),
+			mapping = {
+				['<C-y>'] = { c = cmp.mapping.confirm({ select = true }) },
+				['<C-e>'] = { c = cmp.mapping.abort() },
+			},
 			sources = cmp.config.sources({
 				{ name = 'path' }
 			}, {
