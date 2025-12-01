@@ -143,7 +143,7 @@ fn cmd_headphones() -> Result<(), String> {
     eprintln!("Could not find any of: {:?}", DEVICE_NAMES);
     eprintln!("Available paired devices:");
     for (mac, name) in &all_devices {
-        eprintln!("  {} - {}", mac, name);
+        eprintln!("  {mac} - {name}");
     }
     Err("Headphones not in paired devices".to_string())
 }
