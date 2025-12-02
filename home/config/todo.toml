@@ -3,10 +3,7 @@ date_format = "%Y-%m-%d"
 
 [milestones]
 github_token = { env = "GITHUB_KEY" }
-
-[todos]
-path = "~/s/g/todos/"
-n_tasks_to_show = 3
+url = "https://github.com/valeratrades/todos"
 
 [timer]
 hard_stop_coeff = 1.5
