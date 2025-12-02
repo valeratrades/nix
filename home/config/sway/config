@@ -63,7 +63,8 @@ exec wlr-gamma-service
 exec pipewire-pulse
 exec wireplumber
 exec ringboard-server
-bindsym $mod+g exec ringboard-egui
+exec ringboard-wayland
+bindsym $mod+g exec ${NIXOS_CONFIG}/home/scripts/ringboard_rofi.sh
 bindsym $mod+Shift+g exec ringboard wipe
 #
 
@@ -196,6 +197,7 @@ assign [app_id="spotube"] 4
 assign [app_id="org.telegram.desktop"] 4
 assign [app_id="com.github.flxzt.rnote"] 9
 assign [app_id="com.obsproject.Studio"] 8
+for_window [title="rofi-clipboard"] floating enable
 # doesn't work, as netrw sets the title as "nvim: [No name]"
 #assign [app_id="Alacritty" title="nvim: ~/Todo*$"] 4
 exec "~/.config/sway/restore_session.sh"
