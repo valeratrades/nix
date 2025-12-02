@@ -147,10 +147,10 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 		let line_count: i64 = api::call_function("line", ("$",)).unwrap_or(1);
 		let last_line_col: i64 = {
 			// Get the actual text of the last line and measure its length
-			let lua_code = format!("vim.fn.strlen(vim.fn.getline({}))", line_count);
+			let lua_code = format!("vim.fn.strlen(vim.fn.getline({line_count}))");
 			api::call_function("luaeval", (lua_code,)).unwrap_or(0)
 		};
-		debug_log(format!("File has {} lines, last line ends at col {}", line_count, last_line_col));
+		debug_log(format!("File has {line_count} lines, last line ends at col {last_line_col}"));
 
 		// Parse and interpret all diagnostics first
 		let mut interpreted_diagnostics: Vec<InterpretedDiagnostic> = Vec::new();
@@ -241,9 +241,7 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 		use std::collections::HashSet;
 		let mut lines_with_diagnostics: Vec<i64> = nav_diagnostics.iter().map(|d| d.start.0).collect::<HashSet<_>>().into_iter().collect();
 		lines_with_diagnostics.sort_unstable();
-
-		// Find next/prev line to jump to
-		//TODO!!!!!: write correct logic myself, - should be for exact next diagnostic, not whole line
+		//TODO!!!!: should jump to first diagnostic on the line, if coming from above; otherwise last diagnostic of the line
 		let target_line = if direction == 1 {
 			// Next: find first line > current_line, or wrap to first
 			lines_with_diagnostics
@@ -261,34 +259,37 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 				.unwrap_or(*lines_with_diagnostics.last().unwrap_or(&current_line))
 		};
 
+		//TODO!!!: add functionality to move sideways inside the same line (to navigate into a position where lsp suggestion can be applied. Note that in this case we show the default diagnostics window) 
+
 		// Get all diagnostics on the target line, sorted by column
-		//let mut diagnostics_on_target_line: Vec<&InterpretedDiagnostic> = interpreted_diagnostics.iter().filter(|d| d.start.0 == target_line).collect();
-		//diagnostics_on_target_line.sort_by_key(|d| d.severity);
-		//let repr = diagnostics_on_target_line
-		//	.iter().enumerate()
-		//	.map(|(i,d)| format!("{}. {}{}", i+1, d.message, {
-		//		if let Some(code) = &d.code {
-		//			format!(" [{code}]")
-		//		} else {
-		//			"".to_string()
-		//		}
-		//	}
-		//	))
-		//	.collect::<Vec<String>>()
-		//	.join("\n");
-		//crate::utils::show_markdown_popup(repr); //TODO: actually finish this. Rn biggest issue is window being in incorrect place
+		let mut diagnostics_on_target_line: Vec<&InterpretedDiagnostic> = interpreted_diagnostics.iter().filter(|d| d.start.0 == target_line).collect();
+		diagnostics_on_target_line.sort_by_key(|d| d.severity);
+		let repr = diagnostics_on_target_line
+			.iter().enumerate()
+			.map(|(i,d)| format!("{}. {}{}", i+1, d.message, {
+				if let Some(code) = &d.code {
+					format!(" [{code}]")
+				} else {
+					"".to_string()
+				}
+			}
+			))
+			.collect::<Vec<String>>()
+			.join("\n");
+		crate::utils::show_markdown_popup(repr); //TODO: actually finish this. Rn biggest issue is window being in incorrect place
 
 		// Jump to the target line (first column for now)
+		//Q: can I somehow make use of existing window logic directly, same as what diagnostics_popup does under the hood?
 		let _ = api::call_function::<_, ()>(
 			"nvim_win_set_cursor",
 			(0, Array::from_iter(vec![Object::from(target_line), Object::from(0i64)])),
 		);
 
-		// debug_log(format!(
-		// 	"\n=== OPENING FLOAT ===\nJumped to line {}, {} diagnostics on line",
-		// 	target_line,
-		// 	diagnostics_on_target_line.len()
-		// ));
+		debug_log(format!(
+			"\n=== OPENING FLOAT ===\nJumped to line {}, {} diagnostics on line",
+			target_line,
+			diagnostics_on_target_line.len()
+		));
 
 		// Defer popup opening after cursor has moved
 		crate::utils::defer_fn(1, || {

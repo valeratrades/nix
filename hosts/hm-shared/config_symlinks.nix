@@ -34,5 +34,6 @@ in
     rm_engine = mkSymlink { target_path_postfix = "rm_engine.nix"; };
     wallpaper_carousel = mkSymlink { target_path_postfix = "wallpaper_carousel.nix"; };
     discretionary_engine = mkSymlink { target_path_postfix = "discretionary_engine.nix"; };
+    shared = mkSymlink { target_path_postfix = "shared"; };
   };
 }

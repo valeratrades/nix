@@ -257,10 +257,19 @@ K("t", "<C-w>t", "<C-\\><C-N><C-w>l", { desc = "Win right from terminal" })
 
 local function copyFileLineCol()
 	local file = vim.fn.expand('%')
-	local line = vim.fn.line('.')
-	local col = vim.fn.col('.')
-	local location = string.format("%s:%d:%d", file, line, col)
-	return location
+	local mode = vim.fn.mode()
+
+	if mode == 'v' or mode == 'V' or mode == '\22' then -- visual, visual-line, visual-block
+		local start_pos = vim.fn.getpos("v")
+		local end_pos = vim.fn.getpos(".")
+		local start_line, start_col = start_pos[2], start_pos[3]
+		local end_line, end_col = end_pos[2], end_pos[3]
+		return string.format("%s:{%d:%d; %d:%d}", file, start_line, start_col, end_line, end_col)
+	else
+		local line = vim.fn.line('.')
+		local col = vim.fn.col('.')
+		return string.format("%s:%d:%d", file, line, col)
+	end
 end
 
 K("", "<Space>ay", function() vim.fn.setreg('"', copyFileLineCol()) end, { desc = "copy file:line:col to \" buffer" })
