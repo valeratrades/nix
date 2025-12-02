@@ -157,7 +157,7 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 		for i in 0..diagnostics.len() {
 			let lua_code = format!("vim.fn.json_encode(vim.diagnostic.get({})[{}])", bufnr_handle, i);
 			if let Ok(json_str) = api::call_function::<_, String>("luaeval", (lua_code,)) {
-				if let Ok(mut diag) = serde_json::from_str::<Diagnostic>(&json_str) {
+				if let Ok(diag) = serde_json::from_str::<Diagnostic>(&json_str) {
 					let mut interpreted = InterpretedDiagnostic::from(diag);
 
 					// Clamp diagnostic positions to file boundaries
@@ -264,19 +264,22 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 		// Get all diagnostics on the target line, sorted by column
 		let mut diagnostics_on_target_line: Vec<&InterpretedDiagnostic> = interpreted_diagnostics.iter().filter(|d| d.start.0 == target_line).collect();
 		diagnostics_on_target_line.sort_by_key(|d| d.severity);
-		let repr = diagnostics_on_target_line
+		// Build lines with severity info for highlighting
+		let diag_lines: Vec<DiagLine> = diagnostics_on_target_line
 			.iter().enumerate()
-			.map(|(i,d)| format!("{}. {}{}", i+1, d.message, {
-				if let Some(code) = &d.code {
-					format!(" [{code}]")
-				} else {
-					"".to_string()
-				}
-			}
-			))
-			.collect::<Vec<String>>()
-			.join("\n");
-		crate::utils::show_markdown_popup(repr); //TODO: actually finish this. Rn biggest issue is window being in incorrect place
+			.flat_map(|(i, d)| {
+				let prefix = format!("{}. ", i + 1);
+				let prefix_len = prefix.len();
+				let code_suffix = d.code.as_ref().map(|c| format!(" [{c}]")).unwrap_or_default();
+				let header = format!("{}{}{}", prefix, d.message.lines().next().unwrap_or(""), code_suffix);
+				let rest: Vec<DiagLine> = d.message.lines().skip(1)
+					.map(|s| DiagLine { text: s.to_string(), severity: None, prefix_len: 0 })
+					.collect();
+				std::iter::once(DiagLine { text: header, severity: Some(d.severity), prefix_len })
+					.chain(rest)
+			})
+			.collect();
+		show_diagnostic_float(diag_lines);
 
 		// Jump to the target line (first column for now)
 		//Q: can I somehow make use of existing window logic directly, same as what diagnostics_popup does under the hood?
@@ -315,11 +318,6 @@ fn get_buffer_diagnostics(bufnr: nvim_oxi::api::Buffer) -> Vec<nvim_oxi::Diction
 	}
 }
 
-/// Get a typed field from a diagnostic dictionary
-fn get_diagnostic_field<T: TryFrom<Object>>(diag: &nvim_oxi::Dictionary, field: &str) -> Option<T> {
-	diag.get(field).and_then(|obj| T::try_from(obj.clone()).ok())
-}
-
 /// Helper to open diagnostic float with standard options
 fn open_diagnostic_float() {
 	let lua_code = r#"vim.diagnostic.open_float(nil, {{
@@ -331,10 +329,47 @@ fn open_diagnostic_float() {
 		}})"#;
 	let _ = api::call_function::<_, ()>("luaeval", (lua_code,));
 }
-//TODO: integrate through just this
-//fn open_diagnostic_float(message: String) {
-//    crate::utils::show_markdown_popup(message);
-//}
+
+struct DiagLine {
+	text: String,
+	severity: Option<i64>, // Some(severity) for header lines, None for continuation
+	prefix_len: usize,     // Length of "N. " prefix to highlight
+}
+
+/// Show diagnostic lines in a float with severity-colored prefixes, positioned near cursor
+fn show_diagnostic_float(diag_lines: Vec<DiagLine>) {
+	use crate::utils::{LineHighlight, PopupOptions, show_popup_with_options};
+
+	// Build text content
+	let text = diag_lines.iter().map(|dl| dl.text.as_str()).collect::<Vec<_>>().join("\n");
+
+	// Build highlights
+	let highlights: Vec<LineHighlight> = diag_lines
+		.iter()
+		.enumerate()
+		.filter_map(|(line_idx, dl)| {
+			dl.severity.map(|sev| {
+				let hl_group = match sev {
+					1 => "DiagnosticError",
+					2 => "DiagnosticWarn",
+					3 => "DiagnosticInfo",
+					_ => "DiagnosticHint",
+				};
+				LineHighlight {
+					line: line_idx,
+					col_start: 0,
+					col_end: dl.prefix_len,
+					hl_group: hl_group.to_string(),
+				}
+			})
+		})
+		.collect();
+
+	show_popup_with_options(text, PopupOptions {
+		sticky: true,
+		highlights,
+	});
+}
 
 /// Yank the contents of the diagnostic popup to system clipboard
 pub fn yank_diagnostic_popup() {
