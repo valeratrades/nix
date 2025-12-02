@@ -200,26 +200,30 @@
             # cargo, rustcs, etc are brought in by fenix.nix
             rustup
             leptosfmt # fork of rustfmt with support for formatting some leptos-specific macros
-            crate2nix
-            cargo-edit # cargo add command
-            cargo-expand # expand macros
-            cargo-bloat
-            cargo-generate
-            cargo-hack
-            cargo-udeps
-            cargo-outdated
-            cargo-rr
-            cargo-tarpaulin
-            cargo-sort # format Cargo.toml
-            cargo-insta # snapshot tests
-            cargo-mutants # fuzzy finding
-            cargo-update
-            cargo-binstall # doesn't really work on nixos #? but could it work with fhs-compat layer?
-            cargo-machete # detect unused
-            cargo-release # automate release (has annoying req of having to commit _before_ this runs instead of my preffered way of pushing on success of release
-            cargo-watch # auto-rerun `build` or `run` command on changes #XXX: archived
-            cargo-nextest # better tests
-            cargo-limit # brings `lrun` and other `l$command` aliases for cargo, that suppress warnings if any errors are present.
+
+            # cargo plugins
+            [
+              cargo-edit # cargo add command
+              cargo-expand # expand macros
+              cargo-bloat # see size-sorted composition of the binary
+              cargo-generate #DEPRECATE: a thing to set up a new cargo project; but I'm pretty sure my templates are just superior
+              cargo-hack # wrapper around cargo, for more precise control of {features, deps, versions}, to run a command on
+              cargo-udeps #DEPRECATE: unused deps; but I'm using cargo-machete atm
+              cargo-outdated # display when dependencies are out of date. Q: seemes useless, as I'm just using crates.nvim for this
+              cargo-rr # wrapper around rr debugger. Q: should it ever be used over gdb?
+              cargo-tarpaulin # code coverage. Q: is it ever useful?
+              cargo-sort # format Cargo.toml
+              cargo-insta # snapshot tests
+              cargo-mutants # fuzzy finding
+              cargo-update # `cargo add` command
+              cargo-binstall # doesn't really work on nixos #? but could it work with fhs-compat layer?
+              cargo-machete # detect unused
+              cargo-release # automate release (has annoying req of having to commit _before_ this runs instead of my preffered way of pushing on success of release
+              cargo-watch # auto-rerun `build` or `run` command on changes #XXX: archived
+              cargo-nextest # better tests
+              cargo-limit # brings `lrun` and other `l$command` aliases for cargo, that suppress warnings if any errors are present.
+              cargo-unused-features # detect unused feature flags
+            ]
           ]
 
           # C/C++
