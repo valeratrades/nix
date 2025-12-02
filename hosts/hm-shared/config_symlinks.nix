@@ -24,6 +24,7 @@ in
   home.activation = {
     nvim = mkSymlink { target_path_postfix = "nvim"; };
     eww = mkSymlink { target_path_postfix = "eww"; };
+    site = mkSymlink { target_path_postfix = "site.nix"; };
     sway = mkSymlink { target_path_postfix = "sway"; };
     btc_line = mkSymlink { target_path_postfix = "btc_line.toml"; };
     social_networks = mkSymlink { target_path_postfix = "social_networks.toml"; };
