@@ -22,20 +22,7 @@
     # ind files
     ".config/auto_redshift.toml".source =
       "${self}/home/config/auto_redshift.toml";
-    ".config/todo.toml".text = ''
-      [manual_stats]
-      date_format = "%Y-%m-%d"
-
-      [milestones]
-      github_token = { env = "GITHUB_KEY" }
-
-      [todos]
-      path = "~/s/g/todos/"
-      n_tasks_to_show = 3
-
-      [timer]
-      hard_stop_coeff = 1.5
-    '';
+    ".config/todo.toml".source = "${self}/home/config/todo.toml";
     ".gitattributes".text = ''
       *.jpg filter=lfs diff=lfs merge=lfs -text
       *.jpeg filter=lfs diff=lfs merge=lfs -text

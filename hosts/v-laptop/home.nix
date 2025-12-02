@@ -229,7 +229,6 @@ in {
               "cat ${config.sops.secrets.mail_main_pass.path}";
           };
         };
-      ".config/todo.toml".source = "${self}/home/config/todo.toml";
     };
   };
 }
