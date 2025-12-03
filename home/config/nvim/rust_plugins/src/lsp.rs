@@ -350,16 +350,18 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 		if let Some((line, maybe_col)) = nav_to {
 			// getcurpos() returns [bufnum, lnum, col, off, curswant]
 			let curpos: Vec<i64> = api::call_function("getcurpos", ((),)).unwrap_or_default();
-			assert!(curpos.len() == 5, "wtf");
+			let [_bufnr, _lnum, _col, off, curswant] = curpos[..] else { panic!("getcurpos returned {} elements", curpos.len()) };
 			debug_log(format!("{curpos:?}"));
 			let col = match maybe_col {
 				Some(c) => c,
-				None => {
-					curpos[2]
-				}
+				None => curswant,
 			};
+			debug_log(format!("nav_to: line={}, col={}", line, col));
 			// cursor(line, col, off, curswant)
-			let _ = api::call_function::<_, ()>("cursor", (line, col, curpos[3], curpos[4]));
+			let result: Result<i64, _> = api::call_function("cursor", (line, col, off, curswant));
+			debug_log(format!("cursor() result: {:?}", result));
+			let after: i64 = api::call_function("line", (".",)).unwrap_or(-1);
+			debug_log(format!("after cursor(): line={}", after));
 		}
 
 		// if already on correct line
