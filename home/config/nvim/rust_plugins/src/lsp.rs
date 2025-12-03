@@ -232,7 +232,7 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 		// Parse and interpret all diagnostics first
 		let mut interpreted_diagnostics: Vec<InterpretedDiagnostic> = Vec::new();
 		for i in 0..diagnostics.len() {
-			let lua_code = format!("vim.fn.json_encode(vim.diagnostic.get({})[{}])", bufnr_handle, i);
+			let lua_code = format!("vim.fn.json_encode(vim.diagnostic.get({})[{}])", bufnr_handle, i + 1); // Lua is 1-indexed
 			if let Ok(json_str) = api::call_function::<_, String>("luaeval", (lua_code,)) {
 				if let Ok(diag) = serde_json::from_str::<Diagnostic>(&json_str) {
 					let mut interpreted = InterpretedDiagnostic::from(diag);
@@ -286,6 +286,7 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 		}
 
 		// Filter diagnostics based on diagnostics_filter
+		debug_log(format!("diagnostics_filter: {:?}, direction: {:?}", diagnostics_filter, direction));
 		let relevant_diagnostics: Vec<&InterpretedDiagnostic> = match diagnostics_filter {
 			DiagnosticsFilter::Max => {
 				// Find the most severe (minimum) severity present, then include all diagnostics at that level or more severe
@@ -321,7 +322,7 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 						// Get all unique lines with diagnostics
 						use std::collections::HashSet;
 						let mut lines_with_diagnostics: Vec<i64> = relevant_diagnostics.iter().map(|d| d.start.0).collect::<HashSet<_>>().into_iter().collect();
-						debug_log(format!("{:?}, {lines_with_diagnostics:?}", relevant_diagnostics.len()));
+						debug_log(format!("relevant_diagnostics count: {}, lines_with_diagnostics: {:?}", relevant_diagnostics.len(), lines_with_diagnostics));
 						lines_with_diagnostics.sort_unstable();
 						match direction {
 							Direction::Forward => {
@@ -350,15 +351,18 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 		if let Some((line, maybe_col)) = nav_to {
 			// getcurpos() returns [bufnum, lnum, col, off, curswant]
 			let curpos: Vec<i64> = api::call_function("getcurpos", ((),)).unwrap_or_default();
-			let [_bufnr, _lnum, _col, off, curswant] = curpos[..] else { panic!("getcurpos returned {} elements", curpos.len()) };
+			let [bufnr, _lnum, _col, off, curswant] = curpos[..] else { panic!("getcurpos returned {} elements", curpos.len()) };
 			debug_log(format!("{curpos:?}"));
 			let col = match maybe_col {
 				Some(c) => c,
 				None => curswant,
 			};
 			debug_log(format!("nav_to: line={}, col={}", line, col));
-			// cursor(line, col, off, curswant)
-			let result: Result<i64, _> = api::call_function("cursor", (line, col, off, curswant));
+			// cursor(lnum, col) - then restore curswant via setpos
+			let result: Result<i64, _> = api::call_function("cursor", (line, col));
+			// Restore curswant by setting cursor position with full args: setpos('.', [bufnr, lnum, col, off, curswant])
+			let pos = Array::from_iter([bufnr, line, col, off, curswant]);
+			let _: Result<(), _> = api::call_function("setpos", (".", pos));
 			debug_log(format!("cursor() result: {:?}", result));
 			let after: i64 = api::call_function("line", (".",)).unwrap_or(-1);
 			debug_log(format!("after cursor(): line={}", after));
