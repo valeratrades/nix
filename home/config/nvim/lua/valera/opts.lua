@@ -52,6 +52,7 @@ o.titlestring = "nvim: %F"
 
 -- typst.vim
 vim.g.typst_output_to_tmp = true
+vim.g.typst_html = true --DEPRECATE: as soon as they stabilize html support
 
 vim.g.autoformat = true
 o.sessionoptions = { "buffers", "curdir", "tabpages", "winsize", "help", "globals", "skiprtp" }

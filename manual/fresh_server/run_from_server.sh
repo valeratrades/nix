@@ -1,6 +1,7 @@
 # basic necessities
 apt update
-apt install -y build-essential pkg-config libssl-dev nix-bin
+apt install -y build-essential pkg-config libssl-dev nix-bin git-lfs
+git lfs install
 
 # get rust
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
