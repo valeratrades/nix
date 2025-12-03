@@ -67,6 +67,9 @@ in {
 		};
   };
   boot = {
+    #DEPRECATE: when new kernel fixes Mediatek MT7925 bluetooth support (broken in 6.12, works in 6.6) //TODO: check if I can just `nix flake update` and have it just work
+    kernelPackages = pkgs.linuxPackages_6_6; #TEST
+
     tmp.useTmpfs = true;
     loader = {
       systemd-boot.enable = true;

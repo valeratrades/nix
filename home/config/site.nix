@@ -2,6 +2,7 @@
 	mock = true;
 	admin = {
 		users = [
+			"admin"
 			"valeratrades"
 		];
 		creds = {

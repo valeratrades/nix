@@ -90,6 +90,7 @@
           stash = "stash --all";
           hardupdate = ''!git fetch && git reset --hard "origin/$(git rev-parse --abbrev-ref HEAD)"'';
           noedit = "commit -a --amend --no-edit";
+          pl = "!git pull && git lfs pull";
         };
         url."git@gist.github.com:" = { pushInsteadOf = "https://gist.github.com/"; };
         url."git@gitlab.com:" = { pushInsteadOf = "https://gitlab.com/"; };
