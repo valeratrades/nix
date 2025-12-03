@@ -45,7 +45,7 @@ struct Diagnostic {
 }
 
 /// Diagnostic severity levels (lower number = more severe)
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(i64)]
 enum DiagnosticSeverity {
 	Error = 1,
@@ -65,13 +65,13 @@ impl From<i64> for DiagnosticSeverity {
 	}
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct InterpretedDiagnostic {
 	code: Option<String>,
 	message: String,
-	/// NB: (line, col) where line is 1-indexed
+	/// NB: (line, col) where line and col are 1-indexed
 	start: (i64, i64),
-	/// NB: (line, col) where line is 1-indexed
+	/// NB: (line, col) where line and col are 1-indexed
 	end: (i64, i64),
 	severity: DiagnosticSeverity,
 }
@@ -79,12 +79,13 @@ struct InterpretedDiagnostic {
 impl From<Diagnostic> for InterpretedDiagnostic {
 	fn from(diag: Diagnostic) -> Self {
 		// Get LSP range if available, otherwise use lnum/col
+		// Both lines and columns are 0-indexed in LSP, convert to 1-indexed for Vim
 		let (start, end) = if let Some(lsp_range) = diag.user_data.as_ref().and_then(|u| u.lsp.as_ref()).map(|l| &l.range) {
 			// LSP range is 0-indexed, convert to 1-indexed
-			((lsp_range.start.line + 1, lsp_range.start.character), (lsp_range.end.line + 1, lsp_range.end.character))
+			((lsp_range.start.line + 1, lsp_range.start.character + 1), (lsp_range.end.line + 1, lsp_range.end.character + 1))
 		} else {
-			// lnum is 0-indexed, convert to 1-indexed
-			((diag.lnum + 1, diag.col), (diag.end_lnum + 1, diag.end_col))
+			// lnum/col are 0-indexed, convert to 1-indexed
+			((diag.lnum + 1, diag.col + 1), (diag.end_lnum + 1, diag.end_col + 1))
 		};
 
 		InterpretedDiagnostic {
@@ -214,9 +215,14 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 
 		// Parse and interpret all diagnostics first
 		let mut interpreted_diagnostics: Vec<InterpretedDiagnostic> = Vec::new();
+		debug_log("\n=== RAW DIAGNOSTICS (JSON) ===".to_string());
 		for i in 0..diagnostics.len() {
 			let lua_code = format!("vim.fn.json_encode(vim.diagnostic.get({})[{}])", bufnr_handle, i + 1); // Lua is 1-indexed
 			if let Ok(json_str) = api::call_function::<_, String>("luaeval", (lua_code,)) {
+				// Pretty-print the raw JSON
+				if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(&json_str) {
+					debug_log(format!("[{}] {}", i, serde_json::to_string_pretty(&parsed).unwrap_or(json_str.clone())));
+				}
 				if let Ok(diag) = serde_json::from_str::<Diagnostic>(&json_str) {
 					let mut interpreted = InterpretedDiagnostic::from(diag);
 
@@ -241,7 +247,15 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 			}
 		}
 
+		// Deduplicate diagnostics (same severity, code, message, position from different sources)
+		{
+			use std::collections::HashSet;
+			let mut seen: HashSet<InterpretedDiagnostic> = HashSet::new();
+			interpreted_diagnostics.retain(|d| seen.insert(d.clone()));
+		}
+
 		// log diagnostics state
+		debug_log("\n\n\n\n\n\n\n\n\n\n=== INTERPRETED DIAGNOSTICS ===".to_string());
 		{
 			// Group by line (1-indexed now)
 			use std::collections::HashMap;
@@ -290,11 +304,44 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 
 		let nav_to: Option<(i64, Option<i64>)> = match diagnostics_filter {
 			DiagnosticsFilter::SameLine => {
-				//TODO: want to go to the next/prev diagnostic on the same line, unless we (have a diagnostic on exact line AND col) AND (!is_popup_open)
-				let on_exact_diagnostic = interpreted_diagnostics.iter().any(|d| d.start == current_pos);
-				//DO: if on exact diagnostic, return None if !is_popup_open, else continue
-				//DO: based on direction, return the exact line,Some(col) of same error (NB: don't forget about wrapping)
-				todo!()
+				// Get diagnostics on current line only, sorted by column
+				let mut diags_on_line: Vec<&InterpretedDiagnostic> = interpreted_diagnostics
+					.iter()
+					.filter(|d| d.start.0 == current_line)
+					.collect();
+				diags_on_line.sort_by_key(|d| d.start.1);
+
+				if diags_on_line.is_empty() {
+					// No diagnostics on this line
+					None
+				} else {
+					let on_exact_diagnostic = diags_on_line.iter().any(|d| d.start == current_pos);
+					if on_exact_diagnostic && !is_popup_open() {
+						// Already on a diagnostic, no popup open - just show popup
+						None
+					} else {
+						// Find next/prev diagnostic column on this line
+						let cols: Vec<i64> = diags_on_line.iter().map(|d| d.start.1).collect();
+						let target_col = match direction {
+							Direction::Forward => {
+								// Find first col > current_col, or wrap to first
+								cols.iter()
+									.find(|&&c| c > current_col)
+									.copied()
+									.unwrap_or(*cols.first().unwrap())
+							}
+							Direction::Backward => {
+								// Find last col < current_col, or wrap to last
+								cols.iter()
+									.rev()
+									.find(|&&c| c < current_col)
+									.copied()
+									.unwrap_or(*cols.last().unwrap())
+							}
+						};
+						Some((current_line, Some(target_col)))
+					}
+				}
 			},
 			_ => match !is_popup_open() && interpreted_diagnostics.iter().any(|d| d.start.0 == current_line) {
 				true => None,
@@ -354,45 +401,54 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 		// Get the line we're showing diagnostics for (either where we navigated to, or current line)
 		let display_line = nav_to.map(|(line, _)| line).unwrap_or(current_line);
 
+		// Get current position after navigation
+		let display_col: i64 = api::call_function("col", (".",)).unwrap_or(1);
+
 		let diagnostics_to_show: Vec<DiagLine> = {
-			match diagnostics_filter {
+			let diagnostics_to_display: Vec<&InterpretedDiagnostic> = match diagnostics_filter {
 				DiagnosticsFilter::SameLine => {
-					//DEP: Here we should already be at the exact (line,col) of target diagnostic
-					todo!("should be only displaying the diagnostic we're on rn");
-				}
-				_ => {
-					//DEP: Here we should be already on the target line
-					let diagnostics_on_target_line: Vec<&InterpretedDiagnostic> = interpreted_diagnostics.iter().filter(|d| d.start.0 == display_line).collect();
-					//diagnostics_on_target_line.sort_by_key(|d| d.severity); //Q: wait, if needed to sort at all, we should be sorting by col first, and then by severity over it
-					// Build lines with severity info for highlighting
-					diagnostics_on_target_line
+					// Only show diagnostic(s) at exact current position
+					interpreted_diagnostics
 						.iter()
-						.enumerate()
-						.flat_map(|(i, d)| {
-							let prefix = format!("{}. ", i + 1);
-							let prefix_len = prefix.len();
-							let code_suffix = d.code.as_ref().map(|c| format!(" [{c}]")).unwrap_or_default();
-							let header = format!("{}{}{}", prefix, d.message.lines().next().unwrap_or(""), code_suffix);
-							let rest: Vec<DiagLine> = d
-								.message
-								.lines()
-								.skip(1)
-								.map(|s| DiagLine {
-									text: s.to_string(),
-									severity: None,
-									prefix_len: 0,
-								})
-								.collect();
-							std::iter::once(DiagLine {
-								text: header,
-								severity: Some(d.severity),
-								prefix_len,
-							})
-							.chain(rest)
-						})
+						.filter(|d| d.start == (display_line, display_col))
 						.collect()
 				}
-			}
+				_ => {
+					// Show all diagnostics on the target line
+					interpreted_diagnostics
+						.iter()
+						.filter(|d| d.start.0 == display_line)
+						.collect()
+				}
+			};
+
+			// Build lines with severity info for highlighting
+			diagnostics_to_display
+				.iter()
+				.enumerate()
+				.flat_map(|(i, d)| {
+					let prefix = format!("{}. ", i + 1);
+					let prefix_len = prefix.len();
+					let code_suffix = d.code.as_ref().map(|c| format!(" [{c}]")).unwrap_or_default();
+					let header = format!("{}{}{}", prefix, d.message.lines().next().unwrap_or(""), code_suffix);
+					let rest: Vec<DiagLine> = d
+						.message
+						.lines()
+						.skip(1)
+						.map(|s| DiagLine {
+							text: s.to_string(),
+							severity: None,
+							prefix_len: 0,
+						})
+						.collect();
+					std::iter::once(DiagLine {
+						text: header,
+						severity: Some(d.severity),
+						prefix_len,
+					})
+					.chain(rest)
+				})
+				.collect()
 		};
 
 		// Display
