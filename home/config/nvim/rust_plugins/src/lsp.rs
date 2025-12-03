@@ -69,23 +69,20 @@ impl From<i64> for DiagnosticSeverity {
 struct InterpretedDiagnostic {
 	code: Option<String>,
 	message: String,
-	/// NB: (line, col) where line and col are 1-indexed
+	/// (line, col) - 0-indexed
 	start: (i64, i64),
-	/// NB: (line, col) where line and col are 1-indexed
+	/// (line, col) - 0-indexed
 	end: (i64, i64),
 	severity: DiagnosticSeverity,
 }
 
 impl From<Diagnostic> for InterpretedDiagnostic {
 	fn from(diag: Diagnostic) -> Self {
-		// Get LSP range if available, otherwise use lnum/col
-		// Both lines and columns are 0-indexed in LSP, convert to 1-indexed for Vim
+		// LSP and vim.diagnostic both use 0-indexed positions
 		let (start, end) = if let Some(lsp_range) = diag.user_data.as_ref().and_then(|u| u.lsp.as_ref()).map(|l| &l.range) {
-			// LSP range is 0-indexed, convert to 1-indexed
-			((lsp_range.start.line + 1, lsp_range.start.character + 1), (lsp_range.end.line + 1, lsp_range.end.character + 1))
+			((lsp_range.start.line, lsp_range.start.character), (lsp_range.end.line, lsp_range.end.character))
 		} else {
-			// lnum/col are 0-indexed, convert to 1-indexed
-			((diag.lnum + 1, diag.col + 1), (diag.end_lnum + 1, diag.end_col + 1))
+			((diag.lnum, diag.col), (diag.end_lnum, diag.end_col))
 		};
 
 		InterpretedDiagnostic {
@@ -204,14 +201,15 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 
 		debug_log(format!("\n=== DIAGNOSTICS ({} total) ===", diagnostics.len()));
 
-		// Get file line count and last line length
-		let line_count: i64 = api::call_function("line", ("$",)).unwrap_or(1);
+		// Get file line count and last line length (Lua line("$") is 1-indexed, convert to 0-indexed)
+		let line_count_1idx: i64 = api::call_function("line", ("$",)).unwrap_or(1);
+		let last_line_idx = line_count_1idx - 1; // 0-indexed
 		let last_line_col: i64 = {
-			// Get the actual text of the last line and measure its length
-			let lua_code = format!("vim.fn.strlen(vim.fn.getline({line_count}))");
+			// Get the actual text of the last line and measure its length (getline expects 1-indexed)
+			let lua_code = format!("vim.fn.strlen(vim.fn.getline({line_count_1idx}))");
 			api::call_function("luaeval", (lua_code,)).unwrap_or(0)
 		};
-		debug_log(format!("File has {line_count} lines, last line ends at col {last_line_col}"));
+		debug_log(format!("File has {} lines (0-idx: 0..={}), last line ends at col {}", line_count_1idx, last_line_idx, last_line_col));
 
 		// Parse and interpret all diagnostics first
 		let mut interpreted_diagnostics: Vec<InterpretedDiagnostic> = Vec::new();
@@ -226,20 +224,20 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 				if let Ok(diag) = serde_json::from_str::<Diagnostic>(&json_str) {
 					let mut interpreted = InterpretedDiagnostic::from(diag);
 
-					// Clamp diagnostic positions to file boundaries
-					if interpreted.start.0 > line_count {
+					// Clamp diagnostic positions to file boundaries (0-indexed)
+					if interpreted.start.0 > last_line_idx {
 						debug_log(format!(
 							"Clamping diagnostic start from ({}, {}) to ({}, {})",
-							interpreted.start.0, interpreted.start.1, line_count, last_line_col
+							interpreted.start.0, interpreted.start.1, last_line_idx, last_line_col
 						));
-						interpreted.start = (line_count, last_line_col);
+						interpreted.start = (last_line_idx, last_line_col);
 					}
-					if interpreted.end.0 > line_count {
+					if interpreted.end.0 > last_line_idx {
 						debug_log(format!(
 							"Clamping diagnostic end from ({}, {}) to ({}, {})",
-							interpreted.end.0, interpreted.end.1, line_count, last_line_col
+							interpreted.end.0, interpreted.end.1, last_line_idx, last_line_col
 						));
-						interpreted.end = (line_count, last_line_col);
+						interpreted.end = (last_line_idx, last_line_col);
 					}
 
 					interpreted_diagnostics.push(interpreted);
@@ -293,14 +291,15 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 			_ => interpreted_diagnostics.iter().collect(),
 		};
 
-		let current_line: i64 = api::call_function("line", (".",)).unwrap_or(1);
+		// Lua line()/col() are 1-indexed, convert to 0-indexed
+		let current_line: i64 = api::call_function::<_, i64>("line", (".",)).unwrap_or(1) - 1;
+		let current_col: i64 = api::call_function::<_, i64>("col", (".",)).unwrap_or(1) - 1;
+		let current_pos = (current_line, current_col);
 
 		let is_popup_open = || {
 			let popups = crate::remap::get_popups();
 			!popups.is_empty()
 		};
-		let current_col: i64 = api::call_function("col", (".",)).unwrap_or(1);
-		let current_pos = (current_line, current_col);
 
 		let nav_to: Option<(i64, Option<i64>)> = match diagnostics_filter {
 			DiagnosticsFilter::SameLine => {
@@ -379,30 +378,33 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 			}
 		};
 		if let Some((line, maybe_col)) = nav_to {
-			// getcurpos() returns [bufnum, lnum, col, off, curswant]
+			// getcurpos() returns [bufnum, lnum, col, off, curswant] - all 1-indexed
 			let curpos: Vec<i64> = api::call_function("getcurpos", ((),)).unwrap_or_default();
 			let [bufnr, _lnum, _col, off, curswant] = curpos[..] else { panic!("getcurpos returned {} elements", curpos.len()) };
 			debug_log(format!("{curpos:?}"));
+			// nav_to is 0-indexed, curswant is 1-indexed
 			let col = match maybe_col {
-				Some(c) => c,
-				None => curswant,
+				Some(c) => c + 1, // convert 0-indexed to 1-indexed for Lua
+				None => curswant, // already 1-indexed from getcurpos
 			};
-			debug_log(format!("nav_to: line={}, col={}", line, col));
-			// cursor(lnum, col) - then restore curswant via setpos
-			let result: Result<i64, _> = api::call_function("cursor", (line, col));
-			// Restore curswant by setting cursor position with full args: setpos('.', [bufnr, lnum, col, off, curswant])
-			let pos = Array::from_iter([bufnr, line, col, off, curswant]);
+			// Convert line from 0-indexed to 1-indexed for Lua
+			let line_1idx = line + 1;
+			debug_log(format!("nav_to: line={} (0-idx), col={} (1-idx)", line, col));
+			// cursor(lnum, col) expects 1-indexed
+			let result: Result<i64, _> = api::call_function("cursor", (line_1idx, col));
+			// setpos('.', [bufnr, lnum, col, off, curswant]) expects 1-indexed
+			let pos = Array::from_iter([bufnr, line_1idx, col, off, curswant]);
 			let _: Result<(), _> = api::call_function("setpos", (".", pos));
 			debug_log(format!("cursor() result: {:?}", result));
 			let after: i64 = api::call_function("line", (".",)).unwrap_or(-1);
-			debug_log(format!("after cursor(): line={}", after));
+			debug_log(format!("after cursor(): line={} (1-idx)", after));
 		}
 
 		// Get the line we're showing diagnostics for (either where we navigated to, or current line)
 		let display_line = nav_to.map(|(line, _)| line).unwrap_or(current_line);
 
-		// Get current position after navigation
-		let display_col: i64 = api::call_function("col", (".",)).unwrap_or(1);
+		// Get current position after navigation (Lua col() is 1-indexed, convert to 0-indexed)
+		let display_col: i64 = api::call_function::<_, i64>("col", (".",)).unwrap_or(1) - 1;
 
 		let diagnostics_to_show: Vec<DiagLine> = {
 			let diagnostics_to_display: Vec<&InterpretedDiagnostic> = match diagnostics_filter {
