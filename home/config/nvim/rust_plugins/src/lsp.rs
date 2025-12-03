@@ -121,18 +121,36 @@ pub fn echo(text: String, hl_type: Option<String>) {
 
 /// Severity filter for diagnostic navigation
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum SeverityFilter {
+enum DiagnosticsFilter {
 	/// Navigate to any diagnostic
 	All,
 	/// Navigate only to the most severe diagnostics present (errors if any, else warnings, etc.)
 	Max,
+	/// Navigate through all diagnostic levels on the same line as cursor; display only that one
+	SameLine,
 }
-
-impl From<&str> for SeverityFilter {
+impl From<&str> for DiagnosticsFilter {
 	fn from(s: &str) -> Self {
 		match s.to_lowercase().as_str() {
-			"all" => SeverityFilter::All,
-			_ => SeverityFilter::Max,
+			"all" => DiagnosticsFilter::All,
+			"max" => DiagnosticsFilter::Max,
+			"same_line" => DiagnosticsFilter::SameLine,
+			_ => unimplemented!(),
+		}
+	}
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Direction {
+	Backward,
+	Forward,
+}
+impl From<i64> for Direction {
+	fn from(i: i64) -> Self {
+		match i {
+			1 => Direction::Forward,
+			-1 => Direction::Backward,
+			_ => panic!("\"{i}\" for direction is not supported"),
 		}
 	}
 }
@@ -146,12 +164,13 @@ fn debug_log(msg: String) {
 	let log_path: String = api::call_function("expand", (log_path_tilde,)).unwrap_or_else(|_| log_path_tilde.to_string());
 
 	let mut file = OpenOptions::new().create(true).append(true).open(&log_path).unwrap();
-	writeln!(file, "{}", msg).unwrap();
+	writeln!(file, "{msg}").unwrap();
 }
 
 //TODO: impl logic for sideways movement inside the same line with <C-s>/<C-t>
 pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
-	let severity_filter = SeverityFilter::from(request_severity.as_str());
+	let diagnostics_filter = DiagnosticsFilter::from(request_severity.as_str());
+	let direction = Direction::from(direction);
 
 	let _ = std::panic::catch_unwind(|| {
 		// Setup log file - expand ~ and create directory
@@ -172,7 +191,7 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 		// Log cursor position
 		let cursor_line: i64 = api::call_function("line", (".",)).unwrap_or(0);
 		let cursor_col: i64 = api::call_function("col", (".",)).unwrap_or(0);
-		debug_log(format!("Cursor position: line={}, col={}", cursor_line, cursor_col));
+		debug_log(format!("Cursor position: line={cursor_line}, col={cursor_col}"));
 
 		let bufnr = api::get_current_buf();
 		let bufnr_handle = bufnr.handle();
@@ -237,7 +256,7 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 
 			for line_num in lines {
 				let diags_on_line = &by_line[&line_num];
-				debug_log(format!("\n--- Line {} ({} diagnostics) ---", line_num, diags_on_line.len()));
+				debug_log(format!("\n--- Line {line_num} ({} diagnostics) ---", diags_on_line.len()));
 
 				for diag in diags_on_line {
 					debug_log(format!(
@@ -249,19 +268,87 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 			debug_log("-----------------------------------------------------------------".to_string());
 		}
 
-		// if already on correct line
-		let current_line: i64 = api::call_function("line", (".",)).unwrap_or(1); //MOVE: inside the scope, once nothing else needs it
-		{
-			// Get current line (1-indexed)
+		// Filter diagnostics based on diagnostics_filter
+		let relevant_diagnostics: Vec<&InterpretedDiagnostic> = match diagnostics_filter {
+			DiagnosticsFilter::Max => {
+				// Find the most severe (minimum) severity present, then include all diagnostics at that level or more severe
+				let most_severe_present = interpreted_diagnostics.iter().map(|d| d.severity).min().unwrap_or(DiagnosticSeverity::Hint);
+				interpreted_diagnostics.iter().filter(|d| d.severity <= most_severe_present).collect()
+			}
+			_ => interpreted_diagnostics.iter().collect(),
+		};
 
+		let current_line: i64 = api::call_function("line", (".",)).unwrap_or(1);
+
+		let is_popup_open = || {
+			let popups = crate::remap::get_popups();
+			!popups.is_empty()
+		};
+		let current_col: i64 = api::call_function("col", (".",)).unwrap_or(1);
+		let current_pos = (current_line, current_col);
+
+		let nav_to: Option<(i64, Option<i64>)> = match diagnostics_filter {
+			DiagnosticsFilter::SameLine => {
+				//TODO: want to go to the next/prev diagnostic on the same line, unless we (have a diagnostic on exact line AND col) AND (!is_popup_open)
+				let on_exact_diagnostic = interpreted_diagnostics.iter().any(|d| d.start == current_pos);
+				//DO: if on exact diagnostic, return None if !is_popup_open, else continue
+				//DO: based on direction, return the exact line,Some(col) of same error (NB: don't forget about wrapping)
+				todo!()
+			},
+			_ => match !is_popup_open() && interpreted_diagnostics.iter().any(|d| d.start.0 == current_line) {
+				true => None,
+				false => {
+					//Q: does it really make sense to shove the last diagnostic in the file, if outside of the last line, onto the previous? Or should I only make that adj inside the nav_to.is_some()?
+
+					let target_line = {
+						// Get all unique lines with diagnostics
+						use std::collections::HashSet;
+						let mut lines_with_diagnostics: Vec<i64> = relevant_diagnostics.iter().map(|d| d.start.0).collect::<HashSet<_>>().into_iter().collect();
+						debug_log(format!("{:?}, {lines_with_diagnostics:?}", relevant_diagnostics.len()));
+						lines_with_diagnostics.sort_unstable();
+						match direction {
+							Direction::Forward => {
+								// Next: find first line > current_line, or wrap to first
+								lines_with_diagnostics
+									.iter()
+									.find(|&&l| l > current_line)
+									.copied()
+									.unwrap_or(*lines_with_diagnostics.first().unwrap_or(&current_line))
+							}
+							Direction::Backward => {
+								// Prev: find last line < current_line, or wrap to last
+								lines_with_diagnostics
+									.iter()
+									.rev()
+									.find(|&&l| l < current_line)
+									.copied()
+									.unwrap_or(*lines_with_diagnostics.last().unwrap_or(&current_line))
+							}
+						}
+					};
+					Some((target_line, None))
+				}
+			}
+		};
+		if let Some((line, maybe_col)) = nav_to {
+			let col = match maybe_col {
+				Some(c) => c,
+				None => {
+					// getcurpos() returns [bufnum, lnum, col, off, curswant]
+					let curpos: Vec<i64> = api::call_function("getcurpos", ((),)).unwrap_or_default();
+					curpos.get(4).copied().unwrap_or(0)
+				}
+			};
+			// cursor(line, col, off, curswant)
+			let _ = api::call_function::<_, ()>("cursor", (line, col, 0, col));
+		}
+
+		// if already on correct line
+		{
 			// Check if we're casually on a diagnostic line (whlie no popup is open)
 			let on_diagnostic_line = interpreted_diagnostics.iter().any(|d| d.start.0 == current_line);
 			if on_diagnostic_line {
-				let is_popup_open = {
-					let popups = crate::remap::get_popups();
-					!popups.is_empty()
-				};
-				if !is_popup_open {
+				if !is_popup_open() {
 					// we're already on the correct line, but haven't yet shown the diagnostic. So just show it and return.
 					open_diagnostic_float();
 					return;
@@ -269,81 +356,66 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 			}
 		}
 
-		// Filter diagnostics based on severity_filter
-		let nav_diagnostics: Vec<&InterpretedDiagnostic> = match severity_filter {
-			SeverityFilter::All => interpreted_diagnostics.iter().collect(),
-			SeverityFilter::Max => {
-				// Find the most severe (minimum) severity present, then include all diagnostics at that level or more severe
-				let max_severity = interpreted_diagnostics.iter().map(|d| d.severity).min().unwrap_or(DiagnosticSeverity::Hint);
-				interpreted_diagnostics.iter().filter(|d| d.severity <= max_severity).collect()
+		// Get the line we're showing diagnostics for (either where we navigated to, or current line)
+		let display_line = nav_to.map(|(line, _)| line).unwrap_or(current_line);
+
+		let diagnostics_to_show: Vec<DiagLine> = {
+			match diagnostics_filter {
+				DiagnosticsFilter::SameLine => {
+					//DEP: Here we should already be at the exact (line,col) of target diagnostic
+					todo!("should be only displaying the diagnostic we're on rn");
+				}
+				_ => {
+					//DEP: Here we should be already on the target line
+					let diagnostics_on_target_line: Vec<&InterpretedDiagnostic> = interpreted_diagnostics.iter().filter(|d| d.start.0 == display_line).collect();
+					//diagnostics_on_target_line.sort_by_key(|d| d.severity); //Q: wait, if needed to sort at all, we should be sorting by col first, and then by severity over it
+					// Build lines with severity info for highlighting
+					diagnostics_on_target_line
+						.iter()
+						.enumerate()
+						.flat_map(|(i, d)| {
+							let prefix = format!("{}. ", i + 1);
+							let prefix_len = prefix.len();
+							let code_suffix = d.code.as_ref().map(|c| format!(" [{c}]")).unwrap_or_default();
+							let header = format!("{}{}{}", prefix, d.message.lines().next().unwrap_or(""), code_suffix);
+							let rest: Vec<DiagLine> = d
+								.message
+								.lines()
+								.skip(1)
+								.map(|s| DiagLine {
+									text: s.to_string(),
+									severity: None,
+									prefix_len: 0,
+								})
+								.collect();
+							std::iter::once(DiagLine {
+								text: header,
+								severity: Some(d.severity),
+								prefix_len,
+							})
+							.chain(rest)
+						})
+						.collect()
+				}
 			}
 		};
 
-		// Get all unique lines with diagnostics
-		use std::collections::HashSet;
-		let mut lines_with_diagnostics: Vec<i64> = nav_diagnostics.iter().map(|d| d.start.0).collect::<HashSet<_>>().into_iter().collect();
-		debug_log(format!("nav_diagnostics count: {}, lines_with_diagnostics: {:?}", nav_diagnostics.len(), lines_with_diagnostics));
-		lines_with_diagnostics.sort_unstable();
-		//TODO!!!!: should jump to first diagnostic on the line, if coming from above; otherwise last diagnostic of the line
-		let target_line = if direction == 1 {
-			// Next: find first line > current_line, or wrap to first
-			lines_with_diagnostics
-				.iter()
-				.find(|&&l| l > current_line)
-				.copied()
-				.unwrap_or(*lines_with_diagnostics.first().unwrap_or(&current_line))
-		} else {
-			// Prev: find last line < current_line, or wrap to last
-			lines_with_diagnostics
-				.iter()
-				.rev()
-				.find(|&&l| l < current_line)
-				.copied()
-				.unwrap_or(*lines_with_diagnostics.last().unwrap_or(&current_line))
-		};
-
-		//TODO!!!: add functionality to move sideways inside the same line (to navigate into a position where lsp suggestion can be applied. Note that in this case we show the default diagnostics window) 
-
-		// Get all diagnostics on the target line, sorted by column
-		let mut diagnostics_on_target_line: Vec<&InterpretedDiagnostic> = interpreted_diagnostics.iter().filter(|d| d.start.0 == target_line).collect();
-		diagnostics_on_target_line.sort_by_key(|d| d.severity);
-		// Build lines with severity info for highlighting
-		let diag_lines: Vec<DiagLine> = diagnostics_on_target_line
-			.iter().enumerate()
-			.flat_map(|(i, d)| {
-				let prefix = format!("{}. ", i + 1);
-				let prefix_len = prefix.len();
-				let code_suffix = d.code.as_ref().map(|c| format!(" [{c}]")).unwrap_or_default();
-				let header = format!("{}{}{}", prefix, d.message.lines().next().unwrap_or(""), code_suffix);
-				let rest: Vec<DiagLine> = d.message.lines().skip(1)
-					.map(|s| DiagLine { text: s.to_string(), severity: None, prefix_len: 0 })
-					.collect();
-				std::iter::once(DiagLine { text: header, severity: Some(d.severity), prefix_len })
-					.chain(rest)
-			})
-			.collect();
-		// Close any existing popup windows before jumping
-		crate::remap::kill_popups();
-
-		show_diagnostic_float(diag_lines);
-
-		// Jump to the target line (first column for now)
-		//Q: can I somehow make use of existing window logic directly, same as what diagnostics_popup does under the hood?
-		let _ = api::call_function::<_, ()>(
-			"nvim_win_set_cursor",
-			(0, Array::from_iter(vec![Object::from(target_line), Object::from(0i64)])),
-		);
-
-		debug_log(format!(
-			"\n=== OPENING FLOAT ===\nJumped to line {}, {} diagnostics on line",
-			target_line,
-			diagnostics_on_target_line.len()
-		));
-
-		// Defer popup opening after cursor has moved
-		crate::utils::defer_fn(1, || {
-			open_diagnostic_float();
-		});
+		// Display
+		{
+			if nav_to.is_some() {
+				// if None, it's because we are already there but no existing popup, - so nothing to close
+				crate::remap::kill_popups();
+			}
+			debug_log(format!(
+				"\n=== OPENING FLOAT ===\n{} diagnostics to show",
+				diagnostics_to_show.len()
+			));
+			show_diagnostic_float(diagnostics_to_show);
+			// Defer popup opening after cursor has moved
+			crate::utils::defer_fn(1, || {
+				open_diagnostic_float();
+			});
+		}
 		return;
 	});
 }
@@ -384,7 +456,7 @@ struct DiagLine {
 
 /// Show diagnostic lines in a float with severity-colored prefixes, positioned near cursor
 fn show_diagnostic_float(diag_lines: Vec<DiagLine>) {
-	use crate::utils::{LineHighlight, PopupOptions, show_popup_with_options};
+	use crate::utils::{show_popup_with_options, LineHighlight, PopupOptions};
 
 	// Build text content
 	let text = diag_lines.iter().map(|dl| dl.text.as_str()).collect::<Vec<_>>().join("\n");
@@ -411,10 +483,7 @@ fn show_diagnostic_float(diag_lines: Vec<DiagLine>) {
 		})
 		.collect();
 
-	show_popup_with_options(text, PopupOptions {
-		sticky: true,
-		highlights,
-	});
+	show_popup_with_options(text, PopupOptions { sticky: true, highlights });
 }
 
 /// Yank the contents of the diagnostic popup to system clipboard
