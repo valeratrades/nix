@@ -1,9 +1,10 @@
 #!/usr/bin/env sh
 
-# devices are: (1) headphones: Soundcore Life Tune, (2) headphones: Philips SHB3075
+# devices are: (1) headphones: Soundcore Life Tune, (2) headphones: Philips SHB3075, (3) headphones: WH-1000XM4
 devices="""
 E8:EE:CC:36:53:49
 A4:77:58:82:26:43
+80:99:E7:D2:1F:51
 """
 
 for device in $devices; do

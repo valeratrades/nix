@@ -24,6 +24,7 @@ use std::process::{Command, Stdio};
 use std::thread::sleep;
 use std::time::Duration;
 
+//TODO: standardize an env var with ;-separated list of "name-id" for each device
 const DEVICE_NAMES: &[&str] = &["WH-1000XM4"];
 
 #[derive(Parser, Debug)]

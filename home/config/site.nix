@@ -1,3 +1,6 @@
 {
 	mock = true;
+	admins = [
+		"valeratrades"
+	];
 }

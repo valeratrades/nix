@@ -44,6 +44,27 @@ struct Diagnostic {
 	user_data: Option<UserData>,
 }
 
+/// Diagnostic severity levels (lower number = more severe)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(i64)]
+enum DiagnosticSeverity {
+	Error = 1,
+	Warning = 2,
+	Info = 3,
+	Hint = 4,
+}
+
+impl From<i64> for DiagnosticSeverity {
+	fn from(value: i64) -> Self {
+		match value {
+			1 => DiagnosticSeverity::Error,
+			2 => DiagnosticSeverity::Warning,
+			3 => DiagnosticSeverity::Info,
+			_ => DiagnosticSeverity::Hint,
+		}
+	}
+}
+
 #[derive(Debug)]
 struct InterpretedDiagnostic {
 	code: Option<String>,
@@ -52,7 +73,7 @@ struct InterpretedDiagnostic {
 	start: (i64, i64),
 	/// NB: (line, col) where line is 1-indexed
 	end: (i64, i64),
-	severity: i64, // 1=error, 2=warning, 3=info, 4=hint
+	severity: DiagnosticSeverity,
 }
 
 impl From<Diagnostic> for InterpretedDiagnostic {
@@ -71,7 +92,7 @@ impl From<Diagnostic> for InterpretedDiagnostic {
 			message: diag.message,
 			start,
 			end,
-			severity: diag.severity,
+			severity: DiagnosticSeverity::from(diag.severity),
 		}
 	}
 }
@@ -98,9 +119,27 @@ pub fn echo(text: String, hl_type: Option<String>) {
 	let _ = api::call_function::<_, ()>("nvim_echo", (chunks, false, Array::new()));
 }
 
+/// Severity filter for diagnostic navigation
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum SeverityFilter {
+	/// Navigate to any diagnostic
+	All,
+	/// Navigate only to the most severe diagnostics present (errors if any, else warnings, etc.)
+	Max,
+}
+
+impl From<&str> for SeverityFilter {
+	fn from(s: &str) -> Self {
+		match s.to_lowercase().as_str() {
+			"all" => SeverityFilter::All,
+			_ => SeverityFilter::Max,
+		}
+	}
+}
+
 /// Jump to diagnostic in the given direction
 /// direction: 1 for next, -1 for prev
-/// request_severity: "all" to include all severities, otherwise only errors
+/// request_severity: "all" to include all severities, "max" for only most severe
 // Module-level debug logging helper
 fn debug_log(msg: String) {
 	let log_path_tilde = "~/.local/state/nvim/rust_plugins/jump_to_diagnostic.log";
@@ -112,6 +151,8 @@ fn debug_log(msg: String) {
 
 //TODO: impl logic for sideways movement inside the same line with <C-s>/<C-t>
 pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
+	let severity_filter = SeverityFilter::from(request_severity.as_str());
+
 	let _ = std::panic::catch_unwind(|| {
 		// Setup log file - expand ~ and create directory
 		let log_path_tilde = "~/.local/state/nvim/rust_plugins/jump_to_diagnostic.log";
@@ -228,18 +269,20 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 			}
 		}
 
-		// Check if we should navigate exclusively between errors
-		let has_errors = interpreted_diagnostics.iter().any(|d| d.severity == 1);
-		let filter_errors_only = has_errors && request_severity != "all";
-		let nav_diagnostics: Vec<&InterpretedDiagnostic> = if filter_errors_only {
-			interpreted_diagnostics.iter().filter(|d| d.severity == 1).collect()
-		} else {
-			interpreted_diagnostics.iter().collect()
+		// Filter diagnostics based on severity_filter
+		let nav_diagnostics: Vec<&InterpretedDiagnostic> = match severity_filter {
+			SeverityFilter::All => interpreted_diagnostics.iter().collect(),
+			SeverityFilter::Max => {
+				// Find the most severe (minimum) severity present, then include all diagnostics at that level or more severe
+				let max_severity = interpreted_diagnostics.iter().map(|d| d.severity).min().unwrap_or(DiagnosticSeverity::Hint);
+				interpreted_diagnostics.iter().filter(|d| d.severity <= max_severity).collect()
+			}
 		};
 
 		// Get all unique lines with diagnostics
 		use std::collections::HashSet;
 		let mut lines_with_diagnostics: Vec<i64> = nav_diagnostics.iter().map(|d| d.start.0).collect::<HashSet<_>>().into_iter().collect();
+		debug_log(format!("nav_diagnostics count: {}, lines_with_diagnostics: {:?}", nav_diagnostics.len(), lines_with_diagnostics));
 		lines_with_diagnostics.sort_unstable();
 		//TODO!!!!: should jump to first diagnostic on the line, if coming from above; otherwise last diagnostic of the line
 		let target_line = if direction == 1 {
@@ -279,6 +322,9 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 					.chain(rest)
 			})
 			.collect();
+		// Close any existing popup windows before jumping
+		crate::remap::kill_popups();
+
 		show_diagnostic_float(diag_lines);
 
 		// Jump to the target line (first column for now)
@@ -332,8 +378,8 @@ fn open_diagnostic_float() {
 
 struct DiagLine {
 	text: String,
-	severity: Option<i64>, // Some(severity) for header lines, None for continuation
-	prefix_len: usize,     // Length of "N. " prefix to highlight
+	severity: Option<DiagnosticSeverity>, // Some(severity) for header lines, None for continuation
+	prefix_len: usize,                    // Length of "N. " prefix to highlight
 }
 
 /// Show diagnostic lines in a float with severity-colored prefixes, positioned near cursor
@@ -350,10 +396,10 @@ fn show_diagnostic_float(diag_lines: Vec<DiagLine>) {
 		.filter_map(|(line_idx, dl)| {
 			dl.severity.map(|sev| {
 				let hl_group = match sev {
-					1 => "DiagnosticError",
-					2 => "DiagnosticWarn",
-					3 => "DiagnosticInfo",
-					_ => "DiagnosticHint",
+					DiagnosticSeverity::Error => "DiagnosticError",
+					DiagnosticSeverity::Warning => "DiagnosticWarn",
+					DiagnosticSeverity::Info => "DiagnosticInfo",
+					DiagnosticSeverity::Hint => "DiagnosticHint",
 				};
 				LineHighlight {
 					line: line_idx,
