@@ -310,11 +310,8 @@
         org.freedesktop.impl.portal.FileChooser=termfilechooser
       '';
 
-      # Terminal file chooser wrapper script (for nnn backup)
-      ".config/nnn/termfilechooser.sh".source = ../../home/config/nnn/termfilechooser.sh;
-
       # xdg-desktop-portal-termfilechooser wrapper script
-      ".config/xdg-desktop-portal-termfilechooser/termfilechooser.sh".source = ../../home/config/nnn/termfilechooser.sh;
+      ".config/xdg-desktop-portal-termfilechooser/termfilechooser.sh".source = ../../home/config/filechooser/termfilechooser.sh;
 
       # xdg-desktop-portal-termfilechooser config
       ".config/xdg-desktop-portal-termfilechooser/config".text = ''

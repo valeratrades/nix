@@ -69,7 +69,7 @@
           l = "branch --list";
           unstage = "reset HEAD --";
           last = "log -1 HEAD";
-          a = "add";
+          a = "add .";
           aa = "add -A";
           au = "remote add upstream";
           ao = "remote add origin";

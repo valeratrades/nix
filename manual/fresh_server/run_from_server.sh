@@ -1,6 +1,6 @@
 # basic necessities
 apt update
-apt install -y build-essential pkg-config libssl-dev nix-bin git-lfs
+apt install -y build-essential pkg-config libssl-dev nix-bin git-lfs clickhouse-client clickhouse-server
 git lfs install
 
 # get rust
