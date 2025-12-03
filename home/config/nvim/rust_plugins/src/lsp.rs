@@ -193,6 +193,23 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 		let cursor_col: i64 = api::call_function("col", (".",)).unwrap_or(0);
 		debug_log(format!("Cursor position: line={cursor_line}, col={cursor_col}"));
 
+		//dbg: test cursor() function
+		//{
+		//	let curpos: Vec<i64> = api::call_function("getcurpos", ((),)).unwrap_or_default();
+		//	debug_log(format!("getcurpos: {:?}", curpos));
+		//	// getcurpos returns [bufnum, lnum, col, off, curswant]
+		//	let bufnr = curpos.get(0).copied().unwrap_or(-1);
+		//	debug_log(format!("bufnr from getcurpos: {}", bufnr));
+		//
+		//	// Try to move cursor to line 2
+		//	let result: Result<i64, _> = api::call_function("cursor", (2, 1));
+		//	debug_log(format!("cursor(2, 1) result: {:?}", result));
+		//
+		//	let new_line: i64 = api::call_function("line", (".",)).unwrap_or(0);
+		//	debug_log(format!("After cursor(): line={}", new_line));
+		//	return;
+		//}
+
 		let bufnr = api::get_current_buf();
 		let bufnr_handle = bufnr.handle();
 		let diagnostics = get_buffer_diagnostics(bufnr);
@@ -331,16 +348,18 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 			}
 		};
 		if let Some((line, maybe_col)) = nav_to {
+			// getcurpos() returns [bufnum, lnum, col, off, curswant]
+			let curpos: Vec<i64> = api::call_function("getcurpos", ((),)).unwrap_or_default();
+			assert!(curpos.len() == 5, "wtf");
+			debug_log(format!("{curpos:?}"));
 			let col = match maybe_col {
 				Some(c) => c,
 				None => {
-					// getcurpos() returns [bufnum, lnum, col, off, curswant]
-					let curpos: Vec<i64> = api::call_function("getcurpos", ((),)).unwrap_or_default();
-					curpos.get(4).copied().unwrap_or(0)
+					curpos[2]
 				}
 			};
 			// cursor(line, col, off, curswant)
-			let _ = api::call_function::<_, ()>("cursor", (line, col, 0, col));
+			let _ = api::call_function::<_, ()>("cursor", (line, col, curpos[3], curpos[4]));
 		}
 
 		// if already on correct line
