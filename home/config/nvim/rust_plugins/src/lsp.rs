@@ -193,23 +193,6 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 		let cursor_col: i64 = api::call_function("col", (".",)).unwrap_or(0);
 		debug_log(format!("Cursor position: line={cursor_line}, col={cursor_col}"));
 
-		//dbg: test cursor() function
-		//{
-		//	let curpos: Vec<i64> = api::call_function("getcurpos", ((),)).unwrap_or_default();
-		//	debug_log(format!("getcurpos: {:?}", curpos));
-		//	// getcurpos returns [bufnum, lnum, col, off, curswant]
-		//	let bufnr = curpos.get(0).copied().unwrap_or(-1);
-		//	debug_log(format!("bufnr from getcurpos: {}", bufnr));
-		//
-		//	// Try to move cursor to line 2
-		//	let result: Result<i64, _> = api::call_function("cursor", (2, 1));
-		//	debug_log(format!("cursor(2, 1) result: {:?}", result));
-		//
-		//	let new_line: i64 = api::call_function("line", (".",)).unwrap_or(0);
-		//	debug_log(format!("After cursor(): line={}", new_line));
-		//	return;
-		//}
-
 		let bufnr = api::get_current_buf();
 		let bufnr_handle = bufnr.handle();
 		let diagnostics = get_buffer_diagnostics(bufnr);
@@ -368,19 +351,6 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 			debug_log(format!("after cursor(): line={}", after));
 		}
 
-		// if already on correct line
-		{
-			// Check if we're casually on a diagnostic line (whlie no popup is open)
-			let on_diagnostic_line = interpreted_diagnostics.iter().any(|d| d.start.0 == current_line);
-			if on_diagnostic_line {
-				if !is_popup_open() {
-					// we're already on the correct line, but haven't yet shown the diagnostic. So just show it and return.
-					open_diagnostic_float();
-					return;
-				}
-			}
-		}
-
 		// Get the line we're showing diagnostics for (either where we navigated to, or current line)
 		let display_line = nav_to.map(|(line, _)| line).unwrap_or(current_line);
 
@@ -436,10 +406,6 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 				diagnostics_to_show.len()
 			));
 			show_diagnostic_float(diagnostics_to_show);
-			// Defer popup opening after cursor has moved
-			crate::utils::defer_fn(1, || {
-				open_diagnostic_float();
-			});
 		}
 		return;
 	});
@@ -459,18 +425,6 @@ fn get_buffer_diagnostics(bufnr: nvim_oxi::api::Buffer) -> Vec<nvim_oxi::Diction
 			vec![]
 		}
 	}
-}
-
-/// Helper to open diagnostic float with standard options
-fn open_diagnostic_float() {
-	let lua_code = r#"vim.diagnostic.open_float(nil, {{
-			focusable = true,
-			header = "",
-			format = function(diagnostic)
-				return vim.split(diagnostic.message, "\n")[1]
-			end
-		}})"#;
-	let _ = api::call_function::<_, ()>("luaeval", (lua_code,));
 }
 
 struct DiagLine {
