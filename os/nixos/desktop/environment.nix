@@ -7,11 +7,6 @@
     WINEPREFIX = "/home/${user.username}/.wine";
   };
 
-  #TEST: Workaround for NVIDIA/WiFi blocking hibernation - use platform hibernation mode
-  systemd.services.systemd-hibernate.serviceConfig = {
-    ExecStartPre = "${pkgs.coreutils}/bin/echo platform > /sys/power/disk";
-  };
-
   powerManagement = {
     powerUpCommands = "systemctl --user restart wlr-gamma\nsystemctl --user restart auto_redshift\n";
   };
