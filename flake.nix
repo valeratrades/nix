@@ -56,6 +56,8 @@
 
     sops-nix.url = "github:Mic92/sops-nix";
 
+    nixos-hardware.url = "github:NixOS/nixos-hardware/master";
+
     # -----------------------------------------------------------------
     # My packages
     # ----------------------------------------------------------------

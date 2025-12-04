@@ -34,7 +34,7 @@ in {
   };
 
   imports = [
-		"${builtins.fetchGit { url = "https://github.com/NixOS/nixos-hardware.git"; }}/lenovo/legion/16ach6h/hybrid"
+		inputs.nixos-hardware.nixosModules.lenovo-legion-16ach6h-hybrid
     (mylib.relativeToRoot "home/config/fish/default.nix")
     ./shared
     ./shared-services.nix
@@ -67,8 +67,7 @@ in {
 		};
   };
   boot = {
-    #DEPRECATE: when new kernel fixes Mediatek MT7925 bluetooth support (broken in 6.12, works in 6.6) //TODO: check if I can just `nix flake update` and have it just work
-    kernelPackages = pkgs.linuxPackages_6_6; #TEST
+    kernelPackages = pkgs.linuxPackages_6_12_59; #XXX: if not specified, something's overrriding it to 6.6. Why? Could it be the preset for lenovo legion 16ach6h hybrid?
 
     tmp.useTmpfs = true;
     loader = {
