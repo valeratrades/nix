@@ -140,14 +140,14 @@ impl From<&str> for DiagnosticsFilter {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Direction {
-	Backward,
+	Reverse,
 	Forward,
 }
 impl From<i64> for Direction {
 	fn from(i: i64) -> Self {
 		match i {
 			1 => Direction::Forward,
-			-1 => Direction::Backward,
+			-1 => Direction::Reverse,
 			_ => panic!("\"{i}\" for direction is not supported"),
 		}
 	}
@@ -316,11 +316,15 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 				} else {
 					let on_exact_diagnostic = diags_on_line.iter().any(|d| d.start == current_pos);
 					if on_exact_diagnostic && !is_popup_open() {
-						// Already on a diagnostic, no popup open - just show popup
+						// Already on a diagnostic, no popup open - just show popup at current position
 						None
 					} else {
 						// Find next/prev diagnostic column on this line
-						let cols: Vec<i64> = diags_on_line.iter().map(|d| d.start.1).collect();
+						// Use unique columns only for navigation
+						let cols: Vec<i64> = {
+							use std::collections::BTreeSet;
+							diags_on_line.iter().map(|d| d.start.1).collect::<BTreeSet<_>>().into_iter().collect()
+						};
 						let target_col = match direction {
 							Direction::Forward => {
 								// Find first col > current_col, or wrap to first
@@ -329,7 +333,7 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 									.copied()
 									.unwrap_or(*cols.first().unwrap())
 							}
-							Direction::Backward => {
+							Direction::Reverse => {
 								// Find last col < current_col, or wrap to last
 								cols.iter()
 									.rev()
@@ -362,7 +366,7 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 									.copied()
 									.unwrap_or(*lines_with_diagnostics.first().unwrap_or(&current_line))
 							}
-							Direction::Backward => {
+							Direction::Reverse => {
 								// Prev: find last line < current_line, or wrap to last
 								lines_with_diagnostics
 									.iter()
@@ -395,6 +399,8 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 			// setpos('.', [bufnr, lnum, col, off, curswant]) expects 1-indexed
 			let pos = Array::from_iter([bufnr, line_1idx, col, off, curswant]);
 			let _: Result<(), _> = api::call_function("setpos", (".", pos));
+			// Force redraw so cursor position is updated before popup positioning
+			let _: Result<(), _> = api::command("redraw");
 			debug_log(format!("cursor() result: {:?}", result));
 			let after: i64 = api::call_function("line", (".",)).unwrap_or(-1);
 			debug_log(format!("after cursor(): line={} (1-idx)", after));
@@ -407,7 +413,7 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 		let display_col: i64 = api::call_function::<_, i64>("col", (".",)).unwrap_or(1) - 1;
 
 		let diagnostics_to_show: Vec<DiagLine> = {
-			let diagnostics_to_display: Vec<&InterpretedDiagnostic> = match diagnostics_filter {
+			let mut diagnostics_to_display: Vec<&InterpretedDiagnostic> = match diagnostics_filter {
 				DiagnosticsFilter::SameLine => {
 					// Only show diagnostic(s) at exact current position
 					interpreted_diagnostics
@@ -423,6 +429,8 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 						.collect()
 				}
 			};
+			// Sort by severity (Error=1 first, then Warning=2, Info=3, Hint=4)
+			diagnostics_to_display.sort_by_key(|d| d.severity);
 
 			// Build lines with severity info for highlighting
 			diagnostics_to_display
