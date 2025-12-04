@@ -1,22 +1,5 @@
-#!/usr/bin/env nix
+#!/home/v/nix/home/scripts/nix-run-cached-wtype
 ---cargo
-#! nix shell --impure --expr ``
-#! nix let rust_flake = builtins.getFlake ''github:oxalica/rust-overlay'';
-#! nix     nixpkgs_flake = builtins.getFlake ''nixpkgs'';
-#! nix     pkgs = import nixpkgs_flake {
-#! nix       system = builtins.currentSystem;
-#! nix       overlays = [rust_flake.overlays.default];
-#! nix     };
-#! nix     toolchain = pkgs.rust-bin.nightly."2025-10-10".default.override {
-#! nix       extensions = ["rust-src"];
-#! nix     };
-#! nix
-#! nix in pkgs.symlinkJoin {
-#! nix   name = "env";
-#! nix   paths = [ toolchain pkgs.wtype ];
-#! nix }
-#! nix ``
-#! nix --command sh -c ``cargo -Zscript -q "$0" "$@"``
 
 [dependencies]
 arboard = "3.6.1"

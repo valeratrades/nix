@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Wrapper for cargo -Zscript with nix + wtype, tries --offline first
+# Usage: nix-run-cached-wtype <script.rs> [args...]
+
+SCRIPT="$1"
+shift
+
+NIX_EXPR='let rust_flake = builtins.getFlake "github:oxalica/rust-overlay"; nixpkgs_flake = builtins.getFlake "nixpkgs"; pkgs = import nixpkgs_flake { system = builtins.currentSystem; overlays = [rust_flake.overlays.default]; }; toolchain = pkgs.rust-bin.nightly."2025-10-10".default.override { extensions = ["rust-src"]; }; in pkgs.symlinkJoin { name = "env"; paths = [ toolchain pkgs.wtype ]; }'
+
+if nix shell --offline --impure --expr "$NIX_EXPR" --command cargo -Zscript -q "$SCRIPT" "$@" 2>/dev/null; then
+  exit 0
+fi
+
+notify-send "nix cache miss, fetching..." -t 3000 2>/dev/null &
+exec nix shell --impure --expr "$NIX_EXPR" --command cargo -Zscript -q "$SCRIPT" "$@"

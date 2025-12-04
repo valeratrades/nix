@@ -19,6 +19,7 @@ alias bluetooth="$fish_scripts_pdir/bluetooth.rs"
 
 alias choose_port="$fish_scripts_pdir/choose_port.sh"
 
+#DEPRECATE: recently switched everything to use a helper call one-liner, so won't need this anymore. Q: could I repurpose this to run over ~/s dir, checking if all the ones that do have a set version, have the same one?
 function check_nightly_versions
     set -l script_dir (dirname (status --current-filename))
     set -l nightly_versions
