@@ -1,6 +1,7 @@
 source (dirname (status --current-filename))/cargo.fish
 source (dirname (status --current-filename))/git.fish
 source (dirname (status --current-filename))/nix/mod.fish
+source (dirname (status --current-filename))/music.fish
 source (dirname (status --current-filename))/go.fish
 source (dirname (status --current-filename))/nvim.fish
 source (dirname (status --current-filename))/ssh.fish

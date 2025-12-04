@@ -67,11 +67,20 @@ in {
 		};
   };
   boot = {
-    kernelPackages = pkgs.linuxPackages_6_12_59; #XXX: if not specified, something's overrriding it to 6.6. Why? Could it be the preset for lenovo legion 16ach6h hybrid?
+    kernelPackages = pkgs.linuxPackages_6_12; # 6.12.x series (currently 6.12.59)
 
     tmp.useTmpfs = true;
     loader = {
-      systemd-boot.enable = true;
+      systemd-boot = {
+        enable = true;
+        # Keep gen 34 visible in boot menu (working network adapter)
+        extraEntries."gen34-safe.conf" = ''
+          title NixOS Gen34 (safe - working network)
+          linux /nix/store/gmidh9crlkzz7fpg1apqg2lw6qznf5dx-nixos-system-v-laptop-26.05.20251127.2fad6ea/kernel
+          initrd /nix/store/gmidh9crlkzz7fpg1apqg2lw6qznf5dx-nixos-system-v-laptop-26.05.20251127.2fad6ea/initrd
+          options init=/nix/store/gmidh9crlkzz7fpg1apqg2lw6qznf5dx-nixos-system-v-laptop-26.05.20251127.2fad6ea/init
+        '';
+      };
       # Windows bootloader at /boot/EFI/Microsoft/Boot/bootmgfw.efi is auto-detected
       # Backup copy also on nvme1n1p4 in case Windows nukes this one
       timeout = 0; # spam `Space` or `Shift` to bring the menu up when needed

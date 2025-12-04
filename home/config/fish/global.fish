@@ -55,10 +55,6 @@ function spy
     sudo python $argv
 end
 
-function pp
-    pip $argv --break-system-packages
-end
-
 function pu
     $HOME/s/help_scripts/pip_upload.sh
 end
