@@ -3,12 +3,27 @@ use nvim_oxi::String as NvimString;
 use crate::shorthands::{infer_comment_string, f, ft};
 use crate::utils::defer_fn;
 
+/// Temporarily disable copilot and set up an autocmd to re-enable it on InsertLeave
+fn disable_copilot_temporarily() {
+    let _ = api::set_var("b:copilot_enabled", false);
+
+    // Create a one-shot autocmd to re-enable copilot when leaving insert mode
+    let lua_code = r#"
+        vim.api.nvim_create_autocmd('InsertLeave', {
+            once = true,
+            callback = function()
+                vim.b.copilot_enabled = true
+            end,
+        })
+    "#;
+    let _ = api::call_function::<_, ()>("luaeval", (lua_code,));
+}
+
 /// Add foldmarker comment block around selection
 pub fn foldmarker_comment_block(nesting_level: i64) {
     let cs_str = infer_comment_string();
 
-    // Disable copilot
-    let _ = api::set_var("b:copilot_enabled", false);
+    disable_copilot_temporarily();
 
     // Original Lua: F('o' .. cs .. ',}}}' .. nesting_level)
     f(format!("o{},}}}}}}{}", cs_str, nesting_level), None);
@@ -112,8 +127,7 @@ pub fn debug_comment(action: &str) {
 
 /// Add TODO comment with given number of exclamation marks
 pub fn add_todo_comment(n: i64) {
-    // Disable copilot
-    let _ = api::set_var("b:copilot_enabled", false);
+    disable_copilot_temporarily();
 
     let cs_str = infer_comment_string();
     let exclamations: String = std::iter::repeat('!').take(n as usize).collect();
@@ -157,10 +171,9 @@ pub fn toggle_comments_visibility() {
 }
 
 /// Comment extra reimplementation
-/// Disables copilot and inserts the given leader followed by comment string
+/// Disables copilot temporarily and inserts the given leader followed by comment string
 pub fn comment_extra_reimplementation(insert_leader: String) {
-    // Disable copilot
-    let _ = api::set_var("b:copilot_enabled", false);
+    disable_copilot_temporarily();
 
     // Feed the insert leader
     f(insert_leader, None);
