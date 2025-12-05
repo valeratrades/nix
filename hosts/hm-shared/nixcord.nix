@@ -54,7 +54,7 @@ in
 {
   programs.nixcord = {
     enable = true; # also installs discord package
-    discord.enable = true;
+    discord.enable = false; # when Vesktop is available, it's strictly preferable
     vesktop.enable = true;
     discord.openASAR.enable = true;
 
