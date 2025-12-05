@@ -62,8 +62,7 @@ exec wlr-gamma-service
 #exec ~/.config/sway/eww_open.sh
 exec pipewire-pulse
 exec wireplumber
-exec ringboard-server
-exec ringboard-wayland
+exec ringboard-server && sleep 0.5 && ringboard-wayland
 bindsym $mod+g exec ringboard-egui
 bindsym $mod+Shift+g exec ringboard wipe
 #
