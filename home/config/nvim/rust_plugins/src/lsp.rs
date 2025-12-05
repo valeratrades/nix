@@ -429,8 +429,8 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 						.collect()
 				}
 			};
-			// Sort by severity (Error=1 first, then Warning=2, Info=3, Hint=4)
-			diagnostics_to_display.sort_by_key(|d| d.severity);
+			// Sort by severity first, then by column within each severity level
+			diagnostics_to_display.sort_by_key(|d| (d.severity, d.start.1));
 
 			// Build lines with severity info for highlighting
 			diagnostics_to_display
