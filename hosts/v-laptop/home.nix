@@ -81,6 +81,12 @@ in {
 		#	PasswordAuthentication = yes
 		#'';
 		matchBlocks = {
+			"*.ts.net" = {
+				extraOptions = {
+					StrictHostKeyChecking = "no";
+					UserKnownHostsFile = "/dev/null";
+				};
+			};
 			"github.com" = {
 				hostname = "github.com";
 				user = "git";
