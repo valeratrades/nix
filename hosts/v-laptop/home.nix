@@ -81,6 +81,8 @@ in {
 		#	PasswordAuthentication = yes
 		#'';
 		matchBlocks = {
+      # password of connected hosts:
+      # p-laptop: `Mija1234!`, - can just `ssh p@p-laptop.taila74a7d.ts.net` if tailscale's ssh is misbehaving
 			"*.ts.net" = {
 				extraOptions = {
 					StrictHostKeyChecking = "no";
