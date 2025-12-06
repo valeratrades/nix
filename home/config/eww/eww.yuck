@@ -120,7 +120,7 @@
 (defpoll time_poll :interval "1s" "date +\"%Y/%m/%d%a%H:%M:%S\"")
 (defwidget time [] "${time_poll}")
 
-(defpoll bluetooth_connection :interval "2s" "./modules/bluetooth.sh")
+(defpoll bluetooth_connection :interval "2s" "~/nix/home/scripts/bluetooth.rs is-connected")
 (defwidget bluetooth []
 	(box
 		:visible {bluetooth_connection != ""}

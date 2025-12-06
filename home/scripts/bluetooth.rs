@@ -10,8 +10,14 @@ use std::process::{Command, Stdio};
 use std::thread::sleep;
 use std::time::Duration;
 
-//TODO: standardize an env var with ;-separated list of "name-id" for each device
-const DEVICE_NAMES: &[&str] = &["WH-1000XM4"];
+/// Known devices: (name, Option<mac_address>)
+/// If mac is None, we search by name in paired devices
+const KNOWN_DEVICES: &[(&str, Option<&str>)] = &[
+    ("Soundcore Life Tune", Some("E8:EE:CC:36:53:49")),
+    ("Philips SHB3075", Some("A4:77:58:82:26:43")),
+    ("WH-1000XM4", Some("80:99:E7:D2:1F:51")),
+    ("WH-CH520", None),
+];
 
 #[derive(Parser, Debug)]
 #[command(name = "bluetooth")]
@@ -27,6 +33,8 @@ enum Commands {
     Headphones,
     /// Turn off Bluetooth
     Off,
+    /// Check if any known device is connected and print battery percentage
+    IsConnected,
 }
 
 fn bluetooth_powered() -> bool {
@@ -93,6 +101,63 @@ fn connect_device(mac: &str) -> bool {
     status.success()
 }
 
+fn get_device_info(mac: &str) -> Option<String> {
+    let output = Command::new("bluetoothctl")
+        .args(["info", mac])
+        .output()
+        .ok()?;
+    Some(String::from_utf8_lossy(&output.stdout).to_string())
+}
+
+fn is_device_connected(mac: &str) -> bool {
+    get_device_info(mac)
+        .map(|info| info.contains("Connected: yes"))
+        .unwrap_or(false)
+}
+
+fn get_battery_percentage(mac: &str) -> Option<u8> {
+    let info = get_device_info(mac)?;
+    for line in info.lines() {
+        if line.contains("Battery Percentage") {
+            // Format: "	Battery Percentage: 0x55 (85)"
+            if let Some(start) = line.find('(') {
+                if let Some(end) = line.find(')') {
+                    return line[start + 1..end].parse().ok();
+                }
+            }
+        }
+    }
+    None
+}
+
+fn resolve_mac(name: &str, known_mac: Option<&str>) -> Option<String> {
+    if let Some(mac) = known_mac {
+        return Some(mac.to_string());
+    }
+    // Search in paired devices by name
+    let paired = get_paired_devices();
+    for (mac, device_name) in paired {
+        if device_name.to_lowercase().contains(&name.to_lowercase()) {
+            return Some(mac);
+        }
+    }
+    None
+}
+
+fn cmd_is_connected() -> Result<(), String> {
+    for (name, known_mac) in KNOWN_DEVICES {
+        if let Some(mac) = resolve_mac(name, *known_mac) {
+            if is_device_connected(&mac) {
+                if let Some(battery) = get_battery_percentage(&mac) {
+                    println!("{}", battery);
+                }
+                return Ok(());
+            }
+        }
+    }
+    Ok(())
+}
+
 fn cmd_headphones() -> Result<(), String> {
     // Ensure Bluetooth is powered on
     if !bluetooth_powered() {
@@ -104,16 +169,26 @@ fn cmd_headphones() -> Result<(), String> {
     // Get list of paired devices
     let all_devices = get_paired_devices();
 
-    // Try to connect to each device by name
-    for pattern in DEVICE_NAMES {
-        for (mac, name) in &all_devices {
-            if name.to_lowercase().contains(&pattern.to_lowercase()) {
-                println!("Found {} ({}), attempting to connect...", name, mac);
-                if connect_device(mac) {
-                    println!("Successfully connected to {}", name);
-                    return Ok(());
-                } else {
-                    println!("Failed to connect to {}", name);
+    // Try to connect to each known device
+    for (name, known_mac) in KNOWN_DEVICES {
+        if let Some(mac) = known_mac {
+            // Direct MAC address known
+            println!("Trying {} ({})...", name, mac);
+            if connect_device(mac) {
+                println!("Successfully connected to {}", name);
+                return Ok(());
+            }
+        } else {
+            // Search by name
+            for (mac, device_name) in &all_devices {
+                if device_name.to_lowercase().contains(&name.to_lowercase()) {
+                    println!("Found {} ({}), attempting to connect...", device_name, mac);
+                    if connect_device(mac) {
+                        println!("Successfully connected to {}", device_name);
+                        return Ok(());
+                    } else {
+                        println!("Failed to connect to {}", device_name);
+                    }
                 }
             }
         }
@@ -127,7 +202,8 @@ fn cmd_headphones() -> Result<(), String> {
         return Err("No paired devices".to_string());
     }
 
-    eprintln!("Could not find any of: {:?}", DEVICE_NAMES);
+    let known_names: Vec<_> = KNOWN_DEVICES.iter().map(|(n, _)| *n).collect();
+    eprintln!("Could not connect to any of: {:?}", known_names);
     eprintln!("Available paired devices:");
     for (mac, name) in &all_devices {
         eprintln!("  {mac} - {name}");
@@ -168,6 +244,7 @@ fn main() {
     let result = match args.command {
         Commands::Headphones => cmd_headphones(),
         Commands::Off => cmd_off(),
+        Commands::IsConnected => cmd_is_connected(),
     };
 
     if let Err(e) = result {

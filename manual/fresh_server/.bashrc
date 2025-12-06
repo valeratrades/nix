@@ -1,6 +1,21 @@
 #!/bin/bash
 
+# If not running interactively, don't do anything
+[ -z "$PS1" ] && return
+
+# =====================================================================================================
+# History settings
+# =====================================================================================================
+export HISTSIZE=100000
+export HISTCONTROL=ignoredups:ignorespace
+shopt -s histappend 2>/dev/null || true
+
+# Check window size after each command
+shopt -s checkwinsize 2>/dev/null || true
+
+# =====================================================================================================
 # Prompt: shows directory, exit code, and $ in green if success, red if failure
+# =====================================================================================================
 __prompt_command() {
 	local exit=$?
 	if [ $exit -eq 0 ]; then
@@ -11,25 +26,33 @@ __prompt_command() {
 }
 PROMPT_COMMAND=__prompt_command
 
-# History settings
-export HISTSIZE=1000
-export HISTFILESIZE=2000
-export HISTCONTROL=ignoredups:ignorespace
+# =====================================================================================================
+# Color support
+# =====================================================================================================
+if [ -x /usr/bin/dircolors ]; then
+	test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
+	alias grep='grep --color=auto'
+	alias fgrep='fgrep --color=auto'
+	alias egrep='egrep --color=auto'
+fi
 
-mkcd() {
-	mkdir -p "$1" && cd "$1" || return
-}
+# make less more friendly for non-text input files, see lesspipe(1)
+[ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
 
+# =====================================================================================================
 # ls variants
+# =====================================================================================================
 alias ls='ls --color=auto -A'
 alias l='ls -l'
 alias la='ls -lA'
 alias ll='ls -lh'
 alias lt='ls -lht'  # sort by time
 alias lS='ls -lhS'  # sort by size
-alias sl='ls -lA' # plug for a muscle memory I have, from having a more powerful thingie for this I use all the time in my main setup
+alias sl='ls' # plug for a muscle memory I have, from having a more powerful thingie for this I use all the time in my main setup
 
+# =====================================================================================================
 # Common shortcuts
+# =====================================================================================================
 alias cc='cd; clear'
 
 # Quick editing
@@ -37,28 +60,34 @@ alias e='vim'
 
 alias sr='source ~/.bashrc'
 
+# =====================================================================================================
 # Process management
+# =====================================================================================================
 alias psg='ps aux | grep -v grep | grep -i -e VSZ -e'
 alias k='kill'
 alias k9='kill -9'
 
-# append to hist file, don't overwrite
-shopt -s histappend 2>/dev/null || true
-# Check window size after each command
-shopt -s checkwinsize 2>/dev/null || true
-
-
+# =====================================================================================================
 # Disk usage
+# =====================================================================================================
 alias df='df -h'
 alias du='du -h'
 alias dud='du -d 1 -h'
 alias duf='du -sh *'
 
+# =====================================================================================================
 # Networking
+# =====================================================================================================
 alias ports='netstat -tulanp'
 alias myip='ip addr show'
 
+# =====================================================================================================
 # Utility functions
+# =====================================================================================================
+mkcd() {
+	mkdir -p "$1" && cd "$1" || return
+}
+
 extract() {
 	if [ -f "$1" ]; then
 		case "$1" in
@@ -79,9 +108,8 @@ extract() {
 }
 
 # =====================================================================================================
-# larger functions
+# Larger functions
 # =====================================================================================================
-
 make_it_pass() {
 	simulate_challenge_passing() {
 		source "${LIBSH}/libeval.sh"
@@ -110,3 +138,12 @@ make_it_pass() {
 	simulate_challenge_passing "${challenge}" "${n_count}"
 }
 alias h=make_it_pass # h for "hack"
+
+# =====================================================================================================
+# External tools (conditional)
+# =====================================================================================================
+[ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
+command -v direnv >/dev/null 2>&1 && eval "$(direnv hook bash)"
+
+# Load custom aliases if present
+[ -f ~/.bash_aliases ] && . ~/.bash_aliases
