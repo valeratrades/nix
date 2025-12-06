@@ -148,8 +148,9 @@ fn cmd_is_connected() -> Result<(), String> {
     for (name, known_mac) in KNOWN_DEVICES {
         if let Some(mac) = resolve_mac(name, *known_mac) {
             if is_device_connected(&mac) {
-                if let Some(battery) = get_battery_percentage(&mac) {
-                    println!("{}", battery);
+                match get_battery_percentage(&mac) {
+                    Some(battery) => println!("{battery}"),
+                    None => println!("_"), //HACK: some l
                 }
                 return Ok(());
             }
