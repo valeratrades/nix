@@ -34,7 +34,13 @@ in {
   };
 
   imports = [
-		inputs.nixos-hardware.nixosModules.lenovo-legion-16ach6h-hybrid
+		# Using common modules instead of lenovo-legion-16ach6h-hybrid which is for older Legion (Ryzen 5000 + RTX 30xx)
+		# Your laptop has Ryzen 8840U (Raphael/Phoenix) + RTX 5060 - different hardware
+		inputs.nixos-hardware.nixosModules.common-cpu-amd-pstate
+		inputs.nixos-hardware.nixosModules.common-cpu-amd-raphael-igpu
+		inputs.nixos-hardware.nixosModules.common-gpu-nvidia
+		inputs.nixos-hardware.nixosModules.common-pc-laptop
+		inputs.nixos-hardware.nixosModules.common-pc-laptop-ssd
     (mylib.relativeToRoot "home/config/fish/default.nix")
     ./shared
     ./shared-services.nix
@@ -93,6 +99,8 @@ in {
 			"zswap.enabled=1"
 			"nvidia-drm.modeset=1"
 			"mem_sleep_default=s2idle"
+			# Fix amdgpu DMCUB errors on Raphael iGPU - disable Panel Self Refresh which causes timing issues
+			"amdgpu.dcdebugmask=0x10"  # disable PSR
 		];
 
     # # for obs's Virtual Camera

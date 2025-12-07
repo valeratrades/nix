@@ -27,11 +27,15 @@ function tmux_new_session_base
 		set SESSION_NAME $argv[1]
 	end
 	set SESSION_NAME (echo "$SESSION_NAME" | sed 's/\./_/g')
-	# add -tmp if parent directory is exactly "tmp" and session name doesn't already start with it
-	set -l PARENT_DIR (basename (dirname (pwd)))
-	if test "$PARENT_DIR" = "tmp"
-		if not string match -q 'tmp-*' -- "$SESSION_NAME"
-			set SESSION_NAME "tmp-$SESSION_NAME"
+	# add tmp- prefix if any ancestor directory is named "tmp" and session name doesn't already start with it
+	if not string match -q 'tmp-*' -- "$SESSION_NAME"
+		set -l current_path (pwd)
+		while test "$current_path" != "/"
+			if test (basename "$current_path") = "tmp"
+				set SESSION_NAME "tmp-$SESSION_NAME"
+				break
+			end
+			set current_path (dirname "$current_path")
 		end
 	end
 	if tmux has-session -t "$SESSION_NAME" 2>/dev/null
