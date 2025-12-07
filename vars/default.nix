@@ -36,6 +36,7 @@ in
     wakeTime = "05:10"; # matches system time, (my system time is utc)
     fontSize = 10;
 		kbd = "ansi";
+		disableNvidia = true;  # set to true to use AMD iGPU only (better battery, fewer driver issues)
   };
   maria = {
     inherit sshAuthorizedKeys;

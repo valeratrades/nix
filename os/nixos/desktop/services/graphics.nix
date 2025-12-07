@@ -1,4 +1,8 @@
-{ pkgs, user, mylib, ... }: {
+{ pkgs, lib, user, mylib, ... }:
+let
+	disableNvidia = user.disableNvidia or false;
+in
+lib.trivial.warn (if disableNvidia then "TODO: disable nvidia" else "NVIDIA enabled") {
 	services = {
 		power-profiles-daemon.enable = true;
 		xserver.videoDrivers = [ /*"displaylink"*/ "modesetting" "amdgpu" "nvidia" ];
