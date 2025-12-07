@@ -80,6 +80,10 @@ in {
 		#extraConfig = ''
 		#	PasswordAuthentication = yes
 		#'';
+
+    # # Good Practices
+    # generally want:
+    # - `identitiesOnly = true`: don't try other keys outside of the `identityFile` specified
 		matchBlocks = {
       # password of connected hosts:
       # p-laptop: `Mija1234!`, - can just `ssh p@p-laptop.taila74a7d.ts.net` if tailscale's ssh is misbehaving
@@ -98,6 +102,18 @@ in {
       "cloudzy_ubuntu" = {
         hostname = "45.59.119.234";
         user = "root";
+      };
+      #TEST
+      "priscilia" = {
+        hostname = "p-laptop.taila74a7d.ts.ne";
+        user = "p";
+				identitiesOnly = true;
+				identityFile = [ "~/.ssh/id_ed25519" ];
+				extraOptions = {
+					PreferredAuthentications = "publickey,keyboard-interactive,password";
+					PubkeyAuthentication = "yes";
+					StrictHostKeyChecking = "accept-new";
+				};
       };
 			"vincent" = {
 				hostname = "192.168.5.204";
