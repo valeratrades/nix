@@ -96,7 +96,6 @@ in {
     # not sure how to objectively check its effect on performance, though.
     kernelParams = [
 			"zswap.enabled=1"
-			"nvidia-drm.modeset=1"
 			"mem_sleep_default=s2idle"
 			# Fix amdgpu DMCUB errors on Raphael iGPU - disable Panel Self Refresh which causes timing issues
 			"amdgpu.dcdebugmask=0x10"  # disable PSR

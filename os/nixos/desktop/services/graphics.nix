@@ -61,11 +61,18 @@ in
 		};
 	};
 
-	# Blacklist nvidia modules when disabled
-	boot.blacklistedKernelModules = lib.mkIf disableNvidia [
+	# Always blacklist nouveau - broken support for Blackwell (RTX 50xx) causes kernel panics
+	# When nvidia disabled, also blacklist proprietary drivers
+	boot.blacklistedKernelModules = [ "nouveau" ] ++ lib.optionals disableNvidia [
 		"nvidia"
 		"nvidia_modeset"
 		"nvidia_uvm"
 		"nvidia_drm"
+	];
+
+	# Only set nvidia kernel params when nvidia is enabled
+	boot.kernelParams = lib.mkIf (!disableNvidia) [
+		"nvidia-drm.modeset=1"
+		"nvidia-drm.fbdev=1"
 	];
 }

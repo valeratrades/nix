@@ -158,3 +158,19 @@ function lnn
 
 	cp -f "$FILE_SNIPPETS_PATH/leanpkg.toml" ./leanpkg.toml
 end
+
+function tyn
+	if test (count $argv) -ne 1
+		echo "Usage: tyn <project_name>"
+		return 1
+	end
+
+	mkdir "$argv[1]"
+	set lang "typ"
+	shared_before $argv[1] $lang
+
+	cp "$FILE_SNIPPETS_PATH/$lang/flake.nix" ./
+	cp "$FILE_SNIPPETS_PATH/$lang/presets/default/__main__.typ" ./
+
+	shared_after $argv[1] $lang
+end
