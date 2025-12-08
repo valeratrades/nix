@@ -213,6 +213,19 @@ in {
       ++ [
         # some of my own packages are in shared, not everything is here
         inputs.btc_line.packages.${pkgs.stdenv.hostPlatform.system}.default
+
+      # Optional private packages from local paths (won't fail if path doesn't exist)
+      ] ++ (let
+        tryLocalFlake = path:
+          if builtins.pathExists (path + "/flake.nix")
+          then let
+            flake = builtins.getFlake "path:${path}";
+            pkg = flake.packages.${pkgs.stdenv.hostPlatform.system}.default or null;
+          in if pkg != null then [ pkg ] else []
+          else builtins.trace "WARNING: optional package not found at ${path}" [];
+      in lib.flatten [
+        (tryLocalFlake "/home/v/s/g/vision")
+      ]) ++ [
         inputs.prettify_log.packages.${pkgs.stdenv.hostPlatform.system}.default
         inputs.distributions.packages.${pkgs.stdenv.hostPlatform.system}.default # ? shared?
         inputs.book_parser.packages.${pkgs.stdenv.hostPlatform.system}.default

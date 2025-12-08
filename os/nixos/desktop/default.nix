@@ -193,7 +193,7 @@
           ]
           # C#
           [
-            vscode-extensions.ms-dotnettools.csharp
+            #vscode-extensions.ms-dotnettools.csharp # breaking
           ]
           # rust
           [
