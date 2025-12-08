@@ -38,7 +38,6 @@ in {
 		# Your laptop has Ryzen 8840U (Raphael/Phoenix) + RTX 5060 - different hardware
 		inputs.nixos-hardware.nixosModules.common-cpu-amd-pstate
 		inputs.nixos-hardware.nixosModules.common-cpu-amd-raphael-igpu
-		inputs.nixos-hardware.nixosModules.common-gpu-nvidia
 		inputs.nixos-hardware.nixosModules.common-pc-laptop
 		inputs.nixos-hardware.nixosModules.common-pc-laptop-ssd
     (mylib.relativeToRoot "home/config/fish/default.nix")

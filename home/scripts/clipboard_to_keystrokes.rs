@@ -1,5 +1,22 @@
-#!/home/v/nix/home/scripts/nix-run-cached-wtype
+#!/usr/bin/env nix
 ---cargo
+#! nix shell --impure --expr ``
+#! nix let rust_flake = builtins.getFlake ''github:oxalica/rust-overlay'';
+#! nix     nixpkgs_flake = builtins.getFlake ''nixpkgs'';
+#! nix     pkgs = import nixpkgs_flake {
+#! nix       system = builtins.currentSystem;
+#! nix       overlays = [rust_flake.overlays.default];
+#! nix     };
+#! nix     toolchain = pkgs.rust-bin.nightly."2025-10-10".default.override { #TODO: switch to latest-nightly-with
+#! nix       extensions = ["rust-src"];
+#! nix     };
+#! nix
+#! nix in pkgs.symlinkJoin {
+#! nix   name = "env";
+#! nix   paths = [ toolchain pkgs.wtype ];
+#! nix }
+#! nix ``
+#! nix --command sh -c ``cargo -Zscript -q "$0" "$@"``
 
 [dependencies]
 arboard = "3.6.1"
@@ -7,7 +24,7 @@ arboard = "3.6.1"
 
 
 use arboard::Clipboard;
-use std::process::{exit, Command};
+use std::process::{Command, exit};
 
 /// Try to get clipboard text, first via wl-paste, then fall back to arboard
 fn get_clipboard_text() -> Option<String> {

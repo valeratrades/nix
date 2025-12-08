@@ -5,7 +5,7 @@
 SCRIPT="$1"
 shift
 
-NIX_EXPR='let rust_flake = builtins.getFlake "github:oxalica/rust-overlay"; nixpkgs_flake = builtins.getFlake "nixpkgs"; pkgs = import nixpkgs_flake { system = builtins.currentSystem; overlays = [rust_flake.overlays.default]; }; in pkgs.rust-bin.nightly."2025-10-10".default.override { extensions = ["rust-src"]; }'
+NIX_EXPR='let rust_flake = builtins.getFlake "github:oxalica/rust-overlay/7ed7e8c74be95906275805db68201e74e9904f07"; nixpkgs_flake = builtins.getFlake "github:NixOS/nixpkgs/f61125a668a320878494449750330ca58b78c557"; pkgs = import nixpkgs_flake { system = builtins.currentSystem; overlays = [rust_flake.overlays.default]; }; in pkgs.rust-bin.nightly."2025-10-10".default.override { extensions = ["rust-src"]; }'
 
 if nix shell --offline --impure --expr "$NIX_EXPR" --command cargo -Zscript -q "$SCRIPT" "$@" 2>/dev/null; then
   exit 0

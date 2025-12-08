@@ -2,17 +2,17 @@
 let
 	disableNvidia = user.disableNvidia or false;
 in
-lib.trivial.warn (if disableNvidia then "TODO: disable nvidia" else "NVIDIA enabled") {
+{
 	services = {
 		power-profiles-daemon.enable = true;
-		xserver.videoDrivers = [ /*"displaylink"*/ "modesetting" "amdgpu" "nvidia" ];
-
+		xserver.videoDrivers = if disableNvidia
+			then [ "modesetting" "amdgpu" ]
+			else [ "modesetting" "amdgpu" "nvidia" ];
 
 		xserver = {
 			enable = false;
 			displayManager.startx.enable = true;
 			autorun = false;
-
 
 			xkb = {
 				options = "grp:win_space_toggle";
@@ -39,7 +39,7 @@ lib.trivial.warn (if disableNvidia then "TODO: disable nvidia" else "NVIDIA enab
 			enable = true;
 		};
 
-		nvidia = {
+		nvidia = lib.mkIf (!disableNvidia) {
 			# RTX 5060 is Blackwell (GB206) - use open kernel modules
 			open = true;
 
@@ -60,4 +60,12 @@ lib.trivial.warn (if disableNvidia then "TODO: disable nvidia" else "NVIDIA enab
 			};
 		};
 	};
+
+	# Blacklist nvidia modules when disabled
+	boot.blacklistedKernelModules = lib.mkIf disableNvidia [
+		"nvidia"
+		"nvidia_modeset"
+		"nvidia_uvm"
+		"nvidia_drm"
+	];
 }
