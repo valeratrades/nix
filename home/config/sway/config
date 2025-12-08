@@ -153,7 +153,7 @@ mode "monitors" {
 bindsym $mod+Period exec "swaymsg mode monitors && eww update sway_mode=monitors"
 
 # was using ${NIXOS_CONFIG}/home/config/sway/wallpapers/AndreySakharov.jpg, but it's too bright to be the default.
-set $vision_wallpaper $HOME/s/g/vision/result/output.pdf
+set $vision_wallpaper $HOME/s/g/vision/result/output.png
 set $fallback_wallpaper $sway_root/wallpapers/333333.png
 output * bg `test -f $vision_wallpaper && echo $vision_wallpaper || echo $fallback_wallpaper` fill #333333
 exec "wallpaper_carousel extend $sway_root/wallpapers/333333.png"
