@@ -72,7 +72,7 @@ in {
 		};
   };
   boot = {
-    kernelPackages = pkgs.linuxPackages_6_12; # 6.12.x series (currently 6.12.59)
+    kernelPackages = pkgs.linuxPackages_latest; # 6.18 - 6.12 has DMCUB crashes on Raphael iGPU
 
     tmp.useTmpfs = true;
     loader = {
@@ -97,21 +97,24 @@ in {
     kernelParams = [
 			"zswap.enabled=1"
 			"mem_sleep_default=s2idle"
-			# Fix amdgpu DMCUB errors on Raphael iGPU - disable Panel Self Refresh which causes timing issues
-			"amdgpu.dcdebugmask=0x10"  # disable PSR
-			# Disable scatter-gather display - causes page faults / kernel panics on Raphael with Chrome GPU acceleration
-			"amdgpu.sg_display=0"
+			# amdgpu Raphael iGPU workarounds:
+			"amdgpu.dcdebugmask=0x10"  # disable PSR (Panel Self Refresh)
+			"amdgpu.sg_display=0"      # disable scatter-gather (Chrome GPU crashes)
+			# "amdgpu.abmlevel=0"      # breaks brightness control
+			"amdgpu.noretry=1"         # disable retry on page faults
 		];
 
     # # for obs's Virtual Camera
-    extraModulePackages = with config.boot.kernelPackages; [ v4l2loopback ];
+    # FIXME: v4l2loopback 0.15.1 doesn't build on kernel 6.18 (API change: v4l2_fh_add/del signature)
+    # extraModulePackages = with config.boot.kernelPackages; [ v4l2loopback ];
+    extraModulePackages = [ ];
     kernelModules = [
-      "v4l2loopback"
+      # "v4l2loopback"  # disabled until v4l2loopback is updated for 6.18
       #"binder-linux" # waydroid, nothing to do with obs (but I'm bad with nix, can't split them) #dbg: disabled waydroid for a moment
 			"evdi" # only needed with displaylink
     ];
     extraModprobeConfig = ''
-            options v4l2loopback devices=1 video_nr=1 card_label="OBS Cam" exclusive_caps=1
+            # options v4l2loopback devices=1 video_nr=1 card_label="OBS Cam" exclusive_caps=1  # disabled with v4l2loopback above
             options kvm_amd nested=1 # gnome-boxes require kvm
 						''
 			#dbg

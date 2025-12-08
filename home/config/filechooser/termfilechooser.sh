@@ -10,7 +10,8 @@ suggestion="$4"
 out="$5"
 
 # Debug notifications (uncomment to debug)
-# notify-send "termfilechooser" "save: $save, dir: $dir, suggestion: $suggestion, out: $out"
+logfile="$HOME/.local/state/termfilechooser.log"
+echo "$(date): save=$save, dir=$dir, suggestion=$suggestion, out=$out, out_content=$(cat "$out" 2>/dev/null || echo 'empty')" >> "$logfile"
 
 if [ "$save" -eq 0 ]; then
   # Open mode: use nvim normally to browse and select a file
@@ -59,7 +60,12 @@ else
 
   # Only write to output if user confirmed (statusfile contains 1)
   if [ "$(cat "$statusfile")" = "1" ] && [ -f "$tmpfile" ] && [ -s "$tmpfile" ]; then
-    cat "$tmpfile" > "$out"
+    # Read first line only, strip any trailing whitespace/newlines
+    selected_path=$(head -n1 "$tmpfile" | tr -d '\n\r')
+    printf '%s' "$selected_path" > "$out"
+    echo "$(date): CONFIRMED selected_path=$selected_path | out_hex=$(od -c "$out")" >> "$logfile"
+  else
+    echo "$(date): ABORTED status=$(cat "$statusfile")" >> "$logfile"
   fi
 
   rm -f "$tmpfile" "$statusfile"
