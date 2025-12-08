@@ -49,7 +49,7 @@ in
     masterUserEmail = "m79160164445@gmail.com";
     wakeTime = "06:00";
     fontSize = 11;
-		kdb = "iso";
+		kbd = "iso";
   };
   timur = {
     inherit sshAuthorizedKeys;
