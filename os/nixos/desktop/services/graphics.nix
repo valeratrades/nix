@@ -62,8 +62,9 @@ in
 	};
 
 	# Always blacklist nouveau - broken support for Blackwell (RTX 50xx) causes kernel panics
+	# Also blacklist ucsi_acpi - buggy USB-C driver that spams errors on Lenovo laptops
 	# When nvidia disabled, also blacklist proprietary drivers
-	boot.blacklistedKernelModules = [ "nouveau" ] ++ lib.optionals disableNvidia [
+	boot.blacklistedKernelModules = [ "nouveau" "ucsi_acpi" ] ++ lib.optionals disableNvidia [
 		"nvidia"
 		"nvidia_modeset"
 		"nvidia_uvm"

@@ -38,19 +38,29 @@ if [ "$save" -eq 0 ]; then
 
   rm -f "$tmpfile"
 else
-  # Save mode: let user edit the filename directly in nvim
+  # Save mode: let user edit the filename in nvim, content = desired save path
+  tmpfile=$(mktemp)
+  statusfile=$(mktemp)
+  echo "0" > "$statusfile"  # default to abort
+
   if [ -n "$suggestion" ]; then
-    echo "$suggestion" > "$out"
+    echo "$suggestion" > "$tmpfile"
   else
-    echo "$dir/newfile" > "$out"
+    echo "$dir/newfile" > "$tmpfile"
   fi
 
-  # Open with q mapped to just exit, Enter to confirm and save
-  # Abort with C-c, q, Alt+;
-  alacritty -e nvim "$out" \
-    -c 'nnoremap <CR> :wq<CR>' \
-    -c 'nnoremap q :cq<CR>' \
-    -c 'nnoremap <C-c> :cq<CR>' \
-    -c 'nnoremap <A-;> :cq<CR>' \
-    -c 'nnoremap <Esc> :cq<CR>'
+  # Open with Enter to confirm (writes 1 to statusfile), escape keys to abort
+  alacritty -e nvim "$tmpfile" \
+    -c "nnoremap <CR> :w<CR>:call writefile(['1'], '$statusfile')<CR>:q<CR>" \
+    -c 'nnoremap q :q!<CR>' \
+    -c 'nnoremap <C-c> :q!<CR>' \
+    -c 'nnoremap <A-;> :q!<CR>' \
+    -c 'nnoremap <Esc> :q!<CR>'
+
+  # Only write to output if user confirmed (statusfile contains 1)
+  if [ "$(cat "$statusfile")" = "1" ] && [ -f "$tmpfile" ] && [ -s "$tmpfile" ]; then
+    cat "$tmpfile" > "$out"
+  fi
+
+  rm -f "$tmpfile" "$statusfile"
 fi

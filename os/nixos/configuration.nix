@@ -99,6 +99,8 @@ in {
 			"mem_sleep_default=s2idle"
 			# Fix amdgpu DMCUB errors on Raphael iGPU - disable Panel Self Refresh which causes timing issues
 			"amdgpu.dcdebugmask=0x10"  # disable PSR
+			# Disable scatter-gather display - causes page faults / kernel panics on Raphael with Chrome GPU acceleration
+			"amdgpu.sg_display=0"
 		];
 
     # # for obs's Virtual Camera
