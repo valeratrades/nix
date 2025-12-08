@@ -32,7 +32,7 @@
 
           installPhase = ''
             mkdir -p $out
-            echo "you don't actually install this"
+            cp output.pdf $out/
           '';
         };
 

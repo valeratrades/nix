@@ -169,6 +169,7 @@ function tyn
 	set lang "typ"
 	shared_before $argv[1] $lang
 
+	mkdir "assets"
 	cp "$FILE_SNIPPETS_PATH/$lang/flake.nix" ./
 	cp "$FILE_SNIPPETS_PATH/$lang/presets/default/__main__.typ" ./
 
