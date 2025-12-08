@@ -7,9 +7,9 @@
 #! nix       system = builtins.currentSystem;
 #! nix       overlays = [rust_flake.overlays.default];
 #! nix     };
-#! nix     toolchain = pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default.override {
+#! nix     toolchain = pkgs.rust-bin.nightly."2025-10-10".default.override {
 #! nix       extensions = ["rust-src"];
-#! nix     });
+#! nix     };
 #! nix
 #! nix in pkgs.symlinkJoin {
 #! nix   name = "env";
@@ -29,24 +29,23 @@ use std::process::{Command, exit};
 /// Try to get clipboard text, first via wl-paste, then fall back to arboard
 fn get_clipboard_text() -> Option<String> {
     // Try wl-paste first
-    if let Ok(output) = Command::new("wl-paste").output() {
-        if output.status.success() {
-            if let Ok(text) = String::from_utf8(output.stdout) {
-                let trimmed = text.trim();
-                if !trimmed.is_empty() {
-                    return Some(text);
-                }
-            }
+    if let Ok(output) = Command::new("wl-paste").output()
+        && output.status.success()
+        && let Ok(text) = String::from_utf8(output.stdout)
+    {
+        let trimmed = text.trim();
+        if !trimmed.is_empty() {
+            return Some(text);
         }
     }
 
     // Fall back to arboard
-    if let Ok(mut clip) = Clipboard::new() {
-        if let Ok(text) = clip.get_text() {
-            let trimmed = text.trim();
-            if !trimmed.is_empty() {
-                return Some(text);
-            }
+    if let Ok(mut clip) = Clipboard::new()
+        && let Ok(text) = clip.get_text()
+    {
+        let trimmed = text.trim();
+        if !trimmed.is_empty() {
+            return Some(text);
         }
     }
 
