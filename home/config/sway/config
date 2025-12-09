@@ -52,7 +52,6 @@ exec mako
 exec libinput-gestures
 exec "sh -c 'sudo chmod 766 /var/run/keyd.socket'"
 exec keyd-application-mapper -d
-exec bluetoothctl
 exec pipewire
 #HACK: some problem with runnig it as a service. Could be fixed. Some time later though
 exec wlr-gamma-service
@@ -105,9 +104,6 @@ bindsym XF86AudioPlay exec playerctl play-pause
 bindsym F5 exec playerctl play-pause
 bindsym $mod+F5 exec playerctl next
 bindsym $mod+Shift+F5 exec playerctl previous
-# could be redundant, if I find a way to fix a bug with audio on the phone stopping at times with headphones connected to pc too.
-bindsym $mod+b exec bluetoothctl connect E8:EE:CC:36:53:49
-bindsym $mod+Shift+b exec bluetoothctl disconnect E8:EE:CC:36:53:49
 #
 
 # # Redshift

@@ -72,7 +72,7 @@ in {
 		};
   };
   boot = {
-    kernelPackages = pkgs.linuxPackages_latest; # 6.18 - 6.12 has DMCUB crashes on Raphael iGPU
+    kernelPackages = pkgs.linuxPackages_6_12; # 6.12 LTS - has DMCUB fix (6.12.32+), 6.18 breaks nvidia driver
 
     tmp.useTmpfs = true;
     loader = {
@@ -102,6 +102,8 @@ in {
 			"amdgpu.sg_display=0"      # disable scatter-gather (Chrome GPU crashes)
 			# "amdgpu.abmlevel=0"      # breaks brightness control
 			"amdgpu.noretry=1"         # disable retry on page faults
+			#dbg: investigating kernel panics (2025-12-09) - forces immediate panic on oops instead of limping along, so we get full stack trace
+			"kernel.panic_on_oops=1"
 		];
 
     # # for obs's Virtual Camera
