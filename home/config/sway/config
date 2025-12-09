@@ -153,10 +153,9 @@ mode "monitors" {
 bindsym $mod+Period exec "swaymsg mode monitors && eww update sway_mode=monitors"
 
 # was using ${NIXOS_CONFIG}/home/config/sway/wallpapers/AndreySakharov.jpg, but it's too bright to be the default.
-set $vision_wallpaper $HOME/s/g/vision/result/output.png
 set $fallback_wallpaper $sway_root/wallpapers/333333.png
 output * bg $fallback_wallpaper fill
-exec "wallpaper_carousel extend $vision_wallpaper || "echo \"No vision wallpaper found\""
+exec "wallpaper_carousel extend /home/v/s/g/vision/result/output.png"
 workspace 1 output $primary
 workspace 2 output $primary
 workspace 3 output $primary
@@ -279,6 +278,7 @@ bindsym $mod+w exec "wallpaper_carousel circle -f"
 bindsym $mod+Shift+w exec "wallpaper_carousel circle -b"
 
 bindsym $mod+d exec zathura "~/Downloads/$(ls -t ~/Downloads | head -n 1)"
+bindsym $mod+i exec xdg-open ~/tmp/Screenshots/"$(ls -t ~/tmp/Screenshots | head -n 1)"
 
 # # Screenshots
 exec mkdir -p ~/tmp/Screenshots >/dev/null

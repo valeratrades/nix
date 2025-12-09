@@ -37,7 +37,7 @@ in
     fontSize = 10;
 		kbd = "ansi";
     #TEST
-		disableNvidia = true;  # set to true to use AMD iGPU only (better battery, fewer driver issues)
+		disableNvidia = false;  # set to true to use AMD iGPU only (better battery, fewer driver issues)
   };
   maria = {
     inherit sshAuthorizedKeys;
@@ -51,7 +51,7 @@ in
     wakeTime = "06:00";
     fontSize = 11;
 		kbd = "iso";
-  };
+    };
   timur = {
     inherit sshAuthorizedKeys;
     username = "t";

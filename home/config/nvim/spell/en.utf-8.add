@@ -888,3 +888,5 @@ wasm
 smtp
 deduplicate
 bluetooth
+datatypes
+aggr

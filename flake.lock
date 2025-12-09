@@ -2860,11 +2860,11 @@
         "v-utils": "v-utils_10"
       },
       "locked": {
-        "lastModified": 1763733419,
-        "narHash": "sha256-JmNPxUqViCYhdvpbOTIuCHPTPBMYmtKZIGzfkb1g4wM=",
+        "lastModified": 1765231160,
+        "narHash": "sha256-2OJHxuXHvr/qbDMDP39ngBPOxQW+58Odsvx/cbNN4zI=",
         "owner": "valeratrades",
         "repo": "wallpaper_carousel",
-        "rev": "fd9f35cb928257a059c3796b3d6f28d1a7e71ff3",
+        "rev": "d47aa94dc70245b49bd89bdfac369211dfc53eae",
         "type": "github"
       },
       "original": {
