@@ -55,6 +55,23 @@ end
 
 alias fd="fd -I --full-path" # Ignores .gitignore, etc.
 alias rg="rg -I --glob '!.git'" # Ignores case sensitivity and .git directories.
+function pkill
+    for arg in $argv
+        if string match -qr '^[^-]' $arg
+            if test (string length $arg) -le 2
+                echo "Warning: pattern '$arg' is very short (<=2 chars) and may match unintended processes."
+                read -P "Continue? [y/N] " confirm
+                if not string match -qir '^y' $confirm
+                    echo "Aborted."
+                    return 1
+                end
+            end
+            break
+        end
+    end
+    command pkill $argv
+end
+
 alias ureload="pkill -u (whoami)" # Kill all processes of the current user.
 alias rf="sudo rm -rf"
 #alias massren="py $HOME/clone/massren/massren -d '' $argv"
