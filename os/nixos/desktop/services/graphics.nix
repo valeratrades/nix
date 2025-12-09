@@ -45,6 +45,8 @@ in
 
 			# Disable power management - nvidia-powerd spams JPAC errors and causes system freezes
 			powerManagement.enable = false;
+			#dbg: investigating hard lockups (2025-12-09) - disable fine-grained power management to prevent GPU sleep/wake cycles
+			powerManagement.finegrained = false; #TEST: supposed to prevent GPU wake-up
 			dynamicBoost.enable = false;
 
 			# PRIME configuration for hybrid graphics (AMD iGPU + NVIDIA dGPU)

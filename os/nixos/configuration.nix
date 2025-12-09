@@ -104,6 +104,8 @@ in {
 			"amdgpu.noretry=1"         # disable retry on page faults
 			#dbg: investigating kernel panics (2025-12-09) - forces immediate panic on oops instead of limping along, so we get full stack trace
 			"kernel.panic_on_oops=1"
+			#dbg: NMI watchdog - detects hard lockups and prints stack trace even when CPU is frozen
+			"nmi_watchdog=1"
 		];
 
     # # for obs's Virtual Camera

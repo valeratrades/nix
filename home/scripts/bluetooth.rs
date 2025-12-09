@@ -10,13 +10,12 @@ use std::process::{Command, Stdio};
 use std::thread::sleep;
 use std::time::Duration;
 
-/// Known devices: (name, Option<mac_address>)
-/// If mac is None, we search by name in paired devices
-const KNOWN_DEVICES: &[(&str, Option<&str>)] = &[
-    ("Soundcore Life Tune", Some("E8:EE:CC:36:53:49")),
-    ("Philips SHB3075", Some("A4:77:58:82:26:43")),
-    ("WH-1000XM4", Some("80:99:E7:D2:1F:51")),
-    ("WH-CH520", None),
+/// Known devices: (name, mac_address)
+/// Uses dbus-send instead of bluetoothctl to avoid Adv Monitor spam
+const KNOWN_DEVICES: &[(&str, &str)] = &[
+    ("Soundcore Life Tune", "E8:EE:CC:36:53:49"),
+    ("Philips SHB3075", "A4:77:58:82:26:43"),
+    ("WH-1000XM4", "80:99:E7:D2:1F:51"),
 ];
 
 #[derive(Parser, Debug)]
@@ -37,12 +36,51 @@ enum Commands {
     IsConnected,
 }
 
-fn bluetooth_powered() -> bool {
-    let output = Command::new("bluetoothctl")
-        .arg("show")
+fn mac_to_dbus_path(mac: &str) -> String {
+    format!("/org/bluez/hci0/dev_{}", mac.replace(':', "_"))
+}
+
+fn dbus_get_property(path: &str, interface: &str, property: &str) -> Option<String> {
+    let output = Command::new("dbus-send")
+        .args([
+            "--system",
+            "--dest=org.bluez",
+            "--print-reply",
+            path,
+            "org.freedesktop.DBus.Properties.Get",
+            &format!("string:{}", interface),
+            &format!("string:{}", property),
+        ])
         .output()
-        .expect("Failed to run bluetoothctl show");
-    String::from_utf8_lossy(&output.stdout).contains("Powered: yes")
+        .ok()?;
+
+    if !output.status.success() {
+        return None;
+    }
+
+    Some(String::from_utf8_lossy(&output.stdout).to_string())
+}
+
+fn dbus_call_method(path: &str, interface: &str, method: &str) -> bool {
+    Command::new("dbus-send")
+        .args([
+            "--system",
+            "--dest=org.bluez",
+            "--print-reply",
+            path,
+            &format!("{}.{}", interface, method),
+        ])
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .map(|s| s.success())
+        .unwrap_or(false)
+}
+
+fn bluetooth_powered() -> bool {
+    dbus_get_property("/org/bluez/hci0", "org.bluez.Adapter1", "Powered")
+        .map(|s| s.contains("boolean true"))
+        .unwrap_or(false)
 }
 
 fn power_on_bluetooth() -> bool {
@@ -54,10 +92,19 @@ fn power_on_bluetooth() -> bool {
         .stderr(Stdio::null())
         .status();
 
-    // Power on
-    let _ = Command::new("bluetoothctl")
-        .args(["power", "on"])
-        .stderr(Stdio::null())
+    // Power on via dbus
+    let _ = Command::new("dbus-send")
+        .args([
+            "--system",
+            "--dest=org.bluez",
+            "--print-reply",
+            "/org/bluez/hci0",
+            "org.freedesktop.DBus.Properties.Set",
+            "string:org.bluez.Adapter1",
+            "string:Powered",
+            "variant:boolean:true",
+        ])
+        .stdout(Stdio::null())
         .status();
 
     // Wait for adapter to be ready (up to 5 seconds)
@@ -71,89 +118,42 @@ fn power_on_bluetooth() -> bool {
     false
 }
 
-fn get_paired_devices() -> Vec<(String, String)> {
-    let output = Command::new("bluetoothctl")
-        .arg("devices")
-        .output()
-        .expect("Failed to run bluetoothctl devices");
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let mut devices = Vec::new();
-
-    for line in stdout.lines() {
-        // Format: "Device XX:XX:XX:XX:XX:XX Device Name"
-        let parts: Vec<&str> = line.splitn(3, ' ').collect();
-        if parts.len() >= 3 {
-            let mac = parts[1].to_string();
-            let name = parts[2].to_string();
-            devices.push((mac, name));
-        }
-    }
-
-    devices
-}
-
-fn connect_device(mac: &str) -> bool {
-    let status = Command::new("bluetoothctl")
-        .args(["connect", mac])
-        .status()
-        .expect("Failed to run bluetoothctl connect");
-    status.success()
-}
-
-fn get_device_info(mac: &str) -> Option<String> {
-    let output = Command::new("bluetoothctl")
-        .args(["info", mac])
-        .output()
-        .ok()?;
-    Some(String::from_utf8_lossy(&output.stdout).to_string())
-}
-
 fn is_device_connected(mac: &str) -> bool {
-    get_device_info(mac)
-        .map(|info| info.contains("Connected: yes"))
+    let path = mac_to_dbus_path(mac);
+    dbus_get_property(&path, "org.bluez.Device1", "Connected")
+        .map(|s| s.contains("boolean true"))
         .unwrap_or(false)
 }
 
 fn get_battery_percentage(mac: &str) -> Option<u8> {
-    let info = get_device_info(mac)?;
-    for line in info.lines() {
-        if line.contains("Battery Percentage") {
-            // Format: "	Battery Percentage: 0x55 (85)"
-            if let Some(start) = line.find('(') {
-                if let Some(end) = line.find(')') {
-                    return line[start + 1..end].parse().ok();
-                }
+    let path = mac_to_dbus_path(mac);
+    let output = dbus_get_property(&path, "org.bluez.Battery1", "Percentage")?;
+
+    // Parse "variant byte 85" or similar
+    for line in output.lines() {
+        let line = line.trim();
+        if line.starts_with("variant") && line.contains("byte") {
+            if let Some(num_str) = line.split_whitespace().last() {
+                return num_str.parse().ok();
             }
         }
     }
     None
 }
 
-fn resolve_mac(name: &str, known_mac: Option<&str>) -> Option<String> {
-    if let Some(mac) = known_mac {
-        return Some(mac.to_string());
-    }
-    // Search in paired devices by name
-    let paired = get_paired_devices();
-    for (mac, device_name) in paired {
-        if device_name.to_lowercase().contains(&name.to_lowercase()) {
-            return Some(mac);
-        }
-    }
-    None
+fn connect_device(mac: &str) -> bool {
+    let path = mac_to_dbus_path(mac);
+    dbus_call_method(&path, "org.bluez.Device1", "Connect")
 }
 
 fn cmd_is_connected() -> Result<(), String> {
-    for (name, known_mac) in KNOWN_DEVICES {
-        if let Some(mac) = resolve_mac(name, *known_mac) {
-            if is_device_connected(&mac) {
-                match get_battery_percentage(&mac) {
-                    Some(battery) => println!("{battery}"),
-                    None => println!("_"), //HACK: some l
-                }
-                return Ok(());
+    for (_, mac) in KNOWN_DEVICES {
+        if is_device_connected(mac) {
+            match get_battery_percentage(mac) {
+                Some(battery) => println!("{battery}"),
+                None => println!("_"),
             }
+            return Ok(());
         }
     }
     Ok(())
@@ -167,57 +167,35 @@ fn cmd_headphones() -> Result<(), String> {
         }
     }
 
-    // Get list of paired devices
-    let all_devices = get_paired_devices();
-
     // Try to connect to each known device
-    for (name, known_mac) in KNOWN_DEVICES {
-        if let Some(mac) = known_mac {
-            // Direct MAC address known
-            println!("Trying {} ({})...", name, mac);
-            if connect_device(mac) {
-                println!("Successfully connected to {}", name);
-                return Ok(());
-            }
-        } else {
-            // Search by name
-            for (mac, device_name) in &all_devices {
-                if device_name.to_lowercase().contains(&name.to_lowercase()) {
-                    println!("Found {} ({}), attempting to connect...", device_name, mac);
-                    if connect_device(mac) {
-                        println!("Successfully connected to {}", device_name);
-                        return Ok(());
-                    } else {
-                        println!("Failed to connect to {}", device_name);
-                    }
-                }
-            }
+    for (name, mac) in KNOWN_DEVICES {
+        println!("Trying {} ({})...", name, mac);
+        if connect_device(mac) {
+            println!("Successfully connected to {}", name);
+            return Ok(());
         }
     }
 
-    if all_devices.is_empty() {
-        eprintln!("No paired devices found. Pair your headphones first:");
-        eprintln!("  bluetoothctl scan on");
-        eprintln!("  bluetoothctl pair <MAC>");
-        eprintln!("  bluetoothctl trust <MAC>");
-        return Err("No paired devices".to_string());
-    }
-
-    let known_names: Vec<_> = KNOWN_DEVICES.iter().map(|(n, _)| *n).collect();
-    eprintln!("Could not connect to any of: {:?}", known_names);
-    eprintln!("Available paired devices:");
-    for (mac, name) in &all_devices {
-        eprintln!("  {mac} - {name}");
-    }
-    Err("Headphones not in paired devices".to_string())
+    eprintln!("Could not connect to any known device");
+    Err("No device connected".to_string())
 }
 
 fn cmd_off() -> Result<(), String> {
     println!("Turning off Bluetooth...");
 
-    let _ = Command::new("bluetoothctl")
-        .args(["power", "off"])
-        .stderr(Stdio::null())
+    // Power off via dbus
+    let _ = Command::new("dbus-send")
+        .args([
+            "--system",
+            "--dest=org.bluez",
+            "--print-reply",
+            "/org/bluez/hci0",
+            "org.freedesktop.DBus.Properties.Set",
+            "string:org.bluez.Adapter1",
+            "string:Powered",
+            "variant:boolean:false",
+        ])
+        .stdout(Stdio::null())
         .status();
 
     let _ = Command::new("sudo")
@@ -226,12 +204,7 @@ fn cmd_off() -> Result<(), String> {
         .status();
 
     // Verify it's off
-    let output = Command::new("bluetoothctl")
-        .arg("show")
-        .output()
-        .expect("Failed to run bluetoothctl show");
-
-    if !String::from_utf8_lossy(&output.stdout).contains("Powered: no") {
+    if bluetooth_powered() {
         return Err("Failed to power off Bluetooth adapter".to_string());
     }
 
