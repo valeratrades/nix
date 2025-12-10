@@ -102,6 +102,9 @@ in {
 			"amdgpu.sg_display=0"      # disable scatter-gather (Chrome GPU crashes)
 			# "amdgpu.abmlevel=0"      # breaks brightness control
 			"amdgpu.noretry=1"         # disable retry on page faults
+			#dbg: DMCUB keeps erroring - disable DMCUB-heavy features, keep FreeSync
+			# bits: 0x1=PSR, 0x2=PSR-SU, 0x4=Replay, 0x8=ABM, 0x10=FreeSync, 0x20=DSC, 0x40=DMCUB
+			"amdgpu.dcfeaturemask=0x30" # FreeSync + DSC only (disable PSR/ABM/Replay which hammer DMCUB)
 			#dbg: investigating kernel panics (2025-12-09) - forces immediate panic on oops instead of limping along, so we get full stack trace
 			"kernel.panic_on_oops=1"
 			#dbg: NMI watchdog - detects hard lockups and prints stack trace even when CPU is frozen

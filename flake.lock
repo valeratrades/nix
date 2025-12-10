@@ -2858,20 +2858,38 @@
         "nixpkgs": "nixpkgs_38",
         "pre-commit-hooks": "pre-commit-hooks_11",
         "rust-overlay": "rust-overlay_10",
-        "v-utils": "v-utils_10"
+        "v-utils": "v-utils_10",
+        "wrap-it": "wrap-it"
       },
       "locked": {
-        "lastModified": 1765364273,
-        "narHash": "sha256-vRoK35FzwNmD6Neh1afPhofhpg+PvirVEieopXo+SEQ=",
+        "lastModified": 1765368048,
+        "narHash": "sha256-BzA9hMRJmveMsPM/vYMNRdHjcJHomLQ21Ys3xpc8yMk=",
         "owner": "valeratrades",
         "repo": "wallpaper_carousel",
-        "rev": "cce0b5b422faef22ce0b94f8079945bacd252d53",
+        "rev": "0d4fda9b92108022fb9bb8767e0a41f6c62bdf59",
         "type": "github"
       },
       "original": {
         "owner": "valeratrades",
         "ref": "release",
         "repo": "wallpaper_carousel",
+        "type": "github"
+      }
+    },
+    "wrap-it": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1765366157,
+        "narHash": "sha256-dwTtL/++Vdnmn+E3iyLuMaptTjTfBNfyvJ4Cl+dn1rY=",
+        "owner": "valeratrades",
+        "repo": "wrap-it",
+        "rev": "cf3de8ced50c353ccfd534f3bb1ae9f6d5a04788",
+        "type": "github"
+      },
+      "original": {
+        "owner": "valeratrades",
+        "repo": "wrap-it",
+        "rev": "cf3de8ced50c353ccfd534f3bb1ae9f6d5a04788",
         "type": "github"
       }
     }
