@@ -31,5 +31,6 @@ require("valera.opts")
 --require("valera.temporary")
 require("valera.rooter")
 require("valera.autocommands")
+require("valera.termfilechooser")
 
 require("valera.catpuccin")

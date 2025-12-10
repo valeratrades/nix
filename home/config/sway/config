@@ -151,7 +151,8 @@ bindsym $mod+Period exec "swaymsg mode monitors && eww update sway_mode=monitors
 # was using ${NIXOS_CONFIG}/home/config/sway/wallpapers/AndreySakharov.jpg, but it's too bright to be the default.
 set $fallback_wallpaper $sway_root/wallpapers/333333.png
 output * bg $fallback_wallpaper fill
-exec "wallpaper_carousel extend /home/v/s/g/vision/result/output.png"
+#TODO: check if I can reference the png against `wallpaper_carousel` executable directly
+exec "wallpaper_carousel extend /home/v/s/wallpaper_carousel/result/share/vision/vision.png"
 workspace 1 output $primary
 workspace 2 output $primary
 workspace 3 output $primary

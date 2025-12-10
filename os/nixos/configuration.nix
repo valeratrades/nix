@@ -106,6 +106,10 @@ in {
 			"kernel.panic_on_oops=1"
 			#dbg: NMI watchdog - detects hard lockups and prints stack trace even when CPU is frozen
 			"nmi_watchdog=1"
+			#dbg: limit CPU to shallow C-states (C0/C1 only) - testing if deep sleep triggers IRQ storms
+			"processor.max_cstate=1"
+			# mt7925e WiFi suspend fix - disable ASPM to prevent suspend timeout
+			"pcie_aspm.policy=performance"
 		];
 
     # # for obs's Virtual Camera
@@ -120,6 +124,8 @@ in {
     extraModprobeConfig = ''
             # options v4l2loopback devices=1 video_nr=1 card_label="OBS Cam" exclusive_caps=1  # disabled with v4l2loopback above
             options kvm_amd nested=1 # gnome-boxes require kvm
+            # Disable NVIDIA HDMI audio (card 0) - suspected cause of IRQ storms/kernel panics
+            options snd_hda_intel enable=0,1
 						''
 			#dbg
 			#+ ''options binder-linux devices=binder,hwbinder,vndbinder # waydroid wants this ''
