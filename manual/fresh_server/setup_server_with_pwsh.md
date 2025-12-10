@@ -36,54 +36,78 @@ Get-Content ~/.config/polymarket_mm.toml | reasonable_envsubst - | ssh $env:MAIN
 
 ---
 
-## Step 2: Server — Install Dependencies
+## Step 2: Server — Install Dependencies & PowerShell
 
-SSH into the server:
+SSH into the server (initially via bash):
 ```pwsh
 ssh $env:MAIN_SERVER_SSH_HOST
 ```
 
-```pwsh
+Install base packages and PowerShell (run in bash):
+```sh
 # detect OS and install packages
-$OsRelease = Get-Content /etc/os-release | ConvertFrom-StringData
-switch ($OsRelease.ID) {
-    { $_ -in 'ubuntu', 'debian' } {
-        apt update
-        apt install -y build-essential pkg-config libssl-dev git-lfs apt-transport-https ca-certificates curl gnupg fzf direnv tmux neovim
-        # ClickHouse (official repo - Ubuntu's default is ancient 18.x, we need 21.8+)
-        curl -fsSL 'https://packages.clickhouse.com/rpm/lts/repodata/repomd.xml.key' | gpg --dearmor -o /usr/share/keyrings/clickhouse-keyring.gpg
-        "deb [signed-by=/usr/share/keyrings/clickhouse-keyring.gpg] https://packages.clickhouse.com/deb stable main" | Set-Content /etc/apt/sources.list.d/clickhouse.list
-        apt update
-        apt install -y clickhouse-server clickhouse-client
-    }
-    'fedora' {
-        dnf install -y gcc gcc-c++ make pkg-config openssl-devel git-lfs ca-certificates curl gnupg fzf direnv tmux neovim
-        # ClickHouse (official repo)
-        curl -fsSL https://packages.clickhouse.com/rpm/clickhouse.repo | Set-Content /etc/yum.repos.d/clickhouse.repo
-        dnf install -y clickhouse-server clickhouse-client
-    }
-    default {
-        throw "Unsupported OS: $($OsRelease.ID)"
-    }
-}
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    case "$ID" in
+        ubuntu|debian)
+            apt update
+            apt install -y build-essential pkg-config libssl-dev git-lfs apt-transport-https ca-certificates curl gnupg fzf direnv tmux neovim
+            # ClickHouse
+            curl -fsSL 'https://packages.clickhouse.com/rpm/lts/repodata/repomd.xml.key' | gpg --dearmor -o /usr/share/keyrings/clickhouse-keyring.gpg
+            echo "deb [signed-by=/usr/share/keyrings/clickhouse-keyring.gpg] https://packages.clickhouse.com/deb stable main" | tee /etc/apt/sources.list.d/clickhouse.list
+            apt update
+            apt install -y clickhouse-server clickhouse-client
+            # PowerShell
+            curl -sSL https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/prod.list | tee /etc/apt/sources.list.d/microsoft-prod.list
+            curl -sSL https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
+            apt update
+            apt install -y powershell
+            ;;
+        fedora)
+            dnf install -y gcc gcc-c++ make pkg-config openssl-devel git-lfs ca-certificates curl gnupg fzf direnv tmux neovim
+            # ClickHouse
+            curl -fsSL https://packages.clickhouse.com/rpm/clickhouse.repo | tee /etc/yum.repos.d/clickhouse.repo
+            dnf install -y clickhouse-server clickhouse-client
+            # PowerShell
+            curl -sSL https://packages.microsoft.com/config/rhel/9/prod.repo | tee /etc/yum.repos.d/microsoft-prod.repo
+            dnf install -y powershell
+            ;;
+        *)
+            echo "Unsupported OS: $ID"
+            exit 1
+            ;;
+    esac
+else
+    echo "Cannot detect OS"
+    exit 1
+fi
 
 git lfs install
 systemctl enable clickhouse-server
 systemctl start clickhouse-server
 
+# set PowerShell as default shell
+chsh -s /usr/bin/pwsh root
+
 # disable SELinux (required for Nix on Fedora)
-if (Get-Command setenforce -ErrorAction SilentlyContinue) {
+if command -v setenforce &> /dev/null; then
     setenforce 0
-    (Get-Content /etc/selinux/config) -replace 'SELINUX=enforcing', 'SELINUX=permissive' | Set-Content /etc/selinux/config
-}
+    sed -i 's/SELINUX=enforcing/SELINUX=permissive/' /etc/selinux/config
+fi
 
 # install Nix
-& sh -c 'curl -L https://nixos.org/nix/install | sh -s -- --daemon --yes'
+sh <(curl -L https://nixos.org/nix/install) --daemon --yes
 
 # get rust
-& sh -c 'curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y'
-$env:PATH = "$HOME/.cargo/bin:$env:PATH"
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+source "$HOME/.cargo/env"
 rustup default nightly
+```
+
+Now reconnect to get PowerShell:
+```pwsh
+exit
+ssh $env:MAIN_SERVER_SSH_HOST
 ```
 
 ```pwsh

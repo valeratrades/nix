@@ -209,6 +209,15 @@
           nix-tree # analyse nix-store
         ]
         [
+          # zathura
+          zathura 
+          zathuraPkgs.zathura_pdf_poppler
+          zathuraPkgs.zathura_cb
+          zathuraPkgs.zathura_pdf_mupdf
+          zathuraPkgs.zathura_djvu
+          zathuraPkgs.zathura_ps
+        ]
+        [
           # RDP clients (linux-to-linux doesn't really work)
           remmina
           anydesk # works to manage windows/linux+X11, but obviously can't RDP linux running wayland
@@ -234,7 +243,6 @@
         himalaya # email client but in rust
         fswebcam # instant webcam photo
         anyrun # wayland-native rust alternative to rofi
-        zathura # read PDFs
         pdfgrep
         xournalpp # draw on PDFs
       ] ++ [

@@ -10,6 +10,22 @@
         PasswordAuthentication = yes
       '';
     };
+    neovim = {
+      package = pkgs.neovim-unwrapped.override { lua = pkgs.luajit; };
+    };
+  #	neovim = import "${neovim-nightly}/flake/packages/neovim.nix" {
+  #  inherit lib pkgs;
+  #  neovim-src =
+  #    let
+  #      lock = lib.importJSON "${neovim-nightly}/flake.lock";
+  #      nodeName = lock.nodes.root.inputs.neovim-src;
+  #      input = lock.nodes.${nodeName}.locked;
+  #    in
+  #    pkgs.fetchFromGitHub {
+  #      inherit (input) owner repo rev;
+  #      hash = input.narHash;
+  #    };
+  #};
     rust-motd.enableMotdInSSHD = true;
     mtr.enable = true;
     gnupg.agent = {
