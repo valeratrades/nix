@@ -83,6 +83,7 @@ else
 fi
 
 git lfs install
+git config --global alias.pl '!git pull && git lfs pull'
 systemctl enable clickhouse-server
 systemctl start clickhouse-server
 

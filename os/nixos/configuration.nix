@@ -105,6 +105,10 @@ in {
 			"nmi_watchdog=1"
 			#dbg: limit CPU to shallow C-states (C0/C1 only) - testing if deep sleep triggers IRQ storms
 			"processor.max_cstate=1"
+			#dbg: TSC showing ~5 billion cycle warp between CPUs - try HPET instead
+			"clocksource=hpet"
+			#dbg: override nixos-hardware's amd_pstate=active - try passive for stability
+			"amd_pstate=passive"
 			# mt7925e WiFi suspend fix - disable ASPM to prevent suspend timeout
 			"pcie_aspm.policy=performance"
 		];
@@ -123,11 +127,19 @@ in {
             options kvm_amd nested=1 # gnome-boxes require kvm
             # Disable NVIDIA HDMI audio (card 0) - suspected cause of IRQ storms/kernel panics
             options snd_hda_intel enable=0,1
+            # Completely blacklist the NVIDIA audio device - nvidia driver keeps re-enabling HDA
+            blacklist snd_hda_codec_hdmi
 						''
 			#dbg
 			#+ ''options binder-linux devices=binder,hwbinder,vndbinder # waydroid wants this ''
 			;
   };
+
+  # Disable NVIDIA audio device completely via udev - prevents nvidia driver from touching HDA
+  services.udev.extraRules = ''
+    # Remove NVIDIA audio device (10de:22eb) when it appears - stops IRQ storms from HDA
+    ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{device}=="0x22eb", ATTR{remove}="1"
+  '';
 
   time.timeZone = "UTC";
   i18n = if user.userFullName == "Timur" then {
