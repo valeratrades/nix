@@ -100,7 +100,7 @@ in {
 				identityFile = [ "~/.ssh/id_ed25519" ];
 			};
       "cloudzy_ubuntu" = {
-        hostname = "45.59.119.234";
+        hostname = "45.59.119.236";
         user = "root";
       };
       #TEST
