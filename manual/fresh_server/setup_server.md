@@ -77,6 +77,15 @@ git lfs install
 systemctl enable clickhouse-server
 systemctl start clickhouse-server
 
+# disable SELinux (required for Nix on Fedora)
+if command -v setenforce &> /dev/null; then
+    setenforce 0
+    sed -i 's/SELINUX=enforcing/SELINUX=permissive/' /etc/selinux/config
+fi
+
+# install Nix
+sh <(curl -L https://nixos.org/nix/install) --daemon --yes
+
 # get rust
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 source "$HOME/.cargo/env"
@@ -102,6 +111,9 @@ ssh-add ~/.ssh/id_ed25519
 
 # install social_networks
 cargo install --git https://github.com/valeratrades/social_networks --branch master
+
+# install server_upkeep
+cargo install --git https://github.com/valeratrades/server_upkeep --branch master
 ```
 
 ---
@@ -121,8 +133,10 @@ Start a tmux session with windows for each service:
 tmux new-session -d -s main -c ~/s
 tmux rename-window -t main:0 social_networks
 tmux new-window -t main -n site -c ~/s/site
+tmux new-window -t main -n server_upkeep -c ~/s
 tmux attach -t main
 ```
 
 - **Window 0**: `social_networks`
 - **Window 1**: `site` (see [site README installation section](https://github.com/valeratrades/site#installation) for setup)
+- **Window 2**: `server_upkeep`
