@@ -119,11 +119,28 @@ function M.setup_save(statusfile)
   -- Store the tmpfile path (the file we're editing)
   local tmpfile = vim.fn.expand('%:p')
 
+  -- Debug: log to file
+  local logf = io.open(vim.fn.expand('~/.local/state/termfilechooser-nvim.log'), 'a')
+  if logf then
+    logf:write(string.format('%s: setup_save called, tmpfile=%s, statusfile=%s\n',
+      os.date(), tmpfile, statusfile))
+    logf:close()
+  end
+
   -- Enter to confirm
   vim.keymap.set('n', '<CR>', function()
     -- Get the edited path from buffer and write directly to tmpfile
     local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
     local path = table.concat(lines, '\n')
+
+    -- Debug: log what we're writing
+    local logf = io.open(vim.fn.expand('~/.local/state/termfilechooser-nvim.log'), 'a')
+    if logf then
+      logf:write(string.format('%s: CR pressed, writing path=[%s] to tmpfile=[%s]\n',
+        os.date(), path, tmpfile))
+      logf:close()
+    end
+
     vim.fn.writefile({ path }, tmpfile)
     vim.fn.writefile({ '1' }, statusfile)
     vim.cmd('q!')

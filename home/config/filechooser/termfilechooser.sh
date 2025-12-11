@@ -22,8 +22,13 @@ if [ "$save" = "1" ]; then
 
   alacritty -e nvim "$tmpfile" "+TermFileChooserSave $statusfile"
 
+  echo "$(date): After nvim exit, tmpfile contents: [$(cat "$tmpfile")]" >> "$logfile"
   if [ "$(cat "$statusfile")" = "1" ] && [ -f "$tmpfile" ] && [ -s "$tmpfile" ]; then
     selected_path=$(head -n1 "$tmpfile" | tr -d '\n\r')
+    #HACK Create parent directory and touch the file so portal's stat() succeeds  {{{1
+    mkdir -p "$(dirname "$selected_path")"
+    touch "$selected_path"
+    #,}}}1
     printf '%s' "$selected_path" > "$out"
     echo "$(date): SAVE CONFIRMED selected_path=$selected_path" >> "$logfile"
   else
