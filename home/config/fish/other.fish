@@ -302,18 +302,6 @@ alias sr="source $NIXOS_CONFIG/home/config/fish/mod.fish" # Fish equivalent for 
 alias wui="waydroid show-full-ui" # default way to open it, after initiating the session with `waydroid session start`
 #
 
-# # direnv
-alias dira="git add -A && direnv allow"
-function de
-	# direnv wrap
-	direnv allow && \
-	$argv && \
-	direnv deny
-end
-alias dirr="rm -r .direnv; dira" # for `direnv reload`
-alias dird="direnv deny"
-#
-
 #gpg id = gpg --list-keys --with-colons | awk -F: '/uid/ && /valeratrades@gmail.com/ {getline; print $5}'
 
 # # keyd
