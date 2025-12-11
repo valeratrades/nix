@@ -79,6 +79,7 @@
 
                 mkdir -p ./.cargo
                 cp -f ${ (v-utils.files.gitignore { inherit pkgs; langs = [ "rs" ]; }) } ./.gitignore
+                cp -f ${ (v-utils.files.gitLfs { inherit pkgs; }) } ./.gitattributes
                 cp -f ${(v-utils.files.rust.clippy { inherit pkgs; })} ./.cargo/.clippy.toml
                 cp -f ${(v-utils.files.rust.config { inherit pkgs; })} ./.cargo/config.toml
                 cp -f ${(v-utils.files.rust.rustfmt { inherit pkgs; })} ./.rustfmt.toml

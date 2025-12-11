@@ -47,6 +47,7 @@
                 langs = [ ];
               })
             } ./.gitignore
+            cp -f ${ (v-utils.files.gitLfs { inherit pkgs; }) } ./.gitattributes
             cp -f ${readme} ./README.md
           '';
         };

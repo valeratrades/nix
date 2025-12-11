@@ -86,6 +86,7 @@
                     langs = [ "go" ];
                   })
                 } ./.gitignore
+                cp -f ${ (v-utils.files.gitLfs { inherit pkgs; }) } ./.gitattributes
                 cp -f ${(v-utils.files.golang.gofumpt { inherit pkgs; })} ./gofumpt.toml
 
                 cp -f ${readme} ./README.md

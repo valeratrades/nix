@@ -23,17 +23,6 @@
     ".config/auto_redshift.toml".source =
       "${self}/home/config/auto_redshift.toml";
     ".config/todo.toml".source = "${self}/home/config/todo.toml";
-    ".gitattributes".text = ''
-      *.jpg filter=lfs diff=lfs merge=lfs -text
-      *.jpeg filter=lfs diff=lfs merge=lfs -text
-      *.png filter=lfs diff=lfs merge=lfs -text
-      *.gif filter=lfs diff=lfs merge=lfs -text
-      *.bmp filter=lfs diff=lfs merge=lfs -text
-      *.tiff filter=lfs diff=lfs merge=lfs -text
-      *.webp filter=lfs diff=lfs merge=lfs -text
-      *.svg filter=lfs diff=lfs merge=lfs -text
-      *.pdf filter=lfs diff=lfs merge=lfs -text
-    '';
 	}
 		// pkgs.lib.optionalAttrs (user.kbd != "ansi") (
 			let
