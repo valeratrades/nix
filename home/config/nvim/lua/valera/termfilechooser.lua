@@ -4,6 +4,9 @@
 
 local M = {}
 
+local ABORT_KEYS = { 'q', '<C-c>', '<A-;>' }
+local CONFIRM_KEYS = { '<CR>', '<M-a>' }
+
 _G.filechooser_marks = {}
 _G.filechooser_ns = vim.api.nvim_create_namespace('filechooser')
 
@@ -103,8 +106,52 @@ function M.setup_open(tmpfile)
         oil.open(vim.fn.expand('~/tmp/Screenshots/'))
       end, { buffer = true })
 
+      -- <C-b> to open a buffer for manual path entry
+      vim.keymap.set('n', '<C-b>', function()
+        -- Collect current marks or current directory
+        local prefill = {}
+        for p in pairs(_G.filechooser_marks) do
+          table.insert(prefill, p)
+        end
+        if #prefill == 0 then
+          table.insert(prefill, oil.get_current_dir())
+        end
+
+        -- Create a new scratch buffer
+        vim.cmd('enew')
+        vim.bo.buftype = 'nofile'
+        vim.bo.bufhidden = 'wipe'
+        vim.bo.swapfile = false
+        vim.api.nvim_buf_set_lines(0, 0, -1, false, prefill)
+
+        -- <CR> or <M-a> to confirm
+        local function confirm_paths()
+          local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+          local paths = {}
+          for _, line in ipairs(lines) do
+            local trimmed = line:match('^%s*(.-)%s*$')
+            if trimmed and #trimmed > 0 then
+              table.insert(paths, trimmed)
+            end
+          end
+          if #paths > 0 then
+            vim.fn.writefile(paths, tmpfile)
+            vim.cmd('qa!')
+          end
+        end
+
+        for _, key in ipairs(CONFIRM_KEYS) do
+          vim.keymap.set('n', key, confirm_paths, { buffer = true })
+        end
+
+        -- Abort keys
+        for _, key in ipairs(ABORT_KEYS) do
+          vim.keymap.set('n', key, function() vim.cmd('cq') end, { buffer = true })
+        end
+      end, { buffer = true })
+
       -- Abort keys
-      for _, key in ipairs({ 'q', '<C-c>', '<A-;>', '<Esc>' }) do
+      for _, key in ipairs(ABORT_KEYS) do
         vim.keymap.set('n', key, function() vim.cmd('cq') end, { buffer = true })
       end
     end
@@ -127,8 +174,8 @@ function M.setup_save(statusfile)
     logf:close()
   end
 
-  -- Enter to confirm
-  vim.keymap.set('n', '<CR>', function()
+  -- Confirm keys
+  local function confirm_save()
     -- Get the edited path from buffer and write directly to tmpfile
     local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
     local path = table.concat(lines, '\n')
@@ -136,7 +183,7 @@ function M.setup_save(statusfile)
     -- Debug: log what we're writing
     local logf = io.open(vim.fn.expand('~/.local/state/termfilechooser-nvim.log'), 'a')
     if logf then
-      logf:write(string.format('%s: CR pressed, writing path=[%s] to tmpfile=[%s]\n',
+      logf:write(string.format('%s: confirm pressed, writing path=[%s] to tmpfile=[%s]\n',
         os.date(), path, tmpfile))
       logf:close()
     end
@@ -144,10 +191,14 @@ function M.setup_save(statusfile)
     vim.fn.writefile({ path }, tmpfile)
     vim.fn.writefile({ '1' }, statusfile)
     vim.cmd('q!')
-  end, { buffer = true })
+  end
+
+  for _, key in ipairs(CONFIRM_KEYS) do
+    vim.keymap.set('n', key, confirm_save, { buffer = true })
+  end
 
   -- Abort keys
-  for _, key in ipairs({ 'q', '<C-c>', '<A-;>', '<Esc>' }) do
+  for _, key in ipairs(ABORT_KEYS) do
     vim.keymap.set('n', key, function() vim.cmd('q!') end, { buffer = true })
   end
 end
