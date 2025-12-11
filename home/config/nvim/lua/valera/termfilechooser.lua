@@ -116,11 +116,17 @@ function M.setup_save(statusfile)
   vim.cmd('setlocal filetype=')
   vim.cmd('setlocal buftype=')
 
+  -- Store the tmpfile path (the file we're editing)
+  local tmpfile = vim.fn.expand('%:p')
+
   -- Enter to confirm
   vim.keymap.set('n', '<CR>', function()
-    vim.cmd('w')
+    -- Get the edited path from buffer and write directly to tmpfile
+    local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+    local path = table.concat(lines, '\n')
+    vim.fn.writefile({ path }, tmpfile)
     vim.fn.writefile({ '1' }, statusfile)
-    vim.cmd('q')
+    vim.cmd('q!')
   end, { buffer = true })
 
   -- Abort keys
