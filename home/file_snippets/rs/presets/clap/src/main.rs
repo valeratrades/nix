@@ -4,7 +4,7 @@ pub mod config;
 use config::AppConfig;
 
 #[derive(Parser, Default)]
-#[command(author, version, about, long_about = None)]
+#[command(author, version = concat!(env!("CARGO_PKG_VERSION"), " (", env!("GIT_HASH"), ")"), about, long_about = None)]
 struct Cli {
 	#[command(subcommand)]
 	command: Commands,
