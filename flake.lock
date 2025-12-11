@@ -2862,16 +2862,16 @@
         "wrap-it": "wrap-it"
       },
       "locked": {
-        "lastModified": 1765368048,
-        "narHash": "sha256-BzA9hMRJmveMsPM/vYMNRdHjcJHomLQ21Ys3xpc8yMk=",
+        "lastModified": 1765401976,
+        "narHash": "sha256-l3J2HwvBQpo9SM5wlRR8LT9/uQnpWCP2JvqHKiMprqk=",
         "owner": "valeratrades",
         "repo": "wallpaper_carousel",
-        "rev": "0d4fda9b92108022fb9bb8767e0a41f6c62bdf59",
+        "rev": "512e5f918135eae99c22a28ad827b8d60a5e0a83",
         "type": "github"
       },
       "original": {
         "owner": "valeratrades",
-        "ref": "release",
+        "ref": "master",
         "repo": "wallpaper_carousel",
         "type": "github"
       }
