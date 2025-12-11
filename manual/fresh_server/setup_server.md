@@ -1,3 +1,4 @@
+//TODO: if pwsh ends up being better, - nuke this (after asserting conf and setup guide for it are supersets of this)
 # Fresh Server Setup
 
 ## Prerequisites
@@ -28,6 +29,10 @@ scp ~/.ssh/id_ed25519.pub $MAIN_SERVER_SSH_HOST:~/.ssh/
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 scp "$SCRIPT_DIR/.bashrc" $MAIN_SERVER_SSH_HOST:~/.bashrc
 
+# setup powershell profile
+ssh $MAIN_SERVER_SSH_HOST 'mkdir -p ~/.config/powershell'
+scp "$SCRIPT_DIR/Microsoft.PowerShell_profile.ps1" $MAIN_SERVER_SSH_HOST:~/.config/powershell/
+
 # setup app configs (with env substitution)
 cat ~/.config/social_networks.toml | reasonable_envsubst - | ssh $MAIN_SERVER_SSH_HOST 'cat > ~/.config/social_networks.toml'
 cat ~/.config/site.nix | reasonable_envsubst - | ssh $MAIN_SERVER_SSH_HOST 'cat > ~/.config/site.nix'
@@ -50,7 +55,7 @@ if [ -f /etc/os-release ]; then
     case "$ID" in
         ubuntu|debian)
             apt update
-            apt install -y build-essential pkg-config libssl-dev git-lfs apt-transport-https ca-certificates curl gnupg fzf direnv tmux neovim
+            apt install -y build-essential pkg-config libssl-dev git-lfs apt-transport-https ca-certificates curl gnupg fzf direnv tmux neovim caddy
             # ClickHouse (official repo - Ubuntu's default is ancient 18.x, we need 21.8+)
             curl -fsSL 'https://packages.clickhouse.com/rpm/lts/repodata/repomd.xml.key' | gpg --dearmor -o /usr/share/keyrings/clickhouse-keyring.gpg
             echo "deb [signed-by=/usr/share/keyrings/clickhouse-keyring.gpg] https://packages.clickhouse.com/deb stable main" | tee /etc/apt/sources.list.d/clickhouse.list
@@ -58,7 +63,7 @@ if [ -f /etc/os-release ]; then
             apt install -y clickhouse-server clickhouse-client
             ;;
         fedora)
-            dnf install -y gcc gcc-c++ make pkg-config openssl-devel git-lfs ca-certificates curl gnupg fzf direnv tmux neovim
+            dnf install -y gcc gcc-c++ make pkg-config openssl-devel git-lfs ca-certificates curl gnupg fzf direnv tmux neovim caddy
             # ClickHouse (official repo)
             curl -fsSL https://packages.clickhouse.com/rpm/clickhouse.repo | tee /etc/yum.repos.d/clickhouse.repo
             dnf install -y clickhouse-server clickhouse-client
@@ -91,6 +96,10 @@ echo 'q /tmp 1777 root root 1d' > /etc/tmpfiles.d/tmp.conf
 
 # install Nix
 sh <(curl -L https://nixos.org/nix/install) --daemon --yes
+
+# enable nix experimental features (flakes, nix command)
+mkdir -p ~/.config/nix
+echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
 
 # daily nix garbage collection (removes unreferenced store paths)
 cat > /etc/systemd/system/nix-gc.service << 'EOF'
@@ -171,3 +180,30 @@ tmux attach -t main
 - **Window 0**: `social_networks`
 - **Window 1**: `site` (see [site README installation section](https://github.com/valeratrades/site#installation) for setup)
 - **Window 2**: `server_upkeep`
+
+---
+
+## Step 5: Server — Configure Caddy (HTTPS Reverse Proxy)
+
+Caddy auto-manages SSL certificates via Let's Encrypt.
+
+```sh
+# configure Caddyfile for site
+cat > /etc/caddy/Caddyfile << 'EOF'
+valeratrades.com {
+    reverse_proxy localhost:61156
+}
+
+www.valeratrades.com {
+    redir https://valeratrades.com{uri} permanent
+}
+EOF
+
+# enable and start caddy
+systemctl enable --now caddy
+
+# verify caddy is running
+systemctl status caddy
+```
+
+DNS must have A records for `valeratrades.com` and `www.valeratrades.com` pointing to the server IP.

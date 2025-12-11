@@ -106,8 +106,8 @@ function M.setup_open(tmpfile)
         oil.open(vim.fn.expand('~/tmp/Screenshots/'))
       end, { buffer = true })
 
-      -- <C-b> to open a buffer for manual path entry
-      vim.keymap.set('n', '<C-b>', function()
+      -- <M-b> to open a buffer for manual path entry
+      vim.keymap.set('n', '<M-b>', function()
         -- Collect current marks or current directory
         local prefill = {}
         for p in pairs(_G.filechooser_marks) do
