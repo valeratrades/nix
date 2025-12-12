@@ -20,6 +20,91 @@ return {
 		local ts_utils = require('nvim-treesitter.ts_utils')
 		local lspkind = require('lspkind')
 
+		-- Track current async_path sort mode: "alpha" (default) or "ctime"
+		local async_path_sort_mode = "alpha"
+
+		-- Custom comparator for async_path entries by creation time (newest first)
+		local function compare_by_ctime(entry1, entry2)
+			local source1 = entry1.source.name
+			local source2 = entry2.source.name
+
+			if async_path_sort_mode ~= "ctime" then
+				return nil
+			end
+
+			-- Prioritize async_path over other sources when in ctime mode
+			if source1 == "async_path" and source2 ~= "async_path" then
+				return true
+			end
+			if source1 ~= "async_path" and source2 == "async_path" then
+				return false
+			end
+
+			-- Only sort by ctime for async_path entries
+			if source1 ~= "async_path" or source2 ~= "async_path" then
+				return nil
+			end
+
+			local path1 = entry1:get_completion_item().label
+			local path2 = entry2:get_completion_item().label
+
+			-- Get the directory we're completing in
+			local cursor_before_line = vim.fn.getline('.'):sub(1, vim.fn.col('.') - 1)
+			local path_prefix = cursor_before_line:match('[%w%-%./~]+$') or ''
+			local dir = vim.fn.expand('%:p:h')
+			if path_prefix:match('^[/~]') then
+				dir = vim.fn.fnamemodify(path_prefix, ':h')
+			elseif path_prefix:match('/') then
+				dir = dir .. '/' .. vim.fn.fnamemodify(path_prefix, ':h')
+			end
+
+			local stat1 = vim.loop.fs_stat(dir .. '/' .. path1)
+			local stat2 = vim.loop.fs_stat(dir .. '/' .. path2)
+
+			if stat1 and stat2 then
+				-- Sort by ctime (creation/change time), newest first
+				local ctime1 = stat1.ctime and stat1.ctime.sec or 0
+				local ctime2 = stat2.ctime and stat2.ctime.sec or 0
+				if ctime1 ~= ctime2 then
+					return ctime1 > ctime2
+				end
+			end
+
+			return nil
+		end
+
+		-- Custom comparator for async_path alphabetical sorting
+		local function compare_alphabetically(entry1, entry2)
+			local source1 = entry1.source.name
+			local source2 = entry2.source.name
+
+			if async_path_sort_mode ~= "alpha" then
+				return nil
+			end
+
+			-- Prioritize async_path over other sources when in alpha mode
+			if source1 == "async_path" and source2 ~= "async_path" then
+				return true
+			end
+			if source1 ~= "async_path" and source2 == "async_path" then
+				return false
+			end
+
+			-- Only sort alphabetically for async_path entries
+			if source1 ~= "async_path" or source2 ~= "async_path" then
+				return nil
+			end
+
+			local label1 = entry1:get_completion_item().label
+			local label2 = entry2:get_completion_item().label
+
+			if label1 ~= label2 then
+				return label1 < label2
+			end
+
+			return nil
+		end
+
 		-- modes: `i`nsert, `s`elect, `c`ommand
 		local mappings = {
 			['<C-s>'] = cmp_action.luasnip_supertab(),
@@ -45,6 +130,21 @@ return {
 				"s",
 			}),
 			['<C-c>'] = cmp.mapping(cmp.mapping.complete_common_string(), { "i", "s", "c" }),
+			['<C-t>'] = cmp.mapping(function()
+				if cmp.visible() then
+					async_path_sort_mode = "ctime"
+					-- Force re-sort by closing and reopening
+					cmp.close()
+					cmp.complete()
+				end
+			end, { "i", "s" }),
+			['<C-a>'] = cmp.mapping(function()
+				if cmp.visible() then
+					async_path_sort_mode = "alpha"
+					cmp.close()
+					cmp.complete()
+				end
+			end, { "i", "s" }),
 		}
 
 
@@ -144,6 +244,8 @@ return {
 			sorting = {
 				priority_weight = 1,
 				comparators = {
+					compare_by_ctime,
+					compare_alphabetically,
 					cmp.config.compare.locality,
 					cmp.config.compare.recently_used,
 					cmp.config.compare.score,
