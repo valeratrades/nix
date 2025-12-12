@@ -103,9 +103,8 @@ in {
         hostname = "45.59.119.236";
         user = "root";
       };
-      #TEST
-      "priscilia" = {
-        hostname = "p-laptop.taila74a7d.ts.ne";
+      "p-laptop" = {
+        hostname = "p-laptop";
         user = "p";
 				identitiesOnly = true;
 				identityFile = [ "~/.ssh/id_ed25519" ];

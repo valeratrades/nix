@@ -8,6 +8,11 @@ function code_vincent
 	code --remote ssh-remote+vincent /home/nixos/$argv[1]
 end
 
+function code_prlia
+	ssh-add ~/.ssh/id_ed25519
+	code --remote ssh-remote+p-laptop /home/p/$argv[1]
+end
+
 # not sure abuot the name. Especially considering it's hardcoded. But whatever.
 function dump
 	scp -r "$argv[1]" dev-server:/home/valera/tmp/

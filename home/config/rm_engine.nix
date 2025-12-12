@@ -14,11 +14,11 @@
       api_pubkey.env = "MEXC_READ_PUBKEY";
       api_secret.env = "MEXC_READ_SECRET";
     };
-    kucoin = {
-      api_pubkey.env = "KUCOIN_API_PUBKEY";
-      api_secret.env = "KUCOIN_API_SECRET";
-      passphrase.env = "KUCOIN_API_PASSPHRASE";
-    };
+    #kucoin = {
+    #  api_pubkey.env = "KUCOIN_API_PUBKEY";
+    #  api_secret.env = "KUCOIN_API_SECRET";
+    #  passphrase.env = "KUCOIN_API_PASSPHRASE";
+    #};
   };
   size = {
     default_sl = 0.02;
