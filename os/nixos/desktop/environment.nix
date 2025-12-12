@@ -1,6 +1,6 @@
 { pkgs, user, ... }: {
   environment.variables = {
-    QT_QPA_PLATFORMTHEME = "flatpak";
+    QT_QPA_PLATFORMTHEME = "xdgdesktopportal";
     GTK_USE_PORTAL = "1";
     GDK_DEBUG = "portals";
     DEFAULT_BROWSER = "${pkgs.google-chrome}/bin/google-chrome-stable";

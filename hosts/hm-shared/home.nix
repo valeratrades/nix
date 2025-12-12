@@ -171,7 +171,19 @@
         ]
         [
           # messengers
-          telegram-desktop
+          # Wrap telegram-desktop to force XDG portal usage for file dialogs
+          # (global QT_QPA_PLATFORMTHEME doesn't get picked up by Telegram)
+          (runCommand "telegram-desktop-portal" { nativeBuildInputs = [ makeWrapper ]; } ''
+            mkdir -p $out/bin $out/share/applications $out/share/icons
+            ln -s ${telegram-desktop}/share/icons/* $out/share/icons/
+            makeWrapper ${telegram-desktop}/bin/Telegram $out/bin/Telegram \
+              --set QT_QPA_PLATFORMTHEME xdgdesktopportal
+            ln -s $out/bin/Telegram $out/bin/telegram-desktop
+            # Patch desktop file to use our wrapped binary
+            substitute ${telegram-desktop}/share/applications/org.telegram.desktop.desktop \
+              $out/share/applications/org.telegram.desktop.desktop \
+              --replace-fail "Exec=Telegram" "Exec=$out/bin/Telegram"
+          '')
           element-desktop # GUI matrix client
           iamb # TUI matrix client (rust)
           zulip
