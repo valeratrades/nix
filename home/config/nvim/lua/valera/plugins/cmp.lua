@@ -133,16 +133,20 @@ return {
 			['<C-t>'] = cmp.mapping(function()
 				if cmp.visible() then
 					async_path_sort_mode = "ctime"
-					-- Force re-sort by closing and reopening
-					cmp.close()
-					cmp.complete()
+					-- Force re-sort by aborting and reopening
+					cmp.abort()
+					vim.schedule(function()
+						cmp.complete()
+					end)
 				end
 			end, { "i", "s" }),
 			['<C-a>'] = cmp.mapping(function()
 				if cmp.visible() then
 					async_path_sort_mode = "alpha"
-					cmp.close()
-					cmp.complete()
+					cmp.abort()
+					vim.schedule(function()
+						cmp.complete()
+					end)
 				end
 			end, { "i", "s" }),
 		}
