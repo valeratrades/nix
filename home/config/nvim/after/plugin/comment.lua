@@ -58,8 +58,7 @@ K("v", "gba", "<esc>`><cmd>lua FoldmarkerCommentBlock('always')<cr>", {
 })
 
 -- Custom foldtext that strips "always" from fold markers
-local original_foldtext = vim.opt.foldtext:get()
-vim.opt.foldtext = [[substitute(getline(v:foldstart),'{{{always','{{{','')]]
+vim.opt.foldtext = [[substitute(getline(v:foldstart),'{{{]] .. [[always','{{{','')]]
 
 vim.api.nvim_create_autocmd("BufReadPost", {
 	callback = function()
