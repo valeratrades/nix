@@ -24,10 +24,13 @@
       DontCheckDefaultBrowser = true;
       DisableLoudnessNormalization = true;
 
-      WebsiteFilter.Block = [
-        "*://*youtube.com/*"
-        "*://*tankionline.com/*"
-        "*://*instagram.com/*"
+      WebsiteFilter.Block = let
+        block = domain: [ "*://${domain}/*" "*://*.${domain}/*" ];
+      in builtins.concatLists [
+        (block "youtube.com")
+        (block "tankionline.com")
+        (block "instagram.com")
+        (block "wcoflix.tv")
       ];
 
       ExtensionSettings = let
