@@ -25,12 +25,6 @@
     default_sl = 0.02;
     round_bias = "5%";
 
-    risk_tiers = {
-      a = "20%";
-      b = "8%";
-      c = "3%";
-      d = "1%";
-      e = "0.25%";
-    };
+    abs_max_risk = "20%";
   };
 }

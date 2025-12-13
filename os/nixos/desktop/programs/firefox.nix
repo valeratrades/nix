@@ -24,6 +24,12 @@
       DontCheckDefaultBrowser = true;
       DisableLoudnessNormalization = true;
 
+      WebsiteFilter.Block = [
+        "*://*youtube.com/*"
+        "*://*tankionline.com/*"
+        "*://*instagram.com/*"
+      ];
+
       ExtensionSettings = let
         extension = shortId: uuid: {
           name = uuid;
