@@ -1,9 +1,26 @@
 use nvim_oxi::{api, String as NvimString};
+use serde::Deserialize;
 
 use crate::{
 	shorthands::{f, ft, infer_comment_string},
 	utils::defer_fn,
 };
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(untagged)]
+pub enum NestingLevel {
+	Always,
+	Number(i64),
+}
+
+impl NestingLevel {
+	fn to_fold_string(&self) -> String {
+		match self {
+			NestingLevel::Always => "always".to_string(),
+			NestingLevel::Number(n) => n.to_string(),
+		}
+	}
+}
 
 /// Temporarily disable copilot and set up an autocmd to re-enable it on InsertLeave
 fn disable_copilot_temporarily() {
@@ -22,19 +39,20 @@ fn disable_copilot_temporarily() {
 }
 
 /// Add foldmarker comment block around selection
-pub fn foldmarker_comment_block(nesting_level: i64) {
+pub fn foldmarker_comment_block(nesting_level: NestingLevel) {
 	let cs_str = infer_comment_string();
+	let level_str = nesting_level.to_fold_string();
 
 	disable_copilot_temporarily();
 
 	// Original Lua: F('o' .. cs .. ',}}}' .. nesting_level)
-	f(format!("o{},}}}}}}{}", cs_str, nesting_level), None);
+	f(format!("o{},}}}}}}{}", cs_str, level_str), None);
 
 	// Original Lua: Ft('<Esc>`<')
 	ft("<Esc>`<".to_string(), None);
 
 	// Original Lua: F('O' .. cs .. '  ' .. '{{{' .. nesting_level)
-	f(String::from("O") + &cs_str + "  {{{" + &nesting_level.to_string(), None);
+	f(format!("O{}  {{{{{{{}", cs_str, level_str), None);
 
 	// Original Lua: Ft('<Esc>hhhhi')
 	ft("<Esc>hhhhi".to_string(), None);

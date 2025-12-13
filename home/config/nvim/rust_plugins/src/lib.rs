@@ -347,7 +347,16 @@ fn rust_plugins() -> nvim_oxi::Result<Dictionary> {
 	// Comment functions
 	let cs_fn = Function::from_fn(|()| shorthands::infer_comment_string());
 	let infer_comment_string_fn = Function::from_fn(|()| shorthands::infer_comment_string());
-	let foldmarker_comment_block_fn = Function::from_fn(|(n,)| comment::foldmarker_comment_block(n));
+	let foldmarker_comment_block_fn = Function::from_fn(|(n,): (Object,)| {
+		let level = if let Ok(num) = i64::try_from(n.clone()) {
+			comment::NestingLevel::Number(num)
+		} else if nvim_oxi::String::try_from(n).is_ok() {
+			comment::NestingLevel::Always
+		} else {
+			comment::NestingLevel::Number(1) // default
+		};
+		comment::foldmarker_comment_block(level)
+	});
 	let remove_eol_comment_fn = Function::from_fn(|()| comment::remove_end_of_line_comment());
 	let debug_comment_fn = Function::from_fn(|(action,): (String,)| comment::debug_comment(&action));
 	let add_todo_comment_fn = Function::from_fn(|(n,)| comment::add_todo_comment(n));

@@ -44,7 +44,6 @@ end, { desc = "comment: reimplement `gcA`" })
 
 -- -- Surround Block Comments
 function FoldmarkerCommentBlock(nesting_level)
-	nesting_level = nesting_level or 1
 	require('rust_plugins').foldmarker_comment_block(nesting_level)
 end
 
@@ -53,6 +52,19 @@ for i = 1, 5 do
 		desc = string.format("Add a fold marker (nest %d) around selection", i),
 	})
 end
+-- gba for always-folded blocks
+K("v", "gba", "<esc>`><cmd>lua FoldmarkerCommentBlock('always')<cr>", {
+	desc = "Add a fold marker (always) around selection",
+})
+
+vim.api.nvim_create_autocmd("BufReadPost", {
+	callback = function()
+		vim.defer_fn(function()
+			vim.cmd([[silent! g/{{]] .. [[{always/normal! zc]])
+		end, 10)
+	end,
+})
+
 -- gbf as alias for gb1f
 K("v", "gbf", "<esc>`><cmd>lua FoldmarkerCommentBlock(1)<cr>", {
 	desc = "Add a fold marker (nest 1) around selection",
