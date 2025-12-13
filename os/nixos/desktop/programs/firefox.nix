@@ -34,6 +34,7 @@
           (block "wcoflix.tv")
           (block "ridomovies.tv")
           (block "moviesjoy.cx")
+          (block "anigo.to")
           #,}}}1
       ];
 
