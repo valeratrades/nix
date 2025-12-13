@@ -27,10 +27,14 @@
       WebsiteFilter.Block = let
         block = domain: [ "*://${domain}/*" "*://*.${domain}/*" ];
       in builtins.concatLists [
-        (block "youtube.com")
-        (block "tankionline.com")
-        (block "instagram.com")
-        (block "wcoflix.tv")
+          # hide to not even look at these {{{1
+          (block "youtube.com")
+          (block "tankionline.com")
+          (block "instagram.com")
+          (block "wcoflix.tv")
+          (block "ridomovies.tv")
+          (block "moviesjoy.cx")
+          #,}}}1
       ];
 
       ExtensionSettings = let

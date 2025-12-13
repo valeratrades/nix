@@ -68,13 +68,13 @@ fn find_todo_impl() {
 	let qf_array = Array::from_iter(qf_entries);
 
 	if let Err(e) = api::call_function::<_, i64>("setqflist", (qf_array,)) {
-		let _ = api::err_writeln(&format!("Error setting quickfix list: {}", e));
+		api::err_writeln(&format!("Error setting quickfix list: {e}"));
 		return;
 	}
 
 	// Set mark 'T' to allow jumping back
 	if let Err(e) = api::command("mark T") {
-		let _ = api::err_writeln(&format!("Error setting mark: {}", e));
+		api::err_writeln(&format!("Error setting mark: {e}"));
 	}
 }
 
@@ -123,10 +123,8 @@ fn should_rebuild() -> bool {
 							}
 						}
 					}
-				} else if path.is_dir() {
-					if check_dir_modified(&path, since) {
-						return true;
-					}
+				} else if path.is_dir() && check_dir_modified(&path, since) {
+					return true;
 				}
 			}
 		}
@@ -150,7 +148,7 @@ fn rebuild_if_needed() {
 		Err(_) => return,
 	};
 	// Notify user that rebuild is starting
-	let _ = api::err_writeln("Rebuilding Rust plugins...");
+	api::err_writeln("Rebuilding Rust plugins...");
 
 	let log_file = state_dir.join("build.log");
 	let timestamp_file = state_dir.join("last_build");
@@ -277,7 +275,7 @@ fn goto_file_line_column_or_function(file_line_or_func: String) {
 			);
 			let _ = api::call_function::<_, ()>("luaeval", (lua_code,));
 		} else {
-			let _ = api::err_writeln("No LSP clients found. Falling back to live_grep");
+			api::err_writeln("No LSP clients found. Falling back to live_grep");
 			let lua_code = format!(
 				r#"
                 local builtin = require('telescope.builtin')
@@ -303,7 +301,7 @@ fn goto_file_line_column_or_function(file_line_or_func: String) {
 	if is_readable == 1 {
 		let _ = api::command(&format!("edit {}", expanded_file));
 	} else {
-		let _ = api::err_writeln("Invalid format. Expected: file:line:col or file:function_name");
+		api::err_writeln("Invalid format. Expected: file:line:col or file:function_name");
 	}
 }
 
@@ -313,7 +311,7 @@ fn popup_log_contents(contents: String) {
 	let check = Command::new("sh").arg("-c").arg("command -v prettify_log").output();
 
 	if check.map(|o| o.stdout.is_empty()).unwrap_or(true) {
-		let _ = api::err_writeln("prettify_log not found in PATH. Install it from https://github.com/valeratrades/prettify_log");
+		api::err_writeln("prettify_log not found in PATH. Install it from https://github.com/valeratrades/prettify_log");
 		return;
 	}
 
@@ -332,7 +330,7 @@ fn popup_log_contents(contents: String) {
 			utils::show_markdown_popup(as_rust_block.to_string());
 		}
 		_ => {
-			let _ = api::err_writeln("Failed to run prettify_log");
+			api::err_writeln("Failed to run prettify_log");
 		}
 	}
 }

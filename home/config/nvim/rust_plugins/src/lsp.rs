@@ -209,7 +209,10 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 			let lua_code = format!("vim.fn.strlen(vim.fn.getline({line_count_1idx}))");
 			api::call_function("luaeval", (lua_code,)).unwrap_or(0)
 		};
-		debug_log(format!("File has {} lines (0-idx: 0..={}), last line ends at col {}", line_count_1idx, last_line_idx, last_line_col));
+		debug_log(format!(
+			"File has {} lines (0-idx: 0..={}), last line ends at col {}",
+			line_count_1idx, last_line_idx, last_line_col
+		));
 
 		// Parse and interpret all diagnostics first
 		let mut interpreted_diagnostics: Vec<InterpretedDiagnostic> = Vec::new();
@@ -259,7 +262,7 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 			use std::collections::HashMap;
 			let mut by_line: HashMap<i64, Vec<&InterpretedDiagnostic>> = HashMap::new();
 			for diag in &interpreted_diagnostics {
-				by_line.entry(diag.start.0).or_insert_with(Vec::new).push(diag);
+				by_line.entry(diag.start.0).or_default().push(diag);
 			}
 
 			// Sort lines and display
@@ -304,10 +307,7 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 		let nav_to: Option<(i64, Option<i64>)> = match diagnostics_filter {
 			DiagnosticsFilter::SameLine => {
 				// Get diagnostics on current line only, sorted by column
-				let mut diags_on_line: Vec<&InterpretedDiagnostic> = interpreted_diagnostics
-					.iter()
-					.filter(|d| d.start.0 == current_line)
-					.collect();
+				let mut diags_on_line: Vec<&InterpretedDiagnostic> = interpreted_diagnostics.iter().filter(|d| d.start.0 == current_line).collect();
 				diags_on_line.sort_by_key(|d| d.start.1);
 
 				if diags_on_line.is_empty() {
@@ -328,24 +328,17 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 						let target_col = match direction {
 							Direction::Forward => {
 								// Find first col > current_col, or wrap to first
-								cols.iter()
-									.find(|&&c| c > current_col)
-									.copied()
-									.unwrap_or(*cols.first().unwrap())
+								cols.iter().find(|&&c| c > current_col).copied().unwrap_or(*cols.first().unwrap())
 							}
 							Direction::Reverse => {
 								// Find last col < current_col, or wrap to last
-								cols.iter()
-									.rev()
-									.find(|&&c| c < current_col)
-									.copied()
-									.unwrap_or(*cols.last().unwrap())
+								cols.iter().rev().find(|&&c| c < current_col).copied().unwrap_or(*cols.last().unwrap())
 							}
 						};
 						Some((current_line, Some(target_col)))
 					}
 				}
-			},
+			}
 			_ => match !is_popup_open() && interpreted_diagnostics.iter().any(|d| d.start.0 == current_line) {
 				true => None,
 				false => {
@@ -355,7 +348,11 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 						// Get all unique lines with diagnostics
 						use std::collections::HashSet;
 						let mut lines_with_diagnostics: Vec<i64> = relevant_diagnostics.iter().map(|d| d.start.0).collect::<HashSet<_>>().into_iter().collect();
-						debug_log(format!("relevant_diagnostics count: {}, lines_with_diagnostics: {:?}", relevant_diagnostics.len(), lines_with_diagnostics));
+						debug_log(format!(
+							"relevant_diagnostics count: {}, lines_with_diagnostics: {:?}",
+							relevant_diagnostics.len(),
+							lines_with_diagnostics
+						));
 						lines_with_diagnostics.sort_unstable();
 						match direction {
 							Direction::Forward => {
@@ -379,12 +376,14 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 					};
 					Some((target_line, None))
 				}
-			}
+			},
 		};
 		if let Some((line, maybe_col)) = nav_to {
 			// getcurpos() returns [bufnum, lnum, col, off, curswant] - all 1-indexed
 			let curpos: Vec<i64> = api::call_function("getcurpos", ((),)).unwrap_or_default();
-			let [bufnr, _lnum, _col, off, curswant] = curpos[..] else { panic!("getcurpos returned {} elements", curpos.len()) };
+			let [bufnr, _lnum, _col, off, curswant] = curpos[..] else {
+				panic!("getcurpos returned {} elements", curpos.len())
+			};
 			debug_log(format!("{curpos:?}"));
 			// nav_to is 0-indexed, curswant is 1-indexed
 			let col = match maybe_col {
@@ -416,17 +415,11 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 			let mut diagnostics_to_display: Vec<&InterpretedDiagnostic> = match diagnostics_filter {
 				DiagnosticsFilter::SameLine => {
 					// Only show diagnostic(s) at exact current position
-					interpreted_diagnostics
-						.iter()
-						.filter(|d| d.start == (display_line, display_col))
-						.collect()
+					interpreted_diagnostics.iter().filter(|d| d.start == (display_line, display_col)).collect()
 				}
 				_ => {
 					// Show all diagnostics on the target line
-					interpreted_diagnostics
-						.iter()
-						.filter(|d| d.start.0 == display_line)
-						.collect()
+					interpreted_diagnostics.iter().filter(|d| d.start.0 == display_line).collect()
 				}
 			};
 			// Sort by severity first, then by column within each severity level
@@ -467,13 +460,9 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 				// if None, it's because we are already there but no existing popup, - so nothing to close
 				crate::remap::kill_popups();
 			}
-			debug_log(format!(
-				"\n=== OPENING FLOAT ===\n{} diagnostics to show",
-				diagnostics_to_show.len()
-			));
+			debug_log(format!("\n=== OPENING FLOAT ===\n{} diagnostics to show", diagnostics_to_show.len()));
 			show_diagnostic_float(diagnostics_to_show);
 		}
-		return;
 	});
 }
 
