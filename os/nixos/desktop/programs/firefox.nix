@@ -27,7 +27,7 @@
       WebsiteFilter.Block = let
         block = domain: [ "*://${domain}/*" "*://*.${domain}/*" ];
       in builtins.concatLists [
-          # hide to not even look at these {{{1
+          # hide to not even look at these {{{always
           (block "youtube.com")
           (block "tankionline.com")
           (block "instagram.com")
