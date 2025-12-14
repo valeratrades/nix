@@ -240,6 +240,7 @@ in {
       ];
     #TODO: himalaya. Problems: (gmail requires oauth2, proton requires redirecting to it (also struggling with it))
     file = {
+      ".local/share/fonts/FillLevels.ttf".source = config.lib.file.mkOutOfStoreSymlink "/home/v/nix/home/fs/fonts/FillLevels.ttf"; 
       ".config/himalaya/config.toml".source =
         (pkgs.formats.toml { }).generate "" {
           accounts.master = {

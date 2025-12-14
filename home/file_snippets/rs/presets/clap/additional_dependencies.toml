@@ -1,3 +1,0 @@
-clap = { version = "^4.5.4", features = ["derive"] }
-v_utils = { features = ["io", "macros"], path = "/home/v/s/v_utils/v_utils" }
-config = { version = "^0.14.0" }

@@ -32,9 +32,11 @@
           (block "tankionline.com")
           (block "instagram.com")
           (block "wcoflix.tv")
+          (block "wcostream.tv")
           (block "ridomovies.tv")
           (block "moviesjoy.cx")
           (block "anigo.to")
+          (block "imdb.com")
           #,}}}1
       ];
 

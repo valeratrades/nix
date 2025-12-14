@@ -125,8 +125,9 @@ in {
     extraModprobeConfig = ''
             # options v4l2loopback devices=1 video_nr=1 card_label="OBS Cam" exclusive_caps=1  # disabled with v4l2loopback above
             options kvm_amd nested=1 # gnome-boxes require kvm
-            # Disable NVIDIA HDMI audio (card 0) - suspected cause of IRQ storms/kernel panics
-            options snd_hda_intel enable=0,1
+            # Disable NVIDIA HDMI audio (index 1) - suspected cause of IRQ storms/kernel panics
+            # AMD audio is index 0, NVIDIA is index 1
+            options snd_hda_intel enable=1,0
             # Completely blacklist the NVIDIA audio device - nvidia driver keeps re-enabling HDA
             blacklist snd_hda_codec_hdmi
 						''

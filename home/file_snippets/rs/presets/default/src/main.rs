@@ -1,3 +1,46 @@
+use std::{sync::Arc, time::Duration};
+
+use clap::{Parser, Subcommand};
+pub mod config;
+use config::{LiveSettings, SettingsFlags};
+
+#[derive(Parser, Default)]
+#[command(author, version = concat!(env!("CARGO_PKG_VERSION"), " (", env!("GIT_HASH"), ")"), about, long_about = None)]
+struct Cli {
+	#[command(subcommand)]
+	command: Commands,
+	#[command(flatten)]
+	settings: SettingsFlags,
+}
+#[derive(Subcommand)]
+enum Commands {
+	Greet,
+}
+impl Default for Commands {
+	fn default() -> Self {
+		Commands::Greet
+	}
+}
+
 fn main() {
-	println!("Hello, world!");
+	v_utils::clientside!();
+	let cli = Cli::parse();
+	let live_settings = match LiveSettings::new(cli.settings, Duration::from_secs(5)) {
+		Ok(ls) => Arc::new(ls),
+		Err(e) => {
+			eprintln!("Error reading config: {e}");
+			for cause in e.chain().skip(1) {
+				eprintln!("  Caused by: {cause}");
+			}
+			return;
+		}
+	};
+	match cli.command {
+		Commands::Greet => greet(live_settings),
+	}
+}
+
+fn greet(settings: Arc<LiveSettings>) {
+	let config = settings.config();
+	println!("Hello, {}!", config.example_greet);
 }
