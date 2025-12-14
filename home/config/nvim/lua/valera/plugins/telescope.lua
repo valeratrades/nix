@@ -14,6 +14,46 @@ return require "lazier" {
 		local action_state = require('telescope.actions.state')
 		local gs = { hidden = true, no_ignore = true, file_ignore_patterns = { ".git/", "target/", "%.lock" } } -- `^` and `.` in file ignore patterns don't really work
 
+		-- image.nvim integration for telescope preview
+		local supported_images = { "svg", "png", "jpg", "jpeg", "gif", "webp", "avif" }
+		local image_api = require("image")
+		local is_image_preview = false
+		local image = nil
+		local last_file_path = ""
+
+		local is_supported_image = function(filepath)
+			local split_path = vim.split(filepath:lower(), ".", { plain = true })
+			local extension = split_path[#split_path]
+			return vim.tbl_contains(supported_images, extension)
+		end
+
+		local delete_image = function()
+			if not image then return end
+			image:clear()
+			is_image_preview = false
+		end
+
+		local create_image = function(filepath, winid, bufnr)
+			image = image_api.hijack_buffer(filepath, winid, bufnr)
+			if not image then return end
+			vim.schedule(function()
+				image:render()
+			end)
+			is_image_preview = true
+		end
+
+		local image_buffer_previewer_maker = function(filepath, bufnr, opts)
+			if is_image_preview and last_file_path ~= filepath then
+				delete_image()
+			end
+			last_file_path = filepath
+			if is_supported_image(filepath) then
+				create_image(filepath, opts.winid, bufnr)
+			else
+				require("telescope.previewers").buffer_previewer_maker(filepath, bufnr, opts)
+			end
+		end
+
 		-- Custom action to send to quickfix and open replacer
 		local function send_to_qf_and_replacer(prompt_bufnr)
 			actions.send_to_qflist(prompt_bufnr)
@@ -102,6 +142,7 @@ return require "lazier" {
 				--},
 			},
 			defaults = {
+				buffer_previewer_maker = image_buffer_previewer_maker,
 				mappings = {
 					--Can't find action.top there, could this be done?
 					i = {
