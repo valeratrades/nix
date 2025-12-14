@@ -26,5 +26,9 @@
     round_bias = "5%";
 
     abs_max_risk = "20%";
+
+    risk_layers = {
+      stop_loss_proximity = true; #TODO make useful
+    };
   };
 }
