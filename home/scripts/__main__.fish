@@ -1,7 +1,7 @@
 set fish_scripts_pdir (dirname (status --current-filename))
 source $fish_scripts_pdir/videos.fish
 source $fish_scripts_pdir/server.fish
-source $fish_scripts_pdir/weird/mod.fish
+source $fish_scripts_pdir/weird/__main__.fish
 source $fish_scripts_pdir/document_watch.fish
 
 function beep

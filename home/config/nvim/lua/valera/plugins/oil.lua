@@ -51,9 +51,7 @@ return require "lazier" {
 				["<C-s>"] = "actions.select_vsplit",
 				["<C-h>"] = "actions.select_split",
 				["<C-t>"] = "actions.select_tab",
-				["<C-p>"] = false,
-				["gp"] = false,
-				["<M-p>"] = "actions.preview",
+				["gp"] = false, -- use `<C-p>` instead
 				["<C-c>"] = "actions.close",
 				["<C-l>"] = "actions.refresh",
 				["_"] = "actions.open_cwd",
@@ -118,24 +116,24 @@ return require "lazier" {
 			},
 		})
 
-		vim.api.nvim_create_user_command("OilImagePreview", function()
-			local oil = require("oil")
-			local entry = oil.get_cursor_entry()
-			if not entry then
-				return
-			end
-			local dir = oil.get_current_dir()
-			if not dir then
-				return
-			end
-			local filepath = dir .. entry.name
-			local image_exts = { "png", "jpg", "jpeg", "webp", "gif", "bmp", "svg" }
-			local ext = vim.fn.fnamemodify(filepath, ":e"):lower()
-			if not vim.tbl_contains(image_exts, ext) then
-				vim.notify("Not an image file", vim.log.levels.WARN)
-				return
-			end
-			vim.cmd("split | terminal chafa --format=symbols " .. vim.fn.shellescape(filepath))
-		end, {})
+		--vim.api.nvim_create_user_command("OilImagePreview", function()
+		--	local oil = require("oil")
+		--	local entry = oil.get_cursor_entry()
+		--	if not entry then
+		--		return
+		--	end
+		--	local dir = oil.get_current_dir()
+		--	if not dir then
+		--		return
+		--	end
+		--	local filepath = dir .. entry.name
+		--	local image_exts = { "png", "jpg", "jpeg", "webp", "gif", "bmp", "svg" }
+		--	local ext = vim.fn.fnamemodify(filepath, ":e"):lower()
+		--	if not vim.tbl_contains(image_exts, ext) then
+		--		vim.notify("Not an image file", vim.log.levels.WARN)
+		--		return
+		--	end
+		--	vim.cmd("split | terminal chafa --format=symbols " .. vim.fn.shellescape(filepath))
+		--end, {})
 	end
 }

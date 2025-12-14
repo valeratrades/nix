@@ -295,7 +295,7 @@ function where
     end
 end
 
-alias sr="source $NIXOS_CONFIG/home/config/fish/mod.fish" # Fish equivalent for reloading configuration.
+alias sr="source $NIXOS_CONFIG/home/config/fish/__main__.fish" # Fish equivalent for reloading configuration.
 #
 
 # # waydroid
