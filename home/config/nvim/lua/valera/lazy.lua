@@ -129,7 +129,7 @@ return require('lazy').setup({
 
 	"nvim-neotest/nvim-nio",
 	'arnamak/stay-centered.nvim',
-	--"3rd/image.nvim", -- want's luarocks, which I haven't yet set up with nix
+	{ import = "valera.plugins.image" },
 	"DreamMaoMao/yazi.nvim",
 	"norcalli/nvim-colorizer.lua",
 	{ import = "valera.plugins.nvim-highlight-colors" },

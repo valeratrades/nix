@@ -212,7 +212,16 @@ in {
       ++ [
         # some of my own packages are in shared, not everything is here
         inputs.btc_line.packages.${pkgs.stdenv.hostPlatform.system}.default
-        inputs.snapshot_fonts.packages.${pkgs.stdenv.hostPlatform.system}.default
+        (let
+          snapshot_fonts_bin = inputs.snapshot_fonts.packages.${pkgs.stdenv.hostPlatform.system}.snapshot_fonts_bin.overrideAttrs (old: {
+            doCheck = false;
+          });
+        in pkgs.runCommand "fill-levels-font" {
+          nativeBuildInputs = [ snapshot_fonts_bin pkgs.fontforge ];
+        } ''
+          mkdir -p $out/share/fonts/truetype
+          snapshot_fonts bars --output $out/share/fonts/truetype/FillLevels.ttf
+        '')
       ]
       # Optional private packages from local paths (won't fail if path doesn't exist)
       ++ (let

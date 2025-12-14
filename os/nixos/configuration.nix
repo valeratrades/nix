@@ -470,6 +470,7 @@ in {
         # Command Line Enhancements
         [
           dust # `du` in rust
+          ueberzugpp # display images in terminal
           atuin
           sudo-rs # `sudo` in rust, cause why not
           expect # automate things with interactive prompts

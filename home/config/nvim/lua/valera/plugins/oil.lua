@@ -92,6 +92,9 @@ return require "lazier" {
 					return conf
 				end,
 			},
+			preview_win = {
+				preview_method = "load", -- needed for image.nvim to work
+			},
 			preview = {
 				-- Width dimensions can be integers or a float between 0 and 1 (e.g. 0.4 for 40%)
 				-- min_width and max_width can be a single value or a list of mixed integer/float types.
@@ -115,25 +118,5 @@ return require "lazier" {
 				},
 			},
 		})
-
-		--vim.api.nvim_create_user_command("OilImagePreview", function()
-		--	local oil = require("oil")
-		--	local entry = oil.get_cursor_entry()
-		--	if not entry then
-		--		return
-		--	end
-		--	local dir = oil.get_current_dir()
-		--	if not dir then
-		--		return
-		--	end
-		--	local filepath = dir .. entry.name
-		--	local image_exts = { "png", "jpg", "jpeg", "webp", "gif", "bmp", "svg" }
-		--	local ext = vim.fn.fnamemodify(filepath, ":e"):lower()
-		--	if not vim.tbl_contains(image_exts, ext) then
-		--		vim.notify("Not an image file", vim.log.levels.WARN)
-		--		return
-		--	end
-		--	vim.cmd("split | terminal chafa --format=symbols " .. vim.fn.shellescape(filepath))
-		--end, {})
 	end
 }
