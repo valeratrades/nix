@@ -78,7 +78,7 @@
           };
 
           packages = [
-            mold-wrapped
+            mold
             pkg-config
             rust
           ];

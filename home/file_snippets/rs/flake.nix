@@ -90,7 +90,7 @@
               '';
 
             packages = [
-              mold-wrapped
+              mold
               openssl
               pkg-config
               rust

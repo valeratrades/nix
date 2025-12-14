@@ -93,7 +93,7 @@
               '';
 
             packages = [
-              mold-wrapped
+              mold
             ] ++ pre-commit-check.enabledPackages;
           };
       }

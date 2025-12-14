@@ -9,7 +9,7 @@ let
     copyFileContents.enable = true;
     #betterSettings.enable = true;
     biggerStreamPreview.enable = true;
-    copyUserURLs.enable = true;
+    copyUserUrLs.enable = true;
     #dearrow.enable = true; # less sensational yt thumbnails
     #experiments = {
     #  toolbarDevMenu = true;

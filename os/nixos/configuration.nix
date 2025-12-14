@@ -288,6 +288,15 @@ in {
     allowInsecurePredicate = pkg: true;
   };
 
+  nixpkgs.overlays = [
+    (self: super: {
+      rustup = super.rustup.overrideAttrs (old: {
+        doCheck = false;
+        doInstallCheck = false;
+      });
+    })
+  ];
+
   nix.settings.download-buffer-size = "50G";
 	programs.neovim = {
 		package = pkgs.neovim-unwrapped.override { lua = pkgs.luajit; };

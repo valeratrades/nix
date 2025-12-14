@@ -88,7 +88,7 @@ in
     fish
     dig
     perl
-    rustup
+    #rustup #TODO: skip tests
 		miniupnpc
     nil
     whois

@@ -69,7 +69,7 @@
               {
                 # https://devenv.sh/reference/options/
                 packages = with pkgs; [
-                  mold-wrapped
+                  mold
                   uv
                 ];
 
