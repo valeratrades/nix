@@ -56,47 +56,6 @@ function cpublish
 	cargo release --no-confirm --execute "$argv"
 end
 
-function cnix_release
-	# Releasing for crates is normally managed simply through `cargo publish`, but since nix wants to get them from git, and also is not satisfied with path-deps (which I have on master most of the time), hence this function for releasing things I then install in my nixos setup.
-	# 
-	#DEPENDS:
-	# - [sed-deps](~/s/g/github/.github/workflows/pre_ci_sed_deps.rs)
-	# - nix: a packaged flake
-	
-	set -l fast_mode 0
-	for arg in $argv
-		switch $arg
-		case '--fast' '-f'
-			set fast_mode 1
-		end
-	end
-
-	set -l cur_branch (git symbolic-ref --short HEAD 2>/dev/null)
-	or set cur_branch master
-
-	if not git show-ref --verify --quiet refs/heads/master
-		echo "error: no master branch"; return 1
-	end
-
-	git checkout master || return 1
-	git branch -f release master || return 1
-	git checkout release || return 1
-	~/s/g/github/.github/workflows/pre_ci_sed_deps.rs ./ || return 1 # will rewrite `Cargo.toml`s in-place
-
-	# Test || skip if --fast
-	if test $fast_mode -eq 0
-		cargo t || return 1 # 2 things: re-ensure tests pass and, and update Cargo.lock for nix build
-		nix build || return 1
-	else
-		echo "Fast mode enabled: Skipping tests and build steps"
-	end
-
-	git add -A
-	git commit -m "upload" 2>/dev/null
-	git push --force origin release || return 1
-	git checkout master || git checkout $cur_branch || return 1
-end
-
 # Pause resource-hungry apps
 function pause_greedy
 	set greedy "discord telegram"

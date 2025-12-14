@@ -20,7 +20,7 @@ if [ "$save" = "1" ]; then
   echo "0" > "$statusfile"
   [ -n "$path" ] && echo "$path" > "$tmpfile" || echo "$HOME/newfile" > "$tmpfile"
 
-  alacritty -e nvim "$tmpfile" "+TermFileChooserSave $statusfile"
+  kitty -T termfilechooser nvim "$tmpfile" "+TermFileChooserSave $statusfile"
 
   echo "$(date): After nvim exit, tmpfile contents: [$(cat "$tmpfile")]" >> "$logfile"
   if [ "$(cat "$statusfile")" = "1" ] && [ -f "$tmpfile" ] && [ -s "$tmpfile" ]; then
@@ -45,7 +45,7 @@ else
     startdir="$HOME"
   fi
 
-  alacritty -e nvim "$startdir" "+TermFileChooserOpen $tmpfile"
+  kitty -T termfilechooser nvim "$startdir" "+TermFileChooserOpen $tmpfile"
 
   if [ -f "$tmpfile" ] && [ -s "$tmpfile" ]; then
     cat "$tmpfile" > "$out"

@@ -78,7 +78,7 @@
       #inputs.nixpkgs.follows = "nixpkgs";
     };
     rm_engine = { url = "github:valeratrades/rm_engine?ref=release"; };
-    math_tools = { url = "github:valeratrades/math_tools?ref=master"; };
+    math_tools = { url = "github:valeratrades/math_tools"; };
     tg = {
       url = "github:valeratrades/tg?ref=release";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -101,7 +101,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     bad_apple_rs = {
-      #url = "github:valeratrades/bad-apple-rs";
       url = "github:lomirus/bad-apple-rs"; # merged my nix-integration pull
       inputs.nixpkgs.follows = "nixpkgs";
     };
@@ -110,7 +109,8 @@
     cargo_sort_derives.url =
       "github:valeratrades/cargo-sort-derives"; # TODO: switch to upstream once my PR is merged
 
-    wallpaper_carousel.url = "github:valeratrades/wallpaper_carousel?ref=master";
+    wallpaper_carousel.url = "github:valeratrades/wallpaper_carousel";
+    snapshot_fonts.url = "github:valeratrades/snapshot_fonts";
 
     #aggr_orderbook = {
     #	url = "github:valeratrades/aggr_orderbook";

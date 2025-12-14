@@ -16,6 +16,8 @@ alias translate_book="$fish_scripts_pdir/translate_book.rs"
 alias clipboard_to_keystrokes="$fish_scripts_pdir/clipboard_to_keystrokes.rs"
 alias eww_open_on="$fish_scripts_pdir/eww_open_on.rs"
 alias bluetooth="$fish_scripts_pdir/bluetooth.rs"
+alias cnix_release="$fish_scripts_pdir/cnix_release.rs"
+alias nb="$fish_scripts_pdir/nb.rs"
 
 alias choose_port="$fish_scripts_pdir/choose_port.sh"
 
