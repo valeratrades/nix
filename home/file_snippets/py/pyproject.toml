@@ -12,6 +12,7 @@ urls = { Documentation = "https://github.com/GITHUB_USER/PROJECT_NAME_PLACEHOLDE
 
 dependencies = [
     "loguru>=0.7.0",
+    "typeguard>=4.4.4",
 ]
 
 [dependency-groups]
