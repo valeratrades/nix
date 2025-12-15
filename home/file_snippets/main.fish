@@ -76,7 +76,7 @@ function can
 	end
 
 	switch $preset
-	case "--tokio" "--clap" "--default"
+	case "--tokio" "--clap" "--light" "--default"
 		:
 	case "*"
 		echo "The argument is not valid."
@@ -117,8 +117,12 @@ components = ["rustc-codegen-cranelift-preview"]''' > ./.cargo/rust-toolchain.to
 		cp -r $FILE_SNIPPETS_PATH/$lang/presets/leptos/* ./
 		cat ./additional_dependencies.toml >> Cargo.toml || :
 		rm -r additional_dependencies.toml || :
+	case "--light"
+		cp -r "$FILE_SNIPPETS_PATH/$lang/presets/light/src" src
+		cat "$FILE_SNIPPETS_PATH/$lang/presets/light/additional_dependencies.toml" >> Cargo.toml
 	case "*"
 		cp -r "$FILE_SNIPPETS_PATH/$lang/presets/default/src" src
+		cp "$FILE_SNIPPETS_PATH/$lang/presets/default/build.rs" ./
 		cat "$FILE_SNIPPETS_PATH/$lang/presets/default/additional_dependencies.toml" >> Cargo.toml
 	end
 	touch src/lib.rs

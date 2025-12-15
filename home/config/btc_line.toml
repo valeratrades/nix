@@ -8,6 +8,3 @@ pipes = true
 [spy]
 alpaca_key = "PKTJYTJNKYSBHAZYT3CO"
 alpaca_secret = { env = "ALPACA_API_SECRET" }
-
-[additional_line]
-show_by_default = true
