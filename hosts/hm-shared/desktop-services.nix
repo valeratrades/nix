@@ -18,7 +18,7 @@
     WINEPREFIX = "${config.home.homeDirectory}/.wine";
     PKG_CONFIG_PATH = "${pkgs.alsa-lib.dev}/lib/pkgconfig:${pkgs.wayland-scanner.bin}/bin";
     # Terminal emulator for xdg-desktop-portal-termfilechooser
-    TERMCMD = "kitty -T termfilechooser";
+    TERMCMD = "alacritty -t termfilechooser -e";
   };
 
   home.activation = {

@@ -2571,11 +2571,11 @@
         "v-utils": "v-utils_7"
       },
       "locked": {
-        "lastModified": 1765733007,
-        "narHash": "sha256-MpgUyvcwmbcRssqi8+wX4YHsWt+jMXoCWKp42ohF/IA=",
+        "lastModified": 1765783906,
+        "narHash": "sha256-qSBN9ft2xlCjS6A02a1B1OHlrPSDkm4hnIHnB1+7lCE=",
         "owner": "valeratrades",
         "repo": "snapshot_fonts",
-        "rev": "8cd9d3f26d236b89f9758abee50e4e4c679e0eff",
+        "rev": "40e85bb4cc7decc0b2f2ee2d0bd7da6621f7e635",
         "type": "github"
       },
       "original": {
