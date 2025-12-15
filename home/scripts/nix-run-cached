@@ -7,48 +7,9 @@ shift
 
 NIX_EXPR='let rust_flake = builtins.getFlake "github:oxalica/rust-overlay/7ed7e8c74be95906275805db68201e74e9904f07"; nixpkgs_flake = builtins.getFlake "github:NixOS/nixpkgs/f61125a668a320878494449750330ca58b78c557"; pkgs = import nixpkgs_flake { system = builtins.currentSystem; overlays = [rust_flake.overlays.default]; }; in pkgs.rust-bin.nightly."2025-10-10".default.override { extensions = ["rust-src"]; }'
 
-run_cargo() {
-  local offline_flag="$1"
-  shift
-  local tmpfile
-  tmpfile=$(mktemp)
-
-  if [ -n "$offline_flag" ]; then
-    nix shell --offline --impure --expr "$NIX_EXPR" --command cargo -Zscript -q "$SCRIPT" "$@" 2>&1 | tee "$tmpfile"
-  else
-    nix shell --impure --expr "$NIX_EXPR" --command cargo -Zscript -q "$SCRIPT" "$@" 2>&1 | tee "$tmpfile"
-  fi
-  local exit_code=${PIPESTATUS[0]}
-
-  # Check for sccache temp dir failure
-  if [ $exit_code -ne 0 ] && grep -qE "sccache.*Failed to create temp dir|No such file or directory.*sccache" "$tmpfile"; then
-    echo ""
-    echo "🔧 Detected sccache temp dir failure, restarting sccache and retrying..."
-    echo ""
-    sccache -z 2>/dev/null
-    sccache --stop-server 2>/dev/null
-    sccache --start-server 2>/dev/null
-    rm -f "$tmpfile"
-    return 254  # Special code to signal retry
-  fi
-
-  rm -f "$tmpfile"
-  return $exit_code
-}
-
-# Try offline first (silently)
 if nix shell --offline --impure --expr "$NIX_EXPR" --command cargo -Zscript -q "$SCRIPT" "$@" 2>/dev/null; then
   exit 0
 fi
 
-# Online attempt with sccache retry
-run_cargo "" "$@"
-exit_code=$?
-
-if [ $exit_code -eq 254 ]; then
-  # Retry after sccache restart
-  notify-send "sccache fixed, retrying..." -t 2000 2>/dev/null &
-  exec nix shell --impure --expr "$NIX_EXPR" --command cargo -Zscript -q "$SCRIPT" "$@"
-fi
-
-exit $exit_code
+notify-send "nix cache miss, fetching..." -t 3000 2>/dev/null &
+exec nix shell --impure --expr "$NIX_EXPR" --command cargo -Zscript -q "$SCRIPT" "$@"

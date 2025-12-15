@@ -70,6 +70,8 @@ in {
     };
   };
 
+  fonts.fontconfig.enable = true;
+
 	# is coupled with ssh block in main `configuration.bix`
 	programs.ssh = {
 		enable = true; #Q: do I need this if `enableDefaultConfig = false`?
@@ -212,17 +214,7 @@ in {
       ++ [
         # some of my own packages are in shared, not everything is here
         inputs.btc_line.packages.${pkgs.stdenv.hostPlatform.system}.default
-        (let
-          snapshot_fonts_bin = inputs.snapshot_fonts.packages.${pkgs.stdenv.hostPlatform.system}.snapshot_fonts_bin.overrideAttrs (old: {
-            doCheck = false;
-          });
-        in pkgs.runCommand "fill-levels-font" {
-          nativeBuildInputs = [ snapshot_fonts_bin pkgs.fontforge ];
-        } ''
-          mkdir -p $out/share/fonts/truetype
-          snapshot_fonts fill-levels --output $out/share/fonts/truetype/FillLevels.ttf
-          snapshot_fonts candles --output $out/share/fonts/truetype/Candles.ttf
-        '')
+        inputs.snapshot_fonts.packages.${pkgs.stdenv.hostPlatform.system}.default
       ]
       # Optional private packages from local paths (won't fail if path doesn't exist)
       ++ (let
