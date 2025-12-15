@@ -221,6 +221,7 @@ in {
         } ''
           mkdir -p $out/share/fonts/truetype
           snapshot_fonts fill-levels --output $out/share/fonts/truetype/FillLevels.ttf
+          snapshot_fonts candles --output $out/share/fonts/truetype/Candles.ttf
         '')
       ]
       # Optional private packages from local paths (won't fail if path doesn't exist)
