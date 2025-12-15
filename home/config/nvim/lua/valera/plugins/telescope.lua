@@ -14,9 +14,9 @@ return require "lazier" {
 		local action_state = require('telescope.actions.state')
 		local gs = { hidden = true, no_ignore = true, file_ignore_patterns = { ".git/", "target/", "%.lock" } } -- `^` and `.` in file ignore patterns don't really work
 
-		-- image.nvim integration for telescope preview
+		-- image.nvim integration for telescope preview (lazy-loaded)
 		local supported_images = { "svg", "png", "jpg", "jpeg", "gif", "webp", "avif" }
-		local image_api = require("image")
+		local image_api = nil -- lazy loaded
 		local is_image_preview = false
 		local image = nil
 		local last_file_path = ""
@@ -34,6 +34,9 @@ return require "lazier" {
 		end
 
 		local create_image = function(filepath, winid, bufnr)
+			if not image_api then
+				image_api = require("image")
+			end
 			image = image_api.hijack_buffer(filepath, winid, bufnr)
 			if not image then return end
 			vim.schedule(function()

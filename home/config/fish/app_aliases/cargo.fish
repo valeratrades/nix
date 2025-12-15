@@ -193,7 +193,40 @@ function crt
 end
 
 function fucking_sccache
-	sccache -z 
+	sccache -z
 	sccache --stop-server
 	sccache --start-server
 end
+
+# Wrapper that detects sccache temp dir failures and retries after fixing
+# Usage: sccache_retry cargo build
+#        sccache_retry nb
+function sccache_retry
+	set cmd $argv
+
+	# Run command and capture output
+	set tmpfile (mktemp)
+	$cmd 2>&1 | tee $tmpfile
+	set exit_code $pipestatus[1]
+
+	# Check if sccache failed with temp dir error
+	if test $exit_code -ne 0
+		if grep -q "sccache.*Failed to create temp dir\|No such file or directory.*sccache" $tmpfile
+			echo ""
+			echo "🔧 Detected sccache temp dir failure, restarting sccache and retrying..."
+			echo ""
+			fucking_sccache
+			rm -f $tmpfile
+			$cmd
+			return $status
+		end
+	end
+
+	rm -f $tmpfile
+	return $exit_code
+end
+
+# Aliases for common commands with sccache retry
+alias cb="sccache_retry cargo build"
+alias cr="sccache_retry cargo run"
+alias cc="sccache_retry cargo check"
