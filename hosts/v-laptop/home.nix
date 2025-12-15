@@ -220,7 +220,7 @@ in {
           nativeBuildInputs = [ snapshot_fonts_bin pkgs.fontforge ];
         } ''
           mkdir -p $out/share/fonts/truetype
-          snapshot_fonts bars --output $out/share/fonts/truetype/FillLevels.ttf
+          snapshot_fonts fill-levels --output $out/share/fonts/truetype/FillLevels.ttf
         '')
       ]
       # Optional private packages from local paths (won't fail if path doesn't exist)
