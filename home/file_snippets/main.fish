@@ -119,6 +119,7 @@ components = ["rustc-codegen-cranelift-preview"]''' > ./.cargo/rust-toolchain.to
 		rm -r additional_dependencies.toml || :
 	case "*"
 		cp -r "$FILE_SNIPPETS_PATH/$lang/presets/default/src" src
+		cat "$FILE_SNIPPETS_PATH/$lang/presets/default/additional_dependencies.toml" >> Cargo.toml
 	end
 	touch src/lib.rs
 
