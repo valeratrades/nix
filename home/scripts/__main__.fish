@@ -20,7 +20,7 @@ alias cnix_release="$fish_scripts_pdir/cnix_release.rs"
 alias nb="$fish_scripts_pdir/nb.rs"
 alias gn="$fish_scripts_pdir/gn.rs"
 alias kbd="$fish_scripts_pdir/kbd.rs"
-alias fans="$fish_scripts_pdir/fans.rs"
+alias fans="sudo $fish_scripts_pdir/fans.rs"
 
 alias choose_port="$fish_scripts_pdir/choose_port.sh"
 
