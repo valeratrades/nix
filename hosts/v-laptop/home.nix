@@ -231,7 +231,7 @@ in {
             in if pkg != null then [ pkg ] else []
           else builtins.trace "WARNING: optional package not found at ${path}" [];
       in lib.flatten [
-          (tryLocalFlake "/home/v/s/other/uni_headless")
+          #(tryLocalFlake "/home/v/s/other/uni_headless") #dbg: test if this is what makes `nb` hang
         ]) ++ [
         inputs.prettify_log.packages.${pkgs.stdenv.hostPlatform.system}.default
         inputs.distributions.packages.${pkgs.stdenv.hostPlatform.system}.default # ? shared?

@@ -1,53 +1,50 @@
-//TODO: if pwsh ends up being better, - nuke this (after asserting conf and setup guide for it are supersets of this)
 # Fresh Server Setup
 
 ## Prerequisites
 
 Set the server SSH host in your environment:
-```sh
-export MAIN_SERVER_SSH_HOST=user@your-server-ip
+```pwsh
+$env:MAIN_SERVER_SSH_HOST = "user@your-server-ip"
 ```
 
 ---
 
 ## Step 1: Local Machine — Copy SSH Keys and Configs
 
-```sh
-ssh-copy-id -i ~/.ssh/id_ed25519.pub $MAIN_SERVER_SSH_HOST
+```pwsh
+ssh-copy-id -i ~/.ssh/id_ed25519.pub $env:MAIN_SERVER_SSH_HOST
 ```
 
-```sh
+```pwsh
 # setup tmux
-ssh $MAIN_SERVER_SSH_HOST 'mkdir -p ~/.config/tmux ~/.config'
-scp ~/.config/tmux/tmux.conf $MAIN_SERVER_SSH_HOST:~/.config/tmux/
+ssh $env:MAIN_SERVER_SSH_HOST 'mkdir -p ~/.config/tmux ~/.config'
+scp ~/.config/tmux/tmux.conf "${env:MAIN_SERVER_SSH_HOST}:~/.config/tmux/"
 
 # copy SSH keys (for git access on server)
-scp ~/.ssh/id_ed25519 $MAIN_SERVER_SSH_HOST:~/.ssh/
-scp ~/.ssh/id_ed25519.pub $MAIN_SERVER_SSH_HOST:~/.ssh/
+scp ~/.ssh/id_ed25519 "${env:MAIN_SERVER_SSH_HOST}:~/.ssh/"
+scp ~/.ssh/id_ed25519.pub "${env:MAIN_SERVER_SSH_HOST}:~/.ssh/"
 
-# setup bashrc
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-scp "$SCRIPT_DIR/.bashrc" $MAIN_SERVER_SSH_HOST:~/.bashrc
-
-# setup powershell profile
-ssh $MAIN_SERVER_SSH_HOST 'mkdir -p ~/.config/powershell'
-scp "$SCRIPT_DIR/Microsoft.PowerShell_profile.ps1" $MAIN_SERVER_SSH_HOST:~/.config/powershell/
+# setup pwsh profile
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+ssh $env:MAIN_SERVER_SSH_HOST 'mkdir -p ~/.config/powershell'
+scp "$ScriptDir/Microsoft.PowerShell_profile.ps1" "${env:MAIN_SERVER_SSH_HOST}:~/.config/powershell/"
 
 # setup app configs (with env substitution)
-cat ~/.config/social_networks.toml | reasonable_envsubst - | ssh $MAIN_SERVER_SSH_HOST 'cat > ~/.config/social_networks.toml'
-cat ~/.config/site.nix | reasonable_envsubst - | ssh $MAIN_SERVER_SSH_HOST 'cat > ~/.config/site.nix'
-cat ~/.config/polymarket_mm.toml | reasonable_envsubst - | ssh $MAIN_SERVER_SSH_HOST 'cat > ~/.config/polymarket_mm.toml'
+Get-Content ~/.config/social_networks.toml | reasonable_envsubst - | ssh $env:MAIN_SERVER_SSH_HOST 'cat > ~/.config/social_networks.toml'
+Get-Content ~/.config/site.nix | reasonable_envsubst - | ssh $env:MAIN_SERVER_SSH_HOST 'cat > ~/.config/site.nix'
+Get-Content ~/.config/polymarket_mm.toml | reasonable_envsubst - | ssh $env:MAIN_SERVER_SSH_HOST 'cat > ~/.config/polymarket_mm.toml'
 ```
 
 ---
 
-## Step 2: Server — Install Dependencies
+## Step 2: Server — Install Dependencies & PowerShell
 
-SSH into the server:
-```sh
-ssh $MAIN_SERVER_SSH_HOST
+SSH into the server (initially via bash):
+```pwsh
+ssh $env:MAIN_SERVER_SSH_HOST
 ```
 
+Install base packages and PowerShell (run in bash):
 ```sh
 # detect OS and install packages
 if [ -f /etc/os-release ]; then
@@ -61,12 +58,20 @@ if [ -f /etc/os-release ]; then
             echo "deb [signed-by=/usr/share/keyrings/clickhouse-keyring.gpg] https://packages.clickhouse.com/deb stable main" | tee /etc/apt/sources.list.d/clickhouse.list
             apt update
             apt install -y clickhouse-server clickhouse-client
+            # PowerShell
+            curl -sSL https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/prod.list | tee /etc/apt/sources.list.d/microsoft-prod.list
+            curl -sSL https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
+            apt update
+            apt install -y powershell
             ;;
         fedora)
             dnf install -y gcc gcc-c++ make pkg-config openssl-devel git-lfs ca-certificates curl gnupg fzf direnv tmux neovim caddy
             # ClickHouse (official repo)
             curl -fsSL https://packages.clickhouse.com/rpm/clickhouse.repo | tee /etc/yum.repos.d/clickhouse.repo
             dnf install -y clickhouse-server clickhouse-client
+            # PowerShell
+            curl -sSL https://packages.microsoft.com/config/rhel/9/prod.repo | tee /etc/yum.repos.d/microsoft-prod.repo
+            dnf install -y powershell
             ;;
         *)
             echo "Unsupported OS: $ID"
@@ -82,6 +87,9 @@ git lfs install
 git config --global alias.pl '!git pull && git lfs pull'
 systemctl enable clickhouse-server
 systemctl start clickhouse-server
+
+# set PowerShell as default shell
+chsh -s /usr/bin/pwsh root
 
 # disable SELinux (required for Nix on Fedora)
 if command -v setenforce &> /dev/null; then
@@ -135,21 +143,27 @@ source "$HOME/.cargo/env"
 rustup default nightly
 ```
 
-```sh
-# reload bashrc (picks up cargo, direnv)
-source ~/.bashrc
+Now reconnect to get PowerShell:
+```pwsh
+exit
+ssh $env:MAIN_SERVER_SSH_HOST
+```
+
+```pwsh
+# reload profile (picks up cargo, direnv)
+. $PROFILE
 ```
 
 ---
 
 ## Step 3: Server — Install Custom Tools
 
-```sh
+```pwsh
 # add GitHub to known hosts
-ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+ssh-keyscan github.com 2>$null >> ~/.ssh/known_hosts
 
 # start ssh-agent and add key (for git access)
-eval "$(ssh-agent -s)"
+Start-Service ssh-agent -ErrorAction SilentlyContinue
 ssh-add ~/.ssh/id_ed25519
 
 # install social_networks
@@ -163,16 +177,16 @@ cargo install --git https://github.com/valeratrades/server_upkeep --branch maste
 
 ## Step 4: Server — Running Scripts
 
-```sh
-mkdir -p ~/s
-cd ~/s
+```pwsh
+New-Item -ItemType Directory -Force -Path ~/s
+Set-Location ~/s
 
 # clone projects
 git clone git@github.com:valeratrades/site.git
 ```
 
 Start a tmux session with windows for each service:
-```sh
+```pwsh
 tmux new-session -d -s main -c ~/s
 tmux rename-window -t main:0 social_networks
 tmux new-window -t main -n site -c ~/s/site
@@ -190,9 +204,9 @@ tmux attach -t main
 
 Caddy auto-manages SSL certificates via Let's Encrypt.
 
-```sh
+```pwsh
 # configure Caddyfile for site
-cat > /etc/caddy/Caddyfile << 'EOF'
+@'
 valeratrades.com {
     reverse_proxy localhost:61156
 }
@@ -200,7 +214,7 @@ valeratrades.com {
 www.valeratrades.com {
     redir https://valeratrades.com{uri} permanent
 }
-EOF
+'@ | Set-Content /etc/caddy/Caddyfile
 
 # enable and start caddy
 systemctl enable --now caddy

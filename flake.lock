@@ -2571,16 +2571,16 @@
         "v-utils": "v-utils_7"
       },
       "locked": {
-        "lastModified": 1765926782,
-        "narHash": "sha256-RoT0v6YQGL5flTzhI0kICZjT7ZMPCVjzAqVNk33UToM=",
+        "lastModified": 1765999229,
+        "narHash": "sha256-q6cUe00GEMR6SzGR6fFzFn7lLVlaUExWhGG5JHKAATs=",
         "owner": "valeratrades",
         "repo": "snapshot_fonts",
-        "rev": "9f9ee773fe88d0b6965d4fb16bfbc98a6b88f8e0",
+        "rev": "59829b891d93de7d1a332dd7e981309cfa9541a5",
         "type": "github"
       },
       "original": {
         "owner": "valeratrades",
-        "ref": "candles",
+        "ref": "release",
         "repo": "snapshot_fonts",
         "type": "github"
       }
@@ -3017,11 +3017,11 @@
         "nixpkgs": "nixpkgs_31"
       },
       "locked": {
-        "lastModified": 1765473473,
-        "narHash": "sha256-dR0Tlv68mtJmMhzHhrgcSeM1DaWBMOslSZPvSGNaJRE=",
+        "lastModified": 1765998978,
+        "narHash": "sha256-mDpOw+Of2asQcX/zcqraRnMHrALK/DIBgz5uvCYH0CI=",
         "owner": "valeratrades",
         "repo": ".github",
-        "rev": "35feb0208d3a1166878fc554c5a2374f6a87a192",
+        "rev": "a08d6b6f9124dc1b6a5246eef93151e6dea92b7f",
         "type": "github"
       },
       "original": {
