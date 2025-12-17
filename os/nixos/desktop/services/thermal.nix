@@ -5,6 +5,22 @@
 
   # Lenovo Legion kernel module for fan and power control
   boot.extraModulePackages = [ config.boot.kernelPackages.lenovo-legion-module ];
+  boot.extraModprobeConfig = ''
+    options legion_laptop force=1
+  '';
+
+  # Default to performance profile on boot
+  #TEST: if this doesn't actually heat it upu more than balanced when CPU is slow (just because of fans moving)
+  systemd.services.legion-performance = {
+    description = "Set Legion laptop to performance profile";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "systemd-modules-load.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = "${pkgs.bash}/bin/bash -c 'echo performance > /sys/firmware/acpi/platform_profile'";
+    };
+  };
 
   # Userspace utility for Legion fan control
   environment.systemPackages = [ pkgs.lenovo-legion ];
