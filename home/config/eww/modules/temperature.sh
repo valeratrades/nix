@@ -30,4 +30,4 @@ else
 	icon=""
 fi
 
-printf '{"content": "%s,%s", "icon": "%s"}\n' "$cpu_temp" "$gpu_temp" "$icon"
+printf '{"cpu": %d, "gpu": %d, "icon": "%s"}\n' "$cpu_temp" "$gpu_temp" "$icon"

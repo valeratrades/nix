@@ -96,8 +96,45 @@ if command -v setenforce &> /dev/null; then
     sed -i 's/SELINUX=enforcing/SELINUX=permissive/' /etc/selinux/config
 fi
 
+# switch /tmp from tmpfs to disk (more space, auto-cleaned daily)
+systemctl mask tmp.mount
+echo 'q /tmp 1777 root root 1d' > /etc/tmpfiles.d/tmp.conf
+# reboot required for /tmp to move to disk
+
 # install Nix
 sh <(curl -L https://nixos.org/nix/install) --daemon --yes
+
+# enable nix experimental features (flakes, nix command)
+mkdir -p ~/.config/nix
+echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
+
+# daily nix garbage collection (removes unreferenced store paths, but preserves ~/s/site deps)
+cat > /etc/systemd/system/nix-gc.service << 'EOF'
+[Unit]
+Description=Nix garbage collection
+
+[Service]
+Type=oneshot
+# First, update GC roots for important flakes
+ExecStartPre=/bin/bash -c "cd /root/s/site && /nix/var/nix/profiles/default/bin/nix build .#devShells.x86_64-linux.default --out-link /nix/var/nix/gcroots/per-user/root/site-devshell 2>/dev/null || true"
+# Then garbage collect
+ExecStart=/nix/var/nix/profiles/default/bin/nix-collect-garbage
+EOF
+
+cat > /etc/systemd/system/nix-gc.timer << 'EOF'
+[Unit]
+Description=Daily Nix garbage collection
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+
+systemctl daemon-reload
+systemctl enable --now nix-gc.timer
 
 # get rust
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y

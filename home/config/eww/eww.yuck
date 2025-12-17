@@ -169,7 +169,12 @@
 )
 
 (defpoll temperature_poll :initial "{}" :interval "15s" "./modules/temperature.sh")
-(defwidget temperature [] "${temperature_poll.icon}${temperature_poll.content}")
+(defwidget temperature []
+	(box
+		:class {temperature_poll.cpu >= 70 || temperature_poll.gpu >= 70 ? "warn" : ""}
+		"${temperature_poll.icon}${temperature_poll.cpu},${temperature_poll.gpu}"
+	)
+)
 
 (defpoll day_ev_poll :initial "{}" :interval "5s" "./modules/day_ev.sh")
 (defvar todo_milestones_hover_state false)
