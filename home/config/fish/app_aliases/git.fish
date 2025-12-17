@@ -44,6 +44,7 @@ end
 alias ggf="gg -p feat"
 alias ggx="gg -p fix"
 alias ggc="gg -p chore"
+alias ggh="gg -p hack"
 alias ggs="gg -p style"
 alias ggt="gg -p test"
 alias ggr="gg -p refactor"
