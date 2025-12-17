@@ -32,7 +32,7 @@ a = "add"
 u = "update"
 m = "machete"
 re = "insta review"
-tr = "insta test --review"
+rt = "insta test --review"
 f = "fmt"
 x = "fix --allow-dirty --allow-no-vcs"
 xc = "clippy --fix --allow-dirty --allow-no-vcs"
@@ -45,8 +45,13 @@ so = "sort -wg"
 # if `--all-features` is needed for better dev experience, override these shortcuts with it on per-project basis. eg: "lbuild --all-features"
 b = "lbuild"
 c = "lcheck"
-t = "nextest run"
 r = "lrun"
+t = "nextest run"
+
+# leptos {{{1
+ls = "leptos serve"
+lw = "leptos watch"
+#,}}}1
 
 
 [cargo-new]

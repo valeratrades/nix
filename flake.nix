@@ -110,7 +110,7 @@
       "github:valeratrades/cargo-sort-derives"; # TODO: switch to upstream once my PR is merged
 
     wallpaper_carousel.url = "github:valeratrades/wallpaper_carousel";
-    snapshot_fonts.url = "github:valeratrades/snapshot_fonts";
+    snapshot_fonts.url = "github:valeratrades/snapshot_fonts?ref=candles";
 
     #aggr_orderbook = {
     #	url = "github:valeratrades/aggr_orderbook";

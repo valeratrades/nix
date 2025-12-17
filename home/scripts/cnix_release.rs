@@ -162,7 +162,7 @@ fn main() {
 
     // Run sed-deps to rewrite Cargo.toml
     let home = std::env::var("HOME").unwrap_or_default();
-    let sed_deps = format!("{home}/s/g/github/.github/workflows/pre_ci_sed_deps.rs");
+    let sed_deps = format!("{home}/s/g/github/github/workflows/pre_ci_sed_deps.rs");
     if !run(&sed_deps, &["."]) {
         eprintln!("error: sed-deps failed");
         let _ = run("git", &["checkout", &cur_branch]);

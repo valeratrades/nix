@@ -171,6 +171,11 @@ in {
 
         powershell # for shit and giggles
 
+        # for my laptop's hardware
+        [
+          lenovo-legion
+        ]
+
         # Windows
         #[
         #  winboat
@@ -216,18 +221,19 @@ in {
         inputs.btc_line.packages.${pkgs.stdenv.hostPlatform.system}.default
         inputs.snapshot_fonts.packages.${pkgs.stdenv.hostPlatform.system}.default
       ]
-      # Optional private packages from local paths (won't fail if path doesn't exist)
-      ++ (let
-        tryLocalFlake = path:
-          if builtins.pathExists (path + "/flake.nix")
-            then let
-              flake = builtins.getFlake "path:${path}";
-              pkg = flake.packages.${pkgs.stdenv.hostPlatform.system}.default or null;
-            in if pkg != null then [ pkg ] else []
-          else builtins.trace "WARNING: optional package not found at ${path}" [];
-      in lib.flatten [
-          (tryLocalFlake "/home/v/s/other/uni_headless")
-        ]) ++ [
+      # TODO: uni_headless is slow to evaluate via path: - add as proper flake input instead
+      # ++ (let
+      #   tryLocalFlake = path:
+      #     if builtins.pathExists (path + "/flake.nix")
+      #       then let
+      #         flake = builtins.getFlake "path:${path}";
+      #         pkg = flake.packages.${pkgs.stdenv.hostPlatform.system}.default or null;
+      #       in if pkg != null then [ pkg ] else []
+      #     else builtins.trace "WARNING: optional package not found at ${path}" [];
+      # in lib.flatten [
+      #     (tryLocalFlake "/home/v/s/other/uni_headless")
+      #   ])
+      ++ [
         inputs.prettify_log.packages.${pkgs.stdenv.hostPlatform.system}.default
         inputs.distributions.packages.${pkgs.stdenv.hostPlatform.system}.default # ? shared?
         inputs.book_parser.packages.${pkgs.stdenv.hostPlatform.system}.default

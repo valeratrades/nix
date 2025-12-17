@@ -899,3 +899,7 @@ overlayed
 precompile
 kbd
 OHLC
+convo
+hacky
+docstring
+deps
