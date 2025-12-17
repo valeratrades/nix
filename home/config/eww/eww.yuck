@@ -171,8 +171,15 @@
 (defpoll temperature_poll :initial "{}" :interval "15s" "./modules/temperature.sh")
 (defwidget temperature []
 	(box
-		:class {temperature_poll.cpu >= 70 || temperature_poll.gpu >= 70 ? "warn" : ""}
-		"${temperature_poll.icon}${temperature_poll.cpu},${temperature_poll.gpu}"
+		:space-evenly false
+		(box
+			:class {temperature_poll.cpu >= 70 ? "warn" : ""}
+			"${temperature_poll.icon}${temperature_poll.cpu}"
+		)
+		(box
+			:class {temperature_poll.gpu >= 70 ? "warn" : ""}
+			",${temperature_poll.gpu}"
+		)
 	)
 )
 

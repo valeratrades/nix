@@ -1,7 +1,6 @@
 { pkgs, lib, config, ... }:
 {
-  # Disable power-profiles-daemon - conflicts with auto-cpufreq
-  services.power-profiles-daemon.enable = lib.mkForce false;
+  services.power-profiles-daemon.enable = true;
 
   # Lenovo Legion kernel module for fan and power control
   boot.extraModulePackages = [ config.boot.kernelPackages.lenovo-legion-module ];
@@ -25,19 +24,22 @@
   # Userspace utility for Legion fan control
   environment.systemPackages = [ pkgs.lenovo-legion ];
 
-  services.auto-cpufreq = {
-    enable = true;
-    settings = {
-      charger = {
-        governor = "performance";
-        turbo = "auto";
-      };
-      battery = {
-        governor = "powersave";
-        turbo = "never";
-      };
-    };
-  };
+  # Auto CPU frequency scaling (conflicts with power-profiles-daemon)
+  #NB: conflicts with power-profiles-daemon, so disabled for now
+  #Q: which one of the two do I actually want?
+  # services.auto-cpufreq = {
+  #   enable = true;
+  #   settings = {
+  #     charger = {
+  #       governor = "performance";
+  #       turbo = "auto";
+  #     };
+  #     battery = {
+  #       governor = "powersave";
+  #       turbo = "never";
+  #     };
+  #   };
+  # };
 
   # Throttle CPU at 90°C to prevent thermal shutdown
   systemd.services.thermal-guard = {
