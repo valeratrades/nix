@@ -116,6 +116,8 @@ fn main() {
         (home.join("Downloads"), home.join("Documents/Images"))
     } else if args.screenshot_trading {
         (home.join("tmp/Screenshots"), home.join("trading/strats"))
+    } else if args.screenshot_images {
+        (home.join("tmp/Screenshots"), home.join("Documents/Images"))
     } else if !args.args.is_empty() {
         // Direct path mode - first arg is the path
         let mut to_dir = PathBuf::from(&args.args[0]);
