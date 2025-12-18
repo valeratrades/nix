@@ -13,7 +13,7 @@ use cmd_lib::{run_cmd, run_fun};
 use std::{env, fs, path::PathBuf, process::Command};
 
 #[derive(Parser)]
-#[command(name = "project_new")]
+#[command(name = "new_project")]
 #[command(about = "Create new projects with standard scaffolding")]
 struct Args {
     #[command(subcommand)]
@@ -23,7 +23,7 @@ struct Args {
 #[derive(Subcommand)]
 enum ProjectCommand {
     /// Create a new Rust/Cargo project
-    Can {
+    Rust {
         /// Project name
         name: String,
 
@@ -36,22 +36,22 @@ enum ProjectCommand {
         preset: RustPreset,
     },
     /// Create a new Python project
-    Pyn {
+    Python {
         /// Project name
         name: String,
     },
     /// Create a new Go project
-    Gon {
+    Golang {
         /// Project name
         name: String,
     },
     /// Create a new Lean project
-    Lnn {
+    Lean {
         /// Project name
         name: String,
     },
     /// Create a new Typst project
-    Tyn {
+    Typst {
         /// Project name
         name: String,
     },
@@ -251,7 +251,7 @@ fn copy_dir_all(src: &PathBuf, dst: &PathBuf) -> Result<(), Box<dyn std::error::
     Ok(())
 }
 
-fn can(
+fn rust(
     name: &str,
     _toolchain: &Toolchain,
     preset: &RustPreset,
@@ -374,7 +374,7 @@ components = ["rustc-codegen-cranelift-preview"]"#,
     Ok(())
 }
 
-fn pyn(name: &str) -> Result<(), Box<dyn std::error::Error>> {
+fn python(name: &str) -> Result<(), Box<dyn std::error::Error>> {
     let file_snippets = get_file_snippets_path();
     let lang = "py";
 
@@ -410,7 +410,7 @@ fn pyn(name: &str) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn gon(name: &str) -> Result<(), Box<dyn std::error::Error>> {
+fn golang(name: &str) -> Result<(), Box<dyn std::error::Error>> {
     let file_snippets = get_file_snippets_path();
     let lang = "go";
     let github_name = get_github_name();
@@ -451,7 +451,7 @@ fn gon(name: &str) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn lnn(name: &str) -> Result<(), Box<dyn std::error::Error>> {
+fn lean(name: &str) -> Result<(), Box<dyn std::error::Error>> {
     let file_snippets = get_file_snippets_path();
 
     run_cmd!(elan run --install nightly lake new $name)?;
@@ -466,7 +466,7 @@ fn lnn(name: &str) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn tyn(name: &str) -> Result<(), Box<dyn std::error::Error>> {
+fn typst(name: &str) -> Result<(), Box<dyn std::error::Error>> {
     let file_snippets = get_file_snippets_path();
     let lang = "typ";
 
@@ -497,15 +497,15 @@ fn main() {
     let args = Args::parse();
 
     let result = match args.command {
-        ProjectCommand::Can {
+        ProjectCommand::Rust {
             name,
             toolchain,
             preset,
-        } => can(&name, &toolchain, &preset),
-        ProjectCommand::Pyn { name } => pyn(&name),
-        ProjectCommand::Gon { name } => gon(&name),
-        ProjectCommand::Lnn { name } => lnn(&name),
-        ProjectCommand::Tyn { name } => tyn(&name),
+        } => rust(&name, &toolchain, &preset),
+        ProjectCommand::Python { name } => python(&name),
+        ProjectCommand::Golang { name } => golang(&name),
+        ProjectCommand::Lean { name } => lean(&name),
+        ProjectCommand::Typst { name } => typst(&name),
     };
 
     if let Err(e) = result {
