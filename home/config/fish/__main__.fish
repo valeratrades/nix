@@ -15,7 +15,7 @@ source (dirname (dirname $main_config_pdir))/scripts/__main__.fish
 
 source $main_config_pdir/app_aliases/__main__.fish
 
-source "$NIXOS_CONFIG/home/file_snippets/main.fish"
+source "$NIXOS_CONFIG/home/file_snippets/__main__.fish"
 source "$NIXOS_CONFIG/home/scripts/shell_harpoon/main.fish"
 
 # Init utils {{{
