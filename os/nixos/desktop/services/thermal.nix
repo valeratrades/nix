@@ -41,9 +41,9 @@
   #   };
   # };
 
-  # Throttle CPU at 90°C to prevent thermal shutdown
+  # Throttle CPU at 90°C and manage fan profile to prevent thermal shutdown
   systemd.services.thermal-guard = {
-    description = "Throttle CPU when temperature exceeds 90C";
+    description = "Throttle CPU and manage fans when temperature exceeds 90C";
     wantedBy = [ "multi-user.target" ];
     serviceConfig = {
       Type = "simple";
@@ -55,6 +55,7 @@
       TEMP_LOW=80000    # Stop throttling at 80°C (hysteresis)
       FREQ_THROTTLE=2400000  # ~44% of max
       FREQ_NORMAL=5461000
+      PLATFORM_PROFILE="/sys/firmware/acpi/platform_profile"
 
       throttled=0
 
@@ -62,6 +63,14 @@
         for cpu in /sys/devices/system/cpu/cpu*/cpufreq/scaling_max_freq; do
           echo "$1" > "$cpu" 2>/dev/null || true
         done
+      }
+
+      set_fan_profile() {
+        echo "$1" > "$PLATFORM_PROFILE" 2>/dev/null || true
+      }
+
+      get_fan_profile() {
+        cat "$PLATFORM_PROFILE" 2>/dev/null || echo "unknown"
       }
 
       while true; do
@@ -74,15 +83,24 @@
           fi
         done
 
+        # Never allow quiet profile - power-profiles-daemon sets this with power-saver
+        current_profile=$(get_fan_profile)
+        if [ "$current_profile" = "quiet" ]; then
+          set_fan_profile "balanced"
+          echo "Fan profile: quiet -> balanced (quiet not allowed)"
+        fi
+
         if [ -n "$temp" ]; then
           if [ "$temp" -ge "$TEMP_HIGH" ] && [ "$throttled" -eq 0 ]; then
             set_freq $FREQ_THROTTLE
+            set_fan_profile "performance"
             throttled=1
-            echo "Throttling: $((temp/1000))C >= 90C"
+            echo "Throttling: $((temp/1000))C >= 90C, fans -> performance"
           elif [ "$temp" -lt "$TEMP_LOW" ] && [ "$throttled" -eq 1 ]; then
             set_freq $FREQ_NORMAL
+            set_fan_profile "balanced"
             throttled=0
-            echo "Restored: $((temp/1000))C < 80C"
+            echo "Restored: $((temp/1000))C < 80C, fans -> balanced"
           fi
         fi
 
