@@ -426,18 +426,17 @@ fn golang(name: &str) -> Result<(), Box<dyn std::error::Error>> {
             .or_else(|_| fs::copy(&gofumpt_src, "gofumpt.toml").map(|_| ()));
     }
 
-    // Create cmd directory with main.go
-    fs::create_dir_all("cmd")?;
-    let main_src = file_snippets.join(format!("{lang}/presets/main"));
-    if main_src.exists() {
-        fs::copy(&main_src, format!("cmd/main.{lang}"))?;
-        // chmod u+x
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            let mut perms = fs::metadata(format!("cmd/main.{lang}"))?.permissions();
-            perms.set_mode(perms.mode() | 0o100);
-            fs::set_permissions(format!("cmd/main.{lang}"), perms)?;
+    // Copy preset files (includes cmd/main.go)
+    let preset_dir = file_snippets.join(format!("{lang}/presets/default"));
+    if preset_dir.exists() {
+        for entry in fs::read_dir(&preset_dir)? {
+            let entry = entry?;
+            let dest = PathBuf::from(".").join(entry.file_name());
+            if entry.path().is_dir() {
+                copy_dir_all(&entry.path(), &dest)?;
+            } else {
+                fs::copy(entry.path(), &dest)?;
+            }
         }
     }
 

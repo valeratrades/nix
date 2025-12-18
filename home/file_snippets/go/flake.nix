@@ -4,6 +4,7 @@
     flake-utils.url = "github:numtide/flake-utils";
     pre-commit-hooks.url = "github:cachix/git-hooks.nix";
     v-utils.url = "github:valeratrades/.github";
+    go-warn-unused.url = "github:valeratrades/go-warn-unused";
   };
 
   outputs =
@@ -12,7 +13,7 @@
     , flake-utils
     , pre-commit-hooks
     , v-utils
-    ,
+    , go-warn-unused
     }:
     flake-utils.lib.eachDefaultSystem (
       system:
@@ -20,6 +21,7 @@
         pkgs = import nixpkgs {
           inherit system;
           allowUnfree = true;
+          overlays = [ go-warn-unused.overlays.default ];
         };
 
         pre-commit-check = pre-commit-hooks.lib.${system}.run (v-utils.files.preCommit { inherit pkgs; });
@@ -93,6 +95,7 @@
               '';
 
             packages = [
+              go  # patched with -nounusederrors support
               mold
             ] ++ pre-commit-check.enabledPackages;
           };
