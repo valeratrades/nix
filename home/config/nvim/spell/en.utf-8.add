@@ -906,3 +906,4 @@ deps
 golang
 ccxt
 rustscript
+freqs

@@ -216,7 +216,7 @@ bindsym $mod+Shift+o split horizontal
 bindsym $mod+Ctrl+t layout tabbed
 bindsym $mod+f fullscreen
 bindsym $mod+p focus parent
-bindsym $mod+minus scratchpad show
+bindsym $mod+minus exec $sway_root/scratchpad_show_or_create.sh
 bindsym $mod+Shift+minus move scratchpad
 bindsym Ctrl+Shift+Escape exec alacritty --class btm-float -e btm -u; for_window [app_id="btm-float"] floating enable
 bindsym $mod+Mod1+t exec ~/s/help_scripts/theme_toggle.sh
