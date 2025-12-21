@@ -29,6 +29,12 @@ in {
     package = inputs.wallpaper_carousel.packages.${pkgs.stdenv.hostPlatform.system}.default;
   };
 
+  #dbg
+  btc_line = {
+    enable = true;
+    package = inputs.btc_line.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  };
+
   # Fix sops-nix.service to remain active after completion
   # Without this, oneshot services exit immediately and can't satisfy Requires= dependencies
   systemd.user.services.sops-nix = {
@@ -218,7 +224,6 @@ in {
 
       ++ [
         # some of my own packages are in shared, not everything is here
-        inputs.btc_line.packages.${pkgs.stdenv.hostPlatform.system}.default
         inputs.snapshot_fonts.packages.${pkgs.stdenv.hostPlatform.system}.default
       ]
       # Optional private packages from local paths (won't fail if path doesn't exist)
@@ -237,11 +242,11 @@ in {
         inputs.distributions.packages.${pkgs.stdenv.hostPlatform.system}.default # ? shared?
         inputs.book_parser.packages.${pkgs.stdenv.hostPlatform.system}.default
         inputs.rm_engine.packages.${pkgs.stdenv.hostPlatform.system}.default
-        inputs.wallpaper_carousel.packages.${pkgs.stdenv.hostPlatform.system}.default
         inputs.bad_apple_rs.packages.${pkgs.stdenv.hostPlatform.system}.default
         inputs.ask_llm.packages.${pkgs.stdenv.hostPlatform.system}.default
         inputs.translate_infrequent.packages.${pkgs.stdenv.hostPlatform.system}.default
         inputs.cargo_sort_derives.packages.${pkgs.stdenv.hostPlatform.system}.default
+        inputs.btc_line.packages.${pkgs.stdenv.hostPlatform.system}.default
 
         #inputs.aggr_orderbook.packages.${pkgs.stdenv.hostPlatform.system}.default
         #inputs.orderbook_3d.packages.${pkgs.stdenv.hostPlatform.system}.default

@@ -23,6 +23,7 @@
     ".config/auto_redshift.toml".source =
       "${self}/home/config/auto_redshift.toml";
     ".config/todo.toml".source = "${self}/home/config/todo.toml";
+    ".config/btc_line.nix".source = "${self}/home/config/btc_line.nix";
 	}
 		// pkgs.lib.optionalAttrs (user.kbd != "ansi") (
 			let

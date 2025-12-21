@@ -5,8 +5,8 @@ scratchpad_count=$(swaymsg -t get_tree | jq '[recurse(.nodes[], .floating_nodes[
 
 if [ "$scratchpad_count" -eq 0 ]; then
     swaymsg exec alacritty
-    swaymsg -t subscribe '["window"]' | head -n1 > /dev/null
-    swaymsg "move scratchpad; scratchpad show"
+    swaymsg -t subscribe '["window"]' | jq -c --unbuffered 'select(.change == "focus")' | head -n1 > /dev/null
+    swaymsg "floating enable; move scratchpad; scratchpad show"
 else
     swaymsg scratchpad show
 fi

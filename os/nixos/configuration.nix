@@ -43,13 +43,25 @@ in {
     ./shared-programs.nix
     (if user.userFullName == "Server" then ./server.nix else ./desktop)
     (mylib.relativeToRoot "./hosts/${user.desktopHostName}/configuration.nix")
-    (if builtins.pathExists "/etc/nixos/hardware-configuration.nix" then
-      /etc/nixos/hardware-configuration.nix
-    else
-      builtins.trace
-      "WARNING: Falling back to ./hosts/${user.desktopHostName}/hardware-configuration.nix, as /etc/nixos/hardware-configuration.nix does not exist. Could cause problems."
-      mylib.relativeToRoot
-      "./hosts/${user.desktopHostName}/hardware-configuration.nix")
+    (
+      let
+        etcHwConfig = "/etc/nixos/hardware-configuration.nix";
+        localHwConfig = mylib.relativeToRoot "./hosts/${user.desktopHostName}/hardware-configuration.nix";
+        etcExists = builtins.pathExists etcHwConfig;
+        localExists = builtins.pathExists localHwConfig;
+      in
+        if etcExists && localExists then
+          builtins.trace "WARNING: Both ${etcHwConfig} and ${toString localHwConfig} exist. Using ${etcHwConfig}."
+          /etc/nixos/hardware-configuration.nix
+        else if etcExists then
+          builtins.trace "INFO: Using system hardware config at ${etcHwConfig}"
+          /etc/nixos/hardware-configuration.nix
+        else if localExists then
+          builtins.trace "INFO: Using local hardware config at ${toString localHwConfig}"
+          localHwConfig
+        else
+          throw "ERROR: No hardware-configuration.nix found at ${etcHwConfig} or ${toString localHwConfig}"
+    )
   ];
 	hardware = {
 		enableAllFirmware = true; # Q: not sure if I need it

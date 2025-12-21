@@ -213,12 +213,29 @@ fn parse_log_line(log_line: String) -> (Option<String>, Option<String>) {
 
 /// Go to file:line:col or function symbol
 /// Supports formats:
+/// - file:{start_line:start_col; end_line:end_col} (visual selection)
 /// - file:line:col
 /// - file:line
 /// - file::mod::function (LSP symbol path)
 /// - file (just open the file)
 fn goto_file_line_column_or_function(file_line_or_func: String) {
 	use regex::Regex;
+
+	// Check for visual selection format: file:{start_line:start_col; end_line:end_col}
+	if let Some(caps) = Regex::new(r"^([^:]+):\{(\d+):(\d+);\s*(\d+):(\d+)\}$").ok().and_then(|re| re.captures(&file_line_or_func)) {
+		let file = caps.get(1).unwrap().as_str();
+		let start_line: i64 = caps.get(2).unwrap().as_str().parse().unwrap_or(1);
+		let start_col: i64 = caps.get(3).unwrap().as_str().parse().unwrap_or(1);
+		let end_line: i64 = caps.get(4).unwrap().as_str().parse().unwrap_or(1);
+		let end_col: i64 = caps.get(5).unwrap().as_str().parse().unwrap_or(1);
+
+		let _ = api::command(&format!("edit {}", file));
+		let _ = api::call_function::<_, ()>("cursor", (start_line, start_col));
+		let _ = api::command("normal! v");
+		let _ = api::call_function::<_, ()>("cursor", (end_line, end_col));
+		let _ = api::command("normal! zz");
+		return;
+	}
 
 	// Check for file:line:col pattern
 	if let Some(caps) = Regex::new(r"^([^:]+):(\d+):(\d+)$").ok().and_then(|re| re.captures(&file_line_or_func)) {

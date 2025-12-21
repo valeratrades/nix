@@ -1,15 +1,6 @@
 localhost_port = 59753
 
-[channels]
-general = -1002244305221
-work = "-1002244305221/3"
-trading = "-1002244305221/7"
-tooling = "2244305221/518"
-journal = "-1002244305221/5"
-far-fetched = "2244305221/113"
-learning = "2244305221/998"
-math = "2244305221/1076"
-videos = "2244305221/1127"
-papers = "2244305221/1136"
+# Forum groups - all topics in these groups are auto-discovered
+forum_groups = [2244305221]
 
-alerts = -1001800341082
+# alerts = 1800341082  # TODO: add non-forum channels support if needed

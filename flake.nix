@@ -75,7 +75,6 @@
     };
     btc_line = {
       url = "github:valeratrades/btc_line?ref=release";
-      #inputs.nixpkgs.follows = "nixpkgs";
     };
     rm_engine = { url = "github:valeratrades/rm_engine?ref=release"; };
     math_tools = { url = "github:valeratrades/math_tools"; };

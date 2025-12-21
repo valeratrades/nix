@@ -26,7 +26,7 @@ in
     eww = mkSymlink { target_path_postfix = "eww"; };
     site = mkSymlink { target_path_postfix = "site.nix"; };
     sway = mkSymlink { target_path_postfix = "sway"; };
-    btc_line = mkSymlink { target_path_postfix = "btc_line.toml"; };
+    btc_line = mkSymlink { target_path_postfix = "btc_line.nix"; };
     social_networks = mkSymlink { target_path_postfix = "social_networks.toml"; };
     claude_code_global_CLAUDE_md = mkSymlink {
       target_path = "$HOME/.claude/CLAUDE.md";

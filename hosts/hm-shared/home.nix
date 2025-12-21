@@ -287,7 +287,7 @@
 			};
       #
 
-      ".config/tg.toml".source = "${self}/home/config/tg.toml";
+      #".config/tg.toml".source = "${self}/home/config/tg.toml"; #dbg
       ".config/tg_admin.toml".source = "${self}/home/config/tg_admin.toml";
       ".config/auto_redshift.toml".source = "${self}/home/config/auto_redshift.toml";
       ".config/todo.toml".source = "${self}/home/config/todo.toml";
