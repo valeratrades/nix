@@ -136,12 +136,10 @@
         "v-utils": "v-utils_3"
       },
       "locked": {
-        "lastModified": 1766421419,
-        "narHash": "sha256-hJP77Ter9U+10zaZ11oLzH56XA+hVr1P4C3fqLa5T2c=",
-        "owner": "valeratrades",
-        "repo": "btc_line",
-        "rev": "b10894ad0c632f96dd51e2c54cd9ec71e4eb955f",
-        "type": "github"
+        "lastModified": 1766441127,
+        "narHash": "sha256-RqNu3i07rJRi+6JSFD4zvcHsIO8V5hGJdHdMLuDhlLo=",
+        "path": "/home/v/s/btc_line",
+        "type": "path"
       },
       "original": {
         "owner": "valeratrades",
@@ -2809,11 +2807,11 @@
         "v-utils": "v-utils_8"
       },
       "locked": {
-        "lastModified": 1766367683,
-        "narHash": "sha256-qZ2XPi5Fg+wlWRU1yiBV5l3209CYtRx7kgaErn5THt4=",
+        "lastModified": 1766442918,
+        "narHash": "sha256-Uy+fZdMovFbLFVTgIdVcxmtJh5EECIQlJ2pT4lVBX+w=",
         "owner": "valeratrades",
         "repo": "tg",
-        "rev": "af05ee495f3c145e06af6a21bc39e11ee6ebdd99",
+        "rev": "87ac9472995ecd14f64bca8b7d3b972ad0b1faa9",
         "type": "github"
       },
       "original": {
