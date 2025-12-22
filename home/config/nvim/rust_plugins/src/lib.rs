@@ -13,58 +13,138 @@ mod remap;
 mod shorthands;
 mod utils;
 
-/// Find all TODO comments in the project, sorted by number of '!' signs (descending)
+/// Find all TODO, dbg, TEST, and DEPRECATE comments in the project
+///
+/// Priority order (highest to lowest):
+/// 1. dbg - debug markers (comment_prefix immediately followed by "dbg")
+/// 2. TEST - test markers (comment_prefix immediately followed by "TEST")
+/// 3. TODO - sorted by number of '!' signs (descending)
+/// 4. DEPRECATE - deprecation markers (lowest priority)
 ///
 /// Note: To prevent a line containing "TODO" from being parsed as a TODO comment,
 /// use Russian О (Cyrillic) instead of English O: TОDO
 fn find_todo_impl() {
-	// Build the ripgrep + awk command
-	// Count only '!' immediately after 'TODO' (e.g., TODO!!!, not TODO some text with !)
-	let output = match Command::new("sh")
-		.arg("-c")
-		.arg(r#"rg --line-number -- "TODO" | awk -F: -v OFS=: '{match($0, /TODO!+/); count=RLENGTH-4; if(count<0) count=0; print count, $0}' | sort -rn"#)
+	// Common comment prefixes to search for
+	// Note: Order matters for regex alternation efficiency
+	let comment_prefixes = r#"(//|#|--|;;|%|'|/\*)"#;
+
+	// Priority scores:
+	// dbg: 1000, TEST: 900, TODO: 0-99 (by ! count), DEPRECATE: -1000
+	struct QfEntry {
+		priority: i64,
+		filename: String,
+		lnum: i64,
+		text: String,
+	}
+
+	let mut entries: Vec<QfEntry> = Vec::new();
+
+	// 1. Search for dbg markers (highest priority: 1000)
+	let dbg_pattern = format!(r#"{}dbg"#, comment_prefixes);
+	if let Ok(output) = Command::new("rg")
+		.args(["--line-number", "-e", &dbg_pattern])
 		.output()
 	{
-		Ok(o) if o.status.success() => o,
-		Ok(_) => {
-			return;
-		}
-		Err(e) => {
-			api::err_writeln(&format!("Error running search: {e}"));
-			return;
-		}
-	};
-
-	let stdout = String::from_utf8_lossy(&output.stdout);
-
-	// Parse results into quickfix entries
-	let mut qf_entries = Vec::new();
-
-	for line in stdout.lines() {
-		let parts: Vec<&str> = line.splitn(4, ':').collect();
-
-		if parts.len() >= 4 {
-			// parts[0] = count of '!' from awk (not used in quickfix)
-			// parts[1] = filename
-			// parts[2] = line number
-			// parts[3] = content (everything after line number, includes column + text)
-
-			let filename = parts[1].to_string();
-			let lnum = parts[2].parse::<i64>().unwrap_or(0);
-			let text = parts[3].to_string();
-
-			let entry = Dictionary::from_iter([
-				("filename", Object::from(filename)),
-				("lnum", Object::from(lnum)),
-				("col", Object::from(0_i64)),
-				("text", Object::from(text)),
-			]);
-
-			qf_entries.push(Object::from(entry));
+		if output.status.success() {
+			let stdout = String::from_utf8_lossy(&output.stdout);
+			for line in stdout.lines() {
+				let parts: Vec<&str> = line.splitn(3, ':').collect();
+				if parts.len() >= 3 {
+					entries.push(QfEntry {
+						priority: 1000,
+						filename: parts[0].to_string(),
+						lnum: parts[1].parse().unwrap_or(0),
+						text: parts[2].to_string(),
+					});
+				}
+			}
 		}
 	}
 
-	// Set the quickfix list using vim.fn.setqflist (no second argument, just the list)
+	// 2. Search for TEST markers (priority: 900)
+	let test_pattern = format!(r#"{}TEST"#, comment_prefixes);
+	if let Ok(output) = Command::new("rg")
+		.args(["--line-number", "-e", &test_pattern])
+		.output()
+	{
+		if output.status.success() {
+			let stdout = String::from_utf8_lossy(&output.stdout);
+			for line in stdout.lines() {
+				let parts: Vec<&str> = line.splitn(3, ':').collect();
+				if parts.len() >= 3 {
+					entries.push(QfEntry {
+						priority: 900,
+						filename: parts[0].to_string(),
+						lnum: parts[1].parse().unwrap_or(0),
+						text: parts[2].to_string(),
+					});
+				}
+			}
+		}
+	}
+
+	// 3. Search for TODO markers (priority: 0-99 based on ! count)
+	if let Ok(output) = Command::new("sh")
+		.arg("-c")
+		.arg(r#"rg --line-number -- "TODO" | awk -F: -v OFS=: '{match($0, /TODO!+/); count=RLENGTH-4; if(count<0) count=0; print count, $0}'"#)
+		.output()
+	{
+		if output.status.success() {
+			let stdout = String::from_utf8_lossy(&output.stdout);
+			for line in stdout.lines() {
+				let parts: Vec<&str> = line.splitn(4, ':').collect();
+				if parts.len() >= 4 {
+					let bang_count: i64 = parts[0].parse().unwrap_or(0);
+					entries.push(QfEntry {
+						priority: bang_count,
+						filename: parts[1].to_string(),
+						lnum: parts[2].parse().unwrap_or(0),
+						text: parts[3].to_string(),
+					});
+				}
+			}
+		}
+	}
+
+	// 4. Search for DEPRECATE markers (lowest priority: -1000)
+	let deprecate_pattern = format!(r#"{}DEPRECATE"#, comment_prefixes);
+	if let Ok(output) = Command::new("rg")
+		.args(["--line-number", "-e", &deprecate_pattern])
+		.output()
+	{
+		if output.status.success() {
+			let stdout = String::from_utf8_lossy(&output.stdout);
+			for line in stdout.lines() {
+				let parts: Vec<&str> = line.splitn(3, ':').collect();
+				if parts.len() >= 3 {
+					entries.push(QfEntry {
+						priority: -1000,
+						filename: parts[0].to_string(),
+						lnum: parts[1].parse().unwrap_or(0),
+						text: parts[2].to_string(),
+					});
+				}
+			}
+		}
+	}
+
+	// Sort by priority (descending)
+	entries.sort_by(|a, b| b.priority.cmp(&a.priority));
+
+	// Convert to quickfix entries
+	let qf_entries: Vec<Object> = entries
+		.into_iter()
+		.map(|e| {
+			Object::from(Dictionary::from_iter([
+				("filename", Object::from(e.filename)),
+				("lnum", Object::from(e.lnum)),
+				("col", Object::from(0_i64)),
+				("text", Object::from(e.text)),
+			]))
+		})
+		.collect();
+
+	// Set the quickfix list
 	let qf_array = Array::from_iter(qf_entries);
 
 	if let Err(e) = api::call_function::<_, i64>("setqflist", (qf_array,)) {
