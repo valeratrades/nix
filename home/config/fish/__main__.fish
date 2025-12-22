@@ -26,6 +26,9 @@ end
 if command -v todo &>/dev/null
 	todo init fish | source
 end
+if command -v tg &>/dev/null
+	tg init fish | source
+end
 if command -v himalaya &>/dev/null
 	himalaya completion fish | source
 end
