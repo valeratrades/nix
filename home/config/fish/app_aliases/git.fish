@@ -216,9 +216,6 @@ function gpr
 	yes | gh pr merge -dm "$pr_number"
 end
 
-#TODO: a thing to sync fork
-
-
 # would put a todo for rewriting, but I'm on nix, this may be irrelevant now
 #rewrite correctly from .zsh source, this is not at all what it is supposed to be
 # although, do I even need this now that I'm on nix?

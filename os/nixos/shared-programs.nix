@@ -54,14 +54,6 @@
         safe = { directory = "*"; };
         help = { autocorrect = 5; };
         pager = { difftool = true; };
-        filter = {
-          "lfs" = {
-            clean = "git-lfs clean -- %f";
-            smudge = "git-lfs smudge -- %f";
-            process = "git-lfs filter-process";
-            #required = true; # will panic on shell startup if not attached correctly
-          };
-        };
         fetch = { prune = true; };
         diff = {
           colorMoved = "zebra";
