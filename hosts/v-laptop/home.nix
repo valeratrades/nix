@@ -16,6 +16,8 @@ in {
     secrets.mail_main_pass = { mode = "0400"; };
     secrets.mail_spam_addr = { mode = "0400"; };
     secrets.mail_spam_pass = { mode = "0400"; };
+    secrets.alpaca_api_pubkey = { mode = "0400"; };
+    secrets.alpaca_api_secret = { mode = "0400"; };
   };
 
   tg = {
@@ -29,10 +31,11 @@ in {
     package = inputs.wallpaper_carousel.packages.${pkgs.stdenv.hostPlatform.system}.default;
   };
 
-  #dbg
   btc_line = {
     enable = true;
     package = inputs.btc_line.packages.${pkgs.stdenv.hostPlatform.system}.default;
+    alpacaKey = config.sops.secrets.alpaca_api_pubkey.path;
+    alpacaSecret = config.sops.secrets.alpaca_api_secret.path;
   };
 
   # Fix sops-nix.service to remain active after completion
