@@ -1,9 +1,8 @@
-alias tgf="tg send far-fetched 2>/dev/null"
-alias tgj="tg send journal 2>/dev/null"
-alias tgl="tg send learning 2>/dev/null"
-alias tgm="tg send math 2>/dev/null"
-alias tgp="tg send papers 2>/dev/null"
-alias tgt="tg send tooling 2>/dev/null"
-alias tgr="tg send trading 2>/dev/null"
-alias tgv="tg send videos 2>/dev/null"
-alias tgw="tg send work 2>/dev/null"
+function tgj; tg send journal  $argv >/dev/null; end
+function tgl; tg send learning $argv >/dev/null; end
+function tgm; tg send math     $argv >/dev/null; end
+function tgp; tg send papers   $argv >/dev/null; end
+function tgt; tg send tooling  $argv >/dev/null; end
+function tgr; tg send trading  $argv >/dev/null; end
+function tgv; tg send videos   $argv >/dev/null; end
+function tgw; tg send work     $argv >/dev/null; end
