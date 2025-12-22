@@ -12,6 +12,8 @@ in {
     defaultSopsFormat = "json";
     secrets.telegram_token_main = { mode = "0400"; };
     secrets.telegram_token_test = { mode = "0400"; };
+    secrets.telegram_api_hash = { mode = "0400"; };
+    secrets.telegram_phone = { mode = "0400"; };
     secrets.mail_main_addr = { mode = "0400"; };
     secrets.mail_main_pass = { mode = "0400"; };
     secrets.mail_spam_addr = { mode = "0400"; };
@@ -24,6 +26,8 @@ in {
     enable = true;
     package = inputs.tg.packages.${pkgs.stdenv.hostPlatform.system}.default;
     token = config.sops.secrets.telegram_token_main.path;
+    apiHash = config.sops.secrets.telegram_api_hash.path;
+    phone = config.sops.secrets.telegram_phone.path;
   };
 
   wallpaper-carousel = {
@@ -67,14 +71,8 @@ in {
     };
 
     Service = {
-      LoadCredential = "tg_token:${config.sops.secrets.telegram_token_main.path}";
-      ExecStart = lib.mkForce ''
-        ${pkgs.bash}/bin/bash -c '${
-          inputs.tg.packages.${pkgs.stdenv.hostPlatform.system}.default
-        }/bin/tg --token "$(${pkgs.coreutils}/bin/cat /run/user/1000/credentials/tg-server.service/tg_token)" server'
-      '';
       # Wait for the sops-nix secret file to exist before systemd tries to load it
-      ExecStartPre = "${pkgs.bash}/bin/bash -c 'while [ ! -f ${config.sops.secrets.telegram_token_main.path} ]; do ${pkgs.coreutils}/bin/sleep 0.1; done'";
+      ExecStartPre = lib.mkBefore "${pkgs.bash}/bin/bash -c 'while [ ! -f ${config.sops.secrets.telegram_token_main.path} ]; do ${pkgs.coreutils}/bin/sleep 0.1; done'";
       RestartSec = 5;
     };
   };
