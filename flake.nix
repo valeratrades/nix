@@ -80,7 +80,7 @@
     math_tools = { url = "github:valeratrades/math_tools"; };
     tg = {
       #url = "github:valeratrades/tg?ref=release";
-      url = "github:valeratrades/tg/master"; #dbg: trying a risky change
+      url = "github:valeratrades/tg/master";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     bbeats = {

@@ -1,7 +1,7 @@
 return require("lazier")({
 	"3rd/image.nvim",
 	build = false, -- no luarocks needed with magick_cli
-	lazy = true, -- only load when explicitly required
+	lazy = true,
 	opts = {
 		processor = "magick_cli", -- avoids luarocks dependency
 		backend = "ueberzug", -- works with alacritty

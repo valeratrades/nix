@@ -35,6 +35,7 @@ return require "lazier" {
 
 		local create_image = function(filepath, winid, bufnr)
 			if not image_api then
+				require("lazy").load({ plugins = { "image.nvim" } })
 				image_api = require("image")
 			end
 			image = image_api.hijack_buffer(filepath, winid, bufnr)
