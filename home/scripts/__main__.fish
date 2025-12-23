@@ -21,7 +21,7 @@ alias nb="$fish_scripts_pdir/nb.rs"
 alias gn="$fish_scripts_pdir/gn.rs"
 alias gfork="$fish_scripts_pdir/git.rs fork"
 alias kbd="$fish_scripts_pdir/kbd.rs"
-alias fans="sudo $fish_scripts_pdir/fans.rs"
+alias optimize_for="sudo $fish_scripts_pdir/optimize_for.rs"
 
 alias choose_port="$fish_scripts_pdir/choose_port.sh"
 
