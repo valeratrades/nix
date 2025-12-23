@@ -51,11 +51,9 @@ in
 
 			# PRIME configuration for hybrid graphics (AMD iGPU + NVIDIA dGPU)
 			prime = {
-				# Use offload mode - AMD iGPU renders by default, NVIDIA on-demand
-				offload = {
-					enable = true;
-					enableOffloadCmd = true;  # provides `nvidia-offload` command
-				};
+				# Use sync mode - NVIDIA renders everything, output through AMD iGPU
+				# This avoids AMD GPU hangs that kill all terminals
+				sync.enable = true;
 				# Bus IDs from lspci (convert hex to decimal: 01:00.0 -> 1:0:0, 06:00.0 -> 6:0:0)
 				nvidiaBusId = "PCI:1:0:0";
 				amdgpuBusId = "PCI:6:0:0";

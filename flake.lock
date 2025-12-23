@@ -2809,16 +2809,16 @@
         "v-utils": "v-utils_8"
       },
       "locked": {
-        "lastModified": 1766442918,
-        "narHash": "sha256-Uy+fZdMovFbLFVTgIdVcxmtJh5EECIQlJ2pT4lVBX+w=",
+        "lastModified": 1766453541,
+        "narHash": "sha256-mblVJKIsENfPeNs8JXvfsXUCaZr3ptyVSX4KDsPuAd8=",
         "owner": "valeratrades",
         "repo": "tg",
-        "rev": "87ac9472995ecd14f64bca8b7d3b972ad0b1faa9",
+        "rev": "379480e4ff3ccdac9644d899312d974112c34984",
         "type": "github"
       },
       "original": {
         "owner": "valeratrades",
-        "ref": "master",
+        "ref": "release",
         "repo": "tg",
         "type": "github"
       }

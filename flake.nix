@@ -79,8 +79,7 @@
     rm_engine = { url = "github:valeratrades/rm_engine?ref=release"; };
     math_tools = { url = "github:valeratrades/math_tools"; };
     tg = {
-      #url = "github:valeratrades/tg?ref=release";
-      url = "github:valeratrades/tg/master";
+      url = "github:valeratrades/tg?ref=release";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     bbeats = {
