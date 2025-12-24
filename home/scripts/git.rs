@@ -94,11 +94,18 @@ fn fork(message: Vec<String>) {
         }
     };
 
-    // Check if origin already points to our repo - just run gg
+    // Check if origin already points to our repo
     if origin_url.contains(&format!("github.com/{}/", github_name))
         || origin_url.contains(&format!("github.com:{}/", github_name))
     {
         println!("Origin already points to your repo, running gg...");
+        // Ensure branch tracks origin (might still track upstream from previous fork setup)
+        if let Some(branch) = run_cmd_output("git", &["rev-parse", "--abbrev-ref", "HEAD"]) {
+            let tracking = run_cmd_output("git", &["config", &format!("branch.{}.remote", branch)]);
+            if tracking.as_deref() != Some("origin") {
+                run_cmd("git", &["push", "-u", "origin", &branch]);
+            }
+        }
         run_gg(&message);
         return;
     }
@@ -140,6 +147,15 @@ fn fork(message: Vec<String>) {
     }
 
     println!("Pushing to {} ...", fork_url);
+
+    // Initial push to fork with -u to set up tracking (branch now tracks origin instead of upstream)
+    if let Some(branch) = run_cmd_output("git", &["rev-parse", "--abbrev-ref", "HEAD"]) {
+        if !run_cmd("git", &["push", "-u", "origin", &branch]) {
+            eprintln!("ERROR: Failed to push to fork");
+            std::process::exit(1);
+        }
+    }
+
     run_gg(&message);
 }
 
