@@ -1,19 +1,19 @@
 #!/bin/sh
 
-temps=$(
-  sensors 2>/dev/null | awk '
-    /Tctl:/ {v=$2; gsub(/[+°C]/,"",v); cpu=int(v+0.5)}
-    /edge:/ {v=$2; gsub(/[+°C]/,"",v); gpu=int(v+0.5)}
-    END {
-      if (cpu == "") cpu = 0
-      if (gpu == "") gpu = 0
-      print cpu, gpu
-    }
-  '
-)
+# Read directly from hwmon sysfs to avoid poking broken legion_hwmon
+get_temp_by_name() {
+  for hwmon in /sys/class/hwmon/hwmon*; do
+    if [ "$(cat "$hwmon/name" 2>/dev/null)" = "$1" ]; then
+      val=$(cat "$hwmon/temp1_input" 2>/dev/null)
+      echo $((val / 1000))
+      return
+    fi
+  done
+  echo 0
+}
 
-cpu_temp=$(echo "$temps" | cut -d' ' -f1)
-gpu_temp=$(echo "$temps" | cut -d' ' -f2)
+cpu_temp=$(get_temp_by_name "k10temp")
+gpu_temp=$(get_temp_by_name "amdgpu")
 
 max_temp=$cpu_temp
 [ "$gpu_temp" -gt "$max_temp" ] 2>/dev/null && max_temp=$gpu_temp

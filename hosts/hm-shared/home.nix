@@ -192,7 +192,18 @@
           # Desktop/GUI packages moved from configuration.nix
           libinput-gestures
           #qt5.full #dbg: brings in qtwebengine, which builds for too long
-          google-chrome
+          # Disable GPU acceleration to avoid amdgpu crashes
+          (google-chrome.override {
+            commandLineArgs = [
+              "--disable-gpu"
+              "--disable-gpu-compositing"
+              "--disable-gpu-rasterization"
+              "--disable-software-rasterizer"
+              "--disable-accelerated-2d-canvas"
+              "--disable-accelerated-video-decode"
+              "--disable-accelerated-video-encode"
+            ];
+          })
           alacritty
         ]
         [
