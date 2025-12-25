@@ -242,7 +242,7 @@ in {
         inputs.prettify_log.packages.${pkgs.stdenv.hostPlatform.system}.default
         inputs.distributions.packages.${pkgs.stdenv.hostPlatform.system}.default # ? shared?
         inputs.book_parser.packages.${pkgs.stdenv.hostPlatform.system}.default
-        inputs.rm_engine.packages.${pkgs.stdenv.hostPlatform.system}.default
+        inputs.discretionary_engine.packages.${pkgs.stdenv.hostPlatform.system}.default
         inputs.bad_apple_rs.packages.${pkgs.stdenv.hostPlatform.system}.default
         inputs.ask_llm.packages.${pkgs.stdenv.hostPlatform.system}.default
         inputs.translate_infrequent.packages.${pkgs.stdenv.hostPlatform.system}.default

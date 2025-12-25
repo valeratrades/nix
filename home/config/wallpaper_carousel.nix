@@ -17,6 +17,6 @@
     { text = ''if it's not a "hell yes",\nit's a "no"''; author = "Derek Sivers"; }
   ];
   balance = {
-    command = "discretionary_engine_risk balance";
+    command = "discretionary_engine risk balance";
   };
 }

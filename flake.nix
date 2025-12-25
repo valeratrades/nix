@@ -76,7 +76,7 @@
     btc_line = {
       url = "github:valeratrades/btc_line?ref=release";
     };
-    rm_engine = { url = "github:valeratrades/rm_engine?ref=release"; };
+    discretionary_engine = { url = "github:valeratrades/discretionary_engine?ref=release"; };
     math_tools = { url = "github:valeratrades/math_tools"; };
     tg = {
       url = "github:valeratrades/tg?ref=release";
