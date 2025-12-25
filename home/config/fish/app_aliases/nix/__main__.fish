@@ -1,3 +1,4 @@
+alias n="nix"
 alias flake-build="sudo nixos-rebuild switch --flake .#myhost --show-trace -L -v"
 #TODO!: make into a function and git-commit with $argv concatenation for message
 alias nixup="git -C '$NIXOS_CONFIG' add -A && nix flake update --flake '$NIXOS_CONFIG' && sudo nixos-rebuild switch --show-trace -v --impure --fast && git_upload '$NIXOS_CONFIG'"

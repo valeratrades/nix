@@ -111,8 +111,6 @@ in {
 			"amdgpu.sg_display=0"      # disable scatter-gather (Chrome GPU crashes)
 			# "amdgpu.abmlevel=0"      # breaks brightness control
 			"amdgpu.noretry=1"         # disable retry on page faults
-			#dbg: investigating kernel panics (2025-12-09) - forces immediate panic on oops instead of limping along, so we get full stack trace
-			"kernel.panic_on_oops=1"
 			#dbg: NMI watchdog - detects hard lockups and prints stack trace even when CPU is frozen
 			"nmi_watchdog=1"
 			#dbg: limit CPU to shallow C-states (C0/C1 only) - testing if deep sleep triggers IRQ storms
@@ -124,6 +122,12 @@ in {
 			# mt7925e WiFi suspend fix - disable ASPM to prevent suspend timeout
 			"pcie_aspm.policy=performance"
 		];
+
+		kernel.sysctl = {
+			# disable memory allocation profiling - its bookkeeping can fail under memory pressure,
+			# causing kernel warnings that trigger panic with panic_on_oops=1
+			"vm.mem_profiling" = 0;
+		};
 
     # # for obs's Virtual Camera
     # FIXME: v4l2loopback 0.15.1 doesn't build on kernel 6.18 (API change: v4l2_fh_add/del signature)

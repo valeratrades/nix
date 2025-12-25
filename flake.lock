@@ -199,11 +199,11 @@
         "v-utils": "v-utils_4"
       },
       "locked": {
-        "lastModified": 1766630053,
-        "narHash": "sha256-SRE6qISbjQGn7JTOR+dVlGbrg6DubwB6ncG+dbVl51o=",
+        "lastModified": 1766691493,
+        "narHash": "sha256-0lE6xRhpxuypjlByGUADlK34s+yYNEOJ4yJRMhMmXNE=",
         "owner": "valeratrades",
         "repo": "discretionary_engine",
-        "rev": "1c0d03934a908a301c049df711bd34f9750cad04",
+        "rev": "0ff84909d983c8159e40c32c1bebdaf29bbc0915",
         "type": "github"
       },
       "original": {
