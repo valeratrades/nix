@@ -206,16 +206,6 @@ function gc
 end
 
 
-function gpr
-	set current_branch (git branch --show-current)
-	set target_branch $argv[1]
-	# could ask whether I want to push
-	yes | gh pr create -B "$target_branch" -f -t "$current_branch"
-	git checkout $target_branch
-	set pr_number (gh pr list --limit 100 --json number,title | jq -r --arg title "$current_branch" '.[] | select(.title == $title) | .number')
-	yes | gh pr merge -dm "$pr_number"
-end
-
 # would put a todo for rewriting, but I'm on nix, this may be irrelevant now
 #rewrite correctly from .zsh source, this is not at all what it is supposed to be
 # although, do I even need this now that I'm on nix?

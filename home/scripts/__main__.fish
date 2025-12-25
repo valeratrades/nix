@@ -20,6 +20,7 @@ alias cnix_release="$fish_scripts_pdir/cnix_release.rs"
 alias nb="$fish_scripts_pdir/nb.rs"
 alias gn="$fish_scripts_pdir/gn.rs"
 alias gfork="$fish_scripts_pdir/git.rs fork"
+alias gpr="$fish_scripts_pdir/git.rs pr"
 alias kbd="$fish_scripts_pdir/kbd.rs"
 alias optimize_for="sudo $fish_scripts_pdir/optimize_for.rs"
 
