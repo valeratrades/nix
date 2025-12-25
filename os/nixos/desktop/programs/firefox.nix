@@ -37,6 +37,8 @@
           (block "moviesjoy.cx")
           (block "anigo.to")
           (block "imdb.com")
+          (block "chat*")
+          (block "anime*")
           #,}}}1
       ];
 

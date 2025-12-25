@@ -227,6 +227,6 @@ function sccache_retry
 end
 
 # Aliases for common commands with sccache retry
-alias cb="sccache_retry cargo build"
-alias cr="sccache_retry cargo run"
-alias cc="sccache_retry cargo check"
+alias scb="sccache_retry cargo build"
+alias scr="sccache_retry cargo run"
+alias scc="sccache_retry cargo check"
