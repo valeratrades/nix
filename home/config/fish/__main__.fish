@@ -29,6 +29,9 @@ end
 if command -v tg &>/dev/null
 	tg init fish 2>/dev/null | source
 end
+if command -v discretionary_engine &>/dev/null
+	discretionary_engine init fish 2>/dev/null | source
+end
 if command -v himalaya &>/dev/null
 	himalaya completion fish | source
 end

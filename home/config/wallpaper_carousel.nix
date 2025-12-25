@@ -11,8 +11,12 @@
     { text = "good intentions don't work\nmechanisms do."; author = "Jeff Bezos"; }
 
     "work is the solution"
+
+    "all male problems can be\nsolved with more money"
+
+    { text = ''if it's not a "hell yes",\nit's a "no"''; author = "Derek Sivers"; }
   ];
   balance = {
-    command = "rm_engine balance";
+    command = "discretionary_engine_risk balance";
   };
 }

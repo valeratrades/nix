@@ -1,5 +1,5 @@
 alias dira="git add -A && direnv allow"
-function de
+function dirw
 	# direnv wrap
 	direnv allow && \
 	$argv && \
