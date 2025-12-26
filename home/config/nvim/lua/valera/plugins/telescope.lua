@@ -82,6 +82,23 @@ return require "lazier" {
 
 		K('n', '<space>f', function() builtin.find_files(gs) end, { desc = "Search files" })
 		K('n', '<space>z', function() builtin.live_grep(gs) end, { desc = "Live grep" })
+		K('n', '<space>Z', function()
+			-- Get oil directory from the alternate buffer (oil buffer we came from)
+			local alt_buf = vim.fn.bufnr('#')
+			local oil_dir = nil
+			if alt_buf ~= -1 then
+				local ft = vim.bo[alt_buf].filetype
+				if ft == 'oil' then
+					oil_dir = require('oil').get_current_dir(alt_buf)
+				end
+			end
+			if not oil_dir then
+				vim.notify("No oil buffer found in alternate buffer", vim.log.levels.WARN)
+				return
+			end
+			local opts = vim.tbl_extend("force", gs, { cwd = oil_dir })
+			builtin.live_grep(opts)
+		end, { desc = "Live grep (oil dir)" })
 		K({ 'n', 'v' }, '<space>ss', function() builtin.grep_string(gs) end,
 			{ desc = "Grep visual selection or word under cursor" })
 		K('n', '<space>sk', function() builtin.keymaps(gs) end, { desc = "Keymaps" })
