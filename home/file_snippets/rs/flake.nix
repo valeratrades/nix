@@ -4,7 +4,7 @@
     rust-overlay.url = "github:oxalica/rust-overlay";
     flake-utils.url = "github:numtide/flake-utils";
     pre-commit-hooks.url = "github:cachix/git-hooks.nix";
-    v-utils.url = "github:valeratrades/.github";
+    v-utils.url = "github:valeratrades/.github/v1.1.0";
   };
   outputs = { self, nixpkgs, rust-overlay, flake-utils, pre-commit-hooks, v-utils }:
     flake-utils.lib.eachDefaultSystem (
@@ -24,12 +24,13 @@
         pname = manifest.name;
         stdenv = pkgs.stdenvAdapters.useMoldLinker pkgs.stdenv;
 
-        workflowContents = v-utils.ci {
-          inherit pkgs;
+        github = v-utils.github {
+          inherit pkgs pname;
           lastSupportedVersion = "CURRENT_NIGHTLY_BY_DATE";
           jobsErrors = [ "rust-tests" ];
           jobsWarnings = [ "rust-doc" "rust-clippy" "rust-machete" "rust-sorted" "rust-sorted-derives" "rust-unused-features" "tokei" ];
           jobsOther = [ "loc-badge" ];
+          langs = [ "rs" ];
         };
         readme = v-utils.readme-fw {
           inherit pkgs pname;
@@ -69,16 +70,12 @@
             inherit stdenv;
             shellHook =
               pre-commit-check.shellHook
-              + workflowContents.shellHook
+              + github.shellHook
               + ''
                 cp -f ${v-utils.files.licenses.blue_oak} ./LICENSE
 
-                cargo -Zscript -q ${v-utils.hooks.appendCustom} ./.git/hooks/pre-commit
-                cp -f ${(v-utils.hooks.preCommit) { inherit pkgs pname; }} ./.git/hooks/custom.sh
-                cp -f ${(v-utils.hooks.treefmt) { inherit pkgs; }} ./.treefmt.toml
-
                 mkdir -p ./.cargo
-                cp -f ${ (v-utils.files.gitignore { inherit pkgs; langs = [ "rs" ]; }) } ./.gitignore
+                cp -f ${(v-utils.files.treefmt) { inherit pkgs; }} ./.treefmt.toml
                 cp -f ${ (v-utils.files.gitLfs { inherit pkgs; }) } ./.gitattributes
                 cp -f ${(v-utils.files.rust.clippy { inherit pkgs; })} ./.cargo/.clippy.toml
                 cp -f ${(v-utils.files.rust.config { inherit pkgs; })} ./.cargo/config.toml
@@ -94,7 +91,7 @@
               openssl
               pkg-config
               rust
-            ] ++ pre-commit-check.enabledPackages;
+            ] ++ pre-commit-check.enabledPackages ++ github.enabledPackages;
 
 						env.RUST_BACKTRACE = 1;
 						env.RUST_LIB_BACKTRACE = 0;

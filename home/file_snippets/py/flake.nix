@@ -4,7 +4,7 @@
     nixpkgs-python.url = "github:cachix/nixpkgs-python";
     devenv.url = "github:cachix/devenv";
     git-hooks.url = "github:cachix/git-hooks.nix";
-    v-utils.url = "github:valeratrades/.github";
+    v-utils.url = "github:valeratrades/.github/v1.1.0";
   };
 
   outputs =
@@ -38,12 +38,13 @@
           pkgs = nixpkgs.legacyPackages.${system};
           pname = "PROJECT_NAME_PLACEHOLDER";
 
-          workflowContents = v-utils.ci {
-            inherit pkgs;
+          github = v-utils.github {
+            inherit pkgs pname;
             lastSupportedVersion = "";
             jobsErrors = [ ];
             jobsWarnings = [ "tokei" ];
             jobsOther = [ "loc-badge" ];
+            langs = [ "py" ];
           };
           readme = v-utils.readme-fw {
             inherit pkgs pname;
@@ -94,20 +95,11 @@
                 };
 
                 enterShell =
-                  workflowContents.shellHook +
+                  github.shellHook +
                   ''
                   cp -f ${v-utils.files.licenses.blue_oak} ./LICENSE
 
-                  cargo -Zscript -q ${v-utils.hooks.appendCustom} ./.git/hooks/pre-commit
-                  cp -f ${(v-utils.hooks.treefmt) { inherit pkgs; }} ./.treefmt.toml
-                  cp -f ${(v-utils.hooks.preCommit) { inherit pkgs pname; }} ./.git/hooks/custom.sh
-
-                  cp -f ${
-                    (v-utils.files.gitignore {
-                      inherit pkgs;
-                      langs = [ "py" ];
-                    })
-                  } ./.gitignore
+                  cp -f ${(v-utils.files.treefmt) { inherit pkgs; }} ./.treefmt.toml
                   cp -f ${ (v-utils.files.gitLfs { inherit pkgs; }) } ./.gitattributes
 
                   cp -f ${readme} ./README.md
