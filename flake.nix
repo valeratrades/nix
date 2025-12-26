@@ -76,7 +76,10 @@
     btc_line = {
       url = "github:valeratrades/btc_line?ref=release";
     };
-    discretionary_engine = { url = "github:valeratrades/discretionary_engine?ref=release"; };
+    #dbg: trying to get around failing submodules (need for getting nautilus-bybit) {{{1
+    #discretionary_engine = { url = "github:valeratrades/discretionary_engine?ref=release"; };
+    #discretionary_engine = { url = "github:valeratrades/discretionary_engine?submodules=1"; };
+    #,}}}1
     math_tools = { url = "github:valeratrades/math_tools"; };
     tg = {
       url = "github:valeratrades/tg?ref=release";
