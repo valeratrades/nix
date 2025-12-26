@@ -1,14 +1,80 @@
 #!/usr/bin/env bash
 # Wrapper for cargo -Zscript with nix, tries --offline first
 # Usage: nix-run-cached <script.rs> [args...]
+# Tracks script usage and cleans up old caches (>30 days unused)
 
 SCRIPT="$1"
 shift
 
+CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-$HOME/.cargo/target}"
+METADATA_FILE="$CARGO_TARGET_DIR/.script-access-times"
+
+update_access_time() {
+	local script_hash
+	script_hash=$(echo "$SCRIPT" | md5sum | cut -c1-2)
+	local timestamp
+	timestamp=$(date +%s)
+
+	mkdir -p "$CARGO_TARGET_DIR"
+	touch "$METADATA_FILE"
+
+	# Update or add entry for this script hash
+	if grep -q "^$script_hash " "$METADATA_FILE" 2>/dev/null; then
+		sed -i "s/^$script_hash .*/$script_hash $timestamp/" "$METADATA_FILE"
+	else
+		echo "$script_hash $timestamp" >>"$METADATA_FILE"
+	fi
+}
+
+cleanup_old_caches() {
+	local now
+	now=$(date +%s)
+	local threshold=$((30 * 24 * 60 * 60)) # 30 days in seconds
+	local needs_cleanup=false
+
+	[ -f "$METADATA_FILE" ] || return
+
+	while read -r hash timestamp; do
+		if ((now - timestamp > threshold)); then
+			needs_cleanup=true
+			break
+		fi
+	done <"$METADATA_FILE"
+
+	if $needs_cleanup; then
+		(
+			# Run cleanup in background
+			while read -r hash timestamp; do
+				if ((now - timestamp > threshold)); then
+					rm -rf "${CARGO_TARGET_DIR:?}/$hash"
+					sed -i "/^$hash /d" "$METADATA_FILE"
+				fi
+			done <"$METADATA_FILE"
+
+			# Mark orphaned directories with timestamp 60 days in future (effective 90d retention)
+			local future_timestamp=$((now + 60 * 24 * 60 * 60))
+			for dir in "$CARGO_TARGET_DIR"/*/; do
+				[ -d "$dir" ] || continue
+				local dirname
+				dirname=$(basename "$dir")
+				[[ "$dirname" =~ ^[0-9a-f]{2}$ ]] || continue
+				if ! grep -q "^$dirname " "$METADATA_FILE" 2>/dev/null; then
+					echo "$dirname $future_timestamp" >>"$METADATA_FILE"
+				fi
+			done
+		) &>/dev/null &
+		disown
+	fi
+}
+
+update_access_time
+cleanup_old_caches
+
 NIX_EXPR='let rust_flake = builtins.getFlake "github:oxalica/rust-overlay/7ed7e8c74be95906275805db68201e74e9904f07"; nixpkgs_flake = builtins.getFlake "github:NixOS/nixpkgs/f61125a668a320878494449750330ca58b78c557"; pkgs = import nixpkgs_flake { system = builtins.currentSystem; overlays = [rust_flake.overlays.default]; }; in pkgs.rust-bin.nightly."2025-10-10".default.override { extensions = ["rust-src"]; }'
 
-if nix shell --offline --impure --expr "$NIX_EXPR" --command cargo -Zscript -q "$SCRIPT" "$@" 2>/dev/null; then
-  exit 0
+# add timeout for cache hits, as otherwise it can hang indeffinitely when `--offline` is used
+if timeout 3 nix shell --offline --impure --expr "$NIX_EXPR" --command cargo -Zscript -q "$SCRIPT" "$@" 2>/dev/null; then
+	exit 0
 fi
 
 notify-send "nix cache miss, fetching..." -t 3000 2>/dev/null &

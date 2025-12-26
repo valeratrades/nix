@@ -228,17 +228,18 @@ in {
         inputs.snapshot_fonts.packages.${pkgs.stdenv.hostPlatform.system}.default
       ]
       # Optional private packages from local paths (won't fail if path doesn't exist)
+      # Uses git+file:// to respect .gitignore (avoids copying massive ignored dirs like target/, .venv/, etc.)
       ++ (let
-        tryLocalFlake = path:
-          if builtins.pathExists (path + "/flake.nix")
+        tryLocalFlake = { path, submodules ? false }:
+          if builtins.pathExists (path + "/flake.nix") && builtins.pathExists (path + "/.gitignore")
             then let
-              flake = builtins.getFlake "path:${path}";
+              flake = builtins.getFlake "git+file://${path}${if submodules then "?submodules=1" else ""}";
               pkg = flake.packages.${pkgs.stdenv.hostPlatform.system}.default or null;
             in if pkg != null then [ pkg ] else []
           else builtins.trace "WARNING: optional package not found at ${path}" [];
       in lib.flatten [
-          #(tryLocalFlake "/home/v/s/other/uni_headless") #dbg: test if this is what makes `nb` hang
-          (tryLocalFlake "/home/v/s/discretionary_engine")
+          #(tryLocalFlake { path = "/home/v/s/other/uni_headless"; }) #dbg: rebuilds from 0 every time, so problematic
+          (tryLocalFlake { path = "/home/v/s/discretionary_engine"; submodules = true; }) #TEST
         ]) ++ [
         inputs.prettify_log.packages.${pkgs.stdenv.hostPlatform.system}.default
         inputs.distributions.packages.${pkgs.stdenv.hostPlatform.system}.default # ? shared?

@@ -216,8 +216,21 @@ bindsym $mod+Shift+o split horizontal
 bindsym $mod+Ctrl+t layout tabbed
 bindsym $mod+f fullscreen
 bindsym $mod+p focus parent
-bindsym $mod+minus exec $sway_root/scratchpad_show_or_create.sh
-bindsym $mod+Shift+minus move scratchpad
+# Scratchpads (10 total: main + 9 numbered)
+# Main scratchpad with auto-create terminal if empty
+bindsym $mod+minus exec $sway_root/scratchpad_toggle.sh 0 --create-if-empty
+# Scratchpads 1-9 via Win+Alt+[1-9]
+bindsym $mod+Mod1+1 exec $sway_root/scratchpad_toggle.sh 1
+bindsym $mod+Mod1+2 exec $sway_root/scratchpad_toggle.sh 2
+bindsym $mod+Mod1+3 exec $sway_root/scratchpad_toggle.sh 3
+bindsym $mod+Mod1+4 exec $sway_root/scratchpad_toggle.sh 4
+bindsym $mod+Mod1+5 exec $sway_root/scratchpad_toggle.sh 5
+bindsym $mod+Mod1+6 exec $sway_root/scratchpad_toggle.sh 6
+bindsym $mod+Mod1+7 exec $sway_root/scratchpad_toggle.sh 7
+bindsym $mod+Mod1+8 exec $sway_root/scratchpad_toggle.sh 8
+bindsym $mod+Mod1+9 exec $sway_root/scratchpad_toggle.sh 9
+# Move window to first available scratchpad slot
+bindsym $mod+Shift+minus exec $sway_root/scratchpad_assign.sh
 bindsym Ctrl+Shift+Escape exec alacritty --class btm-float -e btm -u; for_window [app_id="btm-float"] floating enable
 bindsym $mod+Mod1+t exec ~/s/help_scripts/theme_toggle.sh
 # Ctrl suffix because it will often be used after `Ctrl+l` in chrome.

@@ -137,13 +137,13 @@
 
       #TODO!: sigure out how to quickly estimate the dir size, display here with `(gray)`
       # if ordering is not forced, will be sorted alphabetically
+      command_timeout = 1000; # default 500ms is too short for fish shell startup
       custom = {
-        #shell = ["fish" "-c"]; # must be `fish`, but I didn't figure out how to enforce it yet
         path = {
           command = ''printf (prompt_pwd)'';
           when = ''true'';
           style = "bold cyan";
-          shell = "fish";
+          shell = ["fish" "-c"];
         };
         readonly = {
           command = ''printf "🔒"'';

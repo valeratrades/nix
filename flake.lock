@@ -2613,11 +2613,11 @@
         "v-utils": "v-utils_7"
       },
       "locked": {
-        "lastModified": 1766677462,
-        "narHash": "sha256-fSv3R8jrvM3TLgrPsEdo4/9l8Ya0Ek/jE0K0sT64j1U=",
+        "lastModified": 1766784276,
+        "narHash": "sha256-a9UBRStoEhKZNsP+8+vSg/ExkpEArVNnTPq5/GTLJoA=",
         "owner": "valeratrades",
         "repo": "tg",
-        "rev": "deafe243c549ee0c032559e6b6f00573b44879e0",
+        "rev": "53aebd641527323e791b4c53dafcac5d3396134f",
         "type": "github"
       },
       "original": {
