@@ -19,10 +19,12 @@ alias bluetooth="$fish_scripts_pdir/bluetooth.rs"
 alias cnix_release="$fish_scripts_pdir/cnix_release.rs"
 alias nb="$fish_scripts_pdir/nb.rs"
 alias gn="$fish_scripts_pdir/gn.rs"
-alias gfork="$fish_scripts_pdir/git.rs fork"
-alias gpr="$fish_scripts_pdir/git.rs pr"
 alias kbd="$fish_scripts_pdir/kbd.rs"
 alias optimize_for="sudo $fish_scripts_pdir/optimize_for.rs"
+
+alias git_scripts="$fish_scripts_pdir/git_scripts.rs"
+alias gfork="$fish_scripts_pdir/git_scripts.rs fork"
+alias gpr="$fish_scripts_pdir/git_scripts.rs pr"
 
 alias choose_port="$fish_scripts_pdir/choose_port.sh"
 

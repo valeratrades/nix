@@ -28,7 +28,10 @@ enum Commands {
     /// Create PR, merge it into target branch, and delete source branch
     Pr {
         /// Target branch to merge into (e.g., master, main)
-        target_branch: String,
+        target_branch: Option<String>,
+        /// Create a draft PR without merging
+        #[arg(long)]
+        draft: bool,
     },
 }
 
@@ -164,7 +167,7 @@ fn fork(message: Vec<String>) {
     run_gg(&message);
 }
 
-fn pr(target_branch: String) {
+fn pr(target_branch: Option<String>, draft: bool) {
     // Check we're in a git repo
     if !run_cmd_quiet("git", &["rev-parse", "--is-inside-work-tree"]) {
         eprintln!("ERROR: Not in a git repository");
@@ -175,6 +178,39 @@ fn pr(target_branch: String) {
         Some(b) if !b.is_empty() => b,
         _ => {
             eprintln!("ERROR: Could not get current branch");
+            std::process::exit(1);
+        }
+    };
+
+    // Draft mode: just create a draft PR and exit
+    if draft {
+        let mut args = vec!["pr", "create", "--draft", "--fill", "--head", &current_branch];
+        let target = target_branch.as_deref();
+        if let Some(t) = target {
+            args.push("-B");
+            args.push(t);
+        }
+        println!("Creating draft PR for branch '{}'", current_branch);
+        let output = Command::new("gh")
+            .args(&args)
+            .output();
+        match output {
+            Ok(o) if o.status.success() => {}
+            Ok(o) if String::from_utf8_lossy(&o.stderr).contains("already exists") => {
+                println!("Draft PR already exists");
+            }
+            _ => {
+                eprintln!("ERROR: Failed to create draft PR");
+                std::process::exit(1);
+            }
+        }
+        return;
+    }
+
+    let target_branch = match target_branch {
+        Some(b) => b,
+        None => {
+            eprintln!("ERROR: target_branch is required when not using --draft");
             std::process::exit(1);
         }
     };
@@ -269,6 +305,6 @@ fn main() {
 
     match args.command {
         Commands::Fork { message } => fork(message),
-        Commands::Pr { target_branch } => pr(target_branch),
+        Commands::Pr { target_branch, draft } => pr(target_branch, draft),
     }
 }
