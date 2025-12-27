@@ -229,6 +229,16 @@ bindsym $mod+Mod1+6 exec $sway_root/scratchpad_toggle.sh 6
 bindsym $mod+Mod1+7 exec $sway_root/scratchpad_toggle.sh 7
 bindsym $mod+Mod1+8 exec $sway_root/scratchpad_toggle.sh 8
 bindsym $mod+Mod1+9 exec $sway_root/scratchpad_toggle.sh 9
+# Move current scratchpad to slot 1-9 via Shift+Win+Alt+[1-9]
+bindsym $mod+Shift+Mod1+1 exec $sway_root/scratchpad_move.sh 1
+bindsym $mod+Shift+Mod1+2 exec $sway_root/scratchpad_move.sh 2
+bindsym $mod+Shift+Mod1+3 exec $sway_root/scratchpad_move.sh 3
+bindsym $mod+Shift+Mod1+4 exec $sway_root/scratchpad_move.sh 4
+bindsym $mod+Shift+Mod1+5 exec $sway_root/scratchpad_move.sh 5
+bindsym $mod+Shift+Mod1+6 exec $sway_root/scratchpad_move.sh 6
+bindsym $mod+Shift+Mod1+7 exec $sway_root/scratchpad_move.sh 7
+bindsym $mod+Shift+Mod1+8 exec $sway_root/scratchpad_move.sh 8
+bindsym $mod+Shift+Mod1+9 exec $sway_root/scratchpad_move.sh 9
 # Move window to first available scratchpad slot
 bindsym $mod+Shift+minus exec $sway_root/scratchpad_assign.sh
 bindsym Ctrl+Shift+Escape exec alacritty --class btm-float -e btm -u; for_window [app_id="btm-float"] floating enable
