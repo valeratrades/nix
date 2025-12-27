@@ -53,16 +53,11 @@ let
 in
 {
   programs.nixcord = {
-    #enable = true; # also installs discord package
+    enable = true; # also installs discord package
     discord.enable = true; # when Vesktop is available, it's strictly preferable
     vesktop.enable = true;
     discord.openASAR.enable = true;
 
-    #config = {
-    #  frameless = true;
-    #  enableReactDevtools = true;
-    #  plugins = vencord_plugins;
-    #};
     vesktopConfig = {
       frameless = true;
       enableReactDevtools = true;
