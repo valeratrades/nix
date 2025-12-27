@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Toggle a specific scratchpad (0-9). Hides any currently visible scratchpad first.
-# Usage: scratchpad_toggle.sh <index> [--create-if-empty]
+# Creates a terminal if the scratchpad is empty.
+# Usage: scratchpad_toggle.sh <index>
 
 set -e
 
 index="${1:-0}"
-create_if_empty="${2:-}"
 state_file="/tmp/sway_scratchpad_visible"
 
 # Get currently visible scratchpad (if any)
@@ -46,12 +46,13 @@ show_scratchpad() {
     swaymsg "[con_mark=scratch_$idx] scratchpad show" 2>/dev/null || true
 }
 
-# Create a new terminal for the main scratchpad
-create_main_scratchpad() {
+# Create a new terminal for a scratchpad
+create_scratchpad() {
+    local idx="$1"
     swaymsg exec alacritty
     swaymsg -t subscribe '["window"]' | jq -c --unbuffered 'select(.change == "focus")' | head -n1 > /dev/null
     sleep 0.1
-    swaymsg mark scratch_0
+    swaymsg mark "scratch_$idx"
     swaymsg move scratchpad
     swaymsg scratchpad show
 }
@@ -68,14 +69,11 @@ if [ -n "$current_visible" ] && [ "$current_visible" != "$index" ]; then
     hide_scratchpad "$current_visible"
 fi
 
-# Show requested scratchpad
+# Show requested scratchpad, or create if empty
 if has_windows "$index"; then
     show_scratchpad "$index"
     echo "$index" > "$state_file"
-elif [ "$create_if_empty" = "--create-if-empty" ] && [ "$index" = "0" ]; then
-    create_main_scratchpad
-    echo "0" > "$state_file"
 else
-    # No windows in this scratchpad slot
-    rm -f "$state_file"
+    create_scratchpad "$index"
+    echo "$index" > "$state_file"
 fi

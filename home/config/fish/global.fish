@@ -21,10 +21,24 @@ end
 alias mkf="mkfile"
 
 function cs
-    if test -f "$argv[1]"
-        e "$argv[1]"
+    set -l tmux_after 0
+    set -l args
+
+    for arg in $argv
+        switch $arg
+            case -t --tmux
+                set tmux_after 1
+            case '*'
+                set -a args $arg
+        end
+    end
+
+    if test (count $args) -gt 0; and test -f "$args[1]"
+        e "$args[1]"
     else
-        cd "$argv" || return 1
+        if test (count $args) -gt 0
+            cd "$args" || return 1
+        end
 
         source "./.local.fish" > /dev/null 2>&1 || true
         source "./tmp/.local.fish" > /dev/null 2>&1 || true
@@ -34,7 +48,11 @@ function cs
             set -e VIRTUAL_ENV
         end
 
-        sl
+        if test $tmux_after = 1
+            tn
+        else
+            sl
+        end
     end
 end
 

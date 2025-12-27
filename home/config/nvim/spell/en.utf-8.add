@@ -907,3 +907,6 @@ golang
 ccxt
 rustscript
 freqs
+#stest
+rstest/!
+datetime

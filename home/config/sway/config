@@ -218,7 +218,7 @@ bindsym $mod+f fullscreen
 bindsym $mod+p focus parent
 # Scratchpads (10 total: main + 9 numbered)
 # Main scratchpad with auto-create terminal if empty
-bindsym $mod+minus exec $sway_root/scratchpad_toggle.sh 0 --create-if-empty
+bindsym $mod+minus exec $sway_root/scratchpad_toggle.sh 0
 # Scratchpads 1-9 via Win+Alt+[1-9]
 bindsym $mod+Mod1+1 exec $sway_root/scratchpad_toggle.sh 1
 bindsym $mod+Mod1+2 exec $sway_root/scratchpad_toggle.sh 2

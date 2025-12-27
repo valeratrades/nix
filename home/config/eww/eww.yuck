@@ -140,6 +140,7 @@
 (defpoll github_poll :initial "" :interval "20s" "./modules/github.sh")
 (defwidget github []
 	(box
+		:class "warn"
 		:visible {github_poll != "" && github_poll != 0}
 		"${github_poll}"))
 
