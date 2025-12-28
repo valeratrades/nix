@@ -63,7 +63,7 @@
 	)
 )
 
-(defpoll layout_poll :initial "" :interval "1s" "./modules/layout.sh")
+(defpoll layout_poll :initial "" :interval "3s" "./modules/layout.sh")
 (defwidget layout []
 	(box
 		:visible {layout_poll != ""}
@@ -88,7 +88,7 @@
 	)
 )
 
-(defpoll obs_active_poll	:initial "0" :interval "1s" "./modules/obs_active.sh")
+(defpoll obs_active_poll	:initial "0" :interval "10s" "./modules/obs_active.sh")
 (defwidget obs []
 	(box
 		:class "text"
@@ -97,7 +97,7 @@
 	)
 )
 
-(defpoll openvpn_poll :initial "0" :interval "1s" "./modules/openvpn.sh")
+(defpoll openvpn_poll :initial "0" :interval "10s" "./modules/openvpn.sh")
 (defwidget openvpn []
   (box
 		:visible {openvpn_poll == "1"}
@@ -105,10 +105,10 @@
 	)
 )
 
-(defpoll battery_saver_poll	:initial "" :interval "1s" "./modules/battery_saver.sh")
+(defpoll battery_saver_poll	:initial "" :interval "5s" "./modules/battery_saver.sh")
 (defwidget battery_saver [] "${battery_saver_poll}")
 
-(defpoll battery_poll	:initial "{}" :interval "1s" "./modules/battery.sh")
+(deflisten battery_poll :initial "{\"content\": \"--\", \"icon\": \"\"}" "./modules/battery_listen.sh")
 (defwidget battery []
 	(box
 		:class {battery_poll.content < 10 && battery_poll.icon != "" ? "error" : battery_poll.content < 10 && battery_poll.icon == "" ? "warn" : ""}
@@ -120,7 +120,7 @@
 (defpoll time_poll :interval "1s" "date +\"%Y/%m/%d%a%H:%M:%S\"")
 (defwidget time [] "${time_poll}")
 
-(defpoll bluetooth_connection :interval "2s" "~/nix/home/scripts/bluetooth.rs is-connected")
+(defpoll bluetooth_connection :interval "5s" "~/nix/home/scripts/bluetooth.rs is-connected")
 (defwidget bluetooth []
 	(box
 		:visible {bluetooth_connection != ""}
@@ -137,7 +137,7 @@
 		:visible {EWW_RAM.used_mem_perc != ""}
 		"${round(EWW_RAM.used_mem_perc, 0)}%"))
 
-(defpoll github_poll :initial "" :interval "20s" "./modules/github.sh")
+(defpoll github_poll :initial "" :interval "60s" "./modules/github.sh")
 (defwidget github []
 	(box
 		:class "warn"
@@ -151,7 +151,7 @@
 		{notifications_listen.content}))
 
 ; Network
-(defpoll ping_poll :interval "10s" "./modules/ping.sh")
+(defpoll ping_poll :interval "30s" "./modules/ping.sh")
 (defwidget ping []
 	(box
 		:class {ping_poll > 150 || ping_poll == "None" ? "warn" : ""}
@@ -161,7 +161,7 @@
 (defpoll speaker_poll :initial "{}" :interval "1s" "./modules/speaker.sh")
 (defwidget speaker [] "${speaker_poll.icon}${speaker_poll.content}")
 
-(defpoll microphone_poll :initial "{}" :interval "100ms" "./modules/microphone.sh")
+(defpoll microphone_poll :initial "{}" :interval "500ms" "./modules/microphone.sh")
 (defwidget microphone []
 	(box
 		:class {microphone_poll.content < 10 || microphone_poll.content == "" ? "warn" : ""}
@@ -256,7 +256,7 @@
 (defvar todo_blocker_hover_state false)
 ;; Can't combine these two polls, because eww doesn't work well with newlines
 (defpoll todo_blocker_last_poll :initial "" :interval "0.5s" "todo blocker current")
-(defpoll todo_blocker_list_poll :interval "2s" "todo blocker list")
+(defpoll todo_blocker_list_poll :interval "5s" "todo blocker list")
 (defwidget what[]
 	(box
 		:visible {bar_visible == "true"}
