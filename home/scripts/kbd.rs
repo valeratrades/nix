@@ -51,8 +51,8 @@ fn get_current_layouts() -> Vec<String> {
         .output()
         .expect("Failed to run swaymsg");
 
-    let json: serde_json::Value = serde_json::from_slice(&output.stdout)
-        .expect("Failed to parse swaymsg output");
+    let json: serde_json::Value =
+        serde_json::from_slice(&output.stdout).expect("Failed to parse swaymsg output");
 
     if let Some(inputs) = json.as_array() {
         for input in inputs {
@@ -145,10 +145,6 @@ fn build_variants(layouts: &[String], first_variant: &str) -> Vec<String> {
         .collect()
 }
 
-fn get_base_variants(layouts: &[String]) -> Vec<String> {
-    layouts.iter().map(|l| get_default_variant(l).to_string()).collect()
-}
-
 fn main() {
     let args: Vec<String> = env::args().collect();
 
@@ -166,7 +162,10 @@ fn main() {
 
     if is_default_layout(requested) {
         // Restore base layouts with their default variants
-        let base_variants: Vec<String> = base.iter().map(|l| get_default_variant(l).to_string()).collect();
+        let base_variants: Vec<String> = base
+            .iter()
+            .map(|l| get_default_variant(l).to_string())
+            .collect();
 
         if current != base {
             if !set_layouts_with_variants(&base, &base_variants) {
