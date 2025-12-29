@@ -30,11 +30,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1762276027,
-        "narHash": "sha256-D86wszlTDxtDqLDAXFUuZJMDRTplT82siBDffURP428=",
+        "lastModified": 1766976678,
+        "narHash": "sha256-lmSBzv15aslFs7CMpVvMR40fNW4PiqqF3DIhcMiJV70=",
         "owner": "valeratrades",
         "repo": "auto_redshift",
-        "rev": "f8415c4a6bbf5c03c6e54c8dd2da810ba3b17817",
+        "rev": "161a5a1917234f1585459458d114cf797d2a3085",
         "type": "github"
       },
       "original": {
@@ -2368,11 +2368,11 @@
         "nixpkgs": "nixpkgs_33"
       },
       "locked": {
-        "lastModified": 1762223900,
-        "narHash": "sha256-caxpESVH71mdrdihYvQZ9rTZPZqW0GyEG9un7MgpyRM=",
+        "lastModified": 1766890375,
+        "narHash": "sha256-0Zi7ChAtjq/efwQYmp7kOJPcSt6ya9ynSUe6ppgZhsQ=",
         "owner": "oxalica",
         "repo": "rust-overlay",
-        "rev": "cfe1598d69a42a5edb204770e71b8df77efef2c3",
+        "rev": "91e1f7a0017065360f447622d11b7ce6ed04772f",
         "type": "github"
       },
       "original": {
@@ -2638,11 +2638,11 @@
         "v-utils": "v-utils_8"
       },
       "locked": {
-        "lastModified": 1765962463,
-        "narHash": "sha256-++/f+CSNSnEbASeC9rH0+Z+t/w1TU8xsGf4m+9mPui4=",
+        "lastModified": 1766975949,
+        "narHash": "sha256-rC7ZtpqMxsu9W+0NKels8XIZ88IJbPxlxtScijO+hwY=",
         "owner": "valeratrades",
         "repo": "todo",
-        "rev": "10db8fcb327668bfd6d6622cdb2436dbf96777e9",
+        "rev": "f6a850a4141a50b0e2e145b904a5760973a6896b",
         "type": "github"
       },
       "original": {
@@ -2821,15 +2821,16 @@
         "nixpkgs": "nixpkgs_34"
       },
       "locked": {
-        "lastModified": 1763413251,
-        "narHash": "sha256-zrHS6Amr49BEqKPSkH5fW9v6KXbeVekJEpigmYmTuuw=",
+        "lastModified": 1766844378,
+        "narHash": "sha256-HJnjGQDcBQd2DeYAgrdectSzMEVZmIhkp4YqR7IHR+4=",
         "owner": "valeratrades",
         "repo": ".github",
-        "rev": "6289acaeb41283e2197c1acc73fb8c62fcfadc2b",
+        "rev": "352b2a3c31294ad788e95ef5a8713747c221284b",
         "type": "github"
       },
       "original": {
         "owner": "valeratrades",
+        "ref": "v1.2.1",
         "repo": ".github",
         "type": "github"
       }
