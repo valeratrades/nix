@@ -65,10 +65,11 @@
       url = "github:valeratrades/auto_redshift";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    todo = {
-      url = "github:valeratrades/todo";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    #dbg: temporarily loading from local path
+    #todo = {
+    #  url = "github:valeratrades/todo";
+    #  inputs.nixpkgs.follows = "nixpkgs";
+    #};
     booktyping = {
       url = "github:valeratrades/booktyping";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -76,10 +77,7 @@
     btc_line = {
       url = "github:valeratrades/btc_line?ref=release";
     };
-    #dbg: trying to get around failing submodules (need for getting nautilus-bybit) {{{1
-    #discretionary_engine = { url = "github:valeratrades/discretionary_engine?ref=release"; };
-    discretionary_engine = { url = "github:valeratrades/discretionary_engine?submodules=1"; }; #TEST: .
-    #,}}}1
+    #discretionary_engine = { url = "github:valeratrades/discretionary_engine?submodules=1"; }; #TODO: get this working (currently can only do local due to reliance on /libs)
     math_tools = { url = "github:valeratrades/math_tools"; };
     tg = {
       url = "github:valeratrades/tg?ref=release";

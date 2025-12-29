@@ -108,7 +108,7 @@
 (defpoll battery_saver_poll	:initial "" :interval "5s" "./modules/battery_saver.sh")
 (defwidget battery_saver [] "${battery_saver_poll}")
 
-(deflisten battery_poll :initial "{\"content\": \"--\", \"icon\": \"\"}" "./modules/battery_listen.sh")
+(defpoll battery_poll :initial "{}" :interval "5s" "./modules/battery.sh")
 (defwidget battery []
 	(box
 		:class {battery_poll.content < 10 && battery_poll.icon != "" ? "error" : battery_poll.content < 10 && battery_poll.icon == "" ? "warn" : ""}
