@@ -239,7 +239,7 @@ in {
           else builtins.trace "WARNING: optional package not found at ${path}" [];
       in lib.flatten [
           #(tryLocalFlake { path = "/home/v/s/other/uni_headless"; }) #dbg: rebuilds from 0 every time, so problematic
-          (tryLocalFlake { path = "/home/v/s/discretionary_engine"; submodules = true; }) #TEST
+          #(tryLocalFlake { path = "/home/v/s/discretionary_engine"; submodules = true; }) #TEST
         ]) ++ [
         inputs.prettify_log.packages.${pkgs.stdenv.hostPlatform.system}.default
         inputs.distributions.packages.${pkgs.stdenv.hostPlatform.system}.default # ? shared?
