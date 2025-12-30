@@ -6,6 +6,7 @@ clap = { version = "4.5.49", features = ["derive"] }
 
 use clap::Parser;
 use std::collections::{HashMap, HashSet};
+use std::fmt;
 use std::process::Command;
 
 #[derive(Parser)]
@@ -34,6 +35,43 @@ struct ClaudeWindow {
     session: String,
     window_index: u32,
     state: ClaudeState,
+}
+
+#[derive(Debug)]
+struct Sessions {
+    entries: Vec<(String, ClaudeState)>,
+}
+
+impl Sessions {
+    fn new() -> Self {
+        Self { entries: Vec::new() }
+    }
+
+    fn add(&mut self, session: String, state: ClaudeState) {
+        self.entries.push((session, state));
+    }
+
+    fn sort(&mut self) {
+        self.entries.sort_by(|a, b| a.0.cmp(&b.0));
+    }
+}
+
+impl fmt::Display for Sessions {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.entries.is_empty() {
+            return Ok(());
+        }
+
+        let max_session_len = self.entries.iter().map(|(s, _)| s.len()).max().unwrap_or(0);
+
+        for (i, (session, state)) in self.entries.iter().enumerate() {
+            if i > 0 {
+                writeln!(f)?;
+            }
+            write!(f, "{:width$}  {}", session, state.as_str(), width = max_session_len)?;
+        }
+        Ok(())
+    }
 }
 
 fn get_claude_windows() -> Vec<ClaudeWindow> {
@@ -176,8 +214,12 @@ fn main() {
     // Sort by session name, then window index
     results.sort_by(|a, b| a.0.cmp(b.0).then(a.1.cmp(&b.1)));
 
-    // Output one per line
-    for (session, _window_index, state) in results {
-        println!("{}: {}", session, state.as_str());
+    // Build Sessions struct
+    let mut sessions = Sessions::new();
+    for (session, _, state) in results {
+        sessions.add(session.to_string(), state);
     }
+    sessions.sort();
+
+    println!("{}", sessions);
 }
