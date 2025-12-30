@@ -11,7 +11,7 @@ serde_json = "1.0"
 use clap::Parser;
 use colored::Colorize;
 use regex::Regex;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::fs;
@@ -24,6 +24,14 @@ struct Args {
     /// Compact output: hide todos and session summaries
     #[arg(short, long)]
     compact: bool,
+
+    /// JSON output for eww integration
+    #[arg(short, long)]
+    json: bool,
+
+    /// Generate LLM summaries (slow, uses ollama)
+    #[arg(long)]
+    llm_summaries: bool,
 }
 
 #[derive(Deserialize)]
@@ -46,7 +54,8 @@ struct MessageContent {
     content: String,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "lowercase")]
 enum ClaudeState {
     Empty,    // No claude running (shell prompt)
     Active,   // Claude is processing (spinner visible)
@@ -76,7 +85,7 @@ struct ClaudeWindow {
     summary: Option<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 struct SessionEntry {
     name: String,
     state: ClaudeState,
@@ -261,15 +270,50 @@ fn read_active_todo(path: &Path) -> Option<String> {
 static OLLAMA_UNAVAILABLE: std::sync::atomic::AtomicBool =
     std::sync::atomic::AtomicBool::new(false);
 
-/// Generate a short summary using a local LLM (ollama)
+// Only use ollama when --llm-summaries is passed
+static USE_LLM_SUMMARIES: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Generate a short summary using ollama chat API with conversation format
 fn generate_summary_with_llm(first_message: &str) -> Option<String> {
-    let prompt = format!(
-        "Summarize this task in 5 words or less. Grammar doesn't matter, skip connector words. Reply with ONLY the summary, nothing else:\n\n{}",
-        first_message
+    // Only run if --llm-summaries was passed
+    if !USE_LLM_SUMMARIES.load(std::sync::atomic::Ordering::Relaxed) {
+        return None;
+    }
+
+    // Get first line and truncate if too long
+    let first_line = first_message.lines().next().unwrap_or(first_message).trim();
+
+    // Skip if too short or empty - not worth asking the model
+    if first_line.len() < 5 {
+        return None;
+    }
+
+    let truncated = if first_line.len() > 200 {
+        &first_line[..200]
+    } else {
+        first_line
+    };
+
+    // Build conversation with system prompt and few-shot examples
+    let request_body = format!(
+        r#"{{"model":"gemma2:2b","stream":false,"messages":[
+{{"role":"system","content":"Output ONLY a 3-5 word label. No explanations, no markdown, no extra text."}},
+{{"role":"user","content":"add dark mode to settings"}},
+{{"role":"assistant","content":"dark mode settings"}},
+{{"role":"user","content":"fix the memory leak in worker"}},
+{{"role":"assistant","content":"fix worker memory leak"}},
+{{"role":"user","content":"{}"}}
+]}}"#,
+        truncated.replace('\\', "\\\\").replace('"', "\\\"").replace('\n', " ")
     );
 
-    let output = match Command::new("ollama")
-        .args(["run", "qwen2.5:0.5b", &prompt])
+    let output = match Command::new("curl")
+        .args([
+            "-s",
+            "http://localhost:11434/api/chat",
+            "-d",
+            &request_body,
+        ])
         .output()
     {
         Ok(o) if o.status.success() => o,
@@ -279,15 +323,42 @@ fn generate_summary_with_llm(first_message: &str) -> Option<String> {
         }
     };
 
-    let summary = String::from_utf8_lossy(&output.stdout)
-        .trim()
-        .to_string();
+    // Parse JSON response to get message.content
+    let response = String::from_utf8_lossy(&output.stdout);
+    let summary = serde_json::from_str::<serde_json::Value>(&response)
+        .ok()
+        .and_then(|v| v.get("message")?.get("content")?.as_str().map(|s| {
+            // Clean up: get first line, strip markdown/code blocks
+            s.lines()
+                .next()
+                .unwrap_or(s)
+                .trim()
+                .trim_start_matches(['`', '#', '*', '-'])
+                .trim()
+                .to_string()
+        }))
+        .unwrap_or_default();
 
-    if summary.is_empty() {
+    // Reject bad outputs: empty, meta-commentary, conversational, or too short
+    let lower = summary.to_lowercase();
+    let is_bad = summary.is_empty()
+        || summary.len() < 3
+        || summary.starts_with('(')
+        || summary.contains("```")
+        || lower.contains("request")
+        || lower.contains("complex")
+        || lower.contains("here's")
+        || lower.starts_with("yes")
+        || lower.starts_with("no")
+        || lower.starts_with("i ")
+        || lower.starts_with("this ")
+        || lower.starts_with("the ")
+        || lower.contains("already");
+    if is_bad {
         None
     } else {
-        // Limit length just in case
-        let max_len = 40;
+        // Limit length to 35 chars for display
+        let max_len = 35;
         if summary.len() > max_len {
             Some(format!("{}...", &summary[..max_len]))
         } else {
@@ -318,10 +389,7 @@ fn get_session_summary(session_file: &Path) -> Option<String> {
                         }
 
                         // Fallback: use truncated first line of message
-                        let summary = first_message
-                            .lines()
-                            .next()
-                            .unwrap_or(first_message);
+                        let summary = first_message.lines().next().unwrap_or(first_message);
 
                         let max_len = 50;
                         if summary.len() > max_len {
@@ -474,7 +542,12 @@ fn determine_claude_activity(session: &str, window_index: u32) -> ClaudeState {
         .unwrap_or("");
 
     // Look at the last few lines for various indicators
-    let last_portion: String = content.lines().rev().take(15).collect::<Vec<_>>().join("\n");
+    let last_portion: String = content
+        .lines()
+        .rev()
+        .take(15)
+        .collect::<Vec<_>>()
+        .join("\n");
 
     // Match spinner pattern first: "Word…" (capitalized word followed by ellipsis)
     // Examples: Running…, Thinking…, Cogitating…, Summarizing…
@@ -516,6 +589,11 @@ fn determine_claude_activity(session: &str, window_index: u32) -> ClaudeState {
 fn main() {
     let args = Args::parse();
 
+    // Set LLM summaries flag
+    if args.llm_summaries {
+        USE_LLM_SUMMARIES.store(true, std::sync::atomic::Ordering::Relaxed);
+    }
+
     let windows = get_claude_windows();
 
     // Group windows by session to find sessions with non-empty windows
@@ -555,7 +633,11 @@ fn main() {
     }
 
     // Sort by session name, then window index
-    results.sort_by(|a, b| a.session.cmp(&b.session).then(a.window_index.cmp(&b.window_index)));
+    results.sort_by(|a, b| {
+        a.session
+            .cmp(&b.session)
+            .then(a.window_index.cmp(&b.window_index))
+    });
 
     // Build Sessions struct
     let mut sessions = Sessions::new(args.compact);
@@ -570,9 +652,17 @@ fn main() {
     sessions.sort();
 
     // Show warning if ollama was unavailable (only in non-compact mode with summaries)
-    if !args.compact && OLLAMA_UNAVAILABLE.load(std::sync::atomic::Ordering::Relaxed) {
-        eprintln!("{}", "warn: ollama unavailable, using fallback summaries".yellow());
+    if !args.compact && !args.json && OLLAMA_UNAVAILABLE.load(std::sync::atomic::Ordering::Relaxed)
+    {
+        eprintln!(
+            "{}",
+            "warn: ollama unavailable, using fallback summaries".yellow()
+        );
     }
 
-    println!("{}", sessions);
+    if args.json {
+        println!("{}", serde_json::to_string(&sessions.entries).unwrap());
+    } else {
+        println!("{}", sessions);
+    }
 }

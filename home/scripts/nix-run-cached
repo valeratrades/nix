@@ -72,9 +72,10 @@ cleanup_old_caches
 
 NIX_EXPR='let rust_flake = builtins.getFlake "github:oxalica/rust-overlay/7ed7e8c74be95906275805db68201e74e9904f07"; nixpkgs_flake = builtins.getFlake "github:NixOS/nixpkgs/f61125a668a320878494449750330ca58b78c557"; pkgs = import nixpkgs_flake { system = builtins.currentSystem; overlays = [rust_flake.overlays.default]; }; in pkgs.rust-bin.nightly."2025-10-10".default.override { extensions = ["rust-src"]; }'
 
-# add timeout for cache hits, as otherwise it can hang indeffinitely when `--offline` is used
-if timeout 3 nix shell --offline --impure --expr "$NIX_EXPR" --command cargo -Zscript -q "$SCRIPT" "$@" 2>/dev/null; then
-	exit 0
+# Check if nix cache is available (timeout only applies to the cache check, not script execution)
+if timeout 3 nix shell --offline --impure --expr "$NIX_EXPR" --command true 2>/dev/null; then
+	# Cache hit - run the actual script without timeout
+	exec nix shell --offline --impure --expr "$NIX_EXPR" --command cargo -Zscript -q "$SCRIPT" "$@"
 fi
 
 notify-send "nix cache miss, fetching..." -t 3000 2>/dev/null &

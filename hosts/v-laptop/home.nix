@@ -177,7 +177,6 @@ in {
         gitui
         lazygit
 
-        ollama
         ollama-cuda
 
         powershell # for shit and giggles
