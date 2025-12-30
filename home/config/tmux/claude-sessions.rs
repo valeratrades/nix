@@ -264,7 +264,7 @@ static OLLAMA_UNAVAILABLE: std::sync::atomic::AtomicBool =
 /// Generate a short summary using a local LLM (ollama)
 fn generate_summary_with_llm(first_message: &str) -> Option<String> {
     let prompt = format!(
-        "Summarize this task in 5 words or less. Reply with ONLY the summary, nothing else:\n\n{}",
+        "Summarize this task in 5 words or less. Grammar doesn't matter, skip connector words. Reply with ONLY the summary, nothing else:\n\n{}",
         first_message
     );
 
@@ -490,9 +490,8 @@ fn determine_claude_activity(session: &str, window_index: u32) -> ClaudeState {
     if last_portion.contains("bypass permissions") {
         // Find the line starting with "> " and check if there's text after it
         for line in content.lines() {
-            if line.starts_with("> ") {
-                let after_prompt = line[2..].trim();
-                if !after_prompt.is_empty() {
+            if let Some(after_prompt) = line.strip_prefix("> ") {
+                if !after_prompt.trim().is_empty() {
                     return ClaudeState::Draft;
                 }
             }
