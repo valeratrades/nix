@@ -15,6 +15,8 @@
     "all male problems can be\nsolved with more money"
 
     { text = ''if it's not a "hell yes",\nit's a "no"''; author = "Derek Sivers"; }
+
+    { text = ''your "best" is not good enough\nDo what is required.''; author = "Alex Hormozi"; }
   ];
   balance = {
     command = "discretionary_engine risk balance";

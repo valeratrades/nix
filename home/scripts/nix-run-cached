@@ -2,12 +2,16 @@
 # Wrapper for cargo -Zscript with nix, tries --offline first
 # Usage: nix-run-cached <script.rs> [args...]
 # Tracks script usage and cleans up old caches (>30 days unused)
+# Caches the nix store path to avoid re-evaluating the flake expression every time
 
 SCRIPT="$1"
 shift
 
 CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-$HOME/.cargo/target}"
 METADATA_FILE="$CARGO_TARGET_DIR/.script-access-times"
+RUST_STORE_PATH_CACHE="$CARGO_TARGET_DIR/.rust-store-path"
+
+NIX_EXPR='let rust_flake = builtins.getFlake "github:oxalica/rust-overlay/7ed7e8c74be95906275805db68201e74e9904f07"; nixpkgs_flake = builtins.getFlake "github:NixOS/nixpkgs/f61125a668a320878494449750330ca58b78c557"; pkgs = import nixpkgs_flake { system = builtins.currentSystem; overlays = [rust_flake.overlays.default]; }; in pkgs.rust-bin.nightly."2025-10-10".default.override { extensions = ["rust-src"]; }'
 
 update_access_time() {
 	local script_hash
@@ -67,16 +71,47 @@ cleanup_old_caches() {
 	fi
 }
 
+# Get rust toolchain store path (cached to avoid 2+ second nix eval overhead)
+get_rust_store_path() {
+	# Check if we have a cached store path that still exists
+	if [ -f "$RUST_STORE_PATH_CACHE" ]; then
+		local cached_path
+		cached_path=$(cat "$RUST_STORE_PATH_CACHE")
+		if [ -d "$cached_path" ]; then
+			echo "$cached_path"
+			return 0
+		fi
+	fi
+
+	# Need to resolve the store path (slow, ~2s)
+	local store_path
+	if store_path=$(nix build --no-link --print-out-paths --offline --impure --expr "$NIX_EXPR" 2>/dev/null); then
+		mkdir -p "$CARGO_TARGET_DIR"
+		echo "$store_path" >"$RUST_STORE_PATH_CACHE"
+		echo "$store_path"
+		return 0
+	fi
+
+	return 1
+}
+
 update_access_time
 cleanup_old_caches
 
-NIX_EXPR='let rust_flake = builtins.getFlake "github:oxalica/rust-overlay/7ed7e8c74be95906275805db68201e74e9904f07"; nixpkgs_flake = builtins.getFlake "github:NixOS/nixpkgs/f61125a668a320878494449750330ca58b78c557"; pkgs = import nixpkgs_flake { system = builtins.currentSystem; overlays = [rust_flake.overlays.default]; }; in pkgs.rust-bin.nightly."2025-10-10".default.override { extensions = ["rust-src"]; }'
-
-# Check if nix cache is available (timeout only applies to the cache check, not script execution)
-if timeout 3 nix shell --offline --impure --expr "$NIX_EXPR" --command true 2>/dev/null; then
-	# Cache hit - run the actual script without timeout
-	exec nix shell --offline --impure --expr "$NIX_EXPR" --command cargo -Zscript -q "$SCRIPT" "$@"
+# Try to use cached store path for instant startup
+if RUST_PATH=$(get_rust_store_path); then
+	exec "$RUST_PATH/bin/cargo" -Zscript -q "$SCRIPT" "$@"
 fi
 
+# Cache miss - need to fetch
 notify-send "nix cache miss, fetching..." -t 3000 2>/dev/null &
+
+# Build and cache the store path, then run
+if RUST_PATH=$(nix build --no-link --print-out-paths --impure --expr "$NIX_EXPR" 2>/dev/null); then
+	mkdir -p "$CARGO_TARGET_DIR"
+	echo "$RUST_PATH" >"$RUST_STORE_PATH_CACHE"
+	exec "$RUST_PATH/bin/cargo" -Zscript -q "$SCRIPT" "$@"
+fi
+
+# Fallback to nix shell if build fails for some reason
 exec nix shell --impure --expr "$NIX_EXPR" --command cargo -Zscript -q "$SCRIPT" "$@"
