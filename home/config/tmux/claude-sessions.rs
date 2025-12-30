@@ -257,6 +257,45 @@ fn read_active_todo(path: &Path) -> Option<String> {
         .map(|t| t.active_form.clone())
 }
 
+// Track if ollama failed (for warning message)
+static OLLAMA_UNAVAILABLE: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
+
+/// Generate a short summary using a local LLM (ollama)
+fn generate_summary_with_llm(first_message: &str) -> Option<String> {
+    let prompt = format!(
+        "Summarize this task in 5 words or less. Reply with ONLY the summary, nothing else:\n\n{}",
+        first_message
+    );
+
+    let output = match Command::new("ollama")
+        .args(["run", "qwen2.5:0.5b", &prompt])
+        .output()
+    {
+        Ok(o) if o.status.success() => o,
+        _ => {
+            OLLAMA_UNAVAILABLE.store(true, std::sync::atomic::Ordering::Relaxed);
+            return None;
+        }
+    };
+
+    let summary = String::from_utf8_lossy(&output.stdout)
+        .trim()
+        .to_string();
+
+    if summary.is_empty() {
+        None
+    } else {
+        // Limit length just in case
+        let max_len = 40;
+        if summary.len() > max_len {
+            Some(format!("{}...", &summary[..max_len]))
+        } else {
+            Some(summary)
+        }
+    }
+}
+
 /// Get a short summary from the session's first user message
 fn get_session_summary(session_file: &Path) -> Option<String> {
     use std::io::{BufRead, BufReader};
@@ -271,15 +310,19 @@ fn get_session_summary(session_file: &Path) -> Option<String> {
             if msg.msg_type == "user" {
                 if let Some(content) = msg.message {
                     if content.role == "user" {
-                        // Truncate and clean up the summary
-                        let summary = content
-                            .content
+                        let first_message = content.content.trim();
+
+                        // Try to generate summary with LLM
+                        if let Some(summary) = generate_summary_with_llm(first_message) {
+                            return Some(summary);
+                        }
+
+                        // Fallback: use truncated first line of message
+                        let summary = first_message
                             .lines()
                             .next()
-                            .unwrap_or(&content.content)
-                            .trim();
+                            .unwrap_or(first_message);
 
-                        // Limit length
                         let max_len = 50;
                         if summary.len() > max_len {
                             return Some(format!("{}...", &summary[..max_len]));
@@ -526,6 +569,11 @@ fn main() {
         });
     }
     sessions.sort();
+
+    // Show warning if ollama was unavailable (only in non-compact mode with summaries)
+    if !args.compact && OLLAMA_UNAVAILABLE.load(std::sync::atomic::Ordering::Relaxed) {
+        eprintln!("{}", "warn: ollama unavailable, using fallback summaries".yellow());
+    }
 
     println!("{}", sessions);
 }
