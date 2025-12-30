@@ -339,10 +339,12 @@ fn generate_summary_with_llm(first_message: &str) -> Option<String> {
         }))
         .unwrap_or_default();
 
-    // Reject bad outputs: empty, meta-commentary, conversational, or too short
+    // Reject bad outputs: empty, meta-commentary, conversational, too short, or too long (>5 words)
     let lower = summary.to_lowercase();
+    let word_count = summary.split_whitespace().count();
     let is_bad = summary.is_empty()
         || summary.len() < 3
+        || word_count > 5
         || summary.starts_with('(')
         || summary.contains("```")
         || lower.contains("request")
@@ -388,14 +390,14 @@ fn get_session_summary(session_file: &Path) -> Option<String> {
                             return Some(summary);
                         }
 
-                        // Fallback: use truncated first line of message
-                        let summary = first_message.lines().next().unwrap_or(first_message);
+                        // Fallback: use truncated first line of message with ". " prefix
+                        let first_line = first_message.lines().next().unwrap_or(first_message);
 
-                        let max_len = 50;
-                        if summary.len() > max_len {
-                            return Some(format!("{}...", &summary[..max_len]));
+                        let max_len = 47; // 50 - 3 for ". " prefix
+                        if first_line.len() > max_len {
+                            return Some(format!(". {}...", &first_line[..max_len]));
                         }
-                        return Some(summary.to_string());
+                        return Some(format!(". {}", first_line));
                     }
                 }
             }

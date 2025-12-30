@@ -276,7 +276,7 @@
 ;; Claude sessions widget
 (defwindow claude_sessions
 	:monitor 0
-	:geometry (geometry :anchor "top right" :y 55 :width "0%" :height "0%")
+	:geometry (geometry :anchor "top right" :y 60 :width "0%" :height "0%")
 	(box
 		(claude_sessions_widget)
 	)
