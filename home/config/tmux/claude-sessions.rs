@@ -2,11 +2,13 @@
 ---cargo
 [dependencies]
 clap = { version = "4.5.49", features = ["derive"] }
+regex = "1"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 ---
 
 use clap::Parser;
+use regex::Regex;
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
 use std::fmt;
@@ -312,31 +314,27 @@ fn determine_claude_activity(session: &str, window_index: u32) -> ClaudeState {
         _ => return ClaudeState::Finished, // Default to finished if can't read
     };
 
-    // Check for activity indicators (spinners, "Running...", tool execution)
-    // These patterns indicate Claude is actively processing
-    let activity_patterns = [
-        "Running…",
-        "⎿  Running",
-        "Thinking…",
-        "● Read(",
-        "● Bash(",
-        "● Edit(",
-        "● Write(",
-        "● Glob(",
-        "● Grep(",
-        "● Task(",
-        "● WebFetch(",
-        "● WebSearch(",
-        "● LSP(",
-    ];
+    // Find the last non-empty line
+    let last_line = content
+        .lines()
+        .rev()
+        .find(|line| !line.trim().is_empty())
+        .unwrap_or("");
 
-    // Look at the last portion of the content for activity
-    let last_portion: String = content.lines().rev().take(30).collect::<Vec<_>>().join("\n");
+    // If the last line starts with "> " (input prompt), Claude is waiting for input
+    if last_line.starts_with("> ") {
+        return ClaudeState::Finished;
+    }
 
-    for pattern in activity_patterns {
-        if last_portion.contains(pattern) {
-            return ClaudeState::Active;
-        }
+    // Match spinner pattern: "Word…" (capitalized word followed by ellipsis)
+    // Examples: Running…, Thinking…, Cogitating…, Summarizing…
+    let spinner_pattern = Regex::new(r"[A-Z][a-z]+…").unwrap();
+
+    // Look at the last few lines for activity indicators
+    let last_portion: String = content.lines().rev().take(10).collect::<Vec<_>>().join("\n");
+
+    if spinner_pattern.is_match(&last_portion) {
+        return ClaudeState::Active;
     }
 
     ClaudeState::Finished
