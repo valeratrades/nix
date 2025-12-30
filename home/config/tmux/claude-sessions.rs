@@ -20,13 +20,30 @@ use std::process::Command;
 
 #[derive(Parser)]
 #[command(about = "Track state of Claude Code processes in tmux windows")]
-struct Args {}
+struct Args {
+    /// Compact output: hide todos and session summaries
+    #[arg(short, long)]
+    compact: bool,
+}
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct TodoItem {
     status: String,
     active_form: String,
+}
+
+#[derive(Deserialize)]
+struct SessionMessage {
+    #[serde(rename = "type")]
+    msg_type: String,
+    message: Option<MessageContent>,
+}
+
+#[derive(Deserialize)]
+struct MessageContent {
+    role: String,
+    content: String,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -56,24 +73,37 @@ struct ClaudeWindow {
     window_index: u32,
     state: ClaudeState,
     active_todo: Option<String>,
+    summary: Option<String>,
+}
+
+#[derive(Debug)]
+struct SessionEntry {
+    name: String,
+    state: ClaudeState,
+    active_todo: Option<String>,
+    summary: Option<String>,
 }
 
 #[derive(Debug)]
 struct Sessions {
-    entries: Vec<(String, ClaudeState, Option<String>)>,
+    entries: Vec<SessionEntry>,
+    compact: bool,
 }
 
 impl Sessions {
-    fn new() -> Self {
-        Self { entries: Vec::new() }
+    fn new(compact: bool) -> Self {
+        Self {
+            entries: Vec::new(),
+            compact,
+        }
     }
 
-    fn add(&mut self, session: String, state: ClaudeState, active_todo: Option<String>) {
-        self.entries.push((session, state, active_todo));
+    fn add(&mut self, entry: SessionEntry) {
+        self.entries.push(entry);
     }
 
     fn sort(&mut self) {
-        self.entries.sort_by(|a, b| a.0.cmp(&b.0));
+        self.entries.sort_by(|a, b| a.name.cmp(&b.name));
     }
 }
 
@@ -83,24 +113,49 @@ impl fmt::Display for Sessions {
             return Ok(());
         }
 
-        let max_session_len = self.entries.iter().map(|(s, _, _)| s.len()).max().unwrap_or(0);
-        let max_state_len = self
+        // Calculate max lengths for alignment
+        let max_name_len = self
             .entries
             .iter()
-            .map(|(_, state, _)| state.as_str().len())
+            .map(|e| {
+                if self.compact {
+                    e.name.len()
+                } else {
+                    // Include summary in length calculation
+                    let summary_len = e.summary.as_ref().map(|s| s.len() + 3).unwrap_or(0); // +3 for " <>"
+                    e.name.len() + summary_len
+                }
+            })
             .max()
             .unwrap_or(0);
 
-        for (i, (session, state, active_todo)) in self.entries.iter().enumerate() {
+        let max_state_len = self
+            .entries
+            .iter()
+            .map(|e| e.state.as_str().len())
+            .max()
+            .unwrap_or(0);
+
+        for (i, entry) in self.entries.iter().enumerate() {
             if i > 0 {
                 writeln!(f)?;
             }
 
+            // Build the name with optional summary
+            let display_name = if self.compact {
+                entry.name.clone()
+            } else {
+                match &entry.summary {
+                    Some(summary) => format!("{} <{}>", entry.name, summary),
+                    None => entry.name.clone(),
+                }
+            };
+
             // Pad state string manually since colored strings mess up format width
-            let state_str = state.as_str();
+            let state_str = entry.state.as_str();
             let padded_state = format!("{:width$}", state_str, width = max_state_len);
 
-            let colored_state = match state {
+            let colored_state = match entry.state {
                 ClaudeState::Active => padded_state.blue(),
                 ClaudeState::Finished => padded_state.green(),
                 ClaudeState::Empty => padded_state.yellow(),
@@ -108,10 +163,16 @@ impl fmt::Display for Sessions {
                 ClaudeState::Error => padded_state.red(),
             };
 
-            write!(f, "{:swidth$}  {}", session, colored_state, swidth = max_session_len)?;
+            write!(
+                f,
+                "{:width$}  {}",
+                display_name,
+                colored_state,
+                width = max_name_len
+            )?;
 
-            if *state == ClaudeState::Active {
-                let todo_str = match active_todo {
+            if !self.compact && entry.state == ClaudeState::Active {
+                let todo_str = match &entry.active_todo {
                     Some(todo) => format!("[{}]", todo),
                     None => "[]".to_string(),
                 };
@@ -148,36 +209,6 @@ fn get_process_cwd(pid: u32) -> Option<PathBuf> {
 /// e.g., /home/v/s/todo -> -home-v-s-todo
 fn path_to_project_name(path: &Path) -> String {
     path.to_string_lossy().replace('/', "-")
-}
-
-/// Find the most recently modified session file for a project
-fn find_active_session_id(project_dir: &Path) -> Option<String> {
-    let entries = fs::read_dir(project_dir).ok()?;
-
-    let mut session_files: Vec<_> = entries
-        .filter_map(|e| e.ok())
-        .filter(|e| {
-            let name = e.file_name();
-            let name_str = name.to_string_lossy();
-            // Only consider main session files (UUID.jsonl), not agent files
-            name_str.ends_with(".jsonl") && !name_str.starts_with("agent-")
-        })
-        .filter_map(|e| {
-            let metadata = e.metadata().ok()?;
-            let modified = metadata.modified().ok()?;
-            Some((e.path(), modified))
-        })
-        .collect();
-
-    // Sort by modification time, most recent first
-    session_files.sort_by(|a, b| b.1.cmp(&a.1));
-
-    // Get the session ID from the most recent file
-    session_files.first().and_then(|(path, _)| {
-        path.file_stem()
-            .and_then(|s| s.to_str())
-            .map(|s| s.to_string())
-    })
 }
 
 /// Find todo files matching a session ID and get the active (in_progress) todo
@@ -226,28 +257,90 @@ fn read_active_todo(path: &Path) -> Option<String> {
         .map(|t| t.active_form.clone())
 }
 
-/// Main function to get active todo for a tmux pane
-fn get_active_todo_for_pane(shell_pid: u32) -> Option<String> {
-    // Get the claude process (child of shell)
-    let claude_pid = get_child_pid(shell_pid)?;
+/// Get a short summary from the session's first user message
+fn get_session_summary(session_file: &Path) -> Option<String> {
+    use std::io::{BufRead, BufReader};
 
-    // Get the CWD of the claude process
-    let cwd = get_process_cwd(claude_pid)?;
+    let file = fs::File::open(session_file).ok()?;
+    let reader = BufReader::new(file);
 
-    // Convert to project name
-    let project_name = path_to_project_name(&cwd);
+    // Read first few lines to find the first user message
+    for line in reader.lines().take(10) {
+        let line = line.ok()?;
+        if let Ok(msg) = serde_json::from_str::<SessionMessage>(&line) {
+            if msg.msg_type == "user" {
+                if let Some(content) = msg.message {
+                    if content.role == "user" {
+                        // Truncate and clean up the summary
+                        let summary = content
+                            .content
+                            .lines()
+                            .next()
+                            .unwrap_or(&content.content)
+                            .trim();
 
-    // Build path to project directory
-    let home = std::env::var("HOME").ok()?;
-    let project_dir = PathBuf::from(home)
-        .join(".claude/projects")
-        .join(&project_name);
+                        // Limit length
+                        let max_len = 50;
+                        if summary.len() > max_len {
+                            return Some(format!("{}...", &summary[..max_len]));
+                        }
+                        return Some(summary.to_string());
+                    }
+                }
+            }
+        }
+    }
 
-    // Find the active session ID
-    let session_id = find_active_session_id(&project_dir)?;
+    None
+}
 
-    // Get the active todo for this session
-    get_active_todo_from_session(&session_id)
+/// Find the most recent session file path for a project
+fn find_active_session_file(project_dir: &Path) -> Option<PathBuf> {
+    let entries = fs::read_dir(project_dir).ok()?;
+
+    let mut session_files: Vec<_> = entries
+        .filter_map(|e| e.ok())
+        .filter(|e| {
+            let name = e.file_name();
+            let name_str = name.to_string_lossy();
+            name_str.ends_with(".jsonl") && !name_str.starts_with("agent-")
+        })
+        .filter_map(|e| {
+            let metadata = e.metadata().ok()?;
+            let modified = metadata.modified().ok()?;
+            Some((e.path(), modified))
+        })
+        .collect();
+
+    session_files.sort_by(|a, b| b.1.cmp(&a.1));
+    session_files.first().map(|(path, _)| path.clone())
+}
+
+/// Get session info (todo and summary) for a tmux pane
+fn get_session_info_for_pane(shell_pid: u32) -> (Option<String>, Option<String>) {
+    let info = (|| -> Option<(Option<String>, Option<String>)> {
+        let claude_pid = get_child_pid(shell_pid)?;
+        let cwd = get_process_cwd(claude_pid)?;
+        let project_name = path_to_project_name(&cwd);
+
+        let home = std::env::var("HOME").ok()?;
+        let project_dir = PathBuf::from(&home)
+            .join(".claude/projects")
+            .join(&project_name);
+
+        let session_file = find_active_session_file(&project_dir)?;
+        let session_id = session_file
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .map(|s| s.to_string())?;
+
+        let todo = get_active_todo_from_session(&session_id);
+        let summary = get_session_summary(&session_file);
+
+        Some((todo, summary))
+    })();
+
+    info.unwrap_or((None, None))
 }
 
 fn get_claude_windows() -> Vec<ClaudeWindow> {
@@ -291,17 +384,19 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
             continue;
         }
 
-        let (state, active_todo) = if pane_command == "claude" {
+        let (state, active_todo, summary) = if pane_command == "claude" {
             // Claude is running, check if active or finished
             let state = determine_claude_activity(session, window_index);
-            let active_todo = if state == ClaudeState::Active {
-                get_active_todo_for_pane(pane_pid)
+            let (active_todo, summary) = if state == ClaudeState::Active {
+                get_session_info_for_pane(pane_pid)
             } else {
-                None
+                // Still get summary for non-active states
+                let (_, summary) = get_session_info_for_pane(pane_pid);
+                (None, summary)
             };
-            (state, active_todo)
+            (state, active_todo, summary)
         } else {
-            (ClaudeState::Empty, None)
+            (ClaudeState::Empty, None, None)
         };
 
         claude_windows.push(ClaudeWindow {
@@ -309,6 +404,7 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
             window_index,
             state,
             active_todo,
+            summary,
         });
     }
 
@@ -376,7 +472,7 @@ fn determine_claude_activity(session: &str, window_index: u32) -> ClaudeState {
 }
 
 fn main() {
-    let _args = Args::parse();
+    let args = Args::parse();
 
     let windows = get_claude_windows();
 
@@ -398,7 +494,7 @@ fn main() {
 
     // Collect results: show all windows, but skip empty ones if session has non-empty
     // If all windows in a session are empty, show only one empty
-    let mut results: Vec<(&str, u32, ClaudeState, Option<String>)> = Vec::new();
+    let mut results: Vec<&ClaudeWindow> = Vec::new();
     let mut seen_empty_session: HashSet<&str> = HashSet::new();
 
     for window in &windows {
@@ -413,21 +509,21 @@ fn main() {
             }
             seen_empty_session.insert(&window.session);
         }
-        results.push((
-            &window.session,
-            window.window_index,
-            window.state,
-            window.active_todo.clone(),
-        ));
+        results.push(window);
     }
 
     // Sort by session name, then window index
-    results.sort_by(|a, b| a.0.cmp(b.0).then(a.1.cmp(&b.1)));
+    results.sort_by(|a, b| a.session.cmp(&b.session).then(a.window_index.cmp(&b.window_index)));
 
     // Build Sessions struct
-    let mut sessions = Sessions::new();
-    for (session, _, state, active_todo) in results {
-        sessions.add(session.to_string(), state, active_todo);
+    let mut sessions = Sessions::new(args.compact);
+    for window in results {
+        sessions.add(SessionEntry {
+            name: window.session.clone(),
+            state: window.state,
+            active_todo: window.active_todo.clone(),
+            summary: window.summary.clone(),
+        });
     }
     sessions.sort();
 
