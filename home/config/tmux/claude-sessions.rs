@@ -2,12 +2,14 @@
 ---cargo
 [dependencies]
 clap = { version = "4.5.49", features = ["derive"] }
+colored = "2"
 regex = "1"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 ---
 
 use clap::Parser;
+use colored::Colorize;
 use regex::Regex;
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
@@ -32,6 +34,7 @@ enum ClaudeState {
     Empty,    // No claude running (shell prompt)
     Active,   // Claude is processing (spinner visible)
     Finished, // Claude waiting for input (> prompt, no spinner)
+    Error,    // Claude hit an error (rate limit, panic, etc.)
 }
 
 impl ClaudeState {
@@ -40,6 +43,7 @@ impl ClaudeState {
             ClaudeState::Empty => "empty",
             ClaudeState::Active => "active",
             ClaudeState::Finished => "finished",
+            ClaudeState::Error => "error",
         }
     }
 }
@@ -89,14 +93,20 @@ impl fmt::Display for Sessions {
             if i > 0 {
                 writeln!(f)?;
             }
-            write!(
-                f,
-                "{:swidth$}  {:stwidth$}",
-                session,
-                state.as_str(),
-                swidth = max_session_len,
-                stwidth = max_state_len
-            )?;
+
+            // Pad state string manually since colored strings mess up format width
+            let state_str = state.as_str();
+            let padded_state = format!("{:width$}", state_str, width = max_state_len);
+
+            let colored_state = match state {
+                ClaudeState::Active => padded_state.blue(),
+                ClaudeState::Finished => padded_state.green(),
+                ClaudeState::Empty => padded_state.yellow(),
+                ClaudeState::Error => padded_state.red(),
+            };
+
+            write!(f, "{:swidth$}  {}", session, colored_state, swidth = max_session_len)?;
+
             if *state == ClaudeState::Active {
                 let todo_str = match active_todo {
                     Some(todo) => format!("[{}]", todo),
@@ -326,12 +336,32 @@ fn determine_claude_activity(session: &str, window_index: u32) -> ClaudeState {
         return ClaudeState::Finished;
     }
 
+    // Look at the last few lines for various indicators
+    let last_portion: String = content.lines().rev().take(15).collect::<Vec<_>>().join("\n");
+
+    // Check for error patterns (rate limit, panics, errors)
+    let error_patterns = [
+        "rate limit",
+        "Rate limit",
+        "error:",
+        "Error:",
+        "panicked",
+        "PANIC",
+        "failed",
+        "Failed",
+        "timed out",
+        "Timed out",
+    ];
+
+    for pattern in error_patterns {
+        if last_portion.contains(pattern) {
+            return ClaudeState::Error;
+        }
+    }
+
     // Match spinner pattern: "Word…" (capitalized word followed by ellipsis)
     // Examples: Running…, Thinking…, Cogitating…, Summarizing…
     let spinner_pattern = Regex::new(r"[A-Z][a-z]+…").unwrap();
-
-    // Look at the last few lines for activity indicators
-    let last_portion: String = content.lines().rev().take(10).collect::<Vec<_>>().join("\n");
 
     if spinner_pattern.is_match(&last_portion) {
         return ClaudeState::Active;
