@@ -248,6 +248,7 @@
 
 (defwindow todo_blocker
 	:monitor 0
+	:stacking "overlay"
 	:geometry (geometry :anchor "top right" :y 41 :width "0%" :height "0%")
 	(box
 		(what)
