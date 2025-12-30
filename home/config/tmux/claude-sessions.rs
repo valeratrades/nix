@@ -34,6 +34,7 @@ enum ClaudeState {
     Empty,    // No claude running (shell prompt)
     Active,   // Claude is processing (spinner visible)
     Finished, // Claude waiting for input (> prompt, no spinner)
+    Draft,    // User is typing a message (bypass permissions prompt visible)
     Error,    // Claude hit an error (rate limit, panic, etc.)
 }
 
@@ -43,6 +44,7 @@ impl ClaudeState {
             ClaudeState::Empty => "empty",
             ClaudeState::Active => "active",
             ClaudeState::Finished => "finished",
+            ClaudeState::Draft => "draft",
             ClaudeState::Error => "error",
         }
     }
@@ -102,6 +104,7 @@ impl fmt::Display for Sessions {
                 ClaudeState::Active => padded_state.blue(),
                 ClaudeState::Finished => padded_state.green(),
                 ClaudeState::Empty => padded_state.yellow(),
+                ClaudeState::Draft => padded_state.cyan(),
                 ClaudeState::Error => padded_state.red(),
             };
 
@@ -331,40 +334,42 @@ fn determine_claude_activity(session: &str, window_index: u32) -> ClaudeState {
         .find(|line| !line.trim().is_empty())
         .unwrap_or("");
 
+    // Look at the last few lines for various indicators
+    let last_portion: String = content.lines().rev().take(15).collect::<Vec<_>>().join("\n");
+
+    // Match spinner pattern first: "Word…" (capitalized word followed by ellipsis)
+    // Examples: Running…, Thinking…, Cogitating…, Summarizing…
+    // This takes priority because spinners indicate active processing
+    let spinner_pattern = Regex::new(r"[A-Z][a-z]+…").unwrap();
+
+    if spinner_pattern.is_match(&last_portion) {
+        return ClaudeState::Active;
+    }
+
+    // Check for draft state: user has typed something after "> "
+    // The bypass permissions prompt is visible and there's actual text after "> "
+    if last_portion.contains("bypass permissions") {
+        // Find the line starting with "> " and check if there's text after it
+        for line in content.lines() {
+            if line.starts_with("> ") {
+                let after_prompt = line[2..].trim();
+                if !after_prompt.is_empty() {
+                    return ClaudeState::Draft;
+                }
+            }
+        }
+    }
+
     // If the last line starts with "> " (input prompt), Claude is waiting for input
     if last_line.starts_with("> ") {
         return ClaudeState::Finished;
     }
 
-    // Look at the last few lines for various indicators
-    let last_portion: String = content.lines().rev().take(15).collect::<Vec<_>>().join("\n");
-
     // Check for error patterns (rate limit, panics, errors)
-    let error_patterns = [
-        "rate limit",
-        "Rate limit",
-        "error:",
-        "Error:",
-        "panicked",
-        "PANIC",
-        "failed",
-        "Failed",
-        "timed out",
-        "Timed out",
-    ];
+    let error_pattern = Regex::new(r"(?i)(rate.?limit|error:|panicked|PANIC|timed.?out)").unwrap();
 
-    for pattern in error_patterns {
-        if last_portion.contains(pattern) {
-            return ClaudeState::Error;
-        }
-    }
-
-    // Match spinner pattern: "Word…" (capitalized word followed by ellipsis)
-    // Examples: Running…, Thinking…, Cogitating…, Summarizing…
-    let spinner_pattern = Regex::new(r"[A-Z][a-z]+…").unwrap();
-
-    if spinner_pattern.is_match(&last_portion) {
-        return ClaudeState::Active;
+    if error_pattern.is_match(&last_portion) {
+        return ClaudeState::Error;
     }
 
     ClaudeState::Finished
