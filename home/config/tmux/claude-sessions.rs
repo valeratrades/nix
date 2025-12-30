@@ -2,16 +2,28 @@
 ---cargo
 [dependencies]
 clap = { version = "4.5.49", features = ["derive"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 ---
 
 use clap::Parser;
+use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
 use std::fmt;
+use std::fs;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 #[derive(Parser)]
 #[command(about = "Track state of Claude Code processes in tmux windows")]
 struct Args {}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct TodoItem {
+    status: String,
+    active_form: String,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum ClaudeState {
@@ -35,11 +47,12 @@ struct ClaudeWindow {
     session: String,
     window_index: u32,
     state: ClaudeState,
+    active_todo: Option<String>,
 }
 
 #[derive(Debug)]
 struct Sessions {
-    entries: Vec<(String, ClaudeState)>,
+    entries: Vec<(String, ClaudeState, Option<String>)>,
 }
 
 impl Sessions {
@@ -47,8 +60,8 @@ impl Sessions {
         Self { entries: Vec::new() }
     }
 
-    fn add(&mut self, session: String, state: ClaudeState) {
-        self.entries.push((session, state));
+    fn add(&mut self, session: String, state: ClaudeState, active_todo: Option<String>) {
+        self.entries.push((session, state, active_todo));
     }
 
     fn sort(&mut self) {
@@ -62,16 +75,164 @@ impl fmt::Display for Sessions {
             return Ok(());
         }
 
-        let max_session_len = self.entries.iter().map(|(s, _)| s.len()).max().unwrap_or(0);
+        let max_session_len = self.entries.iter().map(|(s, _, _)| s.len()).max().unwrap_or(0);
+        let max_state_len = self
+            .entries
+            .iter()
+            .map(|(_, state, _)| state.as_str().len())
+            .max()
+            .unwrap_or(0);
 
-        for (i, (session, state)) in self.entries.iter().enumerate() {
+        for (i, (session, state, active_todo)) in self.entries.iter().enumerate() {
             if i > 0 {
                 writeln!(f)?;
             }
-            write!(f, "{:width$}  {}", session, state.as_str(), width = max_session_len)?;
+            write!(
+                f,
+                "{:swidth$}  {:stwidth$}",
+                session,
+                state.as_str(),
+                swidth = max_session_len,
+                stwidth = max_state_len
+            )?;
+            if *state == ClaudeState::Active {
+                let todo_str = match active_todo {
+                    Some(todo) => format!("[{}]", todo),
+                    None => "[]".to_string(),
+                };
+                write!(f, "  {}", todo_str)?;
+            }
         }
         Ok(())
     }
+}
+
+/// Get the child process PID of a shell (the claude process)
+fn get_child_pid(shell_pid: u32) -> Option<u32> {
+    let output = Command::new("pgrep")
+        .args(["-P", &shell_pid.to_string()])
+        .output()
+        .ok()?;
+
+    if !output.status.success() {
+        return None;
+    }
+
+    String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .next()
+        .and_then(|s| s.parse().ok())
+}
+
+/// Get the CWD of a process from /proc
+fn get_process_cwd(pid: u32) -> Option<PathBuf> {
+    fs::read_link(format!("/proc/{}/cwd", pid)).ok()
+}
+
+/// Convert a path to Claude's project path format
+/// e.g., /home/v/s/todo -> -home-v-s-todo
+fn path_to_project_name(path: &Path) -> String {
+    path.to_string_lossy().replace('/', "-")
+}
+
+/// Find the most recently modified session file for a project
+fn find_active_session_id(project_dir: &Path) -> Option<String> {
+    let entries = fs::read_dir(project_dir).ok()?;
+
+    let mut session_files: Vec<_> = entries
+        .filter_map(|e| e.ok())
+        .filter(|e| {
+            let name = e.file_name();
+            let name_str = name.to_string_lossy();
+            // Only consider main session files (UUID.jsonl), not agent files
+            name_str.ends_with(".jsonl") && !name_str.starts_with("agent-")
+        })
+        .filter_map(|e| {
+            let metadata = e.metadata().ok()?;
+            let modified = metadata.modified().ok()?;
+            Some((e.path(), modified))
+        })
+        .collect();
+
+    // Sort by modification time, most recent first
+    session_files.sort_by(|a, b| b.1.cmp(&a.1));
+
+    // Get the session ID from the most recent file
+    session_files.first().and_then(|(path, _)| {
+        path.file_stem()
+            .and_then(|s| s.to_str())
+            .map(|s| s.to_string())
+    })
+}
+
+/// Find todo files matching a session ID and get the active (in_progress) todo
+fn get_active_todo_from_session(session_id: &str) -> Option<String> {
+    let home = std::env::var("HOME").ok()?;
+    let todos_dir = PathBuf::from(home).join(".claude/todos");
+
+    let entries = fs::read_dir(&todos_dir).ok()?;
+
+    // Find todo files that start with this session ID
+    let mut todo_files: Vec<_> = entries
+        .filter_map(|e| e.ok())
+        .filter(|e| {
+            let name = e.file_name();
+            let name_str = name.to_string_lossy();
+            name_str.starts_with(session_id) && name_str.ends_with(".json")
+        })
+        .filter_map(|e| {
+            let metadata = e.metadata().ok()?;
+            let modified = metadata.modified().ok()?;
+            Some((e.path(), modified))
+        })
+        .collect();
+
+    // Sort by modification time, most recent first
+    todo_files.sort_by(|a, b| b.1.cmp(&a.1));
+
+    // Try each todo file until we find an in_progress item
+    for (path, _) in todo_files {
+        if let Some(todo) = read_active_todo(&path) {
+            return Some(todo);
+        }
+    }
+
+    None
+}
+
+/// Read a todo file and return the first in_progress item's activeForm
+fn read_active_todo(path: &Path) -> Option<String> {
+    let content = fs::read_to_string(path).ok()?;
+    let todos: Vec<TodoItem> = serde_json::from_str(&content).ok()?;
+
+    todos
+        .iter()
+        .find(|t| t.status == "in_progress")
+        .map(|t| t.active_form.clone())
+}
+
+/// Main function to get active todo for a tmux pane
+fn get_active_todo_for_pane(shell_pid: u32) -> Option<String> {
+    // Get the claude process (child of shell)
+    let claude_pid = get_child_pid(shell_pid)?;
+
+    // Get the CWD of the claude process
+    let cwd = get_process_cwd(claude_pid)?;
+
+    // Convert to project name
+    let project_name = path_to_project_name(&cwd);
+
+    // Build path to project directory
+    let home = std::env::var("HOME").ok()?;
+    let project_dir = PathBuf::from(home)
+        .join(".claude/projects")
+        .join(&project_name);
+
+    // Find the active session ID
+    let session_id = find_active_session_id(&project_dir)?;
+
+    // Get the active todo for this session
+    get_active_todo_from_session(&session_id)
 }
 
 fn get_claude_windows() -> Vec<ClaudeWindow> {
@@ -80,7 +241,7 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
             "list-panes",
             "-a",
             "-F",
-            "#{session_name}\t#{window_index}\t#{window_name}\t#{pane_current_command}",
+            "#{session_name}\t#{window_index}\t#{window_name}\t#{pane_current_command}\t#{pane_pid}",
         ])
         .output()
         .expect("Failed to execute tmux");
@@ -94,7 +255,7 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
 
     for line in stdout.lines() {
         let parts: Vec<&str> = line.split('\t').collect();
-        if parts.len() < 4 {
+        if parts.len() < 5 {
             continue;
         }
 
@@ -105,23 +266,34 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
         };
         let window_name = parts[2];
         let pane_command = parts[3];
+        let pane_pid: u32 = match parts[4].parse() {
+            Ok(pid) => pid,
+            Err(_) => continue,
+        };
 
         // Window name must be "claude" or start with "claude"
         if !window_name.eq("claude") && !window_name.starts_with("claude") {
             continue;
         }
 
-        let state = if pane_command == "claude" {
+        let (state, active_todo) = if pane_command == "claude" {
             // Claude is running, check if active or finished
-            determine_claude_activity(session, window_index)
+            let state = determine_claude_activity(session, window_index);
+            let active_todo = if state == ClaudeState::Active {
+                get_active_todo_for_pane(pane_pid)
+            } else {
+                None
+            };
+            (state, active_todo)
         } else {
-            ClaudeState::Empty
+            (ClaudeState::Empty, None)
         };
 
         claude_windows.push(ClaudeWindow {
             session: session.to_string(),
             window_index,
             state,
+            active_todo,
         });
     }
 
@@ -193,7 +365,7 @@ fn main() {
 
     // Collect results: show all windows, but skip empty ones if session has non-empty
     // If all windows in a session are empty, show only one empty
-    let mut results: Vec<(&str, u32, ClaudeState)> = Vec::new();
+    let mut results: Vec<(&str, u32, ClaudeState, Option<String>)> = Vec::new();
     let mut seen_empty_session: HashSet<&str> = HashSet::new();
 
     for window in &windows {
@@ -208,7 +380,12 @@ fn main() {
             }
             seen_empty_session.insert(&window.session);
         }
-        results.push((&window.session, window.window_index, window.state));
+        results.push((
+            &window.session,
+            window.window_index,
+            window.state,
+            window.active_todo.clone(),
+        ));
     }
 
     // Sort by session name, then window index
@@ -216,8 +393,8 @@ fn main() {
 
     // Build Sessions struct
     let mut sessions = Sessions::new();
-    for (session, _, state) in results {
-        sessions.add(session.to_string(), state);
+    for (session, _, state, active_todo) in results {
+        sessions.add(session.to_string(), state, active_todo);
     }
     sessions.sort();
 
