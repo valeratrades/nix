@@ -216,6 +216,15 @@ mod rust {
     }
 }
 
+fn has_uncommitted_changes() -> bool {
+    // Check for staged or unstaged changes (excluding untracked files)
+    let status = run_output("git", &["status", "--porcelain"]);
+    match status {
+        Some(output) => output.lines().any(|line| !line.starts_with("??")),
+        None => false,
+    }
+}
+
 fn main() {
     let args = Args::parse();
     let is_rust = rust::has_cargo_toml();
@@ -231,6 +240,14 @@ fn main() {
     ) {
         eprintln!("error: no master branch");
         exit(1);
+    }
+
+    // Check for uncommitted changes
+    if has_uncommitted_changes() {
+        if args.commit_message.is_none() {
+            eprintln!("error: uncommitted changes detected. Provide a commit message to commit them first, or manually commit/stash them.");
+            exit(1);
+        }
     }
 
     // If commit message provided, bump version (if rust) and commit on master first
