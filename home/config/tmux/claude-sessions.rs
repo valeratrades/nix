@@ -536,13 +536,6 @@ fn determine_claude_activity(session: &str, window_index: u32) -> ClaudeState {
         _ => return ClaudeState::Finished, // Default to finished if can't read
     };
 
-    // Find the last non-empty line
-    let last_line = content
-        .lines()
-        .rev()
-        .find(|line| !line.trim().is_empty())
-        .unwrap_or("");
-
     // Look at the last few lines for various indicators
     let last_portion: String = content
         .lines()
@@ -573,8 +566,14 @@ fn determine_claude_activity(session: &str, window_index: u32) -> ClaudeState {
         }
     }
 
-    // If the last line starts with "> " (input prompt), Claude is waiting for input
-    if last_line.starts_with("> ") {
+    // Check for fresh session (welcome screen) - this should be Empty, not Finished
+    if content.contains("No recent activity") || content.contains("Tips for getting started") {
+        return ClaudeState::Empty;
+    }
+
+    // Check if there's an input prompt line ("> ") - indicates waiting for input
+    let has_prompt = content.lines().any(|line| line.starts_with("> "));
+    if has_prompt {
         return ClaudeState::Finished;
     }
 
