@@ -3,7 +3,7 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
     pre-commit-hooks.url = "github:cachix/git-hooks.nix";
-    v-utils.url = "github:valeratrades/.github/v1.1.0";
+    v-utils.url = "github:valeratrades/.github?ref=v1.2";
     go-warn-unused.url = "github:valeratrades/go-warn-unused";
   };
 

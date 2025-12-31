@@ -4,7 +4,7 @@
     rust-overlay.url = "github:oxalica/rust-overlay";
     flake-utils.url = "github:numtide/flake-utils";
     pre-commit-hooks.url = "github:cachix/git-hooks.nix";
-    v-utils.url = "github:valeratrades/.github/v1.1.0";
+    v-utils.url = "github:valeratrades/.github?ref=v1.2";
   };
   outputs = { self, nixpkgs, rust-overlay, flake-utils, pre-commit-hooks, v-utils }:
     flake-utils.lib.eachDefaultSystem (

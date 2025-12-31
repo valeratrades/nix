@@ -407,8 +407,8 @@ fn get_session_summary(session_file: &Path) -> Option<String> {
     None
 }
 
-/// Find the most recent session file path for a project
-fn find_active_session_file(project_dir: &Path) -> Option<PathBuf> {
+/// Find session file for a project that best matches the given process start time
+fn find_session_file_for_process(project_dir: &Path, process_start: Option<std::time::SystemTime>) -> Option<PathBuf> {
     let entries = fs::read_dir(project_dir).ok()?;
 
     let mut session_files: Vec<_> = entries
@@ -425,8 +425,35 @@ fn find_active_session_file(project_dir: &Path) -> Option<PathBuf> {
         })
         .collect();
 
+    // Sort by modification time, most recent first
     session_files.sort_by(|a, b| b.1.cmp(&a.1));
+
+    // If we have process start time, try to find session modified around that time
+    if let Some(proc_start) = process_start {
+        // Find session file that was modified closest to (but not before) process start
+        for (path, modified) in &session_files {
+            // Session should have been modified after process started (or within 1 min before)
+            if modified.duration_since(proc_start).is_ok() {
+                // Session modified after process start - good match
+                return Some(path.clone());
+            } else if let Ok(before_diff) = proc_start.duration_since(*modified) {
+                // Session modified up to 1 minute before process start is also acceptable
+                if before_diff.as_secs() < 60 {
+                    return Some(path.clone());
+                }
+            }
+        }
+    }
+
+    // Fallback: return most recent
     session_files.first().map(|(path, _)| path.clone())
+}
+
+/// Get process start time from /proc
+fn get_process_start_time(pid: u32) -> Option<std::time::SystemTime> {
+    let stat_path = format!("/proc/{}", pid);
+    let metadata = fs::metadata(&stat_path).ok()?;
+    metadata.modified().ok()
 }
 
 /// Get session info (todo and summary) for a tmux pane
@@ -441,7 +468,9 @@ fn get_session_info_for_pane(shell_pid: u32) -> (Option<String>, Option<String>)
             .join(".claude/projects")
             .join(&project_name);
 
-        let session_file = find_active_session_file(&project_dir)?;
+        // Get process start time to match with session file
+        let proc_start = get_process_start_time(claude_pid);
+        let session_file = find_session_file_for_process(&project_dir, proc_start)?;
         let session_id = session_file
             .file_stem()
             .and_then(|s| s.to_str())

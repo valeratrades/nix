@@ -4,7 +4,7 @@
     nixpkgs-python.url = "github:cachix/nixpkgs-python";
     devenv.url = "github:cachix/devenv";
     git-hooks.url = "github:cachix/git-hooks.nix";
-    v-utils.url = "github:valeratrades/.github/v1.1.0";
+    v-utils.url = "github:valeratrades/.github?ref=v1.2";
   };
 
   outputs =
