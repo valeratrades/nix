@@ -82,14 +82,17 @@ struct ClaudeWindow {
     window_index: u32,
     state: ClaudeState,
     active_todo: Option<String>,
+    draft_content: Option<String>,
     summary: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
 struct SessionEntry {
     name: String,
+    window_index: u32,
     state: ClaudeState,
     active_todo: Option<String>,
+    draft_content: Option<String>,
     summary: Option<String>,
 }
 
@@ -127,12 +130,18 @@ impl fmt::Display for Sessions {
             .entries
             .iter()
             .map(|e| {
-                if self.compact {
+                // In non-compact mode, name includes ":window_index"
+                let base_name_len = if self.compact {
                     e.name.len()
+                } else {
+                    e.name.len() + 1 + e.window_index.to_string().len() // +1 for ":"
+                };
+                if self.compact {
+                    base_name_len
                 } else {
                     // Include summary in length calculation
                     let summary_len = e.summary.as_ref().map(|s| s.len() + 3).unwrap_or(0); // +3 for " <>"
-                    e.name.len() + summary_len
+                    base_name_len + summary_len
                 }
             })
             .max()
@@ -150,13 +159,14 @@ impl fmt::Display for Sessions {
                 writeln!(f)?;
             }
 
-            // Build the name with optional summary
+            // Build the name with window index (non-compact) and optional summary
             let display_name = if self.compact {
                 entry.name.clone()
             } else {
+                let name_with_index = format!("{}:{}", entry.name, entry.window_index);
                 match &entry.summary {
-                    Some(summary) => format!("{} <{}>", entry.name, summary),
-                    None => entry.name.clone(),
+                    Some(summary) => format!("{} <{}>", name_with_index, summary),
+                    None => name_with_index,
                 }
             };
 
@@ -180,12 +190,22 @@ impl fmt::Display for Sessions {
                 width = max_name_len
             )?;
 
-            if !self.compact && entry.state == ClaudeState::Active {
-                let todo_str = match &entry.active_todo {
-                    Some(todo) => format!("[{}]", todo),
-                    None => "[]".to_string(),
-                };
-                write!(f, "  {}", todo_str)?;
+            if !self.compact {
+                match entry.state {
+                    ClaudeState::Active => {
+                        let todo_str = match &entry.active_todo {
+                            Some(todo) => format!("[{}]", todo),
+                            None => "[]".to_string(),
+                        };
+                        write!(f, "  {}", todo_str)?;
+                    }
+                    ClaudeState::Draft => {
+                        if let Some(draft) = &entry.draft_content {
+                            write!(f, "  > {}", draft)?;
+                        }
+                    }
+                    _ => {}
+                }
             }
         }
         Ok(())
@@ -369,16 +389,29 @@ fn generate_summary_with_llm(first_message: &str) -> Option<String> {
     }
 }
 
-/// Get a short summary from the session's first user message
+/// Deserialize summary entries from session file
+#[derive(Deserialize)]
+struct SummaryEntry {
+    #[serde(rename = "type")]
+    entry_type: String,
+    summary: Option<String>,
+}
+
+/// Get a short summary from the session's first user message or summary entry
 fn get_session_summary(session_file: &Path) -> Option<String> {
     use std::io::{BufRead, BufReader};
 
     let file = fs::File::open(session_file).ok()?;
     let reader = BufReader::new(file);
 
-    // Read first few lines to find the first user message
-    for line in reader.lines().take(10) {
+    // Try to find first user message, or fall back to last summary entry
+    let mut last_summary: Option<String> = None;
+
+    // Read first few lines to find the first user message or summary
+    for line in reader.lines().take(20) {
         let line = line.ok()?;
+
+        // Try to parse as user message first
         if let Ok(msg) = serde_json::from_str::<SessionMessage>(&line) {
             if msg.msg_type == "user" {
                 if let Some(content) = msg.message {
@@ -402,8 +435,44 @@ fn get_session_summary(session_file: &Path) -> Option<String> {
                 }
             }
         }
+
+        // Track summary entries (resumed sessions only have these)
+        if let Ok(entry) = serde_json::from_str::<SummaryEntry>(&line) {
+            if entry.entry_type == "summary" {
+                if let Some(s) = entry.summary {
+                    last_summary = Some(s);
+                }
+            }
+        }
     }
 
+    // If no user message found, use the last summary entry with "~ " prefix
+    last_summary.map(|s| {
+        let max_len = 47;
+        if s.len() > max_len {
+            format!("~ {}...", &s[..max_len])
+        } else {
+            format!("~ {}", s)
+        }
+    })
+}
+
+/// Get file creation time using stat command (birth time)
+fn get_file_creation_time(path: &Path) -> Option<std::time::SystemTime> {
+    // Use stat to get birth time, fall back to modified time
+    let output = Command::new("stat")
+        .args(["-c", "%W", path.to_str()?])
+        .output()
+        .ok()?;
+
+    if output.status.success() {
+        let secs_str = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if let Ok(secs) = secs_str.parse::<i64>() {
+            if secs > 0 {
+                return Some(std::time::UNIX_EPOCH + std::time::Duration::from_secs(secs as u64));
+            }
+        }
+    }
     None
 }
 
@@ -420,28 +489,45 @@ fn find_session_file_for_process(project_dir: &Path, process_start: Option<std::
         })
         .filter_map(|e| {
             let metadata = e.metadata().ok()?;
-            let modified = metadata.modified().ok()?;
-            Some((e.path(), modified))
+            let path = e.path();
+            // Use creation time if available, fall back to modified time
+            let created = get_file_creation_time(&path)
+                .or_else(|| metadata.modified().ok())?;
+            Some((path, created))
         })
         .collect();
 
-    // Sort by modification time, most recent first
+    // Sort by creation time, most recent first
     session_files.sort_by(|a, b| b.1.cmp(&a.1));
 
-    // If we have process start time, try to find session modified around that time
+    // If we have process start time, find the session created closest to process start
     if let Some(proc_start) = process_start {
-        // Find session file that was modified closest to (but not before) process start
-        for (path, modified) in &session_files {
-            // Session should have been modified after process started (or within 1 min before)
-            if modified.duration_since(proc_start).is_ok() {
-                // Session modified after process start - good match
-                return Some(path.clone());
-            } else if let Ok(before_diff) = proc_start.duration_since(*modified) {
-                // Session modified up to 1 minute before process start is also acceptable
-                if before_diff.as_secs() < 60 {
-                    return Some(path.clone());
-                }
+        let mut best_match: Option<(PathBuf, u64)> = None; // (path, time_diff_secs)
+
+        for (path, created) in &session_files {
+            // Session should be created around when process started
+            // Accept sessions created up to 5 minutes before or after process start
+            let diff_secs = if let Ok(after) = created.duration_since(proc_start) {
+                after.as_secs()
+            } else if let Ok(before) = proc_start.duration_since(*created) {
+                before.as_secs()
+            } else {
+                continue;
+            };
+
+            // Only match if within 5 minutes
+            if diff_secs > 300 {
+                continue;
             }
+
+            // Keep the match with smallest time difference
+            if best_match.as_ref().map_or(true, |(_, best_diff)| diff_secs < *best_diff) {
+                best_match = Some((path.clone(), diff_secs));
+            }
+        }
+
+        if let Some((path, _)) = best_match {
+            return Some(path);
         }
     }
 
@@ -575,12 +661,33 @@ fn determine_claude_activity(session: &str, window_index: u32) -> ClaudeState {
         .collect::<Vec<_>>()
         .join("\n");
 
+    // Check if there's a prompt line at the very end (last few non-empty lines)
+    // If so, Claude is waiting for input even if there's spinner text from earlier
+    let last_few_lines: Vec<&str> = content
+        .lines()
+        .rev()
+        .filter(|l| !l.trim().is_empty())
+        .take(5)
+        .collect();
+
+    let has_prompt_at_end = last_few_lines.iter().any(|l| l.starts_with("> "));
+
     // Match spinner pattern: "Word…" (capitalized word followed by ellipsis)
     // Examples: Running…, Thinking…, Cogitating…, Summarizing…
+    // Only match if there's no prompt at the end (meaning Claude is still working)
     let spinner_pattern = Regex::new(r"[A-Z][a-z]+…").unwrap();
 
-    if spinner_pattern.is_match(&last_portion) {
+    if spinner_pattern.is_match(&last_portion) && !has_prompt_at_end {
         return ClaudeState::Active;
+    }
+
+    // Check for external editor with claude-prompt temp file
+    // When user opens external editor (nvim, vim, etc), Claude creates a temp file
+    // like /tmp/claude-prompt-*.md - if we see this in the pane, it's a draft
+    // Match path-like pattern to avoid false positives from text mentioning the filename
+    let claude_prompt_pattern = Regex::new(r"(?m)^.*/t.*/claude-prompt-[a-f0-9-]+\.md").unwrap();
+    if claude_prompt_pattern.is_match(&content) {
+        return ClaudeState::Draft;
     }
 
     // Check for draft state: user has typed something after "> "
@@ -600,10 +707,12 @@ fn determine_claude_activity(session: &str, window_index: u32) -> ClaudeState {
             if let Some(prompt_line) = content_esc.lines().find(|l| l.contains("\x1b[0m>"))
             {
                 if let Some(pos) = prompt_line.find("\x1b[0m>") {
-                    let after_gt = &prompt_line[pos + 4..]; // 4 = len of "\x1b[0m>"
+                    let after_gt = &prompt_line[pos + 5..]; // 5 = len of "\x1b[0m>"
                     // Check if dim escape follows (possibly after NBSP) - that's a suggestion
                     // Real input won't have [2m escape
-                    let is_suggestion = after_gt.contains("\x1b[2m");
+                    // Note: dim can be "\x1b[2m" or combined like "\x1b[0;2m"
+                    let dim_pattern = Regex::new(r"\x1b\[[0-9;]*2m").unwrap();
+                    let is_suggestion = dim_pattern.is_match(after_gt);
                     let has_content = after_gt.chars().any(|c| c.is_alphanumeric());
                     if has_content && !is_suggestion {
                         return ClaudeState::Draft;
@@ -692,6 +801,7 @@ fn main() {
     for window in results {
         sessions.add(SessionEntry {
             name: window.session.clone(),
+            window_index: window.window_index,
             state: window.state,
             active_todo: window.active_todo.clone(),
             summary: window.summary.clone(),
