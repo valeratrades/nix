@@ -467,30 +467,143 @@ fn get_session_summary(session_file: &Path) -> Option<String> {
     None
 }
 
-/// Get file birth (creation) time using statx syscall
-fn get_file_birth_time(path: &Path) -> Option<std::time::SystemTime> {
-    use std::os::unix::fs::MetadataExt;
+/// Check if a session file has actual conversation content (not just file-history-snapshot)
+fn session_has_conversation(path: &Path) -> bool {
+    use std::io::{BufRead, BufReader};
 
-    // Try to get birth time from metadata - Rust 1.75+ exposes created() on Linux with statx
-    let metadata = fs::metadata(path).ok()?;
+    let file = match fs::File::open(path) {
+        Ok(f) => f,
+        Err(_) => return false,
+    };
+    let reader = BufReader::new(file);
 
-    // First try created() which uses statx on Linux
-    if let Ok(created) = metadata.created() {
-        return Some(created);
+    for line in reader.lines().take(50) {
+        if let Ok(line) = line {
+            // Quick check for user message type
+            if line.contains("\"type\":\"user\"") {
+                return true;
+            }
+            // Also check for summary type (indicates real conversation)
+            if line.contains("\"type\":\"summary\"") {
+                return true;
+            }
+        }
+    }
+    false
+}
+
+/// Extract a unique identifier from tmux pane content that can be matched to a session
+fn extract_session_fingerprint(tmux_target: &str) -> Option<String> {
+    let output = Command::new("tmux")
+        .args(["capture-pane", "-t", tmux_target, "-p", "-S", "-500"])
+        .output()
+        .ok()?;
+
+    if !output.status.success() {
+        return None;
     }
 
-    // Fallback: use ctime (inode change time) which is often close to creation
-    // This is not ideal but better than mtime which changes on every write
-    let ctime = metadata.ctime();
-    if ctime > 0 {
-        return Some(std::time::UNIX_EPOCH + std::time::Duration::from_secs(ctime as u64));
+    let content = String::from_utf8_lossy(&output.stdout);
+
+    // Strategy 1: Find the FIRST user message in the conversation (most unique)
+    // Look for the pattern after the welcome screen / initial prompt
+    // User messages appear as "> message text" but we want the earliest one
+    for line in content.lines() {
+        let trimmed = line.trim();
+
+        // Skip empty lines and suggestions
+        if trimmed.is_empty() {
+            continue;
+        }
+
+        // User prompt lines start with "> "
+        if trimmed.starts_with("> ") && trimmed.len() > 15 {
+            let msg = &trimmed[2..]; // Skip "> "
+
+            // Skip suggestions and meta-text
+            if msg.starts_with("Try ") || msg.contains("bypass") || msg.starts_with("──") {
+                continue;
+            }
+
+            // This looks like an actual user message - use first 40 chars as fingerprint
+            // The first user message is usually unique to this session
+            let fingerprint = if msg.len() > 40 { &msg[..40] } else { msg };
+            return Some(fingerprint.to_string());
+        }
+    }
+
+    // Strategy 2: Look for Claude's response patterns with unique paths
+    for line in content.lines() {
+        // Look for file operations with full paths (more unique)
+        if line.contains("Update(") || line.contains("Write(") {
+            if let Some(start) = line.find('(') {
+                if let Some(end) = line.find(')') {
+                    let inner = &line[start + 1..end];
+                    // Only use paths, not short commands
+                    if inner.contains('/') && inner.len() > 20 {
+                        return Some(inner.to_string());
+                    }
+                }
+            }
+        }
     }
 
     None
 }
 
-/// Find session file for a project by matching birth time to process start time
-fn find_session_file_for_process(project_dir: &Path, process_start: Option<std::time::SystemTime>) -> Option<PathBuf> {
+/// Find session file by matching screen content fingerprint in USER messages
+/// Returns the OLDEST matching file (by creation time) since that's likely the original source
+fn find_session_by_fingerprint(project_dir: &Path, fingerprint: &str) -> Option<PathBuf> {
+    use std::io::{BufRead, BufReader};
+
+    let entries = fs::read_dir(project_dir).ok()?;
+
+    let mut matches: Vec<(PathBuf, std::time::SystemTime)> = Vec::new();
+
+    for entry in entries.filter_map(|e| e.ok()) {
+        let name = entry.file_name();
+        let name_str = name.to_string_lossy();
+        if !name_str.ends_with(".jsonl") || name_str.starts_with("agent-") {
+            continue;
+        }
+
+        let path = entry.path();
+
+        // Search for fingerprint specifically in user messages
+        let file = match fs::File::open(&path) {
+            Ok(f) => f,
+            Err(_) => continue,
+        };
+        let reader = BufReader::new(file);
+
+        let mut found_in_user_msg = false;
+        for line in reader.lines().take(100) {
+            if let Ok(line) = line {
+                // Only match in user message lines
+                if line.contains("\"type\":\"user\"") && line.contains(fingerprint) {
+                    found_in_user_msg = true;
+                    break;
+                }
+            }
+        }
+
+        if found_in_user_msg {
+            if let Ok(metadata) = fs::metadata(&path) {
+                if let Ok(created) = metadata.created() {
+                    matches.push((path, created));
+                }
+            }
+        }
+    }
+
+    // Sort by creation time (oldest first) - the original session
+    matches.sort_by_key(|(_, created)| *created);
+    matches.first().map(|(path, _)| path.clone())
+}
+
+/// Find session file for a project by matching to process start time
+/// For resumed sessions, uses screen content matching as fallback
+fn find_session_file_for_process(project_dir: &Path, process_start: Option<std::time::SystemTime>, tmux_target: &str) -> Option<PathBuf> {
     let entries = fs::read_dir(project_dir).ok()?;
 
     let mut session_files: Vec<_> = entries
@@ -502,22 +615,23 @@ fn find_session_file_for_process(project_dir: &Path, process_start: Option<std::
         })
         .filter_map(|e| {
             let path = e.path();
-            let birth = get_file_birth_time(&path)?;
-            let modified = e.metadata().ok()?.modified().ok()?;
-            Some((path, birth, modified))
+            let metadata = e.metadata().ok()?;
+            let modified = metadata.modified().ok()?;
+            let created = metadata.created().ok();
+            Some((path, created, modified))
         })
         .collect();
 
-    // If we have process start time, find the session created closest to (but after) process start
     if let Some(proc_start) = process_start {
-        // Find sessions created within 60 seconds after process start
-        let mut candidates: Vec<_> = session_files
+        // Strategy 1: Find sessions CREATED after process start with conversation content
+        // This is the most reliable - a new session file was created for this process
+        let mut new_sessions: Vec<_> = session_files
             .iter()
-            .filter_map(|(path, birth, _)| {
-                if *birth >= proc_start {
-                    let diff = birth.duration_since(proc_start).ok()?;
-                    // Session should be created within 60 seconds of process start
-                    if diff.as_secs() <= 60 {
+            .filter_map(|(path, created, _)| {
+                let created = (*created)?;
+                if created >= proc_start {
+                    let diff = created.duration_since(proc_start).ok()?;
+                    if diff.as_secs() <= 60 && session_has_conversation(path) {
                         return Some((path.clone(), diff));
                     }
                 }
@@ -525,17 +639,44 @@ fn find_session_file_for_process(project_dir: &Path, process_start: Option<std::
             })
             .collect();
 
-        // Sort by time difference (closest first)
-        candidates.sort_by_key(|(_, diff)| *diff);
+        new_sessions.sort_by_key(|(_, diff)| *diff);
 
-        if let Some((path, _)) = candidates.first() {
+        if let Some((path, _)) = new_sessions.first() {
+            return Some(path.clone());
+        }
+
+        // Strategy 2: For resumed sessions, use screen content fingerprinting
+        // This finds the original session file by matching visible conversation content
+        if let Some(fingerprint) = extract_session_fingerprint(tmux_target) {
+            eprintln!("DEBUG {}: fingerprint={}", tmux_target, &fingerprint[..fingerprint.len().min(30)]);
+            if let Some(path) = find_session_by_fingerprint(project_dir, &fingerprint) {
+                eprintln!("DEBUG {}: matched={}", tmux_target, path.file_name().unwrap().to_string_lossy());
+                return Some(path);
+            }
+        }
+
+        // Strategy 3: Find sessions MODIFIED after process start (active writing)
+        // Only use this if fingerprinting failed
+        let mut active_sessions: Vec<_> = session_files
+            .iter()
+            .filter(|(_, _, modified)| *modified >= proc_start)
+            .filter(|(path, _, _)| session_has_conversation(path))
+            .map(|(path, _, modified)| (path.clone(), *modified))
+            .collect();
+
+        active_sessions.sort_by(|a, b| b.1.cmp(&a.1));
+
+        if let Some((path, _)) = active_sessions.first() {
             return Some(path.clone());
         }
     }
 
-    // Fallback: return most recently modified (original behavior)
+    // Fallback: return most recently modified with conversation content
     session_files.sort_by(|a, b| b.2.cmp(&a.2));
-    session_files.first().map(|(path, _, _)| path.clone())
+    session_files
+        .iter()
+        .find(|(path, _, _)| session_has_conversation(path))
+        .map(|(path, _, _)| path.clone())
 }
 
 /// Get process start time from /proc/PID/stat
@@ -561,7 +702,7 @@ fn get_process_start_time(pid: u32) -> Option<std::time::SystemTime> {
 }
 
 /// Get session info (todo and summary) for a tmux pane
-fn get_session_info_for_pane(shell_pid: u32) -> (Option<String>, Option<String>) {
+fn get_session_info_for_pane(shell_pid: u32, tmux_target: &str) -> (Option<String>, Option<String>) {
     let info = (|| -> Option<(Option<String>, Option<String>)> {
         let claude_pid = get_child_pid(shell_pid)?;
         let cwd = get_process_cwd(claude_pid)?;
@@ -574,7 +715,7 @@ fn get_session_info_for_pane(shell_pid: u32) -> (Option<String>, Option<String>)
 
         // Get process start time to match with session file
         let proc_start = get_process_start_time(claude_pid);
-        let session_file = find_session_file_for_process(&project_dir, proc_start)?;
+        let session_file = find_session_file_for_process(&project_dir, proc_start, tmux_target)?;
         let session_id = session_file
             .file_stem()
             .and_then(|s| s.to_str())
@@ -625,19 +766,22 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
             Err(_) => continue,
         };
 
-        // Window name must be "claude" or start with "claude"
-        if !window_name.eq("claude") && !window_name.starts_with("claude") {
+        // Window must have "claude" in its name OR the pane command must be "claude"
+        let is_claude_window = window_name.eq("claude") || window_name.starts_with("claude") || window_name.contains("claude");
+        let is_claude_pane = pane_command == "claude";
+        if !is_claude_window && !is_claude_pane {
             continue;
         }
 
+        let tmux_target = format!("{}:{}", session, window_index);
         let (state, active_todo, draft_content, summary) = if pane_command == "claude" {
             // Claude is running, check if active or finished
             let activity = determine_claude_activity(session, window_index);
             let (active_todo, summary) = if activity.state == ClaudeState::Active {
-                get_session_info_for_pane(pane_pid)
+                get_session_info_for_pane(pane_pid, &tmux_target)
             } else {
                 // Still get summary for non-active states
-                let (_, summary) = get_session_info_for_pane(pane_pid);
+                let (_, summary) = get_session_info_for_pane(pane_pid, &tmux_target);
                 (None, summary)
             };
             (activity.state, active_todo, activity.draft_content, summary)
