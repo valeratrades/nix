@@ -138,12 +138,18 @@
       #TODO!: sigure out how to quickly estimate the dir size, display here with `(gray)`
       # if ordering is not forced, will be sorted alphabetically
       custom = {
-        #shell = ["fish" "-c"]; # must be `fish`, but I didn't figure out how to enforce it yet
         path = {
-          command = ''printf (prompt_pwd)'';
+          # replicates fish's `prompt_pwd` function
+          command = ''
+            case "$PWD" in
+              "$HOME"*) p="~''${PWD#"$HOME"}" ;;
+              *) p="$PWD" ;;
+            esac
+            printf "%s" "$p" | sed 's:\([^/]\)[^/]*/:\1/:g'
+          '';
           when = ''true'';
           style = "bold cyan";
-          shell = "fish";
+          shell = ["dash" "-c"];
         };
         readonly = {
           command = ''printf "🔒"'';
