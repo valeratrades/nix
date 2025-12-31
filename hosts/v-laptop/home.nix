@@ -50,6 +50,7 @@ in {
     };
   };
 
+  #TODO!!!!!!!: \\
   #dbg: \
   #systemd.user.services.watch-monitors = {
   #  Service = {
@@ -62,21 +63,20 @@ in {
   #};
 
   # Ensure tg-server waits for sops-nix secrets to be available
-  #dbg: cleanup algo is messing with the new impl
-  #systemd.user.services.tg-server = {
-  #  Unit = {
-  #    After = lib.mkForce [ "network.target" "sops-nix.service" ];
-  #    Requires = [ "sops-nix.service" ];
-  #    StartLimitIntervalSec = 60;
-  #    StartLimitBurst = 10;
-  #  };
-  #
-  #  Service = {
-  #    # Wait for the sops-nix secret file to exist before systemd tries to load it
-  #    ExecStartPre = lib.mkBefore "${pkgs.bash}/bin/bash -c 'while [ ! -f ${config.sops.secrets.telegram_token_main.path} ]; do ${pkgs.coreutils}/bin/sleep 0.1; done'";
-  #    RestartSec = 5;
-  #  };
-  #};
+  systemd.user.services.tg-server = {
+    Unit = {
+      After = lib.mkForce [ "network.target" "sops-nix.service" ];
+      Requires = [ "sops-nix.service" ];
+      StartLimitIntervalSec = 60;
+      StartLimitBurst = 10;
+    };
+
+    Service = {
+      # Wait for the sops-nix secret file to exist before systemd tries to load it
+      ExecStartPre = lib.mkBefore "${pkgs.bash}/bin/bash -c 'while [ ! -f ${config.sops.secrets.telegram_token_main.path} ]; do ${pkgs.coreutils}/bin/sleep 0.1; done'";
+      RestartSec = 5;
+    };
+  };
 
   fonts.fontconfig.enable = true;
 
