@@ -2,6 +2,12 @@
 {
   services.power-profiles-daemon.enable = true;
 
+  # Allow users in 'wheel' group to control CPU boost and platform profile
+  services.udev.extraRules = ''
+    KERNEL=="boost", SUBSYSTEM=="cpufreq", MODE="0664", GROUP="wheel"
+    KERNEL=="platform_profile", SUBSYSTEM=="acpi", MODE="0664", GROUP="wheel"
+  '';
+
   # Lenovo Legion kernel module for fan and power control
   boot.extraModulePackages = [ config.boot.kernelPackages.lenovo-legion-module ];
   boot.extraModprobeConfig = ''
