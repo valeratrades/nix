@@ -559,12 +559,28 @@ fn determine_claude_activity(session: &str, window_index: u32) -> ClaudeState {
 
     // Check for draft state: user has typed something after "> "
     // The bypass permissions prompt is visible and there's actual text after "> "
+    // Note: We need to distinguish real input from grey suggestions (dim text)
     if last_portion.contains("bypass permissions") {
-        // Find the line starting with "> " and check if there's text after it
-        for line in content.lines() {
-            if let Some(after_prompt) = line.strip_prefix("> ") {
-                if !after_prompt.trim().is_empty() {
-                    return ClaudeState::Draft;
+        // Re-capture with escape codes to detect dim text (suggestions)
+        let output_with_escapes = Command::new("tmux")
+            .args(["capture-pane", "-t", &target, "-p", "-e", "-S", "-10"])
+            .output();
+
+        if let Ok(out) = output_with_escapes {
+            let content_esc = String::from_utf8_lossy(&out.stdout);
+            // Find the current prompt line - it has "[0m> " pattern (reset then prompt)
+            // Old message lines have different escape patterns
+            if let Some(prompt_line) = content_esc.lines().find(|l| l.contains("\x1b[0m> "))
+            {
+                if let Some(pos) = prompt_line.find("\x1b[0m> ") {
+                    let after_prompt = &prompt_line[pos + 5..]; // 5 = len of "\x1b[0m> "
+                    // Check if there's real input (not empty, not dim/suggestion)
+                    // \x1b[2m is the dim/faint escape sequence for suggestions
+                    // Note: there may be a non-breaking space (U+00A0) before the escape
+                    let trimmed = after_prompt.trim().trim_start_matches('\u{00A0}');
+                    if !trimmed.is_empty() && !trimmed.starts_with("\x1b[2m") {
+                        return ClaudeState::Draft;
+                    }
                 }
             }
         }
