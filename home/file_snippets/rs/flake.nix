@@ -51,7 +51,7 @@
             };
           in
           {
-            default = rustPlatform.buildRustPackage rec {
+            default = rustPlatform.buildRustPackage {
               inherit pname;
               version = manifest.version;
 

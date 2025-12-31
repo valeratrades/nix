@@ -200,9 +200,11 @@ impl fmt::Display for Sessions {
                         write!(f, "  {}", todo_str)?;
                     }
                     ClaudeState::Draft => {
-                        if let Some(draft) = &entry.draft_content {
-                            write!(f, "  > {}", draft)?;
-                        }
+                        let draft_str = match &entry.draft_content {
+                            Some(draft) => format!("> {}", draft),
+                            None => "> ".to_string(),
+                        };
+                        write!(f, "  {}", draft_str)?;
                     }
                     _ => {}
                 }
@@ -612,19 +614,19 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
             continue;
         }
 
-        let (state, active_todo, summary) = if pane_command == "claude" {
+        let (state, active_todo, draft_content, summary) = if pane_command == "claude" {
             // Claude is running, check if active or finished
-            let state = determine_claude_activity(session, window_index);
-            let (active_todo, summary) = if state == ClaudeState::Active {
+            let activity = determine_claude_activity(session, window_index);
+            let (active_todo, summary) = if activity.state == ClaudeState::Active {
                 get_session_info_for_pane(pane_pid)
             } else {
                 // Still get summary for non-active states
                 let (_, summary) = get_session_info_for_pane(pane_pid);
                 (None, summary)
             };
-            (state, active_todo, summary)
+            (activity.state, active_todo, activity.draft_content, summary)
         } else {
-            (ClaudeState::Empty, None, None)
+            (ClaudeState::Empty, None, None, None)
         };
 
         claude_windows.push(ClaudeWindow {
@@ -632,6 +634,7 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
             window_index,
             state,
             active_todo,
+            draft_content,
             summary,
         });
     }
@@ -639,7 +642,13 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
     claude_windows
 }
 
-fn determine_claude_activity(session: &str, window_index: u32) -> ClaudeState {
+/// Result of activity detection including state and optional draft content
+struct ActivityResult {
+    state: ClaudeState,
+    draft_content: Option<String>,
+}
+
+fn determine_claude_activity(session: &str, window_index: u32) -> ActivityResult {
     let target = format!("{}:{}", session, window_index);
 
     let output = Command::new("tmux")
@@ -648,7 +657,7 @@ fn determine_claude_activity(session: &str, window_index: u32) -> ClaudeState {
 
     let content = match output {
         Ok(out) if out.status.success() => String::from_utf8_lossy(&out.stdout).to_string(),
-        _ => return ClaudeState::Finished, // Default to finished if can't read
+        _ => return ActivityResult { state: ClaudeState::Finished, draft_content: None },
     };
 
     // Look at the last portion for various indicators
@@ -678,16 +687,35 @@ fn determine_claude_activity(session: &str, window_index: u32) -> ClaudeState {
     let spinner_pattern = Regex::new(r"[A-Z][a-z]+…").unwrap();
 
     if spinner_pattern.is_match(&last_portion) && !has_prompt_at_end {
-        return ClaudeState::Active;
+        return ActivityResult { state: ClaudeState::Active, draft_content: None };
     }
 
     // Check for external editor with claude-prompt temp file
     // When user opens external editor (nvim, vim, etc), Claude creates a temp file
     // like /tmp/claude-prompt-*.md - if we see this in the pane, it's a draft
-    // Match path-like pattern to avoid false positives from text mentioning the filename
-    let claude_prompt_pattern = Regex::new(r"(?m)^.*/t.*/claude-prompt-[a-f0-9-]+\.md").unwrap();
-    if claude_prompt_pattern.is_match(&content) {
-        return ClaudeState::Draft;
+    // Match only at start of line (nvim title bar) to avoid false positives from text mentioning the file
+    let claude_prompt_pattern = Regex::new(r"(?m)^[/ ]*t.*/claude-prompt-([a-f0-9-]+)\.md").unwrap();
+    if let Some(caps) = claude_prompt_pattern.captures(&content) {
+        let uuid = &caps[1];
+        let full_path = format!("/tmp/claude-prompt-{}.md", uuid);
+        // Read the temp file contents for draft display
+        let draft_content = fs::read_to_string(&full_path)
+            .ok()
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .map(|s| {
+                // Get first line and truncate if needed
+                let first_line = s.lines().next().unwrap_or(&s);
+                if first_line.len() > 50 {
+                    format!("{}...", &first_line[..50])
+                } else {
+                    first_line.to_string()
+                }
+            });
+        return ActivityResult {
+            state: ClaudeState::Draft,
+            draft_content,
+        };
     }
 
     // Check for draft state: user has typed something after "> "
@@ -708,14 +736,34 @@ fn determine_claude_activity(session: &str, window_index: u32) -> ClaudeState {
             {
                 if let Some(pos) = prompt_line.find("\x1b[0m>") {
                     let after_gt = &prompt_line[pos + 5..]; // 5 = len of "\x1b[0m>"
-                    // Check if dim escape follows (possibly after NBSP) - that's a suggestion
-                    // Real input won't have [2m escape
+                    // Check if this is a suggestion vs real user input
+                    // Suggestions have dim text (\x1b[...2m), possibly with cursor highlight (\x1b[7m) on first char
+                    // Real input has regular text without dim escapes
                     // Note: dim can be "\x1b[2m" or combined like "\x1b[0;2m"
                     let dim_pattern = Regex::new(r"\x1b\[[0-9;]*2m").unwrap();
-                    let is_suggestion = dim_pattern.is_match(after_gt);
+                    let reverse_pattern = Regex::new(r"\x1b\[7m").unwrap();
+                    // It's a suggestion if: has dim text OR (has reverse video followed by dim)
+                    // which indicates cursor is highlighting a suggestion character
+                    let has_dim = dim_pattern.is_match(after_gt);
+                    let has_reverse_then_dim = reverse_pattern.is_match(after_gt) && has_dim;
+                    let is_suggestion = has_dim || has_reverse_then_dim;
                     let has_content = after_gt.chars().any(|c| c.is_alphanumeric());
                     if has_content && !is_suggestion {
-                        return ClaudeState::Draft;
+                        // Extract the actual draft text (strip escape codes)
+                        let escape_pattern = Regex::new(r"\x1b\[[0-9;]*m").unwrap();
+                        let clean_text = escape_pattern.replace_all(after_gt, "");
+                        // Also strip NBSP and trim
+                        let draft_text = clean_text.replace('\u{00A0}', " ").trim().to_string();
+                        // Truncate if too long
+                        let draft_display = if draft_text.len() > 50 {
+                            format!("{}...", &draft_text[..50])
+                        } else {
+                            draft_text
+                        };
+                        return ActivityResult {
+                            state: ClaudeState::Draft,
+                            draft_content: if draft_display.is_empty() { None } else { Some(draft_display) },
+                        };
                     }
                 }
             }
@@ -724,23 +772,23 @@ fn determine_claude_activity(session: &str, window_index: u32) -> ClaudeState {
 
     // Check for fresh session (welcome screen) - after draft check
     if content.contains("No recent activity") || content.contains("Tips for getting started") {
-        return ClaudeState::Empty;
+        return ActivityResult { state: ClaudeState::Empty, draft_content: None };
     }
 
     // Check if there's an input prompt line ("> ") - indicates waiting for input
     let has_prompt = content.lines().any(|line| line.starts_with("> "));
     if has_prompt {
-        return ClaudeState::Finished;
+        return ActivityResult { state: ClaudeState::Finished, draft_content: None };
     }
 
     // Check for error patterns (rate limit, panics, errors)
     let error_pattern = Regex::new(r"(?i)(rate.?limit|error:|panicked|PANIC|timed.?out)").unwrap();
 
     if error_pattern.is_match(&last_portion) {
-        return ClaudeState::Error;
+        return ActivityResult { state: ClaudeState::Error, draft_content: None };
     }
 
-    ClaudeState::Finished
+    ActivityResult { state: ClaudeState::Finished, draft_content: None }
 }
 
 fn main() {
@@ -804,6 +852,7 @@ fn main() {
             window_index: window.window_index,
             state: window.state,
             active_todo: window.active_todo.clone(),
+            draft_content: window.draft_content.clone(),
             summary: window.summary.clone(),
         });
     }

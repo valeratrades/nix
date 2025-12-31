@@ -79,10 +79,7 @@
     };
     #discretionary_engine = { url = "github:valeratrades/discretionary_engine?submodules=1"; }; #TODO: get this working (currently can only do local due to reliance on /libs)
     math_tools = { url = "github:valeratrades/math_tools"; };
-    tg = {
-      url = "github:valeratrades/tg";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    tg.url = "github:valeratrades/tg";
     bbeats = {
       url = "github:valeratrades/bbeats";
       inputs.nixpkgs.follows = "nixpkgs";
