@@ -8,6 +8,36 @@ clap = { version = "4.5.49", features = ["derive"] }
 use clap::{Parser, ValueEnum};
 use std::fs;
 use std::process::{Command, exit};
+use std::str::FromStr;
+
+#[derive(Debug, Clone, Copy)]
+struct Version {
+    major: u32,
+    minor: u32,
+    patch: u32,
+}
+
+impl FromStr for Version {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = s.strip_prefix('v').unwrap_or(s);
+        let parts: Vec<&str> = s.split('.').collect();
+        if parts.len() != 3 {
+            return Err(format!("Invalid version format '{}', expected 'v1.2.3' or '1.2.3'", s));
+        }
+        let major = parts[0].parse().map_err(|_| format!("Invalid major version: {}", parts[0]))?;
+        let minor = parts[1].parse().map_err(|_| format!("Invalid minor version: {}", parts[1]))?;
+        let patch = parts[2].parse().map_err(|_| format!("Invalid patch version: {}", parts[2]))?;
+        Ok(Version { major, minor, patch })
+    }
+}
+
+impl std::fmt::Display for Version {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}.{}.{}", self.major, self.minor, self.patch)
+    }
+}
 
 #[derive(Debug, Clone, Copy, ValueEnum, Default)]
 enum SemverBump {
@@ -32,6 +62,10 @@ struct Args {
     /// Fast mode: skip tests and nix build
     #[arg(short, long)]
     fast: bool,
+
+    /// Version to tag (e.g., v1.2.3 or 1.2.3)
+    #[arg(short = 'v', long = "version")]
+    version: Option<Version>,
 }
 
 fn run(cmd: &str, args: &[&str]) -> bool {
@@ -203,9 +237,42 @@ fn main() {
         exit(1);
     }
 
-    // Return to original branch
+    // Return to master
     if !run("git", &["checkout", "master"]) {
         let _ = run("git", &["checkout", &cur_branch]);
+        exit(1);
+    }
+
+    // If version provided, tag and push to version branches
+    if let Some(version) = args.version {
+        let tag = format!("v{}", version);
+        let major_branch = format!("v{}", version.major);
+        let minor_branch = format!("v{}.{}", version.major, version.minor);
+
+        // Create and push tag on master
+        if !run("git", &["tag", "-f", &tag]) {
+            eprintln!("error: failed to create tag {}", tag);
+            exit(1);
+        }
+        if !run("git", &["push", "--force", "origin", &tag]) {
+            eprintln!("error: failed to push tag {}", tag);
+            exit(1);
+        }
+        println!("Tagged and pushed {}", tag);
+
+        // Push to version branches (create if they don't exist)
+        for branch in [&major_branch, &minor_branch] {
+            // Create/update branch pointing to master
+            if !run("git", &["branch", "-f", branch, "master"]) {
+                eprintln!("error: failed to create branch {}", branch);
+                exit(1);
+            }
+            if !run("git", &["push", "--force", "origin", branch]) {
+                eprintln!("error: failed to push branch {}", branch);
+                exit(1);
+            }
+            println!("Pushed to branch {}", branch);
+        }
     }
 
     println!("Release pushed successfully!");
