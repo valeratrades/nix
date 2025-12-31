@@ -207,11 +207,8 @@ fn main() {
             }
         }
 
-        // Commit all changes
-        if !run("git", &["commit", "-am", msg]) {
-            eprintln!("error: git commit failed");
-            exit(1);
-        }
+        // Commit all changes (ignore if nothing to commit)
+        let _ = run("git", &["commit", "-am", msg]);
     }
 
     // Checkout master

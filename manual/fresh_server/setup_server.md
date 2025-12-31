@@ -88,6 +88,40 @@ git config --global alias.pl '!git pull && git lfs pull'
 systemctl enable clickhouse-server
 systemctl start clickhouse-server
 
+# disable verbose ClickHouse system logs (saves ~100GB+ disk over time)
+cat > /etc/clickhouse-server/config.d/disable-logs.xml << 'CLICKHOUSE_EOF'
+<clickhouse>
+    <!-- Disable verbose system logs that cause unnecessary disk/CPU usage -->
+    <asynchronous_metric_log remove="1"/>
+    <metric_log remove="1"/>
+    <trace_log remove="1"/>
+    <part_log remove="1"/>
+    <query_thread_log remove="1"/>
+    <query_views_log remove="1"/>
+    <session_log remove="1"/>
+    <text_log remove="1"/>
+    <processors_profile_log remove="1"/>
+    <opentelemetry_span_log remove="1"/>
+    <crash_log remove="1"/>
+    <backup_log remove="1"/>
+    <blob_storage_log remove="1"/>
+    <s3_queue_log remove="1"/>
+    <azure_queue_log remove="1"/>
+    <zookeeper_log remove="1"/>
+    <error_log remove="1"/>
+
+    <!-- Keep only query_log for debugging, with 7-day TTL -->
+    <query_log>
+        <database>system</database>
+        <table>query_log</table>
+        <flush_interval_milliseconds>7500</flush_interval_milliseconds>
+        <ttl>event_date + INTERVAL 7 DAY DELETE</ttl>
+    </query_log>
+</clickhouse>
+CLICKHOUSE_EOF
+chown clickhouse:clickhouse /etc/clickhouse-server/config.d/disable-logs.xml
+systemctl restart clickhouse-server
+
 # set PowerShell as default shell
 chsh -s /usr/bin/pwsh root
 
