@@ -277,16 +277,13 @@ fn main() {
         let major_branch = format!("v{}", version.major);
         let minor_branch = format!("v{}.{}", version.major, version.minor);
 
-        // Create and push tag on master
-        if !run("git", &["tag", "-f", &tag]) {
-            eprintln!("error: failed to create tag {}", tag);
-            exit(1);
+        // Create and push tag on master (don't fail if already exists)
+        let _ = run("git", &["tag", "-f", &tag]);
+        if run("git", &["push", "--force", "origin", &tag]) {
+            println!("Tagged and pushed {}", tag);
+        } else {
+            println!("Tag {} already exists on remote, continuing", tag);
         }
-        if !run("git", &["push", "--force", "origin", &tag]) {
-            eprintln!("error: failed to push tag {}", tag);
-            exit(1);
-        }
-        println!("Tagged and pushed {}", tag);
 
         // Push to version branches (create if they don't exist)
         for branch in [&major_branch, &minor_branch] {

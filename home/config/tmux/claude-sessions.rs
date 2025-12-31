@@ -536,18 +536,15 @@ fn determine_claude_activity(session: &str, window_index: u32) -> ClaudeState {
         _ => return ClaudeState::Finished, // Default to finished if can't read
     };
 
-    // Look at the last few lines for various indicators
+    // Look at the last portion for various indicators
+    // Filter empty lines first, then take last 15 non-empty lines
     let last_portion: String = content
         .lines()
         .rev()
+        .filter(|l| !l.trim().is_empty())
         .take(15)
         .collect::<Vec<_>>()
         .join("\n");
-
-    // Check for fresh session (welcome screen) first - before any other checks
-    if content.contains("No recent activity") || content.contains("Tips for getting started") {
-        return ClaudeState::Empty;
-    }
 
     // Match spinner pattern: "Word…" (capitalized word followed by ellipsis)
     // Examples: Running…, Thinking…, Cogitating…, Summarizing…
@@ -560,6 +557,7 @@ fn determine_claude_activity(session: &str, window_index: u32) -> ClaudeState {
     // Check for draft state: user has typed something after "> "
     // The bypass permissions prompt is visible and there's actual text after "> "
     // Note: We need to distinguish real input from grey suggestions (dim text)
+    // This must come BEFORE the fresh session check, as user may type on welcome screen
     if last_portion.contains("bypass permissions") {
         // Re-capture with escape codes to detect dim text (suggestions)
         let output_with_escapes = Command::new("tmux")
@@ -568,22 +566,27 @@ fn determine_claude_activity(session: &str, window_index: u32) -> ClaudeState {
 
         if let Ok(out) = output_with_escapes {
             let content_esc = String::from_utf8_lossy(&out.stdout);
-            // Find the current prompt line - it has "[0m> " pattern (reset then prompt)
-            // Old message lines have different escape patterns
-            if let Some(prompt_line) = content_esc.lines().find(|l| l.contains("\x1b[0m> "))
+            // Find the current prompt line - it has "[0m>" pattern (reset then prompt)
+            // The prompt may be followed by regular space or NBSP
+            if let Some(prompt_line) = content_esc.lines().find(|l| l.contains("\x1b[0m>"))
             {
-                if let Some(pos) = prompt_line.find("\x1b[0m> ") {
-                    let after_prompt = &prompt_line[pos + 5..]; // 5 = len of "\x1b[0m> "
-                    // Check if there's real input (not empty, not dim/suggestion)
-                    // \x1b[2m is the dim/faint escape sequence for suggestions
-                    // Note: there may be a non-breaking space (U+00A0) before the escape
-                    let trimmed = after_prompt.trim().trim_start_matches('\u{00A0}');
-                    if !trimmed.is_empty() && !trimmed.starts_with("\x1b[2m") {
+                if let Some(pos) = prompt_line.find("\x1b[0m>") {
+                    let after_gt = &prompt_line[pos + 4..]; // 4 = len of "\x1b[0m>"
+                    // Check if dim escape follows (possibly after NBSP) - that's a suggestion
+                    // Real input won't have [2m escape
+                    let is_suggestion = after_gt.contains("\x1b[2m");
+                    let has_content = after_gt.chars().any(|c| c.is_alphanumeric());
+                    if has_content && !is_suggestion {
                         return ClaudeState::Draft;
                     }
                 }
             }
         }
+    }
+
+    // Check for fresh session (welcome screen) - after draft check
+    if content.contains("No recent activity") || content.contains("Tips for getting started") {
+        return ClaudeState::Empty;
     }
 
     // Check if there's an input prompt line ("> ") - indicates waiting for input
