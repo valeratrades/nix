@@ -467,8 +467,30 @@ fn get_session_summary(session_file: &Path) -> Option<String> {
     None
 }
 
-/// Find session file for a project - just return the most recently modified one
-fn find_session_file_for_process(project_dir: &Path, _process_start: Option<std::time::SystemTime>) -> Option<PathBuf> {
+/// Get file birth (creation) time using statx syscall
+fn get_file_birth_time(path: &Path) -> Option<std::time::SystemTime> {
+    use std::os::unix::fs::MetadataExt;
+
+    // Try to get birth time from metadata - Rust 1.75+ exposes created() on Linux with statx
+    let metadata = fs::metadata(path).ok()?;
+
+    // First try created() which uses statx on Linux
+    if let Ok(created) = metadata.created() {
+        return Some(created);
+    }
+
+    // Fallback: use ctime (inode change time) which is often close to creation
+    // This is not ideal but better than mtime which changes on every write
+    let ctime = metadata.ctime();
+    if ctime > 0 {
+        return Some(std::time::UNIX_EPOCH + std::time::Duration::from_secs(ctime as u64));
+    }
+
+    None
+}
+
+/// Find session file for a project by matching birth time to process start time
+fn find_session_file_for_process(project_dir: &Path, process_start: Option<std::time::SystemTime>) -> Option<PathBuf> {
     let entries = fs::read_dir(project_dir).ok()?;
 
     let mut session_files: Vec<_> = entries
@@ -479,15 +501,41 @@ fn find_session_file_for_process(project_dir: &Path, _process_start: Option<std:
             name_str.ends_with(".jsonl") && !name_str.starts_with("agent-")
         })
         .filter_map(|e| {
-            let metadata = e.metadata().ok()?;
-            let modified = metadata.modified().ok()?;
-            Some((e.path(), modified))
+            let path = e.path();
+            let birth = get_file_birth_time(&path)?;
+            let modified = e.metadata().ok()?.modified().ok()?;
+            Some((path, birth, modified))
         })
         .collect();
 
-    // Return most recently modified
-    session_files.sort_by(|a, b| b.1.cmp(&a.1));
-    session_files.first().map(|(path, _)| path.clone())
+    // If we have process start time, find the session created closest to (but after) process start
+    if let Some(proc_start) = process_start {
+        // Find sessions created within 60 seconds after process start
+        let mut candidates: Vec<_> = session_files
+            .iter()
+            .filter_map(|(path, birth, _)| {
+                if *birth >= proc_start {
+                    let diff = birth.duration_since(proc_start).ok()?;
+                    // Session should be created within 60 seconds of process start
+                    if diff.as_secs() <= 60 {
+                        return Some((path.clone(), diff));
+                    }
+                }
+                None
+            })
+            .collect();
+
+        // Sort by time difference (closest first)
+        candidates.sort_by_key(|(_, diff)| *diff);
+
+        if let Some((path, _)) = candidates.first() {
+            return Some(path.clone());
+        }
+    }
+
+    // Fallback: return most recently modified (original behavior)
+    session_files.sort_by(|a, b| b.2.cmp(&a.2));
+    session_files.first().map(|(path, _, _)| path.clone())
 }
 
 /// Get process start time from /proc/PID/stat

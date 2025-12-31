@@ -38,6 +38,32 @@ impl std::fmt::Display for Version {
     }
 }
 
+impl PartialEq for Version {
+    fn eq(&self, other: &Self) -> bool {
+        self.major == other.major && self.minor == other.minor && self.patch == other.patch
+    }
+}
+
+impl Eq for Version {}
+
+impl PartialOrd for Version {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Version {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        match self.major.cmp(&other.major) {
+            std::cmp::Ordering::Equal => match self.minor.cmp(&other.minor) {
+                std::cmp::Ordering::Equal => self.patch.cmp(&other.patch),
+                other => other,
+            },
+            other => other,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, ValueEnum, Default)]
 enum SemverBump {
     Patch,
@@ -83,6 +109,15 @@ fn run_output(cmd: &str, args: &[&str]) -> Option<String> {
             None
         }
     })
+}
+
+fn get_latest_tag() -> Option<Version> {
+    // Get all tags sorted by version (descending), filter for semver tags
+    let output = run_output("git", &["tag", "--list", "v*"])?;
+    output
+        .lines()
+        .filter_map(|tag| tag.parse::<Version>().ok())
+        .max()
 }
 
 mod rust {
@@ -276,6 +311,22 @@ fn main() {
 
     // If version provided, tag and push to version branches
     if let Some(version) = args.version {
+        // Check against latest existing tag
+        if let Some(latest) = get_latest_tag() {
+            if version < latest {
+                eprintln!(
+                    "error: version v{} is smaller than the latest tag v{}",
+                    version, latest
+                );
+                exit(1);
+            } else if version == latest {
+                eprintln!(
+                    "warning: version v{} is the same as the latest tag",
+                    version
+                );
+            }
+        }
+
         let tag = format!("v{}", version);
         let major_branch = format!("v{}", version.major);
         let minor_branch = format!("v{}.{}", version.major, version.minor);
