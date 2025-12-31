@@ -58,6 +58,44 @@ return require "lazier" {
 			end
 		end
 
+		-- Toggle regex mode for telescope picker
+		local function toggle_regex_mode(prompt_bufnr)
+			local picker = action_state.get_current_picker(prompt_bufnr)
+			local finder = picker.finder
+
+			if finder.__regex_mode then
+				finder.__regex_mode = false
+				finder.opts = finder.opts or {}
+				finder.opts.additional_args = finder.__original_additional_args
+				vim.notify("Fuzzy mode", vim.log.levels.INFO)
+			else
+				finder.__regex_mode = true
+				finder.opts = finder.opts or {}
+				finder.__original_additional_args = finder.opts.additional_args
+				finder.opts.additional_args = function(opts)
+					local args = {}
+					if finder.__original_additional_args then
+						args = finder.__original_additional_args(opts) or {}
+					end
+					table.insert(args, "--fixed-strings")
+					return args
+				end
+				vim.notify("Exact match mode", vim.log.levels.INFO)
+			end
+
+			-- Get current prompt and refresh
+			local current_prompt = picker:_get_prompt()
+			picker:refresh(finder, { reset_prompt = false })
+			-- Restore the prompt text after refresh
+			vim.schedule(function()
+				local prompt_bufnr_new = picker.prompt_bufnr
+				if prompt_bufnr_new and vim.api.nvim_buf_is_valid(prompt_bufnr_new) then
+					vim.api.nvim_buf_set_lines(prompt_bufnr_new, 0, 1, false, { current_prompt })
+					vim.api.nvim_win_set_cursor(0, { 1, #current_prompt })
+				end
+			end)
+		end
+
 		-- Custom action to send to quickfix and open replacer
 		local function send_to_qf_and_replacer(prompt_bufnr)
 			actions.send_to_qflist(prompt_bufnr)
@@ -177,6 +215,7 @@ return require "lazier" {
 						["<c-f>"] = actions.to_fuzzy_refine,
 						["<C-r>"] = send_to_qf_and_replacer,
 						["<C-o>"] = open_parent_dir,
+						["<C-g>"] = toggle_regex_mode,
 					},
 					n = {
 						["<CR>"] = actions.select_default + actions.center,
@@ -186,6 +225,7 @@ return require "lazier" {
 						["<C-l>"] = actions.select_all + actions.add_selected_to_loclist,
 						["<C-r>"] = send_to_qf_and_replacer,
 						["<C-o>"] = open_parent_dir,
+						["<C-g>"] = toggle_regex_mode,
 					}
 				},
 				layout_config = {
