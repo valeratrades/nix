@@ -333,11 +333,6 @@ components = ["rustc-codegen-cranelift-preview"]"#,
             if src_dir.exists() {
                 copy_dir_all(&src_dir, &PathBuf::from("src"))?;
             }
-            // Copy build.rs
-            let build_rs = preset_dir.join("build.rs");
-            if build_rs.exists() {
-                fs::copy(&build_rs, "build.rs")?;
-            }
             // Append additional dependencies
             let additional = preset_dir.join("additional_dependencies.toml");
             if additional.exists() {

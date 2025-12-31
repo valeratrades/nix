@@ -12,7 +12,44 @@ return require "lazier" {
 		local builtin = require('telescope.builtin')
 		local actions = require('telescope.actions')
 		local action_state = require('telescope.actions.state')
-		local gs = { hidden = true, no_ignore = true, file_ignore_patterns = { ".git/", "target/", "%.lock" } } -- `^` and `.` in file ignore patterns don't really work
+
+		-- Get git submodule paths from .gitmodules file
+		local function get_submodule_paths()
+			local gitmodules_path = vim.fn.findfile('.gitmodules', '.;')
+			if gitmodules_path == '' then
+				return {}
+			end
+			local paths = {}
+			local content = vim.fn.readfile(gitmodules_path)
+			for _, line in ipairs(content) do
+				local path = line:match('%s*path%s*=%s*(.+)')
+				if path then
+					-- Add both the directory and all its contents
+					table.insert(paths, path .. "/")
+				end
+			end
+			return paths
+		end
+
+		-- Build file_ignore_patterns with submodules excluded
+		local base_ignore_patterns = { ".git/", "target/", "%.lock" }
+		local include_submodules = false -- toggle state
+
+		local function build_ignore_patterns()
+			local patterns = vim.tbl_extend("force", {}, base_ignore_patterns)
+			if not include_submodules then
+				local submodule_paths = get_submodule_paths()
+				for _, path in ipairs(submodule_paths) do
+					table.insert(patterns, path)
+				end
+			end
+			return patterns
+		end
+
+		local function get_gs()
+			return { hidden = true, no_ignore = true, file_ignore_patterns = build_ignore_patterns() }
+		end
+		-- note: `^` and `.` in file_ignore_patterns don't really work
 
 		-- image.nvim integration for telescope preview (lazy-loaded)
 		local supported_images = { "svg", "png", "jpg", "jpeg", "gif", "webp", "avif" }
@@ -96,6 +133,30 @@ return require "lazier" {
 			end)
 		end
 
+		-- Toggle submodule visibility in telescope picker
+		local function toggle_submodules(prompt_bufnr)
+			include_submodules = not include_submodules
+			local picker = action_state.get_current_picker(prompt_bufnr)
+			local finder = picker.finder
+
+			-- Update file_ignore_patterns on the finder
+			finder.file_ignore_patterns = build_ignore_patterns()
+
+			local status = include_submodules and "Showing submodules" or "Hiding submodules"
+			vim.notify(status, vim.log.levels.INFO)
+
+			-- Get current prompt and refresh
+			local current_prompt = picker:_get_prompt()
+			picker:refresh(finder, { reset_prompt = false })
+			vim.schedule(function()
+				local prompt_bufnr_new = picker.prompt_bufnr
+				if prompt_bufnr_new and vim.api.nvim_buf_is_valid(prompt_bufnr_new) then
+					vim.api.nvim_buf_set_lines(prompt_bufnr_new, 0, 1, false, { current_prompt })
+					vim.api.nvim_win_set_cursor(0, { 1, #current_prompt })
+				end
+			end)
+		end
+
 		-- Custom action to send to quickfix and open replacer
 		local function send_to_qf_and_replacer(prompt_bufnr)
 			actions.send_to_qflist(prompt_bufnr)
@@ -118,8 +179,8 @@ return require "lazier" {
 			vim.cmd('edit ' .. vim.fn.fnameescape(parent))
 		end
 
-		K('n', '<space>f', function() builtin.find_files(gs) end, { desc = "Search files" })
-		K('n', '<space>z', function() builtin.live_grep(gs) end, { desc = "Live grep" })
+		K('n', '<space>f', function() builtin.find_files(get_gs()) end, { desc = "Search files" })
+		K('n', '<space>z', function() builtin.live_grep(get_gs()) end, { desc = "Live grep" })
 		K('n', '<space>Z', function()
 			local search_dir = nil
 			local alt_buf = vim.fn.bufnr('#')
@@ -135,17 +196,17 @@ return require "lazier" {
 				vim.notify("No directory found", vim.log.levels.WARN)
 				return
 			end
-			local opts = vim.tbl_extend("force", gs, { cwd = search_dir })
+			local opts = vim.tbl_extend("force", get_gs(), { cwd = search_dir })
 			builtin.live_grep(opts)
 		end, { desc = "Live grep (oil/file dir)" })
-		K({ 'n', 'v' }, '<space>ss', function() builtin.grep_string(gs) end,
+		K({ 'n', 'v' }, '<space>ss', function() builtin.grep_string(get_gs()) end,
 			{ desc = "Grep visual selection or word under cursor" })
-		K('n', '<space>sk', function() builtin.keymaps(gs) end, { desc = "Keymaps" })
-		K('n', '<space>sg', function() builtin.git_files(gs) end, { desc = "Git files" })
+		K('n', '<space>sk', function() builtin.keymaps(get_gs()) end, { desc = "Keymaps" })
+		K('n', '<space>sg', function() builtin.git_files(get_gs()) end, { desc = "Git files" })
 		K('n', '<space>sp', "<cmd>Telescope persisted<cr>", { desc = "Persisted: sessions" })
-		K('n', '<space>sb', function() builtin.buffers(gs) end, { desc = "Find buffers" })
-		K('n', '<space>sh', function() builtin.help_tags(gs) end, { desc = "Neovim documentation" })
-		K('n', '<space>sl', function() builtin.loclist(gs) end, { desc = "Telescope loclist" })
+		K('n', '<space>sb', function() builtin.buffers(get_gs()) end, { desc = "Find buffers" })
+		K('n', '<space>sh', function() builtin.help_tags(get_gs()) end, { desc = "Neovim documentation" })
+		K('n', '<space>sl', function() builtin.loclist(get_gs()) end, { desc = "Telescope loclist" })
 		K('n', '<space>sn', function() builtin.find_files({ hidden = true, no_ignore_parent = true }) end,
 			{ desc = "No_ignore_parent" })
 		K('n', '<space>st', function()
@@ -216,6 +277,7 @@ return require "lazier" {
 						["<C-r>"] = send_to_qf_and_replacer,
 						["<C-o>"] = open_parent_dir,
 						["<C-g>"] = toggle_regex_mode,
+						["<C-s>"] = toggle_submodules,
 					},
 					n = {
 						["<CR>"] = actions.select_default + actions.center,
@@ -226,6 +288,7 @@ return require "lazier" {
 						["<C-r>"] = send_to_qf_and_replacer,
 						["<C-o>"] = open_parent_dir,
 						["<C-g>"] = toggle_regex_mode,
+						["<C-s>"] = toggle_submodules,
 					}
 				},
 				layout_config = {
@@ -243,7 +306,7 @@ return require "lazier" {
 
 		--Q: should probably split by priority. Where "dbg" and "TEST" are actually the highest ones. Just include in the same `!` framework, have them wegh 11 and 10 respectively.
 		K('n', '<space>sd', function()
-			local gs_ext = vim.tbl_extend("force", gs, {
+			local gs_ext = vim.tbl_extend("force", get_gs(), {
 				default_text = [[#\s*TEST|#\s*dbg|dbg!\(|#\s*Q|#\s*DEPRECATE|#\sDO|#\s*TODO|dbg]],
 				additional_args = function()
 					return { '--pcre2' }
