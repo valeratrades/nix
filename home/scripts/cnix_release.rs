@@ -209,6 +209,12 @@ fn main() {
 
         // Commit all changes (ignore if nothing to commit)
         let _ = run("git", &["commit", "-am", msg]);
+
+        // Push commit to master
+        if !run("git", &["push", "origin", "master"]) {
+            eprintln!("error: failed to push to master");
+            exit(1);
+        }
     }
 
     // Checkout master

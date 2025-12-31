@@ -4,7 +4,7 @@
     rust-overlay.url = "github:oxalica/rust-overlay";
     flake-utils.url = "github:numtide/flake-utils";
     pre-commit-hooks.url = "github:cachix/git-hooks.nix";
-    v-utils.url = "github:valeratrades/.github?ref=v1.2";
+    v-utils.url = "github:valeratrades/.github?ref=v1.3";
   };
   outputs = { self, nixpkgs, rust-overlay, flake-utils, pre-commit-hooks, v-utils }:
     flake-utils.lib.eachDefaultSystem (
@@ -32,6 +32,7 @@
           jobsOther = [ "loc-badge" ];
           langs = [ "rs" ];
         };
+        rs = v-utils.rs { inherit pkgs; };
         readme = v-utils.readme-fw {
           inherit pkgs pname;
           lastSupportedVersion = "nightly-RUSTC_CURRENT_VERSION";
@@ -71,16 +72,12 @@
             shellHook =
               pre-commit-check.shellHook
               + github.shellHook
+              + rs.shellHook
               + ''
                 cp -f ${v-utils.files.licenses.blue_oak} ./LICENSE
-
-                mkdir -p ./.cargo
                 cp -f ${(v-utils.files.treefmt) { inherit pkgs; }} ./.treefmt.toml
                 cp -f ${ (v-utils.files.gitLfs { inherit pkgs; }) } ./.gitattributes
                 cp -f ${(v-utils.files.rust.clippy { inherit pkgs; })} ./.cargo/.clippy.toml
-                cp -f ${(v-utils.files.rust.config { inherit pkgs; })} ./.cargo/config.toml
-                cp -f ${(v-utils.files.rust.build { inherit pkgs; })} ./build.rs && chmod +w ./build.rs
-                cp -f ${(v-utils.files.rust.rustfmt { inherit pkgs; })} ./.rustfmt.toml
 
                 cp -f ${readme} ./README.md
 
