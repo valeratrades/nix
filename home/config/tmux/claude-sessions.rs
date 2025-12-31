@@ -410,21 +410,26 @@ fn get_session_summary(session_file: &Path) -> Option<String> {
     let mut last_summary: Option<String> = None;
     let mut first_user_message: Option<String> = None;
 
-    // Read lines to find summary entries and first user message
-    for line in reader.lines().take(50) {
-        let line = line.ok()?;
+    // Read ALL lines to find the last summary entry and first user message
+    for line in reader.lines() {
+        let line = match line {
+            Ok(l) => l,
+            Err(_) => continue,
+        };
 
-        // Track summary entries (preferred - Claude-generated summaries)
-        if let Ok(entry) = serde_json::from_str::<SummaryEntry>(&line) {
-            if entry.entry_type == "summary" {
-                if let Some(s) = entry.summary {
-                    last_summary = Some(s);
+        // Track summary entries - we want the LAST one (most recent)
+        if line.contains("\"type\":\"summary\"") {
+            if let Ok(entry) = serde_json::from_str::<SummaryEntry>(&line) {
+                if entry.entry_type == "summary" {
+                    if let Some(s) = entry.summary {
+                        last_summary = Some(s);
+                    }
                 }
             }
         }
 
-        // Track first user message as fallback
-        if first_user_message.is_none() {
+        // Track first user message as fallback (only need the first one)
+        if first_user_message.is_none() && line.contains("\"type\":\"user\"") {
             if let Ok(msg) = serde_json::from_str::<SessionMessage>(&line) {
                 if msg.msg_type == "user" {
                     if let Some(content) = msg.message {
@@ -648,9 +653,7 @@ fn find_session_file_for_process(project_dir: &Path, process_start: Option<std::
         // Strategy 2: For resumed sessions, use screen content fingerprinting
         // This finds the original session file by matching visible conversation content
         if let Some(fingerprint) = extract_session_fingerprint(tmux_target) {
-            eprintln!("DEBUG {}: fingerprint={}", tmux_target, &fingerprint[..fingerprint.len().min(30)]);
             if let Some(path) = find_session_by_fingerprint(project_dir, &fingerprint) {
-                eprintln!("DEBUG {}: matched={}", tmux_target, path.file_name().unwrap().to_string_lossy());
                 return Some(path);
             }
         }
