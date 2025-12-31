@@ -544,9 +544,13 @@ fn determine_claude_activity(session: &str, window_index: u32) -> ClaudeState {
         .collect::<Vec<_>>()
         .join("\n");
 
-    // Match spinner pattern first: "Word…" (capitalized word followed by ellipsis)
+    // Check for fresh session (welcome screen) first - before any other checks
+    if content.contains("No recent activity") || content.contains("Tips for getting started") {
+        return ClaudeState::Empty;
+    }
+
+    // Match spinner pattern: "Word…" (capitalized word followed by ellipsis)
     // Examples: Running…, Thinking…, Cogitating…, Summarizing…
-    // This takes priority because spinners indicate active processing
     let spinner_pattern = Regex::new(r"[A-Z][a-z]+…").unwrap();
 
     if spinner_pattern.is_match(&last_portion) {
@@ -564,11 +568,6 @@ fn determine_claude_activity(session: &str, window_index: u32) -> ClaudeState {
                 }
             }
         }
-    }
-
-    // Check for fresh session (welcome screen) - this should be Empty, not Finished
-    if content.contains("No recent activity") || content.contains("Tips for getting started") {
-        return ClaudeState::Empty;
     }
 
     // Check if there's an input prompt line ("> ") - indicates waiting for input

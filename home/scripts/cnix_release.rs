@@ -6,7 +6,6 @@ clap = { version = "4.5.49", features = ["derive"] }
 ---
 
 use clap::{Parser, ValueEnum};
-use std::fs;
 use std::process::{Command, exit};
 use std::str::FromStr;
 
@@ -86,67 +85,105 @@ fn run_output(cmd: &str, args: &[&str]) -> Option<String> {
     })
 }
 
-fn bump_version(cargo_toml_path: &str, bump: SemverBump) -> Result<(), String> {
-    let content = fs::read_to_string(cargo_toml_path)
-        .map_err(|e| format!("Failed to read {}: {}", cargo_toml_path, e))?;
+mod rust {
+    use super::{run, SemverBump};
+    use std::fs;
+    use std::path::Path;
 
-    let mut in_package = false;
-    let mut new_lines = Vec::new();
-    let mut version_bumped = false;
+    pub fn has_cargo_toml() -> bool {
+        Path::new("Cargo.toml").exists()
+    }
 
-    for line in content.lines() {
-        let trimmed = line.trim();
-        if trimmed == "[package]" {
-            in_package = true;
-            new_lines.push(line.to_string());
-        } else if trimmed.starts_with('[') {
-            in_package = false;
-            new_lines.push(line.to_string());
-        } else if in_package && trimmed.starts_with("version") {
-            // Parse version line like: version = "1.2.3"
-            if let Some(start) = line.find('"') {
-                if let Some(end) = line.rfind('"') {
-                    let version_str = &line[start + 1..end];
-                    let parts: Vec<&str> = version_str.split('.').collect();
-                    if parts.len() == 3 {
-                        let major: u32 = parts[0].parse().map_err(|_| "Invalid major version")?;
-                        let minor: u32 = parts[1].parse().map_err(|_| "Invalid minor version")?;
-                        let patch: u32 = parts[2].parse().map_err(|_| "Invalid patch version")?;
+    pub fn bump_version(bump: SemverBump) -> Result<(), String> {
+        let cargo_toml_path = "Cargo.toml";
+        let content = fs::read_to_string(cargo_toml_path)
+            .map_err(|e| format!("Failed to read {}: {}", cargo_toml_path, e))?;
 
-                        let (new_major, new_minor, new_patch) = match bump {
-                            SemverBump::Major => (major + 1, 0, 0),
-                            SemverBump::Minor => (major, minor + 1, 0),
-                            SemverBump::Patch => (major, minor, patch + 1),
-                        };
+        let mut in_package = false;
+        let mut new_lines = Vec::new();
+        let mut version_bumped = false;
 
-                        let new_version = format!("{}.{}.{}", new_major, new_minor, new_patch);
-                        let prefix = &line[..start + 1];
-                        let suffix = &line[end..];
-                        new_lines.push(format!("{}{}{}", prefix, new_version, suffix));
-                        version_bumped = true;
-                        println!("Bumped version: {} -> {}", version_str, new_version);
-                        continue;
+        for line in content.lines() {
+            let trimmed = line.trim();
+            if trimmed == "[package]" {
+                in_package = true;
+                new_lines.push(line.to_string());
+            } else if trimmed.starts_with('[') {
+                in_package = false;
+                new_lines.push(line.to_string());
+            } else if in_package && trimmed.starts_with("version") {
+                // Parse version line like: version = "1.2.3"
+                if let Some(start) = line.find('"') {
+                    if let Some(end) = line.rfind('"') {
+                        let version_str = &line[start + 1..end];
+                        let parts: Vec<&str> = version_str.split('.').collect();
+                        if parts.len() == 3 {
+                            let major: u32 = parts[0].parse().map_err(|_| "Invalid major version")?;
+                            let minor: u32 = parts[1].parse().map_err(|_| "Invalid minor version")?;
+                            let patch: u32 = parts[2].parse().map_err(|_| "Invalid patch version")?;
+
+                            let (new_major, new_minor, new_patch) = match bump {
+                                SemverBump::Major => (major + 1, 0, 0),
+                                SemverBump::Minor => (major, minor + 1, 0),
+                                SemverBump::Patch => (major, minor, patch + 1),
+                            };
+
+                            let new_version = format!("{}.{}.{}", new_major, new_minor, new_patch);
+                            let prefix = &line[..start + 1];
+                            let suffix = &line[end..];
+                            new_lines.push(format!("{}{}{}", prefix, new_version, suffix));
+                            version_bumped = true;
+                            println!("Bumped version: {} -> {}", version_str, new_version);
+                            continue;
+                        }
                     }
                 }
+                new_lines.push(line.to_string());
+            } else {
+                new_lines.push(line.to_string());
             }
-            new_lines.push(line.to_string());
-        } else {
-            new_lines.push(line.to_string());
         }
+
+        if !version_bumped {
+            return Err("Could not find version in [package] section".to_string());
+        }
+
+        fs::write(cargo_toml_path, new_lines.join("\n") + "\n")
+            .map_err(|e| format!("Failed to write {}: {}", cargo_toml_path, e))?;
+
+        Ok(())
     }
 
-    if !version_bumped {
-        return Err("Could not find version in [package] section".to_string());
+    pub fn run_sed_deps(cur_branch: &str) -> bool {
+        let home = std::env::var("HOME").unwrap_or_default();
+        let sed_deps = format!("{home}/s/g/github/github/workflows/pre_ci_sed_deps.rs");
+        if !run(&sed_deps, &["."]) {
+            eprintln!("error: sed-deps failed");
+            let _ = run("git", &["checkout", cur_branch]);
+            return false;
+        }
+        true
     }
 
-    fs::write(cargo_toml_path, new_lines.join("\n") + "\n")
-        .map_err(|e| format!("Failed to write {}: {}", cargo_toml_path, e))?;
+    pub fn test_and_build(cur_branch: &str) -> bool {
+        if !run("cargo", &["t"]) {
+            eprintln!("error: cargo test failed");
+            let _ = run("git", &["checkout", cur_branch]);
+            return false;
+        }
 
-    Ok(())
+        if !run("nix", &["build"]) {
+            eprintln!("error: nix build failed");
+            let _ = run("git", &["checkout", cur_branch]);
+            return false;
+        }
+        true
+    }
 }
 
 fn main() {
     let args = Args::parse();
+    let is_rust = rust::has_cargo_toml();
 
     // Get current branch
     let cur_branch = run_output("git", &["symbolic-ref", "--short", "HEAD"])
@@ -161,12 +198,13 @@ fn main() {
         exit(1);
     }
 
-    // If commit message provided, bump version and commit on master first
+    // If commit message provided, bump version (if rust) and commit on master first
     if let Some(ref msg) = args.commit_message {
-        // Bump version in Cargo.toml
-        if let Err(e) = bump_version("Cargo.toml", args.semver) {
-            eprintln!("error bumping version: {}", e);
-            exit(1);
+        if is_rust {
+            if let Err(e) = rust::bump_version(args.semver) {
+                eprintln!("error bumping version: {}", e);
+                exit(1);
+            }
         }
 
         // Commit all changes
@@ -194,30 +232,20 @@ fn main() {
         exit(1);
     }
 
-    // Run sed-deps to rewrite Cargo.toml
-    let home = std::env::var("HOME").unwrap_or_default();
-    let sed_deps = format!("{home}/s/g/github/github/workflows/pre_ci_sed_deps.rs");
-    if !run(&sed_deps, &["."]) {
-        eprintln!("error: sed-deps failed");
-        let _ = run("git", &["checkout", &cur_branch]);
-        exit(1);
-    }
-
-    // Test and build unless fast mode
-    if !args.fast {
-        if !run("cargo", &["t"]) {
-            eprintln!("error: cargo test failed");
-            let _ = run("git", &["checkout", &cur_branch]);
+    if is_rust {
+        // Run sed-deps to rewrite Cargo.toml
+        if !rust::run_sed_deps(&cur_branch) {
             exit(1);
         }
 
-        if !run("nix", &["build"]) {
-            eprintln!("error: nix build failed");
-            let _ = run("git", &["checkout", &cur_branch]);
-            exit(1);
+        // Test and build unless fast mode
+        if !args.fast {
+            if !rust::test_and_build(&cur_branch) {
+                exit(1);
+            }
+        } else {
+            println!("Fast mode: skipping tests and build");
         }
-    } else {
-        println!("Fast mode enabled: Skipping tests and build steps");
     }
 
     // Stage all changes

@@ -14,16 +14,15 @@
     options legion_laptop force=1
   '';
 
-  # Default to performance profile on boot
-  #TEST: if this doesn't actually heat it upu more than balanced when CPU is slow (just because of fans moving)
-  systemd.services.legion-performance = {
-    description = "Set Legion laptop to performance profile";
+  # Default to performance fan profile and CPU boost off on boot (longevity mode)
+  systemd.services.legion-longevity = {
+    description = "Set Legion laptop to longevity mode (boost off, fans max)";
     wantedBy = [ "multi-user.target" ];
     after = [ "systemd-modules-load.service" ];
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
-      ExecStart = "${pkgs.bash}/bin/bash -c 'echo performance > /sys/firmware/acpi/platform_profile'";
+      ExecStart = "${pkgs.bash}/bin/bash -c 'echo 0 > /sys/devices/system/cpu/cpufreq/boost && echo performance > /sys/firmware/acpi/platform_profile'";
     };
   };
 
