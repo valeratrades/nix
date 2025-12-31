@@ -77,7 +77,9 @@
     btc_line = {
       url = "github:valeratrades/btc_line?ref=release";
     };
-    #discretionary_engine = { url = "github:valeratrades/discretionary_engine?submodules=1"; }; #TODO: get this working (currently can only do local due to reliance on /libs)
+    discretionary_engine = {
+      url = "git+https://github.com/valeratrades/discretionary_engine?submodules=1";
+    };
     math_tools = { url = "github:valeratrades/math_tools"; };
     tg.url = "github:valeratrades/tg";
     bbeats = {

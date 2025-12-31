@@ -25,6 +25,9 @@ alias optimize_for="sudo $fish_scripts_pdir/optimize_for.rs"
 alias git_scripts="$fish_scripts_pdir/git_scripts.rs"
 alias gfork="$fish_scripts_pdir/git_scripts.rs fork"
 alias gpr="$fish_scripts_pdir/git_scripts.rs pr"
+alias gpf="$fish_scripts_pdir/git_scripts.rs push"
+alias gpff="$fish_scripts_pdir/git_scripts.rs push --force"
+alias gbd="$fish_scripts_pdir/git_scripts.rs delete"
 
 alias choose_port="$fish_scripts_pdir/choose_port.sh"
 

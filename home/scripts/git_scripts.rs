@@ -33,6 +33,20 @@ enum Commands {
         #[arg(long)]
         draft: bool,
     },
+    /// Force push with safety checks (refuses on main branches unless only commit messages changed)
+    Push {
+        /// Use --force instead of --force-with-lease (more dangerous)
+        #[arg(long, short)]
+        force: bool,
+        /// Additional arguments to pass to git push
+        #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
+        args: Vec<String>,
+    },
+    /// Delete a branch locally and on remote (refuses on main branches)
+    Delete {
+        /// Branch name to delete
+        branch: String,
+    },
 }
 
 fn run_cmd(cmd: &str, args: &[&str]) -> bool {
@@ -300,11 +314,86 @@ fn pr(target_branch: Option<String>, draft: bool) {
     println!("Successfully merged '{}' into '{}'", current_branch, target_branch);
 }
 
+const GIT_SHARED_MAIN_BRANCHES: &[&str] = &["master", "main", "release", "stg", "prod"];
+
+fn is_main_branch(branch: &str) -> bool {
+    GIT_SHARED_MAIN_BRANCHES.contains(&branch)
+}
+
+fn push(force: bool, extra_args: Vec<String>) {
+    if !run_cmd_quiet("git", &["rev-parse", "--is-inside-work-tree"]) {
+        eprintln!("ERROR: Not in a git repository");
+        std::process::exit(1);
+    }
+
+    let branch = match run_cmd_output("git", &["rev-parse", "--abbrev-ref", "HEAD"]) {
+        Some(b) if !b.is_empty() => b,
+        _ => {
+            eprintln!("ERROR: Could not get current branch");
+            std::process::exit(1);
+        }
+    };
+
+    if is_main_branch(&branch) {
+        // Check if only commit messages differ (same tree content)
+        let local_tree = run_cmd_output("git", &["rev-parse", "HEAD^{tree}"]);
+        let remote_tree = run_cmd_output("git", &["rev-parse", &format!("origin/{}^{{tree}}", branch)]);
+
+        match (local_tree, remote_tree) {
+            (Some(local), Some(remote)) if local == remote => {
+                println!("Trees match - only commit messages changed. Allowing force push on {}.", branch);
+            }
+            _ => {
+                eprintln!("Refusing to force push {} (tree content differs)", branch);
+                std::process::exit(1);
+            }
+        }
+    }
+
+    let force_flag = if force { "--force" } else { "--force-with-lease" };
+    let extra_refs: Vec<&str> = extra_args.iter().map(|s| s.as_str()).collect();
+
+    let mut args = vec!["push", force_flag, "--follow-tags"];
+    args.extend(extra_refs);
+
+    if !run_cmd("git", &args) {
+        std::process::exit(1);
+    }
+}
+
+fn delete(branch: String) {
+    if !run_cmd_quiet("git", &["rev-parse", "--is-inside-work-tree"]) {
+        eprintln!("ERROR: Not in a git repository");
+        std::process::exit(1);
+    }
+
+    if is_main_branch(&branch) {
+        eprintln!("Refusing to delete {}", branch);
+        std::process::exit(1);
+    }
+
+    // Delete local branch
+    if !run_cmd("git", &["branch", "-D", &branch]) {
+        eprintln!("ERROR: Failed to delete local branch {}", branch);
+        std::process::exit(1);
+    }
+
+    // Delete remote branch
+    if !run_cmd("git", &["push", "origin", "--delete", &branch]) {
+        eprintln!("ERROR: Failed to delete remote branch {}", branch);
+        std::process::exit(1);
+    }
+
+    println!("Deleted branch {} locally and on remote", branch);
+}
+
 fn main() {
     let args = Args::parse();
 
     match args.command {
         Commands::Fork { message } => fork(message),
         Commands::Pr { target_branch, draft } => pr(target_branch, draft),
+        Commands::Push { force, args } => push(force, args),
+        Commands::Delete { branch } => delete(branch),
     }
 }

@@ -106,41 +106,58 @@ alias git_rate_limit 'curl -L -X GET -H "Accept: application/vnd.github+json" -H
 
 alias eg 'git branch -D tmp/experiment; git cb tmp/experiment'
 
-function gpf
-	# force push, but refuse on main-ish ones
-	set branch (git rev-parse --abbrev-ref HEAD)
-	switch $branch
-	case $GIT_SHARED_MAIN_BRANCHES
-		echo "Refusing to force push $branch"
-		return 1
-	case '*'
-		git push --force-with-lease --follow-tags $argv 
-	end
-end
-function gpff
-	# same af `gpf`, but actual force push,-  not even `--with-lease`
-	set branch (git rev-parse --abbrev-ref HEAD)
-	switch $branch
-	case $GIT_SHARED_MAIN_BRANCHES
-		echo "Refusing to force push $branch"
-		return 1
-	case '*'
-		git push --force --follow-tags $argv 
-	end
-end
-
-function gbd
-	# git branch delete, but refuse on main-ish ones
-	set target $argv[1]
-	switch $target
-	case $GIT_SHARED_MAIN_BRANCHES
-		echo "Refusing to delete $target"
-		return 1
-	case '*'
-		git branch -D $target
-		git push origin --delete $target
-	end
-end
+#DEPRECATE: once we know that equivalents defined in git_scripts.rs are working properly
+#function gpf
+#	# force push, but refuse on main-ish ones (unless only commit messages changed)
+#	set branch (git rev-parse --abbrev-ref HEAD)
+#	switch $branch
+#	case $GIT_SHARED_MAIN_BRANCHES
+#		# Check if only commit messages differ (same tree content)
+#		set local_tree (git rev-parse HEAD^{tree} 2>/dev/null)
+#		set remote_tree (git rev-parse origin/$branch^{tree} 2>/dev/null)
+#		if test -n "$local_tree" -a -n "$remote_tree" -a "$local_tree" = "$remote_tree"
+#			echo "Trees match - only commit messages changed. Allowing force push on $branch."
+#			git push --force-with-lease --follow-tags $argv
+#		else
+#			echo "Refusing to force push $branch (tree content differs)"
+#			return 1
+#		end
+#	case '*'
+#		git push --force-with-lease --follow-tags $argv
+#	end
+#end
+#function gpff
+#	# same as `gpf`, but actual force push - not even `--with-lease`
+#	set branch (git rev-parse --abbrev-ref HEAD)
+#	switch $branch
+#	case $GIT_SHARED_MAIN_BRANCHES
+#		# Check if only commit messages differ (same tree content)
+#		set local_tree (git rev-parse HEAD^{tree} 2>/dev/null)
+#		set remote_tree (git rev-parse origin/$branch^{tree} 2>/dev/null)
+#		if test -n "$local_tree" -a -n "$remote_tree" -a "$local_tree" = "$remote_tree"
+#			echo "Trees match - only commit messages changed. Allowing force push on $branch."
+#			git push --force --follow-tags $argv
+#		else
+#			echo "Refusing to force push $branch (tree content differs)"
+#			return 1
+#		end
+#	case '*'
+#		git push --force --follow-tags $argv
+#	end
+#end
+#
+#function gbd
+#	# git branch delete, but refuse on main-ish ones
+#	set target $argv[1]
+#	switch $target
+#	case $GIT_SHARED_MAIN_BRANCHES
+#		echo "Refusing to delete $target"
+#		return 1
+#	case '*'
+#		git branch -D $target
+#		git push origin --delete $target
+#	end
+#end
 
 
 #TODO!: add all issues outside of milestones to the list _if no milestone is specified_

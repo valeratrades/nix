@@ -399,46 +399,22 @@ struct SummaryEntry {
     summary: Option<String>,
 }
 
-/// Get a short summary from the session's first user message or summary entry
+/// Get a short summary from the session file
+/// Priority: 1. Summary entries (Claude-generated), 2. LLM summary of first message, 3. First user message
 fn get_session_summary(session_file: &Path) -> Option<String> {
     use std::io::{BufRead, BufReader};
 
     let file = fs::File::open(session_file).ok()?;
     let reader = BufReader::new(file);
 
-    // Try to find first user message, or fall back to last summary entry
     let mut last_summary: Option<String> = None;
+    let mut first_user_message: Option<String> = None;
 
-    // Read first few lines to find the first user message or summary
-    for line in reader.lines().take(20) {
+    // Read lines to find summary entries and first user message
+    for line in reader.lines().take(50) {
         let line = line.ok()?;
 
-        // Try to parse as user message first
-        if let Ok(msg) = serde_json::from_str::<SessionMessage>(&line) {
-            if msg.msg_type == "user" {
-                if let Some(content) = msg.message {
-                    if content.role == "user" {
-                        let first_message = content.content.trim();
-
-                        // Try to generate summary with LLM
-                        if let Some(summary) = generate_summary_with_llm(first_message) {
-                            return Some(summary);
-                        }
-
-                        // Fallback: use truncated first line of message with ". " prefix
-                        let first_line = first_message.lines().next().unwrap_or(first_message);
-
-                        let max_len = 47; // 50 - 3 for ". " prefix
-                        if first_line.len() > max_len {
-                            return Some(format!(". {}...", &first_line[..max_len]));
-                        }
-                        return Some(format!(". {}", first_line));
-                    }
-                }
-            }
-        }
-
-        // Track summary entries (resumed sessions only have these)
+        // Track summary entries (preferred - Claude-generated summaries)
         if let Ok(entry) = serde_json::from_str::<SummaryEntry>(&line) {
             if entry.entry_type == "summary" {
                 if let Some(s) = entry.summary {
@@ -446,40 +422,53 @@ fn get_session_summary(session_file: &Path) -> Option<String> {
                 }
             }
         }
-    }
 
-    // If no user message found, use the last summary entry with "~ " prefix
-    last_summary.map(|s| {
-        let max_len = 47;
-        if s.len() > max_len {
-            format!("~ {}...", &s[..max_len])
-        } else {
-            format!("~ {}", s)
-        }
-    })
-}
-
-/// Get file creation time using stat command (birth time)
-fn get_file_creation_time(path: &Path) -> Option<std::time::SystemTime> {
-    // Use stat to get birth time, fall back to modified time
-    let output = Command::new("stat")
-        .args(["-c", "%W", path.to_str()?])
-        .output()
-        .ok()?;
-
-    if output.status.success() {
-        let secs_str = String::from_utf8_lossy(&output.stdout).trim().to_string();
-        if let Ok(secs) = secs_str.parse::<i64>() {
-            if secs > 0 {
-                return Some(std::time::UNIX_EPOCH + std::time::Duration::from_secs(secs as u64));
+        // Track first user message as fallback
+        if first_user_message.is_none() {
+            if let Ok(msg) = serde_json::from_str::<SessionMessage>(&line) {
+                if msg.msg_type == "user" {
+                    if let Some(content) = msg.message {
+                        if content.role == "user" {
+                            first_user_message = Some(content.content.trim().to_string());
+                        }
+                    }
+                }
             }
         }
     }
+
+    // Prefer summary entries (Claude-generated)
+    if let Some(s) = last_summary {
+        let max_len = 50;
+        return if s.len() > max_len {
+            Some(format!("{}...", &s[..max_len]))
+        } else {
+            Some(s)
+        };
+    }
+
+    // Fall back to first user message
+    if let Some(first_message) = first_user_message {
+        // Try to generate summary with LLM
+        if let Some(summary) = generate_summary_with_llm(&first_message) {
+            return Some(summary);
+        }
+
+        // Fallback: use truncated first line of message with ". " prefix
+        let first_line = first_message.lines().next().unwrap_or(&first_message);
+        let max_len = 47; // 50 - 3 for ". " prefix
+        return if first_line.len() > max_len {
+            Some(format!(". {}...", &first_line[..max_len]))
+        } else {
+            Some(format!(". {}", first_line))
+        };
+    }
+
     None
 }
 
-/// Find session file for a project that best matches the given process start time
-fn find_session_file_for_process(project_dir: &Path, process_start: Option<std::time::SystemTime>) -> Option<PathBuf> {
+/// Find session file for a project - just return the most recently modified one
+fn find_session_file_for_process(project_dir: &Path, _process_start: Option<std::time::SystemTime>) -> Option<PathBuf> {
     let entries = fs::read_dir(project_dir).ok()?;
 
     let mut session_files: Vec<_> = entries
@@ -491,57 +480,36 @@ fn find_session_file_for_process(project_dir: &Path, process_start: Option<std::
         })
         .filter_map(|e| {
             let metadata = e.metadata().ok()?;
-            let path = e.path();
-            // Use creation time if available, fall back to modified time
-            let created = get_file_creation_time(&path)
-                .or_else(|| metadata.modified().ok())?;
-            Some((path, created))
+            let modified = metadata.modified().ok()?;
+            Some((e.path(), modified))
         })
         .collect();
 
-    // Sort by creation time, most recent first
+    // Return most recently modified
     session_files.sort_by(|a, b| b.1.cmp(&a.1));
-
-    // If we have process start time, find the session created closest to process start
-    if let Some(proc_start) = process_start {
-        let mut best_match: Option<(PathBuf, u64)> = None; // (path, time_diff_secs)
-
-        for (path, created) in &session_files {
-            // Session should be created around when process started
-            // Accept sessions created up to 5 minutes before or after process start
-            let diff_secs = if let Ok(after) = created.duration_since(proc_start) {
-                after.as_secs()
-            } else if let Ok(before) = proc_start.duration_since(*created) {
-                before.as_secs()
-            } else {
-                continue;
-            };
-
-            // Only match if within 5 minutes
-            if diff_secs > 300 {
-                continue;
-            }
-
-            // Keep the match with smallest time difference
-            if best_match.as_ref().map_or(true, |(_, best_diff)| diff_secs < *best_diff) {
-                best_match = Some((path.clone(), diff_secs));
-            }
-        }
-
-        if let Some((path, _)) = best_match {
-            return Some(path);
-        }
-    }
-
-    // Fallback: return most recent
     session_files.first().map(|(path, _)| path.clone())
 }
 
-/// Get process start time from /proc
+/// Get process start time from /proc/PID/stat
 fn get_process_start_time(pid: u32) -> Option<std::time::SystemTime> {
-    let stat_path = format!("/proc/{}", pid);
-    let metadata = fs::metadata(&stat_path).ok()?;
-    metadata.modified().ok()
+    // Read starttime (field 22) from /proc/PID/stat - it's in clock ticks since boot
+    let stat_content = fs::read_to_string(format!("/proc/{}/stat", pid)).ok()?;
+    let fields: Vec<&str> = stat_content.split_whitespace().collect();
+    if fields.len() < 22 {
+        return None;
+    }
+    let starttime_ticks: u64 = fields[21].parse().ok()?;
+
+    // Get system boot time from /proc/stat
+    let proc_stat = fs::read_to_string("/proc/stat").ok()?;
+    let btime_line = proc_stat.lines().find(|l| l.starts_with("btime "))?;
+    let boot_time: u64 = btime_line.split_whitespace().nth(1)?.parse().ok()?;
+
+    // Clock ticks per second (usually 100 on Linux)
+    let ticks_per_sec: u64 = 100; // Could use sysconf(_SC_CLK_TCK) but 100 is standard
+
+    let start_secs = boot_time + (starttime_ticks / ticks_per_sec);
+    Some(std::time::UNIX_EPOCH + std::time::Duration::from_secs(start_secs))
 }
 
 /// Get session info (todo and summary) for a tmux pane
