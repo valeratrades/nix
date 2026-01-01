@@ -33,7 +33,7 @@ enum Commands {
         #[arg(long)]
         draft: bool,
     },
-    /// Push with optional force flags (refuses force on main branches unless only commit messages changed)
+    /// Push with optional force flags (refuses force on main branches unless harmless: renames or squashes)
     Push {
         /// Use --force-with-lease (safer force push)
         #[arg(long, short = 'l', conflicts_with = "force")]
@@ -354,18 +354,31 @@ fn push(force_with_lease: bool, force: bool, extra_args: Vec<String>) {
     let is_force = force_with_lease || force;
 
     if is_force && is_main_branch(&branch) {
-        // Check if only commit messages differ (same tree content)
+        // Check if this is a safe force push:
+        // 1. Trees match exactly (rename commits, squash with identical end state)
+        // 2. Remote is ancestor of local (squashed remote commits into fewer local commits)
         let local_tree = run_cmd_output("git", &["rev-parse", "HEAD^{tree}"]);
         let remote_tree = run_cmd_output("git", &["rev-parse", &format!("origin/{branch}^{{tree}}")]);
+        let remote_is_ancestor = run_cmd_quiet("git", &["merge-base", "--is-ancestor", &format!("origin/{branch}"), "HEAD"]);
 
-        match (local_tree, remote_tree) {
+        let safe = match (&local_tree, &remote_tree) {
             (Some(local), Some(remote)) if local == remote => {
-                println!("Trees match - only commit messages changed. Allowing force push on {branch}.");
+                println!("Trees match - only commit structure changed. Allowing force push on {branch}.");
+                true
             }
-            _ => {
-                eprintln!("Refusing to force push {branch} (tree content differs)");
-                std::process::exit(1);
+            _ if remote_is_ancestor => {
+                // Remote is ancestor of local - this is a squash scenario where we're
+                // replacing multiple remote commits with fewer local commits that include
+                // additional changes. This is safe because we're not losing any work.
+                println!("Remote is ancestor of local - squashed commits. Allowing force push on {branch}.");
+                true
             }
+            _ => false,
+        };
+
+        if !safe {
+            eprintln!("Refusing to force push {branch} (tree content differs and remote is not ancestor)");
+            std::process::exit(1);
         }
     }
 
