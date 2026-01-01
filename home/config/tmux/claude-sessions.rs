@@ -759,8 +759,6 @@ fn get_process_start_time(pid: u32) -> Option<std::time::SystemTime> {
 
 /// Session metadata extracted from the session file
 struct SessionMetadata {
-    /// Whether the session file has any conversation content
-    has_conversation: bool,
     /// Whether any non-completed todos exist (session is actively working)
     has_active_todos: bool,
     /// The todo to display
@@ -788,14 +786,10 @@ fn get_session_info_for_pane(shell_pid: u32, tmux_target: &str) -> Option<Sessio
         .and_then(|s| s.to_str())
         .map(|s| s.to_string())?;
 
-    // Check if session file has conversation content
-    let has_conversation = session_has_conversation(&session_file);
-
     let todo_result = get_active_todo_from_session(&session_id);
     let summary = get_session_summary(&session_file);
 
     Some(SessionMetadata {
-        has_conversation,
         has_active_todos: todo_result.has_active_todos,
         display_todo: todo_result.display_todo,
         summary,
@@ -850,17 +844,16 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
             // Claude is running - get session info first, then determine activity
             let metadata = get_session_info_for_pane(pane_pid, &tmux_target);
 
-            // First check: if session file has no conversation, it's definitively empty
-            // This is more reliable than terminal content parsing
+            // Use session metadata to determine state
             if let Some(ref meta) = metadata {
-                if !meta.has_conversation {
-                    // No conversation in session file = fresh/empty session
-                    (ClaudeState::Empty, None, None, None)
-                } else if meta.has_active_todos {
+                if meta.has_active_todos {
                     // Has active todos = Claude is definitively active
                     (ClaudeState::Active, meta.display_todo.clone(), None, meta.summary.clone())
                 } else {
-                    // Has conversation but no active todos - check terminal for state
+                    // No active todos - check terminal for state
+                    // We always fall back to terminal parsing here because:
+                    // - Session might be resumed (new file has no conversation but old one does)
+                    // - Session might be finished/waiting for input
                     let activity = determine_claude_activity(session, window_index);
                     (activity.state, None, activity.draft_content, meta.summary.clone())
                 }
