@@ -149,7 +149,7 @@
           '';
           when = ''true'';
           style = "bold cyan";
-          shell = ["dash" "-c"];
+          shell = ["dash"];
         };
         readonly = {
           command = ''printf "🔒"'';

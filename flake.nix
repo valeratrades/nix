@@ -1,13 +1,13 @@
 {
   description = "OS master";
 
-  #TODO!: setup my [own cache server](<https://nixos-and-flakes.thiscute.world/nix-store/host-your-own-binary-cache-server>). Needed to avoid rebuilding on lower-performance machines, like Rapsberri Pi
+  #TODO!: setup my [own cache server](<https://nixos-and-flakes.thiscute.world/nix-store/host-your-own-binary-cache-server>). Needed to avoid rebuilding on lower-performance machines, like Rapsberri Pi or old laptops.
 
   inputs = {
     nixpkgs = {
       #url = "github:nixos/nixpkgs/nixos-24.11"; #unstable";
       url =
-        "github:nixos/nixpkgs/nixos-unstable"; # TODO!!!!: switch to stable (last try it just broke some packages with indescernable errors)
+        "github:nixos/nixpkgs/nixos-unstable";
     };
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-24.11";
@@ -21,12 +21,6 @@
       # to avoid problems caused by different versions of nixpkgs.
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
-    # doing rustup instead now
-    #fenix = {
-    #	url = "github:nix-community/fenix";
-    #	inputs.nixpkgs.follows = "nixpkgs";
-    #};
 
     #TODO!: integrate
     lanzaboote = {
@@ -65,11 +59,7 @@
       url = "github:valeratrades/auto_redshift";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    #dbg: temporarily loading from local path
-    #todo = {
-    #  url = "github:valeratrades/todo";
-    #  inputs.nixpkgs.follows = "nixpkgs";
-    #};
+    todo.url = "github:valeratrades/todo";
     booktyping = {
       url = "github:valeratrades/booktyping";
       inputs.nixpkgs.follows = "nixpkgs";
