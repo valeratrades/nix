@@ -351,7 +351,7 @@ fn glob_simple(dir: &str, ext: &str) -> Result<Vec<PathBuf>> {
     for e in fs::read_dir(dir)? {
         let e = e?;
         let p = e.path();
-        if p.is_file() && p.extension().map(|x| format!(".{}", x.to_string_lossy()) == ext).unwrap_or(false) {
+        if p.is_file() && p.extension().map(|x| { let x = x.to_string_lossy(); format!(".{x}") == ext }).unwrap_or(false) {
             v.push(p);
         }
     }

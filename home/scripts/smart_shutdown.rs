@@ -39,7 +39,7 @@ fn main() {
     if args.claude_sessions {
         println!("Saving claude sessions to telegram...");
         let claude_sessions_path = std::env::var("HOME")
-            .map(|h| format!("{}/nix/home/config/tmux/claude-sessions.rs", h))
+            .map(|h| format!("{h}/nix/home/config/tmux/claude-sessions.rs"))
             .unwrap_or_else(|_| "/home/v/nix/home/config/tmux/claude-sessions.rs".to_string());
 
         let output = Command::new(&claude_sessions_path)
@@ -65,17 +65,18 @@ fn main() {
                     match tg_result {
                         Ok(status) if status.success() => println!("Claude sessions sent to telegram"),
                         Ok(_) => eprintln!("Warning: tg command failed"),
-                        Err(e) => eprintln!("Warning: failed to run tg: {}", e),
+                        Err(e) => eprintln!("Warning: failed to run tg: {e}"),
                     }
                 } else {
                     println!("No claude sessions to send");
                 }
             }
             Ok(out) => {
-                eprintln!("Warning: claude_sessions failed: {}", String::from_utf8_lossy(&out.stderr));
+                let stderr = String::from_utf8_lossy(&out.stderr);
+                eprintln!("Warning: claude_sessions failed: {stderr}");
             }
             Err(e) => {
-                eprintln!("Warning: failed to run claude_sessions: {}", e);
+                eprintln!("Warning: failed to run claude_sessions: {e}");
             }
         }
     }
@@ -105,7 +106,7 @@ fn main() {
             .status();
 
         if let Err(e) = status {
-            eprintln!("Failed to shutdown: {}", e);
+            eprintln!("Failed to shutdown: {e}");
             std::process::exit(1);
         }
     }

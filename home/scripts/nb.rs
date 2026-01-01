@@ -41,7 +41,7 @@ fn main() {
     let mut cmd = Command::new("sudo");
     cmd.args(["nixos-rebuild", "switch", "--impure", "--no-reexec"]);
     cmd.arg("--flake");
-    cmd.arg(format!("/home/v/nix#{}", hostname));
+    cmd.arg(format!("/home/v/nix#{hostname}"));
 
     // Add debug flags if requested
     if args.debug {
@@ -60,7 +60,7 @@ fn main() {
     // Play final beep if requested
     if args.beep {
         let _ = Command::new("beep")
-            .arg(format!("nix rb {}", status_code))
+            .arg(format!("nix rb {status_code}"))
             .status();
     }
 

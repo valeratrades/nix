@@ -37,7 +37,8 @@ enum Commands {
 }
 
 fn mac_to_dbus_path(mac: &str) -> String {
-    format!("/org/bluez/hci0/dev_{}", mac.replace(':', "_"))
+    let mac_underscored = mac.replace(':', "_");
+    format!("/org/bluez/hci0/dev_{mac_underscored}")
 }
 
 fn dbus_get_property(path: &str, interface: &str, property: &str) -> Option<String> {
@@ -48,8 +49,8 @@ fn dbus_get_property(path: &str, interface: &str, property: &str) -> Option<Stri
             "--print-reply",
             path,
             "org.freedesktop.DBus.Properties.Get",
-            &format!("string:{}", interface),
-            &format!("string:{}", property),
+            &format!("string:{interface}"),
+            &format!("string:{property}"),
         ])
         .output()
         .ok()?;
@@ -68,7 +69,7 @@ fn dbus_call_method(path: &str, interface: &str, method: &str) -> bool {
             "--dest=org.bluez",
             "--print-reply",
             path,
-            &format!("{}.{}", interface, method),
+            &format!("{interface}.{method}"),
         ])
         .stdout(Stdio::null())
         .stderr(Stdio::null())
@@ -169,9 +170,9 @@ fn cmd_headphones() -> Result<(), String> {
 
     // Try to connect to each known device
     for (name, mac) in KNOWN_DEVICES {
-        println!("Trying {} ({})...", name, mac);
+        println!("Trying {name} ({mac})...");
         if connect_device(mac) {
-            println!("Successfully connected to {}", name);
+            println!("Successfully connected to {name}");
             return Ok(());
         }
     }
@@ -222,7 +223,7 @@ fn main() {
     };
 
     if let Err(e) = result {
-        eprintln!("Error: {}", e);
+        eprintln!("Error: {e}");
         std::process::exit(1);
     }
 }

@@ -81,7 +81,8 @@ fn run_gg(message: &[String]) {
     let gg_cmd = if message.is_empty() {
         "gg".to_string()
     } else {
-        format!("gg {}", message.join(" "))
+        let msg = message.join(" ");
+        format!("gg {msg}")
     };
     let status = Command::new("fish")
         .args(["-c", &gg_cmd])
@@ -117,13 +118,13 @@ fn fork(message: Vec<String>) {
     };
 
     // Check if origin already points to our repo
-    if origin_url.contains(&format!("github.com/{}/", github_name))
-        || origin_url.contains(&format!("github.com:{}/", github_name))
+    if origin_url.contains(&format!("github.com/{github_name}/"))
+        || origin_url.contains(&format!("github.com:{github_name}/"))
     {
         println!("Origin already points to your repo, running gg...");
         // Ensure branch tracks origin (might still track upstream from previous fork setup)
         if let Some(branch) = run_cmd_output("git", &["rev-parse", "--abbrev-ref", "HEAD"]) {
-            let tracking = run_cmd_output("git", &["config", &format!("branch.{}.remote", branch)]);
+            let tracking = run_cmd_output("git", &["config", &format!("branch.{branch}.remote")]);
             if tracking.as_deref() != Some("origin") {
                 run_cmd("git", &["push", "-u", "origin", &branch]);
             }
@@ -140,7 +141,7 @@ fn fork(message: Vec<String>) {
         .unwrap_or("");
 
     if repo_name.is_empty() {
-        eprintln!("ERROR: Could not extract repo name from origin URL: {}", origin_url);
+        eprintln!("ERROR: Could not extract repo name from origin URL: {origin_url}");
         std::process::exit(1);
     }
 
@@ -152,7 +153,7 @@ fn fork(message: Vec<String>) {
         .status();
 
     // Setup remotes: upstream = original, origin = fork
-    let fork_url = format!("https://github.com/{}/{}.git", github_name, repo_name);
+    let fork_url = format!("https://github.com/{github_name}/{repo_name}.git");
 
     // Check if upstream already exists
     let has_upstream = run_cmd_quiet("git", &["remote", "get-url", "upstream"]);
@@ -168,14 +169,14 @@ fn fork(message: Vec<String>) {
         }
     }
 
-    println!("Pushing to {} ...", fork_url);
+    println!("Pushing to {fork_url} ...");
 
     // Initial push to fork with -u to set up tracking (branch now tracks origin instead of upstream)
-    if let Some(branch) = run_cmd_output("git", &["rev-parse", "--abbrev-ref", "HEAD"]) {
-        if !run_cmd("git", &["push", "-u", "origin", &branch]) {
-            eprintln!("ERROR: Failed to push to fork");
-            std::process::exit(1);
-        }
+    if let Some(branch) = run_cmd_output("git", &["rev-parse", "--abbrev-ref", "HEAD"])
+        && !run_cmd("git", &["push", "-u", "origin", &branch])
+    {
+        eprintln!("ERROR: Failed to push to fork");
+        std::process::exit(1);
     }
 
     run_gg(&message);
@@ -198,16 +199,21 @@ fn pr(target_branch: Option<String>, draft: bool) {
 
     // Draft mode: just create a draft PR and exit
     if draft {
-        let mut args = vec!["pr", "create", "--draft", "--fill", "--head", &current_branch];
+        let mut args = vec![
+            "pr",
+            "create",
+            "--draft",
+            "--fill",
+            "--head",
+            &current_branch,
+        ];
         let target = target_branch.as_deref();
         if let Some(t) = target {
             args.push("-B");
             args.push(t);
         }
-        println!("Creating draft PR for branch '{}'", current_branch);
-        let output = Command::new("gh")
-            .args(&args)
-            .output();
+        println!("Creating draft PR for branch '{current_branch}'");
+        let output = Command::new("gh").args(&args).output();
         match output {
             Ok(o) if o.status.success() => {}
             Ok(o) if String::from_utf8_lossy(&o.stderr).contains("already exists") => {
@@ -230,20 +236,24 @@ fn pr(target_branch: Option<String>, draft: bool) {
     };
 
     if current_branch == target_branch {
-        eprintln!("ERROR: Already on target branch '{}'", target_branch);
+        eprintln!("ERROR: Already on target branch '{target_branch}'");
         std::process::exit(1);
     }
 
-    println!("Creating PR: {} -> {}", current_branch, target_branch);
+    println!("Creating PR: {current_branch} -> {target_branch}");
 
     // Try to create the PR (use --head to avoid push detection issues)
     let pr_create_output = Command::new("gh")
         .args([
-            "pr", "create",
-            "-B", &target_branch,
+            "pr",
+            "create",
+            "-B",
+            &target_branch,
             "-f",
-            "-t", &current_branch,
-            "--head", &current_branch,
+            "-t",
+            &current_branch,
+            "--head",
+            &current_branch,
         ])
         .stdin(Stdio::null())
         .output();
@@ -253,7 +263,11 @@ fn pr(target_branch: Option<String>, draft: bool) {
         Err(_) => false,
     };
 
-    if !pr_already_exists && !pr_create_output.map(|o| o.status.success()).unwrap_or(false) {
+    if !pr_already_exists
+        && !pr_create_output
+            .map(|o| o.status.success())
+            .unwrap_or(false)
+    {
         eprintln!("ERROR: Failed to create PR");
         std::process::exit(1);
     }
@@ -284,16 +298,16 @@ fn pr(target_branch: Option<String>, draft: bool) {
     let pr_number = match pr_number {
         Some(n) => n,
         None => {
-            eprintln!("ERROR: Could not find PR number for '{}'", current_branch);
+            eprintln!("ERROR: Could not find PR number for '{current_branch}'");
             std::process::exit(1);
         }
     };
 
-    println!("Merging PR #{}", pr_number);
+    println!("Merging PR #{pr_number}");
 
     // Checkout target branch
     if !run_cmd("git", &["checkout", &target_branch]) {
-        eprintln!("ERROR: Failed to checkout {}", target_branch);
+        eprintln!("ERROR: Failed to checkout {target_branch}");
         std::process::exit(1);
     }
 
@@ -311,7 +325,7 @@ fn pr(target_branch: Option<String>, draft: bool) {
     // Pull to get the merge commit locally
     run_cmd("git", &["pull"]);
 
-    println!("Successfully merged '{}' into '{}'", current_branch, target_branch);
+    println!("Successfully merged '{current_branch}' into '{target_branch}'");
 }
 
 const GIT_SHARED_MAIN_BRANCHES: &[&str] = &["master", "main", "release", "stg", "prod"];
@@ -337,20 +351,24 @@ fn push(force: bool, extra_args: Vec<String>) {
     if is_main_branch(&branch) {
         // Check if only commit messages differ (same tree content)
         let local_tree = run_cmd_output("git", &["rev-parse", "HEAD^{tree}"]);
-        let remote_tree = run_cmd_output("git", &["rev-parse", &format!("origin/{}^{{tree}}", branch)]);
+        let remote_tree = run_cmd_output("git", &["rev-parse", &format!("origin/{branch}^{{tree}}")]);
 
         match (local_tree, remote_tree) {
             (Some(local), Some(remote)) if local == remote => {
-                println!("Trees match - only commit messages changed. Allowing force push on {}.", branch);
+                println!("Trees match - only commit messages changed. Allowing force push on {branch}.");
             }
             _ => {
-                eprintln!("Refusing to force push {} (tree content differs)", branch);
+                eprintln!("Refusing to force push {branch} (tree content differs)");
                 std::process::exit(1);
             }
         }
     }
 
-    let force_flag = if force { "--force" } else { "--force-with-lease" };
+    let force_flag = if force {
+        "--force"
+    } else {
+        "--force-with-lease"
+    };
     let extra_refs: Vec<&str> = extra_args.iter().map(|s| s.as_str()).collect();
 
     let mut args = vec!["push", force_flag, "--follow-tags"];
@@ -368,23 +386,23 @@ fn delete(branch: String) {
     }
 
     if is_main_branch(&branch) {
-        eprintln!("Refusing to delete {}", branch);
+        eprintln!("Refusing to delete {branch}");
         std::process::exit(1);
     }
 
     // Delete local branch
     if !run_cmd("git", &["branch", "-D", &branch]) {
-        eprintln!("ERROR: Failed to delete local branch {}", branch);
+        eprintln!("ERROR: Failed to delete local branch {branch}");
         std::process::exit(1);
     }
 
     // Delete remote branch
     if !run_cmd("git", &["push", "origin", "--delete", &branch]) {
-        eprintln!("ERROR: Failed to delete remote branch {}", branch);
+        eprintln!("ERROR: Failed to delete remote branch {branch}");
         std::process::exit(1);
     }
 
-    println!("Deleted branch {} locally and on remote", branch);
+    println!("Deleted branch {branch} locally and on remote");
 }
 
 fn main() {
@@ -392,7 +410,10 @@ fn main() {
 
     match args.command {
         Commands::Fork { message } => fork(message),
-        Commands::Pr { target_branch, draft } => pr(target_branch, draft),
+        Commands::Pr {
+            target_branch,
+            draft,
+        } => pr(target_branch, draft),
         Commands::Push { force, args } => push(force, args),
         Commands::Delete { branch } => delete(branch),
     }

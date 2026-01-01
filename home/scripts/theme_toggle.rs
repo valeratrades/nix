@@ -59,7 +59,7 @@ fn set_theme(config: &Config) -> Result<(), String> {
 	Command::new("gsettings")
 		.args(["set", "org.gnome.desktop.interface", "color-scheme", theme_value])
 		.status()
-		.map_err(|e| format!("Failed to set gsettings: {}", e))?;
+		.map_err(|e| format!("Failed to set gsettings: {e}"))?;
 
 	// Notify the user
 	let mode_str = match config.mode {
@@ -68,23 +68,23 @@ fn set_theme(config: &Config) -> Result<(), String> {
 	};
 
 	Command::new("notify-send")
-		.args([&format!("Setting {} theme", mode_str)])
+		.args([&format!("Setting {mode_str} theme")])
 		.status()
-		.map_err(|e| format!("Failed to send notification: {}", e))?;
+		.map_err(|e| format!("Failed to send notification: {e}"))?;
 
 	// Update Alacritty config
 	let alacritty_config_path = env::var("HOME").map_err(|_| "Failed to get HOME environment variable".to_string())? + "/.config/alacritty/alacritty.toml";
 
-	let config_content = fs::read_to_string(&alacritty_config_path).map_err(|e| format!("Failed to read Alacritty config: {}", e))?;
+	let config_content = fs::read_to_string(&alacritty_config_path).map_err(|e| format!("Failed to read Alacritty config: {e}"))?;
 
 	let (from_theme, to_theme) = match config.mode {
 		ThemeMode::Light => (&config.dark_theme_alacritty, &config.light_theme_alacritty),
 		ThemeMode::Dark => (&config.light_theme_alacritty, &config.dark_theme_alacritty),
 	};
 
-	let new_content = config_content.replace(&format!("{}.toml", from_theme), &format!("{}.toml", to_theme));
+	let new_content = config_content.replace(&format!("{from_theme}.toml"), &format!("{to_theme}.toml"));
 
-	fs::write(&alacritty_config_path, new_content).map_err(|e| format!("Failed to write Alacritty config: {}", e))?;
+	fs::write(&alacritty_config_path, new_content).map_err(|e| format!("Failed to write Alacritty config: {e}"))?;
 
 	// Change wallpaper if flag is provided
 	if config.change_wallpaper {
@@ -104,11 +104,11 @@ fn set_theme(config: &Config) -> Result<(), String> {
 		Command::new("swaymsg")
 			.args(["output", "*", "bg", &expanded_path, "fill"])
 			.status()
-			.map_err(|e| format!("Failed to set wallpaper: {}", e))?;
+			.map_err(|e| format!("Failed to set wallpaper: {e}"))?;
 	}
 
 	// Update theme for all nvim instances {{{
-	let uid_output = Command::new("id").arg("-u").output().map_err(|e| format!("Failed to get user ID: {}", e))?;
+	let uid_output = Command::new("id").arg("-u").output().map_err(|e| format!("Failed to get user ID: {e}"))?;
 
 	let uid = String::from_utf8_lossy(&uid_output.stdout).trim().to_string();
 
@@ -116,7 +116,7 @@ fn set_theme(config: &Config) -> Result<(), String> {
 	let socket_paths = Command::new("find")
 		.args(["/run/user/", &uid, "/tmp", "-name", "nvim*", "-type", "s"])
 		.output()
-		.map_err(|e| format!("Failed to find Neovim sockets: {}", e))?;
+		.map_err(|e| format!("Failed to find Neovim sockets: {e}"))?;
 
 	let sockets = String::from_utf8_lossy(&socket_paths.stdout);
 
@@ -125,7 +125,7 @@ fn set_theme(config: &Config) -> Result<(), String> {
 			Command::new("nvim")
 				.args(["--server", socket, "--remote-send", "<C-\\><C-n>;lua SetThemeSystem()<CR>"]) //NB: currently there is no way to send a direct lua command, so must be mindful of key mapping (spent a lot of time to figure out that on my config I must send ";lua" not ":lua" due to mapping (docs lie, - keys **are** mapped) (2025/04/04)
 				.status()
-				.map_err(|e| format!("Failed to update Neovim instance at {}: {}", socket, e))?;
+				.map_err(|e| format!("Failed to update Neovim instance at {socket}: {e}"))?;
 		}
 	}
 	//,}}}
@@ -138,7 +138,7 @@ fn main() {
 	let config = Config::from(args);
 
 	if let Err(e) = set_theme(&config) {
-		eprintln!("Error: {}", e);
+		eprintln!("Error: {e}");
 		std::process::exit(1);
 	}
 }

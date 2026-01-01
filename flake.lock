@@ -2862,11 +2862,11 @@
         "v-utils": "v-utils_9"
       },
       "locked": {
-        "lastModified": 1767269683,
-        "narHash": "sha256-G/wIPQhQQ/ChfeE40NrAWeK/wUYookUdxuArMz+TC9U=",
+        "lastModified": 1767274246,
+        "narHash": "sha256-17+pfKnOeoDq41h//P7PTf0cr+mdV/AvLIWxlcNNZhM=",
         "owner": "valeratrades",
         "repo": "todo",
-        "rev": "6b272afeb8af668d65feab0d9b857b10f587fae0",
+        "rev": "ecda09dcf34d0a98631ad7b00c037d5a1ff57656",
         "type": "github"
       },
       "original": {

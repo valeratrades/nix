@@ -174,21 +174,21 @@ fn cmd_headphones() -> Result<(), String> {
     for (name, known_mac) in KNOWN_DEVICES {
         if let Some(mac) = known_mac {
             // Direct MAC address known
-            println!("Trying {} ({})...", name, mac);
+            println!("Trying {name} ({mac})...");
             if connect_device(mac) {
-                println!("Successfully connected to {}", name);
+                println!("Successfully connected to {name}");
                 return Ok(());
             }
         } else {
             // Search by name
             for (mac, device_name) in &all_devices {
                 if device_name.to_lowercase().contains(&name.to_lowercase()) {
-                    println!("Found {} ({}), attempting to connect...", device_name, mac);
+                    println!("Found {device_name} ({mac}), attempting to connect...");
                     if connect_device(mac) {
-                        println!("Successfully connected to {}", device_name);
+                        println!("Successfully connected to {device_name}");
                         return Ok(());
                     } else {
-                        println!("Failed to connect to {}", device_name);
+                        println!("Failed to connect to {device_name}");
                     }
                 }
             }
@@ -204,7 +204,7 @@ fn cmd_headphones() -> Result<(), String> {
     }
 
     let known_names: Vec<_> = KNOWN_DEVICES.iter().map(|(n, _)| *n).collect();
-    eprintln!("Could not connect to any of: {:?}", known_names);
+    eprintln!("Could not connect to any of: {known_names:?}");
     eprintln!("Available paired devices:");
     for (mac, name) in &all_devices {
         eprintln!("  {mac} - {name}");
@@ -249,7 +249,7 @@ fn main() {
     };
 
     if let Err(e) = result {
-        eprintln!("Error: {}", e);
+        eprintln!("Error: {e}");
         std::process::exit(1);
     }
 }

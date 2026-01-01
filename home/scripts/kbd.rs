@@ -101,8 +101,8 @@ fn set_layouts_with_variants(layouts: &[String], variants: &[String]) -> bool {
     let clear_variant_cmd = "input type:keyboard xkb_variant \"\"";
     let _ = Command::new("swaymsg").arg(clear_variant_cmd).status();
 
-    let layout_cmd = format!("input type:keyboard xkb_layout \"{}\"", layout_str);
-    let variant_cmd = format!("input type:keyboard xkb_variant \"{}\"", variant_str);
+    let layout_cmd = format!("input type:keyboard xkb_layout \"{layout_str}\"");
+    let variant_cmd = format!("input type:keyboard xkb_variant \"{variant_str}\"");
 
     let layout_ok = Command::new("swaymsg")
         .arg(&layout_cmd)
@@ -122,7 +122,7 @@ fn set_layouts_with_variants(layouts: &[String], variants: &[String]) -> bool {
 }
 
 fn switch_to_layout(index: usize) -> bool {
-    let cmd = format!("input type:keyboard xkb_switch_layout {}", index);
+    let cmd = format!("input type:keyboard xkb_switch_layout {index}");
     Command::new("swaymsg")
         .arg(&cmd)
         .status()
@@ -179,7 +179,7 @@ fn main() {
                 std::process::exit(1);
             }
         }
-        println!("Switched to: {}", requested);
+        println!("Switched to: {requested}");
     } else {
         // Non-default layout: prepend to base
         let mut new_layouts = vec![requested.to_string()];
@@ -192,6 +192,7 @@ fn main() {
             std::process::exit(1);
         }
         switch_to_layout(0);
-        println!("Set layouts: {}", new_layouts.join(","));
+        let layouts_joined = new_layouts.join(",");
+        println!("Set layouts: {layouts_joined}");
     }
 }

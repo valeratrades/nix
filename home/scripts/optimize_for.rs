@@ -60,7 +60,7 @@ fn main() {
 fn set_boost(enabled: bool) {
 	let value = if enabled { "1" } else { "0" };
 	if let Err(e) = fs::write(CPU_BOOST, value) {
-		eprintln!("Failed to set CPU boost: {}", e);
+		eprintln!("Failed to set CPU boost: {e}");
 		std::process::exit(1);
 	}
 }
@@ -73,7 +73,7 @@ fn set_fan_profile(profile: &str) {
 	}
 
 	if let Err(e) = fs::write(PLATFORM_PROFILE, profile) {
-		eprintln!("Failed to set fan profile: {}", e);
+		eprintln!("Failed to set fan profile: {e}");
 		std::process::exit(1);
 	}
 }
@@ -91,9 +91,9 @@ fn show_status() {
 		.map(|s| s.trim().to_string())
 		.unwrap_or_else(|_| "".to_string());
 
-	println!("boost: {}", boost);
-	println!("fans: {}", fan_profile);
+	println!("boost: {boost}");
+	println!("fans: {fan_profile}");
 	if !choices.is_empty() {
-		println!("fan profiles: {}", choices);
+		println!("fan profiles: {choices}");
 	}
 }

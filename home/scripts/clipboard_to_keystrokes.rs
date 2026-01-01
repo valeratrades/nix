@@ -82,24 +82,25 @@ fn main() {
         .stdin(Stdio::piped())
         .spawn()
         .unwrap_or_else(|e| {
-            eprintln!("Failed to execute wtype: {}", e);
+            eprintln!("Failed to execute wtype: {e}");
             exit(1)
         });
 
     if let Some(mut stdin) = child.stdin.take() {
         stdin.write_all(text.as_bytes()).unwrap_or_else(|e| {
-            eprintln!("Failed to write to wtype stdin: {}", e);
+            eprintln!("Failed to write to wtype stdin: {e}");
             exit(1)
         });
     }
 
     let status = child.wait().unwrap_or_else(|e| {
-        eprintln!("Failed to wait for wtype: {}", e);
+        eprintln!("Failed to wait for wtype: {e}");
         exit(1)
     });
 
     if !status.success() {
-        eprintln!("wtype failed with exit code: {:?}", status.code());
+        let code = status.code();
+        eprintln!("wtype failed with exit code: {code:?}");
         exit(1);
     }
 }

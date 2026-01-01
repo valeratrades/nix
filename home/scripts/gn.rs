@@ -83,13 +83,16 @@ fn run_cmd_quiet(cmd: &str, args: &[&str]) -> bool {
 }
 
 fn create_label(github_name: &str, repo_name: &str, label: &Label) {
+    let name = label.name;
+    let color = label.color;
+    let description = label.description;
     let output = Command::new("gh")
         .args([
             "api",
-            &format!("repos/{}/{}/labels", github_name, repo_name),
-            "-f", &format!("name={}", label.name),
-            "-f", &format!("color={}", label.color),
-            "-f", &format!("description={}", label.description),
+            &format!("repos/{github_name}/{repo_name}/labels"),
+            "-f", &format!("name={name}"),
+            "-f", &format!("color={color}"),
+            "-f", &format!("description={description}"),
         ])
         .output();
 
@@ -98,20 +101,21 @@ fn create_label(github_name: &str, repo_name: &str, label: &Label) {
             let stderr = String::from_utf8_lossy(&out.stderr);
             let stdout = String::from_utf8_lossy(&out.stdout);
             if stderr.contains("already_exists") || stdout.contains("already_exists") {
-                println!("Label '{}' already exists, skipping...", label.name);
+                println!("Label '{name}' already exists, skipping...");
             } else if out.status.success() {
-                println!("Successfully created: '{}'", label.name);
+                println!("Successfully created: '{name}'");
             } else {
-                eprintln!("ERROR creating '{}': {}", label.name, stderr);
+                eprintln!("ERROR creating '{name}': {stderr}");
             }
         }
-        Err(e) => eprintln!("Failed to create label '{}': {}", label.name, e),
+        Err(e) => eprintln!("Failed to create label '{name}': {e}"),
     }
 }
 
 fn create_milestone(github_name: &str, github_key: &str, repo_name: &str, milestone: &Milestone) {
+    let title = milestone.title;
     let body = serde_json::json!({
-        "title": milestone.title,
+        "title": title,
         "state": "open",
         "description": milestone.description
     });
@@ -120,9 +124,9 @@ fn create_milestone(github_name: &str, github_key: &str, repo_name: &str, milest
         .args([
             "-L", "-X", "POST",
             "-H", "Accept: application/vnd.github+json",
-            "-H", &format!("Authorization: token {}", github_key),
+            "-H", &format!("Authorization: token {github_key}"),
             "-H", "X-GitHub-Api-Version: 2022-11-28",
-            &format!("https://api.github.com/repos/{}/{}/milestones", github_name, repo_name),
+            &format!("https://api.github.com/repos/{github_name}/{repo_name}/milestones"),
             "-d", &body.to_string(),
         ])
         .stdout(Stdio::null())
@@ -130,8 +134,8 @@ fn create_milestone(github_name: &str, github_key: &str, repo_name: &str, milest
         .status();
 
     match output {
-        Ok(s) if s.success() => println!("Created milestone '{}'", milestone.title),
-        _ => eprintln!("Failed to create milestone '{}'", milestone.title),
+        Ok(s) if s.success() => println!("Created milestone '{title}'"),
+        _ => eprintln!("Failed to create milestone '{title}'"),
     }
 }
 
@@ -180,7 +184,7 @@ fn main() {
         "--private" // default to private
     };
 
-    println!("Creating repository: {}", repo_name);
+    println!("Creating repository: {repo_name}");
 
     // git init
     if !run_cmd("git", &["init"]) {
@@ -207,7 +211,7 @@ fn main() {
     }
 
     // git remote add origin
-    let remote_url = format!("https://github.com/{}/{}.git", github_name, repo_name);
+    let remote_url = format!("https://github.com/{github_name}/{repo_name}.git");
     // Remove existing origin if any, then add
     run_cmd_quiet("git", &["remote", "remove", "origin"]);
     if !run_cmd("git", &["remote", "add", "origin", &remote_url]) {
@@ -236,11 +240,11 @@ fn main() {
     // Set loc_gist_token secret if available
     if let Some(loc_gist) = github_loc_gist {
         println!("\nSetting loc_gist_token secret...");
-        let full_repo = format!("{}/{}", github_name, repo_name);
+        let full_repo = format!("{github_name}/{repo_name}");
         if !run_cmd("gh", &["secret", "set", "loc_gist_token", "--repo", &full_repo, "--body", &loc_gist]) {
             eprintln!("WARNING: Failed to set loc_gist_token secret");
         }
     }
 
-    println!("\nRepository {} created successfully!", repo_name);
+    println!("\nRepository {repo_name} created successfully!");
 }

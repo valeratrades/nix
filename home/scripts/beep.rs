@@ -57,7 +57,7 @@ fn main() {
 	};
 
 	if let Err(e) = notify_result {
-		eprintln!("Error showing notification: {}", e);
+		eprintln!("Error showing notification: {e}");
 		std::process::exit(1);
 	}
 
@@ -68,7 +68,7 @@ fn main() {
 			.output();
 
 		if let Err(e) = sound_result {
-			eprintln!("Error playing sound: {}", e);
+			eprintln!("Error playing sound: {e}");
 			std::process::exit(1);
 		}
 	}
