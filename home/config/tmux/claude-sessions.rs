@@ -239,15 +239,22 @@ fn get_process_cwd(pid: u32) -> Option<PathBuf> {
 /// Convert a path to Claude's project path format
 /// e.g., /home/v/s/todo -> -home-v-s-todo
 fn path_to_project_name(path: &Path) -> String {
-    path.to_string_lossy().replace('/', "-")
+    path.to_string_lossy().replace('/', "-").replace('_', "-")
 }
 
-/// Find todo files matching a session ID and get the active (in_progress) todo
-fn get_active_todo_from_session(session_id: &str) -> Option<String> {
-    let home = std::env::var("HOME").ok()?;
+/// Find todo files matching a session ID and get todo status
+/// Returns (has_active_todos, display_todo)
+fn get_active_todo_from_session(session_id: &str) -> TodoResult {
+    let home = match std::env::var("HOME") {
+        Ok(h) => h,
+        Err(_) => return TodoResult { has_active_todos: false, display_todo: None },
+    };
     let todos_dir = PathBuf::from(home).join(".claude/todos");
 
-    let entries = fs::read_dir(&todos_dir).ok()?;
+    let entries = match fs::read_dir(&todos_dir) {
+        Ok(e) => e,
+        Err(_) => return TodoResult { has_active_todos: false, display_todo: None },
+    };
 
     // Find todo files that start with this session ID
     let mut todo_files: Vec<_> = entries
@@ -267,25 +274,69 @@ fn get_active_todo_from_session(session_id: &str) -> Option<String> {
     // Sort by modification time, most recent first
     todo_files.sort_by(|a, b| b.1.cmp(&a.1));
 
-    // Try each todo file until we find an in_progress item
+    // Try each todo file until we find active todos
     for (path, _) in todo_files {
-        if let Some(todo) = read_active_todo(&path) {
-            return Some(todo);
+        let result = read_active_todo(&path);
+        if result.has_active_todos {
+            return result;
         }
     }
 
-    None
+    TodoResult { has_active_todos: false, display_todo: None }
 }
 
-/// Read a todo file and return the first in_progress item's activeForm
-fn read_active_todo(path: &Path) -> Option<String> {
-    let content = fs::read_to_string(path).ok()?;
-    let todos: Vec<TodoItem> = serde_json::from_str(&content).ok()?;
+/// Result of reading a todo file
+struct TodoResult {
+    /// Whether any non-completed todos exist (session is active)
+    has_active_todos: bool,
+    /// The todo to display (in_progress, or first pending if no completed yet)
+    display_todo: Option<String>,
+}
 
-    todos
+/// Read a todo file and determine activity status
+/// Returns (has_active_todos, display_todo)
+/// - has_active_todos: true if any pending/in_progress todos exist
+/// - display_todo: in_progress > first pending (if no completed) > None
+fn read_active_todo(path: &Path) -> TodoResult {
+    let content = match fs::read_to_string(path) {
+        Ok(c) => c,
+        Err(_) => return TodoResult { has_active_todos: false, display_todo: None },
+    };
+    let todos: Vec<TodoItem> = match serde_json::from_str(&content) {
+        Ok(t) => t,
+        Err(_) => return TodoResult { has_active_todos: false, display_todo: None },
+    };
+
+    // Empty array means all todos were completed and cleared
+    if todos.is_empty() {
+        return TodoResult { has_active_todos: false, display_todo: None };
+    }
+
+    // Check if there are any non-completed todos (pending or in_progress)
+    let has_active_todos = todos.iter().any(|t| t.status != "completed");
+
+    // First priority: explicit in_progress
+    if let Some(t) = todos.iter().find(|t| t.status == "in_progress") {
+        return TodoResult {
+            has_active_todos,
+            display_todo: Some(t.active_form.clone()),
+        };
+    }
+
+    // If any completed exist, Claude has started working through the list
+    // but hasn't marked next as in_progress yet - don't show stale pending
+    let has_completed = todos.iter().any(|t| t.status == "completed");
+    if has_completed {
+        return TodoResult { has_active_todos, display_todo: None };
+    }
+
+    // No completed yet = Claude just created the list, show first pending
+    let display_todo = todos
         .iter()
-        .find(|t| t.status == "in_progress")
-        .map(|t| t.active_form.clone())
+        .find(|t| t.status == "pending")
+        .map(|t| t.active_form.clone());
+
+    TodoResult { has_active_todos, display_todo }
 }
 
 // Track if ollama failed (for warning message)
@@ -628,15 +679,17 @@ fn find_session_file_for_process(project_dir: &Path, process_start: Option<std::
         .collect();
 
     if let Some(proc_start) = process_start {
-        // Strategy 1: Find sessions CREATED after process start with conversation content
+        // Strategy 1: Find sessions CREATED after process start
         // This is the most reliable - a new session file was created for this process
+        // Note: we do NOT require session_has_conversation here because a fresh session
+        // will have an empty file, and we need to detect that to return Empty state
         let mut new_sessions: Vec<_> = session_files
             .iter()
             .filter_map(|(path, created, _)| {
                 let created = (*created)?;
                 if created >= proc_start {
                     let diff = created.duration_since(proc_start).ok()?;
-                    if diff.as_secs() <= 60 && session_has_conversation(path) {
+                    if diff.as_secs() <= 60 {
                         return Some((path.clone(), diff));
                     }
                 }
@@ -704,33 +757,49 @@ fn get_process_start_time(pid: u32) -> Option<std::time::SystemTime> {
     Some(std::time::UNIX_EPOCH + std::time::Duration::from_secs(start_secs))
 }
 
+/// Session metadata extracted from the session file
+struct SessionMetadata {
+    /// Whether the session file has any conversation content
+    has_conversation: bool,
+    /// Whether any non-completed todos exist (session is actively working)
+    has_active_todos: bool,
+    /// The todo to display
+    display_todo: Option<String>,
+    /// Session summary
+    summary: Option<String>,
+}
+
 /// Get session info (todo and summary) for a tmux pane
-fn get_session_info_for_pane(shell_pid: u32, tmux_target: &str) -> (Option<String>, Option<String>) {
-    let info = (|| -> Option<(Option<String>, Option<String>)> {
-        let claude_pid = get_child_pid(shell_pid)?;
-        let cwd = get_process_cwd(claude_pid)?;
-        let project_name = path_to_project_name(&cwd);
+fn get_session_info_for_pane(shell_pid: u32, tmux_target: &str) -> Option<SessionMetadata> {
+    let claude_pid = get_child_pid(shell_pid)?;
+    let cwd = get_process_cwd(claude_pid)?;
+    let project_name = path_to_project_name(&cwd);
 
-        let home = std::env::var("HOME").ok()?;
-        let project_dir = PathBuf::from(&home)
-            .join(".claude/projects")
-            .join(&project_name);
+    let home = std::env::var("HOME").ok()?;
+    let project_dir = PathBuf::from(&home)
+        .join(".claude/projects")
+        .join(&project_name);
 
-        // Get process start time to match with session file
-        let proc_start = get_process_start_time(claude_pid);
-        let session_file = find_session_file_for_process(&project_dir, proc_start, tmux_target)?;
-        let session_id = session_file
-            .file_stem()
-            .and_then(|s| s.to_str())
-            .map(|s| s.to_string())?;
+    // Get process start time to match with session file
+    let proc_start = get_process_start_time(claude_pid);
+    let session_file = find_session_file_for_process(&project_dir, proc_start, tmux_target)?;
+    let session_id = session_file
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .map(|s| s.to_string())?;
 
-        let todo = get_active_todo_from_session(&session_id);
-        let summary = get_session_summary(&session_file);
+    // Check if session file has conversation content
+    let has_conversation = session_has_conversation(&session_file);
 
-        Some((todo, summary))
-    })();
+    let todo_result = get_active_todo_from_session(&session_id);
+    let summary = get_session_summary(&session_file);
 
-    info.unwrap_or((None, None))
+    Some(SessionMetadata {
+        has_conversation,
+        has_active_todos: todo_result.has_active_todos,
+        display_todo: todo_result.display_todo,
+        summary,
+    })
 }
 
 fn get_claude_windows() -> Vec<ClaudeWindow> {
@@ -778,16 +847,28 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
 
         let tmux_target = format!("{}:{}", session, window_index);
         let (state, active_todo, draft_content, summary) = if pane_command == "claude" {
-            // Claude is running, check if active or finished
-            let activity = determine_claude_activity(session, window_index);
-            let (active_todo, summary) = if activity.state == ClaudeState::Active {
-                get_session_info_for_pane(pane_pid, &tmux_target)
+            // Claude is running - get session info first, then determine activity
+            let metadata = get_session_info_for_pane(pane_pid, &tmux_target);
+
+            // First check: if session file has no conversation, it's definitively empty
+            // This is more reliable than terminal content parsing
+            if let Some(ref meta) = metadata {
+                if !meta.has_conversation {
+                    // No conversation in session file = fresh/empty session
+                    (ClaudeState::Empty, None, None, None)
+                } else if meta.has_active_todos {
+                    // Has active todos = Claude is definitively active
+                    (ClaudeState::Active, meta.display_todo.clone(), None, meta.summary.clone())
+                } else {
+                    // Has conversation but no active todos - check terminal for state
+                    let activity = determine_claude_activity(session, window_index);
+                    (activity.state, None, activity.draft_content, meta.summary.clone())
+                }
             } else {
-                // Still get summary for non-active states
-                let (_, summary) = get_session_info_for_pane(pane_pid, &tmux_target);
-                (None, summary)
-            };
-            (activity.state, active_todo, activity.draft_content, summary)
+                // Couldn't find session info - fall back to terminal parsing
+                let activity = determine_claude_activity(session, window_index);
+                (activity.state, None, activity.draft_content, None)
+            }
         } else {
             (ClaudeState::Empty, None, None, None)
         };
