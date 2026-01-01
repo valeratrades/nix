@@ -73,6 +73,32 @@ impl Ord for Version {
     }
 }
 
+impl Version {
+    fn bump_patch(self) -> Self {
+        Version {
+            major: self.major,
+            minor: self.minor,
+            patch: self.patch + 1,
+        }
+    }
+
+    fn bump_minor(self) -> Self {
+        Version {
+            major: self.major,
+            minor: self.minor + 1,
+            patch: 0,
+        }
+    }
+
+    fn bump_major(self) -> Self {
+        Version {
+            major: self.major + 1,
+            minor: 0,
+            patch: 0,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, ValueEnum, Default)]
 enum SemverBump {
     Patch,
@@ -98,8 +124,20 @@ struct Args {
     fast: bool,
 
     /// Version to tag (e.g., v1.2.3 or 1.2.3)
-    #[arg(short = 'v', long = "version")]
+    #[arg(short = 'v', long = "version", conflicts_with_all = ["patch", "minor", "major"])]
     version: Option<Version>,
+
+    /// Bump patch version from latest tag (e.g., v1.2.3 -> v1.2.4)
+    #[arg(long, conflicts_with_all = ["version", "minor", "major"])]
+    patch: bool,
+
+    /// Bump minor version from latest tag (e.g., v1.2.3 -> v1.3.0)
+    #[arg(long, conflicts_with_all = ["version", "patch", "major"])]
+    minor: bool,
+
+    /// Bump major version from latest tag (e.g., v1.2.3 -> v2.0.0)
+    #[arg(long, conflicts_with_all = ["version", "patch", "minor"])]
+    major: bool,
 }
 
 fn run(cmd: &str, args: &[&str]) -> bool {
@@ -353,18 +391,41 @@ fn main() {
         exit(1);
     }
 
-    // If version provided, tag and push to version branches
-    if let Some(version) = args.version {
+    // Determine version: either explicit, or computed from bump flags
+    let version = if let Some(v) = args.version {
         // Check against latest existing tag
         if let Some(latest) = get_latest_tag() {
-            if version < latest {
-                eprintln!("error: version v{version} is smaller than the latest tag v{latest}");
+            if v < latest {
+                eprintln!("error: version v{v} is smaller than the latest tag v{latest}");
                 exit(1);
-            } else if version == latest {
-                eprintln!("warning: version v{version} is the same as the latest tag");
+            } else if v == latest {
+                eprintln!("warning: version v{v} is the same as the latest tag");
             }
         }
+        Some(v)
+    } else if args.patch || args.minor || args.major {
+        let latest = match get_latest_tag() {
+            Some(v) => v,
+            None => {
+                eprintln!("error: no existing version tags found, cannot bump. Use -v to set an initial version.");
+                exit(1);
+            }
+        };
+        let new_version = if args.patch {
+            latest.bump_patch()
+        } else if args.minor {
+            latest.bump_minor()
+        } else {
+            latest.bump_major()
+        };
+        println!("Bumping version: v{latest} -> v{new_version}");
+        Some(new_version)
+    } else {
+        None
+    };
 
+    // If version determined, tag and push to version branches
+    if let Some(version) = version {
         let tag = format!("v{version}");
         let major_branch = format!("v{}", version.major);
         let minor_branch = format!("v{}.{}", version.major, version.minor);
