@@ -33,10 +33,13 @@ enum Commands {
         #[arg(long)]
         draft: bool,
     },
-    /// Force push with safety checks (refuses on main branches unless only commit messages changed)
+    /// Push with optional force flags (refuses force on main branches unless only commit messages changed)
     Push {
-        /// Use --force instead of --force-with-lease (more dangerous)
-        #[arg(long, short)]
+        /// Use --force-with-lease (safer force push)
+        #[arg(long, short = 'l', conflicts_with = "force")]
+        force_with_lease: bool,
+        /// Use --force (dangerous, overwrites remote unconditionally)
+        #[arg(long, short, conflicts_with = "force_with_lease")]
         force: bool,
         /// Additional arguments to pass to git push
         #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
@@ -334,7 +337,7 @@ fn is_main_branch(branch: &str) -> bool {
     GIT_SHARED_MAIN_BRANCHES.contains(&branch)
 }
 
-fn push(force: bool, extra_args: Vec<String>) {
+fn push(force_with_lease: bool, force: bool, extra_args: Vec<String>) {
     if !run_cmd_quiet("git", &["rev-parse", "--is-inside-work-tree"]) {
         eprintln!("ERROR: Not in a git repository");
         std::process::exit(1);
@@ -348,7 +351,9 @@ fn push(force: bool, extra_args: Vec<String>) {
         }
     };
 
-    if is_main_branch(&branch) {
+    let is_force = force_with_lease || force;
+
+    if is_force && is_main_branch(&branch) {
         // Check if only commit messages differ (same tree content)
         let local_tree = run_cmd_output("git", &["rev-parse", "HEAD^{tree}"]);
         let remote_tree = run_cmd_output("git", &["rev-parse", &format!("origin/{branch}^{{tree}}")]);
@@ -364,14 +369,15 @@ fn push(force: bool, extra_args: Vec<String>) {
         }
     }
 
-    let force_flag = if force {
-        "--force"
-    } else {
-        "--force-with-lease"
-    };
     let extra_refs: Vec<&str> = extra_args.iter().map(|s| s.as_str()).collect();
 
-    let mut args = vec!["push", force_flag, "--follow-tags"];
+    let mut args = vec!["push"];
+    if force {
+        args.push("--force");
+    } else if force_with_lease {
+        args.push("--force-with-lease");
+    }
+    args.push("--follow-tags");
     args.extend(extra_refs);
 
     if !run_cmd("git", &args) {
@@ -414,7 +420,7 @@ fn main() {
             target_branch,
             draft,
         } => pr(target_branch, draft),
-        Commands::Push { force, args } => push(force, args),
+        Commands::Push { force_with_lease, force, args } => push(force_with_lease, force, args),
         Commands::Delete { branch } => delete(branch),
     }
 }
