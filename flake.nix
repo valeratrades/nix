@@ -59,7 +59,7 @@
       url = "github:valeratrades/auto_redshift";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    todo.url = "github:valeratrades/todo";
+    todo.url = "github:valeratrades/todo?ref=release";
     booktyping = {
       url = "github:valeratrades/booktyping";
       inputs.nixpkgs.follows = "nixpkgs";

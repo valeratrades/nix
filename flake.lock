@@ -2871,6 +2871,7 @@
       },
       "original": {
         "owner": "valeratrades",
+        "ref": "release",
         "repo": "todo",
         "type": "github"
       }

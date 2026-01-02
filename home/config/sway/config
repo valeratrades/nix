@@ -52,15 +52,8 @@ exec mako
 exec libinput-gestures
 exec "sh -c 'sudo chmod 766 /var/run/keyd.socket'"
 exec keyd-application-mapper -d
-exec pipewire
-#HACK: some problem with runnig it as a service. Could be fixed. Some time later though
+# PipeWire is managed by systemd (services.pipewire in audio.nix)
 exec wlr-gamma-service
-#DEPRECATE: once eww-widgets.service actually starts it up correctly
-#exec eww open bar && eww open btc_line_lower && eww open btc_line_upper && eww open todo_blocker
-#TEST: \
-#exec ~/.config/sway/eww_open.sh
-exec pipewire-pulse
-exec wireplumber
 bindsym $mod+g exec ringboard-egui
 bindsym $mod+Shift+g exec ringboard wipe
 #
