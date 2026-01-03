@@ -139,7 +139,7 @@ mode "monitors" {
 	bindsym Escape exec $switch_out
 	bindsym q exec $switch_out
 }
-bindsym $mod+Period exec "swaymsg mode monitors && eww update sway_mode=monitors"
+bindsym $mod+Period exec "swaymsg mode monitors && eww update sway_mode='monitors (a,s,t)'"
 
 set $fallback_wallpaper $sway_root/wallpapers/333333.png
 output * bg $fallback_wallpaper fill
@@ -253,7 +253,7 @@ mode "eww" {
 	bindsym Escape exec $switch_out
 	bindsym q exec $switch_out
 }
-bindsym $mod+e exec "swaymsg mode eww && eww update sway_mode=eww"
+bindsym $mod+e exec "swaymsg mode eww && eww update sway_mode='eww (h,f,a,c)'"
 
 # paste clipboard contents through keystrokes
 bindsym $mod+Shift+p exec ${NIXOS_CONFIG}/home/scripts/clipboard_to_keystrokes.rs
@@ -323,7 +323,7 @@ mode "screenshot" {
 	bindsym Escape exec $switch_out
 	bindsym q exec $switch_out
 }
-bindsym $mod+Insert exec "swaymsg mode screenshot && eww update sway_mode=screenshot"
+bindsym $mod+Insert exec "swaymsg mode screenshot && eww update sway_mode='screenshot (i,t,f,d,o)'"
 #
 
 mode "size_presets" {
@@ -346,7 +346,7 @@ mode "size_presets" {
 	bindsym Escape exec $switch_out
 	bindsym q exec $switch_out
 }
-bindsym $mod+apostrophe exec "swaymsg mode size_presets && eww update sway_mode=size_presets"
+bindsym $mod+apostrophe exec "swaymsg mode size_presets && eww update sway_mode='size_presets (1-5)'"
 
 focus_wrapping no
 bindsym $mod+$left focus left
@@ -383,7 +383,7 @@ mode "move_or_resize" {
 	bindsym q exec $switch_out
 
 }
-bindsym $mod+k exec "swaymsg mode move_or_resize && eww update sway_mode=move_or_resize"
+bindsym $mod+k exec "swaymsg mode move_or_resize && eww update sway_mode='move_or_resize (snrt,2,3,5)'"
 
 mode "obs" {
 	#NB: Manual starting of obs before any of these is currently required.
@@ -418,4 +418,4 @@ mode "obs" {
 	bindsym q exec $switch_out
 
 }
-bindsym $mod+comma exec "swaymsg mode obs && eww update sway_mode=obs"
+bindsym $mod+comma exec "swaymsg mode obs && eww update sway_mode='obs (v,r,p,b,s,c)'"
