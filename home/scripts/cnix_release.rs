@@ -261,10 +261,10 @@ mod rust {
 }
 
 fn has_uncommitted_changes() -> bool {
-    // Check for staged or unstaged changes (excluding untracked files)
+    // Check for staged, unstaged, or untracked files
     let status = run_output("git", &["status", "--porcelain"]);
     match status {
-        Some(output) => output.lines().any(|line| !line.starts_with("??")),
+        Some(output) => !output.is_empty(),
         None => false,
     }
 }
@@ -319,8 +319,12 @@ fn main() {
             }
         }
 
-        // Commit all changes (ignore if nothing to commit)
-        let _ = run("git", &["commit", "-am", msg]);
+        // Stage all files (including untracked) and commit
+        if !run("git", &["add", "-A"]) {
+            eprintln!("error: git add failed");
+            exit(1);
+        }
+        let _ = run("git", &["commit", "-m", msg]);
 
         // Push commit to default branch
         if !run("git", &["push", "origin", &default_branch]) {
