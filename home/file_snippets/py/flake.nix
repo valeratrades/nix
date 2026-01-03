@@ -4,7 +4,7 @@
     nixpkgs-python.url = "github:cachix/nixpkgs-python";
     devenv.url = "github:cachix/devenv";
     git-hooks.url = "github:cachix/git-hooks.nix";
-    v-utils.url = "github:valeratrades/.github?ref=v1.3";
+    v-utils.url = "github:valeratrades/.github?ref=v1.4";
   };
 
   outputs =
@@ -41,10 +41,8 @@
           github = v-utils.github {
             inherit pkgs pname;
             lastSupportedVersion = "";
-            jobsErrors = [ ];
-            jobsWarnings = [ "tokei" ];
-            jobsOther = [ "loc-badge" ];
             langs = [ "py" ];
+            jobs.default = true;
           };
           readme = v-utils.readme-fw {
             inherit pkgs pname;

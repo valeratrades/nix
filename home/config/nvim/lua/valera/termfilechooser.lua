@@ -167,30 +167,102 @@ function M.setup_save(statusfile)
   local tmpfile = vim.fn.expand('%:p')
 
   -- Debug: log to file
-  local logf = io.open(vim.fn.expand('~/.local/state/termfilechooser-nvim.log'), 'a')
-  if logf then
-    logf:write(string.format('%s: setup_save called, tmpfile=%s, statusfile=%s\n',
-      os.date(), tmpfile, statusfile))
-    logf:close()
+  local function log(msg)
+    local logf = io.open(vim.fn.expand('~/.local/state/termfilechooser-nvim.log'), 'a')
+    if logf then
+      logf:write(string.format('%s: %s\n', os.date(), msg))
+      logf:close()
+    end
+  end
+
+  log(string.format('setup_save called, tmpfile=%s, statusfile=%s', tmpfile, statusfile))
+
+  -- Helper to finalize save with a specific path
+  local function finalize_save(path)
+    log(string.format('finalize_save path=[%s] to tmpfile=[%s]', path, tmpfile))
+    vim.fn.writefile({ path }, tmpfile)
+    vim.fn.writefile({ '1' }, statusfile)
+    vim.cmd('qa!')
+  end
+
+  -- Open oil.nvim in a directory for file selection within save mode
+  local function open_directory_chooser(dir)
+    log(string.format('open_directory_chooser dir=[%s]', dir))
+    local oil = require('oil')
+
+    -- Close current buffer and open oil in the directory
+    vim.cmd('enew')
+    oil.open(dir)
+
+    -- Wait for oil to load, then set up keybindings
+    vim.api.nvim_create_autocmd('FileType', {
+      pattern = 'oil',
+      once = true,
+      callback = function()
+        -- Enter on a file: save to that path
+        for _, key in ipairs(CONFIRM_KEYS) do
+          vim.keymap.set('n', key, function()
+            local entry = oil.get_cursor_entry()
+            local current_dir = oil.get_current_dir()
+            if entry and entry.type == 'file' then
+              finalize_save(current_dir .. entry.name)
+            else
+              -- No file selected, prompt for filename in current directory
+              vim.ui.input({ prompt = 'Filename: ', default = '' }, function(filename)
+                if filename and #filename > 0 then
+                  finalize_save(current_dir .. filename)
+                end
+              end)
+            end
+          end, { buffer = true })
+        end
+
+        -- 'n' to create new file with prompted name in current dir
+        vim.keymap.set('n', 'n', function()
+          local current_dir = oil.get_current_dir()
+          vim.ui.input({ prompt = 'New filename: ', default = '' }, function(filename)
+            if filename and #filename > 0 then
+              finalize_save(current_dir .. filename)
+            end
+          end)
+        end, { buffer = true })
+
+        -- Abort keys
+        for _, key in ipairs(ABORT_KEYS) do
+          vim.keymap.set('n', key, function() vim.cmd('qa!') end, { buffer = true })
+        end
+      end
+    })
+  end
+
+  -- Check if path looks like a directory request (ends with /) or is an existing directory
+  local function is_directory_path(path)
+    if path:match('/$') then
+      return true
+    end
+    if vim.fn.isdirectory(path) == 1 then
+      return true
+    end
+    return false
   end
 
   -- Confirm keys
   local function confirm_save()
     -- Get the edited path from buffer and write directly to tmpfile
     local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
-    local path = table.concat(lines, '\n')
+    local path = table.concat(lines, '\n'):match('^%s*(.-)%s*$') -- trim whitespace
 
-    -- Debug: log what we're writing
-    local logf = io.open(vim.fn.expand('~/.local/state/termfilechooser-nvim.log'), 'a')
-    if logf then
-      logf:write(string.format('%s: confirm pressed, writing path=[%s] to tmpfile=[%s]\n',
-        os.date(), path, tmpfile))
-      logf:close()
+    log(string.format('confirm pressed, path=[%s]', path))
+
+    if is_directory_path(path) then
+      -- User wants to save in this directory - open oil for file selection
+      local dir = path:match('/$') and path or (path .. '/')
+      -- Ensure directory exists
+      vim.fn.mkdir(dir, 'p')
+      open_directory_chooser(dir)
+    else
+      finalize_save(path)
     end
-
-    vim.fn.writefile({ path }, tmpfile)
-    vim.fn.writefile({ '1' }, statusfile)
-    vim.cmd('q!')
   end
 
   for _, key in ipairs(CONFIRM_KEYS) do

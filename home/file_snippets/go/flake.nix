@@ -3,7 +3,7 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
     pre-commit-hooks.url = "github:cachix/git-hooks.nix";
-    v-utils.url = "github:valeratrades/.github?ref=v1.3";
+    v-utils.url = "github:valeratrades/.github?ref=v1.4";
     go-warn-unused.url = "github:valeratrades/go-warn-unused";
   };
 
@@ -31,14 +31,8 @@
         github = v-utils.github {
           inherit pkgs pname;
           lastSupportedVersion = "";
-          jobsErrors = [ "go-tests" ];
-          jobsWarnings = [
-            "tokei"
-            "go-gocritic"
-            "go-security-audit"
-          ];
-          jobsOther = [ "loc-badge" ];
           langs = [ "go" ];
+          jobs.default = true;
         };
         readme = v-utils.readme-fw {
           inherit pkgs pname;

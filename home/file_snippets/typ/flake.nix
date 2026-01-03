@@ -2,7 +2,7 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
-    v-utils.url = "github:valeratrades/.github?ref=v1.3";
+    v-utils.url = "github:valeratrades/.github?ref=v1.4";
   };
 
   outputs = { self, nixpkgs, flake-utils, v-utils }:
