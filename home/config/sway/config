@@ -240,6 +240,7 @@ bindsym $mod+Mod1+t exec ~/s/help_scripts/theme_toggle.sh
 bindsym $mod+Ctrl+g exec tg $(wl-paste)
 
 set $eww_visibility_toggle ~/.config/sway/eww_visibility_toggle.sh
+bindsym $mod+Shift+e exec $eww_visibility_toggle
 mode "eww" {
 	bindsym h exec $switch_out && $eww_visibility_toggle
 	bindsym f exec $switch_out && ${NIXOS_CONFIG}/home/scripts/eww_open_on.rs focused

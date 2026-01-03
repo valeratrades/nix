@@ -5,7 +5,7 @@
 clap = { version = "4.5.49", features = ["derive"] }
 ---
 
-use clap::{Parser, ValueEnum};
+use clap::Parser;
 use std::process::{Command, exit};
 use std::str::FromStr;
 
@@ -99,10 +99,9 @@ impl Version {
     }
 }
 
-#[derive(Debug, Clone, Copy, ValueEnum, Default)]
+#[derive(Debug, Clone, Copy)]
 enum SemverBump {
     Patch,
-    #[default]
     Minor,
     Major,
 }
@@ -114,10 +113,6 @@ enum SemverBump {
 struct Args {
     /// Git commit message - if provided, commits on master before switching to release
     commit_message: Option<String>,
-
-    /// Semver bump type (defaults to minor)
-    #[arg(short, long, value_enum, default_value = "minor")]
-    semver: SemverBump,
 
     /// Fast mode: skip tests and nix build
     #[arg(short, long)]
@@ -310,10 +305,20 @@ fn main() {
         exit(1);
     }
 
+    // Determine effective semver bump: explicit flags override the -s/--semver default
+    let effective_semver = if args.patch {
+        SemverBump::Patch
+    } else if args.major {
+        SemverBump::Major
+    } else {
+        // args.minor or default (which is also minor)
+        SemverBump::Minor
+    };
+
     // If commit message provided, bump version (if rust) and commit on default branch first
     if let Some(ref msg) = args.commit_message {
         if is_rust {
-            if let Err(e) = rust::bump_version(args.semver) {
+            if let Err(e) = rust::bump_version(effective_semver) {
                 eprintln!("error bumping version: {e}");
                 exit(1);
             }

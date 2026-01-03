@@ -360,43 +360,50 @@ fn push(force_with_lease: bool, force: bool, extra_args: Vec<String>) {
         }
     };
 
-    let is_force = force_with_lease || force;
+    let use_force = force;
+    let mut use_force_with_lease = force_with_lease;
+    let explicit_force = force_with_lease || force;
 
-    if is_force && is_main_branch(&branch) {
-        // Check if this is a safe force push:
-        // 1. Trees match exactly (rename commits, squash with identical end state)
-        // 2. Remote is ancestor of local (squashed remote commits into fewer local commits)
-        let local_tree = run_cmd_output("git", &["rev-parse", "HEAD^{tree}"]);
-        let remote_tree = run_cmd_output("git", &["rev-parse", &format!("origin/{branch}^{{tree}}")]);
-        let remote_is_ancestor = run_cmd_quiet("git", &["merge-base", "--is-ancestor", &format!("origin/{branch}"), "HEAD"]);
+    // Check if we need a force push and whether it's safe
+    let local_tree = run_cmd_output("git", &["rev-parse", "HEAD^{tree}"]);
+    let remote_tree = run_cmd_output("git", &["rev-parse", &format!("origin/{branch}^{{tree}}")]);
+    let remote_is_ancestor = run_cmd_quiet("git", &["merge-base", "--is-ancestor", &format!("origin/{branch}"), "HEAD"]);
+    let local_is_ancestor = run_cmd_quiet("git", &["merge-base", "--is-ancestor", "HEAD", &format!("origin/{branch}")]);
 
-        let safe = match (&local_tree, &remote_tree) {
-            (Some(local), Some(remote)) if local == remote => {
-                println!("Trees match - only commit structure changed. Allowing force push on {branch}.");
-                true
-            }
-            _ if remote_is_ancestor => {
-                // Remote is ancestor of local - this is a squash scenario where we're
-                // replacing multiple remote commits with fewer local commits that include
-                // additional changes. This is safe because we're not losing any work.
-                println!("Remote is ancestor of local - squashed commits. Allowing force push on {branch}.");
-                true
-            }
-            _ => false,
-        };
+    // Determine if force push would be safe
+    let trees_match = matches!((&local_tree, &remote_tree), (Some(local), Some(remote)) if local == remote);
 
-        if !safe {
+    // Check if we actually need a force push (histories diverged)
+    let needs_force = !local_is_ancestor && !remote_is_ancestor;
+
+    if explicit_force && is_main_branch(&branch) {
+        // User explicitly requested force - check if it's safe on main branches
+        if trees_match {
+            println!("Trees match - only commit structure changed. Allowing force push on {branch}.");
+        } else if remote_is_ancestor {
+            println!("Remote is ancestor of local - squashed commits. Allowing force push on {branch}.");
+        } else {
             eprintln!("Refusing to force push {branch} (tree content differs and remote is not ancestor)");
             std::process::exit(1);
         }
+    } else if !explicit_force && needs_force {
+        // No explicit force flag, but histories diverged - auto-force if safe
+        if trees_match {
+            println!("Trees match (only commit messages/structure changed) - auto-enabling force-with-lease.");
+            use_force_with_lease = true;
+        } else if remote_is_ancestor {
+            println!("Remote is ancestor of local (squashed commits) - auto-enabling force-with-lease.");
+            use_force_with_lease = true;
+        }
+        // If not safe, let git push fail naturally with its error message
     }
 
     let extra_refs: Vec<&str> = extra_args.iter().map(|s| s.as_str()).collect();
 
     let mut args = vec!["push"];
-    if force {
+    if use_force {
         args.push("--force");
-    } else if force_with_lease {
+    } else if use_force_with_lease {
         args.push("--force-with-lease");
     }
     args.push("--follow-tags");
