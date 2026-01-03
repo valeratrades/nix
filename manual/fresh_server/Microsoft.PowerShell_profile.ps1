@@ -68,3 +68,8 @@ if ($direnvVersion) {
 
 # direnv hook
 Invoke-Expression "$(direnv hook pwsh)"
+
+# Editor aliases (evil-helix)
+Set-Alias -Name nvim -Value hx
+Set-Alias -Name vim -Value hx
+Set-Alias -Name vi -Value hx

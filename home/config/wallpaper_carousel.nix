@@ -18,6 +18,8 @@
 
     { text = ''your "best" is not good enough
     Do what is required.''; author = "Alex Hormozi"; }
+
+    { text = "what would make a more epic story?"; author = "Alex Hormozi"; }
   ];
   balance = {
     command = "discretionary_engine risk balance";
