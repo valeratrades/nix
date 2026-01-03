@@ -239,14 +239,22 @@ bindsym $mod+Mod1+t exec ~/s/help_scripts/theme_toggle.sh
 # Ctrl suffix because it will often be used after `Ctrl+l` in chrome.
 bindsym $mod+Ctrl+g exec tg $(wl-paste)
 
-#set $refresh_eww "eww kill; eww open bar; eww open btc_line_upper; eww open btc_line_lower" #TEST: trying to do this with a service
-#exec_always $refresh_eww
-#bindsym $mod+e exec ~/.config/sway/eww_zoom_toggle.sh #dbg: works poorly, commented-out until fixed
-bindsym $mod+Shift+e exec ~/.config/sway/eww_visibility_toggle.sh
-bindsym $mod+Ctrl+e exec $refresh_eww
-bindsym $mod+Ctrl+Shift+e exec ${NIXOS_CONFIG}/home/scripts/eww_open_on.rs focused
-#HACK: don't like the keybind
-bindsym $mod+Ctrl+Shift+a exec ${NIXOS_CONFIG}/home/scripts/eww_open_on.rs all
+set $eww_visibility_toggle ~/.config/sway/eww_visibility_toggle.sh
+mode "eww" {
+	bindsym f exec $switch_out && $eww_visibility_toggle
+	bindsym h exec $switch_out && $eww_visibility_toggle
+	bindsym a exec $switch_out && ${NIXOS_CONFIG}/home/scripts/eww_open_on.rs focused
+	bindsym Shift+a exec $switch_out && ${NIXOS_CONFIG}/home/scripts/eww_open_on.rs all
+	bindsym c exec $switch_out && ~/.config/eww/scripts/toggle_claude_sessions.sh
+
+	bindsym $mod+e exec $switch_out
+	bindsym $mod+c exec $switch_out
+	bindsym $mod+q exec $switch_out
+	bindsym Ctrl+c exec $switch_out
+	bindsym Escape exec $switch_out
+	bindsym q exec $switch_out
+}
+bindsym $mod+e exec "swaymsg mode eww && eww update sway_mode=eww"
 
 # paste clipboard contents through keystrokes
 bindsym $mod+Shift+p exec ${NIXOS_CONFIG}/home/scripts/clipboard_to_keystrokes.rs

@@ -282,13 +282,14 @@
 	)
 )
 (defvar claude_sessions_hover_state false)
+(defvar claude_sessions_always_expand "false")
 (defpoll claude_sessions_compact_poll :initial "" :interval "1s" "/home/v/nix/home/config/tmux/claude-sessions.rs -c")
 (defpoll claude_sessions_full_poll :interval "3s" "/home/v/nix/home/config/tmux/claude-sessions.rs")
 (defwidget claude_sessions_widget[]
 	(box
 		:visible {bar_visible == "true" && claude_sessions_compact_poll != ""}
 		(reveal_on_hover
-			:var claude_sessions_hover_state
+			:var {claude_sessions_always_expand == "true" ? true : claude_sessions_hover_state}
 			:varname "claude_sessions_hover_state"
 			:transition "none"
 			:orientation "vertical"
