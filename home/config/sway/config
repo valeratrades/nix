@@ -241,10 +241,9 @@ bindsym $mod+Ctrl+g exec tg $(wl-paste)
 
 set $eww_visibility_toggle ~/.config/sway/eww_visibility_toggle.sh
 mode "eww" {
-	bindsym f exec $switch_out && $eww_visibility_toggle
 	bindsym h exec $switch_out && $eww_visibility_toggle
-	bindsym a exec $switch_out && ${NIXOS_CONFIG}/home/scripts/eww_open_on.rs focused
-	bindsym Shift+a exec $switch_out && ${NIXOS_CONFIG}/home/scripts/eww_open_on.rs all
+	bindsym f exec $switch_out && ${NIXOS_CONFIG}/home/scripts/eww_open_on.rs focused
+	bindsym a exec $switch_out && ${NIXOS_CONFIG}/home/scripts/eww_open_on.rs all
 	bindsym c exec $switch_out && ~/.config/eww/scripts/toggle_claude_sessions.sh
 
 	bindsym $mod+e exec $switch_out
