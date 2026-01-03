@@ -163,7 +163,7 @@ fn get_latest_tag() -> Option<Version> {
 }
 
 mod rust {
-    use super::{SemverBump, run};
+    use super::{SemverBump, Version, run};
     use std::fs;
     use std::path::Path;
 
@@ -171,14 +171,13 @@ mod rust {
         Path::new("Cargo.toml").exists()
     }
 
-    pub fn bump_version(bump: SemverBump) -> Result<(), String> {
+    pub fn bump_version(bump: SemverBump) -> Result<Version, String> {
         let cargo_toml_path = "Cargo.toml";
         let content = fs::read_to_string(cargo_toml_path)
             .map_err(|e| format!("Failed to read {cargo_toml_path}: {e}"))?;
 
         let mut in_package = false;
         let mut new_lines = Vec::new();
-        let mut version_bumped = false;
 
         for line in content.lines() {
             let trimmed = line.trim();
@@ -200,19 +199,25 @@ mod rust {
                         let minor: u32 = parts[1].parse().map_err(|_| "Invalid minor version")?;
                         let patch: u32 = parts[2].parse().map_err(|_| "Invalid patch version")?;
 
-                        let (new_major, new_minor, new_patch) = match bump {
-                            SemverBump::Major => (major + 1, 0, 0),
-                            SemverBump::Minor => (major, minor + 1, 0),
-                            SemverBump::Patch => (major, minor, patch + 1),
+                        let new_version = match bump {
+                            SemverBump::Major => Version { major: major + 1, minor: 0, patch: 0 },
+                            SemverBump::Minor => Version { major, minor: minor + 1, patch: 0 },
+                            SemverBump::Patch => Version { major, minor, patch: patch + 1 },
                         };
 
-                        let new_version = format!("{new_major}.{new_minor}.{new_patch}");
                         let prefix = &line[..start + 1];
                         let suffix = &line[end..];
                         new_lines.push(format!("{prefix}{new_version}{suffix}"));
-                        version_bumped = true;
                         println!("Bumped version: {version_str} -> {new_version}");
-                        continue;
+
+                        // Write file and return new version
+                        let remaining_lines = content.lines().skip(new_lines.len());
+                        for remaining in remaining_lines {
+                            new_lines.push(remaining.to_string());
+                        }
+                        fs::write(cargo_toml_path, new_lines.join("\n") + "\n")
+                            .map_err(|e| format!("Failed to write {cargo_toml_path}: {e}"))?;
+                        return Ok(new_version);
                     }
                 }
                 new_lines.push(line.to_string());
@@ -221,14 +226,7 @@ mod rust {
             }
         }
 
-        if !version_bumped {
-            return Err("Could not find version in [package] section".to_string());
-        }
-
-        fs::write(cargo_toml_path, new_lines.join("\n") + "\n")
-            .map_err(|e| format!("Failed to write {cargo_toml_path}: {e}"))?;
-
-        Ok(())
+        Err("Could not find version in [package] section".to_string())
     }
 
     pub fn run_sed_deps() -> bool {
@@ -305,25 +303,44 @@ fn main() {
         exit(1);
     }
 
-    // Determine effective semver bump: explicit flags override the -s/--semver default
+    // Determine effective semver bump from flags
     let effective_semver = if args.patch {
-        SemverBump::Patch
+        Some(SemverBump::Patch)
     } else if args.major {
-        SemverBump::Major
+        Some(SemverBump::Major)
+    } else if args.minor {
+        Some(SemverBump::Minor)
     } else {
-        // args.minor or default (which is also minor)
-        SemverBump::Minor
+        None
     };
 
-    // If commit message provided, bump version (if rust) and commit on default branch first
-    if let Some(ref msg) = args.commit_message {
-        if is_rust {
-            if let Err(e) = rust::bump_version(effective_semver) {
-                eprintln!("error bumping version: {e}");
-                exit(1);
+    // Track the version to use for tagging (from Cargo.toml for Rust projects)
+    let mut cargo_version: Option<Version> = None;
+
+    // If bumping version in Rust project, always bump Cargo.toml
+    if is_rust {
+        if let Some(bump) = effective_semver {
+            match rust::bump_version(bump) {
+                Ok(v) => cargo_version = Some(v),
+                Err(e) => {
+                    eprintln!("error bumping version: {e}");
+                    exit(1);
+                }
             }
         }
+    }
 
+    // Commit message: user-provided or default for version bumps
+    let commit_message = args.commit_message.clone().or_else(|| {
+        if cargo_version.is_some() {
+            Some("chore: bump version".to_string())
+        } else {
+            None
+        }
+    });
+
+    // If we have changes to commit (version bump or user-provided message)
+    if let Some(ref msg) = commit_message {
         // Stage all files (including untracked) and commit
         if !run("git", &["add", "-A"]) {
             eprintln!("error: git add failed");
@@ -400,7 +417,7 @@ fn main() {
         exit(1);
     }
 
-    // Determine version: either explicit, or computed from bump flags
+    // Determine version: explicit -v flag, Cargo.toml (for Rust), or computed from git tags
     let version = if let Some(v) = args.version {
         // Check against latest existing tag
         if let Some(latest) = get_latest_tag() {
@@ -412,7 +429,11 @@ fn main() {
             }
         }
         Some(v)
+    } else if let Some(v) = cargo_version {
+        // Rust project: use version from Cargo.toml
+        Some(v)
     } else if args.patch || args.minor || args.major {
+        // Non-Rust project: compute from git tags
         let latest = match get_latest_tag() {
             Some(v) => v,
             None => {
