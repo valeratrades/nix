@@ -244,9 +244,9 @@ bindsym $mod+Ctrl+g exec tg $(wl-paste)
 #bindsym $mod+e exec ~/.config/sway/eww_zoom_toggle.sh #dbg: works poorly, commented-out until fixed
 bindsym $mod+Shift+e exec ~/.config/sway/eww_visibility_toggle.sh
 bindsym $mod+Ctrl+e exec $refresh_eww
-bindsym $mod+Ctrl+Shift+e exec ${NIXOS_CONFIG}/home/scripts/eww_open_on focused
+bindsym $mod+Ctrl+Shift+e exec ${NIXOS_CONFIG}/home/scripts/eww_open_on.rs focused
 #HACK: don't like the keybind
-bindsym $mod+Ctrl+Shift+a exec ${NIXOS_CONFIG}/home/scripts/eww_open_on all
+bindsym $mod+Ctrl+Shift+a exec ${NIXOS_CONFIG}/home/scripts/eww_open_on.rs all
 
 # paste clipboard contents through keystrokes
 bindsym $mod+Shift+p exec ${NIXOS_CONFIG}/home/scripts/clipboard_to_keystrokes.rs

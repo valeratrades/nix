@@ -102,10 +102,30 @@ fn get_all_monitor_indices() -> Result<Vec<usize>, String> {
     Ok((0..active_outputs.len()).collect())
 }
 
-fn open_eww_windows(monitor_index: usize) -> Result<(), String> {
-    let windows = ["bar", "btc_line_lower", "btc_line_upper", "todo_blocker"];
+fn get_window_list() -> Result<Vec<String>, String> {
+    let home = std::env::var("HOME").map_err(|_| "HOME environment variable not set")?;
+    let path = format!("{home}/nix/home/config/eww/eww_windows.txt");
 
-    for window in windows {
+    let content =
+        std::fs::read_to_string(&path).map_err(|e| format!("Failed to read {path}: {e}"))?;
+
+    let windows: Vec<String> = content
+        .lines()
+        .filter(|line| !line.trim().is_empty())
+        .map(|s| s.to_string())
+        .collect();
+
+    if windows.is_empty() {
+        return Err(format!("{path} is empty"));
+    }
+
+    Ok(windows)
+}
+
+fn open_eww_windows(monitor_index: usize) -> Result<(), String> {
+    let windows = get_window_list()?;
+
+    for window in &windows {
         Command::new("eww")
             .args(["open", window, "--screen", &monitor_index.to_string()])
             .status()

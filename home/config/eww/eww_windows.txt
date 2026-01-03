@@ -1,0 +1,5 @@
+bar
+btc_line_lower
+btc_line_upper
+claude_sessions
+todo_blocker
