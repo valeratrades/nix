@@ -185,6 +185,11 @@ fn fork(message: Vec<String>) {
     run_gg(&message);
 }
 
+fn get_default_branch() -> Option<String> {
+    // Try to get the default branch from GitHub via gh CLI
+    run_cmd_output("gh", &["repo", "view", "--json", "defaultBranchRef", "-q", ".defaultBranchRef.name"])
+}
+
 fn pr(target_branch: Option<String>, draft: bool) {
     // Check we're in a git repo
     if !run_cmd_quiet("git", &["rev-parse", "--is-inside-work-tree"]) {
@@ -200,23 +205,35 @@ fn pr(target_branch: Option<String>, draft: bool) {
         }
     };
 
+    // Resolve target branch: use provided value, or detect default branch
+    let target_branch = match target_branch {
+        Some(b) => b,
+        None => match get_default_branch() {
+            Some(b) => {
+                println!("Using default branch: {b}");
+                b
+            }
+            None => {
+                eprintln!("ERROR: Could not detect default branch. Please specify target branch.");
+                std::process::exit(1);
+            }
+        },
+    };
+
     // Draft mode: just create a draft PR and exit
     if draft {
-        let mut args = vec![
+        let args = vec![
             "pr",
             "create",
             "--draft",
             "--fill",
             "--head",
             &current_branch,
+            "-B",
+            &target_branch,
         ];
-        let target = target_branch.as_deref();
-        if let Some(t) = target {
-            args.push("-B");
-            args.push(t);
-        }
-        println!("Creating draft PR for branch '{current_branch}'");
-        let output = Command::new("gh").args(&args).output();
+        println!("Creating draft PR for branch '{current_branch}' -> '{target_branch}'");
+        let output = Command::new("gh").args(args).output();
         match output {
             Ok(o) if o.status.success() => {}
             Ok(o) if String::from_utf8_lossy(&o.stderr).contains("already exists") => {
@@ -229,14 +246,6 @@ fn pr(target_branch: Option<String>, draft: bool) {
         }
         return;
     }
-
-    let target_branch = match target_branch {
-        Some(b) => b,
-        None => {
-            eprintln!("ERROR: target_branch is required when not using --draft");
-            std::process::exit(1);
-        }
-    };
 
     if current_branch == target_branch {
         eprintln!("ERROR: Already on target branch '{target_branch}'");
