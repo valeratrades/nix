@@ -46,8 +46,37 @@ return require "lazier" {
 			return patterns
 		end
 
+		-- Build glob exclusions for the find command (fd/rg level, not post-filter)
+		local function build_find_command_args()
+			local args = {}
+			if not include_submodules then
+				local submodule_paths = get_submodule_paths()
+				for _, path in ipairs(submodule_paths) do
+					-- Remove trailing slash for glob pattern
+					local clean_path = path:gsub("/$", "")
+					table.insert(args, "--glob")
+					table.insert(args, "!" .. clean_path .. "/**")
+				end
+			end
+			return args
+		end
+
 		local function get_gs()
-			return { hidden = true, no_ignore = true, file_ignore_patterns = build_ignore_patterns() }
+			local extra_args = build_find_command_args()
+			return {
+				hidden = true,
+				no_ignore = true,
+				file_ignore_patterns = build_ignore_patterns(),
+				-- For find_files (uses fd by default)
+				find_command = vim.list_extend(
+					{ "fd", "--type", "f", "--hidden", "--no-ignore", "--color", "never" },
+					extra_args
+				),
+				-- For live_grep (uses rg)
+				additional_args = function()
+					return extra_args
+				end,
+			}
 		end
 		-- note: `^` and `.` in file_ignore_patterns don't really work
 
@@ -137,23 +166,17 @@ return require "lazier" {
 		local function toggle_submodules(prompt_bufnr)
 			include_submodules = not include_submodules
 			local picker = action_state.get_current_picker(prompt_bufnr)
-			local finder = picker.finder
-
-			-- Update file_ignore_patterns on the finder
-			finder.file_ignore_patterns = build_ignore_patterns()
 
 			local status = include_submodules and "Showing submodules" or "Hiding submodules"
 			vim.notify(status, vim.log.levels.INFO)
 
-			-- Get current prompt and refresh
+			-- Close and reopen with new settings (finder options can't be modified in-place for find_command)
 			local current_prompt = picker:_get_prompt()
-			picker:refresh(finder, { reset_prompt = false })
+			actions.close(prompt_bufnr)
 			vim.schedule(function()
-				local prompt_bufnr_new = picker.prompt_bufnr
-				if prompt_bufnr_new and vim.api.nvim_buf_is_valid(prompt_bufnr_new) then
-					vim.api.nvim_buf_set_lines(prompt_bufnr_new, 0, 1, false, { current_prompt })
-					vim.api.nvim_win_set_cursor(0, { 1, #current_prompt })
-				end
+				-- Determine which picker was being used based on the prompt title or finder type
+				local opts = vim.tbl_extend("force", get_gs(), { default_text = current_prompt })
+				builtin.find_files(opts)
 			end)
 		end
 
@@ -306,10 +329,12 @@ return require "lazier" {
 
 		--Q: should probably split by priority. Where "dbg" and "TEST" are actually the highest ones. Just include in the same `!` framework, have them wegh 11 and 10 respectively.
 		K('n', '<space>sd', function()
-			local gs_ext = vim.tbl_extend("force", get_gs(), {
+			local base = get_gs()
+			local submodule_args = base.additional_args and base.additional_args() or {}
+			local gs_ext = vim.tbl_extend("force", base, {
 				default_text = [[#\s*TEST|#\s*dbg|dbg!\(|#\s*Q|#\s*DEPRECATE|#\sDO|#\s*TODO|dbg]],
 				additional_args = function()
-					return { '--pcre2' }
+					return vim.list_extend({ '--pcre2' }, submodule_args)
 				end
 			})
 			builtin.live_grep(gs_ext)

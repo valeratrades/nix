@@ -25,16 +25,17 @@
     },
     "auto_redshift": {
       "inputs": {
+        "fenix": "fenix",
         "nixpkgs": [
           "nixpkgs"
         ]
       },
       "locked": {
-        "lastModified": 1766977737,
-        "narHash": "sha256-yc8M/bJ11GH4pGVZ9cEh0c2MeM16EP2Y1AxbOzsLVKM=",
+        "lastModified": 1767487300,
+        "narHash": "sha256-9whR+48n9afe0jGEaGjLuVp5qrRd1fpTxT9CKFlSVak=",
         "owner": "valeratrades",
         "repo": "auto_redshift",
-        "rev": "45ff909657ec96bc61de3aea9ce7038f252218c5",
+        "rev": "3aaf893960f374bae3c1807f074207f3a66837d1",
         "type": "github"
       },
       "original": {
@@ -252,6 +253,28 @@
       "original": {
         "owner": "valeratrades",
         "repo": "distributions",
+        "type": "github"
+      }
+    },
+    "fenix": {
+      "inputs": {
+        "nixpkgs": [
+          "auto_redshift",
+          "nixpkgs"
+        ],
+        "rust-analyzer-src": "rust-analyzer-src"
+      },
+      "locked": {
+        "lastModified": 1767422556,
+        "narHash": "sha256-w6S1JbQxBntGGkGBhVJ96BYEFAJ95mm5oCp/3ficlvQ=",
+        "owner": "nix-community",
+        "repo": "fenix",
+        "rev": "e2b0f066811cdb71b37098329888f54af10fd369",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "fenix",
         "type": "github"
       }
     },
@@ -2387,6 +2410,23 @@
         "todo": "todo",
         "translate_infrequent": "translate_infrequent",
         "wallpaper_carousel": "wallpaper_carousel"
+      }
+    },
+    "rust-analyzer-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1767357033,
+        "narHash": "sha256-e7MFAKiN7BemfytVJYHWAtHUMlKF5Q8P9hatKWIRvsk=",
+        "owner": "rust-lang",
+        "repo": "rust-analyzer",
+        "rev": "e19dfc83c387ebd64ac4c786301606663183e7fa",
+        "type": "github"
+      },
+      "original": {
+        "owner": "rust-lang",
+        "ref": "nightly",
+        "repo": "rust-analyzer",
+        "type": "github"
       }
     },
     "rust-overlay": {
