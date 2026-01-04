@@ -341,96 +341,96 @@ end
 
 ## git new repository
 #TODO!!!!: figure out how to sync the base labels settings across all repos
-function gn
-	if [ "$argv[1]" = "-h" ] || [ "$argv[1]" = "--help" ] || [ "$argv[1]" = "help" ]
-		printf """\
-		#git create new repo
-		arg1: repository name
-		arg2: --private or --public
+#DEPRECATE: once we're sure version in git_scripts.rs is working properly
+#function gn
+#	if [ "$argv[1]" = "-h" ] || [ "$argv[1]" = "--help" ] || [ "$argv[1]" = "help" ]
+#		printf """\
+#		#git create new repo
+#		arg1: repository name
+#		arg2: --private or --public
+#
+#		ex: gn my_new_repo --private
+#		"""
+#		return 0
+#	end
+#	set repo_name $argv[1]
+#	if [ "$argv[1]" = "--private" ] || [ "$argv[1]" = "--public" ]
+#		set repo_name (basename (pwd))
+#	else
+#		set argv $argv[2..-1]
+#	end
+#
+#	# before running, ensure we have all the necessary env vars
+#	if test -z "$GITHUB_NAME"
+#		echo "ERROR: GITHUB_NAME is not set"
+#		return 1
+#	end
+#	if test -z "$GITHUB_KEY"
+#		echo "ERROR: GITHUB_KEY is not set"
+#		return 1
+#	end
+#	if test -z "$GITHUB_LOC_GIST"
+#		echo "WARNING: GITHUB_LOC_GIST is not set, loc_gist_token secret will not be created // in my setup it's used for LoC badge generation"
+#	end
+#
+#	git init
+#	git add .
+#	git commit -m "Initial Commit"
+#	gh repo create $repo_name $argv[1] --source=.
+#	git remote add origin https://github.com/$GITHUB_NAME/$repo_name.git
+#	git push -u origin master
+#
+#	init_labels $repo_name
+#
+#	curl -L -X POST \
+#	-H "Accept: application/vnd.github+json" \
+#	-H "Authorization: token $GITHUB_KEY" \
+#	-H "X-GitHub-Api-Version: 2022-11-28" \
+#	https://api.github.com/repos/$GITHUB_NAME/$repo_name/milestones \
+#	-d '{
+#	"title":"1.0",
+#	"state":"open",
+#	"description":"Minimum viable product"
+#	}'
+#
+#	curl -L -X POST \
+#	-H "Accept: application/vnd.github+json" \
+#	-H "Authorization: token $GITHUB_KEY" \
+#	-H "X-GitHub-Api-Version: 2022-11-28" \
+#	https://api.github.com/repos/$GITHUB_NAME/$repo_name/milestones \
+#	-d '{
+#	"title":"2.0",
+#	"state":"open",
+#	"description":"Fix bugs, rewrite hacks"
+#	}'
+#
+#	curl -L -X POST \
+#	-H "Accept: application/vnd.github+json" \
+#	-H "Authorization: token $GITHUB_KEY" \
+#	-H "X-GitHub-Api-Version: 2022-11-28" \
+#	https://api.github.com/repos/$GITHUB_NAME/$repo_name/milestones \
+#	-d '{
+#	"title":"3.0",
+#	"state":"open",
+#	"description":"More and better"
+#	}'
+#
+#	if test -n "$GITHUB_LOC_GIST"
+#		echo "Setting loc_gist_token secret..."
+#		gh secret set loc_gist_token --repo "$GITHUB_NAME/$repo_name" --body "$GITHUB_LOC_GIST"
+#	end
+#end
 
-		ex: gn my_new_repo --private
-		"""
-		return 0
-	end
-	set repo_name $argv[1]
-	if [ "$argv[1]" = "--private" ] || [ "$argv[1]" = "--public" ]
-		set repo_name (basename (pwd))
-	else
-		set argv $argv[2..-1]
-	end
-
-	# before running, ensure we have all the necessary env vars
-	if test -z "$GITHUB_NAME"
-		echo "ERROR: GITHUB_NAME is not set"
-		return 1
-	end
-	if test -z "$GITHUB_KEY"
-		echo "ERROR: GITHUB_KEY is not set"
-		return 1
-	end
-	if test -z "$GITHUB_LOC_GIST"
-		echo "WARNING: GITHUB_LOC_GIST is not set, loc_gist_token secret will not be created // in my setup it's used for LoC badge generation"
-	end
-
-	git init
-	git add .
-	git commit -m "Initial Commit"
-	gh repo create $repo_name $argv[1] --source=.
-	git remote add origin https://github.com/$GITHUB_NAME/$repo_name.git
-	git push -u origin master
-
-	init_labels $repo_name
-
-	curl -L -X POST \
-	-H "Accept: application/vnd.github+json" \
-	-H "Authorization: token $GITHUB_KEY" \
-	-H "X-GitHub-Api-Version: 2022-11-28" \
-	https://api.github.com/repos/$GITHUB_NAME/$repo_name/milestones \
-	-d '{
-	"title":"1.0",
-	"state":"open",
-	"description":"Minimum viable product"
-	}'
-
-	curl -L -X POST \
-	-H "Accept: application/vnd.github+json" \
-	-H "Authorization: token $GITHUB_KEY" \
-	-H "X-GitHub-Api-Version: 2022-11-28" \
-	https://api.github.com/repos/$GITHUB_NAME/$repo_name/milestones \
-	-d '{
-	"title":"2.0",
-	"state":"open",
-	"description":"Fix bugs, rewrite hacks"
-	}'
-
-	curl -L -X POST \
-	-H "Accept: application/vnd.github+json" \
-	-H "Authorization: token $GITHUB_KEY" \
-	-H "X-GitHub-Api-Version: 2022-11-28" \
-	https://api.github.com/repos/$GITHUB_NAME/$repo_name/milestones \
-	-d '{
-	"title":"3.0",
-	"state":"open",
-	"description":"More and better"
-	}'
-
-	if test -n "$GITHUB_LOC_GIST"
-		echo "Setting loc_gist_token secret..."
-		gh secret set loc_gist_token --repo "$GITHUB_NAME/$repo_name" --body "$GITHUB_LOC_GIST"
-	end
-end
-
-#TODO: make a file in main .github repo to store all additional labels defined for all repositories. Than change the label-manipulation commands to simply overwrite those. (or check for differences first, but that's more difficult, as some can have eg same name but outdated description)
-function git_add_global_label
-	set label_name $argv[1]
-	set label_description $argv[2]
-	set label_color $argv[3]
-
-	gh repo list $GITHUB_NAME --limit 1000 --json nameWithOwner --jq '.[].nameWithOwner' | rg -v '\.github$|'"$GITHUB_NAME"'$' | while read -l repo
-		echo "Adding label to $repo"
-		gh api repos/$repo/labels \
-		-f name="$label_name" \
-		-f color="$label_color" \
-		-f description="$label_description"
-	end
-end
+#function git_add_global_label
+#	set label_name $argv[1]
+#	set label_description $argv[2]
+#	set label_color $argv[3]
+#
+#	gh repo list $GITHUB_NAME --limit 1000 --json nameWithOwner --jq '.[].nameWithOwner' | rg -v '\.github$|'"$GITHUB_NAME"'$' | while read -l repo
+#		echo "Adding label to $repo"
+#		gh api repos/$repo/labels \
+#		-f name="$label_name" \
+#		-f color="$label_color" \
+#		-f description="$label_description"
+#	end
+#end

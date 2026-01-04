@@ -14,7 +14,8 @@
 
     "all male problems can be\nsolved with more money"
 
-    { text = ''if it's not a "hell yes",\nit's a "no"''; author = "Derek Sivers"; }
+    { text = ''if it's not a "hell yes",
+    it's a "no"''; author = "Derek Sivers"; }
 
     { text = ''your "best" is not good enough
     Do what is required.''; author = "Alex Hormozi"; }

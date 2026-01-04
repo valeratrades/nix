@@ -3,6 +3,7 @@
 
 [dependencies]
 clap = { version = "4.5.49", features = ["derive"] }
+serde_json = "1"
 ---
 
 use clap::{Parser, Subcommand};
@@ -49,6 +50,20 @@ enum Commands {
     Delete {
         /// Branch name to delete
         branch: String,
+    },
+    /// Create a new GitHub repository with standard labels and milestones
+    Publish {
+        /// Repository name (defaults to current directory name)
+        repo_name: Option<String>,
+        /// Create a private repository
+        #[arg(long, conflicts_with = "public")]
+        private: bool,
+        /// Create a public repository
+        #[arg(long, conflicts_with = "private")]
+        public: bool,
+        /// Commit all changes first with this message
+        #[arg(short, long)]
+        commit: Option<String>,
     },
 }
 
@@ -376,12 +391,55 @@ fn push(force_with_lease: bool, force: bool, extra_args: Vec<String>) {
     // Check if we actually need a force push (histories diverged)
     let needs_force = !local_is_ancestor && !remote_is_ancestor;
 
+    // Check if divergence is due to commit renames only (even with new commits on top)
+    // This handles: local has A'-B-C, remote has A, where A' is A with different message
+    let divergence_is_rename_only = needs_force && {
+        // Find the merge-base (common ancestor)
+        let merge_base = run_cmd_output("git", &["merge-base", "HEAD", &format!("origin/{branch}")]);
+        if let Some(base) = merge_base {
+            // Get commits on remote since merge-base
+            let remote_commits = run_cmd_output(
+                "git",
+                &["rev-list", "--reverse", &format!("{base}..origin/{branch}")],
+            );
+            // Get commits on local since merge-base
+            let local_commits = run_cmd_output(
+                "git",
+                &["rev-list", "--reverse", &format!("{base}..HEAD")],
+            );
+
+            match (remote_commits, local_commits) {
+                (Some(remote), Some(local)) => {
+                    let remote_list: Vec<&str> = remote.lines().collect();
+                    let local_list: Vec<&str> = local.lines().collect();
+
+                    // Remote commits must be a prefix (in terms of trees) of local commits
+                    // i.e., for each remote commit, there's a corresponding local commit with same tree
+                    if !remote_list.is_empty() && local_list.len() >= remote_list.len() {
+                        remote_list.iter().zip(local_list.iter()).all(|(r, l)| {
+                            let r_tree = run_cmd_output("git", &["rev-parse", &format!("{r}^{{tree}}")]);
+                            let l_tree = run_cmd_output("git", &["rev-parse", &format!("{l}^{{tree}}")]);
+                            matches!((r_tree, l_tree), (Some(rt), Some(lt)) if rt == lt)
+                        })
+                    } else {
+                        false
+                    }
+                }
+                _ => false,
+            }
+        } else {
+            false
+        }
+    };
+
     if explicit_force && is_main_branch(&branch) {
         // User explicitly requested force - check if it's safe on main branches
         if trees_match {
             println!("Trees match - only commit structure changed. Allowing force push on {branch}.");
         } else if remote_is_ancestor {
             println!("Remote is ancestor of local - squashed commits. Allowing force push on {branch}.");
+        } else if divergence_is_rename_only {
+            println!("Divergence is commit renames only (with new commits on top). Allowing force push on {branch}.");
         } else {
             eprintln!("Refusing to force push {branch} (tree content differs and remote is not ancestor)");
             std::process::exit(1);
@@ -393,6 +451,9 @@ fn push(force_with_lease: bool, force: bool, extra_args: Vec<String>) {
             use_force_with_lease = true;
         } else if remote_is_ancestor {
             println!("Remote is ancestor of local (squashed commits) - auto-enabling force-with-lease.");
+            use_force_with_lease = true;
+        } else if divergence_is_rename_only {
+            println!("Divergence is commit renames only (with new commits on top) - auto-enabling force-with-lease.");
             use_force_with_lease = true;
         }
         // If not safe, let git push fail naturally with its error message
@@ -440,6 +501,146 @@ fn delete(branch: String) {
     println!("Deleted branch {branch} locally and on remote");
 }
 
+struct Milestone {
+    title: &'static str,
+    description: &'static str,
+}
+
+const MILESTONES: &[Milestone] = &[
+    Milestone { title: "1.0", description: "Minimum viable product" },
+    Milestone { title: "2.0", description: "Fix bugs, rewrite hacks" },
+    Milestone { title: "3.0", description: "More and better" },
+];
+
+fn create_milestone(github_name: &str, github_key: &str, repo_name: &str, milestone: &Milestone) {
+    let title = milestone.title;
+    let body = serde_json::json!({
+        "title": title,
+        "state": "open",
+        "description": milestone.description
+    });
+
+    let output = Command::new("curl")
+        .args([
+            "-L", "-X", "POST",
+            "-H", "Accept: application/vnd.github+json",
+            "-H", &format!("Authorization: token {github_key}"),
+            "-H", "X-GitHub-Api-Version: 2022-11-28",
+            &format!("https://api.github.com/repos/{github_name}/{repo_name}/milestones"),
+            "-d", &body.to_string(),
+        ])
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status();
+
+    match output {
+        Ok(s) if s.success() => println!("Created milestone '{title}'"),
+        _ => eprintln!("Failed to create milestone '{title}'"),
+    }
+}
+
+fn publish(repo_name: Option<String>, private: bool, public: bool, commit: Option<String>) {
+    // Get environment variables
+    let github_name = match env::var("GITHUB_NAME") {
+        Ok(v) => v,
+        Err(_) => {
+            eprintln!("ERROR: GITHUB_NAME is not set");
+            std::process::exit(1);
+        }
+    };
+
+    let github_key = match env::var("GITHUB_KEY") {
+        Ok(v) => v,
+        Err(_) => {
+            eprintln!("ERROR: GITHUB_KEY is not set");
+            std::process::exit(1);
+        }
+    };
+
+    let github_loc_gist = env::var("GITHUB_LOC_GIST").ok();
+    if github_loc_gist.is_none() {
+        eprintln!("WARNING: GITHUB_LOC_GIST is not set, loc_gist_token secret will not be created // in my setup it's used for LoC badge generation");
+    }
+
+    // Determine repo name
+    let repo_name = repo_name.unwrap_or_else(|| {
+        env::current_dir()
+            .ok()
+            .and_then(|p| p.file_name().map(|n| n.to_string_lossy().to_string()))
+            .unwrap_or_else(|| {
+                eprintln!("ERROR: Could not determine repository name");
+                std::process::exit(1);
+            })
+    });
+
+    // Determine visibility flag
+    let visibility = if private {
+        "--private"
+    } else if public {
+        "--public"
+    } else {
+        "--private" // default to private
+    };
+
+    println!("Creating repository: {repo_name}");
+
+    // git init
+    if !run_cmd("git", &["init"]) {
+        eprintln!("ERROR: git init failed");
+        std::process::exit(1);
+    }
+
+    // git add . and commit
+    if !run_cmd("git", &["add", "."]) {
+        eprintln!("ERROR: git add failed");
+        std::process::exit(1);
+    }
+
+    let commit_msg = commit.as_deref().unwrap_or("Initial Commit");
+    if !run_cmd("git", &["commit", "-m", commit_msg]) {
+        eprintln!("ERROR: git commit failed");
+        std::process::exit(1);
+    }
+
+    // gh repo create
+    if !run_cmd("gh", &["repo", "create", &repo_name, visibility, "--source=."]) {
+        eprintln!("ERROR: gh repo create failed");
+        std::process::exit(1);
+    }
+
+    // git remote add origin
+    let remote_url = format!("https://github.com/{github_name}/{repo_name}.git");
+    // Remove existing origin if any, then add
+    run_cmd_quiet("git", &["remote", "remove", "origin"]);
+    if !run_cmd("git", &["remote", "add", "origin", &remote_url]) {
+        eprintln!("ERROR: git remote add failed");
+        std::process::exit(1);
+    }
+
+    // git push
+    if !run_cmd("git", &["push", "-u", "origin", "master"]) {
+        eprintln!("ERROR: git push failed");
+        std::process::exit(1);
+    }
+
+    // Create milestones
+    println!("\nCreating milestones...");
+    for milestone in MILESTONES {
+        create_milestone(&github_name, &github_key, &repo_name, milestone);
+    }
+
+    // Set loc_gist_token secret if available
+    if let Some(loc_gist) = github_loc_gist {
+        println!("\nSetting loc_gist_token secret...");
+        let full_repo = format!("{github_name}/{repo_name}");
+        if !run_cmd("gh", &["secret", "set", "loc_gist_token", "--repo", &full_repo, "--body", &loc_gist]) {
+            eprintln!("WARNING: Failed to set loc_gist_token secret");
+        }
+    }
+
+    println!("\nRepository {repo_name} created successfully!");
+}
+
 fn main() {
     let args = Args::parse();
 
@@ -451,5 +652,6 @@ fn main() {
         } => pr(target_branch, draft),
         Commands::Push { force_with_lease, force, args } => push(force_with_lease, force, args),
         Commands::Delete { branch } => delete(branch),
+        Commands::Publish { repo_name, private, public, commit } => publish(repo_name, private, public, commit),
     }
 }

@@ -33,9 +33,9 @@
         rs = v-utils.rs { inherit pkgs; };
         readme = v-utils.readme-fw {
           inherit pkgs pname;
+          defaults = true;
           lastSupportedVersion = "nightly-RUSTC_CURRENT_VERSION";
           rootDir = ./.;
-          licenses = [{ name = "Blue Oak 1.0.0"; outPath = "LICENSE"; }];
           badges = [ "msrv" "crates_io" "docs_rs" "loc" "ci" ];
         };
       in
@@ -71,15 +71,9 @@
               pre-commit-check.shellHook
               + github.shellHook
               + rs.shellHook
+              + readme.shellHook
               + ''
-                cp -f ${v-utils.files.licenses.blue_oak} ./LICENSE
                 cp -f ${(v-utils.files.treefmt) { inherit pkgs; }} ./.treefmt.toml
-                cp -f ${ (v-utils.files.gitLfs { inherit pkgs; }) } ./.gitattributes
-                cp -f ${(v-utils.files.rust.clippy { inherit pkgs; })} ./.cargo/.clippy.toml
-
-                cp -f ${readme} ./README.md
-
-                alias qr="./target/debug/${pname}"
               '';
 
             packages = [
@@ -87,7 +81,7 @@
               openssl
               pkg-config
               rust
-            ] ++ pre-commit-check.enabledPackages ++ github.enabledPackages;
+            ] ++ pre-commit-check.enabledPackages ++ github.enabledPackages ++ rs.enabledPackages;
 
 						env.RUST_BACKTRACE = 1;
 						env.RUST_LIB_BACKTRACE = 0;
