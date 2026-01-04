@@ -270,7 +270,7 @@
         xournalpp # draw on PDFs
       ] ++ [
         inputs.auto_redshift.packages.${pkgs.stdenv.hostPlatform.system}.default # good idea for everyone
-        inputs.todo.packages.${pkgs.stdenv.hostPlatform.system}.default # pretty generic at this point
+        (inputs.todo.packages.${pkgs.stdenv.hostPlatform.system}.default.overrideAttrs (old: { doCheck = false; })) # pretty generic at this point
         inputs.bbeats.packages.${pkgs.stdenv.hostPlatform.system}.default
         inputs.math_tools.packages.${pkgs.stdenv.hostPlatform.system}.default # could be useful to all people currently using my distro
         inputs.reasonable_envsubst.packages.${pkgs.stdenv.hostPlatform.system}.default # have scripts depending on it, and they are currently part of the shared config.

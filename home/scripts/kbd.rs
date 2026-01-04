@@ -93,7 +93,24 @@ fn extract_base_layouts(current: &[String]) -> Vec<String> {
     }
 }
 
-fn set_layouts_with_variants(layouts: &[String], variants: &[String]) -> bool {
+// Base xkb_options that should always be set
+const BASE_XKB_OPTIONS: &str = "grp:win_space_toggle";
+
+fn set_xkb_options(swap_ctrl_caps: bool) -> bool {
+    let options = if swap_ctrl_caps {
+        format!("{BASE_XKB_OPTIONS},ctrl:swapcaps")
+    } else {
+        BASE_XKB_OPTIONS.to_string()
+    };
+    let cmd = format!("input type:keyboard xkb_options \"{options}\"");
+    Command::new("swaymsg")
+        .arg(&cmd)
+        .status()
+        .map(|s| s.success())
+        .unwrap_or(false)
+}
+
+fn set_layouts_with_variants(layouts: &[String], variants: &[String], swap_ctrl_caps: bool) -> bool {
     let layout_str = layouts.join(",");
     let variant_str = variants.join(",");
 
@@ -114,11 +131,19 @@ fn set_layouts_with_variants(layouts: &[String], variants: &[String]) -> bool {
         return false;
     }
 
-    Command::new("swaymsg")
+    let variant_ok = Command::new("swaymsg")
         .arg(&variant_cmd)
         .status()
         .map(|s| s.success())
-        .unwrap_or(false)
+        .unwrap_or(false);
+
+    if !variant_ok {
+        return false;
+    }
+
+    // Set xkb_options based on whether we need to swap ctrl/caps
+    // Non-default layouts need ctrl:swapcaps to undo keyd's swap
+    set_xkb_options(swap_ctrl_caps)
 }
 
 fn switch_to_layout(index: usize) -> bool {
@@ -168,10 +193,14 @@ fn main() {
             .collect();
 
         if current != base {
-            if !set_layouts_with_variants(&base, &base_variants) {
+            // Default layouts don't need ctrl:swapcaps (keyd handles it)
+            if !set_layouts_with_variants(&base, &base_variants, false) {
                 eprintln!("Failed to restore base layouts");
                 std::process::exit(1);
             }
+        } else {
+            // Even if layouts match, ensure xkb_options are correct
+            set_xkb_options(false);
         }
         if let Some(idx) = base.iter().position(|l| l == requested) {
             if !switch_to_layout(idx) {
@@ -187,7 +216,8 @@ fn main() {
 
         let variants = build_variants(&new_layouts, variant);
 
-        if !set_layouts_with_variants(&new_layouts, &variants) {
+        // Non-default layouts need ctrl:swapcaps to undo keyd's ctrl/caps swap
+        if !set_layouts_with_variants(&new_layouts, &variants, true) {
             eprintln!("Failed to set layouts");
             std::process::exit(1);
         }
