@@ -171,62 +171,53 @@ mod rust {
         Path::new("Cargo.toml").exists()
     }
 
-    pub fn bump_version(bump: SemverBump) -> Result<Version, String> {
+    pub fn get_version() -> Result<Version, String> {
         let cargo_toml_path = "Cargo.toml";
         let content = fs::read_to_string(cargo_toml_path)
             .map_err(|e| format!("Failed to read {cargo_toml_path}: {e}"))?;
 
         let mut in_package = false;
-        let mut new_lines = Vec::new();
 
         for line in content.lines() {
             let trimmed = line.trim();
             if trimmed == "[package]" {
                 in_package = true;
-                new_lines.push(line.to_string());
             } else if trimmed.starts_with('[') {
                 in_package = false;
-                new_lines.push(line.to_string());
             } else if in_package && trimmed.starts_with("version") {
-                // Parse version line like: version = "1.2.3"
                 if let Some(start) = line.find('"')
                     && let Some(end) = line.rfind('"')
                 {
                     let version_str = &line[start + 1..end];
-                    let parts: Vec<&str> = version_str.split('.').collect();
-                    if parts.len() == 3 {
-                        let major: u32 = parts[0].parse().map_err(|_| "Invalid major version")?;
-                        let minor: u32 = parts[1].parse().map_err(|_| "Invalid minor version")?;
-                        let patch: u32 = parts[2].parse().map_err(|_| "Invalid patch version")?;
-
-                        let new_version = match bump {
-                            SemverBump::Major => Version { major: major + 1, minor: 0, patch: 0 },
-                            SemverBump::Minor => Version { major, minor: minor + 1, patch: 0 },
-                            SemverBump::Patch => Version { major, minor, patch: patch + 1 },
-                        };
-
-                        let prefix = &line[..start + 1];
-                        let suffix = &line[end..];
-                        new_lines.push(format!("{prefix}{new_version}{suffix}"));
-                        println!("Bumped version: {version_str} -> {new_version}");
-
-                        // Write file and return new version
-                        let remaining_lines = content.lines().skip(new_lines.len());
-                        for remaining in remaining_lines {
-                            new_lines.push(remaining.to_string());
-                        }
-                        fs::write(cargo_toml_path, new_lines.join("\n") + "\n")
-                            .map_err(|e| format!("Failed to write {cargo_toml_path}: {e}"))?;
-                        return Ok(new_version);
-                    }
+                    return version_str.parse::<Version>();
                 }
-                new_lines.push(line.to_string());
-            } else {
-                new_lines.push(line.to_string());
             }
         }
 
         Err("Could not find version in [package] section".to_string())
+    }
+
+    pub fn bump_version(bump: SemverBump) -> Result<Version, String> {
+        let old_version = get_version()?;
+        let new_version = match bump {
+            SemverBump::Major => old_version.bump_major(),
+            SemverBump::Minor => old_version.bump_minor(),
+            SemverBump::Patch => old_version.bump_patch(),
+        };
+
+        let cargo_toml_path = "Cargo.toml";
+        let content = fs::read_to_string(cargo_toml_path)
+            .map_err(|e| format!("Failed to read {cargo_toml_path}: {e}"))?;
+
+        let old_version_str = old_version.to_string();
+        let new_version_str = new_version.to_string();
+        let new_content = content.replacen(&old_version_str, &new_version_str, 1);
+
+        fs::write(cargo_toml_path, new_content)
+            .map_err(|e| format!("Failed to write {cargo_toml_path}: {e}"))?;
+
+        println!("Bumped version: {old_version} -> {new_version}");
+        Ok(new_version)
     }
 
     pub fn run_sed_deps() -> bool {
@@ -276,6 +267,12 @@ fn get_default_branch() -> Option<String> {
 fn main() {
     let args = Args::parse();
     let is_rust = rust::has_cargo_toml();
+
+    // Error early if -v provided for Rust project
+    if args.version.is_some() && is_rust {
+        eprintln!("error: -v flag cannot be used in Rust projects, version is defined in Cargo.toml");
+        exit(1);
+    }
 
     // Determine default branch (master or main)
     let default_branch = match get_default_branch() {
@@ -417,9 +414,12 @@ fn main() {
         exit(1);
     }
 
-    // Determine version: explicit -v flag, Cargo.toml (for Rust), or computed from git tags
-    let version = if let Some(v) = args.version {
-        // Check against latest existing tag
+    // Determine version for tagging/semver branches
+    let version = if let Some(v) = cargo_version {
+        // Rust project with version bump: use bumped version from Cargo.toml
+        Some(v)
+    } else if let Some(v) = args.version {
+        // Non-Rust project with explicit -v flag (Rust projects error early)
         if let Some(latest) = get_latest_tag() {
             if v < latest {
                 eprintln!("error: version v{v} is smaller than the latest tag v{latest}");
@@ -428,9 +428,6 @@ fn main() {
                 eprintln!("warning: version v{v} is the same as the latest tag");
             }
         }
-        Some(v)
-    } else if let Some(v) = cargo_version {
-        // Rust project: use version from Cargo.toml
         Some(v)
     } else if args.patch || args.minor || args.major {
         // Non-Rust project: compute from git tags
@@ -450,6 +447,15 @@ fn main() {
         };
         println!("Bumping version: v{latest} -> v{new_version}");
         Some(new_version)
+    } else if is_rust {
+        // Rust project without version flag: read version from Cargo.toml for semver branches
+        match rust::get_version() {
+            Ok(v) => Some(v),
+            Err(e) => {
+                eprintln!("warning: could not read version from Cargo.toml: {e}");
+                None
+            }
+        }
     } else {
         None
     };
