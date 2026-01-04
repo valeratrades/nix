@@ -4,9 +4,11 @@
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+regex = "1"
 ---
 
 use std::env;
+use std::fs;
 use std::process::Command;
 
 // Default layouts with their variants: (layout, variant)
@@ -93,24 +95,157 @@ fn extract_base_layouts(current: &[String]) -> Vec<String> {
     }
 }
 
-// Base xkb_options that should always be set
-const BASE_XKB_OPTIONS: &str = "grp:win_space_toggle";
+const PATCHED_XKB_DIR: &str = "/tmp/kbd_xkb";
+const CUSTOM_SYMBOLS_DIR: &str = "/home/v/nix/home/xkb_symbols";
 
-fn set_xkb_options(swap_ctrl_caps: bool) -> bool {
-    let options = if swap_ctrl_caps {
-        format!("{BASE_XKB_OPTIONS},ctrl:swapcaps")
-    } else {
-        BASE_XKB_OPTIONS.to_string()
-    };
-    let cmd = format!("input type:keyboard xkb_options \"{options}\"");
-    Command::new("swaymsg")
-        .arg(&cmd)
-        .status()
-        .map(|s| s.success())
-        .unwrap_or(false)
+/// Generate per-group ctrl/caps swap symbols
+/// This creates a custom xkb symbols file that swaps ctrl/caps only for specified groups
+fn generate_per_group_ctrl_swap(swap_groups: &[usize]) -> String {
+    if swap_groups.is_empty() {
+        return String::new();
+    }
+
+    let mut caps_symbols = Vec::new();
+    let mut lctl_symbols = Vec::new();
+
+    // Generate symbols for each group
+    // Groups that need swap: CAPS -> Control_L, LCTL -> Caps_Lock
+    // Groups that don't: leave as default (CAPS -> Caps_Lock, LCTL -> Control_L)
+    for group in swap_groups {
+        caps_symbols.push(format!("symbols[Group{group}]= [ Control_L ]"));
+        lctl_symbols.push(format!("symbols[Group{group}]= [ Caps_Lock ]"));
+    }
+
+    format!(
+        r#"
+partial modifier_keys
+xkb_symbols "pergroup_swapcaps" {{
+    key <CAPS> {{
+        type= "ONE_LEVEL",
+        {}
+    }};
+    key <LCTL> {{
+        type= "ONE_LEVEL",
+        {}
+    }};
+}};
+"#,
+        caps_symbols.join(",\n        "),
+        lctl_symbols.join(",\n        ")
+    )
 }
 
-fn set_layouts_with_variants(layouts: &[String], variants: &[String], swap_ctrl_caps: bool) -> bool {
+/// Generate a complete .xkb keymap file for the given layouts with ctrl:swapcaps on non-default ones
+fn generate_xkb_file(layouts: &[String], variants: &[String]) -> Option<String> {
+    // Create xkb directory structure with symbols subdirectory
+    let symbols_dir = format!("{PATCHED_XKB_DIR}/symbols");
+    fs::create_dir_all(&symbols_dir).ok()?;
+
+    // Copy custom layouts (semimak, etc.) to symbols directory
+    if let Ok(entries) = fs::read_dir(CUSTOM_SYMBOLS_DIR) {
+        for entry in entries.flatten() {
+            let src = entry.path();
+            if src.is_file() {
+                let dest = format!("{symbols_dir}/{}", entry.file_name().to_string_lossy());
+                fs::copy(&src, &dest).ok();
+            }
+        }
+    }
+
+    // Determine which groups need ctrl/caps swap (non-default layouts)
+    let swap_groups: Vec<usize> = layouts
+        .iter()
+        .enumerate()
+        .filter(|(_, l)| !is_default_layout(l))
+        .map(|(i, _)| i + 1) // xkb groups are 1-indexed
+        .collect();
+
+    // Generate and write per-group ctrl swap symbols
+    let ctrl_swap_symbols = generate_per_group_ctrl_swap(&swap_groups);
+    if !ctrl_swap_symbols.is_empty() {
+        let ctrl_path = format!("{symbols_dir}/kbd_ctrl_swap");
+        fs::write(&ctrl_path, &ctrl_swap_symbols).ok()?;
+    }
+
+    // Build xkb_symbols include string
+    // Format: pc+layout1(variant1):1+layout2(variant2):2+...+inet(evdev)+group(win_space_toggle)
+    let mut symbols_parts = vec!["pc".to_string()];
+
+    for (i, layout) in layouts.iter().enumerate() {
+        let variant = variants.get(i).map(|s| s.as_str()).unwrap_or("");
+        let group_num = i + 1;
+
+        let layout_spec = if variant.is_empty() {
+            format!("{layout}:{group_num}")
+        } else {
+            format!("{layout}({variant}):{group_num}")
+        };
+
+        symbols_parts.push(layout_spec);
+    }
+
+    symbols_parts.push("inet(evdev)".to_string());
+
+    // Add per-group ctrl swap if needed
+    if !swap_groups.is_empty() {
+        symbols_parts.push("kbd_ctrl_swap(pergroup_swapcaps)".to_string());
+    }
+
+    // Add group toggle option for all groups
+    for i in 1..=layouts.len() {
+        symbols_parts.push(format!("group(win_space_toggle):{i}"));
+    }
+
+    let symbols_include = symbols_parts.join("+");
+
+    // Build complete keymap description
+    let keymap = format!(
+        r#"xkb_keymap {{
+    xkb_keycodes  {{ include "evdev+aliases(qwerty)" }};
+    xkb_types     {{ include "complete" }};
+    xkb_compat    {{ include "complete" }};
+    xkb_symbols   {{ include "{symbols_include}" }};
+    xkb_geometry  {{ include "pc(pc105)" }};
+}};
+"#
+    );
+
+    let keymap_path = format!("{PATCHED_XKB_DIR}/keymap.xkbmap");
+    let xkb_path = format!("{PATCHED_XKB_DIR}/keymap.xkb");
+
+    fs::write(&keymap_path, &keymap).ok()?;
+
+    // Compile with xkbcomp - use -xkb to output text-based XKB file
+    // Use -I to add the patched xkb dir for custom symbols lookup
+    let include_arg = format!("-I{PATCHED_XKB_DIR}");
+    let compile_output = Command::new("xkbcomp")
+        .args(["-xkb", &include_arg, &keymap_path, "-o", &xkb_path])
+        .output()
+        .ok()?;
+
+    if !compile_output.status.success() {
+        let stderr = String::from_utf8_lossy(&compile_output.stderr);
+        eprintln!("xkbcomp failed: {stderr}");
+        return None;
+    }
+
+    Some(xkb_path)
+}
+
+fn set_layouts_with_variants(layouts: &[String], variants: &[String]) -> bool {
+    // Always use xkb_file approach to ensure consistent behavior
+    // and proper ctrl:swapcaps handling for non-default layouts
+    if let Some(xkb_path) = generate_xkb_file(layouts, variants) {
+        let cmd = format!("input type:keyboard xkb_file \"{xkb_path}\"");
+        return Command::new("swaymsg")
+            .arg(&cmd)
+            .status()
+            .map(|s| s.success())
+            .unwrap_or(false);
+    }
+
+    // Fallback to regular method if xkb generation fails
+    eprintln!("Warning: falling back to regular layout switching");
     let layout_str = layouts.join(",");
     let variant_str = variants.join(",");
 
@@ -131,19 +266,11 @@ fn set_layouts_with_variants(layouts: &[String], variants: &[String], swap_ctrl_
         return false;
     }
 
-    let variant_ok = Command::new("swaymsg")
+    Command::new("swaymsg")
         .arg(&variant_cmd)
         .status()
         .map(|s| s.success())
-        .unwrap_or(false);
-
-    if !variant_ok {
-        return false;
-    }
-
-    // Set xkb_options based on whether we need to swap ctrl/caps
-    // Non-default layouts need ctrl:swapcaps to undo keyd's swap
-    set_xkb_options(swap_ctrl_caps)
+        .unwrap_or(false)
 }
 
 fn switch_to_layout(index: usize) -> bool {
@@ -193,14 +320,10 @@ fn main() {
             .collect();
 
         if current != base {
-            // Default layouts don't need ctrl:swapcaps (keyd handles it)
-            if !set_layouts_with_variants(&base, &base_variants, false) {
+            if !set_layouts_with_variants(&base, &base_variants) {
                 eprintln!("Failed to restore base layouts");
                 std::process::exit(1);
             }
-        } else {
-            // Even if layouts match, ensure xkb_options are correct
-            set_xkb_options(false);
         }
         if let Some(idx) = base.iter().position(|l| l == requested) {
             if !switch_to_layout(idx) {
@@ -216,8 +339,7 @@ fn main() {
 
         let variants = build_variants(&new_layouts, variant);
 
-        // Non-default layouts need ctrl:swapcaps to undo keyd's ctrl/caps swap
-        if !set_layouts_with_variants(&new_layouts, &variants, true) {
+        if !set_layouts_with_variants(&new_layouts, &variants) {
             eprintln!("Failed to set layouts");
             std::process::exit(1);
         }
