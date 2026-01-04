@@ -408,8 +408,12 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 		// Get the line we're showing diagnostics for (either where we navigated to, or current line)
 		let display_line = nav_to.map(|(line, _)| line).unwrap_or(current_line);
 
-		// Get current position after navigation (Lua col() is 1-indexed, convert to 0-indexed)
-		let display_col: i64 = api::call_function::<_, i64>("col", (".",)).unwrap_or(1) - 1;
+		// Get column: use the target column we navigated to if available, otherwise read from cursor
+		let display_col: i64 = match nav_to {
+			Some((_, Some(col))) => col, // Use the column we explicitly navigated to (already 0-indexed)
+			_ => api::call_function::<_, i64>("col", (".",)).unwrap_or(1) - 1, // Fallback: read from cursor (1-indexed -> 0-indexed)
+		};
+		debug_log(format!("display_line: {}, display_col: {}", display_line, display_col));
 
 		let diagnostics_to_show: Vec<DiagLine> = {
 			let mut diagnostics_to_display: Vec<&InterpretedDiagnostic> = match diagnostics_filter {
@@ -461,6 +465,11 @@ pub fn jump_to_diagnostic(direction: i64, request_severity: String) {
 				crate::remap::kill_popups();
 			}
 			debug_log(format!("\n=== OPENING FLOAT ===\n{} diagnostics to show", diagnostics_to_show.len()));
+			if diagnostics_to_show.is_empty() {
+				debug_log("WARNING: diagnostics_to_show is empty, skipping popup".to_string());
+				echo("No diagnostic at this position".to_string(), Some("Comment".to_string()));
+				return;
+			}
 			show_diagnostic_float(diagnostics_to_show);
 		}
 	});

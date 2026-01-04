@@ -61,8 +61,8 @@ pub fn show_popup_with_options(text: String, options: PopupOptions) {
 	// Calculate width (max line length, minimum 10)
 	let width = lines.iter().map(|line| line.chars().count()).max().unwrap_or(10).max(10) as u32;
 
-	// Calculate height
-	let height = lines.len() as u32;
+	// Calculate height (minimum 1 to avoid Neovim error)
+	let height = (lines.len() as u32).max(1);
 
 	// Build window config based on sticky option
 	let config = if options.sticky {
