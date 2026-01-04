@@ -63,7 +63,7 @@
 	)
 )
 
-(defpoll layout_poll :initial "" :interval "3s" "./modules/layout.sh")
+(defpoll layout_poll :initial "" :interval "1s" "./modules/layout.sh")
 (defwidget layout []
 	(box
 		:visible {layout_poll != ""}
