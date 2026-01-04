@@ -14,6 +14,8 @@ use std::process::Command;
 // Default layouts with their variants: (layout, variant)
 const DEFAULT_LAYOUTS: &[(&str, &str)] = &[("semimak", "ansi"), ("ru", "")];
 
+//TODO: figure out auto switching back of Ctrl <-> Caps when switching to default layouts
+
 fn map_layout(input: &str) -> &'static str {
     match input.to_lowercase().as_str() {
         "qwerty" | "us" => "us",
