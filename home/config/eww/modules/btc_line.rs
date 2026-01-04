@@ -32,6 +32,7 @@ use serde::Serialize;
 struct Output {
     main: String,
     additional: String,
+    main_stale: bool,
 }
 
 struct LineConfig {
@@ -78,10 +79,12 @@ fn main() {
     // Check and output main and additional values
     let main_value = get_value_or_none(&lines[0], &timestamps_file, current_time);
     let additional_value = get_value_or_none(&lines[1], &timestamps_file, current_time);
+    let main_stale = is_stale(&lines[0], &timestamps_file, current_time);
 
     let output = Output {
         main: main_value,
         additional: additional_value,
+        main_stale,
     };
 
     println!("{}", serde_json::to_string(&output).unwrap());
@@ -199,6 +202,21 @@ fn get_value_or_none(line: &LineConfig, timestamps_file: &PathBuf, current_time:
     } else {
         read_file(&line.file).unwrap_or_default()
     }
+}
+
+/// Returns true if data is stale (age exceeds max_age_secs)
+fn is_stale(line: &LineConfig, timestamps_file: &PathBuf, current_time: u64) -> bool {
+    let timestamp = get_timestamp(timestamps_file, line.name).unwrap_or(0);
+
+    if timestamp > current_time && timestamp != 0 {
+        panic!(
+            "Timestamp for '{}' is in the future! ts: {} > now: {}",
+            line.name, timestamp, current_time
+        );
+    }
+
+    let age = current_time.saturating_sub(timestamp);
+    age > line.max_age_secs
 }
 
 // Simple home_dir implementation since it's deprecated in std

@@ -221,7 +221,7 @@
 (defvar btc_line_additional_str "")
 (defvar btc_line_spy_str "")
 
-(defpoll btc_line_poll :initial "{\"main\": \"\", \"additional\": \"\"}" :interval "5s" "./modules/btc_line.rs 2>/dev/null")
+(defpoll btc_line_poll :initial "{\"main\": \"\", \"additional\": \"\", \"main_stale\": false}" :interval "5s" "./modules/btc_line.rs 2>/dev/null")
 
 (defwindow btc_line_upper
 	:monitor 0
@@ -231,7 +231,8 @@
 		:visible {bar_visible == "true" && btc_line_main_str != ""}
 		:space-evenly false
 		"${btc_line_poll.additional != "None" ? btc_line_additional_str : ""}"
-		"${btc_line_main_str}"
+		(label :class {btc_line_poll.main_stale ? "warn" : ""} :text "")
+		"${btc_line_main_str}"
 	)
 )
 
