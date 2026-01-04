@@ -33,15 +33,20 @@ alias gbd="$fish_scripts_pdir/git_scripts.rs delete"
 
 alias choose_port="$fish_scripts_pdir/choose_port.sh"
 
-#DEPRECATE: recently switched everything to use a helper call one-liner, so won't need this anymore. Q: could I repurpose this to run over ~/s dir, checking if all the ones that do have a set version, have the same one?
 function check_nightly_versions
-    set -l script_dir (dirname (status --current-filename))
-    set -l nightly_versions
     set -l has_warning 0
+    set -l nightly_versions
 
-    # Find all .rs files in the script directory and subdirectories
-    for script in $script_dir/**/*.rs
-        if test -f "$script"
+    for search_dir in $argv
+        set search_dir (eval echo $search_dir)
+        if not test -d "$search_dir"
+            echo "Warning: $search_dir is not a directory"
+            set has_warning 1
+            continue
+        end
+
+        # Use fd to find .rs files, respecting .gitignore
+        for script in (fd -t f -e rs . "$search_dir" 2>/dev/null)
             # Check for selectLatestNightlyWith usage
             if grep -q 'selectLatestNightlyWith' "$script" 2>/dev/null
                 echo "Warning: $script uses selectLatestNightlyWith instead of pinned nightly version"
@@ -75,4 +80,4 @@ function check_nightly_versions
 
     return $has_warning
 end
-check_nightly_versions
+check_nightly_versions ~/s ~/nix/home/scripts
