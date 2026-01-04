@@ -1,10 +1,22 @@
+-- Save/restore views (folds, cursor) - skip special buffers like oil
+vim.api.nvim_create_autocmd("BufWinLeave", {
+	callback = function()
+		if vim.bo.buftype == "" and vim.bo.filetype ~= "oil" then
+			vim.cmd("silent! mkview")
+		end
+	end,
+})
+vim.api.nvim_create_autocmd("BufWinEnter", {
+	callback = function()
+		if vim.bo.buftype == "" and vim.bo.filetype ~= "oil" then
+			vim.cmd("silent! loadview")
+		end
+	end,
+})
+
 vim.cmd [[
-  au BufWinLeave * silent! mkview
-  au BufWinEnter * silent! loadview
   autocmd FileType * :set formatoptions-=ro
 	autocmd VimEnter,WinNew,BufWinEnter * lua vim.fn.chdir(vim.env.PWD)
-	"autocmd BufRead,BufNewFile *.md set conceallevel=3
-	"autocmd BufRead,BufNewFile *.txt set conceallevel=3
 ]]
 
 --TODO!!!: make it work when opening a new editor instance on a file

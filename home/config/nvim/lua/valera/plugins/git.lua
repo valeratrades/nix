@@ -14,6 +14,12 @@ return {
 				},
 				max_file_length = 40000,
 				numhl = false,
+				on_attach = function(bufnr)
+					local ft = vim.bo[bufnr].filetype
+					if ft == "oil" then
+						return false
+					end
+				end,
 			})
 
 			K('n', '<Space>gg', "<cmd>!git add -A && git commit -m '_' && git push<cr><cr>",

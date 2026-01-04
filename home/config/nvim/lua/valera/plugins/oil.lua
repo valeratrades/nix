@@ -2,16 +2,30 @@ return require "lazier" {
 	"stevearc/oil.nvim",
 	dependencies = { "nvim-tree/nvim-web-devicons" },
 	config = function()
-		require("oil").setup({
+		local oil = require("oil")
+
+		-- Session-wide toggle for detail columns (default: show details)
+		local show_details = true
+		local detail_columns = { "permissions", "size", "mtime", "icon" }
+		local minimal_columns = { "icon" }
+
+		local function get_columns()
+			return show_details and detail_columns or minimal_columns
+		end
+
+		local function toggle_detail_columns()
+			show_details = not show_details
+			oil.set_columns(get_columns())
+			local status = show_details and "Showing details" or "Hiding details"
+			vim.notify(status, vim.log.levels.INFO)
+		end
+
+		oil.setup({
 			default_file_explorer = true,
 			-- Id is automatically added at the beginning, and name at the end
 			-- See :help oil-columns
-			columns = {
-				"permissions",
-				"size",
-				"mtime",
-				"icon",
-			},
+			-- NOTE: permissions/size/mtime require stat() on every file - very slow in large dirs
+			columns = get_columns(),
 			-- Buffer-local options to use for oil buffers
 			buf_options = {
 				buflisted = false,
@@ -60,6 +74,7 @@ return require "lazier" {
 				["gs"] = "actions.change_sort",
 				["gx"] = "actions.open_external",
 				["g."] = "actions.toggle_hidden",
+				["gd"] = { callback = toggle_detail_columns, desc = "Toggle detail columns" },
 			},
 			use_default_keymaps = true,
 			view_options = {
