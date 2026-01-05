@@ -73,8 +73,8 @@ function M.setup_open(tmpfile)
         end
       end, { buffer = true })
 
-      -- Visual Tab to select range
-      vim.keymap.set('v', '<Tab>', function()
+      -- Visual selection confirm (Tab or CR)
+      local function confirm_visual_selection()
         local dir = oil.get_current_dir()
         local start_line = vim.fn.line('v')
         local end_line = vim.fn.line('.')
@@ -99,7 +99,9 @@ function M.setup_open(tmpfile)
           end
           vim.cmd('qa!')
         end
-      end, { buffer = true })
+      end
+      vim.keymap.set('v', '<Tab>', confirm_visual_selection, { buffer = true })
+      vim.keymap.set('v', '<CR>', confirm_visual_selection, { buffer = true })
 
       -- S to jump to Screenshots
       vim.keymap.set('n', 'S', function()
