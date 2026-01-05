@@ -597,7 +597,24 @@ fn publish(repo_name: Option<String>, private: bool, public: bool, commit: Optio
     }
 
     let commit_msg = commit.as_deref().unwrap_or("Initial Commit");
-    if !run_cmd("git", &["commit", "-m", commit_msg]) {
+    // Commit may fail if working tree is clean - that's okay, just continue
+    let commit_output = Command::new("git")
+        .args(["commit", "-m", commit_msg])
+        .output();
+
+    let commit_failed_fatally = match &commit_output {
+        Ok(o) => {
+            // Check if failure is due to "nothing to commit" - that's fine
+            let stderr = String::from_utf8_lossy(&o.stderr);
+            let stdout = String::from_utf8_lossy(&o.stdout);
+            !o.status.success()
+                && !stderr.contains("nothing to commit")
+                && !stdout.contains("nothing to commit")
+        }
+        Err(_) => true,
+    };
+
+    if commit_failed_fatally {
         eprintln!("ERROR: git commit failed");
         std::process::exit(1);
     }
