@@ -1,7 +1,10 @@
 #alias tmux="TERM='alacritty-direct' tmux"
 alias ta="tmux attach -t"
+complete -c ta -w tmux
 alias tl="tmux ls"
+complete -c tl -w tmux
 alias tks="tmux kill-server"
+complete -c tks -w tmux
 
 function tk --description "Kill tmux session + direnv deny its root"
 	if test (count $argv) != 1

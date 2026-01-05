@@ -83,5 +83,8 @@ alias epy="e ~/envs/Python/lib/python3.11/site-packages"
 
 # to simplify pasting stuff
 alias nano="nvim"
+complete -c nano -w nvim
 alias vi="nvim"
+complete -c vi -w nvim
 alias vim="nvim"
+complete -c vim -w nvim

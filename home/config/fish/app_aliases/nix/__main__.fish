@@ -1,4 +1,5 @@
 alias n="nix"
+complete -c n -w nix
 alias flake-build="sudo nixos-rebuild switch --flake .#myhost --show-trace -L -v"
 #TODO!: make into a function and git-commit with $argv concatenation for message
 alias nixup="git -C '$NIXOS_CONFIG' add -A && nix flake update --flake '$NIXOS_CONFIG' && sudo nixos-rebuild switch --show-trace -v --impure --fast && git_upload '$NIXOS_CONFIG'"
@@ -8,7 +9,7 @@ alias nshell="nix-shell --command fish"
 alias ndevelop="nix develop --command fish"
 #alias nupdate="nix flake lock --update-input nixpkgs --update-input"
 alias nup="nix flake update"
-alias up="$NIXOS_CONFIG/home/scripts/maintenance/main.sh"
+alias up="$NIXOS_CONFIG/home/scripts/maintenance.rs"
 
 function nsync
 	if [ (whoami) == "v" ]

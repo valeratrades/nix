@@ -92,6 +92,7 @@ end
 function c
 	cargo $argv
 end
+complete -c c -w cargo
 
 function rd
     set base_name (basename (pwd))

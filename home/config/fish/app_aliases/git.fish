@@ -4,9 +4,11 @@
 # Could do it through a label with say black-color. Probably a series of labels, simply named {[1-9],NaN}
 
 alias gl="lazygit"
+complete -c gl -w lazygit
 
 set -g GIT_SHARED_MAIN_BRANCHES master main release stg prod
 alias g="git"
+complete -c g -w git
 
 function gg
 	set prefix ""
@@ -87,11 +89,16 @@ end
 
 # GitHub aliases
 alias gi="gh issue create -b \"\" -t"
+complete -c gi -w gh
 alias gil="gh issue list"
+complete -c gil -w gh
 
 alias gia="gh issue edit --add-assignee"
+complete -c gia -w gh
 alias giam="gh issue edit --add-assignee @me"
+complete -c giam -w gh
 alias gial="gh issue edit --add-label"
+complete -c gial -w gh
 
 function giem
 	set issue $argv[1]
@@ -100,8 +107,11 @@ function giem
 end
 
 alias gic="gh issue close -r completed"
+complete -c gic -w gh
 alias gir="gh issue close -r \"not planned\"" # for "retract"
+complete -c gir -w gh
 alias gix="gh issue delete --yes"
+complete -c gix -w gh
 
 alias git_rate_limit 'curl -L -X GET -H "Accept: application/vnd.github+json" -H "Authorization: token $GITHUB_KEY" https://api.github.com/rate_limit'
 

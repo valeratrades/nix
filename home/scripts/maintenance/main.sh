@@ -12,7 +12,10 @@ sync()  {
 	("$dot/check_caches.sh" && printf "\033[32mChecked caches\033[0m\n" || printf "\033[31mFailed to check caches\033[0m\n") &
 	PID3=$!
 
-	wait $PID2 $PID3 #$PID1
+	(fish -c "check_nightly_versions --discover" && printf "\033[32mRefreshed nightly version file cache\033[0m\n" || printf "\033[31mFailed to refresh nightly version cache\033[0m\n") &
+	PID4=$!
+
+	wait $PID2 $PID3 $PID4 #$PID1
 
 	sudo nixos-rebuild switch --show-trace -v --impure && git -C "$NIXOS_CONFIG" add -A && git -C "$NIXOS_CONFIG" commit -m "_" && git -C "$NIXOS_CONFIG" push  # git commit nix files only on successful build
 	return 0
