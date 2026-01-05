@@ -2,7 +2,10 @@
 
 {
   programs = {
-    fish.enable = true;
+    fish = {
+      enable = true;
+      useBabelfish = true; # faster than foreign-env, and we don't source any bash scripts anyway
+    };
     ssh = {
       startAgent = true;
       enableAskPassword = true;

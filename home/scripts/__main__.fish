@@ -22,7 +22,7 @@ alias gn="$__fish_scripts_dir/git_scripts.rs publish"
 alias kbd="$__fish_scripts_dir/kbd.rs"
 alias optimize_for="sudo $__fish_scripts_dir/optimize_for.rs"
 alias smart_shutdown="$__fish_scripts_dir/smart_shutdown.rs"
-alias profile_shell_init="$__fish_scripts_dir/profile_shell_init.rs"
+alias profile_shell_init="$__fish_scripts_dir/maintenance/profile_shell_init.rs"
 
 alias git_scripts="$__fish_scripts_dir/git_scripts.rs"
 alias gfork="$__fish_scripts_dir/git_scripts.rs fork"
