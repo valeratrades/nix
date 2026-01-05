@@ -1,38 +1,38 @@
-set fish_scripts_pdir (dirname (status --current-filename))
-source $fish_scripts_pdir/videos.fish
-source $fish_scripts_pdir/server.fish
-source $fish_scripts_pdir/weird/__main__.fish
-source $fish_scripts_pdir/document_watch.fish
+set __fish_scripts_dir (dirname (status --current-filename))
+source $__fish_scripts_dir/videos.fish
+source $__fish_scripts_dir/server.fish
+source $__fish_scripts_dir/weird/__main__.fish
+source $__fish_scripts_dir/document_watch.fish
 
 function beep
-	$fish_scripts_pdir/beep.rs $fish_scripts_pdir/assets/sound/Notification.mp3 $argv
+	$__fish_scripts_dir/beep.rs $__fish_scripts_dir/assets/sound/Notification.mp3 $argv
 end
 
-alias 2fa="$fish_scripts_pdir/2fa.rs"
-alias timer="$fish_scripts_pdir/timer.rs"
-alias theme="$fish_scripts_pdir/theme_toggle.rs"
-alias mvd="$fish_scripts_pdir/mvd.rs"
-alias translate_book="$fish_scripts_pdir/translate_book.rs"
-alias clipboard_to_keystrokes="$fish_scripts_pdir/clipboard_to_keystrokes.rs"
-alias eww_open_on="$fish_scripts_pdir/eww_open_on.rs"
-alias bluetooth="$fish_scripts_pdir/bluetooth.rs"
-alias cnix_release="$fish_scripts_pdir/cnix_release.rs"
-alias nb="$fish_scripts_pdir/nb.rs"
-alias gn="$fish_scripts_pdir/git_scripts.rs publish"
-alias kbd="$fish_scripts_pdir/kbd.rs"
-alias optimize_for="sudo $fish_scripts_pdir/optimize_for.rs"
-alias smart_shutdown="$fish_scripts_pdir/smart_shutdown.rs"
-alias profile_shell_init="$fish_scripts_pdir/profile_shell_init.rs"
+alias 2fa="$__fish_scripts_dir/2fa.rs"
+alias timer="$__fish_scripts_dir/timer.rs"
+alias theme="$__fish_scripts_dir/theme_toggle.rs"
+alias mvd="$__fish_scripts_dir/mvd.rs"
+alias translate_book="$__fish_scripts_dir/translate_book.rs"
+alias clipboard_to_keystrokes="$__fish_scripts_dir/clipboard_to_keystrokes.rs"
+alias eww_open_on="$__fish_scripts_dir/eww_open_on.rs"
+alias bluetooth="$__fish_scripts_dir/bluetooth.rs"
+alias cnix_release="$__fish_scripts_dir/cnix_release.rs"
+alias nb="$__fish_scripts_dir/nb.rs"
+alias gn="$__fish_scripts_dir/git_scripts.rs publish"
+alias kbd="$__fish_scripts_dir/kbd.rs"
+alias optimize_for="sudo $__fish_scripts_dir/optimize_for.rs"
+alias smart_shutdown="$__fish_scripts_dir/smart_shutdown.rs"
+alias profile_shell_init="$__fish_scripts_dir/profile_shell_init.rs"
 
-alias git_scripts="$fish_scripts_pdir/git_scripts.rs"
-alias gfork="$fish_scripts_pdir/git_scripts.rs fork"
-alias gpr="$fish_scripts_pdir/git_scripts.rs pr"
-alias gp="$fish_scripts_pdir/git_scripts.rs push"
-alias gpf="$fish_scripts_pdir/git_scripts.rs push --force"
-alias gpl="$fish_scripts_pdir/git_scripts.rs push --force-with-lease"
-alias gbd="$fish_scripts_pdir/git_scripts.rs delete"
+alias git_scripts="$__fish_scripts_dir/git_scripts.rs"
+alias gfork="$__fish_scripts_dir/git_scripts.rs fork"
+alias gpr="$__fish_scripts_dir/git_scripts.rs pr"
+alias gp="$__fish_scripts_dir/git_scripts.rs push"
+alias gpf="$__fish_scripts_dir/git_scripts.rs push --force"
+alias gpl="$__fish_scripts_dir/git_scripts.rs push --force-with-lease"
+alias gbd="$__fish_scripts_dir/git_scripts.rs delete"
 
-alias choose_port="$fish_scripts_pdir/choose_port.sh"
+alias choose_port="$__fish_scripts_dir/choose_port.sh"
 
 set -g __check_nightly_versions_cache "$XDG_STATE_HOME/fish/nightly_version_files.txt"
 set -g __maintenance_last_run "$XDG_STATE_HOME/fish/maintenance_last_run"

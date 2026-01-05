@@ -1,24 +1,24 @@
 #NB: don't make aliases with """,""" - as they are incorrectly interpreted
 #NB: local vars are shared between all things you source. So setting an abbreviation to say `(dirname(status -- curent-filename))` to something simple like `pdir` could overwrite pdir of something else and wreck havoc.
 
-set main_config_pdir (dirname (status --current-filename))
+set __fish_config_main_dir (dirname (status --current-filename))
 
 source $HOME/s/g/private/credentials.fish
-source $main_config_pdir/global.fish #NB: other things can rely on functions in it
-source $main_config_pdir/other.fish
+source $__fish_config_main_dir/global.fish #NB: other things can rely on functions in it
+source $__fish_config_main_dir/other.fish
 
-source $main_config_pdir/cli_translate.fish
-source $main_config_pdir/cs_nav.fish
-source $main_config_pdir/tmp.fish
+source $__fish_config_main_dir/cli_translate.fish
+source $__fish_config_main_dir/cs_nav.fish
+source $__fish_config_main_dir/tmp.fish
 
-source (dirname (dirname $main_config_pdir))/scripts/__main__.fish
+source $__fish_config_main_dir/../../scripts/__main__.fish
 
-source $main_config_pdir/app_aliases/__main__.fish
+source $__fish_config_main_dir/app_aliases/__main__.fish
 
-source "$NIXOS_CONFIG/home/file_snippets/__main__.fish"
+source $__fish_config_main_dir/../../file_snippets/__main__.fish
 #source "$NIXOS_CONFIG/home/scripts/shell_harpoon/main.fish" #DEPRECATED: pointless. Might want to nuke the entire thing
-source "$NIXOS_CONFIG/home/config/eww/__main__.fish"
-source "$NIXOS_CONFIG/home/config/tmux/__main__.fish"
+source $__fish_config_main_dir/../eww/__main__.fish
+source $__fish_config_main_dir/../tmux/__main__.fish
 
 # Init utils {{{
 

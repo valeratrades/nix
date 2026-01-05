@@ -1,14 +1,15 @@
-source (dirname (status --current-filename))/cargo.fish
-source (dirname (status --current-filename))/direnv.fish
-source (dirname (status --current-filename))/git.fish
-source (dirname (status --current-filename))/nix/__main__.fish
-source (dirname (status --current-filename))/music.fish
-source (dirname (status --current-filename))/go.fish
-source (dirname (status --current-filename))/nvim.fish
-source (dirname (status --current-filename))/ssh.fish
-source (dirname (status --current-filename))/swappy.fish
-source (dirname (status --current-filename))/tg.fish
-source (dirname (status --current-filename))/tmux.fish
-source (dirname (status --current-filename))/zathura.fish
-source (dirname (status --current-filename))/uv.fish
-source (dirname (status --current-filename))/llm.fish
+set __fish_config_app_aliases_dir (dirname (status --current-filename))
+source $__fish_config_app_aliases_dir/cargo.fish
+source $__fish_config_app_aliases_dir/direnv.fish
+source $__fish_config_app_aliases_dir/git.fish
+source $__fish_config_app_aliases_dir/nix/__main__.fish
+source $__fish_config_app_aliases_dir/music.fish
+source $__fish_config_app_aliases_dir/go.fish
+source $__fish_config_app_aliases_dir/nvim.fish
+source $__fish_config_app_aliases_dir/ssh.fish
+source $__fish_config_app_aliases_dir/swappy.fish
+source $__fish_config_app_aliases_dir/tg.fish
+source $__fish_config_app_aliases_dir/tmux.fish
+source $__fish_config_app_aliases_dir/zathura.fish
+source $__fish_config_app_aliases_dir/uv.fish
+source $__fish_config_app_aliases_dir/llm.fish

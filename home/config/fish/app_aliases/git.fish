@@ -1,4 +1,5 @@
 # all general git shorthands
+set __fish_config_git_dir (dirname (status --current-filename))
 
 #TODO!!: start assigning difficulty score to all entries. Default to NaN.
 # Could do it through a label with say black-color. Probably a series of labels, simply named {[1-9],NaN}
@@ -214,7 +215,7 @@ end
 
 function gc
 	#ex: gc neovim/neovim . -c
-	set result (cargo -Zscript -q (dirname (status --current-filename))/git_clone.rs $argv[1] $argv[2])
+	set result (cargo -Zscript -q $__fish_config_git_dir/git_clone.rs $argv[1] $argv[2])
 	if [ $status = 0 ]
 		if begin
 			[ (count $argv) -ge 3 ]
