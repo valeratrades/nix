@@ -57,6 +57,14 @@ fn main() {
     let status = cmd.status().expect("Failed to run nixos-rebuild");
     let status_code = status.code().unwrap_or(1);
 
+    // Refresh shell init caches after successful rebuild
+    if status.success() {
+        eprintln!("Refreshing shell init caches...");
+        let _ = Command::new("fish")
+            .args(["-c", "refresh_shell_init_caches"])
+            .status();
+    }
+
     // Play final beep if requested
     if args.beep {
         let _ = Command::new("beep")

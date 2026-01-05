@@ -22,6 +22,7 @@ alias gn="$fish_scripts_pdir/git_scripts.rs publish"
 alias kbd="$fish_scripts_pdir/kbd.rs"
 alias optimize_for="sudo $fish_scripts_pdir/optimize_for.rs"
 alias smart_shutdown="$fish_scripts_pdir/smart_shutdown.rs"
+alias profile_shell_init="$fish_scripts_pdir/profile_shell_init.rs"
 
 alias git_scripts="$fish_scripts_pdir/git_scripts.rs"
 alias gfork="$fish_scripts_pdir/git_scripts.rs fork"
@@ -86,8 +87,9 @@ function check_nightly_versions
                 continue
             end
 
-            # Use fd to find .rs and .nix files that contain nightly patterns
-            for script in (fd -t f -e rs -e nix . "$search_dir" 2>/dev/null)
+            # Use fd to find .rs files that contain nightly patterns
+            # Only .rs scripts need pinned versions; proper projects with flake.nix can use selectLatestNightlyWith
+            for script in (fd -t f -e rs . "$search_dir" 2>/dev/null)
                 if grep -qE 'selectLatestNightlyWith|nightly\."[0-9]{4}-[0-9]{2}-[0-9]{2}"' "$script" 2>/dev/null
                     echo "$script" >> $__check_nightly_versions_cache
                     set -a files_to_check "$script"
@@ -110,20 +112,20 @@ function check_nightly_versions
         end < $__check_nightly_versions_cache
     end
 
-    # Check the files
-    for script in $files_to_check
-        # Check for selectLatestNightlyWith usage
-        if grep -q 'selectLatestNightlyWith' "$script" 2>/dev/null
-            echo "Warning: $script uses selectLatestNightlyWith instead of pinned nightly version"
-            set has_warning 1
-            continue
-        end
-
-        # Extract nightly version (format: nightly."YYYY-MM-DD")
-        set -l _version (grep -oP 'nightly\."\K[0-9]{4}-[0-9]{2}-[0-9]{2}' "$script" 2>/dev/null)
-
-        if test -n "$_version"
-            set -a nightly_versions "$_version:$script"
+    # Check files with single rg call
+    if test (count $files_to_check) -gt 0
+        # Single rg call for both patterns, limit to first match per file
+        for match in (rg -m1 --with-filename '(selectLatestNightlyWith|nightly\."[0-9]{4}-[0-9]{2}-[0-9]{2}")' $files_to_check 2>/dev/null)
+            set -l file (string split -m1 ':' $match)[1]
+            if string match -q '*selectLatestNightlyWith*' -- $match
+                echo "Warning: $file uses selectLatestNightlyWith instead of pinned nightly version"
+                set has_warning 1
+            else
+                set -l version (string match -r '[0-9]{4}-[0-9]{2}-[0-9]{2}' $match)
+                if test -n "$version"
+                    set -a nightly_versions "$version:$file"
+                end
+            end
         end
     end
 
@@ -144,4 +146,5 @@ function check_nightly_versions
 
     return $has_warning
 end
-check_nightly_versions --known 2>/dev/null; or true
+# check_nightly_versions --known is too slow for shell startup (~10ms for rg call)
+# Run during --discover (maintenance) instead
