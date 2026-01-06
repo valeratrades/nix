@@ -267,40 +267,70 @@ fn pr(target_branch: Option<String>, draft: bool) {
         std::process::exit(1);
     }
 
-    println!("Creating PR: {current_branch} -> {target_branch}");
-
-    // Try to create the PR (use --head to avoid push detection issues)
-    let pr_create_output = Command::new("gh")
-        .args([
-            "pr",
-            "create",
-            "-B",
-            &target_branch,
-            "-f",
-            "-t",
-            &current_branch,
-            "--head",
-            &current_branch,
-        ])
-        .stdin(Stdio::null())
+    // Check if a PR already exists for this branch
+    let existing_pr = Command::new("gh")
+        .args(["pr", "view", "--json", "number,isDraft,baseRefName"])
         .output();
 
-    let pr_already_exists = match &pr_create_output {
-        Ok(o) => String::from_utf8_lossy(&o.stderr).contains("already exists"),
-        Err(_) => false,
+    let (pr_exists, is_draft, existing_base) = match &existing_pr {
+        Ok(o) if o.status.success() => {
+            let json_str = String::from_utf8_lossy(&o.stdout);
+            let is_draft = json_str.contains("\"isDraft\":true");
+            let base = json_str
+                .split("\"baseRefName\":\"")
+                .nth(1)
+                .and_then(|s| s.split('"').next())
+                .map(|s| s.to_string());
+            (true, is_draft, base)
+        }
+        _ => (false, false, None),
     };
 
-    if !pr_already_exists
-        && !pr_create_output
+    if pr_exists {
+        // Check if existing PR targets same branch
+        if existing_base.as_deref() != Some(&target_branch) {
+            eprintln!(
+                "ERROR: Existing PR targets '{}', but you specified '{target_branch}'",
+                existing_base.as_deref().unwrap_or("unknown")
+            );
+            std::process::exit(1);
+        }
+
+        if is_draft {
+            println!("Found existing draft PR, marking ready for review...");
+            if !run_cmd("gh", &["pr", "ready"]) {
+                eprintln!("ERROR: Failed to mark PR as ready");
+                std::process::exit(1);
+            }
+        } else {
+            println!("PR already exists, proceeding to merge...");
+        }
+    } else {
+        println!("Creating PR: {current_branch} -> {target_branch}");
+
+        // Try to create the PR (use --head to avoid push detection issues)
+        let pr_create_output = Command::new("gh")
+            .args([
+                "pr",
+                "create",
+                "-B",
+                &target_branch,
+                "-f",
+                "-t",
+                &current_branch,
+                "--head",
+                &current_branch,
+            ])
+            .stdin(Stdio::null())
+            .output();
+
+        if !pr_create_output
             .map(|o| o.status.success())
             .unwrap_or(false)
-    {
-        eprintln!("ERROR: Failed to create PR");
-        std::process::exit(1);
-    }
-
-    if pr_already_exists {
-        println!("PR already exists, proceeding to merge...");
+        {
+            eprintln!("ERROR: Failed to create PR");
+            std::process::exit(1);
+        }
     }
 
     // Get PR number for the current branch (matches by head branch, not title)
