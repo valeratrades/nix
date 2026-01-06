@@ -256,7 +256,7 @@ K("t", "<C-w>t", "<C-\\><C-N><C-w>l", { desc = "Win right from terminal" })
 --
 
 local function copyFileLineCol()
-	local file = vim.fn.expand('%')
+	local file = vim.fn.expand('%:p') -- absolute path
 	local mode = vim.fn.mode()
 
 	if mode == 'v' or mode == 'V' or mode == '\22' then -- visual, visual-line, visual-block
@@ -272,9 +272,15 @@ local function copyFileLineCol()
 	end
 end
 
+local function copyFilePath()
+	return vim.fn.expand('%:p') -- absolute path
+end
+
 K("", "<Space>ay", function() vim.fn.setreg('"', copyFileLineCol()) end, { desc = "copy file:line:col to \" buffer" })
 K("", "<Space>a<Space>y", function() vim.fn.setreg('+', copyFileLineCol()) end,
 	{ desc = "copy file:line:col to + buffer" })
+K("", "<Space>aY", function() vim.fn.setreg('"', copyFilePath()) end, { desc = "copy filepath to \" buffer" })
+K("", "<Space>a<Space>Y", function() vim.fn.setreg('+', copyFilePath()) end, { desc = "copy filepath to + buffer" })
 
 vim.api.nvim_create_user_command("Gf", function(opts)
 	local arg = opts.fargs[1]
