@@ -33,12 +33,11 @@
           (block "instagram.com")
           (block "wcoflix.tv")
           (block "wcostream.tv")
-          (block "ridomovies.tv")
-          (block "moviesjoy.cx")
+          (block "*movies*")
           (block "anigo.to")
           (block "imdb.com")
           (block "chat*")
-          (block "anime*")
+          (block "*anime*")
           #,}}}1
       ];
 
