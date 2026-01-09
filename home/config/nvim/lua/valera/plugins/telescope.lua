@@ -46,13 +46,25 @@ return require "lazier" {
 			return patterns
 		end
 
-		-- Build glob exclusions for the find command (fd/rg level, not post-filter)
-		local function build_find_command_args()
+		-- Build exclusion args for fd and rg (different syntax)
+		local function build_fd_exclude_args()
 			local args = {}
 			if not include_submodules then
 				local submodule_paths = get_submodule_paths()
 				for _, path in ipairs(submodule_paths) do
-					-- Remove trailing slash for glob pattern
+					local clean_path = path:gsub("/$", "")
+					table.insert(args, "--exclude")
+					table.insert(args, clean_path)
+				end
+			end
+			return args
+		end
+
+		local function build_rg_exclude_args()
+			local args = {}
+			if not include_submodules then
+				local submodule_paths = get_submodule_paths()
+				for _, path in ipairs(submodule_paths) do
 					local clean_path = path:gsub("/$", "")
 					table.insert(args, "--glob")
 					table.insert(args, "!" .. clean_path .. "/**")
@@ -62,19 +74,18 @@ return require "lazier" {
 		end
 
 		local function get_gs()
-			local extra_args = build_find_command_args()
 			return {
 				hidden = true,
 				no_ignore = true,
 				file_ignore_patterns = build_ignore_patterns(),
-				-- For find_files (uses fd by default)
+				-- For find_files (uses fd)
 				find_command = vim.list_extend(
 					{ "fd", "--type", "f", "--hidden", "--no-ignore", "--color", "never" },
-					extra_args
+					build_fd_exclude_args()
 				),
 				-- For live_grep (uses rg)
 				additional_args = function()
-					return extra_args
+					return build_rg_exclude_args()
 				end,
 			}
 		end
