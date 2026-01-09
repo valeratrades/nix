@@ -24,13 +24,13 @@
         pname = manifest.name;
         stdenv = pkgs.stdenvAdapters.useMoldLinker pkgs.stdenv;
 
+        rs = v-utils.rs { inherit pkgs rust; };
         github = v-utils.github {
-          inherit pkgs pname;
+          inherit pkgs pname rs;
           lastSupportedVersion = "CURRENT_NIGHTLY_BY_DATE";
           langs = [ "rs" ];
           jobs.default = true;
         };
-        rs = v-utils.rs { inherit pkgs rust; };
         readme = v-utils.readme-fw {
           inherit pkgs pname;
           defaults = true;
