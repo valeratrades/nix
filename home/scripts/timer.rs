@@ -185,11 +185,16 @@ fn timer(time: &str, quiet: bool) -> Result<(), String> {
             sleep(Duration::from_millis(100));
         }
 
-        let mins = left / 60;
+        let hours = left / 3600;
+        let mins = (left % 3600) / 60;
         let secs = left % 60;
-        let formatted_secs = format!("{:02}", secs);
+        let display = if hours > 0 {
+            format!("{hours}:{mins:02}:{secs:02}")
+        } else {
+            format!("{mins}:{secs:02}")
+        };
         Command::new("eww")
-            .args(["update", &format!("timer={mins}:{formatted_secs}")])
+            .args(["update", &format!("timer={display}")])
             .status()
             .map_err(|e| e.to_string())?;
         sleep(Duration::from_secs(1));
