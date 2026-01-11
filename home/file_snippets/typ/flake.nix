@@ -2,20 +2,31 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
+    pre-commit-hooks.url = "github:cachix/git-hooks.nix";
     v-utils.url = "github:valeratrades/.github?ref=v1.4";
   };
-
-  outputs = { self, nixpkgs, flake-utils, v-utils }:
-    flake-utils.lib.eachDefaultSystem (system:
+  outputs = { self, nixpkgs, flake-utils, pre-commit-hooks, v-utils }:
+    flake-utils.lib.eachDefaultSystem (
+      system:
       let
-        pkgs = nixpkgs.legacyPackages.${system};
+        pkgs = import nixpkgs {
+          inherit system;
+          allowUnfree = true;
+        };
+        pre-commit-check = pre-commit-hooks.lib.${system}.run (v-utils.files.preCommit { inherit pkgs; });
         pname = "PROJECT_NAME_PLACEHOLDER";
 
+        github = v-utils.github {
+          inherit pkgs pname;
+          lastSupportedVersion = "";
+          langs = [ ];
+          jobs.default = false;
+        };
         readme = v-utils.readme-fw {
           inherit pkgs pname;
           lastSupportedVersion = "";
           rootDir = ./.;
-          licenses = [{ name = "Blue Oak 1.0.0"; outPath = "LICENSE"; }];
+          default = true;
           badges = [ "loc" ];
         };
       in
@@ -36,21 +47,21 @@
           '';
         };
 
-        devShells.default = pkgs.mkShell {
-          buildInputs = [ pkgs.typst ];
+        devShells.default =
+          with pkgs;
+          mkShell {
+            shellHook =
+              pre-commit-check.shellHook
+              + github.shellHook
+              + readme.shellHook
+              + ''
+                cp -f ${(v-utils.files.treefmt) { inherit pkgs; }} ./.treefmt.toml
+              '';
 
-          shellHook = ''
-            cp -f ${v-utils.files.licenses.blue_oak} ./LICENSE
-            cp -f ${
-              (v-utils.files.gitignore {
-                inherit pkgs;
-                langs = [ ];
-              })
-            } ./.gitignore
-            cp -f ${ (v-utils.files.gitLfs { inherit pkgs; }) } ./.gitattributes
-            cp -f ${readme} ./README.md
-          '';
-        };
+            packages = [
+              typst
+            ] ++ pre-commit-check.enabledPackages ++ github.enabledPackages;
+          };
       }
     );
 }

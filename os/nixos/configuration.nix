@@ -129,17 +129,15 @@ in {
 			"vm.mem_profiling" = 0;
 		};
 
-    # # for obs's Virtual Camera
-    # FIXME: v4l2loopback 0.15.1 doesn't build on kernel 6.18 (API change: v4l2_fh_add/del signature)
-    # extraModulePackages = with config.boot.kernelPackages; [ v4l2loopback ];
-    extraModulePackages = [ ];
+    # for obs's Virtual Camera
+    extraModulePackages = with config.boot.kernelPackages; [ v4l2loopback ];
     kernelModules = [
-      # "v4l2loopback"  # disabled until v4l2loopback is updated for 6.18
+      "v4l2loopback"
       #"binder-linux" # waydroid, nothing to do with obs (but I'm bad with nix, can't split them) #dbg: disabled waydroid for a moment
 			"evdi" # only needed with displaylink
     ];
     extraModprobeConfig = ''
-            # options v4l2loopback devices=1 video_nr=1 card_label="OBS Cam" exclusive_caps=1  # disabled with v4l2loopback above
+            options v4l2loopback devices=1 video_nr=1 card_label="OBS Cam" exclusive_caps=1
             options kvm_amd nested=1 # gnome-boxes require kvm
             # Disable NVIDIA HDMI audio (index 1) - suspected cause of IRQ storms/kernel panics
             # AMD audio is index 0, NVIDIA is index 1
