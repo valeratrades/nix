@@ -202,7 +202,8 @@ in {
 
         zed-editor-fhs
 				zed
-				claude-code
+				#claude-code #DEPRECATE: once sure that https://github.com/sadjow/claude-code-nix is the way to go
+        inputs.claude_code_nix.packages.${pkgs.stdenv.hostPlatform.system}.default
 
         libreoffice-still
 

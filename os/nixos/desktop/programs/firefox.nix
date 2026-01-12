@@ -39,7 +39,7 @@
           (block "imdb.com")
           (block "chat*")
           (fuzzy "anime")
-          #,}}}1
+          #,}}}
       ];
 
       ExtensionSettings = let

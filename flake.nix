@@ -52,6 +52,8 @@
 
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
 
+    claude_code_nix.url = "github:sadjow/claude-code-nix";
+
     # -----------------------------------------------------------------
     # My packages
     # ----------------------------------------------------------------
@@ -59,7 +61,8 @@
       url = "github:valeratrades/auto_redshift";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    todo.url = "github:valeratrades/todo?ref=release";
+    #todo.url = "github:valeratrades/todo?ref=release";
+    todo.url = "github:valeratrades/todo"; #dbg
     booktyping = {
       url = "github:valeratrades/booktyping";
       inputs.nixpkgs.follows = "nixpkgs";

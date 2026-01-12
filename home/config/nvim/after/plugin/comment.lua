@@ -57,16 +57,16 @@ K("v", "gba", "<esc>`><cmd>lua FoldmarkerCommentBlock('always')<cr>", {
 	desc = "Add a fold marker (always) around selection",
 })
 
--- Custom foldtext that strips "always" from fold markers
-vim.opt.foldtext = [[substitute(getline(v:foldstart),'{{{]] .. [[always','{{{','')]]
-
+-- always folded markers {{{1
+vim.opt.foldtext = [[substitute(getline(v:foldstart),'{{{]] .. [[always[->\/*#]*\s*$','{{{','')]] -- Custom foldtext that strips "always" from fold markers
 vim.api.nvim_create_autocmd("BufReadPost", {
 	callback = function()
 		vim.defer_fn(function()
-			vim.cmd([[silent! g/{{]] .. [[{always/normal! zc]])
+			vim.cmd([[silent! g/{{]] .. [[{always[->\/*#]*\s*$/normal! zc]])
 		end, 10)
 	end,
 })
+--,}}}1
 
 -- gbf as alias for gb1f
 K("v", "gbf", "<esc>`><cmd>lua FoldmarkerCommentBlock(1)<cr>", {
