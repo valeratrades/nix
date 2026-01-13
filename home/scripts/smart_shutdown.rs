@@ -20,6 +20,10 @@ struct Args {
     /// Skip the actual shutdown (dry run)
     #[arg(short = 'n', long)]
     dry_run: bool,
+
+    /// Internal flag: run as detached process (used when inside tmux)
+    #[arg(long, hide = true)]
+    detached: bool,
 }
 
 fn run_cmd_silent(cmd: &str, args: &[&str]) -> bool {
@@ -34,6 +38,43 @@ fn run_cmd_silent(cmd: &str, args: &[&str]) -> bool {
 
 fn main() {
     let args = Args::parse();
+
+    // If we're inside tmux and not already detached, re-exec ourselves detached from tmux
+    if !args.detached && std::env::var("TMUX").is_ok() {
+        let exe = std::env::current_exe().expect("Failed to get current executable path");
+        let mut cmd_args = vec!["--detached".to_string()];
+        if args.claude_sessions {
+            cmd_args.push("--claude-sessions".to_string());
+        }
+        if args.dry_run {
+            cmd_args.push("--dry-run".to_string());
+        }
+
+        // Use setsid to create a new session, detaching from the terminal
+        let status = Command::new("setsid")
+            .arg("--fork")
+            .arg(&exe)
+            .args(&cmd_args)
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status();
+
+        match status {
+            Ok(s) if s.success() => {
+                println!("Shutdown process started in background");
+                std::process::exit(0);
+            }
+            Ok(s) => {
+                eprintln!("Failed to start detached process: exit code {:?}", s.code());
+                std::process::exit(1);
+            }
+            Err(e) => {
+                eprintln!("Failed to start detached process: {e}");
+                std::process::exit(1);
+            }
+        }
+    }
 
     // 1. Run claude_sessions and send to telegram if requested
     if args.claude_sessions {

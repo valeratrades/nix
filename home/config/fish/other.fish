@@ -1,3 +1,5 @@
+alias sudo="sudo -E"
+
 function chh
     sudo chmod -R 777 ~/
 end
