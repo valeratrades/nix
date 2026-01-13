@@ -46,20 +46,16 @@
           };
           readme = v-utils.readme-fw {
             inherit pkgs pname;
+            defaults = true;
             lastSupportedVersion = "python-3.12";
             rootDir = ./.;
-            licenses = [
-              {
-                name = "Blue Oak 1.0.0";
-                outPath = "LICENSE";
-              }
-            ];
             badges = [
               "msrv"
               "loc"
               "ci"
             ];
           };
+          combined = v-utils.utils.combineModules [ github readme ];
         in
         {
           default = devenv.lib.mkShell {
@@ -93,14 +89,10 @@
                 };
 
                 enterShell =
-                  github.shellHook +
+                  combined.shellHook +
                   ''
-                  cp -f ${v-utils.files.licenses.blue_oak} ./LICENSE
-
                   cp -f ${(v-utils.files.treefmt) { inherit pkgs; }} ./.treefmt.toml
                   cp -f ${ (v-utils.files.gitLfs { inherit pkgs; }) } ./.gitattributes
-
-                  cp -f ${readme} ./README.md
 
                   if [ -f .devenv/state/venv/bin/activate ]; then
                     source .devenv/state/venv/bin/activate

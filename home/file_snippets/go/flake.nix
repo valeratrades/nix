@@ -36,20 +36,16 @@
         };
         readme = v-utils.readme-fw {
           inherit pkgs pname;
+          defaults = true;
           lastSupportedVersion = "go-GOLANG_VERSION";
           rootDir = ./.;
-          licenses = [
-            {
-              name = "Blue Oak 1.0.0";
-              outPath = "LICENSE";
-            }
-          ];
           badges = [
             "msrv"
             "loc"
             "ci"
           ];
         };
+        combined = v-utils.utils.combineModules [ github readme ];
       in
       {
         #TODO!: \
@@ -65,21 +61,17 @@
             inherit stdenv;
             shellHook =
               pre-commit-check.shellHook
-              + github.shellHook
+              + combined.shellHook
               + ''
-                cp -f ${v-utils.files.licenses.blue_oak} ./LICENSE
-
                 cp -f ${(v-utils.files.treefmt) { inherit pkgs; }} ./.treefmt.toml
                 cp -f ${ (v-utils.files.gitLfs { inherit pkgs; }) } ./.gitattributes
                 cp -f ${(v-utils.files.golang.gofumpt { inherit pkgs; })} ./gofumpt.toml
-
-                cp -f ${readme} ./README.md
               '';
 
             packages = [
               go  # patched with -nounusederrors support
               mold
-            ] ++ pre-commit-check.enabledPackages ++ github.enabledPackages;
+            ] ++ pre-commit-check.enabledPackages ++ combined.enabledPackages;
           };
       }
     );

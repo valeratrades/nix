@@ -29,6 +29,7 @@
           default = true;
           badges = [ "loc" ];
         };
+        combined = v-utils.utils.combineModules [ github readme ];
       in
       {
         packages.default = pkgs.stdenvNoCC.mkDerivation {
@@ -52,15 +53,14 @@
           mkShell {
             shellHook =
               pre-commit-check.shellHook
-              + github.shellHook
-              + readme.shellHook
+              + combined.shellHook
               + ''
                 cp -f ${(v-utils.files.treefmt) { inherit pkgs; }} ./.treefmt.toml
               '';
 
             packages = [
               typst
-            ] ++ pre-commit-check.enabledPackages ++ github.enabledPackages;
+            ] ++ pre-commit-check.enabledPackages ++ combined.enabledPackages;
           };
       }
     );

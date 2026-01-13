@@ -38,6 +38,7 @@
           rootDir = ./.;
           badges = [ "msrv" "crates_io" "docs_rs" "loc" "ci" ];
         };
+        combined = v-utils.utils.combineModules [ rs github readme ];
       in
       {
         packages =
@@ -69,9 +70,7 @@
             inherit stdenv;
             shellHook =
               pre-commit-check.shellHook
-              + github.shellHook
-              + rs.shellHook
-              + readme.shellHook
+              + combined.shellHook
               + ''
                 cp -f ${(v-utils.files.treefmt) { inherit pkgs; }} ./.treefmt.toml
               '';
@@ -81,7 +80,7 @@
               openssl
               pkg-config
               rust
-            ] ++ pre-commit-check.enabledPackages ++ github.enabledPackages ++ rs.enabledPackages;
+            ] ++ pre-commit-check.enabledPackages ++ combined.enabledPackages;
 
 						env.RUST_BACKTRACE = 1;
 						env.RUST_LIB_BACKTRACE = 0;

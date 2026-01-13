@@ -3005,11 +3005,11 @@
         "v-utils": "v-utils_9"
       },
       "locked": {
-        "lastModified": 1768258915,
-        "narHash": "sha256-i3A+Xl4mbvSDx8fIkdNvNC2HUrQz5qsArl3XSd9AQZg=",
+        "lastModified": 1768262293,
+        "narHash": "sha256-K7RUsrqksMeIExqUFk8k873uUqIG7wCJA3j6pNb6mZA=",
         "owner": "valeratrades",
         "repo": "todo",
-        "rev": "666d11b8f7eac15fcabe49c580ced6c03ad27f16",
+        "rev": "7b670ccf171b4c9be50efbf3e054626913c07f53",
         "type": "github"
       },
       "original": {
