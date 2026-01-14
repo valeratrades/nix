@@ -171,6 +171,31 @@ mod rust {
         Path::new("Cargo.toml").exists()
     }
 
+    pub fn get_package_name() -> Result<String, String> {
+        let cargo_toml_path = "Cargo.toml";
+        let content = fs::read_to_string(cargo_toml_path)
+            .map_err(|e| format!("Failed to read {cargo_toml_path}: {e}"))?;
+
+        let mut in_package = false;
+
+        for line in content.lines() {
+            let trimmed = line.trim();
+            if trimmed == "[package]" {
+                in_package = true;
+            } else if trimmed.starts_with('[') {
+                in_package = false;
+            } else if in_package && trimmed.starts_with("name") {
+                if let Some(start) = line.find('"')
+                    && let Some(end) = line.rfind('"')
+                {
+                    return Ok(line[start + 1..end].to_string());
+                }
+            }
+        }
+
+        Err("Could not find name in [package] section".to_string())
+    }
+
     pub fn get_version() -> Result<Version, String> {
         let cargo_toml_path = "Cargo.toml";
         let content = fs::read_to_string(cargo_toml_path)
@@ -197,7 +222,88 @@ mod rust {
         Err("Could not find version in [package] section".to_string())
     }
 
-    pub fn bump_version(bump: SemverBump) -> Result<Version, String> {
+    /// Update version in Cargo.lock for the local package (package without source field).
+    /// This is used in --fast mode to avoid cargo regenerating the lock file on next run.
+    pub fn update_cargo_lock_version(
+        package_name: &str,
+        old_version: &Version,
+        new_version: &Version,
+    ) -> Result<(), String> {
+        let cargo_lock_path = "Cargo.lock";
+        if !Path::new(cargo_lock_path).exists() {
+            // No Cargo.lock, nothing to update
+            return Ok(());
+        }
+
+        let content = fs::read_to_string(cargo_lock_path)
+            .map_err(|e| format!("Failed to read {cargo_lock_path}: {e}"))?;
+
+        let old_version_str = old_version.to_string();
+        let new_version_str = new_version.to_string();
+
+        // Parse Cargo.lock to find the correct package section.
+        // We need to find a [[package]] with matching name and version,
+        // that does NOT have a source field (local packages have no source).
+        let mut result = String::new();
+        let mut lines = content.lines().peekable();
+
+        while let Some(line) = lines.next() {
+            if line == "[[package]]" {
+                // Collect entire package block
+                let mut block = vec![line.to_string()];
+                while let Some(next_line) = lines.peek() {
+                    if next_line.is_empty() || next_line.starts_with("[[") {
+                        break;
+                    }
+                    block.push(lines.next().unwrap().to_string());
+                }
+
+                // Check if this is our package (name matches, no source, old version)
+                let has_matching_name = block.iter().any(|l| {
+                    l.starts_with("name = ")
+                        && l.contains(&format!("\"{package_name}\""))
+                });
+                let has_source = block.iter().any(|l| l.starts_with("source = "));
+                let has_old_version = block.iter().any(|l| {
+                    l.starts_with("version = ")
+                        && l.contains(&format!("\"{old_version_str}\""))
+                });
+
+                if has_matching_name && !has_source && has_old_version {
+                    // Replace version in this block
+                    for block_line in &block {
+                        if block_line.starts_with("version = ") {
+                            result.push_str(&format!("version = \"{new_version_str}\"\n"));
+                        } else {
+                            result.push_str(block_line);
+                            result.push('\n');
+                        }
+                    }
+                } else {
+                    // Keep block as-is
+                    for block_line in &block {
+                        result.push_str(block_line);
+                        result.push('\n');
+                    }
+                }
+            } else {
+                result.push_str(line);
+                result.push('\n');
+            }
+        }
+
+        // Remove trailing newline if original didn't have one
+        if !content.ends_with('\n') && result.ends_with('\n') {
+            result.pop();
+        }
+
+        fs::write(cargo_lock_path, result)
+            .map_err(|e| format!("Failed to write {cargo_lock_path}: {e}"))?;
+
+        Ok(())
+    }
+
+    pub fn bump_version(bump: SemverBump, fast_mode: bool) -> Result<Version, String> {
         let old_version = get_version()?;
         let new_version = match bump {
             SemverBump::Major => old_version.bump_major(),
@@ -215,6 +321,16 @@ mod rust {
 
         fs::write(cargo_toml_path, new_content)
             .map_err(|e| format!("Failed to write {cargo_toml_path}: {e}"))?;
+
+        // In fast mode, also update Cargo.lock to avoid diffs on next run
+        if fast_mode {
+            if let Ok(package_name) = get_package_name() {
+                if let Err(e) = update_cargo_lock_version(&package_name, &old_version, &new_version)
+                {
+                    eprintln!("warning: failed to update Cargo.lock: {e}");
+                }
+            }
+        }
 
         println!("Bumped version: {old_version} -> {new_version}");
         Ok(new_version)
@@ -320,7 +436,7 @@ fn main() {
     // If bumping version in Rust project, bump Cargo.toml FIRST, before any git operations
     if is_rust {
         if let Some(bump) = effective_semver {
-            match rust::bump_version(bump) {
+            match rust::bump_version(bump, args.fast) {
                 Ok(v) => {
                     cargo_version = Some(v);
                     // Set default commit message if user didn't provide one
