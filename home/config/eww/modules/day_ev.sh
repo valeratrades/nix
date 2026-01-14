@@ -5,10 +5,13 @@
 
 MAX_WITHOUT_UPDATE=1
 DEFAULT_CONTENT="_"
+todo_cmd() {
+	todo --log-to "eww_day_ev" "$@"
+}
 
-if day_ev=$(todo manual print-ev); then
+if day_ev=$(todo_cmd manual print-ev); then
 	content="$day_ev"
-	if last_update=$(todo manual last-ev-update-hours 2>&1); then
+	if last_update=$(todo_cmd manual last-ev-update-hours 2>&1); then
 		if [ "$MAX_WITHOUT_UPDATE" -le "$last_update" ]; then
 			class="warn"
 		else
@@ -32,12 +35,12 @@ if [ -f "$temp_var_file" ]; then
 	fi
 fi
 if [ "$success" != 1 ]; then
-	healthcheck_status_file="$(todo milestones healthcheck | head -n 1)"
+	healthcheck_status_file="$(todo_cmd milestones healthcheck | head -n 1)"
 	echo "$healthcheck_status_file" > "$temp_var_file"
 fi
 
 if [ "$(find "$healthcheck_status_file" -mmin +120)" ]; then
-	todo milestones healthcheck
+	todo_cmd milestones healthcheck
 	wait $!
 fi
 if [ -f "$healthcheck_status_file" ]; then

@@ -61,6 +61,7 @@ enum ClaudeState {
     Active,   // Claude is processing (spinner visible)
     Finished, // Claude waiting for input (> prompt, no spinner)
     Draft,    // User is typing a message (bypass permissions prompt visible)
+    Question, // Claude is asking a question (numbered options visible)
     Error,    // Claude hit an error (rate limit, panic, etc.)
 }
 
@@ -71,6 +72,7 @@ impl ClaudeState {
             ClaudeState::Active => "active",
             ClaudeState::Finished => "finished",
             ClaudeState::Draft => "draft",
+            ClaudeState::Question => "question",
             ClaudeState::Error => "error",
         }
     }
@@ -83,6 +85,7 @@ struct ClaudeWindow {
     state: ClaudeState,
     active_todo: Option<String>,
     draft_content: Option<String>,
+    question_content: Option<String>,
     summary: Option<String>,
 }
 
@@ -93,6 +96,7 @@ struct SessionEntry {
     state: ClaudeState,
     active_todo: Option<String>,
     draft_content: Option<String>,
+    question_content: Option<String>,
     summary: Option<String>,
 }
 
@@ -840,7 +844,7 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
         }
 
         let tmux_target = format!("{}:{}", session, window_index);
-        let (state, active_todo, draft_content, summary) = if pane_command == "claude" {
+        let (state, active_todo, draft_content, question_content, summary) = if pane_command == "claude" {
             // Claude is running - get session info first, then determine activity
             let metadata = get_session_info_for_pane(pane_pid, &tmux_target);
 
@@ -848,22 +852,22 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
             if let Some(ref meta) = metadata {
                 if meta.has_active_todos {
                     // Has active todos = Claude is definitively active
-                    (ClaudeState::Active, meta.display_todo.clone(), None, meta.summary.clone())
+                    (ClaudeState::Active, meta.display_todo.clone(), None, None, meta.summary.clone())
                 } else {
                     // No active todos - check terminal for state
                     // We always fall back to terminal parsing here because:
                     // - Session might be resumed (new file has no conversation but old one does)
                     // - Session might be finished/waiting for input
                     let activity = determine_claude_activity(session, window_index);
-                    (activity.state, None, activity.draft_content, meta.summary.clone())
+                    (activity.state, None, activity.draft_content, activity.question_content, meta.summary.clone())
                 }
             } else {
                 // Couldn't find session info - fall back to terminal parsing
                 let activity = determine_claude_activity(session, window_index);
-                (activity.state, None, activity.draft_content, None)
+                (activity.state, None, activity.draft_content, activity.question_content, None)
             }
         } else {
-            (ClaudeState::Empty, None, None, None)
+            (ClaudeState::Empty, None, None, None, None)
         };
 
         claude_windows.push(ClaudeWindow {
@@ -872,6 +876,7 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
             state,
             active_todo,
             draft_content,
+            question_content,
             summary,
         });
     }
@@ -879,10 +884,11 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
     claude_windows
 }
 
-/// Result of activity detection including state and optional draft content
+/// Result of activity detection including state and optional draft/question content
 struct ActivityResult {
     state: ClaudeState,
     draft_content: Option<String>,
+    question_content: Option<String>,
 }
 
 fn determine_claude_activity(session: &str, window_index: u32) -> ActivityResult {
@@ -894,7 +900,7 @@ fn determine_claude_activity(session: &str, window_index: u32) -> ActivityResult
 
     let content = match output {
         Ok(out) if out.status.success() => String::from_utf8_lossy(&out.stdout).to_string(),
-        _ => return ActivityResult { state: ClaudeState::Finished, draft_content: None },
+        _ => return ActivityResult { state: ClaudeState::Finished, draft_content: None, question_content: None },
     };
 
     // Look at the last portion for various indicators
@@ -924,7 +930,7 @@ fn determine_claude_activity(session: &str, window_index: u32) -> ActivityResult
     let spinner_pattern = Regex::new(r"[A-Z][a-z]+…").unwrap();
 
     if spinner_pattern.is_match(&last_portion) && !has_prompt_at_end {
-        return ActivityResult { state: ClaudeState::Active, draft_content: None };
+        return ActivityResult { state: ClaudeState::Active, draft_content: None, question_content: None };
     }
 
     // Check for external editor with claude-prompt temp file
@@ -952,6 +958,7 @@ fn determine_claude_activity(session: &str, window_index: u32) -> ActivityResult
         return ActivityResult {
             state: ClaudeState::Draft,
             draft_content,
+            question_content: None,
         };
     }
 
@@ -1000,6 +1007,7 @@ fn determine_claude_activity(session: &str, window_index: u32) -> ActivityResult
                         return ActivityResult {
                             state: ClaudeState::Draft,
                             draft_content: if draft_display.is_empty() { None } else { Some(draft_display) },
+                            question_content: None,
                         };
                     }
                 }
@@ -1007,25 +1015,55 @@ fn determine_claude_activity(session: &str, window_index: u32) -> ActivityResult
         }
     }
 
+    // Check for question state: Claude is asking with numbered options
+    // Pattern: "❯ 1. Option text" or numbered options with selection indicator
+    // The question text usually appears as "Question?" followed by options
+    let question_option_pattern = Regex::new(r"(?m)^\s*❯?\s*\d+\.\s+.+$").unwrap();
+    if question_option_pattern.is_match(&last_portion) {
+        // Extract the question text - look for line ending with "?" before the options
+        let question_text = content
+            .lines()
+            .rev()
+            .take(20)
+            .find(|line| {
+                let trimmed = line.trim();
+                trimmed.ends_with('?') && !trimmed.starts_with('>') && !trimmed.contains("❯")
+            })
+            .map(|s| {
+                let trimmed = s.trim().to_string();
+                if trimmed.len() > 60 {
+                    format!("{}...", &trimmed[..60])
+                } else {
+                    trimmed
+                }
+            });
+
+        return ActivityResult {
+            state: ClaudeState::Question,
+            draft_content: None,
+            question_content: question_text,
+        };
+    }
+
     // Check for fresh session (welcome screen) - after draft check
     if content.contains("No recent activity") || content.contains("Tips for getting started") {
-        return ActivityResult { state: ClaudeState::Empty, draft_content: None };
+        return ActivityResult { state: ClaudeState::Empty, draft_content: None, question_content: None };
     }
 
     // Check if there's an input prompt line ("> ") - indicates waiting for input
     let has_prompt = content.lines().any(|line| line.starts_with("> "));
     if has_prompt {
-        return ActivityResult { state: ClaudeState::Finished, draft_content: None };
+        return ActivityResult { state: ClaudeState::Finished, draft_content: None, question_content: None };
     }
 
     // Check for error patterns (rate limit, panics, errors)
     let error_pattern = Regex::new(r"(?i)(rate.?limit|error:|panicked|PANIC|timed.?out)").unwrap();
 
     if error_pattern.is_match(&last_portion) {
-        return ActivityResult { state: ClaudeState::Error, draft_content: None };
+        return ActivityResult { state: ClaudeState::Error, draft_content: None, question_content: None };
     }
 
-    ActivityResult { state: ClaudeState::Finished, draft_content: None }
+    ActivityResult { state: ClaudeState::Finished, draft_content: None, question_content: None }
 }
 
 fn main() {
