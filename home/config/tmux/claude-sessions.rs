@@ -183,6 +183,7 @@ impl fmt::Display for Sessions {
                 ClaudeState::Finished => padded_state.green(),
                 ClaudeState::Empty => padded_state.yellow(),
                 ClaudeState::Draft => padded_state.cyan(),
+                ClaudeState::Question => padded_state.magenta(),
                 ClaudeState::Error => padded_state.red(),
             };
 
@@ -209,6 +210,13 @@ impl fmt::Display for Sessions {
                             None => "> ".to_string(),
                         };
                         write!(f, "  {}", draft_str)?;
+                    }
+                    ClaudeState::Question => {
+                        let question_str = match &entry.question_content {
+                            Some(q) => format!("? {}", q),
+                            None => "?".to_string(),
+                        };
+                        write!(f, "  {}", question_str)?;
                     }
                     _ => {}
                 }
@@ -1016,10 +1024,11 @@ fn determine_claude_activity(session: &str, window_index: u32) -> ActivityResult
     }
 
     // Check for question state: Claude is asking with numbered options
-    // Pattern: "❯ 1. Option text" or numbered options with selection indicator
+    // Pattern: "❯ 1. Option text" - the ❯ character indicates a selection menu
+    // This is distinct from regular numbered lists in Claude's output
     // The question text usually appears as "Question?" followed by options
-    let question_option_pattern = Regex::new(r"(?m)^\s*❯?\s*\d+\.\s+.+$").unwrap();
-    if question_option_pattern.is_match(&last_portion) {
+    let question_selector_pattern = Regex::new(r"(?m)^\s*❯\s*\d+\.\s+.+$").unwrap();
+    if question_selector_pattern.is_match(&last_portion) {
         // Extract the question text - look for line ending with "?" before the options
         let question_text = content
             .lines()
@@ -1128,6 +1137,7 @@ fn main() {
             state: window.state,
             active_todo: window.active_todo.clone(),
             draft_content: window.draft_content.clone(),
+            question_content: window.question_content.clone(),
             summary: window.summary.clone(),
         });
     }
