@@ -62,7 +62,9 @@ vim.opt.foldtext = [[substitute(getline(v:foldstart),'{{{]] .. [[always[->\/*#]*
 vim.api.nvim_create_autocmd("BufReadPost", {
 	callback = function()
 		vim.defer_fn(function()
+			local save_cursor = vim.api.nvim_win_get_cursor(0)
 			vim.cmd([[silent! g/{{]] .. [[{always[->\/*#]*\s*$/normal! zc]])
+			vim.api.nvim_win_set_cursor(0, save_cursor)
 		end, 10)
 	end,
 })
