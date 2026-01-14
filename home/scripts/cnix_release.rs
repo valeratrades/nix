@@ -314,11 +314,20 @@ fn main() {
     // Track the version to use for tagging (from Cargo.toml for Rust projects)
     let mut cargo_version: Option<Version> = None;
 
-    // If bumping version in Rust project, always bump Cargo.toml
+    // Commit message: user-provided or will be set if version bump happens
+    let mut commit_message = args.commit_message.clone();
+
+    // If bumping version in Rust project, bump Cargo.toml FIRST, before any git operations
     if is_rust {
         if let Some(bump) = effective_semver {
             match rust::bump_version(bump) {
-                Ok(v) => cargo_version = Some(v),
+                Ok(v) => {
+                    cargo_version = Some(v);
+                    // Set default commit message if user didn't provide one
+                    if commit_message.is_none() {
+                        commit_message = Some("chore: bump version".to_string());
+                    }
+                }
                 Err(e) => {
                     eprintln!("error bumping version: {e}");
                     exit(1);
@@ -327,16 +336,8 @@ fn main() {
         }
     }
 
-    // Commit message: user-provided or default for version bumps
-    let commit_message = args.commit_message.clone().or_else(|| {
-        if cargo_version.is_some() {
-            Some("chore: bump version".to_string())
-        } else {
-            None
-        }
-    });
-
     // If we have changes to commit (version bump or user-provided message)
+    // Note: version bump ALREADY happened above, so Cargo.toml is modified on disk
     if let Some(ref msg) = commit_message {
         // Stage all files (including untracked) and commit
         if !run("git", &["add", "-A"]) {
@@ -345,7 +346,7 @@ fn main() {
         }
         let _ = run("git", &["commit", "-m", msg]);
 
-        // Push commit to default branch
+        // Push commit to default branch (AFTER commit includes version bump)
         if !run("git", &["push", "origin", &default_branch]) {
             eprintln!("error: failed to push to {default_branch}");
             exit(1);
