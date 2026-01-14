@@ -8,14 +8,14 @@ DEFAULT_CONTENT="_"
 
 if day_ev=$(todo manual print-ev); then
 	content="$day_ev"
-	if last_update=$(todo manual last-ev-update-hours); then
+	if last_update=$(todo manual last-ev-update-hours 2>&1); then
 		if [ "$MAX_WITHOUT_UPDATE" -le "$last_update" ]; then
 			class="warn"
 		else
 			class="info"
 		fi
 	else
-		content="panicked"
+		content=$(printf "%.35s" "${last_update#Error: }")
 		class="error"
 	fi
 else

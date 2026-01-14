@@ -13,9 +13,9 @@ use std::time::Duration;
 /// Known devices: (name, mac_address)
 /// Uses dbus-send instead of bluetoothctl to avoid Adv Monitor spam
 const KNOWN_DEVICES: &[(&str, &str)] = &[
-    ("Soundcore Life Tune", "E8:EE:CC:36:53:49"),
-    ("Philips SHB3075", "A4:77:58:82:26:43"),
     ("WH-1000XM4", "80:99:E7:D2:1F:51"),
+    ("Philips SHB3075", "A4:77:58:82:26:43"),
+    ("Soundcore Life Tune", "E8:EE:CC:36:53:49"),
 ];
 
 #[derive(Parser, Debug)]
@@ -133,10 +133,11 @@ fn get_battery_percentage(mac: &str) -> Option<u8> {
     // Parse "variant byte 85" or similar
     for line in output.lines() {
         let line = line.trim();
-        if line.starts_with("variant") && line.contains("byte") {
-            if let Some(num_str) = line.split_whitespace().last() {
-                return num_str.parse().ok();
-            }
+        if line.starts_with("variant")
+            && line.contains("byte")
+            && let Some(num_str) = line.split_whitespace().last()
+        {
+            return num_str.parse().ok();
         }
     }
     None
@@ -162,10 +163,8 @@ fn cmd_is_connected() -> Result<(), String> {
 
 fn cmd_headphones() -> Result<(), String> {
     // Ensure Bluetooth is powered on
-    if !bluetooth_powered() {
-        if !power_on_bluetooth() {
-            return Err("Failed to power on Bluetooth adapter".to_string());
-        }
+    if !bluetooth_powered() && !power_on_bluetooth() {
+        return Err("Failed to power on Bluetooth adapter".to_string());
     }
 
     // Try to connect to each known device

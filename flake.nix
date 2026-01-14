@@ -74,7 +74,7 @@
       url = "git+https://github.com/valeratrades/discretionary_engine?submodules=1";
     };
     math_tools = { url = "github:valeratrades/math_tools"; };
-    tg.url = "github:valeratrades/tg";
+    tg.url = "github:valeratrades/tg"; #dbg: ?ref=release
     bbeats = {
       url = "github:valeratrades/bbeats";
       inputs.nixpkgs.follows = "nixpkgs";

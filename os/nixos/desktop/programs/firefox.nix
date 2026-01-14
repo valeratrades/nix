@@ -26,7 +26,7 @@
 
       WebsiteFilter.Block = let
         block = domain: [ "*://${domain}/*" "*://*.${domain}/*" ];
-        fuzzy = str: [ "*://${str}*" "*://*${str}/*" ];
+        fuzzy = str: [ "*://*${str}*" ];
       in builtins.concatLists [
           # hide to not even look at these {{{always
           #(block "youtube.com") #Q: difficult to block fully. Could there maybe be some consistent sub-parts of the link that I could block based on instead?
