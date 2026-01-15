@@ -25,6 +25,8 @@
 
 - when using `insta` crate for snapshots, - avoid modifying them manually; prefer adding an empty string, then running `cargo insta accept` and seeing what gets written.
 
+- if a test is failing due to underlying logic being incorrect, don't try to fix it, unless you're in charge of the implementation concerning that part of the logic. What you can do is tell me what you found, after you finished your own implementation, and then we decide if you can be assigned to fixing that too.
+
 ## Development Principles
 - fail fast. We always prefer to exit over continuing with a corrupted state.
     if it's triggered by user interaction, we exit with a good error.
