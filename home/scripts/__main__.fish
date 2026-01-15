@@ -23,6 +23,7 @@ alias kbd="$__fish_scripts_dir/kbd.rs"
 alias optimize_for="sudo -E $__fish_scripts_dir/optimize_for.rs"
 alias smart_shutdown="$__fish_scripts_dir/smart_shutdown.rs"
 alias profile_shell_init="$__fish_scripts_dir/maintenance/profile_shell_init.rs"
+alias ambiance="$__fish_scripts_dir/ambiance.rs"
 
 alias git_scripts="$__fish_scripts_dir/git_scripts.rs"
 alias gfork="$__fish_scripts_dir/git_scripts.rs fork"
