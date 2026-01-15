@@ -39,6 +39,7 @@
           (block "imdb.com")
           (block "chat*")
           (fuzzy "anime")
+          (block "amazon") # just a reminder to self to never again touch this shit. Cancelling subscription takes calling tech support. Do not touch this burning pile of trash with a 6 foot pole.
           #,}}}
       ];
 

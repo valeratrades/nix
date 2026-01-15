@@ -29,7 +29,7 @@
           default = true;
           badges = [ "loc" ];
         };
-        combined = v-utils.utils.combineModules [ github readme ];
+        combined = v-utils.utils.combine [ github readme ];
       in
       {
         packages.default = pkgs.stdenvNoCC.mkDerivation {

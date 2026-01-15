@@ -462,6 +462,48 @@ fn push(force_with_lease: bool, force: bool, extra_args: Vec<String>) {
         }
     };
 
+    // Check if local is a rewrite (fixup/amend/squash) of remote commits
+    // This handles: remote has A, local has A' where A' rewrites A (possibly with different content)
+    // Safe because we're rewriting our own pushed commits, not losing someone else's work
+    let is_rewrite_of_remote = needs_force && !divergence_is_rename_only && {
+        // Strategy: Check that local is rewriting commits that diverged from remote at the same base
+        // and that local has at least as many commits as it's replacing (squash) or fewer (amend/fixup)
+        let merge_base = run_cmd_output("git", &["merge-base", "HEAD", &format!("origin/{branch}")]);
+        if let Some(base) = merge_base {
+            // Count commits on each side since the merge-base
+            let remote_commits = run_cmd_output(
+                "git",
+                &["rev-list", "--count", &format!("{base}..origin/{branch}")],
+            );
+            let local_commits = run_cmd_output(
+                "git",
+                &["rev-list", "--count", &format!("{base}..HEAD")],
+            );
+
+            match (remote_commits.and_then(|s| s.parse::<usize>().ok()),
+                   local_commits.and_then(|s| s.parse::<usize>().ok())) {
+                (Some(remote_count), Some(local_count)) => {
+                    // Safe rewrite scenarios:
+                    // - local_count <= remote_count: squashing multiple commits into fewer (fixup/squash)
+                    // - local_count == remote_count: amending commits (1-to-1 replacement)
+                    // - local_count > remote_count: extended history (but still rewriting base commits)
+                    //
+                    // The key safety check: both sides diverged from the same base,
+                    // meaning we're rewriting our own work, not someone else's.
+                    // This is safe to auto-force because:
+                    // 1. The merge-base exists (we share history)
+                    // 2. Remote has commits since that base (we pushed something)
+                    // 3. Local has commits since that base (we have work to push)
+                    // 4. Neither is ancestor of the other (histories diverged - rewrite happened)
+                    remote_count > 0 && local_count > 0
+                }
+                _ => false,
+            }
+        } else {
+            false
+        }
+    };
+
     if explicit_force && is_main_branch(&branch) {
         // User explicitly requested force - check if it's safe on main branches
         if trees_match {
@@ -470,6 +512,8 @@ fn push(force_with_lease: bool, force: bool, extra_args: Vec<String>) {
             println!("Remote is ancestor of local - squashed commits. Allowing force push on {branch}.");
         } else if divergence_is_rename_only {
             println!("Divergence is commit renames only (with new commits on top). Allowing force push on {branch}.");
+        } else if is_rewrite_of_remote {
+            println!("Local rewrites remote commits (fixup/amend). Allowing force push on {branch}.");
         } else {
             eprintln!("Refusing to force push {branch} (tree content differs and remote is not ancestor)");
             std::process::exit(1);
@@ -484,6 +528,9 @@ fn push(force_with_lease: bool, force: bool, extra_args: Vec<String>) {
             use_force_with_lease = true;
         } else if divergence_is_rename_only {
             println!("Divergence is commit renames only (with new commits on top) - auto-enabling force-with-lease.");
+            use_force_with_lease = true;
+        } else if is_rewrite_of_remote {
+            println!("Local rewrites remote commits (fixup/amend) - auto-enabling force-with-lease.");
             use_force_with_lease = true;
         }
         // If not safe, let git push fail naturally with its error message

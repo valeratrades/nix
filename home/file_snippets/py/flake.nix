@@ -55,7 +55,7 @@
               "ci"
             ];
           };
-          combined = v-utils.utils.combineModules [ github readme ];
+          combined = v-utils.utils.combine [ github readme ];
         in
         {
           default = devenv.lib.mkShell {
