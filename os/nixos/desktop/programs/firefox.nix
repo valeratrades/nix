@@ -109,8 +109,10 @@
     };
 
     preferences = {
-      # Disable GPU-accelerated rendering to prevent amdgpu hangs
-      "gfx.webrender.all" = false;
+      # Enable WebRender but keep video acceleration disabled to prevent crashes
+      "gfx.webrender.all" = true;
+      "media.hardware-video-decoding.enabled" = false;
+      "media.hardware-video-decoding.force-enabled" = false;
       "browser.newtabpage.activity-stream.showSponsored" = false;
       "browser.newtabpage.activity-stream.system.showSponsored" = false;
       "browser.newtabpage.activity-stream.showSponsoredTopSites" = false;

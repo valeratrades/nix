@@ -84,9 +84,10 @@ fn find_todo_impl() {
 	}
 
 	// 3. Search for TODO markers (priority: 0-99 based on ! count)
+	// Only match TODO followed by :, !, space, or end of line (not part of identifier like TODO_MOCK_STATE)
 	if let Ok(output) = Command::new("sh")
 		.arg("-c")
-		.arg(r#"rg --line-number -- "TODO" | awk -F: -v OFS=: '{match($0, /TODO!+/); count=RLENGTH-4; if(count<0) count=0; print count, $0}'"#)
+		.arg(r#"rg --line-number -e "TODO[!: \n]" -e "TODO$" | awk -F: -v OFS=: '{match($0, /TODO!+/); count=RLENGTH-4; if(count<0) count=0; print count, $0}'"#)
 		.output()
 	{
 		if output.status.success() {
