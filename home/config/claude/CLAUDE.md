@@ -36,5 +36,7 @@
 - do not take shortcuts.
     if you see a hacky solution to a problem, - stop, figure out then outline the actual underlying issue that caused the need for the hack in the first place, then either return and ask whether I want it fixed, either just fix; based on complexity.
 
+- oftentimes I will request a change that will modify some key primitives used throughout the codebase. You must not attempt to minimize number of necessary changes by introducing a sneaky fallback function that replicates the old behavior in a slightly different way. Simplicity is measured in the correctness of the final interface, not how long it took you to rewrite to it. Semantic correctness of the architecture is most important.
+
 - do not take shortcuts.
     it's ALWAYS better to make a part of a larger change properly, in a way that could be extended on later, then try to shortcut the entire thing. I will repeat again, - a fully correct and well written implementation for a smaller part of the target functionality is ALWAYS better than bad attempt at making it all at once.
