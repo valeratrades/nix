@@ -143,7 +143,7 @@ pub fn debug_comment(action: &str) {
 
 /// Add TODO comment with given number of exclamation marks
 pub fn add_todo_comment(n: i64) {
-	disable_copilot_temporarily();
+	//disable_copilot_temporarily();
 
 	let cs_str = infer_comment_string();
 	let exclamations: String = std::iter::repeat_n('!', n as usize).collect();
@@ -188,7 +188,7 @@ pub fn toggle_comments_visibility() {
 /// Comment extra reimplementation
 /// Disables copilot temporarily and inserts the given leader followed by comment string
 pub fn comment_extra_reimplementation(insert_leader: String) {
-	disable_copilot_temporarily();
+	//disable_copilot_temporarily();
 
 	// Feed the insert leader
 	f(insert_leader, None);

@@ -310,6 +310,7 @@ in {
         doInstallCheck = false;
       });
     })
+    (import (mylib.relativeToRoot "overlays/rnote-main.nix"))
   ];
 
   nix.settings.download-buffer-size = "50G";

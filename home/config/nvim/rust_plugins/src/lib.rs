@@ -29,7 +29,7 @@ fn find_todo_impl() {
 	let comment_prefixes = r#"(//|#|--|;;|%|'|/\*)"#;
 
 	// Priority scores:
-	// dbg: 1000, TEST: 900, TODO: 0-99 (by ! count), DEPRECATE: -1000
+	// dbg: 1000, TEST: 900, XXX: 100, TODO: 0-99 (by ! count), DEPRECATE: -1000
 	struct QfEntry {
 		priority: i64,
 		filename: String,
@@ -83,7 +83,29 @@ fn find_todo_impl() {
 		}
 	}
 
-	// 3. Search for TODO markers (priority: 0-99 based on ! count)
+	// 3. Search for XXX markers (priority: 100)
+	let xxx_pattern = format!(r#"{}XXX"#, comment_prefixes);
+	if let Ok(output) = Command::new("rg")
+		.args(["--line-number", "-e", &xxx_pattern])
+		.output()
+	{
+		if output.status.success() {
+			let stdout = String::from_utf8_lossy(&output.stdout);
+			for line in stdout.lines() {
+				let parts: Vec<&str> = line.splitn(3, ':').collect();
+				if parts.len() >= 3 {
+					entries.push(QfEntry {
+						priority: 100,
+						filename: parts[0].to_string(),
+						lnum: parts[1].parse().unwrap_or(0),
+						text: parts[2].to_string(),
+					});
+				}
+			}
+		}
+	}
+
+	// 4. Search for TODO markers (priority: 0-99 based on ! count)
 	// Only match TODO followed by :, !, space, or end of line (not part of identifier like TODO_MOCK_STATE)
 	if let Ok(output) = Command::new("sh")
 		.arg("-c")
@@ -107,7 +129,7 @@ fn find_todo_impl() {
 		}
 	}
 
-	// 4. Search for DEPRECATE markers (lowest priority: -1000)
+	// 5. Search for DEPRECATE markers (lowest priority: -1000)
 	let deprecate_pattern = format!(r#"{}DEPRECATE"#, comment_prefixes);
 	if let Ok(output) = Command::new("rg")
 		.args(["--line-number", "-e", &deprecate_pattern])

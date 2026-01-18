@@ -405,6 +405,11 @@ fn push(force_with_lease: bool, force: bool, extra_args: Vec<String>) {
         }
     };
 
+    // Fetch the remote branch to ensure we have up-to-date refs for comparison
+    run_cmd_quiet("git", &["fetch", "origin", &format!("{branch}:refs/remotes/origin/{branch}")]);
+    // Store the fetched remote commit for --force-with-lease (avoids "stale info" error)
+    let remote_ref = run_cmd_output("git", &["rev-parse", &format!("origin/{branch}")]);
+
     let use_force = force;
     let mut use_force_with_lease = force_with_lease;
     let explicit_force = force_with_lease || force;
@@ -539,10 +544,17 @@ fn push(force_with_lease: bool, force: bool, extra_args: Vec<String>) {
     let extra_refs: Vec<&str> = extra_args.iter().map(|s| s.as_str()).collect();
 
     let mut args = vec!["push"];
+    let force_with_lease_arg;
     if use_force {
         args.push("--force");
     } else if use_force_with_lease {
-        args.push("--force-with-lease");
+        // Use explicit expected value to avoid "stale info" error after fetch
+        if let Some(ref expected) = remote_ref {
+            force_with_lease_arg = format!("--force-with-lease=refs/heads/{branch}:{expected}");
+            args.push(&force_with_lease_arg);
+        } else {
+            args.push("--force-with-lease");
+        }
     }
     args.push("--follow-tags");
     args.extend(extra_refs);

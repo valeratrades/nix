@@ -2,8 +2,8 @@ vim.g.mapleader = " "
 K({ "n", "v" }, "-", "<cmd>Oil<cr>", { desc = "Open Oil" })
 
 -- only want copilot enable if it was temporarely suspended by writing a comment.
-K("i", "<Esc>", "<Esc><Esc><cmd>lua CommentCopilotEsc()<cr>",
-	{ desc = "Exit cmp suggestions", overwrite = true })
+--K("i", "<Esc>", "<Esc><Esc><cmd>lua CommentCopilotEsc()<cr>",
+--	{ desc = "Exit cmp suggestions", overwrite = true })
 
 K("", "<C-e>", "<nop>", { desc = "Nop (tmux prefix)", overwrite = true })
 --K("", "s", multiplySidewaysMovements('h'), { silent = true })

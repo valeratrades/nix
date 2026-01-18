@@ -19,7 +19,7 @@ return require('lazy').setup({
 	{ import = "valera.plugins.undotree" },
 	'L3MON4D3/LuaSnip',
 	{ import = "valera.plugins.blankline" },
-	{ import = "valera.plugins.copilot" },
+	--{ import = "valera.plugins.copilot" },
 	--"github/copilot.vim",
 	{ import = "valera.plugins.treesitter" },
 	{ import = "valera.plugins.telescope" },
