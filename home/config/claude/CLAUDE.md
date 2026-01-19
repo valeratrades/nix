@@ -42,3 +42,4 @@
 
 - do not take shortcuts.
     it's ALWAYS better to make a part of a larger change properly, in a way that could be extended on later, then try to shortcut the entire thing. I will repeat again, - a fully correct and well written implementation for a smaller part of the target functionality is ALWAYS better than bad attempt at making it all at once.
+    Remember that you do not have to finish everything in the same session. Quality > quantity.
