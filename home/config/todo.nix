@@ -2,9 +2,9 @@
 	manual_stats = {
 		date_format = "%Y-%m-%d";
 	};
+	github_token = { env = "GITHUB_KEY"; };
 
 	milestones = {
-		github_token = { env = "GITHUB_KEY"; };
 		url = "https://github.com/valeratrades/todos";
 	};
 
