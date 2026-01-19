@@ -183,7 +183,7 @@
 					[
 						texliveFull
 						texlivePackages.chktex
-						miktex
+						# miktex # builds from source, takes forever
 					]
           # golang
           [

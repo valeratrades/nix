@@ -8,6 +8,7 @@ source $__fish_config_app_aliases_dir/go.fish
 source $__fish_config_app_aliases_dir/nvim.fish
 source $__fish_config_app_aliases_dir/ssh.fish
 source $__fish_config_app_aliases_dir/swappy.fish
+source $__fish_config_app_aliases_dir/mail.fish
 source $__fish_config_app_aliases_dir/tg.fish
 source $__fish_config_app_aliases_dir/tmux.fish
 source $__fish_config_app_aliases_dir/zathura.fish

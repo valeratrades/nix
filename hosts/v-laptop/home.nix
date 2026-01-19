@@ -1,5 +1,5 @@
 # TODO!: move much of this to shared dirs
-{ self, config, lib, pkgs, inputs, mylib, user, ... }:
+{ self, config, lib, pkgs, pkgs-ollama, inputs, mylib, user, ... }:
 let
   #TODO: `ssh-add ~/.ssh/id_ed25519` as part of the setup
   sshConfigPath = "${config.home.homeDirectory}/.ssh";
@@ -177,7 +177,7 @@ in {
         gitui
         lazygit
 
-        ollama-cuda
+        pkgs-ollama.ollama-cuda # pinned nixpkgs to avoid rebuilds
 
         powershell # for shit and giggles
 

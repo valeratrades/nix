@@ -281,7 +281,7 @@
 
       ".config/tg_admin.toml".source = "${self}/home/config/tg_admin.toml";
       ".config/auto_redshift.toml".source = "${self}/home/config/auto_redshift.toml";
-      ".config/todo.nix".source = "${self}/home/config/todo.nix";
+      ".config/tedi.nix".source = "${self}/home/config/tedi.nix";
 
       ".lesskey".source = "${self}/home/config/lesskey";
       ".config/fish/conf.d/sway.fish".source =

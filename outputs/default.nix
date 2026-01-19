@@ -100,6 +100,10 @@ in {
           home-manager.extraSpecialArgs = {
             inherit inputs self;
             inherit mylib user;
+            pkgs-ollama = import inputs.pin-nixpkgs-ollama {
+              system = "x86_64-linux";
+              config = common_pkgs_config;
+            };
           };
 
           home-manager.sharedModules = [

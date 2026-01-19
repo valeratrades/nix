@@ -2216,6 +2216,22 @@
         "type": "github"
       }
     },
+    "pin-nixpkgs-ollama": {
+      "locked": {
+        "lastModified": 1768564909,
+        "narHash": "sha256-Kell/SpJYVkHWMvnhqJz/8DqQg2b6PguxVWOuadbHCc=",
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "e4bae1bd10c9c57b2cf517953ab70060a828ee6f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "e4bae1bd10c9c57b2cf517953ab70060a828ee6f",
+        "type": "github"
+      }
+    },
     "pre-commit-hooks": {
       "inputs": {
         "flake-compat": "flake-compat",
@@ -2555,6 +2571,7 @@
         "nixpkgs-2405": "nixpkgs-2405",
         "nixpkgs-stable": "nixpkgs-stable_2",
         "nixpkgs-unstable": "nixpkgs-unstable",
+        "pin-nixpkgs-ollama": "pin-nixpkgs-ollama",
         "pre-commit-hooks": "pre-commit-hooks_6",
         "prettify_log": "prettify_log",
         "reasonable_envsubst": "reasonable_envsubst",
