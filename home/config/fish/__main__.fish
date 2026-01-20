@@ -92,8 +92,8 @@ end
 if command -v zoxide &>/dev/null
     cached_init zoxide "zoxide init fish"
 end
-if command -v todo &>/dev/null
-    cached_init todo "todo init fish"
+if command -v tedi &>/dev/null
+    cached_init tedi "tedi init fish"
 end
 if command -v tg &>/dev/null
     cached_init tg "tg init fish"
