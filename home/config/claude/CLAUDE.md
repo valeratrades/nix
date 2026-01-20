@@ -40,6 +40,8 @@
 
 - if you've just added `unwrap_or(_else)`, - stop and think hard. Almost always it's much much preferable to just panic and see the error clearly than to continue with faulty state (which this unwrap_or_else oftentimes is a symptom of).
 
+- Every time you use or especially make a helper, - stop and think: is there an already existing native way to do this.
+
 - do not take shortcuts.
     it's ALWAYS better to make a part of a larger change properly, in a way that could be extended on later, then try to shortcut the entire thing. I will repeat again, - a fully correct and well written implementation for a smaller part of the target functionality is ALWAYS better than bad attempt at making it all at once.
     Remember that you do not have to finish everything in the same session. Quality > quantity.

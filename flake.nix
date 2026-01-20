@@ -65,8 +65,7 @@
       url = "github:valeratrades/auto_redshift";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    #todo.url = "github:valeratrades/todo?ref=release";
-    todo.url = "github:valeratrades/todo"; #dbg
+    tedi.url = "github:valeratrades/tedi?ref=release";
     booktyping = {
       url = "github:valeratrades/booktyping";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -110,10 +109,6 @@
 
     #aggr_orderbook = {
     #	url = "github:valeratrades/aggr_orderbook";
-    #	inputs.nixpkgs.follows = "nixpkgs";
-    #};
-    #orderbook_3d = {
-    #	url = "github:valeratrades/todo";
     #	inputs.nixpkgs.follows = "nixpkgs";
     #};
 

@@ -910,7 +910,7 @@
     "gitignore_10": {
       "inputs": {
         "nixpkgs": [
-          "tg",
+          "tedi",
           "pre-commit-hooks",
           "nixpkgs"
         ]
@@ -932,7 +932,7 @@
     "gitignore_11": {
       "inputs": {
         "nixpkgs": [
-          "todo",
+          "tg",
           "pre-commit-hooks",
           "nixpkgs"
         ]
@@ -1892,11 +1892,11 @@
     },
     "nixpkgs_35": {
       "locked": {
-        "lastModified": 1766902085,
-        "narHash": "sha256-coBu0ONtFzlwwVBzmjacUQwj3G+lybcZ1oeNSQkgC0M=",
+        "lastModified": 1766651565,
+        "narHash": "sha256-QEhk0eXgyIqTpJ/ehZKg9IKS7EtlWxF3N7DXy42zPfU=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "c0b0e0fddf73fd517c3471e546c0df87a42d53f4",
+        "rev": "3e2499d5539c16d0d173ba53552a4ff8547f4539",
         "type": "github"
       },
       "original": {
@@ -1956,11 +1956,11 @@
     },
     "nixpkgs_39": {
       "locked": {
-        "lastModified": 1766651565,
-        "narHash": "sha256-QEhk0eXgyIqTpJ/ehZKg9IKS7EtlWxF3N7DXy42zPfU=",
+        "lastModified": 1766902085,
+        "narHash": "sha256-coBu0ONtFzlwwVBzmjacUQwj3G+lybcZ1oeNSQkgC0M=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "3e2499d5539c16d0d173ba53552a4ff8547f4539",
+        "rev": "c0b0e0fddf73fd517c3471e546c0df87a42d53f4",
         "type": "github"
       },
       "original": {
@@ -2577,8 +2577,8 @@
         "reasonable_envsubst": "reasonable_envsubst",
         "snapshot_fonts": "snapshot_fonts",
         "sops-nix": "sops-nix",
+        "tedi": "tedi",
         "tg": "tg",
-        "todo": "todo",
         "translate_infrequent": "translate_infrequent",
         "wallpaper_carousel": "wallpaper_carousel"
       }
@@ -3101,13 +3101,36 @@
         "type": "github"
       }
     },
-    "tg": {
+    "tedi": {
       "inputs": {
         "flake-utils": "flake-utils_11",
         "nixpkgs": "nixpkgs_35",
         "pre-commit-hooks": "pre-commit-hooks_9",
         "rust-overlay": "rust-overlay_9",
         "v-utils": "v-utils_8"
+      },
+      "locked": {
+        "lastModified": 1768431010,
+        "narHash": "sha256-5YG1fXQSZpKdtG8j9YyTdOq9T7DeHEzpc/j9Njeb4PA=",
+        "owner": "valeratrades",
+        "repo": "tedi",
+        "rev": "e1559b3cc00ab062146e5c28b6bb76d24dc4a4ab",
+        "type": "github"
+      },
+      "original": {
+        "owner": "valeratrades",
+        "ref": "release",
+        "repo": "tedi",
+        "type": "github"
+      }
+    },
+    "tg": {
+      "inputs": {
+        "flake-utils": "flake-utils_13",
+        "nixpkgs": "nixpkgs_39",
+        "pre-commit-hooks": "pre-commit-hooks_10",
+        "rust-overlay": "rust-overlay_10",
+        "v-utils": "v-utils_9"
       },
       "locked": {
         "lastModified": 1768418747,
@@ -3120,28 +3143,6 @@
       "original": {
         "owner": "valeratrades",
         "repo": "tg",
-        "type": "github"
-      }
-    },
-    "todo": {
-      "inputs": {
-        "flake-utils": "flake-utils_13",
-        "nixpkgs": "nixpkgs_39",
-        "pre-commit-hooks": "pre-commit-hooks_10",
-        "rust-overlay": "rust-overlay_10",
-        "v-utils": "v-utils_9"
-      },
-      "locked": {
-        "lastModified": 1768527044,
-        "narHash": "sha256-IcN53hqAscQEks8Uhhx1whMgCF97s0EXBqcRvl+6B7g=",
-        "owner": "valeratrades",
-        "repo": "todo",
-        "rev": "e111c69caa6a02de42b697d94a6870595ef5ac3e",
-        "type": "github"
-      },
-      "original": {
-        "owner": "valeratrades",
-        "repo": "todo",
         "type": "github"
       }
     },
@@ -3336,11 +3337,11 @@
         "nixpkgs": "nixpkgs_38"
       },
       "locked": {
-        "lastModified": 1768416995,
-        "narHash": "sha256-sWRrQKcRo13bz+UkhW4XocmO1hhakIGkodhi2wALPVQ=",
+        "lastModified": 1768427484,
+        "narHash": "sha256-Nv4PdgBxuCPpkD1LcfJn89pQzY/v+mCpo4XbC+8try4=",
         "owner": "valeratrades",
         "repo": ".github",
-        "rev": "ed3e5937fc43896dbce0020148551dfbe3d3a8c0",
+        "rev": "f8c4ab4c5491f9a9e39d6f3a72729a49229220bb",
         "type": "github"
       },
       "original": {
@@ -3356,11 +3357,11 @@
         "nixpkgs": "nixpkgs_42"
       },
       "locked": {
-        "lastModified": 1768495714,
-        "narHash": "sha256-QFlgo6/n4zOXJLk+hXLL4ZS1fuECxycVSGvWk7GKDIM=",
+        "lastModified": 1768416995,
+        "narHash": "sha256-sWRrQKcRo13bz+UkhW4XocmO1hhakIGkodhi2wALPVQ=",
         "owner": "valeratrades",
         "repo": ".github",
-        "rev": "1eebd357e4f9e573e4f8a98086fce1abdb34d3cc",
+        "rev": "ed3e5937fc43896dbce0020148551dfbe3d3a8c0",
         "type": "github"
       },
       "original": {
