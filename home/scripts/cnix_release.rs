@@ -427,30 +427,80 @@ fn main() {
         None
     };
 
-    // Track the version to use for tagging (from Cargo.toml for Rust projects)
-    let mut cargo_version: Option<Version> = None;
+    // Step 1: Determine the current version BEFORE any modifications
+    // For Rust projects: from Cargo.toml
+    // For non-Rust projects: from git tags (if using bump flags) or explicit -v flag
+    let current_version: Option<Version> = if is_rust {
+        match rust::get_version() {
+            Ok(v) => Some(v),
+            Err(e) => {
+                eprintln!("warning: could not read version from Cargo.toml: {e}");
+                None
+            }
+        }
+    } else if let Some(v) = args.version {
+        // Non-Rust with explicit -v flag
+        if let Some(latest) = get_latest_tag() {
+            if v < latest {
+                eprintln!("error: version v{v} is smaller than the latest tag v{latest}");
+                exit(1);
+            } else if v == latest {
+                eprintln!("warning: version v{v} is the same as the latest tag");
+            }
+        }
+        Some(v)
+    } else if effective_semver.is_some() {
+        // Non-Rust with bump flags: need existing tag to bump from
+        match get_latest_tag() {
+            Some(v) => Some(v),
+            None => {
+                eprintln!("error: no existing version tags found, cannot bump. Use -v to set an initial version.");
+                exit(1);
+            }
+        }
+    } else {
+        // Non-Rust without version info: try to get from tags
+        get_latest_tag()
+    };
 
     // Commit message: user-provided or will be set if version bump happens
     let mut commit_message = args.commit_message.clone();
 
-    // If bumping version in Rust project, bump Cargo.toml FIRST, before any git operations
-    if is_rust {
+    // Track the version to use for tagging (may be bumped from current_version)
+    // For Rust projects with bump: bump Cargo.toml FIRST, before any git operations
+    let release_version: Option<Version> = if is_rust {
         if let Some(bump) = effective_semver {
             match rust::bump_version(bump, args.fast) {
                 Ok(v) => {
-                    cargo_version = Some(v);
                     // Set default commit message if user didn't provide one
                     if commit_message.is_none() {
                         commit_message = Some("chore: bump version".to_string());
                     }
+                    Some(v)
                 }
                 Err(e) => {
                     eprintln!("error bumping version: {e}");
                     exit(1);
                 }
             }
+        } else {
+            // No bump requested, use current version from Cargo.toml
+            current_version
         }
-    }
+    } else if let Some(bump) = effective_semver {
+        // Non-Rust with bump flags
+        let base = current_version.expect("current_version should be set for non-Rust with bump flags");
+        let new_version = match bump {
+            SemverBump::Patch => base.bump_patch(),
+            SemverBump::Minor => base.bump_minor(),
+            SemverBump::Major => base.bump_major(),
+        };
+        println!("Bumping version: v{base} -> v{new_version}");
+        Some(new_version)
+    } else {
+        // Non-Rust without bump: use explicit -v or latest tag
+        current_version
+    };
 
     // If we have changes to commit (version bump or user-provided message)
     // Note: version bump ALREADY happened above, so Cargo.toml is modified on disk
@@ -531,54 +581,8 @@ fn main() {
         exit(1);
     }
 
-    // Determine version for tagging/semver branches
-    let version = if let Some(v) = cargo_version {
-        // Rust project with version bump: use bumped version from Cargo.toml
-        Some(v)
-    } else if let Some(v) = args.version {
-        // Non-Rust project with explicit -v flag (Rust projects error early)
-        if let Some(latest) = get_latest_tag() {
-            if v < latest {
-                eprintln!("error: version v{v} is smaller than the latest tag v{latest}");
-                exit(1);
-            } else if v == latest {
-                eprintln!("warning: version v{v} is the same as the latest tag");
-            }
-        }
-        Some(v)
-    } else if args.patch || args.minor || args.major {
-        // Non-Rust project: compute from git tags
-        let latest = match get_latest_tag() {
-            Some(v) => v,
-            None => {
-                eprintln!("error: no existing version tags found, cannot bump. Use -v to set an initial version.");
-                exit(1);
-            }
-        };
-        let new_version = if args.patch {
-            latest.bump_patch()
-        } else if args.minor {
-            latest.bump_minor()
-        } else {
-            latest.bump_major()
-        };
-        println!("Bumping version: v{latest} -> v{new_version}");
-        Some(new_version)
-    } else if is_rust {
-        // Rust project without version flag: read version from Cargo.toml for semver branches
-        match rust::get_version() {
-            Ok(v) => Some(v),
-            Err(e) => {
-                eprintln!("warning: could not read version from Cargo.toml: {e}");
-                None
-            }
-        }
-    } else {
-        None
-    };
-
     // If version determined, tag and push to version branches
-    if let Some(version) = version {
+    if let Some(version) = release_version {
         let tag = format!("v{version}");
         let major_branch = format!("v{}", version.major);
         let minor_branch = format!("v{}.{}", version.major, version.minor);
@@ -604,6 +608,10 @@ fn main() {
             }
             println!("Pushed to branch {branch}");
         }
+    } else {
+        eprintln!("warning: no semver version available, only pushed to 'release' branch");
+        eprintln!("hint: for Rust projects, ensure Cargo.toml has a valid version field");
+        eprintln!("hint: for other projects, use -v to set a version or --patch/--minor/--major to bump from existing tags");
     }
 
     println!("Release pushed successfully!");
