@@ -26,15 +26,20 @@ alias profile_shell_init="$__fish_scripts_dir/maintenance/profile_shell_init.rs"
 alias ambiance="$__fish_scripts_dir/ambiance.rs"
 
 function __run_pic_script
+    set -l ext png
+    if test "$argv[1]" = "--type"
+        set ext $argv[2]
+        set -e argv[1..2]
+    end
     set -l script $argv[1]
     set -l script_args $argv[2..-1]
-    set -l out /tmp/__pic_gen_script_out.png
+    set -l out /tmp/__pic_gen_script_out.$ext
     $script -o $out $script_args
-    and xdg-open $out
+    and xdg-open $out 2>/dev/null
 end
 
 function dji_distr
-    __run_pic_script $__fish_scripts_dir/gen_pics/dji_distr.rs $argv
+    __run_pic_script --type html $__fish_scripts_dir/gen_pics/dji_distr.rs $argv
 end
 
 alias git_scripts="$__fish_scripts_dir/git_scripts.rs"

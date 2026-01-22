@@ -7,13 +7,17 @@ reqwest = { version = "0.12", features = ["blocking", "rustls-tls"] }
 scraper = "0.20"
 regex = "1.10"
 color-eyre = "0.6"
-plotters = { version = "0.3", default-features = false, features = ["svg_backend", "all_elements"] }
-resvg = "0.45"
+plotly = "0.13"
 ---
 
 use clap::Parser;
 use color_eyre::eyre::{bail, Context, Result, eyre};
-use plotters::prelude::*;
+use std::ffi::OsStr;
+use plotly::{
+    Pie, Plot,
+    common::{Title, Font, Position},
+    layout::Layout,
+};
 use regex::Regex;
 use reqwest::blocking::Client;
 use scraper::{Html, Selector};
@@ -35,7 +39,7 @@ struct Args {
     #[arg(long, default_value_t = 12)]
     top: usize,
 
-    /// Output PNG file path (if not specified, does nothing)
+    /// Output HTML file path (if not specified, does nothing)
     #[arg(short, long)]
     out: Option<PathBuf>,
 }
@@ -121,7 +125,7 @@ fn fetch_items(url: &str) -> Result<Vec<Item>> {
         let symbol = ws_re.replace_all(symbol_raw.trim(), " ").to_string();
         let weight = parse_percent(&weight_raw)?;
 
-        let label = format!("{symbol} — {company}");
+        let label = format!("{symbol} ({company})");
         out.push(Item { label, weight });
     }
 
@@ -148,65 +152,27 @@ fn aggregate_top(mut items: Vec<Item>, top: usize) -> Vec<Item> {
     kept
 }
 
-fn render_pie_svg(items: &[Item], title: &str) -> String {
-    let mut svg = String::new();
-    {
-        let root = SVGBackend::with_string(&mut svg, (1400, 1000)).into_drawing_area();
-        root.fill(&WHITE).unwrap();
+fn create_pie_chart(items: &[Item], title: &str) -> Plot {
+    let labels: Vec<String> = items.iter().map(|x| x.label.clone()).collect();
+    let values: Vec<f64> = items.iter().map(|x| x.weight).collect();
 
-        let (upper, lower) = root.split_vertically(80);
-        upper
-            .draw(&Text::new(title, (20, 35), ("sans-serif", 36).into_font()))
-            .unwrap();
+    let pie = Pie::new(values)
+        .labels(labels)
+        .text_info("percent+label")
+        .text_position(Position::Outside)
+        .hole(0.3)
+        .sort(false);
 
-        let center = (700i32, 520i32);
-        let radius = 300.0;
-        let label_offset = 50.0;
+    let layout = Layout::new()
+        .title(Title::with_text(title).font(Font::new().size(20)))
+        .height(900)
+        .width(1400)
+        .show_legend(true);
 
-        let sizes: Vec<f64> = items.iter().map(|x| x.weight).collect();
-        let labels: Vec<String> = items
-            .iter()
-            .zip(sizes.iter())
-            .map(|(it, &w)| {
-                let total: f64 = sizes.iter().sum();
-                let pct = 100.0 * w / total;
-                format!("{:.1}% {}", pct, it.label)
-            })
-            .collect();
-        let label_refs: Vec<&str> = labels.iter().map(|s| s.as_str()).collect();
-
-        let colors: Vec<RGBColor> = (0..items.len())
-            .map(|i| {
-                let (r, g, b) = Palette99::pick(i).to_rgba().rgb();
-                RGBColor(r, g, b)
-            })
-            .collect();
-
-        let mut pie = Pie::new(&center, &radius, &sizes, &colors, &label_refs);
-        pie.label_offset(label_offset);
-        pie.label_style(("sans-serif", 16));
-
-        lower.draw(&pie).unwrap();
-        root.present().unwrap();
-    }
-    svg
-}
-
-fn svg_to_png(svg_data: &str, out: &PathBuf) -> Result<()> {
-    let tree = resvg::usvg::Tree::from_str(svg_data, &resvg::usvg::Options::default())
-        .context("parse SVG")?;
-
-    let size = tree.size();
-    let width = size.width() as u32;
-    let height = size.height() as u32;
-
-    let mut pixmap = resvg::tiny_skia::Pixmap::new(width, height)
-        .ok_or_else(|| eyre!("failed to create pixmap"))?;
-
-    resvg::render(&tree, resvg::tiny_skia::Transform::default(), &mut pixmap.as_mut());
-
-    pixmap.save_png(out).context("save PNG")?;
-    Ok(())
+    let mut plot = Plot::new();
+    plot.add_trace(pie);
+    plot.set_layout(layout);
+    plot
 }
 
 fn main() -> Result<()> {
@@ -218,15 +184,19 @@ fn main() -> Result<()> {
         return Ok(());
     };
 
+    if out.extension().and_then(OsStr::to_str) != Some("html") {
+        bail!("output file must have .html extension, got: {}", out.display());
+    }
+
     let items = fetch_items(&args.url)?;
     let items = aggregate_top(items, args.top);
 
-    let svg = render_pie_svg(
+    let plot = create_pie_chart(
         &items,
-        "Dow Jones (DJI) composition by weight — slickcharts.com",
+        "Dow Jones Industrial Average (DJI) — Component Weights",
     );
 
-    svg_to_png(&svg, &out)?;
+    plot.write_html(&out);
 
     Ok(())
 }
