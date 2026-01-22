@@ -10,38 +10,46 @@ color-eyre = "0.6"
 plotly = "0.13"
 ---
 
-use clap::Parser;
-use color_eyre::eyre::{bail, Context, Result, eyre};
-use std::ffi::OsStr;
+use clap::{Parser, Subcommand};
+use color_eyre::eyre::{Context, Result, bail, eyre};
 use plotly::{
     Pie, Plot,
-    common::{Title, Font, Position},
+    common::{Font, Position, Title},
     layout::Layout,
 };
 use regex::Regex;
 use reqwest::blocking::Client;
 use scraper::{Html, Selector};
 use std::cmp::Ordering;
+use std::ffi::OsStr;
 use std::path::PathBuf;
 
-const DEFAULT_URL: &str = "https://www.slickcharts.com/dowjones";
+const DJI_URL: &str = "https://www.slickcharts.com/dowjones";
+const SPY_URL: &str = "https://www.slickcharts.com/symbol/SPY/holdings";
 
-/// Pie chart of Dow Jones component weights from slickcharts.com
+/// Pie charts of index component weights from slickcharts.com
 #[derive(Parser, Debug)]
-#[command(name = "dji_distr")]
-#[command(about = "Generate a pie chart of Dow Jones component weights")]
+#[command(name = "indexes")]
+#[command(about = "Generate pie charts of index component weights")]
 struct Args {
-    /// URL to fetch Dow Jones data from
-    #[arg(long, default_value = DEFAULT_URL)]
-    url: String,
-
-    /// Number of top components to show (0 = no aggregation, rest goes into "OTHER")
-    #[arg(long, default_value_t = 12)]
-    top: usize,
-
     /// Output HTML file path (if not specified, does nothing)
     #[arg(short, long)]
     out: Option<PathBuf>,
+
+    /// Number of top components to show (0 = no aggregation, rest goes into "OTHER")
+    #[arg(long, default_value_t = 32)]
+    top: usize,
+
+    #[command(subcommand)]
+    cmd: Cmd,
+}
+
+#[derive(Subcommand, Debug)]
+enum Cmd {
+    /// Dow Jones Industrial Average components
+    Dji,
+    /// S&P 500 ETF (SPY) holdings
+    Spy,
 }
 
 #[derive(Clone, Debug)]
@@ -58,7 +66,7 @@ fn parse_percent(s: &str) -> Result<f64> {
     Ok(t.parse::<f64>().context("parse percent float")?)
 }
 
-fn fetch_items(url: &str) -> Result<Vec<Item>> {
+fn fetch_items(url: &str, company_header: &str, weight_header: &str) -> Result<Vec<Item>> {
     let client = Client::builder()
         .user_agent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36")
         .build()
@@ -96,16 +104,16 @@ fn fetch_items(url: &str) -> Result<Vec<Item>> {
 
     let company_i = headers
         .iter()
-        .position(|h| h == "Company")
-        .ok_or_else(|| eyre!("no 'Company' header found; headers={headers:?}"))?;
+        .position(|h| h == company_header)
+        .ok_or_else(|| eyre!("no '{company_header}' header found; headers={headers:?}"))?;
     let symbol_i = headers
         .iter()
         .position(|h| h == "Symbol")
         .ok_or_else(|| eyre!("no 'Symbol' header found; headers={headers:?}"))?;
     let weight_i = headers
         .iter()
-        .position(|h| h == "Weight")
-        .ok_or_else(|| eyre!("no 'Weight' header found; headers={headers:?}"))?;
+        .position(|h| h == weight_header)
+        .ok_or_else(|| eyre!("no '{weight_header}' header found; headers={headers:?}"))?;
 
     let ws_re = Regex::new(r"\s+").unwrap();
 
@@ -175,28 +183,55 @@ fn create_pie_chart(items: &[Item], title: &str) -> Plot {
     plot
 }
 
+fn run(
+    out: Option<PathBuf>,
+    url: &str,
+    company_header: &str,
+    weight_header: &str,
+    title: &str,
+    top: usize,
+) -> Result<()> {
+    let Some(out) = out else {
+        return Ok(());
+    };
+
+    if out.extension().and_then(OsStr::to_str) != Some("html") {
+        bail!(
+            "output file must have .html extension, got: {}",
+            out.display()
+        );
+    }
+
+    let items = fetch_items(url, company_header, weight_header)?;
+    let items = aggregate_top(items, top);
+
+    let plot = create_pie_chart(&items, title);
+    plot.write_html(&out);
+
+    Ok(())
+}
+
 fn main() -> Result<()> {
     color_eyre::install()?;
 
     let args = Args::parse();
 
-    let Some(out) = args.out else {
-        return Ok(());
-    };
-
-    if out.extension().and_then(OsStr::to_str) != Some("html") {
-        bail!("output file must have .html extension, got: {}", out.display());
+    match args.cmd {
+        Cmd::Dji => run(
+            args.out,
+            DJI_URL,
+            "Company",
+            "Weight",
+            "Dow Jones Industrial Average (DJI) — Component Weights",
+            args.top,
+        ),
+        Cmd::Spy => run(
+            args.out,
+            SPY_URL,
+            "Holding",
+            "Portfolio%",
+            "S&P 500 ETF (SPY) — Top Holdings",
+            args.top,
+        ),
     }
-
-    let items = fetch_items(&args.url)?;
-    let items = aggregate_top(items, args.top);
-
-    let plot = create_pie_chart(
-        &items,
-        "Dow Jones Industrial Average (DJI) — Component Weights",
-    );
-
-    plot.write_html(&out);
-
-    Ok(())
 }

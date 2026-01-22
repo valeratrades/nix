@@ -38,8 +38,8 @@ function __run_pic_script
     and xdg-open $out 2>/dev/null
 end
 
-function dji_distr
-    __run_pic_script --type html $__fish_scripts_dir/gen_pics/dji_distr.rs $argv
+function indexes
+    __run_pic_script --type html $__fish_scripts_dir/gen_pics/indexes.rs $argv
 end
 
 alias git_scripts="$__fish_scripts_dir/git_scripts.rs"
