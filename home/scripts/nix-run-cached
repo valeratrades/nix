@@ -99,8 +99,10 @@ update_access_time
 cleanup_old_caches
 
 # Try to use cached store path for instant startup
+# RUSTC_WRAPPER="" disables sccache from cargo config to avoid version mismatches
+# PATH must include the nix rust bin so cargo finds the correct rustc
 if RUST_PATH=$(get_rust_store_path); then
-	exec "$RUST_PATH/bin/cargo" -Zscript -q "$SCRIPT" "$@"
+	exec env RUSTC_WRAPPER="" PATH="$RUST_PATH/bin:$PATH" "$RUST_PATH/bin/cargo" -Zscript -q "$SCRIPT" "$@"
 fi
 
 # Cache miss - need to fetch
@@ -110,8 +112,8 @@ notify-send "nix cache miss, fetching..." -t 3000 2>/dev/null &
 if RUST_PATH=$(nix build --no-link --print-out-paths --impure --expr "$NIX_EXPR" 2>/dev/null); then
 	mkdir -p "$CARGO_TARGET_DIR"
 	echo "$RUST_PATH" >"$RUST_STORE_PATH_CACHE"
-	exec "$RUST_PATH/bin/cargo" -Zscript -q "$SCRIPT" "$@"
+	exec env RUSTC_WRAPPER="" PATH="$RUST_PATH/bin:$PATH" "$RUST_PATH/bin/cargo" -Zscript -q "$SCRIPT" "$@"
 fi
 
 # Fallback to nix shell if build fails for some reason
-exec nix shell --impure --expr "$NIX_EXPR" --command cargo -Zscript -q "$SCRIPT" "$@"
+exec env RUSTC_WRAPPER="" nix shell --impure --expr "$NIX_EXPR" --command cargo -Zscript -q "$SCRIPT" "$@"

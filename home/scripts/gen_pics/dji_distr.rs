@@ -6,12 +6,13 @@ clap = { version = "4.5.49", features = ["derive"] }
 reqwest = { version = "0.12", features = ["blocking", "rustls-tls"] }
 scraper = "0.20"
 regex = "1.10"
-anyhow = "1.0"
-plotters = "0.3"
+color-eyre = "0.6"
+plotters = { version = "0.3", default-features = false, features = ["svg_backend", "all_elements"] }
+resvg = "0.45"
 ---
 
-use anyhow::{Context, Result, anyhow, bail};
 use clap::Parser;
+use color_eyre::eyre::{bail, Context, Result, eyre};
 use plotters::prelude::*;
 use regex::Regex;
 use reqwest::blocking::Client;
@@ -42,7 +43,7 @@ struct Args {
 #[derive(Clone, Debug)]
 struct Item {
     label: String,
-    weight: f64, // percent value, e.g. 6.12
+    weight: f64,
 }
 
 fn parse_percent(s: &str) -> Result<f64> {
@@ -70,7 +71,6 @@ fn fetch_items(url: &str) -> Result<Vec<Item>> {
 
     let doc = Html::parse_document(&body);
 
-    // Locate the main table. Slickcharts uses Bootstrap-ish classes; this is intentionally loose.
     let table_sel = Selector::parse("table").unwrap();
     let thead_sel = Selector::parse("thead th").unwrap();
     let row_sel = Selector::parse("tbody tr").unwrap();
@@ -79,7 +79,7 @@ fn fetch_items(url: &str) -> Result<Vec<Item>> {
     let table = doc
         .select(&table_sel)
         .next()
-        .ok_or_else(|| anyhow!("could not find a <table> on the page (format changed?)"))?;
+        .ok_or_else(|| eyre!("could not find a <table> on the page (format changed?)"))?;
 
     let headers: Vec<String> = table
         .select(&thead_sel)
@@ -93,15 +93,15 @@ fn fetch_items(url: &str) -> Result<Vec<Item>> {
     let company_i = headers
         .iter()
         .position(|h| h == "Company")
-        .ok_or_else(|| anyhow!("no 'Company' header found; headers={headers:?}"))?;
+        .ok_or_else(|| eyre!("no 'Company' header found; headers={headers:?}"))?;
     let symbol_i = headers
         .iter()
         .position(|h| h == "Symbol")
-        .ok_or_else(|| anyhow!("no 'Symbol' header found; headers={headers:?}"))?;
+        .ok_or_else(|| eyre!("no 'Symbol' header found; headers={headers:?}"))?;
     let weight_i = headers
         .iter()
         .position(|h| h == "Weight")
-        .ok_or_else(|| anyhow!("no 'Weight' header found; headers={headers:?}"))?;
+        .ok_or_else(|| eyre!("no 'Weight' header found; headers={headers:?}"))?;
 
     let ws_re = Regex::new(r"\s+").unwrap();
 
@@ -148,54 +148,70 @@ fn aggregate_top(mut items: Vec<Item>, top: usize) -> Vec<Item> {
     kept
 }
 
-fn pie_png(items: &[Item], out: &PathBuf, title: &str) -> Result<()> {
-    let root = BitMapBackend::new(out, (1400, 1000)).into_drawing_area();
-    root.fill(&WHITE)?;
+fn render_pie_svg(items: &[Item], title: &str) -> String {
+    let mut svg = String::new();
+    {
+        let root = SVGBackend::with_string(&mut svg, (1400, 1000)).into_drawing_area();
+        root.fill(&WHITE).unwrap();
 
-    let (upper, lower) = root.split_vertically(80);
-    upper.draw(&Text::new(title, (20, 35), ("sans-serif", 36).into_font()))?;
+        let (upper, lower) = root.split_vertically(80);
+        upper
+            .draw(&Text::new(title, (20, 35), ("sans-serif", 36).into_font()))
+            .unwrap();
 
-    let center = (700, 520);
-    let radius = 380;
+        let center = (700i32, 520i32);
+        let radius = 300.0;
+        let label_offset = 50.0;
 
-    let total: f64 = items.iter().map(|x| x.weight).sum();
-    if total <= 0.0 {
-        bail!("total weight <= 0");
+        let sizes: Vec<f64> = items.iter().map(|x| x.weight).collect();
+        let labels: Vec<String> = items
+            .iter()
+            .zip(sizes.iter())
+            .map(|(it, &w)| {
+                let total: f64 = sizes.iter().sum();
+                let pct = 100.0 * w / total;
+                format!("{:.1}% {}", pct, it.label)
+            })
+            .collect();
+        let label_refs: Vec<&str> = labels.iter().map(|s| s.as_str()).collect();
+
+        let colors: Vec<RGBColor> = (0..items.len())
+            .map(|i| {
+                let (r, g, b) = Palette99::pick(i).to_rgba().rgb();
+                RGBColor(r, g, b)
+            })
+            .collect();
+
+        let mut pie = Pie::new(&center, &radius, &sizes, &colors, &label_refs);
+        pie.label_offset(label_offset);
+        pie.label_style(("sans-serif", 16));
+
+        lower.draw(&pie).unwrap();
+        root.present().unwrap();
     }
+    svg
+}
 
-    // Slice angles
-    let mut a0 = 0.0f64; // radians
-    for (i, it) in items.iter().enumerate() {
-        let frac = it.weight / total;
-        let a1 = a0 + frac * std::f64::consts::TAU;
+fn svg_to_png(svg_data: &str, out: &PathBuf) -> Result<()> {
+    let tree = resvg::usvg::Tree::from_str(svg_data, &resvg::usvg::Options::default())
+        .context("parse SVG")?;
 
-        // Plotters colors are limited; cycle through Palette99.
-        let col = Palette99::pick(i).mix(0.85).filled();
+    let size = tree.size();
+    let width = size.width() as u32;
+    let height = size.height() as u32;
 
-        lower.draw(&Sector::new(center, radius, a0, a1).style(col))?;
+    let mut pixmap = resvg::tiny_skia::Pixmap::new(width, height)
+        .ok_or_else(|| eyre!("failed to create pixmap"))?;
 
-        // Label (symbol/company) and percent
-        let mid = (a0 + a1) / 2.0;
-        let lx = center.0 as f64 + (radius as f64 + 18.0) * mid.cos();
-        let ly = center.1 as f64 - (radius as f64 + 18.0) * mid.sin();
+    resvg::render(&tree, resvg::tiny_skia::Transform::default(), &mut pixmap.as_mut());
 
-        let pct = 100.0 * frac;
-        let label = format!("{:.1}% {}", pct, it.label);
-
-        lower.draw(&Text::new(
-            label,
-            (lx as i32, ly as i32),
-            ("sans-serif", 18).into_font(),
-        ))?;
-
-        a0 = a1;
-    }
-
-    root.present().context("write png")?;
+    pixmap.save_png(out).context("save PNG")?;
     Ok(())
 }
 
 fn main() -> Result<()> {
+    color_eyre::install()?;
+
     let args = Args::parse();
 
     let Some(out) = args.out else {
@@ -205,11 +221,12 @@ fn main() -> Result<()> {
     let items = fetch_items(&args.url)?;
     let items = aggregate_top(items, args.top);
 
-    pie_png(
+    let svg = render_pie_svg(
         &items,
-        &out,
         "Dow Jones (DJI) composition by weight — slickcharts.com",
-    )?;
+    );
+
+    svg_to_png(&svg, &out)?;
 
     Ok(())
 }

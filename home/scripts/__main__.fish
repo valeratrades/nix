@@ -30,7 +30,7 @@ function __run_pic_script
     set -l script_args $argv[2..-1]
     set -l out /tmp/__pic_gen_script_out.png
     $script -o $out $script_args
-    and chafa $out
+    and xdg-open $out
 end
 
 function dji_distr
