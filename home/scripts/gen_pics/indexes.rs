@@ -148,6 +148,7 @@ fn create_pie_chart(items: &[Item], title: &str, labeled_count: usize) -> Plot {
     let mut items: Vec<_> = items.to_vec();
     items.sort_by(|a, b| b.weight.partial_cmp(&a.weight).unwrap_or(Ordering::Equal));
 
+    let total: f64 = items.iter().map(|x| x.weight).sum();
     let labels: Vec<String> = items.iter().map(|x| x.label.clone()).collect();
     let values: Vec<f64> = items.iter().map(|x| x.weight).collect();
     let text: Vec<String> = items
@@ -155,7 +156,8 @@ fn create_pie_chart(items: &[Item], title: &str, labeled_count: usize) -> Plot {
         .enumerate()
         .map(|(i, x)| {
             if labeled_count == 0 || i < labeled_count {
-                x.label.clone()
+                let pct = x.weight / total * 100.0;
+                format!("{}<br>{:.2}%", x.label, pct)
             } else {
                 String::new()
             }
@@ -165,7 +167,7 @@ fn create_pie_chart(items: &[Item], title: &str, labeled_count: usize) -> Plot {
     let pie = Pie::new(values)
         .labels(labels)
         .text_array(text)
-        .text_info("text+percent")
+        .text_info("text")
         .text_position(Position::Outside)
         .hole(0.3)
         .sort(false)
