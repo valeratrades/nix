@@ -36,7 +36,7 @@ struct Args {
     #[arg(short, long)]
     out: Option<PathBuf>,
 
-    /// Number of top components to show (0 = no aggregation, rest goes into "OTHER")
+    /// Number of top components to label on the chart (0 = all)
     #[arg(long, default_value_t = 32)]
     top: usize,
 
@@ -144,37 +144,36 @@ fn fetch_items(url: &str, company_header: &str, weight_header: &str) -> Result<V
     Ok(out)
 }
 
-fn aggregate_top(mut items: Vec<Item>, top: usize) -> Vec<Item> {
+fn create_pie_chart(items: &[Item], title: &str, labeled_count: usize) -> Plot {
+    let mut items: Vec<_> = items.to_vec();
     items.sort_by(|a, b| b.weight.partial_cmp(&a.weight).unwrap_or(Ordering::Equal));
 
-    if top == 0 || items.len() <= top {
-        return items;
-    }
-
-    let other_weight: f64 = items.iter().skip(top).map(|x| x.weight).sum();
-    let mut kept: Vec<Item> = items.into_iter().take(top).collect();
-    kept.push(Item {
-        label: "OTHER".to_string(),
-        weight: other_weight,
-    });
-    kept
-}
-
-fn create_pie_chart(items: &[Item], title: &str) -> Plot {
     let labels: Vec<String> = items.iter().map(|x| x.label.clone()).collect();
     let values: Vec<f64> = items.iter().map(|x| x.weight).collect();
+    let text: Vec<String> = items
+        .iter()
+        .enumerate()
+        .map(|(i, x)| {
+            if labeled_count == 0 || i < labeled_count {
+                x.label.clone()
+            } else {
+                String::new()
+            }
+        })
+        .collect();
 
     let pie = Pie::new(values)
         .labels(labels)
-        .text_info("percent+label")
+        .text_array(text)
+        .text_info("text+percent")
         .text_position(Position::Outside)
         .hole(0.3)
         .sort(false)
-        .domain(plotly::common::Domain::new().x(&[0.25, 0.75]).y(&[0.15, 0.85]));
+        .domain(plotly::common::Domain::new().x(&[0.1, 0.6]).y(&[0.1, 0.9]));
 
     let layout = Layout::new()
         .title(Title::with_text(title).font(Font::new().size(20)))
-        .show_legend(true);
+        .show_legend(false);
 
     let mut plot = Plot::new();
     plot.add_trace(pie);
@@ -190,19 +189,68 @@ fn write_responsive_html(plot: &Plot, path: &std::path::Path) -> Result<()> {
 <head>
     <meta charset="utf-8">
     <style>
-        html, body {{ margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }}
-        #chart {{ width: 100%; height: 100%; }}
+        html, body {{ margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; display: flex; }}
+        #chart {{ flex: 1; height: 100%; }}
+        #legend {{
+            width: 280px;
+            height: 100%;
+            overflow-y: auto;
+            padding: 10px;
+            box-sizing: border-box;
+            font-family: sans-serif;
+            font-size: 12px;
+        }}
+        .legend-item {{
+            display: flex;
+            align-items: center;
+            padding: 2px 0;
+        }}
+        .legend-color {{
+            width: 12px;
+            height: 12px;
+            margin-right: 6px;
+            flex-shrink: 0;
+        }}
+        .legend-label {{
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }}
+        .legend-pct {{
+            margin-left: 6px;
+            color: #666;
+        }}
     </style>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
 <body>
     <div id="chart"></div>
+    <div id="legend"></div>
     <script>
         var spec = {plot_json};
         var data = spec.data;
         var layout = spec.layout || {{}};
         layout.autosize = true;
         Plotly.newPlot('chart', data, layout, {{responsive: true}});
+
+        var trace = data[0];
+        var labels = trace.labels;
+        var values = trace.values;
+        var total = values.reduce((a, b) => a + b, 0);
+        var colors = Plotly.d3.scale.category20().range();
+
+        var legendDiv = document.getElementById('legend');
+        for (var i = 0; i < labels.length; i++) {{
+            var pct = (values[i] / total * 100).toFixed(2);
+            var color = colors[i % colors.length];
+            var item = document.createElement('div');
+            item.className = 'legend-item';
+            item.innerHTML = '<div class="legend-color" style="background:' + color + '"></div>' +
+                '<span class="legend-label">' + labels[i] + '</span>' +
+                '<span class="legend-pct">' + pct + '%</span>';
+            legendDiv.appendChild(item);
+        }}
     </script>
 </body>
 </html>"##
@@ -231,9 +279,8 @@ fn run(
     }
 
     let items = fetch_items(url, company_header, weight_header)?;
-    let items = aggregate_top(items, top);
 
-    let plot = create_pie_chart(&items, title);
+    let plot = create_pie_chart(&items, title, top);
     write_responsive_html(&plot, &out)?;
 
     Ok(())
