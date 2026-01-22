@@ -16,6 +16,8 @@
 
 - when I say you're in charge of a git issue, - you update it on every big change made, or improvement in understanding of the problem-space. So if current state or understanding of what should happen changes, tracker issue should too.
 
+- you are prohibited from restoring files using git
+
 ## Testing
 - if a change is not trivial, always test.
     And any time you write actual tests in code, - read https://matklad.github.io/2021/05/31/how-to-test.html
@@ -33,14 +35,12 @@
     If it's something we don't control, - we propagate the error to the level where we can recover or exit.
     If it's internal logical error, we panic out.
 
-- do not take shortcuts.
-    if you see a hacky solution to a problem, - stop, figure out then outline the actual underlying issue that caused the need for the hack in the first place, then either return and ask whether I want it fixed, either just fix; based on complexity.
-
 - oftentimes I will request a change that will modify some key primitives used throughout the codebase. You must not attempt to minimize number of necessary changes by introducing a sneaky fallback function that replicates the old behavior in a slightly different way. Simplicity is measured in the correctness of the final interface, not how long it took you to rewrite to it. Semantic correctness of the architecture is most important.
 
 - if you've just added `unwrap_or(_else)`, - stop and think hard. Almost always it's much much preferable to just panic and see the error clearly than to continue with faulty state (which this unwrap_or_else oftentimes is a symptom of).
 
-- Every time you use or especially make a helper, - stop and think: is there an already existing native way to do this.
+- Every time you use a standalone helper you lose 10 points (-20 if you create it). Non-default helper functions should be made only when absolutely necessary and there is no way to slightly refactor existing methods to allow for desired behavior natively. Every time you refactor and remove a helper function, you gain 50 points.
+    // implementing std traits like From and using them to shorten evocations is however highly encouraged
 
 - do not take shortcuts.
     it's ALWAYS better to make a part of a larger change properly, in a way that could be extended on later, then try to shortcut the entire thing. I will repeat again, - a fully correct and well written implementation for a smaller part of the target functionality is ALWAYS better than bad attempt at making it all at once.

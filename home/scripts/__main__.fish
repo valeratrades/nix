@@ -25,6 +25,18 @@ alias smart_shutdown="$__fish_scripts_dir/smart_shutdown.rs"
 alias profile_shell_init="$__fish_scripts_dir/maintenance/profile_shell_init.rs"
 alias ambiance="$__fish_scripts_dir/ambiance.rs"
 
+function __run_pic_script
+    set -l script $argv[1]
+    set -l script_args $argv[2..-1]
+    set -l out /tmp/__pic_gen_script_out.png
+    $script -o $out $script_args
+    and chafa $out
+end
+
+function dji_distr
+    __run_pic_script $__fish_scripts_dir/gen_pics/dji_distr.rs $argv
+end
+
 alias git_scripts="$__fish_scripts_dir/git_scripts.rs"
 alias gfork="$__fish_scripts_dir/git_scripts.rs fork"
 alias gpr="$__fish_scripts_dir/git_scripts.rs pr"

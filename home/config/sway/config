@@ -123,6 +123,8 @@ bindsym $mod+Shift+Ctrl+F6 exec gdbus call -e -d net.zoidplex.wlr_gamma_service 
 set $output_laptop "eDP-1"
 set $output_monitor "HDMI-A-1"
 set $all_possible_output_monitors "HDMI-A-1" "DP-1"
+# University giant monitor - redirect all workspaces to it
+set $output_university "Iiyama North America PL8604U Unknown"
 # sway circles through this space-delimited list when the first element is not found.
 set $primary $all_possible_output_monitors $output_laptop
 mode "monitors" {
@@ -154,6 +156,17 @@ workspace 7 output $primary
 workspace 8 output $output_laptop
 workspace 9 output $output_laptop
 workspace 0 output $primary
+# University monitor: all workspaces go there when connected
+workspace 1 output $output_university
+workspace 2 output $output_university
+workspace 3 output $output_university
+workspace 4 output $output_university
+workspace 5 output $output_university
+workspace 6 output $output_university
+workspace 7 output $output_university
+workspace 8 output $output_university
+workspace 9 output $output_university
+workspace 0 output $output_university
 bindsym $mod+1   workspace 1
 bindsym $mod+2   workspace 2
 bindsym $mod+3   workspace 3
