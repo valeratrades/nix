@@ -169,18 +169,46 @@ fn create_pie_chart(items: &[Item], title: &str) -> Plot {
         .text_info("percent+label")
         .text_position(Position::Outside)
         .hole(0.3)
-        .sort(false);
+        .sort(false)
+        .domain(plotly::common::Domain::new().x(&[0.25, 0.75]).y(&[0.15, 0.85]));
 
     let layout = Layout::new()
         .title(Title::with_text(title).font(Font::new().size(20)))
-        .height(900)
-        .width(1400)
         .show_legend(true);
 
     let mut plot = Plot::new();
     plot.add_trace(pie);
     plot.set_layout(layout);
     plot
+}
+
+fn write_responsive_html(plot: &Plot, path: &std::path::Path) -> Result<()> {
+    let plot_json = plot.to_json();
+    let html = format!(
+        r##"<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        html, body {{ margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }}
+        #chart {{ width: 100%; height: 100%; }}
+    </style>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <div id="chart"></div>
+    <script>
+        var spec = {plot_json};
+        var data = spec.data;
+        var layout = spec.layout || {{}};
+        layout.autosize = true;
+        Plotly.newPlot('chart', data, layout, {{responsive: true}});
+    </script>
+</body>
+</html>"##
+    );
+    std::fs::write(path, html).context("write html")?;
+    Ok(())
 }
 
 fn run(
@@ -206,7 +234,7 @@ fn run(
     let items = aggregate_top(items, top);
 
     let plot = create_pie_chart(&items, title);
-    plot.write_html(&out);
+    write_responsive_html(&plot, &out)?;
 
     Ok(())
 }
