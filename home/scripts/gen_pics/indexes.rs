@@ -10,7 +10,7 @@ color-eyre = "0.6"
 plotly = "0.13"
 ---
 
-use clap::{Parser, Subcommand};
+use clap::{Parser, ValueEnum};
 use color_eyre::eyre::{Context, Result, bail, eyre};
 use plotly::{
     Pie, Plot,
@@ -24,14 +24,42 @@ use std::cmp::Ordering;
 use std::ffi::OsStr;
 use std::path::PathBuf;
 
-const DJI_URL: &str = "https://www.slickcharts.com/dowjones";
-const SPY_URL: &str = "https://www.slickcharts.com/symbol/SPY/holdings";
+#[derive(Clone, Copy, Debug, ValueEnum)]
+enum Index {
+    /// SPDR Dow Jones Industrial Average ETF
+    Dia,
+    /// SPDR S&P 500 ETF
+    Spy,
+    /// Invesco QQQ (Nasdaq-100)
+    Qqq,
+}
+
+impl Index {
+    fn url(self) -> &'static str {
+        match self {
+            Index::Dia => "https://www.slickcharts.com/symbol/DIA/holdings",
+            Index::Spy => "https://www.slickcharts.com/symbol/SPY/holdings",
+            Index::Qqq => "https://www.slickcharts.com/symbol/QQQ/holdings",
+        }
+    }
+
+    fn title(self) -> &'static str {
+        match self {
+            Index::Dia => "SPDR Dow Jones Industrial Average ETF (DIA) — Holdings",
+            Index::Spy => "S&P 500 ETF (SPY) — Holdings",
+            Index::Qqq => "Invesco QQQ (Nasdaq-100) — Holdings",
+        }
+    }
+}
 
 /// Pie charts of index component weights from slickcharts.com
 #[derive(Parser, Debug)]
 #[command(name = "indexes")]
 #[command(about = "Generate pie charts of index component weights")]
 struct Args {
+    /// Index to display
+    index: Index,
+
     /// Output HTML file path (if not specified, does nothing)
     #[arg(short, long)]
     out: Option<PathBuf>,
@@ -39,17 +67,6 @@ struct Args {
     /// Number of top components to label on the chart (0 = all)
     #[arg(long, default_value_t = 32)]
     top: usize,
-
-    #[command(subcommand)]
-    cmd: Cmd,
-}
-
-#[derive(Subcommand, Debug)]
-enum Cmd {
-    /// Dow Jones Industrial Average components
-    Dji,
-    /// S&P 500 ETF (SPY) holdings
-    Spy,
 }
 
 #[derive(Clone, Debug)]
@@ -66,7 +83,7 @@ fn parse_percent(s: &str) -> Result<f64> {
     Ok(t.parse::<f64>().context("parse percent float")?)
 }
 
-fn fetch_items(url: &str, company_header: &str, weight_header: &str) -> Result<Vec<Item>> {
+fn fetch_items(url: &str) -> Result<Vec<Item>> {
     let client = Client::builder()
         .user_agent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36")
         .build()
@@ -104,16 +121,16 @@ fn fetch_items(url: &str, company_header: &str, weight_header: &str) -> Result<V
 
     let company_i = headers
         .iter()
-        .position(|h| h == company_header)
-        .ok_or_else(|| eyre!("no '{company_header}' header found; headers={headers:?}"))?;
+        .position(|h| h == "Holding")
+        .ok_or_else(|| eyre!("no 'Holding' header found; headers={headers:?}"))?;
     let symbol_i = headers
         .iter()
         .position(|h| h == "Symbol")
         .ok_or_else(|| eyre!("no 'Symbol' header found; headers={headers:?}"))?;
     let weight_i = headers
         .iter()
-        .position(|h| h == weight_header)
-        .ok_or_else(|| eyre!("no '{weight_header}' header found; headers={headers:?}"))?;
+        .position(|h| h == "Portfolio%")
+        .ok_or_else(|| eyre!("no 'Portfolio%' header found; headers={headers:?}"))?;
 
     let ws_re = Regex::new(r"\s+").unwrap();
 
@@ -261,15 +278,12 @@ fn write_responsive_html(plot: &Plot, path: &std::path::Path) -> Result<()> {
     Ok(())
 }
 
-fn run(
-    out: Option<PathBuf>,
-    url: &str,
-    company_header: &str,
-    weight_header: &str,
-    title: &str,
-    top: usize,
-) -> Result<()> {
-    let Some(out) = out else {
+fn main() -> Result<()> {
+    color_eyre::install()?;
+
+    let args = Args::parse();
+
+    let Some(out) = args.out else {
         return Ok(());
     };
 
@@ -280,35 +294,10 @@ fn run(
         );
     }
 
-    let items = fetch_items(url, company_header, weight_header)?;
-
-    let plot = create_pie_chart(&items, title, top);
+    let index = args.index;
+    let items = fetch_items(index.url())?;
+    let plot = create_pie_chart(&items, index.title(), args.top);
     write_responsive_html(&plot, &out)?;
 
     Ok(())
-}
-
-fn main() -> Result<()> {
-    color_eyre::install()?;
-
-    let args = Args::parse();
-
-    match args.cmd {
-        Cmd::Dji => run(
-            args.out,
-            DJI_URL,
-            "Company",
-            "Weight",
-            "Dow Jones Industrial Average (DJI) — Component Weights",
-            args.top,
-        ),
-        Cmd::Spy => run(
-            args.out,
-            SPY_URL,
-            "Holding",
-            "Portfolio%",
-            "S&P 500 ETF (SPY) — Top Holdings",
-            args.top,
-        ),
-    }
 }
