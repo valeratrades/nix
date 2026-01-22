@@ -3,11 +3,12 @@
 
 [dependencies]
 clap = { version = "4.5.49", features = ["derive"] }
-reqwest = { version = "0.12", features = ["blocking", "rustls-tls"] }
+reqwest = { version = "0.12", features = ["blocking", "rustls-tls", "json"] }
 scraper = "0.20"
 regex = "1.10"
 color-eyre = "0.6"
 plotly = "0.13"
+serde = { version = "1", features = ["derive"] }
 ---
 
 use clap::{Parser, ValueEnum};
@@ -32,22 +33,17 @@ enum Index {
     Spy,
     /// Invesco QQQ (Nasdaq-100)
     Qqq,
+    /// Top 100 cryptocurrencies by market cap
+    Crypto,
 }
 
 impl Index {
-    fn url(self) -> &'static str {
-        match self {
-            Index::Dia => "https://www.slickcharts.com/symbol/DIA/holdings",
-            Index::Spy => "https://www.slickcharts.com/symbol/SPY/holdings",
-            Index::Qqq => "https://www.slickcharts.com/symbol/QQQ/holdings",
-        }
-    }
-
     fn title(self) -> &'static str {
         match self {
             Index::Dia => "SPDR Dow Jones Industrial Average ETF (DIA) — Holdings",
             Index::Spy => "S&P 500 ETF (SPY) — Holdings",
             Index::Qqq => "Invesco QQQ (Nasdaq-100) — Holdings",
+            Index::Crypto => "Cryptocurrency Market Cap Distribution",
         }
     }
 }
@@ -83,11 +79,52 @@ fn parse_percent(s: &str) -> Result<f64> {
     Ok(t.parse::<f64>().context("parse percent float")?)
 }
 
-fn fetch_items(url: &str) -> Result<Vec<Item>> {
-    let client = Client::builder()
+fn build_client() -> Result<Client> {
+    Client::builder()
         .user_agent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36")
         .build()
-        .context("build http client")?;
+        .context("build http client")
+}
+
+#[derive(serde::Deserialize)]
+struct CoinData {
+    name: String,
+    symbol: String,
+    market_cap: Option<f64>,
+}
+
+fn fetch_crypto_items() -> Result<Vec<Item>> {
+    let client = build_client()?;
+    let url = "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1";
+
+    let coins: Vec<CoinData> = client
+        .get(url)
+        .send()
+        .context("GET coingecko")?
+        .error_for_status()
+        .context("coingecko status")?
+        .json()
+        .context("parse coingecko json")?;
+
+    let items: Vec<Item> = coins
+        .into_iter()
+        .filter_map(|c| {
+            c.market_cap.map(|mc| Item {
+                label: format!("{} ({})", c.symbol.to_uppercase(), c.name),
+                weight: mc,
+            })
+        })
+        .collect();
+
+    if items.is_empty() {
+        bail!("no crypto data returned");
+    }
+
+    Ok(items)
+}
+
+fn fetch_etf_items(url: &str) -> Result<Vec<Item>> {
+    let client = build_client()?;
 
     let body = client
         .get(url)
@@ -295,7 +332,12 @@ fn main() -> Result<()> {
     }
 
     let index = args.index;
-    let items = fetch_items(index.url())?;
+    let items = match index {
+        Index::Crypto => fetch_crypto_items()?,
+        Index::Dia => fetch_etf_items("https://www.slickcharts.com/symbol/DIA/holdings")?,
+        Index::Spy => fetch_etf_items("https://www.slickcharts.com/symbol/SPY/holdings")?,
+        Index::Qqq => fetch_etf_items("https://www.slickcharts.com/symbol/QQQ/holdings")?,
+    };
     let plot = create_pie_chart(&items, index.title(), args.top);
     write_responsive_html(&plot, &out)?;
 
