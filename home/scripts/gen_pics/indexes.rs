@@ -333,7 +333,10 @@ fn main() -> Result<()> {
 
     let index = args.index;
     let items = match index {
-        Index::Crypto => fetch_crypto_items()?,
+        Index::Crypto => {
+            eprintln!("HINT: https://coin360.com/ — superior version of what we're pitifully trying to do");
+            fetch_crypto_items()?
+        }
         Index::Dia => fetch_etf_items("https://www.slickcharts.com/symbol/DIA/holdings")?,
         Index::Spy => fetch_etf_items("https://www.slickcharts.com/symbol/SPY/holdings")?,
         Index::Qqq => fetch_etf_items("https://www.slickcharts.com/symbol/QQQ/holdings")?,
