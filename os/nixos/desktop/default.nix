@@ -71,17 +71,17 @@
         #gnome-boxes # vm with linux distros #dbg: may be bringing in `webkitgtk`, which builds stupid long
         # Windows
         [
-          wineWowPackages.stable
-          wine
-          (wine.override { wineBuild = "wine64"; })
-          wine64
-					wineWowPackages.stable
-          wineWowPackages.staging
+          #DEPRECATE: a bunch of stuff here seems to be bringing the same thing in
+          #wineWowPackages.stable
+          #wine
+          #(wine.override { wineBuild = "wine64"; })
+          #wine64
+					#wineWowPackages.stable
+     #     wineWowPackages.staging
 					wineWowPackages.waylandFull
-          wineWowPackages.wayland
-          #wineWowPackages.waylandFull
+          #wineWowPackages.wayland
           #wineWowPackages.unstableFull
-          winePackages.stagingFull
+          #winePackages.stagingFull
           #wine-staging # nightly wine
           winetricks # install deps for wine
           #bottles # ... python

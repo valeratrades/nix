@@ -49,6 +49,13 @@ in {
         localHwConfig = mylib.relativeToRoot "./hosts/${user.desktopHostName}/hardware-configuration.nix";
         etcExists = builtins.pathExists etcHwConfig;
         localExists = builtins.pathExists localHwConfig;
+        # Minimal stub for evaluation when no hardware config exists (e.g., building for another machine)
+        stubHwConfig = { lib, modulesPath, ... }: {
+          imports = [ (modulesPath + "/installer/scan/not-detected.nix") ];
+          fileSystems."/" = { device = "/dev/null"; fsType = "ext4"; };
+          fileSystems."/boot" = { device = "/dev/null"; fsType = "vfat"; };
+          nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
+        };
       in
         if etcExists && localExists then
           builtins.trace "WARNING: Both ${etcHwConfig} and ${toString localHwConfig} exist. Using ${etcHwConfig}."
@@ -60,7 +67,8 @@ in {
           builtins.trace "INFO: Using local hardware config at ${toString localHwConfig}"
           localHwConfig
         else
-          throw "ERROR: No hardware-configuration.nix found at ${etcHwConfig} or ${toString localHwConfig}"
+          builtins.trace "INFO: No hardware-configuration.nix found, using stub for evaluation"
+          stubHwConfig
     )
   ];
 	hardware = {
@@ -311,6 +319,8 @@ in {
       });
     })
     (import (mylib.relativeToRoot "overlays/rnote-main.nix"))
+    (import (mylib.relativeToRoot "overlays/sierra-chart.nix"))
+    (import (mylib.relativeToRoot "overlays/tiger-trade.nix"))
   ];
 
   nix.settings.download-buffer-size = "50G";

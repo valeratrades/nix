@@ -16,8 +16,6 @@
 
 - when I say you're in charge of a git issue, - you update it on every big change made, or improvement in understanding of the problem-space. So if current state or understanding of what should happen changes, tracker issue should too.
 
-- you are prohibited from restoring files using git
-
 ## Testing
 - if a change is not trivial, always test.
     And any time you write actual tests in code, - read https://matklad.github.io/2021/05/31/how-to-test.html
@@ -45,3 +43,5 @@
 - do not take shortcuts.
     it's ALWAYS better to make a part of a larger change properly, in a way that could be extended on later, then try to shortcut the entire thing. I will repeat again, - a fully correct and well written implementation for a smaller part of the target functionality is ALWAYS better than bad attempt at making it all at once.
     Remember that you do not have to finish everything in the same session. Quality > quantity.
+
+- NO FALLBACKS. we do not do fallbacks. If state is tainted, we error the fuck out as soon as possible. Think 10 times before adding `unwrap_or` or `let _ =` anywhere, - most likely you're trying to patch up a corrupted state. If that's the case, undo and instead just make it panic out.

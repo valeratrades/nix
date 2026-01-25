@@ -186,10 +186,11 @@ in {
           lenovo-legion
         ]
 
-        # Windows
-        #[
-        #  winboat
-        #]
+        # Windows (via Wine)
+        [
+          sierra-chart
+          tiger-trade
+        ]
 
         # vpn
         [

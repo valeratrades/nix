@@ -54,3 +54,22 @@ for future reference: $BTC ~$${btc_price}
 
 [youtube]
 channels = { hamaha = "UCI3uVtN-W5StRN1RsLNKV6g", test = "UCG5YX-fn1-EIv-sOSYMjSmg" } #Q: is `test` one still relevant?
+
+[email]
+email = "valeratrades@gmail.com"
+ignore_patterns = [
+  "Alex Hormozi",
+]
+claude_token = { env = "CLAUDE_TOKEN" }
+
+[email.important_if_contains]
+any = []
+subject = ["Appointment booked"]
+body = []
+address = []
+
+[email.auth.imap]
+pass = { env = "GOOGLE_MAIN_MAIL_PASS" }
+
+[clickhouse]
+url = "http://localhost:8123"

@@ -16,7 +16,7 @@
           # retarded games. Here only following Tsyren's nagging.
           prismlauncher
           modrinth-app
-          jdk23
+          jdk
           #factorio # will work only with the game purchased. 
           transmission_4 # Factorio torrent install link is this: magnet:?xt=urn:btih:85860DA0DD1F597F8A6E89A95C266CDAE8E078D2&dn=Factorio%20%5Bamd64%5D%20%5BMulti%5D%20%5BNative%5D%20(1.1.104%20%2B%201.1.105%20Experimental)
         ]
