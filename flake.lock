@@ -3381,11 +3381,11 @@
         "wrap-it": "wrap-it"
       },
       "locked": {
-        "lastModified": 1768506204,
-        "narHash": "sha256-T8x8uawUycva41trIhf4eFSnLOFMMPxX2iU4nICA6o4=",
+        "lastModified": 1768824130,
+        "narHash": "sha256-V2xtWsueUB5mhRhVYwBAI1YOqU+i5dbkdDtDGuifvf0=",
         "owner": "valeratrades",
         "repo": "wallpaper_carousel",
-        "rev": "e3cfeb9695d5d116f3e1f3e7d575369ba28fad59",
+        "rev": "29c68b7e7b27ed56958c8b5b94d86bc2770b7016",
         "type": "github"
       },
       "original": {

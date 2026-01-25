@@ -8,6 +8,8 @@ final: prev: {
       winetricks
       curl
       coreutils
+      sway
+      jq
     ];
     text = ''
       set -euo pipefail
@@ -62,7 +64,23 @@ final: prev: {
           fi
       fi
 
-      exec wine "$TT_DIR/TigerTrade.exe" "$@"
+      # Wine cursor fix: temporarily move all outputs to 0 0
+      SAVED_OUTPUTS=$(swaymsg -t get_outputs | jq -r '.[] | "\(.name) \(.rect.x) \(.rect.y)"')
+
+      cleanup() {
+          echo "Restoring monitor positions..."
+          while IFS=' ' read -r name x y; do
+              swaymsg output "$name" pos "$x" "$y" 2>/dev/null || true
+          done <<< "$SAVED_OUTPUTS"
+      }
+      trap cleanup EXIT
+
+      echo "Temporarily resetting monitor positions for Wine compatibility..."
+      swaymsg -t get_outputs | jq -r '.[].name' | while read -r name; do
+          swaymsg output "$name" pos 0 0 2>/dev/null || true
+      done
+
+      wine "$TT_DIR/TigerTrade.exe" "$@"
     '';
   };
 }
