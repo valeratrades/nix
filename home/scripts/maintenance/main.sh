@@ -12,10 +12,13 @@ sync()  {
 	("$dot/check_caches.sh" && printf "\033[32mChecked caches\033[0m\n" || printf "\033[31mFailed to check caches\033[0m\n") &
 	PID3=$!
 
-	(fish -c "check_nightly_versions --discover" && printf "\033[32mRefreshed nightly version file cache\033[0m\n" || printf "\033[31mFailed to refresh nightly version cache\033[0m\n") &
+	("$dot/cross_project_version_alignment.rs" rust --discover && printf "\033[32mRust nightly versions aligned\033[0m\n" || printf "\033[31mRust nightly version mismatch\033[0m\n") &
 	PID4=$!
 
-	wait $PID2 $PID3 $PID4 #$PID1
+	("$dot/cross_project_version_alignment.rs" lean ~/s && printf "\033[32mLean4 projects aligned\033[0m\n" || printf "\033[31mFailed to align lean4 projects\033[0m\n") &
+	PID5=$!
+
+	wait $PID2 $PID3 $PID4 $PID5 #$PID1
 
 	sudo nixos-rebuild switch --show-trace -v --impure && git -C "$NIXOS_CONFIG" add -A && git -C "$NIXOS_CONFIG" commit -m "_" && git -C "$NIXOS_CONFIG" push  # git commit nix files only on successful build
 	return 0

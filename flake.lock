@@ -3133,17 +3133,14 @@
         "v-utils": "v-utils_9"
       },
       "locked": {
-        "lastModified": 1769365590,
-        "narHash": "sha256-bJJH6PEabiE3koZyqxsmSaSsOYUhbBxmw/XzDBHBkVg=",
-        "owner": "valeratrades",
-        "repo": "tg",
-        "rev": "09d3abe288a2493ac5a951902b6602f23e118d09",
-        "type": "github"
+        "lastModified": 1769549435,
+        "narHash": "sha256-OQQn4aZzaYs2VEwyB+rHLnH+2Xj9amkUpRR2OdK5ppo=",
+        "path": "/home/v/s/tg",
+        "type": "path"
       },
       "original": {
-        "owner": "valeratrades",
-        "repo": "tg",
-        "type": "github"
+        "path": "/home/v/s/tg",
+        "type": "path"
       }
     },
     "translate_infrequent": {

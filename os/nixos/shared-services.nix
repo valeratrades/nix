@@ -39,9 +39,8 @@ in {
     #  };
     #};
 
-    clickhouse = {
-      enable = true;
-      extraServerConfig = ''
+    clickhouse.enable = true;
+    clickhouse.extraServerConfig = ''
         <clickhouse>
           <!-- Disable verbose system logs that cause unnecessary CPU usage -->
           <asynchronous_metric_log remove="1"/>
@@ -71,7 +70,6 @@ in {
           </query_log>
         </clickhouse>
       '';
-    };
 
     openssh = {
       enable = true;
@@ -82,6 +80,13 @@ in {
         PermitRootLogin = "yes";
       };
     };
+  };
+
+  # ClickHouse 25.x has a known slow shutdown bug (~39s delay).
+  # Just kill it fast - data is trivial.
+  systemd.services.clickhouse.serviceConfig = {
+    TimeoutStopSec = 5;
+    KillMode = "mixed";  # SIGTERM main, then SIGKILL all after timeout
   };
 
   environment.variables = {

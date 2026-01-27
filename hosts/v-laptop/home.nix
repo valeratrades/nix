@@ -14,6 +14,7 @@ in {
     secrets.telegram_token_test = { mode = "0400"; };
     secrets.telegram_api_hash = { mode = "0400"; };
     secrets.telegram_phone = { mode = "0400"; };
+    secrets.telegram_alerts_channel = { mode = "0400"; };
     secrets.mail_main_addr = { mode = "0400"; };
     secrets.mail_main_pass = { mode = "0400"; };
     secrets.mail_spam_addr = { mode = "0400"; };
@@ -28,6 +29,7 @@ in {
     token = config.sops.secrets.telegram_token_main.path;
     apiHash = config.sops.secrets.telegram_api_hash.path;
     phone = config.sops.secrets.telegram_phone.path;
+    alertsChannel = config.sops.secrets.telegram_alerts_channel.path;
   };
 
   wallpaper-carousel = {

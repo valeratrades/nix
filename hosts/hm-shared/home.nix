@@ -31,7 +31,19 @@
       package = pkgs.direnv;
       nix-direnv = {
         enable = true; # faster on nix
-        package = pkgs.nix-direnv;
+        # _nix_clean_old_gcroots uses pattern `{nix,flake}-profile*` which matches `flake-tmp-profile.*`,
+        # deleting the tmp profile before _nix_add_gcroot can create the GC root symlink.
+        # Result: "error: getting status of '.direnv/flake-tmp-profile.XXX': No such file or directory"
+        # Caching still works, but GC root isn't created, so dependencies get deleted on nix-collect-garbage.
+        #WAIT: https://github.com/nix-community/nix-direnv/issues/546
+        #WAIT: https://github.com/direnv/direnv/issues/1181
+        package = pkgs.nix-direnv.overrideAttrs (old: {
+          postFixup = (old.postFixup or "") + ''
+            substituteInPlace $out/share/nix-direnv/direnvrc \
+              --replace-fail '{nix,flake}-profile*' '{nix-profile-,flake-profile-}*' \
+              --replace-fail '_nix build --out-link "$symlink" "$storepath"' '_nix build --out-link "$symlink" "$(readlink -f "$storepath")"'
+          '';
+        });
       };
       silent = true;
     };

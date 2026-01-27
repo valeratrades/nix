@@ -133,8 +133,11 @@ fn main() {
     // tailscaled is a system service, needs sudo
     run_cmd_silent("sudo", &["systemctl", "stop", "tailscaled"]);
 
-    // clickhouse and postgresql are also system services
-    run_cmd_silent("sudo", &["systemctl", "stop", "clickhouse"]);
+    // clickhouse has a known slow shutdown bug in 25.x (~39s delay)
+    // Just kill it - data is trivial and not worth waiting for
+    run_cmd_silent("sudo", &["pkill", "-9", "clickhouse"]);
+
+    // postgresql if it's running
     run_cmd_silent("sudo", &["systemctl", "stop", "postgresql"]);
 
     // 4. Shutdown
