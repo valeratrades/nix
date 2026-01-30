@@ -2,6 +2,7 @@ use nvim_oxi::api;
 
 /// Get all popup windows in the current tabpage
 /// Returns array of window handles that have a zindex (floating windows)
+/// Excludes treesitter-context windows which should persist
 pub fn get_popups() -> Vec<i64> {
     let wins: Vec<i64> = api::call_function("nvim_tabpage_list_wins", (0,))
         .unwrap_or_else(|_| vec![]);
@@ -12,7 +13,14 @@ pub fn get_popups() -> Vec<i64> {
                 api::call_function("nvim_win_get_config", (win,));
 
             if let Ok(cfg) = config {
-                cfg.get("zindex").is_some()
+                if cfg.get("zindex").is_none() {
+                    return false;
+                }
+                // Skip treesitter-context window
+                let bufnr: i64 = api::call_function("nvim_win_get_buf", (win,)).unwrap_or(0);
+                let ft: String = api::call_function("nvim_get_option_value", ("filetype", nvim_oxi::Dictionary::from_iter([("buf", bufnr)])))
+                    .unwrap_or_default();
+                ft != "treesitter-context"
             } else {
                 false
             }

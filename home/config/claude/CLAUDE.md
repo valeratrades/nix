@@ -38,13 +38,18 @@
 
 - if you've just added `unwrap_or(_else)`, - stop and think hard. Almost always it's much much preferable to just panic and see the error clearly than to continue with faulty state (which this unwrap_or_else oftentimes is a symptom of).
 
-- Every time you use a standalone helper you lose 10 points (-20 if you create it). Non-default helper functions should be made only when absolutely necessary and there is no way to slightly refactor existing methods to allow for desired behavior natively. Every time you refactor and remove a helper function, you gain 50 points.
+- avoid implementing and using helper functions at all costs. Minimize communication boundary of the modules ruthlessly. Every single `pub` fn is future pain. Every single `pub` function you manage to refactor out is considered a huge win.
     // implementing std traits like From and using them to shorten evocations is however highly encouraged
 
-- you are NOT allowed to ever `git checkout` files to reset their state. If you want to undo changes, - you do so manually.
+- using `git checkout` or `sed` to bulk-change files is absolute last resort. I will always much prefer you doing it by hand. But if you think the scope is ginormous and unmanageable by hand at all, you first `git stash`, as both of these are destructive.
 
 - do not take shortcuts.
-    it's ALWAYS better to make a part of a larger change properly, in a way that could be extended on later, then try to shortcut the entire thing. I will repeat again, - a fully correct and well written implementation for a smaller part of the target functionality is ALWAYS better than bad attempt at making it all at once.
     Remember that you do not have to finish everything in the same session. Quality > quantity.
 
+- before thinking "what can I add to make this work", ALWAYS think "what can I **remove**". Remove > refactor > add. Always start with thinking about what can be removed.
+
+- don't be afraid of `unsafe`. It's absolutely fine and is part of life.
+
 - NO FALLBACKS. we do not do fallbacks. If state is tainted, we error the fuck out as soon as possible. Think 10 times before adding `unwrap_or` or `let _ =` anywhere, - most likely you're trying to patch up a corrupted state. If that's the case, undo and instead just make it panic out.
+
+- investment into better errors (miette, thiserror, color_eyre), additional **standard** trait impls (derive_more, strum), improving testing infrastructure, are always justified. Procedurally improving our visibility into a group of bugs is as good as solving any one of them.

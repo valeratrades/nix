@@ -426,16 +426,31 @@ fn push(force_with_lease: bool, force: bool, extra_args: Vec<String>) {
     // Check if we actually need a force push (histories diverged)
     let needs_force = !local_is_ancestor && !remote_is_ancestor;
 
-    // Check if local contains remote's content (remote tree appears in local's history)
-    // This is the key safety check: if remote's tree is in our history, we're not losing any work
+    // Check if local contains remote's content
+    // Safe scenarios:
+    // 1. Remote tree appears in local history (exact match)
+    // 2. Remote is merge-base with local (squash case: remote commits were squashed into local)
+    // 3. No diff between local and remote (same content, different history)
     let local_contains_remote_content = needs_force && {
-        if let Some(ref r_tree) = remote_tree {
-            // Check if any commit in local history has the same tree as remote tip
+        // Check 1: exact tree match in history
+        let tree_in_history = if let Some(ref r_tree) = remote_tree {
             let local_trees = run_cmd_output("git", &["log", "--format=%T", "HEAD"]);
             local_trees.map(|trees| trees.lines().any(|t| t == r_tree)).unwrap_or(false)
         } else {
             false
-        }
+        };
+
+        // Check 2: remote is the merge-base (means local is a rewrite/squash of remote)
+        let remote_is_merge_base = run_cmd_output("git", &["merge-base", "HEAD", &format!("origin/{branch}")])
+            .map(|mb| run_cmd_output("git", &["rev-parse", &format!("origin/{branch}")]).as_ref() == Some(&mb))
+            .unwrap_or(false);
+
+        // Check 3: no actual content difference (just history rewrite)
+        let no_content_diff = run_cmd_output("git", &["diff", &format!("origin/{branch}"), "HEAD"])
+            .map(|d| d.is_empty())
+            .unwrap_or(false);
+
+        tree_in_history || remote_is_merge_base || no_content_diff
     };
 
     if explicit_force && is_main_branch(&branch) {

@@ -47,6 +47,7 @@ b = "lbuild"
 c = "lcheck"
 r = "lrun"
 t = "nextest run"
+ta = "nextest run --no-fail-fast"
 
 # leptos {{{1
 ls = "leptos serve"
