@@ -8,7 +8,33 @@ serde_json = "1"
 
 use clap::{Parser, Subcommand};
 use std::env;
-use std::process::{Command, Stdio};
+use std::fmt;
+use std::process::{Command, ExitStatus, Stdio};
+
+#[derive(Debug)]
+struct GitError {
+    cmd: String,
+    args: Vec<String>,
+    stderr: Option<String>,
+    status: Option<ExitStatus>,
+}
+
+impl fmt::Display for GitError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} {} failed", self.cmd, self.args.join(" "))?;
+        if let Some(status) = self.status {
+            write!(f, " (exit: {})", status)?;
+        }
+        if let Some(ref stderr) = self.stderr {
+            if !stderr.is_empty() {
+                write!(f, ": {}", stderr)?;
+            }
+        }
+        Ok(())
+    }
+}
+
+type GitResult<T> = Result<T, GitError>;
 
 #[derive(Parser, Debug)]
 #[command(name = "git")]
@@ -67,32 +93,67 @@ enum Commands {
     },
 }
 
-fn run_cmd(cmd: &str, args: &[&str]) -> bool {
-    Command::new(cmd)
+/// Run command with inherited stdio (user sees output)
+fn run_cmd(cmd: &str, args: &[&str]) -> GitResult<()> {
+    let status = Command::new(cmd)
         .args(args)
         .status()
-        .map(|s| s.success())
-        .unwrap_or(false)
+        .map_err(|e| GitError {
+            cmd: cmd.to_string(),
+            args: args.iter().map(|s| s.to_string()).collect(),
+            stderr: Some(e.to_string()),
+            status: None,
+        })?;
+    if status.success() {
+        Ok(())
+    } else {
+        Err(GitError {
+            cmd: cmd.to_string(),
+            args: args.iter().map(|s| s.to_string()).collect(),
+            stderr: None,
+            status: Some(status),
+        })
+    }
 }
 
-fn run_cmd_output(cmd: &str, args: &[&str]) -> Option<String> {
-    Command::new(cmd)
+/// Run command and capture stdout, suppressing stderr
+fn run_cmd_output(cmd: &str, args: &[&str]) -> GitResult<String> {
+    let output = Command::new(cmd)
         .args(args)
-        .stderr(Stdio::null())
+        .stderr(Stdio::piped())
         .output()
-        .ok()
-        .filter(|o| o.status.success())
-        .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
+        .map_err(|e| GitError {
+            cmd: cmd.to_string(),
+            args: args.iter().map(|s| s.to_string()).collect(),
+            stderr: Some(e.to_string()),
+            status: None,
+        })?;
+    if output.status.success() {
+        Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
+    } else {
+        Err(GitError {
+            cmd: cmd.to_string(),
+            args: args.iter().map(|s| s.to_string()).collect(),
+            stderr: Some(String::from_utf8_lossy(&output.stderr).trim().to_string()),
+            status: Some(output.status),
+        })
+    }
 }
 
-fn run_cmd_quiet(cmd: &str, args: &[&str]) -> bool {
-    Command::new(cmd)
+/// Run command silently, returns Ok(true) if success, Ok(false) if failed with exit code, Err if couldn't run
+fn run_cmd_status(cmd: &str, args: &[&str]) -> GitResult<bool> {
+    let status = Command::new(cmd)
         .args(args)
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .status()
-        .map(|s| s.success())
-        .unwrap_or(false)
+        .map_err(|e| GitError {
+            cmd: cmd.to_string(),
+            args: args.iter().map(|s| s.to_string()).collect(),
+            stderr: Some(e.to_string()),
+            status: None,
+        })?;
+    Ok(status.success())
 }
 
 fn run_gg(message: &[String]) {
@@ -114,7 +175,7 @@ fn run_gg(message: &[String]) {
 
 fn fork(message: Vec<String>) {
     // Check we're in a git repo
-    if !run_cmd_quiet("git", &["rev-parse", "--is-inside-work-tree"]) {
+    if run_cmd_status("git", &["rev-parse", "--is-inside-work-tree"]).unwrap_or(false) != true {
         eprintln!("ERROR: Not in a git repository");
         std::process::exit(1);
     }
@@ -128,8 +189,8 @@ fn fork(message: Vec<String>) {
     };
 
     let origin_url = match run_cmd_output("git", &["remote", "get-url", "origin"]) {
-        Some(url) => url,
-        None => {
+        Ok(url) => url,
+        Err(_) => {
             eprintln!("ERROR: No origin remote found");
             std::process::exit(1);
         }
@@ -141,10 +202,10 @@ fn fork(message: Vec<String>) {
     {
         println!("Origin already points to your repo, running gg...");
         // Ensure branch tracks origin (might still track upstream from previous fork setup)
-        if let Some(branch) = run_cmd_output("git", &["rev-parse", "--abbrev-ref", "HEAD"]) {
-            let tracking = run_cmd_output("git", &["config", &format!("branch.{branch}.remote")]);
+        if let Ok(branch) = run_cmd_output("git", &["rev-parse", "--abbrev-ref", "HEAD"]) {
+            let tracking = run_cmd_output("git", &["config", &format!("branch.{branch}.remote")]).ok();
             if tracking.as_deref() != Some("origin") {
-                run_cmd("git", &["push", "-u", "origin", &branch]);
+                let _ = run_cmd("git", &["push", "-u", "origin", &branch]);
             }
         }
         run_gg(&message);
@@ -174,27 +235,27 @@ fn fork(message: Vec<String>) {
     let fork_url = format!("https://github.com/{github_name}/{repo_name}.git");
 
     // Check if upstream already exists
-    let has_upstream = run_cmd_quiet("git", &["remote", "get-url", "upstream"]);
+    let has_upstream = run_cmd_status("git", &["remote", "get-url", "upstream"]).unwrap_or(false);
 
     if has_upstream {
         // upstream exists, just update origin
-        run_cmd("git", &["remote", "set-url", "origin", &fork_url]);
+        let _ = run_cmd("git", &["remote", "set-url", "origin", &fork_url]);
     } else {
         // Rename origin to upstream, add fork as origin
-        run_cmd_quiet("git", &["remote", "rename", "origin", "upstream"]);
-        if !run_cmd_quiet("git", &["remote", "add", "origin", &fork_url]) {
-            run_cmd("git", &["remote", "set-url", "origin", &fork_url]);
+        let _ = run_cmd_status("git", &["remote", "rename", "origin", "upstream"]);
+        if run_cmd_status("git", &["remote", "add", "origin", &fork_url]).unwrap_or(false) != true {
+            let _ = run_cmd("git", &["remote", "set-url", "origin", &fork_url]);
         }
     }
 
     println!("Pushing to {fork_url} ...");
 
     // Initial push to fork with -u to set up tracking (branch now tracks origin instead of upstream)
-    if let Some(branch) = run_cmd_output("git", &["rev-parse", "--abbrev-ref", "HEAD"])
-        && !run_cmd("git", &["push", "-u", "origin", &branch])
-    {
-        eprintln!("ERROR: Failed to push to fork");
-        std::process::exit(1);
+    if let Ok(branch) = run_cmd_output("git", &["rev-parse", "--abbrev-ref", "HEAD"]) {
+        if run_cmd("git", &["push", "-u", "origin", &branch]).is_err() {
+            eprintln!("ERROR: Failed to push to fork");
+            std::process::exit(1);
+        }
     }
 
     run_gg(&message);
@@ -202,18 +263,18 @@ fn fork(message: Vec<String>) {
 
 fn get_default_branch() -> Option<String> {
     // Try to get the default branch from GitHub via gh CLI
-    run_cmd_output("gh", &["repo", "view", "--json", "defaultBranchRef", "-q", ".defaultBranchRef.name"])
+    run_cmd_output("gh", &["repo", "view", "--json", "defaultBranchRef", "-q", ".defaultBranchRef.name"]).ok()
 }
 
 fn pr(target_branch: Option<String>, draft: bool) {
     // Check we're in a git repo
-    if !run_cmd_quiet("git", &["rev-parse", "--is-inside-work-tree"]) {
+    if run_cmd_status("git", &["rev-parse", "--is-inside-work-tree"]).unwrap_or(false) != true {
         eprintln!("ERROR: Not in a git repository");
         std::process::exit(1);
     }
 
     let current_branch = match run_cmd_output("git", &["branch", "--show-current"]) {
-        Some(b) if !b.is_empty() => b,
+        Ok(b) if !b.is_empty() => b,
         _ => {
             eprintln!("ERROR: Could not get current branch");
             std::process::exit(1);
@@ -298,7 +359,7 @@ fn pr(target_branch: Option<String>, draft: bool) {
 
         if is_draft {
             println!("Found existing draft PR, marking ready for review...");
-            if !run_cmd("gh", &["pr", "ready"]) {
+            if run_cmd("gh", &["pr", "ready"]).is_err() {
                 eprintln!("ERROR: Failed to mark PR as ready");
                 std::process::exit(1);
             }
@@ -363,7 +424,7 @@ fn pr(target_branch: Option<String>, draft: bool) {
     println!("Merging PR #{pr_number}");
 
     // Checkout target branch
-    if !run_cmd("git", &["checkout", &target_branch]) {
+    if run_cmd("git", &["checkout", &target_branch]).is_err() {
         eprintln!("ERROR: Failed to checkout {target_branch}");
         std::process::exit(1);
     }
@@ -380,7 +441,7 @@ fn pr(target_branch: Option<String>, draft: bool) {
     }
 
     // Pull to get the merge commit locally
-    run_cmd("git", &["pull"]);
+    let _ = run_cmd("git", &["pull"]);
 
     println!("Successfully merged '{current_branch}' into '{target_branch}'");
 }
@@ -392,13 +453,13 @@ fn is_main_branch(branch: &str) -> bool {
 }
 
 fn push(force_with_lease: bool, force: bool, extra_args: Vec<String>) {
-    if !run_cmd_quiet("git", &["rev-parse", "--is-inside-work-tree"]) {
+    if run_cmd_status("git", &["rev-parse", "--is-inside-work-tree"]).unwrap_or(false) != true {
         eprintln!("ERROR: Not in a git repository");
         std::process::exit(1);
     }
 
     let branch = match run_cmd_output("git", &["rev-parse", "--abbrev-ref", "HEAD"]) {
-        Some(b) if !b.is_empty() => b,
+        Ok(b) if !b.is_empty() => b,
         _ => {
             eprintln!("ERROR: Could not get current branch");
             std::process::exit(1);
@@ -406,19 +467,22 @@ fn push(force_with_lease: bool, force: bool, extra_args: Vec<String>) {
     };
 
     // Fetch the remote branch to ensure we have up-to-date refs for comparison
-    run_cmd_quiet("git", &["fetch", "origin", &format!("{branch}:refs/remotes/origin/{branch}")]);
+    if let Err(e) = run_cmd_output("git", &["fetch", "origin", &format!("{branch}:refs/remotes/origin/{branch}")]) {
+        eprintln!("ERROR: Failed to fetch origin/{branch}: {e}");
+        std::process::exit(1);
+    }
     // Store the fetched remote commit for --force-with-lease (avoids "stale info" error)
-    let remote_ref = run_cmd_output("git", &["rev-parse", &format!("origin/{branch}")]);
+    let remote_ref = run_cmd_output("git", &["rev-parse", &format!("origin/{branch}")]).ok();
 
     let use_force = force;
     let mut use_force_with_lease = force_with_lease;
     let explicit_force = force_with_lease || force;
 
     // Check if we need a force push and whether it's safe
-    let local_tree = run_cmd_output("git", &["rev-parse", "HEAD^{tree}"]);
-    let remote_tree = run_cmd_output("git", &["rev-parse", &format!("origin/{branch}^{{tree}}")]);
-    let remote_is_ancestor = run_cmd_quiet("git", &["merge-base", "--is-ancestor", &format!("origin/{branch}"), "HEAD"]);
-    let local_is_ancestor = run_cmd_quiet("git", &["merge-base", "--is-ancestor", "HEAD", &format!("origin/{branch}")]);
+    let local_tree = run_cmd_output("git", &["rev-parse", "HEAD^{tree}"]).ok();
+    let remote_tree = run_cmd_output("git", &["rev-parse", &format!("origin/{branch}^{{tree}}")]).ok();
+    let remote_is_ancestor = run_cmd_status("git", &["merge-base", "--is-ancestor", &format!("origin/{branch}"), "HEAD"]).unwrap_or(false);
+    let local_is_ancestor = run_cmd_status("git", &["merge-base", "--is-ancestor", "HEAD", &format!("origin/{branch}")]).unwrap_or(false);
 
     // Determine if force push would be safe
     let trees_match = matches!((&local_tree, &remote_tree), (Some(local), Some(remote)) if local == remote);
@@ -434,15 +498,16 @@ fn push(force_with_lease: bool, force: bool, extra_args: Vec<String>) {
     let local_contains_remote_content = needs_force && {
         // Check 1: exact tree match in history
         let tree_in_history = if let Some(ref r_tree) = remote_tree {
-            let local_trees = run_cmd_output("git", &["log", "--format=%T", "HEAD"]);
-            local_trees.map(|trees| trees.lines().any(|t| t == r_tree)).unwrap_or(false)
+            run_cmd_output("git", &["log", "--format=%T", "HEAD"])
+                .map(|trees| trees.lines().any(|t| t == r_tree))
+                .unwrap_or(false)
         } else {
             false
         };
 
         // Check 2: remote is the merge-base (means local is a rewrite/squash of remote)
         let remote_is_merge_base = run_cmd_output("git", &["merge-base", "HEAD", &format!("origin/{branch}")])
-            .map(|mb| run_cmd_output("git", &["rev-parse", &format!("origin/{branch}")]).as_ref() == Some(&mb))
+            .map(|mb| run_cmd_output("git", &["rev-parse", &format!("origin/{branch}")]).ok().as_ref() == Some(&mb))
             .unwrap_or(false);
 
         // Check 3: no actual content difference (just history rewrite)
@@ -488,13 +553,13 @@ fn push(force_with_lease: bool, force: bool, extra_args: Vec<String>) {
     args.push("--follow-tags");
     args.extend(extra_refs);
 
-    if !run_cmd("git", &args) {
+    if run_cmd("git", &args).is_err() {
         std::process::exit(1);
     }
 }
 
 fn delete(branch: String) {
-    if !run_cmd_quiet("git", &["rev-parse", "--is-inside-work-tree"]) {
+    if run_cmd_status("git", &["rev-parse", "--is-inside-work-tree"]).unwrap_or(false) != true {
         eprintln!("ERROR: Not in a git repository");
         std::process::exit(1);
     }
@@ -505,13 +570,13 @@ fn delete(branch: String) {
     }
 
     // Delete local branch
-    if !run_cmd("git", &["branch", "-D", &branch]) {
+    if run_cmd("git", &["branch", "-D", &branch]).is_err() {
         eprintln!("ERROR: Failed to delete local branch {branch}");
         std::process::exit(1);
     }
 
     // Delete remote branch
-    if !run_cmd("git", &["push", "origin", "--delete", &branch]) {
+    if run_cmd("git", &["push", "origin", "--delete", &branch]).is_err() {
         eprintln!("ERROR: Failed to delete remote branch {branch}");
         std::process::exit(1);
     }
@@ -603,13 +668,13 @@ fn publish(repo_name: Option<String>, private: bool, public: bool, commit: Optio
     println!("Creating repository: {repo_name}");
 
     // git init
-    if !run_cmd("git", &["init"]) {
+    if run_cmd("git", &["init"]).is_err() {
         eprintln!("ERROR: git init failed");
         std::process::exit(1);
     }
 
     // git add . and commit
-    if !run_cmd("git", &["add", "."]) {
+    if run_cmd("git", &["add", "."]).is_err() {
         eprintln!("ERROR: git add failed");
         std::process::exit(1);
     }
@@ -638,7 +703,7 @@ fn publish(repo_name: Option<String>, private: bool, public: bool, commit: Optio
     }
 
     // gh repo create
-    if !run_cmd("gh", &["repo", "create", &repo_name, visibility, "--source=."]) {
+    if run_cmd("gh", &["repo", "create", &repo_name, visibility, "--source=."]).is_err() {
         eprintln!("ERROR: gh repo create failed");
         std::process::exit(1);
     }
@@ -646,14 +711,14 @@ fn publish(repo_name: Option<String>, private: bool, public: bool, commit: Optio
     // git remote add origin
     let remote_url = format!("https://github.com/{github_name}/{repo_name}.git");
     // Remove existing origin if any, then add
-    run_cmd_quiet("git", &["remote", "remove", "origin"]);
-    if !run_cmd("git", &["remote", "add", "origin", &remote_url]) {
+    let _ = run_cmd_status("git", &["remote", "remove", "origin"]);
+    if run_cmd("git", &["remote", "add", "origin", &remote_url]).is_err() {
         eprintln!("ERROR: git remote add failed");
         std::process::exit(1);
     }
 
     // git push
-    if !run_cmd("git", &["push", "-u", "origin", "master"]) {
+    if run_cmd("git", &["push", "-u", "origin", "master"]).is_err() {
         eprintln!("ERROR: git push failed");
         std::process::exit(1);
     }
@@ -668,7 +733,7 @@ fn publish(repo_name: Option<String>, private: bool, public: bool, commit: Optio
     if let Some(loc_gist) = github_loc_gist {
         println!("\nSetting loc_gist_token secret...");
         let full_repo = format!("{github_name}/{repo_name}");
-        if !run_cmd("gh", &["secret", "set", "loc_gist_token", "--repo", &full_repo, "--body", &loc_gist]) {
+        if run_cmd("gh", &["secret", "set", "loc_gist_token", "--repo", &full_repo, "--body", &loc_gist]).is_err() {
             eprintln!("WARNING: Failed to set loc_gist_token secret");
         }
     }
