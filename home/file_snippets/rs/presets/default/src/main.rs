@@ -4,13 +4,6 @@ use clap::Parser;
 pub mod config;
 use config::{LiveSettings, SettingsFlags};
 
-#[derive(Parser, Default)]
-#[command(author, version = concat!(env!("CARGO_PKG_VERSION"), " (", env!("GIT_HASH"), ")"), about, long_about = None)]
-struct Cli {
-    #[command(flatten)]
-    settings: SettingsFlags,
-}
-
 fn main() {
     v_utils::clientside!();
     let cli = Cli::parse();
@@ -27,7 +20,14 @@ fn main() {
     greet(live_settings);
 }
 
+#[derive(Parser, Default)]
+#[command(author, version = concat!(env!("CARGO_PKG_VERSION"), " (", env!("GIT_HASH"), ")"), about, long_about = None)]
+struct Cli {
+    #[command(flatten)]
+    settings: SettingsFlags,
+}
+
 fn greet(settings: Arc<LiveSettings>) {
     let config = settings.config();
-    println!("Hello, {}!", config.example_greet);
+    println!("Hello, {}!", config.unwrap().example_greet);
 }

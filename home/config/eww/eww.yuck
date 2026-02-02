@@ -247,29 +247,29 @@
 	)
 )
 
-(defwindow todo_blocker
+(defwindow tedi_blocker
 	:monitor 0
 	:geometry (geometry :anchor "top right" :y 41 :width "0%" :height "0%")
 	(box
 		(what)
 	)
 )
-(defvar todo_blocker_hover_state false)
+(defvar tedi_blocker_hover_state false)
 ;; Can't combine these two polls, because eww doesn't work well with newlines
-(defpoll todo_blocker_last_poll :initial "" :interval "0.5s" "todo --log-to 'eww_blocker_list' blocker current")
-(defpoll todo_blocker_list_poll :interval "5s" "todo --log-to 'eww_blocker_list' blocker list | wrap_output.rs - -l 120")
+(defpoll tedi_blocker_last_poll :initial "" :interval "0.5s" "tedi --log-to 'eww_blocker_list' blocker current")
+(defpoll tedi_blocker_list_poll :interval "5s" "tedi --log-to 'eww_blocker_list' blocker list | wrap_output.rs - -l 120")
 (defwidget what[]
 	(box
 		:visible {bar_visible == "true"}
 		:class ""
 		(reveal_on_hover
-			:var todo_blocker_hover_state
-			:varname "todo_blocker_hover_state"
+			:var tedi_blocker_hover_state
+			:varname "tedi_blocker_hover_state"
 			:transition "none"
 			:orientation "vertical"
-			:label_text "${todo_blocker_last_poll}"
+			:label_text "${tedi_blocker_last_poll}"
 			:label_class "text"
-			(label :class "text" :text "${todo_blocker_list_poll}")
+			(label :class "text" :text "${tedi_blocker_list_poll}")
 		)
 	)
 )
