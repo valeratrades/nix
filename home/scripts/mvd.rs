@@ -121,7 +121,17 @@ fn main() {
     } else if !args.args.is_empty() {
         // Direct path mode - first arg is the path
         let mut to_dir = PathBuf::from(&args.args[0]);
-        if !to_dir.is_absolute() {
+        if to_dir.is_absolute() {
+            // absolute path - use as-is
+        } else if args.args[0].starts_with("./") || args.args[0].starts_with("../") {
+            // explicit relative path - resolve from cwd
+            let cwd = env::current_dir().unwrap_or_else(|e| {
+                eprintln!("Error: Failed to get current directory: {e}");
+                std::process::exit(1);
+            });
+            to_dir = cwd.join(to_dir);
+        } else {
+            // implicit path - resolve from home
             to_dir = home.join(to_dir);
         }
 
