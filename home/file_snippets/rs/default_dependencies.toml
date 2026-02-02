@@ -7,6 +7,7 @@ float_cmp = "allow" # is bad for `==` direct comparisons, but `<` and `>` should
 len_zero = "allow" # `.empty()` is O(1) but on &str only
 undocumented_unsafe_blocks = "warn"
 tabs_in_doc_comments = "allow"
+doc_lazy_continuation = "allow" # tries to make me add a newline after a list in docs
 
 # Questionable
 # const fns, so actually more performant

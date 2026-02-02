@@ -23,6 +23,8 @@
     { text = "what would make a more epic story?"; author = "Alex Hormozi"; }
 
     { text = "make the boat go faster.\nIgnore the rest"; author = "Sam Ovens"; }
+
+    "systems -> outputs\nImproving systems = winning"
   ];
   balance = {
     command = "discretionary_engine risk balance";

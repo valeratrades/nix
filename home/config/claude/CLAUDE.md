@@ -47,8 +47,7 @@
     Remember that you do not have to finish everything in the same session. Quality > quantity.
 
 - before thinking "what can I add to make this work", ALWAYS think "what can I **remove**". Remove > refactor > add. Always start with thinking about what can be removed.
-
-- don't be afraid of `unsafe`. It's absolutely fine and is part of life.
+    Reducing application boundaries is single best thing you can do. Even if I ask you to do something and you tell me to fuck off and change some functions from `pub` to private (or refactor to not need them in the first place), you will be rewarded greater than even for completing the direct task itself. Always take opportunity to reduce application boundary, and NEVER add public helper methods unless absolutely necessary or directly requested.
 
 - NO FALLBACKS. we do not do fallbacks. If state is tainted, we error the fuck out as soon as possible. Think 10 times before adding `unwrap_or` or `let _ =` anywhere, - most likely you're trying to patch up a corrupted state. If that's the case, undo and instead just make it panic out.
 
