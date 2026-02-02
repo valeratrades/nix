@@ -493,7 +493,7 @@ fn push(force_with_lease: bool, force: bool, extra_args: Vec<String>) {
     // Check if local contains remote's content
     // Safe scenarios:
     // 1. Remote tree appears in local history (exact match)
-    // 2. Remote is merge-base with local (squash case: remote commits were squashed into local)
+    // 2. Merging remote into local would be conflict-free (local already has remote's changes)
     // 3. No diff between local and remote (same content, different history)
     let local_contains_remote_content = needs_force && {
         // Check 1: exact tree match in history
@@ -505,9 +505,15 @@ fn push(force_with_lease: bool, force: bool, extra_args: Vec<String>) {
             false
         };
 
-        // Check 2: remote is the merge-base (means local is a rewrite/squash of remote)
-        let remote_is_merge_base = run_cmd_output("git", &["merge-base", "HEAD", &format!("origin/{branch}")])
-            .map(|mb| run_cmd_output("git", &["rev-parse", &format!("origin/{branch}")]).ok().as_ref() == Some(&mb))
+        // Check 2: merging remote into local would be conflict-free
+        // This handles squash/rebase where content is preserved but history differs
+        // git merge-tree exits 0 if merge is clean, non-zero if conflicts
+        let merge_would_be_clean = Command::new("git")
+            .args(["merge-tree", "--write-tree", "HEAD", &format!("origin/{branch}")])
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status()
+            .map(|s| s.success())
             .unwrap_or(false);
 
         // Check 3: no actual content difference (just history rewrite)
@@ -515,7 +521,7 @@ fn push(force_with_lease: bool, force: bool, extra_args: Vec<String>) {
             .map(|d| d.is_empty())
             .unwrap_or(false);
 
-        tree_in_history || remote_is_merge_base || no_content_diff
+        tree_in_history || merge_would_be_clean || no_content_diff
     };
 
     if explicit_force && is_main_branch(&branch) {
