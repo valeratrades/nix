@@ -3,7 +3,7 @@
 
 [dependencies]
 clap = { version = "4.5.49", features = ["derive"] }
-gix = { version = "0.78", features = ["merge"] }
+gix = { version = "0.78", features = ["merge", "blocking-network-client", "blocking-http-transport-reqwest-rust-tls", "worktree-mutation"] }
 serde_json = "1"
 ---
 
@@ -160,6 +160,32 @@ fn branch_tracking_remote(repo: &gix::Repository, branch: &str) -> Option<String
 
 fn remote_exists(repo: &gix::Repository, name: &str) -> bool {
     repo.find_remote(name).is_ok()
+}
+
+/// Fetch a specific refspec from origin using gix
+fn gix_fetch(repo: &gix::Repository, refspec: &str) -> Result<(), String> {
+    let remote = repo
+        .find_remote("origin")
+        .map_err(|e| format!("Failed to find remote 'origin': {e}"))?;
+
+    let remote = remote
+        .with_refspecs([refspec], gix::remote::Direction::Fetch)
+        .map_err(|e| format!("Failed to set refspec: {e}"))?;
+
+    remote
+        .connect(gix::remote::Direction::Fetch)
+        .map_err(|e| format!("Failed to connect to remote: {e}"))?
+        .prepare_fetch(gix::progress::Discard, Default::default())
+        .map_err(|e| format!("Failed to prepare fetch: {e}"))?
+        .receive(gix::progress::Discard, &gix::interrupt::IS_INTERRUPTED)
+        .map_err(|e| format!("Failed to receive: {e}"))?;
+
+    Ok(())
+}
+
+/// Initialize a new git repository using gix
+fn gix_init(path: &std::path::Path) -> Result<gix::Repository, String> {
+    gix::init(path).map_err(|e| format!("Failed to init repository: {e}"))
 }
 
 fn fork(message: Vec<String>) {
@@ -524,8 +550,8 @@ fn push(force_with_lease: bool, force: bool, extra_args: Vec<String>) {
 
     // Fetch the remote branch to ensure we have up-to-date refs for comparison
     let fetch_refspec = format!("{branch}:refs/remotes/origin/{branch}");
-    if !run_cmd("git", &["fetch", "origin", &fetch_refspec]) {
-        eprintln!("ERROR: Failed to fetch origin/{branch}");
+    if let Err(e) = gix_fetch(&repo, &fetch_refspec) {
+        eprintln!("ERROR: Failed to fetch origin/{branch}: {e}");
         std::process::exit(1);
     }
 
@@ -787,8 +813,8 @@ fn publish(repo_name: Option<String>, private: bool, public: bool, commit: Optio
     println!("Creating repository: {repo_name}");
 
     // git init
-    if !run_cmd("git", &["init"]) {
-        eprintln!("ERROR: git init failed");
+    if let Err(e) = gix_init(std::path::Path::new(".")) {
+        eprintln!("ERROR: {e}");
         std::process::exit(1);
     }
 

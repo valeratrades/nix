@@ -30,6 +30,20 @@ update_access_time() {
 	fi
 }
 
+fix_root_owned_dirs() {
+	[ "$(id -u)" = "0" ] && return
+
+	# Fix any root-owned files/dirs in cargo target (from accidental sudo runs)
+	# Cargo's -Zscript hashes script content, not path, so `sudo 2fa` created
+	# /home/v/.cargo/target/2b/... as root, blocking normal user builds.
+	local root_owned
+	root_owned=$(find "$CARGO_TARGET_DIR" -maxdepth 2 -user root 2>/dev/null | head -1)
+	[ -z "$root_owned" ] && return
+
+	echo "WARN: $root_owned was root-owned, fixing" >&2
+	sudo chown -R "$(id -un):$(id -gn)" "$root_owned" 2>/dev/null
+}
+
 cleanup_old_caches() {
 	local now
 	now=$(date +%s)
@@ -97,6 +111,7 @@ get_rust_store_path() {
 
 update_access_time
 cleanup_old_caches
+fix_root_owned_dirs
 
 # Try to use cached store path for instant startup
 # RUSTC_WRAPPER="" disables sccache from cargo config to avoid version mismatches
