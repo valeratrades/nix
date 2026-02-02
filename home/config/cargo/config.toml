@@ -41,9 +41,6 @@ s = "sweep --recursive --installed" # only leave currently active artifacts
 rel = "release --no-confirm --execute"
 so = "sort -wg"
 
-ls = "leptos serve"
-lw = "leptos watch --hot-reload"
-
 # overriding defaults in favor of cargo-limit alternatives
 # if `--all-features` is needed for better dev experience, override these shortcuts with it on per-project basis. eg: "lbuild --all-features"
 b = "lbuild"
@@ -54,7 +51,7 @@ ta = "nextest run --no-fail-fast"
 
 # leptos {{{1
 ls = "leptos serve"
-lw = "leptos watch"
+lw = "leptos watch --hot-reload"
 #,}}}1
 
 

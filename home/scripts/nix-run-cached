@@ -30,15 +30,15 @@ update_access_time() {
 	fi
 }
 
-fix_root_owned_dirs() {
-	[ "$(id -u)" = "0" ] && return
+try_fix_root_owned_dirs() {
+	[ "$(id -u)" = "0" ] && return 1
 
 	# Fix any root-owned files/dirs in cargo target (from accidental sudo runs)
 	# Cargo's -Zscript hashes script content, not path, so `sudo 2fa` created
 	# /home/v/.cargo/target/2b/... as root, blocking normal user builds.
 	local root_owned
 	root_owned=$(find "$CARGO_TARGET_DIR" -maxdepth 2 -user root 2>/dev/null | head -1)
-	[ -z "$root_owned" ] && return
+	[ -z "$root_owned" ] && return 1
 
 	echo "WARN: $root_owned was root-owned, fixing" >&2
 	sudo chown -R "$(id -un):$(id -gn)" "$root_owned" 2>/dev/null
@@ -111,13 +111,21 @@ get_rust_store_path() {
 
 update_access_time
 cleanup_old_caches
-fix_root_owned_dirs
+
+run_cargo() {
+	env RUSTC_WRAPPER="" PATH="$1/bin:$PATH" "$1/bin/cargo" -Zscript -q "$SCRIPT" "${@:2}"
+}
 
 # Try to use cached store path for instant startup
 # RUSTC_WRAPPER="" disables sccache from cargo config to avoid version mismatches
 # PATH must include the nix rust bin so cargo finds the correct rustc
 if RUST_PATH=$(get_rust_store_path); then
-	exec env RUSTC_WRAPPER="" PATH="$RUST_PATH/bin:$PATH" "$RUST_PATH/bin/cargo" -Zscript -q "$SCRIPT" "$@"
+	if run_cargo "$RUST_PATH" "$@"; then
+		exit 0
+	elif try_fix_root_owned_dirs; then
+		exec run_cargo "$RUST_PATH" "$@"
+	fi
+	exit 1
 fi
 
 # Cache miss - need to fetch
@@ -127,8 +135,15 @@ notify-send "nix cache miss, fetching..." -t 3000 2>/dev/null &
 if RUST_PATH=$(nix build --no-link --print-out-paths --impure --expr "$NIX_EXPR" 2>/dev/null); then
 	mkdir -p "$CARGO_TARGET_DIR"
 	echo "$RUST_PATH" >"$RUST_STORE_PATH_CACHE"
-	exec env RUSTC_WRAPPER="" PATH="$RUST_PATH/bin:$PATH" "$RUST_PATH/bin/cargo" -Zscript -q "$SCRIPT" "$@"
+	if run_cargo "$RUST_PATH" "$@"; then
+		exit 0
+	elif try_fix_root_owned_dirs; then
+		exec run_cargo "$RUST_PATH" "$@"
+	fi
+	exit 1
 fi
 
 # Fallback to nix shell if build fails for some reason
-exec env RUSTC_WRAPPER="" nix shell --impure --expr "$NIX_EXPR" --command cargo -Zscript -q "$SCRIPT" "$@"
+env RUSTC_WRAPPER="" nix shell --impure --expr "$NIX_EXPR" --command cargo -Zscript -q "$SCRIPT" "$@" && exit 0
+try_fix_root_owned_dirs && exec env RUSTC_WRAPPER="" nix shell --impure --expr "$NIX_EXPR" --command cargo -Zscript -q "$SCRIPT" "$@"
+exit 1

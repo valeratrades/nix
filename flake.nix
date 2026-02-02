@@ -65,7 +65,7 @@
       url = "github:valeratrades/auto_redshift";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    tedi.url = "github:valeratrades/tedi?ref=release";
+    tedi.url = "github:valeratrades/tedi";
     booktyping = {
       url = "github:valeratrades/booktyping";
       inputs.nixpkgs.follows = "nixpkgs";
