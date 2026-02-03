@@ -80,6 +80,9 @@ input type:touchpad {
 input type:tablet_tool {
 	left_handed enabled
 }
+# Stylus button remapping: lower button = right click, upper button = middle click
+bindsym --input-device="1386:890:Wacom_One_by_Wacom_S_Pen" BTN_STYLUS exec wlrctl pointer click right
+bindsym --input-device="1386:890:Wacom_One_by_Wacom_S_Pen" BTN_STYLUS2 exec wlrctl pointer click middle
 
 
 exec_always ~/.config/sway/loop_bind_tablet_to_focused.sh

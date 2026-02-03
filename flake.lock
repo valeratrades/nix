@@ -3110,11 +3110,11 @@
         "v-utils": "v-utils_8"
       },
       "locked": {
-        "lastModified": 1770071739,
-        "narHash": "sha256-tYhBb/HCLMEngKUjaMoOWoE01QbH0uZrzd6MxN2DT/k=",
+        "lastModified": 1770076636,
+        "narHash": "sha256-u+nOVfxdK0gC0ivO4lVx13Iilh4YBCceIAMtXcBwtYQ=",
         "owner": "valeratrades",
         "repo": "tedi",
-        "rev": "d07227d373ee90e3f21b7dbc33f943b2c7a3c0fd",
+        "rev": "174acdadeab4546e3065bf5d4888a6c70047543d",
         "type": "github"
       },
       "original": {

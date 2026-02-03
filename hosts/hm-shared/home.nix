@@ -180,6 +180,7 @@
           unimatrix
           cowsay
           xdotool # most options don't work on wayland though
+          wlrctl # wayland mouse/keyboard emulation for sway
         ]
         [
           # messengers
