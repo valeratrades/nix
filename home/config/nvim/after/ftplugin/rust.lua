@@ -12,7 +12,40 @@ end
 -- This ensures it's registered before rustaceanvim starts the LSP client
 
 K('n', '<Space>re', function()
-	vim.cmd.RustLsp('expandMacro')
+	local ra = require('rustaceanvim.rust_analyzer')
+	local clients = ra.get_active_rustaceanvim_clients(0)
+	if #clients == 0 then
+		return
+	end
+	local client = clients[1]
+	local params = vim.lsp.util.make_position_params(0, client.offset_encoding or 'utf-8')
+	ra.buf_request(0, 'rust-analyzer/expandMacro', params, function(_, result)
+		if result == nil then
+			if not vim.g['ra_quiescent_' .. client.id] then
+				vim.notify('rust-analyzer is still loading (proc macros not ready yet)', vim.log.levels.WARN)
+			else
+				vim.notify('No macro under cursor!', vim.log.levels.INFO)
+			end
+			return
+		end
+		-- Delegate to rustaceanvim's UI for the actual display
+		local ui = require('rustaceanvim.ui')
+		local buf_id = vim.api.nvim_create_buf(false, true)
+		ui.split(true, buf_id)
+		vim.bo[buf_id].filetype = 'rust'
+		local lines = {}
+		local header = '// Recursive expansion of the ' .. result.name .. ' macro'
+		local sep = '// ' .. string.rep('=', #header - 3)
+		table.insert(lines, sep)
+		table.insert(lines, header)
+		table.insert(lines, sep)
+		table.insert(lines, '')
+		for line in result.expansion:gmatch('([^\n]+)') do
+			table.insert(lines, line)
+		end
+		vim.api.nvim_buf_set_lines(buf_id, 0, 0, false, lines)
+		ui.resize(true, '-25')
+	end)
 end, { desc = "Rustacean: Expand Macro", buffer = bufnr, overwrite = nil })
 
 K('n', '<Space>rb', function()

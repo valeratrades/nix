@@ -20,7 +20,7 @@ vim.notify = function(msg, level, opts)
 				f:write(os.date("[%Y-%m-%d %H:%M:%S] ") .. msg:gsub("\n", " ") .. "\n")
 				f:close()
 			end
-			vim.api.nvim_echo({{"RA: workspace error (see :RustLsp logFile)", "WarningMsg"}}, false, {})
+			vim.api.nvim_echo({ { "RA: workspace error (see :RustLsp logFile)", "WarningMsg" } }, false, {})
 			return
 		end
 	end
@@ -45,8 +45,6 @@ require("valera.lazy")
 require("valera.lsp")
 require("valera.log")
 require("valera.opts")
---require("valera.temporary")
-require("valera.rooter")
 require("valera.autocommands")
 require("valera.termfilechooser")
 

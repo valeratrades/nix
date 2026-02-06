@@ -86,14 +86,6 @@ vim.api.nvim_create_autocmd({ "FileType" }, {
 	end,
 })
 
--- Just don't see a point, given I'm always visually selecting first (which is the right practice)
----- Highlight Yanked Text
---vim.api.nvim_create_autocmd({ "TextYankPost" }, {
---	callback = function()
---		vim.highlight.on_yank({ higroup = "Visual", timeout = 200 })
---	end,
---})
-
 -- Disable undo file for .env files
 vim.api.nvim_create_autocmd({ "BufWritePre" }, {
 	pattern = { "*.env" },
@@ -101,11 +93,3 @@ vim.api.nvim_create_autocmd({ "BufWritePre" }, {
 		vim.opt_local.undofile = false
 	end,
 })
-
--- it messing with comments outweighs all the potential benefits of having it on
---vim.api.nvim_create_autocmd({ "BufWrite" }, {
---	pattern = { "python" },
---	callback = function()
---		vim.lsp.buf.format { async = true }
---	end,
---})

@@ -16,11 +16,12 @@ pub fn get_popups() -> Vec<i64> {
                 if cfg.get("zindex").is_none() {
                     return false;
                 }
-                // Skip treesitter-context window
-                let bufnr: i64 = api::call_function("nvim_win_get_buf", (win,)).unwrap_or(0);
-                let ft: String = api::call_function("nvim_get_option_value", ("filetype", nvim_oxi::Dictionary::from_iter([("buf", bufnr)])))
-                    .unwrap_or_default();
-                ft != "treesitter-context"
+                // Skip treesitter-context windows (main has treesitter_context, gutter has treesitter_context_line_number)
+                let is_ts_ctx: bool = api::call_function("nvim_win_get_var", (win, "treesitter_context"))
+                    .unwrap_or(false);
+                let is_ts_ctx_ln: bool = api::call_function("nvim_win_get_var", (win, "treesitter_context_line_number"))
+                    .unwrap_or(false);
+                !is_ts_ctx && !is_ts_ctx_ln
             } else {
                 false
             }

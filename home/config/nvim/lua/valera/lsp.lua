@@ -349,7 +349,13 @@ vim.g.rustaceanvim = {
 		--test_executor = 'backround',
 		Opts = {
 			enable_clippy = false, --  Whether to enable clippy checks on save if a clippy installation is detected. Default: `true`. I want this to be conditional on a .g var that's toggled depending on which stage of dev process I'm in.
-		}
+		},
+		on_initialized = function(_, client_id)
+			vim.g.ra_quiescent = (vim.g.ra_quiescent or 0) + 1
+			-- Store per-client for multi-client setups
+			local key = 'ra_quiescent_' .. client_id
+			vim.g[key] = true
+		end,
 	},
 	dap = {
 		adapter = codelldb_adapter(),

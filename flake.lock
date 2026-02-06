@@ -176,11 +176,11 @@
         "nixpkgs": "nixpkgs_13"
       },
       "locked": {
-        "lastModified": 1768532013,
-        "narHash": "sha256-6vsbKCzgO8KqrXOSdDvcP66eLvSVfl/7XerpH0VDUJs=",
+        "lastModified": 1770362224,
+        "narHash": "sha256-glZjGWSy+LpalbwlsQ3iWNpWU4TlEOandYWOpl8sMt8=",
         "owner": "sadjow",
         "repo": "claude-code-nix",
-        "rev": "fd0c7516195bdf75337d8616be4316c7392c4423",
+        "rev": "f4f8d6e7cc59e34e5a85550f017ead83ab925b22",
         "type": "github"
       },
       "original": {
@@ -1516,11 +1516,11 @@
     },
     "nixpkgs_13": {
       "locked": {
-        "lastModified": 1768395095,
-        "narHash": "sha256-ZhuYJbwbZT32QA95tSkXd9zXHcdZj90EzHpEXBMabaw=",
+        "lastModified": 1770169770,
+        "narHash": "sha256-awR8qIwJxJJiOmcEGgP2KUqYmHG4v/z8XpL9z8FnT1A=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "13868c071cc73a5e9f610c47d7bb08e5da64fdd5",
+        "rev": "aa290c9891fa4ebe88f8889e59633d20cc06a5f2",
         "type": "github"
       },
       "original": {
@@ -3110,11 +3110,11 @@
         "v-utils": "v-utils_8"
       },
       "locked": {
-        "lastModified": 1770076636,
-        "narHash": "sha256-u+nOVfxdK0gC0ivO4lVx13Iilh4YBCceIAMtXcBwtYQ=",
+        "lastModified": 1770419411,
+        "narHash": "sha256-sO/c9aYgAJOR2tu8dqurv2whxrUfY8s2HqDLe2KCIs0=",
         "owner": "valeratrades",
         "repo": "tedi",
-        "rev": "174acdadeab4546e3065bf5d4888a6c70047543d",
+        "rev": "d1992a42f03cb8bd82ef361197a7cda5b5dba87f",
         "type": "github"
       },
       "original": {
@@ -3336,11 +3336,11 @@
         "nixpkgs": "nixpkgs_38"
       },
       "locked": {
-        "lastModified": 1769894155,
-        "narHash": "sha256-ZCK0wuYk68ptLynak5o6103Y7WsRV23ZVjr3PZ/I3Nk=",
+        "lastModified": 1770047732,
+        "narHash": "sha256-2U24HAaOJTG8vKRGpJcPwa1kXZJqYxCdCQU4mrT1rJI=",
         "owner": "valeratrades",
         "repo": ".github",
-        "rev": "c5d8d25236fa95eb74977ff04e8b851bd2f93abb",
+        "rev": "ce4008a870405993ffb113fbce95576466ef6fda",
         "type": "github"
       },
       "original": {
