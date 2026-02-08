@@ -25,6 +25,8 @@
     { text = "make the boat go faster.\nIgnore the rest"; author = "Sam Ovens"; }
 
     "systems -> outputs\nImproving systems = winning"
+
+    "momento mori"
   ];
   balance = {
     command = "discretionary_engine risk balance";
