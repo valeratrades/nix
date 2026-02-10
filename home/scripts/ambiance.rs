@@ -33,17 +33,13 @@ fn home() -> String {
 }
 
 struct WallpaperGuard {
-    /// swaybg args to restore: Vec of ["-o", output, "-i", image, "-m", mode] groups
-    restore_args: Vec<String>,
+    image: String,
+    mode: String,
 }
 
 impl WallpaperGuard {
     fn capture() -> Self {
-        // Parse all running swaybg processes to capture current wallpaper state
-        let mut restore_args = Vec::new();
-        let Ok(entries) = std::fs::read_dir("/proc") else {
-            panic!("failed to read /proc");
-        };
+        let entries = std::fs::read_dir("/proc").expect("failed to read /proc");
         for entry in entries.flatten() {
             let pid_str = entry.file_name();
             let pid_str = pid_str.to_string_lossy();
@@ -58,29 +54,33 @@ impl WallpaperGuard {
                 .filter(|s| !s.is_empty())
                 .map(|s| String::from_utf8_lossy(s).into_owned())
                 .collect();
-            if args.first().map(|s| s.contains("swaybg")).unwrap_or(false) {
-                // skip the binary name, keep the rest
-                restore_args = args[1..].to_vec();
-                break;
+            if !args.first().map(|s| s.contains("swaybg")).unwrap_or(false) {
+                continue;
             }
+            let mut image = None;
+            let mut mode = None;
+            let mut iter = args[1..].iter();
+            while let Some(arg) = iter.next() {
+                match arg.as_str() {
+                    "-i" => image = iter.next().cloned(),
+                    "-m" => mode = iter.next().cloned(),
+                    _ => {}
+                }
+            }
+            return Self {
+                image: image.expect("swaybg has no -i arg"),
+                mode: mode.expect("swaybg has no -m arg"),
+            };
         }
-        if restore_args.is_empty() {
-            panic!("no swaybg process found to capture wallpaper state from");
-        }
-        Self { restore_args }
+        panic!("no swaybg process found");
     }
+}
 
-    fn restore(&self) {
-        use std::process::Command as StdCommand;
-        // Kill any swaybg instances sway spawned for our override
-        // Then re-launch swaybg with the original args
-        // swaymsg output * bg ... would work but let's directly restore what was there
-        let _ = StdCommand::new("swaybg")
-            .args(&self.restore_args)
-            .stdin(Stdio::null())
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .spawn();
+impl Drop for WallpaperGuard {
+    fn drop(&mut self) {
+        let _ = std::process::Command::new("swaymsg")
+            .args(["output", "eDP-1", "bg", &self.image, &self.mode])
+            .status();
     }
 }
 
@@ -100,16 +100,17 @@ impl Ambiance {
     fn own(&mut self, child: tokio::process::Child) {
         self.children.push(child);
     }
+}
 
-    fn teardown(&mut self) {
+impl Drop for Ambiance {
+    fn drop(&mut self) {
         for child in &mut self.children {
             if let Some(pid) = child.id() {
-                // kill the process group if we can, otherwise just the process
                 unsafe { libc::kill(-(pid as i32), libc::SIGTERM) };
                 let _ = child.start_kill();
             }
         }
-        self.wallpaper.restore();
+        println!("Restoring wallpaper: {}", self.wallpaper.image);
     }
 }
 
@@ -191,7 +192,7 @@ async fn setup_math() {
     println!("Ambiance running. Ctrl+C to stop and restore.");
     signal::ctrl_c().await.expect("failed to listen for ctrl+c");
     println!("\nTearing down...");
-    ambiance.teardown();
+    drop(ambiance);
 }
 
 fn wait_for_window(app_id: &str, timeout_secs: u64) -> bool {
