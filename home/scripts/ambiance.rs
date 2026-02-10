@@ -21,7 +21,9 @@ struct Args {
 
 #[derive(Subcommand, Debug)]
 enum Commands {
-    /// Set up ambiance for learning math
+    /// Set up ambiance for learning math (browser-based, legacy)
+    MathFirefox,
+    /// Set up ambiance for learning math (local)
     Math,
 }
 
@@ -29,6 +31,7 @@ fn main() {
     let args = Args::parse();
 
     match args.command {
+        Commands::MathFirefox => setup_math_firefox(),
         Commands::Math => setup_math(),
     }
 }
@@ -51,7 +54,63 @@ fn wait_for_window(app_id: &str, timeout_secs: u64) -> bool {
     false
 }
 
+fn kill_running_pp() {
+    // Kill mpv instances spawned by the `pp` fish function.
+    // These have a distinctive flag combination: --no-terminal --no-video --loop-file --loop-playlist
+    let output = Command::new("pgrep")
+        .args(["-f", "mpv --no-terminal --no-video --loop-file --loop-playlist"])
+        .output()
+        .expect("failed to run pgrep");
+    if output.status.success() {
+        let pids = String::from_utf8_lossy(&output.stdout);
+        for pid in pids.lines() {
+            let pid = pid.trim();
+            if !pid.is_empty() {
+                println!("Killing pp instance (mpv pid {pid})");
+                let _ = Command::new("kill").arg(pid).status();
+            }
+        }
+    }
+}
+
+fn is_running(process_name: &str) -> bool {
+    Command::new("pgrep")
+        .args(["-x", process_name])
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false)
+}
+
 fn setup_math() {
+    // Set wallpaper
+    let _ = Command::new("swaymsg")
+        .args(["output", "eDP-1", "bg", &format!("{}/.config/sway/wallpapers/MartinSchmid.jpeg", std::env::var("HOME").expect("HOME not set")), "fill"])
+        .status()
+        .expect("failed to set wallpaper");
+
+    // Kill any running pp instances
+    kill_running_pp();
+
+    // Start exam auditorium ambiance
+    let mut child = Command::new("fish")
+        .args(["-c", &format!("pp1 {}/Music/study/exam_auditorium_ambiance.mp3", std::env::var("HOME").expect("HOME not set"))])
+        .spawn()
+        .expect("failed to start pp1");
+    thread::spawn(move || { let _ = child.wait(); });
+
+    // Start bbeats if not already running
+    if !is_running("bbeats") {
+        let mut child = Command::new("fish")
+            .args(["-c", "bbeats"])
+            .spawn()
+            .expect("failed to start bbeats");
+        thread::spawn(move || { let _ = child.wait(); });
+    } else {
+        println!("bbeats already running, skipping");
+    }
+}
+
+fn setup_math_firefox() {
     // Open YouTube video in Firefox (spawn, don't wait)
     let mut firefox = Command::new("firefox")
         .args(["https://www.youtube.com/watch?v=gnahH-iQLjQ"])

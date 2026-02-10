@@ -215,6 +215,8 @@ in {
 
 				simplescreenrecorder
 
+        yt-dlp # cli for downloading stuff from yt
+
         #flutterPackages-source.stable // errors
 
 				# ISOs

@@ -115,6 +115,7 @@ alias monkey="smassh"
 alias bbeats="sudo -Es nice -n -20 /etc/profiles/per-user/v/bin/bbeats" # otherwise any demanding process will produce bad breaks in sound
 alias workspaces="swaymsg -t get_tree" # shortcut for ease of remembrance by Ania and Tima
 alias q "ask_llm -f"
+alias ytd "yt-dlp -x --audio-format mp3 --cookies-from-browser firefox " # downloads audio from yt; you provide <URL>
 
 
 function tge

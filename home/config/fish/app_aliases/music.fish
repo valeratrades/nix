@@ -6,4 +6,4 @@ function pp
 	end
 	mpv --no-terminal --no-video --loop-file --loop-playlist --speed=$argv[1] $argv[2]
 end
-
+alias pp1="pp 1.0"
