@@ -164,8 +164,11 @@ async fn setup_math() {
         .await
         .expect("failed to set wallpaper");
 
-    // Kill any running pp instances
+    // Kill distractions
     kill_running_pp();
+    for app in ["vesktop", "discord", "telegram-desktop"] {
+        let _ = std::process::Command::new("pkill").arg(app).status();
+    }
 
     // Start exam auditorium ambiance
     let child = Command::new("fish")
