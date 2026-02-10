@@ -110,6 +110,9 @@ impl Drop for Ambiance {
                 let _ = child.start_kill();
             }
         }
+        let _ = std::process::Command::new("tedi")
+            .args(["blocker", "halt"])
+            .status();
         println!("Restoring wallpaper: {}", self.wallpaper.image);
     }
 }
@@ -150,8 +153,32 @@ fn is_running(process_name: &str) -> bool {
 }
 
 async fn setup_math() {
+    // Verify tedi blocker is set to a math project
+    let project = std::process::Command::new("tedi")
+        .args(["blocker", "current-project"])
+        .output()
+        .expect("failed to run tedi blocker current-project");
+    let current = std::process::Command::new("tedi")
+        .args(["blocker", "current"])
+        .output()
+        .expect("failed to run tedi blocker current");
+    let project_out = String::from_utf8_lossy(&project.stdout);
+    let current_out = String::from_utf8_lossy(&current.stdout);
+    if !project_out.to_lowercase().contains("math") && !current_out.to_lowercase().contains("math") {
+        eprintln!("tedi blocker is not set to a math project.");
+        eprintln!("  current-project: {}", project_out.trim());
+        eprintln!("  current: {}", current_out.trim());
+        eprintln!("Please set the correct blocker before running ambiance math.");
+        std::process::exit(1);
+    }
+
     let wallpaper = WallpaperGuard::capture();
     let mut ambiance = Ambiance::new(wallpaper);
+
+    // Resume tedi blocker
+    let _ = std::process::Command::new("tedi")
+        .args(["blocker", "resume"])
+        .status();
 
     // Set wallpaper
     Command::new("swaymsg")
@@ -166,7 +193,7 @@ async fn setup_math() {
 
     // Kill distractions
     kill_running_pp();
-    for app in ["vesktop", "discord", "telegram-desktop"] {
+    for app in ["vesktop", "discord", "telegram-deskto"] {
         let _ = std::process::Command::new("pkill").arg(app).status();
     }
 
