@@ -125,6 +125,7 @@ return require('lazy').setup({
 	{ import = "valera.plugins.replacer" },
 	{ import = "valera.plugins.trouble" },
 	{ import = "valera.plugins.flash" },
+	{ import = "valera.plugins.compile" },
 	"echasnovski/mini.ai",
 
 	"nvim-neotest/nvim-nio",
