@@ -33,7 +33,7 @@ in {
   };
 
   wallpaper-carousel = {
-    enable = true;
+    enable = false; #Q: not sold on having this run hourly. Interferes with any manual wallpaper setting
     package = inputs.wallpaper_carousel.packages.${pkgs.stdenv.hostPlatform.system}.default;
   };
 
