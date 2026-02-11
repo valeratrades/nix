@@ -1,6 +1,7 @@
 { self, config, lib, pkgs, user, inputs, ... }: {
   imports = [
     ./programs
+    ./claude.nix
     ./nixcord.nix
     (
       # in my own config I symlink stuff to fascilitate experimentation. In derived setups I value reproducibility much more
@@ -360,25 +361,6 @@
            sync.records = true;
            enter_accept = true;
          };
-
-			".claude/settings.json".source =
-				(pkgs.formats.json { }).generate "claude.json" {
-					alwaysThinkingEnabled = false;
-					hooks = {
-						Stop = [
-							{
-								hooks = [
-									{
-										type = "command";
-                    #DEPRECATE: currently writes `$input` to a file for debugging, - as I'm not certain about some edge-cases (eg .summary being null at times)
-                    command = "/usr/bin/env fish -c 'read input; echo $input > /tmp/dbg_claude_code_input.json; set transcript_path (echo $input | jq -r .transcript_path); set chat_name (head -1 $transcript_path | jq -r .summary); set tmux_session (tmux display-message -p \"#S\" 2>/dev/null || echo
-           -   \"no session\"); set cwd (echo $input | jq -r .cwd); beep -l='15' \"CC: response on:\n$tmux_session\n$chat_name\n$cwd\"'";
-									}
-								];
-							}
-						];
-					};
-				};
 
       # configured via hm, can't just symlink it in my host's config
       ".config/tmux" = {
