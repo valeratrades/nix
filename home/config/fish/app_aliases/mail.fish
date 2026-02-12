@@ -39,9 +39,8 @@ end
 alias md="himalaya envelope list -f '[Gmail]/Drafts'"
 alias mt="himalaya envelope list -f '[Gmail]/Trash'"
 alias mu="himalaya envelope list -f INBOX -- 'not flag seen'"
-alias mr="himalaya message read" # mr <ID> to read a message; mr <ID1> <ID2> to read multiple
-alias mT="himalaya envelope thread -i" # mT <ID> to see the thread containing that message
-alias mR="himalaya message reply" # mR <ID> to reply; mR -A <ID> to reply-all
+alias mr="himalaya message read -f '[Gmail]/All Mail'" # mr <ID>; mr <ID1> <ID2>
+alias mR="himalaya message reply -f '[Gmail]/All Mail'" # mR <ID>; mR -A <ID> to reply-all
 alias mf="himalaya folder list" # overwrites some `METAFONT` thing I have, but no clue what it is, and don't care
 function mw --description "Write a new email (Ctrl-C discards)" --wraps "himalaya message write"
 	# himalaya catches SIGINT and loops instead of exiting.

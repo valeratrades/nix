@@ -10,4 +10,4 @@ else
 	icon=""
 fi
 
-echo "{\"content\": \"$volume\", \"icon\": \"$icon\"}"
+echo "{\"content\": \"$volume\", \"icon\": \"$icon\", \"muted\": \"$mute\"}"
