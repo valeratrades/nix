@@ -98,9 +98,40 @@ end
 
 function brb
     set current_fontsize (fontsize)
+
+    # mute mic
+    wpctl set-mute @DEFAULT_SOURCE@ 1
+
+    # halt time tracker, remember if we should resume
+    set should_resume false
+    set halt_output (tedi blocker halt 2>&1)
+    if test $status -eq 0; and not string match -q '*already stopped*' "$halt_output"
+        set should_resume true
+    end
+
+    # switch OBS to stream-only scene if running
+    set obs_running false
+    if swaymsg -t get_tree | jq -e '.. | select(.app_id? == "com.obsproject.Studio")' >/dev/null 2>&1
+        set obs_running true
+        ~/.config/sway/send_keypress_to_window.rs com.obsproject.Studio s
+    end
+
     fontsize 22
     printf 'Will be\nright back' | figlet | $PAGER
     fontsize "$current_fontsize"
+
+    # unmute mic
+    wpctl set-mute @DEFAULT_SOURCE@ 0
+
+    # switch OBS back to both scene
+    if test "$obs_running" = true
+        ~/.config/sway/send_keypress_to_window.rs com.obsproject.Studio b
+    end
+
+    # resume time tracker if we halted it
+    if test "$should_resume" = true
+        tedi blocker resume
+    end
 end
 
 function print_phonetic
