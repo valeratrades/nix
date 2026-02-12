@@ -27,6 +27,12 @@
     "systems -> outputs\nImproving systems = winning"
 
     "momento mori"
+
+    ''
+󿾴󷛮󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󳵐󻡪
+󿿽󿿽󿷕󺍎󵦁󱶁󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧹󳩁󷴸󼻵󿿽󿿽
+󿿽󿿽󿿽󿿽󿿽󿿷󾉠󻨈󹦏󷻽󶥗󵞡󴣥󴿑󵾓󷍅󸯣󺥮󼷞󿨛󿿽󿿽󿿽󿿽󿿽
+     memory x result''
   ];
   balance = {
     command = "discretionary_engine risk balance";
