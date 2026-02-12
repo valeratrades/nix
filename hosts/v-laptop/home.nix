@@ -291,6 +291,9 @@ in {
             message.send.backend.auth.type = "password";
             message.send.backend.auth.command =
               "cat ${config.sops.secrets.mail_main_pass.path}";
+            folder.aliases.sent = "[Gmail]/Sent Mail";
+            folder.aliases.drafts = "[Gmail]/Drafts";
+            folder.aliases.trash = "[Gmail]/Trash";
           };
         };
     };
