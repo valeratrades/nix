@@ -28,11 +28,13 @@
 
     "momento mori"
 
-    ''
+    { text = ''
 󿾴󷛮󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󳵐󻡪
 󿿽󿿽󿷕󺍎󵦁󱶁󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧹󳩁󷴸󼻵󿿽󿿽
 󿿽󿿽󿿽󿿽󿿽󿿷󾉠󻨈󹦏󷻽󶥗󵞡󴣥󴿑󵾓󷍅󸯣󺥮󼷞󿨛󿿽󿿽󿿽󿿽󿿽
-     memory x result''
+     memory x result'';
+      author = "Charlie Morgan";
+    }
   ];
   balance = {
     command = "discretionary_engine risk balance";
