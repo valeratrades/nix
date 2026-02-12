@@ -15,21 +15,33 @@ function me --description "List sent mail with recipient info" --wraps "himalaya
 				((.oh|tonumber)*3600 + (.om|tonumber)*60) as $off |
 				(if .sign == "-" then $epoch + $off else $epoch - $off end) |
 				strftime("%Y-%m-%d %H:%M");
-			["ID","FLAGS","SUBJECT","TO","DATE"],
-			(.[] | [
+			.[] | [
 				.id,
 				([.flags[] | select(. == "Seen" | not)] | join(",")),
 				.subject,
 				.to.addr,
 				(.date | to_utc)
-			]) | @tsv' \
-		| column -ts\t
+			] | @tsv' \
+		| awk -F'\t' '
+			{ id[NR]=$1; fl[NR]=$2; su[NR]=$3; to[NR]=$4; dt[NR]=$5
+			  if (length($1)>w1) w1=length($1)
+			  if (length($2)>w2) w2=length($2)
+			  if (length($3)>w3) w3=length($3)
+			  if (length($4)>w4) w4=length($4)
+			  n=NR }
+			END {
+			  g="\033[32m"; d="\033[38;5;242m"; h="\033[2;4;37m"; r="\033[0m"
+			  printf h "%-*s  %-*s  %-*s  %-*s  %s" r "\n", w1,"ID", w2,"FLAGS", w3,"SUBJECT", w4,"TO", "DATE"
+			  for (i=1;i<=n;i++)
+			    printf g "%-*s" r "  " d "%-*s" r "  %-*s  " d "%-*s" r "  " d "%s" r "\n", w1,id[i], w2,fl[i], w3,su[i], w4,to[i], dt[i]
+			}'
 end
 alias md="himalaya envelope list -f '[Gmail]/Drafts'"
 alias mt="himalaya envelope list -f '[Gmail]/Trash'"
 alias mu="himalaya envelope list -f INBOX -- 'not flag seen'"
 alias mr="himalaya message read" # mr <ID> to read a message; mr <ID1> <ID2> to read multiple
 alias mT="himalaya envelope thread -i" # mT <ID> to see the thread containing that message
+alias mR="himalaya message reply" # mR <ID> to reply; mR -A <ID> to reply-all
 alias mf="himalaya folder list" # overwrites some `METAFONT` thing I have, but no clue what it is, and don't care
 function mw --description "Write a new email (Ctrl-C discards)" --wraps "himalaya message write"
 	# himalaya catches SIGINT and loops instead of exiting.
