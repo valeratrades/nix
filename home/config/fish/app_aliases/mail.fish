@@ -6,9 +6,39 @@ complete -c m -w himalaya
 alias mi="himalaya envelope list -f INBOX"
 alias ma="himalaya envelope list -f '[Gmail]/All Mail'"
 alias ms="himalaya envelope list -f '[Gmail]/Spam'"
-alias me="himalaya envelope list -f '[Gmail]/Sent Mail'" # a weird choice, but `s` was taken. Guess it's second letter in `sent` and also French `envoyée` starts with it
+function me --description "List sent mail with recipient info" --wraps "himalaya envelope list -f '[Gmail]/Sent Mail'"
+	himalaya envelope list -f '[Gmail]/Sent Mail' -o json $argv \
+		| jq -r '
+			def to_utc:
+				capture("^(?<dt>.*[0-9]{2}:[0-9]{2})(?<sign>[+-])(?<oh>[0-9]{2}):(?<om>[0-9]{2})$") |
+				(.dt | gsub(" "; "T") | strptime("%Y-%m-%dT%H:%M") | mktime) as $epoch |
+				((.oh|tonumber)*3600 + (.om|tonumber)*60) as $off |
+				(if .sign == "-" then $epoch + $off else $epoch - $off end) |
+				strftime("%Y-%m-%d %H:%M");
+			["ID","FLAGS","SUBJECT","TO","DATE"],
+			(.[] | [
+				.id,
+				([.flags[] | select(. == "Seen" | not)] | join(",")),
+				.subject,
+				.to.addr,
+				(.date | to_utc)
+			]) | @tsv' \
+		| column -ts\t
+end
 alias md="himalaya envelope list -f '[Gmail]/Drafts'"
 alias mt="himalaya envelope list -f '[Gmail]/Trash'"
-alias mu="himalaya envelope list -f INBOX -- 'flag unseen'"
+alias mu="himalaya envelope list -f INBOX -- 'not flag seen'"
+alias mr="himalaya message read" # mr <ID> to read a message; mr <ID1> <ID2> to read multiple
+alias mT="himalaya envelope thread -i" # mT <ID> to see the thread containing that message
 alias mf="himalaya folder list" # overwrites some `METAFONT` thing I have, but no clue what it is, and don't care
-alias mw="himalaya message write"
+function mw --description "Write a new email (Ctrl-C discards)" --wraps "himalaya message write"
+	# himalaya catches SIGINT and loops instead of exiting.
+	# We background it (keeping stdin via <&0) so bash can trap INT and SIGKILL it.
+	# No job control = same process group, so both get SIGINT, but our kill -9 wins.
+	bash -c '
+		himalaya message write "$@" <&0 &
+		PID=$!
+		trap "kill -9 $PID 2>/dev/null; exit 130" INT
+		wait $PID 2>/dev/null
+	' -- $argv
+end

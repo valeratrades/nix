@@ -394,26 +394,27 @@ bindsym $mod+k exec "swaymsg mode move_or_resize && eww update sway_mode='move_o
 
 mode "obs" {
 	#NB: Manual starting of obs before any of these is currently required.
-	# I'm using wtype, and it is stupid, so I made a bunch of nonsensical shortcuts in obs, so as to not use modifier keys.
+	# Sends keypresses to OBS via sway focus-switch + wlrctl (focus is restored automatically).
+	set $obs_send /home/v/.config/sway/send_keypress_to_window.rs com.obsproject.Studio
 
 	# Virtual Camera
-	bindsym v exec $switch_out && /home/v/.config/sway/obs_send.sh "v"
-	bindsym Shift+v exec $switch_out && /home/v/.config/sway/obs_send.sh "e"
+	bindsym v exec $switch_out && $obs_send v
+	bindsym Shift+v exec $switch_out && $obs_send e
 	# Start/Stop Recording
-	bindsym r exec $switch_out && /home/v/.config/sway/obs_send.sh "r"
-	bindsym Shift+r exec $switch_out && /home/v/.config/sway/obs_send.sh "g"
-	# Pause/Unpause Recording #BUG: doesn't work
-	bindsym p exec $switch_out && /home/v/.config/sway/obs_send.sh "p"
-	bindsym Shift+p exec $switch_out && /home/v/.config/sway/obs_send.sh "u"
-	## Disable Preview	
-	#bindsym d exec $switch_out && /home/v/.config/sway/obs_send.sh "d"
+	bindsym r exec $switch_out && $obs_send r
+	bindsym Shift+r exec $switch_out && $obs_send g
+	# Pause/Unpause Recording
+	bindsym p exec $switch_out && $obs_send p
+	bindsym Shift+p exec $switch_out && $obs_send u
+	## Disable Preview
+	#bindsym d exec $switch_out && $obs_send d
 
 	## Scenes: Both, Stream, Camera //"t" is to transition to it immediately
-	bindsym b exec $switch_out && /home/v/.config/sway/obs_send.sh "b"
+	bindsym b exec $switch_out && $obs_send b
 #"bt"
-	bindsym s exec $switch_out && /home/v/.config/sway/obs_send.sh "s"
+	bindsym s exec $switch_out && $obs_send s
 #"st"
-	bindsym c exec $switch_out && /home/v/.config/sway/obs_send.sh "c"
+	bindsym c exec $switch_out && $obs_send c
 #"ct"
 
 
