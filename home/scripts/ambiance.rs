@@ -152,6 +152,71 @@ fn is_running(process_name: &str) -> bool {
         .unwrap_or(false)
 }
 
+fn parse_sink_input_id(line: &str, name: &str) -> Option<String> {
+    if !line.starts_with("Sink input:") {
+        return None;
+    }
+    if !line.contains(&format!("Name: {name},")) {
+        return None;
+    }
+    let id_start = line.find("ID: ")? + 4;
+    let id_end = line[id_start..].find(',')? + id_start;
+    Some(line[id_start..id_end].to_string())
+}
+
+async fn balance_volumes() {
+    const RATIO: f64 = 0.87;
+    const MAX_WAIT: std::time::Duration = std::time::Duration::from_secs(10);
+    const POLL_INTERVAL: std::time::Duration = std::time::Duration::from_millis(300);
+
+    let start = std::time::Instant::now();
+    loop {
+        let output = std::process::Command::new("pulsemixer")
+            .arg("--list-sinks")
+            .output()
+            .expect("failed to run pulsemixer");
+        let listing = String::from_utf8_lossy(&output.stdout);
+
+        let mpv_id = listing.lines().find_map(|l| parse_sink_input_id(l, "mpv"));
+        let bbeats_id = listing.lines().find_map(|l| parse_sink_input_id(l, "PipeWire ALSA [bbeats]"));
+
+        if start.elapsed() > MAX_WAIT {
+            panic!(
+                "Timed out waiting for audio sink inputs — mpv found: {}, bbeats found: {}",
+                mpv_id.is_some(),
+                bbeats_id.is_some()
+            );
+        }
+
+        let (Some(mpv_id), Some(bbeats_id)) = (mpv_id, bbeats_id) else {
+            tokio::time::sleep(POLL_INTERVAL).await;
+            continue;
+        };
+
+        let bbeats_vol = std::process::Command::new("pulsemixer")
+            .args(["--id", &bbeats_id, "--get-volume"])
+            .output()
+            .expect("failed to get bbeats volume");
+        let vol_str = String::from_utf8_lossy(&bbeats_vol.stdout);
+        let bbeats_volume: u32 = vol_str
+            .split_whitespace()
+            .next()
+            .expect("no volume value from pulsemixer")
+            .parse()
+            .expect("failed to parse bbeats volume");
+
+        let target = (bbeats_volume as f64 * RATIO).round() as u32;
+        println!("Setting exam ambiance volume to {target}% (bbeats at {bbeats_volume}%, ratio {RATIO})");
+
+        let status = std::process::Command::new("pulsemixer")
+            .args(["--id", &mpv_id, "--set-volume", &target.to_string()])
+            .status()
+            .expect("failed to set mpv volume");
+        assert!(status.success(), "pulsemixer --set-volume failed");
+        return;
+    }
+}
+
 async fn setup_math() {
     // Verify tedi blocker is set to a math project
     let project = std::process::Command::new("tedi")
@@ -218,6 +283,9 @@ async fn setup_math() {
     } else {
         println!("bbeats already running, skipping");
     }
+
+    // Balance volumes: set exam ambiance (mpv) to 87% of bbeats volume
+    balance_volumes().await;
 
     println!("Ambiance running. Ctrl+C to stop and restore.");
     signal::ctrl_c().await.expect("failed to listen for ctrl+c");
