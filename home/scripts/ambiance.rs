@@ -129,7 +129,10 @@ fn kill_running_pp() {
     // Kill mpv instances spawned by the `pp` fish function.
     // These have a distinctive flag combination: --no-terminal --no-video --loop-file --loop-playlist
     let output = std::process::Command::new("pgrep")
-        .args(["-f", "mpv --no-terminal --no-video --loop-file --loop-playlist"])
+        .args([
+            "-f",
+            "mpv --no-terminal --no-video --loop-file --loop-playlist",
+        ])
         .output()
         .expect("failed to run pgrep");
     if output.status.success() {
@@ -178,7 +181,9 @@ async fn balance_volumes() {
         let listing = String::from_utf8_lossy(&output.stdout);
 
         let mpv_id = listing.lines().find_map(|l| parse_sink_input_id(l, "mpv"));
-        let bbeats_id = listing.lines().find_map(|l| parse_sink_input_id(l, "PipeWire ALSA [bbeats]"));
+        let bbeats_id = listing
+            .lines()
+            .find_map(|l| parse_sink_input_id(l, "PipeWire ALSA [bbeats]"));
 
         if start.elapsed() > MAX_WAIT {
             panic!(
@@ -206,7 +211,9 @@ async fn balance_volumes() {
             .expect("failed to parse bbeats volume");
 
         let target = (bbeats_volume as f64 * RATIO).round() as u32;
-        println!("Setting exam ambiance volume to {target}% (bbeats at {bbeats_volume}%, ratio {RATIO})");
+        println!(
+            "Setting exam ambiance volume to {target}% (bbeats at {bbeats_volume}%, ratio {RATIO})"
+        );
 
         let status = std::process::Command::new("pulsemixer")
             .args(["--id", &mpv_id, "--set-volume", &target.to_string()])
@@ -229,7 +236,8 @@ async fn setup_math() {
         .expect("failed to run tedi blocker current");
     let project_out = String::from_utf8_lossy(&project.stdout);
     let current_out = String::from_utf8_lossy(&current.stdout);
-    if !project_out.to_lowercase().contains("math") && !current_out.to_lowercase().contains("math") {
+    if !project_out.to_lowercase().contains("math") && !current_out.to_lowercase().contains("math")
+    {
         eprintln!("tedi blocker is not set to a math project.");
         eprintln!("  current-project: {}", project_out.trim());
         eprintln!("  current: {}", current_out.trim());
@@ -240,15 +248,19 @@ async fn setup_math() {
     let wallpaper = WallpaperGuard::capture();
     let mut ambiance = Ambiance::new(wallpaper);
 
-    // Resume tedi blocker
-    let _ = std::process::Command::new("tedi")
+    // Resume tedi blocker (networking roundtrip, run concurrently with rest of setup)
+    let mut tedi_resume = Command::new("tedi")
         .args(["blocker", "resume"])
-        .status();
+        .stdin(Stdio::null())
+        .spawn()
+        .expect("failed to spawn tedi blocker resume");
 
     // Set wallpaper
     Command::new("swaymsg")
         .args([
-            "output", "eDP-1", "bg",
+            "output",
+            "eDP-1",
+            "bg",
             &format!("{}/.config/sway/wallpapers/MartinSchmid.jpeg", home()),
             "fill",
         ])
@@ -264,7 +276,10 @@ async fn setup_math() {
 
     // Start exam auditorium ambiance
     let child = Command::new("fish")
-        .args(["-c", &format!("pp1 {}/Music/study/exam_auditorium_ambiance.mp3", home())])
+        .args([
+            "-c",
+            &format!("pp1 {}/Music/study/exam_auditorium_ambiance.mp3", home()),
+        ])
         .process_group(0)
         .stdin(Stdio::null())
         .spawn()
@@ -283,6 +298,13 @@ async fn setup_math() {
     } else {
         println!("bbeats already running, skipping");
     }
+
+    // Wait for tedi blocker resume to finish
+    let status = tedi_resume
+        .wait()
+        .await
+        .expect("failed to wait on tedi blocker resume");
+    assert!(status.success(), "tedi blocker resume failed");
 
     // Balance volumes: set exam ambiance (mpv) to 87% of bbeats volume
     balance_volumes().await;
