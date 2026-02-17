@@ -68,7 +68,6 @@ in {
   systemd.user.services.tg-server = {
     Unit = {
       After = lib.mkForce [ "network.target" "sops-nix.service" ];
-      Requires = [ "sops-nix.service" ];
       StartLimitIntervalSec = 60;
       StartLimitBurst = 10;
     };

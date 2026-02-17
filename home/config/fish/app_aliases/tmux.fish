@@ -77,7 +77,6 @@ function tmux_new_session_base
 	tmux select-pane -t "$SESSION_NAME:window.0"
 
 	tmux new-window -t "$SESSION_NAME" -n "claude"
-	tmux send-keys -t "$SESSION_NAME:cursor.0" "echo '`claude_all` here'" Enter
 
 	echo $SESSION_NAME
 	return 0

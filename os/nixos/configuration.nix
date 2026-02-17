@@ -20,9 +20,10 @@ in {
   };
 
   services = {
-    gnome.gnome-keyring.enable = lib.mkDefault
-      false; # annoying // Supposed to be an extra layer of security for managed {ssh passwords, gpg, wifi, etc}
+    gnome.gnome-keyring.enable = true;
+    gnome.gcr-ssh-agent.enable = false;
   };
+  security.pam.services.login.enableGnomeKeyring = true;
   virtualisation = {
     docker = {
       enable = true;

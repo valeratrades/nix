@@ -846,13 +846,13 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
 
         // Window must have "claude" in its name OR the pane command must be "claude"
         let is_claude_window = window_name.eq("claude") || window_name.starts_with("claude") || window_name.contains("claude");
-        let is_claude_pane = pane_command == "claude";
+        let is_claude_pane = pane_command == "claude" || pane_command == "claude-raw";
         if !is_claude_window && !is_claude_pane {
             continue;
         }
 
         let tmux_target = format!("{}:{}", session, window_index);
-        let (state, active_todo, draft_content, question_content, summary) = if pane_command == "claude" {
+        let (state, active_todo, draft_content, question_content, summary) = if is_claude_pane {
             // Claude is running - get session info first, then determine activity
             let metadata = get_session_info_for_pane(pane_pid, &tmux_target);
 

@@ -15,6 +15,7 @@ let
 			"code-review@claude-code-plugins" = true;
 			"rust-analyzer-lsp@claude-plugins-official" = true;
 			"feature-dev@claude-code-plugins" = true;
+			"plugin-dev@claude-code-plugins" = true;
 		};
 	};
 

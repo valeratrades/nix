@@ -10,7 +10,7 @@
 
 - don't forget to run `nix develop` to init env in all projects with flake.nix
 
-- don't compile with `--release` when testing, unless the application is bottlenecked by its operations speed. So you would only use --release for like a game or some algorithm
+- don't compile with `--release` when testing, unless the application is bottlenecked by its operations speed
 
 - you're disallowed from ever adding `#[allow(dead_code)]` (if it's a false-positive from a macro, there are likely more precise flags to skip it like eg `unused_assignment`). Similarly, you can't name things to start with underscore to silence unused warnings.
 

@@ -1,6 +1,7 @@
 return {
 	require "lazier" {
 		"lewis6991/gitsigns.nvim",
+		lazy = false,
 		config = function()
 			local gs = require("gitsigns")
 			gs.setup({
@@ -13,6 +14,7 @@ return {
 					untracked    = { text = '┆' },
 				},
 				max_file_length = 40000,
+				base = 'HEAD',
 				numhl = false,
 				on_attach = function(bufnr)
 					local ft = vim.bo[bufnr].filetype
