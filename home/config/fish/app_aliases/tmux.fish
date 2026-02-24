@@ -6,6 +6,14 @@ complete -c tl -w tmux
 alias tks="tmux kill-server"
 complete -c tks -w tmux
 
+function tkc --description "Kill the current tmux session"
+	if test -z "$TMUX"
+		echo "Not in a tmux session."
+		return 1
+	end
+	tmux kill-session -t (tmux display-message -p '#{session_name}')
+end
+
 function tk --description "Kill tmux session + direnv deny its root"
 	if test (count $argv) != 1
 		echo "Usage: tk <session_name>"

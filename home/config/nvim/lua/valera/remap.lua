@@ -313,6 +313,15 @@ K("i", "^M", "^M<c-g>u", { desc = "Enter with undo break" })
 K("i", ",", ",<c-g>u", { desc = "Comma with undo break" })
 K("i", ".", ".<c-g>u", { desc = "Period with undo break" })
 K("i", ";", ";<c-g>u", { desc = "Semicolon with undo break" })
+
+-- Undo break before any paste (bracketed paste from terminal, <C-r>, etc.)
+local orig_paste = vim.paste
+vim.paste = function(lines, phase) --TEST: don't know if it will work with terminal-level pasting like `Ctrl+Shift+V`
+	if phase == 1 and vim.fn.mode() == "i" then
+		vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<C-g>u", true, false, true), "n", false)
+	end
+	return orig_paste(lines, phase)
+end
 --,}}}1
 
 -- Time insertions {{{1

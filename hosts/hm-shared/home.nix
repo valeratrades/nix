@@ -211,6 +211,7 @@
             commandLineArgs = [
               "--disable-accelerated-video-decode"
               "--disable-accelerated-video-encode"
+              "--silent-debugger-extension-api" # suppress OpenClaw Auto Relay debug bar
             ];
           })
           alacritty

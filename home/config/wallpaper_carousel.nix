@@ -24,7 +24,11 @@
 
     { text = "make the boat go faster.\nIgnore the rest"; author = "Sam Ovens"; }
 
+    { text = "it only makes sense to automate\nthat which is already done manually"; author = "Leily Hormozi"; }
+
     "systems -> outputs\nImproving systems = winning"
+
+    "work env is not getting better.\nIf you can't work at 100% now,\nyou will never make it"
 
     "momento mori"
 

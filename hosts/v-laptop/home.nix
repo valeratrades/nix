@@ -59,7 +59,7 @@ in {
   #    ExecStart = lib.mkForce ''
   #      ${pkgs.bash}/bin/bash -c '${
   #        inputs.todo.packages.${pkgs.stdenv.hostPlatform.system}.default
-  #      }/bin/todo watch-monitors'
+  #      }/bin/tedi watch-monitors'
   #    '';
   #  };
   #};

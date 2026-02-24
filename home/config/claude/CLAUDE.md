@@ -15,6 +15,7 @@
 - you're disallowed from ever adding `#[allow(dead_code)]` (if it's a false-positive from a macro, there are likely more precise flags to skip it like eg `unused_assignment`). Similarly, you can't name things to start with underscore to silence unused warnings.
 
 - when I say you're in charge of a git issue, - you make a new git workspace in ~/tmp for your implementation. Then while working, update the tracking issue on every (big change made / improvement in understanding of the problem-space). So if current state or understanding of what should happen changes, tracker issue should too.
+    You also generate the implementation plan, and once accepted, you push it as a comment under that tracking issue.
     When done, you PR the change and ask me for review. If green-lighted, you handle merge conflicts if any appear.
 
 - prefer running `cargo b` and `cargo r` instead of `cargo build` and `cargo run`, - under my config they skip warnings if any errors exist, which is always desirable.
@@ -29,6 +30,10 @@
 - when using `insta` crate for snapshots, - avoid modifying them manually; prefer adding an empty string, then running `cargo insta accept` and seeing what gets written.
 
 - if a test is failing due to underlying logic being incorrect, don't try to fix it, unless you're in charge of the implementation concerning that part of the logic. What you can do is tell me what you found, after you finished your own implementation, and then we decide if you can be assigned to fixing that too.
+
+- never change actual code logic if something broke mocks or integration tests. Tests are ALWAYS inferior to actual code, we do not care for ease of testing when thinking through logic. Correct logic is much more important than ability to easily test it, and if tests infra breaks, - it wasn't good in the first place.
+
+- when you're doing debugging, avoid editing actual tests, - prefer making standalone bins in [examples/]
 
 ## Development Principles
 - fail fast. We always prefer to exit over continuing with a corrupted state.
