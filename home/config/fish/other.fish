@@ -102,7 +102,6 @@ alias audio="qpwgraph"
 alias test_mic="arecord -c1 -vvv /tmp/mic.wav"
 alias nano="nvim"
 alias pro_audio="pulsemixer"
-alias wayland_wine="DISPLAY='' wine64" # Set up to work with Wayland
 alias pfind="procs --tree | fzf"
 alias tree="fd . | as-tree"
 alias bak="XDG_CONFIG_HOME=/home/v/.dots/home/v/.config"
@@ -116,6 +115,7 @@ alias bbeats="sudo -Es nice -n -20 /etc/profiles/per-user/v/bin/bbeats" # otherw
 alias workspaces="swaymsg -t get_tree" # shortcut for ease of remembrance by Ania and Tima
 alias q "ask_llm -f"
 alias ytd "yt-dlp -x --audio-format mp3 --cookies-from-browser firefox " # downloads audio from yt; you provide <URL>
+alias dr="deno run -A ./tmp/cmd.ts" # `dr` for `deno run`; follows https://matklad.github.io/2026/01/27/make-ts.html
 
 
 function tge

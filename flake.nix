@@ -58,6 +58,11 @@
 
     claude_code_nix.url = "github:sadjow/claude-code-nix";
 
+    winapps = {
+      url = "github:winapps-org/winapps";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # -----------------------------------------------------------------
     # My packages
     # ----------------------------------------------------------------

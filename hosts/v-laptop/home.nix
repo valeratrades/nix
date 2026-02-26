@@ -193,6 +193,12 @@ in {
           tiger-trade
         ]
 
+        # Windows (via WinApps/Docker VM)
+        [
+          inputs.winapps.packages.${pkgs.stdenv.hostPlatform.system}.winapps
+          inputs.winapps.packages.${pkgs.stdenv.hostPlatform.system}.winapps-launcher
+        ]
+
         # vpn
         [
           mullvad # incredibly minimalistic. TODO: switch to it

@@ -510,7 +510,10 @@ fn main() {
             eprintln!("error: git add failed");
             exit(1);
         }
-        let _ = run("git", &["commit", "-m", msg]);
+        if !run("git", &["commit", "-m", msg]) {
+            eprintln!("error: git commit failed (nothing to commit?)");
+            exit(1);
+        }
 
         // Push commit to default branch (AFTER commit includes version bump)
         if !run("git", &["push", "origin", &default_branch]) {
@@ -587,13 +590,13 @@ fn main() {
         let major_branch = format!("v{}", version.major);
         let minor_branch = format!("v{}.{}", version.major, version.minor);
 
-        // Create and push tag on default branch (don't fail if already exists)
+        // Create and push tag on default branch
         let _ = run("git", &["tag", "-f", &tag]);
-        if run("git", &["push", "--force", "origin", &tag]) {
-            println!("Tagged and pushed {tag}");
-        } else {
-            println!("Tag {tag} already exists on remote, continuing");
+        if !run("git", &["push", "--force", "origin", &tag]) {
+            eprintln!("error: failed to push tag {tag}");
+            exit(1);
         }
+        println!("Tagged and pushed {tag}");
 
         // Push to version branches (create if they don't exist)
         for branch in [&major_branch, &minor_branch] {

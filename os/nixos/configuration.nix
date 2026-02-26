@@ -144,6 +144,8 @@ in {
       "v4l2loopback"
       #"binder-linux" # waydroid, nothing to do with obs (but I'm bad with nix, can't split them) #dbg: disabled waydroid for a moment
 			"evdi" # only needed with displaylink
+			"ip_tables" # WinApps folder sharing
+			"iptable_nat" # WinApps folder sharing
     ];
     extraModprobeConfig = ''
             options v4l2loopback devices=1 video_nr=1 card_label="OBS Cam" exclusive_caps=1

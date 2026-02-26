@@ -51,7 +51,14 @@ local on_attach = function(client, bufnr)
 		K(mode, lhs, rhs, opts)
 	end
 
-	buf_set_keymap('n', 'K', vim.lsp.buf.hover, { desc = "Hover Info", overwrite = true })
+	buf_set_keymap('n', 'K', function()
+		local popups = require('rust_plugins').get_popups()
+		if #popups > 0 then
+			vim.api.nvim_set_current_win(popups[1])
+		else
+			vim.lsp.buf.hover()
+		end
+	end, { desc = "Hover Info / Focus Popup", overwrite = true })
 	buf_set_keymap('n', 'gd', vim.lsp.buf.definition, { desc = "Go to Definition", overwrite = true })
 	buf_set_keymap('n', '<space>lR', vim.lsp.buf.rename, { desc = "Rename" })
 	buf_set_keymap('n', '<space>lh', function() vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled()) end,
@@ -194,7 +201,14 @@ vim.lsp.config('bashls', {})
 vim.lsp.enable('bashls')
 
 -- clangd
-vim.lsp.config('clangd', {})
+vim.lsp.config('clangd', {
+	cmd = {
+		'clangd',
+		'--background-index',
+		'--clang-tidy',
+		'--header-insertion=iwyu',
+	},
+})
 vim.lsp.enable('clangd')
 
 -- jsonls
