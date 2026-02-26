@@ -172,6 +172,7 @@ in {
 				neofetch # main system info
         libinput
         virt-viewer
+        gnome-boxes
 
         ringboard-wayland
 

@@ -117,6 +117,21 @@ alias q "ask_llm -f"
 alias ytd "yt-dlp -x --audio-format mp3 --cookies-from-browser firefox " # downloads audio from yt; you provide <URL>
 alias dr="deno run -A ./tmp/cmd.ts" # `dr` for `deno run`; follows https://matklad.github.io/2026/01/27/make-ts.html
 
+function ubuntu_vm
+	set -l iso_dir "$HOME/.cache/gnome-boxes/isos"
+	set -l iso_path "$iso_dir/ubuntu-24.04-desktop-amd64.iso"
+	set -l iso_url "https://releases.ubuntu.com/24.04/ubuntu-24.04.2-desktop-amd64.iso"
+
+	if not test -f "$iso_path"
+		echo "Downloading Ubuntu 24.04 ISO..."
+		mkdir -p "$iso_dir"
+		aria2c -x16 -d "$iso_dir" -o (basename "$iso_path") "$iso_url"
+		or return 1
+	end
+
+	gnome-boxes "$iso_path"
+end
+
 
 function tge
 	q "answer concisely. Translate from german: $argv"
