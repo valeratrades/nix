@@ -119,17 +119,29 @@ alias dr="deno run -A ./tmp/cmd.ts" # `dr` for `deno run`; follows https://matkl
 
 function ubuntu_vm
 	set -l iso_dir "$HOME/.cache/gnome-boxes/isos"
-	set -l iso_path "$iso_dir/ubuntu-24.04-desktop-amd64.iso"
-	set -l iso_url "https://releases.ubuntu.com/24.04/ubuntu-24.04.2-desktop-amd64.iso"
 
-	if not test -f "$iso_path"
-		echo "Downloading Ubuntu 24.04 ISO..."
-		mkdir -p "$iso_dir"
-		aria2c -x16 -d "$iso_dir" -o (basename "$iso_path") "$iso_url"
-		or return 1
+	# Find existing ISO if already downloaded
+	set -l existing (ls "$iso_dir"/ubuntu-24.04*-desktop-amd64.iso 2>/dev/null | head -1)
+	if test -n "$existing"
+		gnome-boxes "$existing"
+		return
 	end
 
-	gnome-boxes "$iso_path"
+	# Resolve current point release from the directory listing
+	echo "Resolving latest Ubuntu 24.04 ISO..."
+	set -l iso_name (curl -sL https://releases.ubuntu.com/24.04/ | string match -r 'ubuntu-24\.04\.[0-9]+-desktop-amd64\.iso' | head -1)
+	if test -z "$iso_name"
+		echo "Failed to find Ubuntu 24.04 desktop ISO on releases.ubuntu.com"
+		return 1
+	end
+
+	set -l iso_url "https://releases.ubuntu.com/24.04/$iso_name"
+	echo "Downloading $iso_name..."
+	mkdir -p "$iso_dir"
+	aria2c -x16 -d "$iso_dir" -o "$iso_name" "$iso_url"
+	or return 1
+
+	gnome-boxes "$iso_dir/$iso_name"
 end
 
 
