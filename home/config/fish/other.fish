@@ -410,6 +410,26 @@ function cpf
 end
 
 
+function ngrok_open
+	ngrok tcp 22 --log=stdout --log-format=json &
+	set -l pid $last_pid
+
+	for i in (seq 10)
+		sleep 1
+		set -l url (curl -s http://localhost:4040/api/tunnels 2>/dev/null | jq -r '.tunnels[0].public_url // empty' 2>/dev/null)
+		if test -n "$url"
+			set -l host (string replace 'tcp://' '' $url | string split ':')[1]
+			set -l port (string replace 'tcp://' '' $url | string split ':')[2]
+			echo "ssh -p $port v@$host"
+			return 0
+		end
+	end
+
+	echo "Failed to start ngrok tunnel"
+	kill $pid 2>/dev/null
+	return 1
+end
+
 function log
 	set -l guess_project_name (basename (pwd))
 	set -l log_file "$XDG_STATE_HOME/$guess_project_name/.log"
