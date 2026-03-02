@@ -2,7 +2,7 @@
   positions_dir = "~/s/g/positions";
   comparison_offset_h = 24;
 
-  exchanges = import ./shared/exchanges.nix;
+  exchanges = import ~/nix/home/config/shared/exchanges.nix;
 
   risk = {
     # Optional: Add balances not tracked on exchanges (in USD)

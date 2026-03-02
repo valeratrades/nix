@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Wrapper for cargo -Zscript with nix, tries --offline first
+# Wrapper for cargo -Zscript with nix, caches the resolved store path
 # Usage: nix-run-cached <script.rs> [args...]
 # Tracks script usage and cleans up old caches (>30 days unused)
 # Caches the nix store path to avoid re-evaluating the flake expression every time
@@ -95,15 +95,8 @@ get_rust_store_path() {
 			echo "$cached_path"
 			return 0
 		fi
-	fi
-
-	# Need to resolve the store path (slow, ~2s)
-	local store_path
-	if store_path=$(nix build --no-link --print-out-paths --offline --impure --expr "$NIX_EXPR" 2>/dev/null); then
-		mkdir -p "$CARGO_TARGET_DIR"
-		echo "$store_path" >"$RUST_STORE_PATH_CACHE"
-		echo "$store_path"
-		return 0
+		# Cached path was garbage-collected, remove stale cache
+		rm -f "$RUST_STORE_PATH_CACHE"
 	fi
 
 	return 1
@@ -132,18 +125,15 @@ fi
 notify-send "nix cache miss, fetching..." -t 3000 2>/dev/null &
 
 # Build and cache the store path, then run
-if RUST_PATH=$(nix build --no-link --print-out-paths --impure --expr "$NIX_EXPR" 2>/dev/null); then
-	mkdir -p "$CARGO_TARGET_DIR"
-	echo "$RUST_PATH" >"$RUST_STORE_PATH_CACHE"
-	if run_cargo "$RUST_PATH" "$@"; then
-		exit 0
-	elif try_fix_root_owned_dirs; then
-		exec run_cargo "$RUST_PATH" "$@"
-	fi
+if ! RUST_PATH=$(nix build --no-link --print-out-paths --impure --expr "$NIX_EXPR" 2>/dev/null); then
+	echo "nix build failed" >&2
 	exit 1
 fi
-
-# Fallback to nix shell if build fails for some reason
-env RUSTC_WRAPPER="" nix shell --impure --expr "$NIX_EXPR" --command cargo -Zscript -q "$SCRIPT" "$@" && exit 0
-try_fix_root_owned_dirs && exec env RUSTC_WRAPPER="" nix shell --impure --expr "$NIX_EXPR" --command cargo -Zscript -q "$SCRIPT" "$@"
+mkdir -p "$CARGO_TARGET_DIR"
+echo "$RUST_PATH" >"$RUST_STORE_PATH_CACHE"
+if run_cargo "$RUST_PATH" "$@"; then
+	exit 0
+elif try_fix_root_owned_dirs; then
+	exec run_cargo "$RUST_PATH" "$@"
+fi
 exit 1
