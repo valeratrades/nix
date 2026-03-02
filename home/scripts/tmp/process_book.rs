@@ -5,7 +5,8 @@
 clap = { version = "4", features = ["derive"] }
 regex = "1"
 eyre = "0.6"
-tokio = { version = "1", features = ["rt-multi-thread","macros","process","fs","io-util","time","sync"] }
+tokio = { version = "1", features = ["rt-multi-thread","macros","process","fs","io-util","time"] }
+futures = "0.3"
 quick-xml = "0.36"
 zip = "2"
 dirs = "5"
@@ -19,10 +20,9 @@ use regex::Regex;
 use std::io::{BufRead, BufReader, Read, Write as _};
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
-use std::sync::{Arc, OnceLock};
+use std::sync::OnceLock;
 use std::{fmt, fs};
 use tokio::process::Command;
-use tokio::sync::Semaphore;
 use zip::ZipWriter;
 use zip::write::FileOptions;
 
@@ -74,9 +74,12 @@ enum Cmd {
 		/// CSS selectors for book_parser (can be repeated)
 		#[arg(short, long)]
 		css: Vec<String>,
-		/// Parallel page downloads
+		/// Parallel page downloads per chunk
 		#[arg(long, default_value_t = 16)]
 		parallel: usize,
+		/// Seconds to wait between chunks (default: 0)
+		#[arg(long, default_value_t = 0)]
+		timeout: u64,
 		#[command(flatten)]
 		pattern: ChapterPatternArgs,
 	},
@@ -86,12 +89,9 @@ enum Cmd {
 		name: String,
 		#[arg(short, long)]
 		wlimit: String,
-		/// First section to translate (inclusive)
+		/// Section range, e.g. 1..50, 1..=50, 5.., ..=20
 		#[arg(long)]
-		since: Option<u32>,
-		/// Last section to translate (inclusive)
-		#[arg(long)]
-		until: Option<u32>,
+		range: Option<String>,
 	},
 	/// Assemble translated sections into a book
 	Compile {
@@ -108,8 +108,6 @@ enum OutputFormat {
 	Epub,
 	Md,
 	Markdown,
-	Txt,
-	Raw,
 }
 
 #[derive(Clone)]
@@ -200,21 +198,6 @@ fn paragraphs_to_md(title: Option<&str>, paragraphs: &[&str]) -> String {
 	s
 }
 
-fn md_to_plaintext(md: &str) -> String {
-	let mut out = String::new();
-	for line in md.lines() {
-		if line.starts_with("# ") {
-			continue;
-		}
-		if line.trim().is_empty() {
-			continue;
-		}
-		out.push_str(line);
-		out.push('\n');
-	}
-	out
-}
-
 fn md_title(md: &str) -> Option<String> {
 	for line in md.lines() {
 		if let Some(title) = line.strip_prefix("# ") {
@@ -225,6 +208,18 @@ fn md_title(md: &str) -> Option<String> {
 		}
 	}
 	None
+}
+
+fn md_to_plaintext(md: &str) -> String {
+	let mut out = String::new();
+	for line in md.lines() {
+		if line.starts_with("# ") || line.trim().is_empty() {
+			continue;
+		}
+		out.push_str(line);
+		out.push('\n');
+	}
+	out
 }
 
 /// Decode common HTML/XML entities to plain text
@@ -617,8 +612,7 @@ async fn load_page(
 	let text = String::from_utf8_lossy(&output.stdout);
 	let decoded = decode_entities(&text);
 	let lines: Vec<&str> = decoded.lines().collect();
-	let title = format!("Page {page}");
-	let md = paragraphs_to_md(Some(&title), &lines);
+	let md = paragraphs_to_md(None, &lines);
 	fs::write(out_path, md)?;
 	println!("  page {page} ok");
 
@@ -745,7 +739,7 @@ fn compile_epub(sections: &[(u32, PathBuf)], out: &Path) -> Result<()> {
 
 	for (num, path) in sections {
 		let md = fs::read_to_string(path)?;
-		let xhtml = md_to_xhtml(&md);
+		let xhtml = md_to_xhtml(&md, *num);
 		zip.start_file(format!("OEBPS/section_{num}.xhtml"), opts.clone())?;
 		zip.write_all(xhtml.as_bytes())?;
 	}
@@ -786,7 +780,7 @@ fn compile_epub(sections: &[(u32, PathBuf)], out: &Path) -> Result<()> {
 	);
 	for (num, path) in sections {
 		let md = fs::read_to_string(path)?;
-		let title = md_title(&md).unwrap_or_else(|| format!("Section {num}"));
+		let title = md_title(&md).unwrap_or_else(|| format!("Page {num}"));
 		nav.push_str(&format!(
 			"<li><a href=\"section_{num}.xhtml\">{}</a></li>\n",
 			escape_xml(&title)
@@ -803,25 +797,15 @@ fn compile_epub(sections: &[(u32, PathBuf)], out: &Path) -> Result<()> {
 
 fn compile_markdown(sections: &[(u32, PathBuf)], out: &Path) -> Result<()> {
 	let mut f = fs::File::create(out)?;
-	for (i, (_, path)) in sections.iter().enumerate() {
+	for (i, (num, path)) in sections.iter().enumerate() {
 		if i > 0 {
 			f.write_all(b"\n")?;
 		}
 		let md = fs::read_to_string(path)?;
+		if md_title(&md).is_none() {
+			writeln!(f, "## Page {num}\n")?;
+		}
 		f.write_all(md.as_bytes())?;
-	}
-	Ok(())
-}
-
-fn compile_raw(sections: &[(u32, PathBuf)], out: &Path) -> Result<()> {
-	let mut f = fs::File::create(out)?;
-	for (i, (_, path)) in sections.iter().enumerate() {
-		if i > 0 {
-			f.write_all(b"\n")?;
-		}
-		let md = fs::read_to_string(path)?;
-		let text = md_to_plaintext(&md);
-		f.write_all(text.as_bytes())?;
 	}
 	Ok(())
 }
@@ -833,13 +817,16 @@ fn escape_xml(s: &str) -> String {
 		.replace('"', "&quot;")
 }
 
-fn md_to_xhtml(md: &str) -> String {
+fn md_to_xhtml(md: &str, page_num: u32) -> String {
 	let mut s = String::from(
 		"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n\
 		 <html xmlns=\"http://www.w3.org/1999/xhtml\">\n\
 		 <head><title></title></head>\n\
 		 <body>\n",
 	);
+	if md_title(md).is_none() {
+		s.push_str(&format!("<h2>Page {page_num}</h2>\n"));
+	}
 	for line in md.lines() {
 		if let Some(title) = line.strip_prefix("# ") {
 			let t = title.trim();
@@ -909,6 +896,7 @@ async fn main() -> Result<()> {
 			url,
 			css,
 			parallel,
+			timeout,
 			pattern: _,
 		} => {
 			let (url_template, start, end) = parse_load_url(&url)?;
@@ -948,33 +936,28 @@ async fn main() -> Result<()> {
 				return Ok(());
 			}
 
-			println!("loading {} pages -> {}", pages_to_load.len(), sections_dir.display());
+			let n_chunks = (pages_to_load.len() + parallel - 1) / parallel;
+			println!(
+				"loading {} pages in {} chunks of {} -> {}",
+				pages_to_load.len(),
+				n_chunks,
+				parallel,
+				sections_dir.display()
+			);
 
-			let sem = Arc::new(Semaphore::new(parallel));
-			let url_template = Arc::new(url_template);
-			let css = Arc::new(css);
-			let sections_dir_arc = Arc::new(sections_dir.clone());
+			'chunks: for (chunk_idx, chunk) in pages_to_load.chunks(parallel).enumerate() {
+				if chunk_idx > 0 && timeout > 0 {
+					println!("  waiting {timeout}s between chunks...");
+					tokio::time::sleep(std::time::Duration::from_secs(timeout)).await;
+				}
 
-			let mut tasks = Vec::new();
-			for page in pages_to_load {
-				let url_template = url_template.clone();
-				let css = css.clone();
-				let sections_dir_arc = sections_dir_arc.clone();
-				let permit = sem.clone().acquire_owned().await.unwrap();
-				tasks.push(tokio::spawn(async move {
-					let _p = permit;
-					load_page(&url_template, page, &css, &sections_dir_arc).await
-				}));
-			}
-
-			// collect all results (tasks are already running)
-			let mut first_err: Option<eyre::Report> = None;
-			for t in tasks {
-				if let Err(e) = t.await.unwrap() {
-					eprintln!("  {e}");
-					if first_err.is_none() {
-						first_err = Some(e);
-					}
+				let futs: Vec<_> = chunk
+					.iter()
+					.map(|&page| load_page(&url_template, page, &css, &sections_dir))
+					.collect();
+				if let Err(e) = futures::future::try_join_all(futs).await {
+					enforce_contiguous(&sections_dir, start, end);
+					return Err(e);
 				}
 			}
 
@@ -983,10 +966,6 @@ async fn main() -> Result<()> {
 				let loaded = gap - start;
 				println!("loaded {loaded} contiguous pages ({start}..={})", gap - 1);
 				return Err(eyre!("stopped at page {gap} (gap in sequence)"));
-			}
-
-			if let Some(e) = first_err {
-				return Err(e);
 			}
 
 			println!("loaded all {} pages ({start}..={end})", end - start + 1);
@@ -1035,119 +1014,98 @@ async fn main() -> Result<()> {
 				}
 			);
 
-			let sem = Arc::new(Semaphore::new(cli.max_jobs));
-
 			// book_parser pass
 			{
-				let mut tasks = Vec::new();
+				let mut to_parse: Vec<(u32, PathBuf)> = Vec::new();
 				let mut skipped = 0u32;
 				for (num, path) in &sections {
-					let num = *num;
 					if !cli.force && de.join(format!("section_{num}.md")).exists() {
 						skipped += 1;
 						continue;
 					}
-					let path = path.clone();
-					let de = de.clone();
-					let fbp = fbp.clone();
-					let permit = sem.clone().acquire_owned().await.unwrap();
-					tasks.push(tokio::spawn(async move {
-						let _p = permit;
-						run_book_parser(&path, num, &de, &fbp).await
-					}));
+					to_parse.push((*num, path.clone()));
 				}
 				if skipped > 0 {
 					eprintln!("warning: skipped {skipped} already-parsed sections (use --force to overwrite)");
 				}
-				for t in tasks {
-					t.await.unwrap()?;
+				for chunk in to_parse.chunks(cli.max_jobs) {
+					let futs: Vec<_> = chunk
+						.iter()
+						.map(|(num, path)| run_book_parser(path, *num, &de, &fbp))
+						.collect();
+					futures::future::try_join_all(futs).await?;
 				}
 			}
 
 			// translate_infrequent pass
 			{
-				let mut tasks = Vec::new();
+				let mut to_translate: Vec<u32> = Vec::new();
 				let mut skipped = 0u32;
 				let des = collect_numbered(&de, "section_", ".md")?;
-				let filtered: Vec<_> =
-					des.into_iter().filter(|(n, _)| range.contains(*n)).collect();
-				for (num, _) in &filtered {
-					let num = *num;
+				for (num, _) in &des {
+					if !range.contains(*num) {
+						continue;
+					}
 					if !cli.force && ti.join(format!("section_{num}.md")).exists() {
 						skipped += 1;
 						continue;
 					}
-					let wlimit = wlimit.clone();
-					let de = de.clone();
-					let ti = ti.clone();
-					let fti = fti.clone();
-					let permit = sem.clone().acquire_owned().await.unwrap();
-					tasks.push(tokio::spawn(async move {
-						let _p = permit;
-						run_translate_infrequent(num, &wlimit, &de, &ti, &fti).await
-					}));
+					to_translate.push(*num);
 				}
 				if skipped > 0 {
 					eprintln!("warning: skipped {skipped} already-translated sections (use --force to overwrite)");
 				}
-				for t in tasks {
-					t.await.unwrap()?;
+				for chunk in to_translate.chunks(cli.max_jobs) {
+					let futs: Vec<_> = chunk
+						.iter()
+						.map(|&num| run_translate_infrequent(num, &wlimit, &de, &ti, &fti))
+						.collect();
+					futures::future::try_join_all(futs).await?;
 				}
 			}
 
 			// retry book_parser failures
 			{
 				let fails = glob_fails(&fbp)?;
-				if !fails.is_empty() {
-					let mut tasks = Vec::new();
-					for fail in fails {
-						let num: u32 = fs::read_to_string(&fail)?.trim().parse()?;
-						if !range.contains(num) {
-							continue;
-						}
-						let _ = fs::remove_file(de.join(format!("section_{num}.md")));
-						let _ = fs::remove_file(ti.join(format!("section_{num}.md")));
-						let _ = fs::remove_file(&fail);
-						let section = sections_dir.join(format!("section_{num}.md"));
-						let de = de.clone();
-						let fbp = fbp.clone();
-						let permit = sem.clone().acquire_owned().await.unwrap();
-						tasks.push(tokio::spawn(async move {
-							let _p = permit;
-							run_book_parser(&section, num, &de, &fbp).await
-						}));
+				let mut to_retry: Vec<(u32, PathBuf)> = Vec::new();
+				for fail in fails {
+					let num: u32 = fs::read_to_string(&fail)?.trim().parse()?;
+					if !range.contains(num) {
+						continue;
 					}
-					for t in tasks {
-						t.await.unwrap()?;
-					}
+					let _ = fs::remove_file(de.join(format!("section_{num}.md")));
+					let _ = fs::remove_file(ti.join(format!("section_{num}.md")));
+					let _ = fs::remove_file(&fail);
+					to_retry.push((num, sections_dir.join(format!("section_{num}.md"))));
+				}
+				for chunk in to_retry.chunks(cli.max_jobs) {
+					let futs: Vec<_> = chunk
+						.iter()
+						.map(|(num, path)| run_book_parser(path, *num, &de, &fbp))
+						.collect();
+					futures::future::try_join_all(futs).await?;
 				}
 			}
 
 			// retry translate failures
 			{
 				let fails = glob_fails(&fti)?;
-				if !fails.is_empty() {
-					let mut tasks = Vec::new();
-					for fail in fails {
-						let num: u32 = fs::read_to_string(&fail)?.trim().parse()?;
-						if !range.contains(num) {
-							continue;
-						}
-						let _ = fs::remove_file(ti.join(format!("section_{num}.md")));
-						let _ = fs::remove_file(&fail);
-						let wlimit = wlimit.clone();
-						let de = de.clone();
-						let ti = ti.clone();
-						let fti = fti.clone();
-						let permit = sem.clone().acquire_owned().await.unwrap();
-						tasks.push(tokio::spawn(async move {
-							let _p = permit;
-							run_translate_infrequent(num, &wlimit, &de, &ti, &fti).await
-						}));
+				let mut to_retry: Vec<u32> = Vec::new();
+				for fail in fails {
+					let num: u32 = fs::read_to_string(&fail)?.trim().parse()?;
+					if !range.contains(num) {
+						continue;
 					}
-					for t in tasks {
-						t.await.unwrap()?;
-					}
+					let _ = fs::remove_file(ti.join(format!("section_{num}.md")));
+					let _ = fs::remove_file(&fail);
+					to_retry.push(num);
+				}
+				for chunk in to_retry.chunks(cli.max_jobs) {
+					let futs: Vec<_> = chunk
+						.iter()
+						.map(|&num| run_translate_infrequent(num, &wlimit, &de, &ti, &fti))
+						.collect();
+					futures::future::try_join_all(futs).await?;
 				}
 			}
 
@@ -1186,7 +1144,6 @@ async fn main() -> Result<()> {
 				match format {
 					OutputFormat::Epub => ("epub", compile_epub),
 					OutputFormat::Md | OutputFormat::Markdown => ("md", compile_markdown),
-					OutputFormat::Txt | OutputFormat::Raw => ("txt", compile_raw),
 				};
 			let out_path = root.join(format!("out{range}.{out_ext}"));
 
