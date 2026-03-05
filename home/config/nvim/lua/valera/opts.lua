@@ -23,7 +23,61 @@ o.smartindent = true
 o.wrap = true
 o.splitright = true
 
+-- Custom tabline: substitute XDG paths with aliases before pathshorten()
+local xdg_substitutions = {
+	{ os.getenv("XDG_DATA_HOME") or (os.getenv("HOME") .. "/.local/share"), "xdg_share" },
+	{ os.getenv("XDG_CONFIG_HOME") or (os.getenv("HOME") .. "/.config"), "xdg_config" },
+	{ os.getenv("XDG_STATE_HOME") or (os.getenv("HOME") .. "/.local/state"), "xdg_state" },
+	{ os.getenv("XDG_CACHE_HOME") or (os.getenv("HOME") .. "/.cache"), "xdg_cache" },
+	{ os.getenv("HOME"), "~" },
+}
+
+function _G.custom_tabline()
+	local s = ""
+	for i = 1, vim.fn.tabpagenr("$") do
+		local winnr = vim.fn.tabpagewinnr(i)
+		local bufnr = vim.fn.tabpagebuflist(i)[winnr]
+		local name = vim.fn.bufname(bufnr)
+
+		if name == "" then
+			name = "[No Name]"
+		else
+			-- Separate scheme (e.g. "oil://") from path
+			local scheme, rest = name:match("^(%w+://)(.*)")
+			local path = rest or name
+
+			-- Resolve to absolute so XDG prefixes always match
+			if path:sub(1, 1) ~= "/" then
+				path = vim.fn.fnamemodify(path, ":p")
+			end
+
+			local alias_prefix = nil
+			for _, sub in ipairs(xdg_substitutions) do
+				local prefix, alias = sub[1], sub[2]
+				if prefix and path:sub(1, #prefix) == prefix then
+					alias_prefix = alias
+					path = path:sub(#prefix + 1)
+					break
+				end
+			end
+
+			path = vim.fn.pathshorten(path)
+			if alias_prefix then
+				path = alias_prefix .. path
+			end
+			name = scheme and (scheme .. path) or path
+		end
+
+		local is_current = (i == vim.fn.tabpagenr())
+		s = s .. (is_current and "%#TabLineSel#" or "%#TabLine#")
+		s = s .. " " .. name .. " "
+	end
+	s = s .. "%#TabLineFill#"
+	return s
+end
+
 o.showtabline = 2 -- tabline shown even if only 1 file is open // reason: consistency
+o.tabline = "%!v:lua.custom_tabline()"
 
 o.swapfile = false
 o.backup = false
