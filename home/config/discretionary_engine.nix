@@ -11,6 +11,7 @@
       abs_max_risk = "20%";
       risk_layers = {
         stop_loss_proximity = true;
+        from_phone = false;
       };
     };
     other_balances = {

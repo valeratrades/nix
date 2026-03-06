@@ -41,6 +41,6 @@
     }
   ];
   balance = {
-    command = "discretionary_engine risk balance";
+    command = "fish -lc 'discretionary_engine risk balance'";
   };
 }

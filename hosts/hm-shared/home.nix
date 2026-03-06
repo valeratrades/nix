@@ -369,10 +369,45 @@
         recursive = true;
       };
 
-      ".cargo" = {
-        source = "${self}/home/config/cargo";
-        recursive = true;
-      };
+      ".cargo/rustfmt.toml".source = "${self}/home/config/cargo/rustfmt.toml";
+      ".cargo/config.toml".source = (pkgs.formats.toml { }).generate "cargo-config.toml" ({
+        profile = {
+          release = { debug = 0; opt-level = 2; };
+          dev = { debug = true; };
+          dev.package = {
+            v_utils = { opt-level = 1; };
+            bevy = { opt-level = 3; };
+            bevy_editor_pls = { opt-level = 3; };
+            bevy_panorbit_camera = { opt-level = 3; };
+            insta = { opt-level = 3; };
+          };
+        };
+        alias = {
+          w = "watch";
+          a = "add";
+          u = "update";
+          m = "machete";
+          re = "insta review";
+          rt = "insta test --review";
+          f = "fmt";
+          x = "fix --allow-dirty --allow-no-vcs";
+          xc = "clippy --fix --allow-dirty --allow-no-vcs";
+          xca = "clippy --fix --all-targets --all-features --allow-dirty --allow-no-vcs --allow-staged";
+          s = "sweep --recursive --installed";
+          rel = "release --no-confirm --execute";
+          so = "sort -wg";
+          b = "lbuild";
+          c = "lcheck";
+          r = "lrun";
+          t = "nextest run";
+          ta = "nextest run --no-fail-fast";
+          ls = "leptos serve";
+          lw = "leptos watch --hot-reload";
+        };
+        cargo-new = { vcs = "none"; };
+      } // lib.optionalAttrs (user ? sccache && user.sccache) {
+        build = { rustc-wrapper = "sccache"; };
+      });
 			".config/zathura" = {
 				source = "${self}/home/config/zathura";
 				recursive = true;

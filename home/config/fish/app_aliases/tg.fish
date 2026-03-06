@@ -7,3 +7,4 @@ function tgr; tg send -c trading  $argv 2>/dev/null; end
 function tgi; tg send -c tooling  $argv 2>/dev/null; end
 function tgv; tg send -c videos   $argv 2>/dev/null; end
 function tgw; tg send -c work     $argv 2>/dev/null; end
+function tgd; tg send -c discretionary_engine     $argv 2>/dev/null; end
