@@ -165,6 +165,26 @@ in {
         name = "dots";
         shellHook = ''
           ${self.checks.${system}.pre-commit-check.shellHook}
+
+          # Replace the generated pre-commit hook with a resilient wrapper that
+          # resolves `pre-commit` from $PATH at runtime instead of hardcoding a
+          # Nix store path (which goes stale on flake.lock updates).
+          GIT_WC=$(git rev-parse --show-toplevel 2>/dev/null)
+          if [ -n "$GIT_WC" ] && [ -f "$GIT_WC/.git/hooks/pre-commit" ]; then
+            printf '%s\n' '#!/usr/bin/env bash' \
+              '# Resilient pre-commit hook: resolves pre-commit from PATH.' \
+              '# If not in nix develop (pre-commit not on PATH), warn and skip.' \
+              'if ! command -v pre-commit &>/dev/null; then' \
+              '  echo "WARNING: pre-commit not found on PATH (not in nix develop?), skipping hook." >&2' \
+              '  exit 0' \
+              'fi' \
+              'ARGS=(hook-impl --config=.pre-commit-config.yaml --hook-type=pre-commit)' \
+              'HERE="$(cd "$(dirname "$0")" && pwd)"' \
+              'ARGS+=(--hook-dir "$HERE" -- "$@")' \
+              'exec pre-commit "''${ARGS[@]}"' \
+              > "$GIT_WC/.git/hooks/pre-commit"
+            chmod +x "$GIT_WC/.git/hooks/pre-commit"
+          fi
         '';
       };
     });

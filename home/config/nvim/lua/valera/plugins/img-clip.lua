@@ -26,6 +26,7 @@ return require("lazier")({
 					vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<C-v>", true, false, true), "n", false)
 				end
 			end,
+			mode = { "n", "i" },
 			desc = "Paste image from clipboard",
 		},
 	},

@@ -179,6 +179,12 @@ in {
         gitui
         lazygit
 
+        # excalidraw
+        [
+          obsidian # want it for excalidraw interop
+          excalidraw_export # svg and png from .excalidraw
+        ]
+
         pkgs-ollama.ollama-cuda # pinned nixpkgs to avoid rebuilds
 
         powershell # for shit and giggles

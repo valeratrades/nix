@@ -3173,11 +3173,11 @@
         "v-utils": "v-utils_8"
       },
       "locked": {
-        "lastModified": 1772407137,
-        "narHash": "sha256-7M7UlCC2zvf3eGVcf5RTsZbaChdWt7F2fJEFOdzZaQ8=",
+        "lastModified": 1772831365,
+        "narHash": "sha256-3PULpXrITuy5nVazyXFsz8xwfmKUju4ePHkzMcMTjT8=",
         "owner": "valeratrades",
         "repo": "tedi",
-        "rev": "30072125a456e0750aeedbff5405261ad533be6f",
+        "rev": "bdb56f7138055f192790840381a2fc66f1e03b3f",
         "type": "github"
       },
       "original": {
@@ -3399,11 +3399,11 @@
         "nixpkgs": "nixpkgs_38"
       },
       "locked": {
-        "lastModified": 1771295123,
-        "narHash": "sha256-NcI+VeuVY7BpTMVyzlBXxOSCrzgCPoMlBBTFl81wbwc=",
+        "lastModified": 1772709870,
+        "narHash": "sha256-9SSRE2rkugAIEKCLsXCBmY16giu5Bo0ZeXg0fDiQdc4=",
         "owner": "valeratrades",
         "repo": ".github",
-        "rev": "6a1180e1f4e928c3e543e4698da8a45526ed60d7",
+        "rev": "92d468587d5df07761574768f764c4270873af15",
         "type": "github"
       },
       "original": {

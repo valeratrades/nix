@@ -15,10 +15,10 @@ return require "lazier" {
 			},
 		})
 
-		K('n', '<space>sel', "<cmd>SessionLoad<cr><cmd>SessionStart<cr>", { desc = "Session: Load" })
-		K('n', '<space>ses', "<cmd>SessionSave<cr><cmd>SessionStart<cr><cmd>lua print('session saved')<cr>",
+		K('n', '<space>sel', "<cmd>Persisted load<cr><cmd>Persisted start<cr>", { desc = "Session: Load" })
+		K('n', '<space>ses', "<cmd>Persisted save<cr><cmd>Persisted start<cr><cmd>lua print('session saved')<cr>",
 			{ desc = "Session: Save" })
-		K('n', '<space>seq', "<cmd>SessionStop<cr><cmd>lua print('stopped recording session')<cr>",
+		K('n', '<space>seq', "<cmd>Persisted stop<cr><cmd>lua print('stopped recording session')<cr>",
 			{ desc = "Session: Quit" })
 	end
 }

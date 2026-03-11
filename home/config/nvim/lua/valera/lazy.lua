@@ -131,6 +131,7 @@ return require('lazy').setup({
 	"nvim-neotest/nvim-nio",
 	'arnamak/stay-centered.nvim',
 	{ import = "valera.plugins.image" },
+	{ import = "valera.plugins.render-markdown" },
 	{ import = "valera.plugins.img-clip" },
 	"DreamMaoMao/yazi.nvim",
 	"norcalli/nvim-colorizer.lua",

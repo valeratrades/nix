@@ -63,8 +63,9 @@ fn main() {
 
     if tasks.contains(&"nightly") {
         handles.push(std::thread::spawn(|| {
-            let status = Command::new("fish")
-                .args(["-c", "check_nightly_versions --discover"])
+            let script = PathBuf::from("/home/v/nix/home/scripts/maintenance/cross_project_version_alignment.rs");
+            let status = Command::new(&script)
+                .args(["rust", "--discover"])
                 .status();
             if status.map(|s| s.success()).unwrap_or(false) {
                 println!("\x1b[32mRefreshed nightly version file cache\x1b[0m");
@@ -94,8 +95,23 @@ fn main() {
         let nixos_config = std::env::var("NIXOS_CONFIG")
             .unwrap_or_else(|_| "/home/v/nix".to_string());
 
+        let hostname = String::from_utf8_lossy(
+            &Command::new("hostname").output().expect("Failed to get hostname").stdout,
+        )
+        .trim()
+        .to_string();
+
         let rebuild_status = Command::new("sudo")
-            .args(["nixos-rebuild", "switch", "--show-trace", "-v", "--impure"])
+            .args([
+                "nixos-rebuild",
+                "switch",
+                "--impure",
+                "--no-reexec",
+                "--flake",
+                &format!("{}#{}", nixos_config, hostname),
+                "--show-trace",
+                "-v",
+            ])
             .status();
 
         if rebuild_status.map(|s| s.success()).unwrap_or(false) {

@@ -39,16 +39,13 @@
         ffmpeg
 
         # OBS
-        [
-          obs-studio
-          (pkgs.wrapOBS {
-            plugins = with pkgs.obs-studio-plugins; [
-              wlrobs
-              obs-backgroundremoval
-							input-overlay
-            ];
-          })
-        ]
+        (pkgs.wrapOBS {
+          plugins = with pkgs.obs-studio-plugins; [
+            wlrobs
+            obs-backgroundremoval # advanced settings: {threshold: 0.15; contour filter: 0%; smooth silhoutte: 1.0; blend silhouette: 0.0; sim thresh: 35.0}
+            input-overlay
+          ];
+        })
       ]
 
       # UI/UX Utilities
@@ -60,6 +57,7 @@
         grim
         slurp
         mako
+        cron
         networkmanagerapplet
         rofi
         swappy

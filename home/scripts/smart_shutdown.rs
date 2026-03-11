@@ -76,50 +76,67 @@ fn main() {
         }
     }
 
-    // 1. Run claude_sessions and send to telegram if requested
-    if args.claude_sessions {
-        println!("Saving claude sessions to telegram...");
-        let claude_sessions_path = std::env::var("HOME")
-            .map(|h| format!("{h}/nix/home/config/tmux/claude-sessions.rs"))
-            .unwrap_or_else(|_| "/home/v/nix/home/config/tmux/claude-sessions.rs".to_string());
+    // 1. Pre-shutdown async tasks: claude_sessions->tg and tedi blocker halt
+    let tedi_handle = std::thread::spawn(|| {
+        println!("Halting tedi blocker...");
+        match Command::new("tedi").args(["blocker", "halt"]).status() {
+            Ok(s) if s.success() => println!("tedi blocker halted"),
+            Ok(_) => eprintln!("Warning: tedi blocker halt failed"),
+            Err(e) => eprintln!("Warning: failed to run tedi: {e}"),
+        }
+    });
 
-        let output = Command::new(&claude_sessions_path)
-            .output();
+    let claude_handle = if args.claude_sessions {
+        Some(std::thread::spawn(|| {
+            println!("Saving claude sessions to telegram...");
+            let claude_sessions_path = std::env::var("HOME")
+                .map(|h| format!("{h}/nix/home/config/tmux/claude-sessions.rs"))
+                .unwrap_or_else(|_| "/home/v/nix/home/config/tmux/claude-sessions.rs".to_string());
 
-        match output {
-            Ok(out) if out.status.success() => {
-                let sessions = String::from_utf8_lossy(&out.stdout);
-                if !sessions.trim().is_empty() {
-                    // Send to telegram
-                    let tg_result = Command::new("tg")
-                        .args(["send", "-c", "general", "-"])
-                        .stdin(Stdio::piped())
-                        .spawn()
-                        .and_then(|mut child| {
-                            use std::io::Write;
-                            if let Some(ref mut stdin) = child.stdin {
-                                stdin.write_all(sessions.as_bytes())?;
-                            }
-                            child.wait()
-                        });
+            let output = Command::new(&claude_sessions_path).output();
 
-                    match tg_result {
-                        Ok(status) if status.success() => println!("Claude sessions sent to telegram"),
-                        Ok(_) => eprintln!("Warning: tg command failed"),
-                        Err(e) => eprintln!("Warning: failed to run tg: {e}"),
+            match output {
+                Ok(out) if out.status.success() => {
+                    let sessions = String::from_utf8_lossy(&out.stdout);
+                    if !sessions.trim().is_empty() {
+                        let tg_result = Command::new("tg")
+                            .args(["send", "-c", "general", "-"])
+                            .stdin(Stdio::piped())
+                            .spawn()
+                            .and_then(|mut child| {
+                                use std::io::Write;
+                                if let Some(ref mut stdin) = child.stdin {
+                                    stdin.write_all(sessions.as_bytes())?;
+                                }
+                                child.wait()
+                            });
+
+                        match tg_result {
+                            Ok(status) if status.success() => println!("Claude sessions sent to telegram"),
+                            Ok(_) => eprintln!("Warning: tg command failed"),
+                            Err(e) => eprintln!("Warning: failed to run tg: {e}"),
+                        }
+                    } else {
+                        println!("No claude sessions to send");
                     }
-                } else {
-                    println!("No claude sessions to send");
+                }
+                Ok(out) => {
+                    let stderr = String::from_utf8_lossy(&out.stderr);
+                    eprintln!("Warning: claude_sessions failed: {stderr}");
+                }
+                Err(e) => {
+                    eprintln!("Warning: failed to run claude_sessions: {e}");
                 }
             }
-            Ok(out) => {
-                let stderr = String::from_utf8_lossy(&out.stderr);
-                eprintln!("Warning: claude_sessions failed: {stderr}");
-            }
-            Err(e) => {
-                eprintln!("Warning: failed to run claude_sessions: {e}");
-            }
-        }
+        }))
+    } else {
+        None
+    };
+
+    // Wait for both to finish before proceeding with shutdown
+    tedi_handle.join().expect("tedi thread panicked");
+    if let Some(h) = claude_handle {
+        h.join().expect("claude_sessions thread panicked");
     }
 
     // 2. Kill tmux sessions
