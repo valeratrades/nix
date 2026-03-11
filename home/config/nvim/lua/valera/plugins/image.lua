@@ -1,12 +1,12 @@
 return require("lazier")({
 	"3rd/image.nvim",
 	build = false, -- no luarocks needed with magick_cli
-	lazy = true,
+	ft = { "markdown" },
 	opts = {
 		processor = "magick_cli", -- avoids luarocks dependency
 		backend = "ueberzug", -- works with alacritty
 		integrations = {
-			markdown = { enabled = false },
+			markdown = { enabled = true },
 			neorg = { enabled = false },
 			typst = { enabled = false },
 			html = { enabled = false },
@@ -16,6 +16,7 @@ return require("lazier")({
 		max_height = nil,
 		max_width_window_percentage = nil,
 		max_height_window_percentage = 50,
+		editor_only_render_when_focused = true,
 		window_overlap_clear_enabled = true,
 		window_overlap_clear_ft_ignore = { "cmp_menu", "cmp_docs", "" },
 	},
