@@ -3,10 +3,21 @@
 
 [dependencies]
 clap = { version = "4.5.49", features = ["derive"] }
+libc = "0.2"
 ---
 
 use clap::Parser;
-use std::{fs, io::ErrorKind, path::PathBuf, process::Command, thread::sleep, time::Duration};
+use std::{
+    fs,
+    io::ErrorKind,
+    path::PathBuf,
+    process::Command,
+    sync::atomic::{AtomicBool, Ordering},
+    thread::sleep,
+    time::Duration,
+};
+
+static INTERRUPTED: AtomicBool = AtomicBool::new(false);
 
 fn control_file() -> PathBuf {
     PathBuf::from("/tmp/timer_control")
@@ -111,7 +122,7 @@ mod timeframe {
 #[command(name = "timer")]
 #[command(about = "Countdown timer with visual feedback and notifications")]
 struct Args {
-    /// Time: seconds (90), mm:ss (1:30), hh:mm:ss (1:30:00), or timeframe (5m, 1h, 30s)
+    /// Time: seconds (90), mm:ss (1:30), hh:mm:ss (1:30:00), or timeframe (5m, 1h, 30s). Omit to count up from 0:00.
     time: Option<String>,
 
     /// Halt (pause) the running timer
@@ -173,53 +184,84 @@ fn clear_control() {
     let _ = fs::remove_file(control_file());
 }
 
-fn timer(time: &str, quiet: bool) -> Result<(), String> {
-    let mut left = parse_time(time)?;
+fn format_time(left: i32) -> String {
+    let abs = left.unsigned_abs();
+    let hours = abs / 3600;
+    let mins = (abs % 3600) / 60;
+    let secs = abs % 60;
+    let sign = if left < 0 { "-" } else { "" };
+    if hours > 0 {
+        format!("{sign}{hours}:{mins:02}:{secs:02}")
+    } else {
+        format!("{sign}{mins}:{secs:02}")
+    }
+}
+
+extern "C" fn handle_signal(_: libc::c_int) {
+    INTERRUPTED.store(true, Ordering::Relaxed);
+}
+
+fn cleanup() {
+    clear_control();
+    let _ = Command::new("eww")
+        .args(["update", "timer="])
+        .status();
+}
+
+fn timer(initial: Option<i32>, quiet: bool) -> Result<(), String> {
+    let mut left = initial.unwrap_or(0);
+    let notify = initial.is_some();
+    let mut notified = false;
+
+    unsafe {
+        libc::signal(libc::SIGINT, handle_signal as libc::sighandler_t);
+        libc::signal(libc::SIGTERM, handle_signal as libc::sighandler_t);
+    }
 
     // Mark as running
     write_control("running")?;
 
-    while left > 0 {
+    loop {
+        if INTERRUPTED.load(Ordering::Relaxed) {
+            break;
+        }
         // Check control file for pause state
         while read_control().as_deref() == Some("paused") {
             sleep(Duration::from_millis(100));
+            if INTERRUPTED.load(Ordering::Relaxed) {
+                break;
+            }
+        }
+        // Timer was cancelled externally
+        if read_control().is_none() || INTERRUPTED.load(Ordering::Relaxed) {
+            break;
         }
 
-        let hours = left / 3600;
-        let mins = (left % 3600) / 60;
-        let secs = left % 60;
-        let display = if hours > 0 {
-            format!("{hours}:{mins:02}:{secs:02}")
-        } else {
-            format!("{mins}:{secs:02}")
-        };
+        let display = format_time(left);
         Command::new("eww")
             .args(["update", &format!("timer={display}")])
             .status()
             .map_err(|e| e.to_string())?;
         sleep(Duration::from_secs(1));
         left -= 1;
+
+        if left < 0 && notify && !notified {
+            notified = true;
+            if quiet {
+                Command::new("notify-send")
+                    .args(["timer finished", "-t", "2147483647"])
+                    .status()
+                    .map_err(|e| e.to_string())?;
+            } else {
+                Command::new("fish")
+                    .args(["-c", "beep --long 600 time"])
+                    .status()
+                    .map_err(|e| e.to_string())?;
+            }
+        }
     }
 
-    clear_control();
-
-    Command::new("eww")
-        .args(["update", "timer="]) // eww things, doing `timer=\"\"` literally sets it to "\"\""
-        .status()
-        .map_err(|e| e.to_string())?;
-
-    if quiet {
-        Command::new("notify-send")
-            .args(["timer finished", "-t", "2147483647"])
-            .status()
-            .map_err(|e| e.to_string())?;
-    } else {
-        Command::new("fish")
-            .args(["-c", "beep --long 600 time"])
-            .status()
-            .map_err(|e| e.to_string())?;
-    }
-
+    cleanup();
     Ok(())
 }
 
@@ -254,12 +296,18 @@ fn main() {
         return;
     }
 
-    let Some(time) = args.time else {
-        eprintln!("No time specified. Use --help for usage.");
-        std::process::exit(1);
+    let initial = match args.time {
+        Some(t) => match parse_time(&t) {
+            Ok(secs) => Some(secs),
+            Err(e) => {
+                eprintln!("{e}");
+                std::process::exit(1);
+            }
+        },
+        None => None,
     };
 
-    if let Err(e) = timer(&time, args.quiet) {
+    if let Err(e) = timer(initial, args.quiet) {
         eprintln!("{e}");
         std::process::exit(1);
     }

@@ -6,7 +6,7 @@ clap = { version = "4.5.49", features = ["derive"] }
 ---
 
 use clap::Parser;
-use std::io::{self, Write};
+use std::io::{self, IsTerminal, Write};
 use std::process::{Command, exit};
 
 /// Play audio with mpv at a given speed, with volume safety check
@@ -20,7 +20,12 @@ struct Args {
 	file: String,
 }
 
-fn get_volume() -> f64 {
+struct VolumeState {
+	level: f64,
+	muted: bool,
+}
+
+fn get_volume() -> VolumeState {
 	let output = Command::new("wpctl")
 		.args(["get-volume", "@DEFAULT_AUDIO_SINK@"])
 		.output()
@@ -30,8 +35,9 @@ fn get_volume() -> f64 {
 		});
 	let stdout = String::from_utf8_lossy(&output.stdout);
 	// Format: "Volume: 0.15" or "Volume: 0.15 [MUTED]"
-	let vol_str = stdout
-		.trim()
+	let trimmed = stdout.trim();
+	let muted = trimmed.contains("[MUTED]");
+	let vol_str = trimmed
 		.strip_prefix("Volume: ")
 		.unwrap_or_else(|| {
 			eprintln!("Unexpected wpctl output: {stdout}");
@@ -40,18 +46,19 @@ fn get_volume() -> f64 {
 		.split_whitespace()
 		.next()
 		.unwrap();
-	vol_str.parse::<f64>().unwrap_or_else(|e| {
+	let level = vol_str.parse::<f64>().unwrap_or_else(|e| {
 		eprintln!("Failed to parse volume '{vol_str}': {e}");
 		exit(1);
-	})
+	});
+	VolumeState { level, muted }
 }
 
 fn main() {
 	let args = Args::parse();
 
 	let vol = get_volume();
-	if vol > 0.5 {
-		let pct = (vol * 100.0).round() as u32;
+	if vol.level > 0.5 && !vol.muted && io::stdin().is_terminal() {
+		let pct = (vol.level * 100.0).round() as u32;
 		print!("Volume is at {pct}%. Continue? [y/N] ");
 		io::stdout().flush().unwrap();
 		let mut input = String::new();

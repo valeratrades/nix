@@ -13,6 +13,7 @@ return require("lazier")({
 	},
 	config = function(_, opts)
 		require("render-markdown").setup(opts)
+		require("render-markdown").disable()
 
 		vim.api.nvim_create_user_command("MarkdownInline", function()
 			require("render-markdown").enable()

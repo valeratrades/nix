@@ -214,64 +214,6 @@ function gco
 	git branch | sed 's/^\* //' | fzf --height=20% --reverse --info=inline --query="$initial_query" | xargs git checkout
 end
 
-function gc
-	#ex: gc neovim/neovim . -c
-	set result (cargo -Zscript -q $__fish_config_git_dir/git_clone.rs $argv[1] $argv[2])
-	if [ $status = 0 ]
-		if begin
-			[ (count $argv) -ge 3 ]
-			and begin
-				[ "$argv[3]" = "--cd" ]
-				or [ "$argv[3]" = "-c" ]
-			end
-		end
-			cd $result
-		else
-			echo $result
-		end
-	else
-		echo $result
-	end
-	return $status
-end
-
-
-# would put a todo for rewriting, but I'm on nix, this may be irrelevant now
-#rewrite correctly from .zsh source, this is not at all what it is supposed to be
-# although, do I even need this now that I'm on nix?
-#function gb
-#	set gb_readme '''
-#	#build from source helper
-#	Does git clone into /tmp, and then tries to build until it works.
-#
-#	ex: build neovim/neovim
-#
-#	some repositories have shorthands, eg: `build nvim` would work.
-#	'''
-#	if test "$argv[1]" = "nvim"
-#		set target "neovim/neovim"
-#	else if test "$argv[1]" = "eww"
-#		set target "elkowar/eww"
-#	else if test "$argv[1]" = "-h" -o "$argv[1]" = "--help" -o "$argv[1]" = "help"
-#		printf $gb_readme
-#		return 0
-#	else if test -z "$argv[1]"
-#		printf $gb_readme
-#		return 1
-#	else
-#		set target "$argv[1]"
-#	end
-#
-#	set initial_dir (pwd)
-#	set target_dir (gc "$target")
-#	if test $status -ne 0
-#		return 1
-#	end
-#	cd "$target_dir" || return 1
-#
-#	and command cmake -S . -B ./build && cd ./build && sudo make install
-#	and cd $initial_dir && rm -rf $target_dir
-#end
 
 function protect_branch
 	set repo $argv[1]

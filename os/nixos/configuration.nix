@@ -320,6 +320,8 @@ in {
         doCheck = false;
         doInstallCheck = false;
       });
+      # canvas npm package doesn't build with nodejs v24's V8 API changes
+      excalidraw_export = super.excalidraw_export.override { buildNpmPackage = super.buildNpmPackage.override { nodejs = super.nodejs_22; }; };
     })
     (import (mylib.relativeToRoot "overlays/rnote-main.nix"))
     (import (mylib.relativeToRoot "overlays/sierra-chart.nix"))

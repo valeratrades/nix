@@ -32,10 +32,7 @@ fn clone_repo(args: &[String]) -> Result<PathBuf, String> {
 		.to_string();
 
 	if args.len() == 1 {
-		let tmp_path = format!("/tmp/{}", filename);
-		if env::current_dir().unwrap().to_str() == Some(&tmp_path) {
-			Command::new("cd").arg("-").output().ok();
-		}
+		let tmp_path = PathBuf::from(format!("/tmp/{}", filename));
 		Command::new("rm")
 			.arg("-rf")
 			.arg(&tmp_path)
@@ -43,13 +40,12 @@ fn clone_repo(args: &[String]) -> Result<PathBuf, String> {
 			.map_err(|_| "Failed to remove existing directory".to_string())?;
 
 		let status = Command::new("git")
-			.args(["clone", "--depth=1", &url, &tmp_path])
+			.args(["clone", "--depth=1", &url, &tmp_path.display().to_string()])
 			.status()
 			.map_err(|_| "Failed to run git clone".to_string())?;
 
 		if status.success() {
-			env::set_current_dir(&tmp_path).map_err(|_| "Failed to change directory".to_string())?;
-			Ok(env::current_dir().unwrap())
+			Ok(tmp_path)
 		} else {
 			Err("Git clone failed".to_string())
 		}

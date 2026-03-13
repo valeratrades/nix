@@ -51,6 +51,11 @@ alias gpf="$__fish_scripts_dir/git_scripts.rs push --force"
 alias gpl="$__fish_scripts_dir/git_scripts.rs push --force-with-lease"
 alias gbd="$__fish_scripts_dir/git_scripts.rs delete"
 
+function gc
+	set -l result ($__fish_scripts_dir/git_clone.rs $argv)
+	and cd $result
+end
+
 alias choose_port="$__fish_scripts_dir/choose_port.sh"
 
 set -g __maintenance_last_run "$XDG_STATE_HOME/fish/maintenance_last_run"
