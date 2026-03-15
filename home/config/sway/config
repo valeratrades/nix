@@ -240,6 +240,8 @@ bindsym $mod+Shift+Mod1+8 exec $sway_root/scratchpad_move.sh 8
 bindsym $mod+Shift+Mod1+9 exec $sway_root/scratchpad_move.sh 9
 # Move window to first available scratchpad slot
 bindsym $mod+Shift+minus exec $sway_root/scratchpad_assign.sh
+# Forget focused window from scratchpad (remove all scratch marks)
+bindsym $mod+Mod1+minus exec $sway_root/scratchpad_forget.sh
 bindsym Ctrl+Shift+Escape exec alacritty --class btm-float -e btm -u; for_window [app_id="btm-float"] floating enable
 bindsym $mod+Mod1+t exec ~/s/help_scripts/theme_toggle.sh
 # Ctrl suffix because it will often be used after `Ctrl+l` in chrome.
