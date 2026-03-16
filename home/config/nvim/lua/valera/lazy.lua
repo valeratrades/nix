@@ -66,8 +66,8 @@ return require('lazy').setup({
 			ft = 'rust',
 		},
 	},
-	{ -- Math
-		'valeratrades/lean.nvim',
+	{                         -- Math
+		'valeratrades/lean.nvim', --TODO: switch to master, once [my pr](https://github.com/Julian/lean.nvim/pull/485) is accepted
 		event = { 'BufReadPre *.lean', 'BufNewFile *.lean' },
 		dependencies = {
 			'neovim/nvim-lspconfig',
