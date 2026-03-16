@@ -404,9 +404,11 @@ mode "obs" {
 	bindsym Shift+v exec $switch_out && $obs_send e
 	# Start/Stop Recording
 	bindsym r exec $switch_out && $obs_send r
+	#NB: highly un-intuitive, - make sure to configure OBS to `g` not `R`, - we don't seem to be able to send modifiers over
 	bindsym Shift+r exec $switch_out && $obs_send g
 	# Pause/Unpause Recording
 	bindsym p exec $switch_out && $obs_send p
+	#NB: same story as Shift+r -> g
 	bindsym Shift+p exec $switch_out && $obs_send u
 	## Disable Preview
 	#bindsym d exec $switch_out && $obs_send d
