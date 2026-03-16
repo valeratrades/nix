@@ -117,6 +117,8 @@ alias q "ask_llm -f"
 alias ytd "yt-dlp -x --audio-format mp3 --cookies-from-browser firefox " # downloads audio from yt; you provide <URL>
 alias dr="deno run -A ./tmp/cmd.ts" # `dr` for `deno run`; follows https://matklad.github.io/2026/01/27/make-ts.html
 
+alias oclaw="cd ~/.openclaw/workspace && tn openclaw"
+
 function ubuntu_vm
 	set -l iso_dir "$HOME/.cache/gnome-boxes/isos"
 
