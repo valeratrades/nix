@@ -249,8 +249,9 @@ async fn setup_math() {
     let mut ambiance = Ambiance::new(wallpaper);
 
     // Resume tedi blocker (networking roundtrip, run concurrently with rest of setup)
-    let mut tedi_resume = Command::new("tedi")
-        .args(["blocker", "resume"])
+    // Pipe `yes` because clockify may prompt to create a new project
+    let mut tedi_resume = Command::new("sh")
+        .args(["-c", "yes | tedi blocker resume"])
         .stdin(Stdio::null())
         .spawn()
         .expect("failed to spawn tedi blocker resume");

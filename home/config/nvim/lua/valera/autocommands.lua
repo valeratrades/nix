@@ -93,3 +93,96 @@ vim.api.nvim_create_autocmd({ "BufWritePre" }, {
 		vim.opt_local.undofile = false
 	end,
 })
+
+-- 3-way merge on external file change: preserves unsaved buffer edits
+-- Snapshots the "base" (last known disk state) on read and write.
+-- On FileChangedShell, merges: base × buffer × new_disk via `git merge-file`.
+do
+	local base_snapshots = {} -- bufnr -> lines (string)
+
+	local function snapshot_base(bufnr)
+		local path = vim.api.nvim_buf_get_name(bufnr)
+		if path == "" or vim.bo[bufnr].buftype ~= "" then return end
+		local f = io.open(path, "r")
+		if f then
+			base_snapshots[bufnr] = f:read("*a")
+			f:close()
+		end
+	end
+
+	vim.api.nvim_create_autocmd({ "BufReadPost", "BufWritePost" }, {
+		callback = function(args) snapshot_base(args.buf) end,
+		desc = "Snapshot file base for 3-way merge",
+	})
+
+	-- Clean up snapshots when buffers are deleted
+	vim.api.nvim_create_autocmd("BufDelete", {
+		callback = function(args) base_snapshots[args.buf] = nil end,
+	})
+
+	vim.api.nvim_create_autocmd("FileChangedShell", {
+		callback = function(args)
+			local bufnr = args.buf
+			local path = vim.api.nvim_buf_get_name(bufnr)
+
+			-- If buffer is not modified, just reload
+			if not vim.bo[bufnr].modified then
+				vim.v.fcs_choice = "reload"
+				-- Update snapshot to new disk state
+				vim.schedule(function() snapshot_base(bufnr) end)
+				return
+			end
+
+			local base = base_snapshots[bufnr]
+			if not base then
+				-- No base snapshot (shouldn't happen), fall back to plain reload
+				vim.v.fcs_choice = "reload"
+				vim.schedule(function() snapshot_base(bufnr) end)
+				return
+			end
+
+			-- Read new disk content
+			local f = io.open(path, "r")
+			if not f then
+				vim.v.fcs_choice = "reload"
+				return
+			end
+			local theirs = f:read("*a")
+			f:close()
+
+			-- Get current buffer content
+			local buf_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+			local mine = table.concat(buf_lines, "\n") .. "\n"
+
+			-- Tell nvim we're handling it
+			vim.v.fcs_choice = ""
+
+			local rp = require("rust_plugins")
+			local merged, had_conflicts = rp.three_way_merge(base, mine, theirs)
+
+			-- Split merged content into lines (drop trailing empty line from final \n)
+			local new_lines = vim.split(merged, "\n", { plain = true })
+			if new_lines[#new_lines] == "" then
+				table.remove(new_lines)
+			end
+
+			-- Save cursor position
+			local cursor = vim.api.nvim_win_get_cursor(0)
+
+			vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, new_lines)
+
+			-- Restore cursor (clamp to new line count)
+			local max_line = vim.api.nvim_buf_line_count(bufnr)
+			cursor[1] = math.min(cursor[1], max_line)
+			vim.api.nvim_win_set_cursor(0, cursor)
+
+			-- Update base snapshot to new disk state
+			base_snapshots[bufnr] = theirs
+
+			if had_conflicts then
+				vim.notify("Overlapping edits were overwritten by disk version", vim.log.levels.WARN)
+			end
+		end,
+		desc = "3-way merge external changes with unsaved buffer edits",
+	})
+end

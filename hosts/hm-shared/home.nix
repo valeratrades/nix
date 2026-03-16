@@ -73,6 +73,20 @@
     home-manager.enable = true; # let it manage itself
   };
 
+  xdg.desktopEntries.obs-studio = {
+    name = "OBS Studio";
+    genericName = "Streaming/Recording Software";
+    comment = "Free and Open Source Streaming/Recording Software";
+    exec = "obs";
+    icon = "com.obsproject.Studio";
+    terminal = false;
+    type = "Application";
+    categories = [ "AudioVideo" "Recorder" ];
+    startupNotify = true;
+    settings.StartupWMClass = "obs";
+    settings.Keywords = "obs;";
+  };
+
   dconf = {
     enable = true;
     settings."org/gnome/desktop/interface" = { color-scheme = "prefer-dark"; };

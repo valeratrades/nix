@@ -119,6 +119,8 @@
         };
         rebase = { autosquash = true; };
         merge = { conflictStyle = "zdiff3"; };
+        "includeIf \"gitdir:/home/${user.username}/.local/\"".path = "/etc/gitconfig-no-lfs";
+        "includeIf \"gitdir:/home/${user.username}/.cache/\"".path = "/etc/gitconfig-no-lfs";
       };
     };
   };

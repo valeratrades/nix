@@ -67,7 +67,7 @@ return require('lazy').setup({
 		},
 	},
 	{ -- Math
-		'Julian/lean.nvim',
+		'valeratrades/lean.nvim',
 		event = { 'BufReadPre *.lean', 'BufNewFile *.lean' },
 		dependencies = {
 			'neovim/nvim-lspconfig',

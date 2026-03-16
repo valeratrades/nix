@@ -202,6 +202,14 @@ in {
     Disable=Headset
   '';
 
+  environment.etc."gitconfig-no-lfs".text = ''
+    [filter "lfs"]
+    	smudge = cat
+    	process =
+    	clean = cat
+    	required = false
+  '';
+
   security = {
     sudo = {
       wheelNeedsPassword = false;

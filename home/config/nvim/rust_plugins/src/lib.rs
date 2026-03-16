@@ -7,6 +7,7 @@ use std::{
 
 use nvim_oxi::{api, Array, Dictionary, Function, Object};
 
+mod autoreload;
 mod comment;
 mod lsp;
 mod remap;
@@ -501,6 +502,14 @@ fn rust_plugins() -> nvim_oxi::Result<Dictionary> {
 	let yank_diagnostic_popup_fn = Function::from_fn(|()| lsp::yank_diagnostic_popup());
 	let show_markdown_popup_fn = Function::from_fn(|(text,): (String,)| utils::show_markdown_popup(text));
 
+	// Autoreload: returns (merged_content, had_conflicts)
+	let three_way_merge_fn = Function::from_fn(|(base, mine, theirs): (String, String, String)| -> (String, bool) {
+		match autoreload::three_way_merge(base, mine, theirs) {
+			Ok(merged) => (merged, false),
+			Err(with_markers) => (with_markers, true),
+		}
+	});
+
 	Ok(Dictionary::from_iter([
 		("find_todo", Object::from(find_todo)),
 		("should_rebuild", Object::from(should_rebuild_fn)),
@@ -526,5 +535,6 @@ fn rust_plugins() -> nvim_oxi::Result<Dictionary> {
 		("jump_to_diagnostic", Object::from(jump_to_diagnostic_fn)),
 		("yank_diagnostic_popup", Object::from(yank_diagnostic_popup_fn)),
 		("show_markdown_popup", Object::from(show_markdown_popup_fn)),
+		("three_way_merge", Object::from(three_way_merge_fn)),
 	]))
 }

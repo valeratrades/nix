@@ -7,7 +7,6 @@ return {
 		"hrsh7th/cmp-cmdline",
 		"saadparwaiz1/cmp_luasnip",
 		"VonHeikemen/lsp-zero.nvim",
-		"nvim-treesitter/nvim-treesitter",
 		"onsails/lspkind.nvim",
 		"L3MON4D3/LuaSnip",
 		"Saecki/crates.nvim",
@@ -17,7 +16,6 @@ return {
 		local cmp = require('cmp')
 		local _ = { behavior = cmp.SelectBehavior.Select } -- prevent nvim-cmp from force-feeding completeions on 'Enter'
 		local cmp_action = require('lsp-zero').cmp_action()
-		local ts_utils = require('nvim-treesitter.ts_utils')
 		local lspkind = require('lspkind')
 
 		-- Track current async_path sort mode: "alpha" (default) or "ctime"
@@ -163,8 +161,8 @@ return {
 					-- when inputting an argument, suggest only values with this in mind
 					entry_filter = function(entry, _context)
 						local success = pcall(function()
-							local node = ts_utils.get_node_at_cursor():type()
-							if node == "arguments" then
+							local node = vim.treesitter.get_node()
+							if node and node:type() == "arguments" then
 								local kind = entry:get_kind()
 								return kind == 6
 							end

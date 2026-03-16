@@ -1,99 +1,78 @@
-return require "lazier" {
+return {
 	"nvim-treesitter/nvim-treesitter",
+	branch = "main",
 	dependencies = {
-		"nvim-treesitter/nvim-treesitter-textobjects",
+		{ "nvim-treesitter/nvim-treesitter-textobjects", branch = "main" },
 		"nvim-treesitter/nvim-treesitter-context",
 	},
 	config = function()
-		--vim.g.maplocalleader = "\\"
+		require('nvim-treesitter').setup {
+			auto_install = true,
+		}
 
-		require('nvim-treesitter.configs').setup {
-			sync_install = true, -- not sure what should this be on nixos
-			auto_install = true, -- not sure what should this be on nixos
-			indent = { enable = true },
-			highlight = {
-				enable = true,
-				additional_vim_regex_highlighting = true, -- highlight TODOs for example
+		-- textobjects
+		local select = require 'nvim-treesitter-textobjects.select'
+		local move = require 'nvim-treesitter-textobjects.move'
+		local swap = require 'nvim-treesitter-textobjects.swap'
+
+		require('nvim-treesitter-textobjects').setup {
+			select = {
+				lookahead = true, -- automatically jump forward to textobj, similar to targets.vim
 			},
-			-- autopairs = {
-			--  enable = true,
-			--},
-			autotag = { -- html tags
-				enable = true,
-			},
-			incremental_selection = {
-				enable = true,
-				keymaps = {
-					--init_selection = "\\s",
-					node_incremental = "\\s",
-					scope_incremental = false,
-					node_decremental = "\\t",
-				},
-			},
-			textobjects = {
-				move = {
-					enable = true,
-					set_jumps = false, -- whether to set jumps in the jumplist
-					goto_next_start = {
-						["]m"] = "@function.outer",
-						["]]"] = "@class.outer",
-						["]o"] = "@loop.*",
-						["]s"] = { query = "@scope", query_group = "locals", desc = "Next scope" },
-						["]z"] = { query = "@fold", query_group = "folds", desc = "Next fold" },
-					},
-					goto_next_end = {
-						["]M"] = "@function.outer",
-						["]["] = "@class.outer",
-					},
-					goto_previous_start = {
-						["[m"] = "@function.outer",
-						["[["] = "@class.outer",
-					},
-					goto_previous_end = {
-						["[M"] = "@function.outer",
-						["[]"] = "@class.outer",
-					},
-					goto_next = {
-						["]d"] = "@conditional.outer",
-					},
-					goto_previous = {
-						["[d"] = "@conditional.outer",
-					},
-				},
-				select = {
-					enable = true,
-					lookahead = true,
-					keymaps = {
-						["af"] = "@function.outer",
-						["if"] = "@function.inner",
-						["ac"] = "@class.outer",
-						["ic"] = "@class.inner",
-						["aa"] = "@parameter.outer",
-						["ia"] = "@parameter.inner",
-					},
-				},
-				swap = {
-					enable = true,
-					swap_previous = {
-						["g<"] = "@parameter.inner",
-					},
-					swap_next = {
-						["g>"] = "@parameter.inner",
-					},
-				},
-				lsp_interop = {
-					enable = true,
-					border = 'none',
-					lookahead = true,
-					floating_preview_opts = {},
-					peek_definition_code = {
-						["\\f"] = "@function.inner",
-						["\\c"] = "@class.inner",
-					},
-				},
+			move = {
+				set_jumps = false, -- whether to set jumps in the jumplist
 			},
 		}
 
+		-- select
+		for _, mapping in ipairs {
+			{ "af", "@function.outer" },
+			{ "if", "@function.inner" },
+			{ "ac", "@class.outer" },
+			{ "ic", "@class.inner" },
+			{ "aa", "@parameter.outer" },
+			{ "ia", "@parameter.inner" },
+		} do
+			vim.keymap.set({ "x", "o" }, mapping[1], function()
+				select.select_textobject(mapping[2], "textobjects")
+			end)
+		end
+
+		-- move
+		for _, mapping in ipairs {
+			{ "]m", "goto_next_start", "@function.outer" },
+			{ "]]", "goto_next_start", "@class.outer" },
+			{ "]o", "goto_next_start", { "@loop.inner", "@loop.outer" } },
+			{ "]s", "goto_next_start", "@local.scope", "locals" },
+			{ "]z", "goto_next_start", "@fold", "folds" },
+			{ "]M", "goto_next_end", "@function.outer" },
+			{ "][", "goto_next_end", "@class.outer" },
+			{ "[m", "goto_previous_start", "@function.outer" },
+			{ "[[", "goto_previous_start", "@class.outer" },
+			{ "[M", "goto_previous_end", "@function.outer" },
+			{ "[]", "goto_previous_end", "@class.outer" },
+			{ "]d", "goto_next", "@conditional.outer" },
+			{ "[d", "goto_previous", "@conditional.outer" },
+		} do
+			local query_group = mapping[4] or "textobjects"
+			vim.keymap.set({ "n", "x", "o" }, mapping[1], function()
+				move[mapping[2]](mapping[3], query_group)
+			end)
+		end
+
+		-- swap
+		vim.keymap.set("n", "g<", function()
+			swap.swap_previous("@parameter.inner")
+		end)
+		vim.keymap.set("n", "g>", function()
+			swap.swap_next("@parameter.inner")
+		end)
+
+		-- incremental selection: removed from nvim-treesitter main.
+		-- \\s / \\t bindings were: init/increment/decrement node selection.
+		--TODO: find a replacement plugin or implement manually via vim.treesitter.get_node()
+
+		-- context
 		require 'treesitter-context'.setup {
 			enable = true,          -- Enable this plugin (Can be enabled/disabled later via commands)
 			max_lines = 0,          -- How many lines the window should span. Values <= 0 mean no limit.
