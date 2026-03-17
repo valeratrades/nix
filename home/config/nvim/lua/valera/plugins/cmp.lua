@@ -18,89 +18,111 @@ return {
 		local cmp_action = require('lsp-zero').cmp_action()
 		local lspkind = require('lspkind')
 
+		local cmp_log_path = vim.fn.stdpath("state") .. "/cmp_debug.log"
+		local function cmp_log(msg)
+			local f = io.open(cmp_log_path, "a")
+			if f then
+				f:write(os.date("[%Y-%m-%d %H:%M:%S] ") .. msg .. "\n")
+				f:close()
+			end
+		end
+
 		-- Track current async_path sort mode: "alpha" (default) or "ctime"
 		local async_path_sort_mode = "alpha"
 
 		-- Custom comparator for async_path entries by creation time (newest first)
 		local function compare_by_ctime(entry1, entry2)
-			local source1 = entry1.source.name
-			local source2 = entry2.source.name
+			local ok, result = pcall(function()
+				local source1 = entry1.source.name
+				local source2 = entry2.source.name
 
-			if async_path_sort_mode ~= "ctime" then
-				return nil
-			end
-
-			-- Prioritize async_path over other sources when in ctime mode
-			if source1 == "async_path" and source2 ~= "async_path" then
-				return true
-			end
-			if source1 ~= "async_path" and source2 == "async_path" then
-				return false
-			end
-
-			-- Only sort by ctime for async_path entries
-			if source1 ~= "async_path" or source2 ~= "async_path" then
-				return nil
-			end
-
-			local path1 = entry1:get_completion_item().label
-			local path2 = entry2:get_completion_item().label
-
-			-- Get the directory we're completing in
-			local cursor_before_line = vim.fn.getline('.'):sub(1, vim.fn.col('.') - 1)
-			local path_prefix = cursor_before_line:match('[%w%-%./~]+$') or ''
-			local dir = vim.fn.expand('%:p:h')
-			if path_prefix:match('^[/~]') then
-				dir = vim.fn.fnamemodify(path_prefix, ':h')
-			elseif path_prefix:match('/') then
-				dir = dir .. '/' .. vim.fn.fnamemodify(path_prefix, ':h')
-			end
-
-			local stat1 = vim.loop.fs_stat(dir .. '/' .. path1)
-			local stat2 = vim.loop.fs_stat(dir .. '/' .. path2)
-
-			if stat1 and stat2 then
-				-- Sort by ctime (creation/change time), newest first
-				local ctime1 = stat1.ctime and stat1.ctime.sec or 0
-				local ctime2 = stat2.ctime and stat2.ctime.sec or 0
-				if ctime1 ~= ctime2 then
-					return ctime1 > ctime2
+				if async_path_sort_mode ~= "ctime" then
+					return nil
 				end
-			end
 
-			return nil
+				-- Prioritize async_path over other sources when in ctime mode
+				if source1 == "async_path" and source2 ~= "async_path" then
+					return true
+				end
+				if source1 ~= "async_path" and source2 == "async_path" then
+					return false
+				end
+
+				-- Only sort by ctime for async_path entries
+				if source1 ~= "async_path" or source2 ~= "async_path" then
+					return nil
+				end
+
+				local path1 = entry1:get_completion_item().label
+				local path2 = entry2:get_completion_item().label
+
+				-- Get the directory we're completing in
+				local cursor_before_line = vim.fn.getline('.'):sub(1, vim.fn.col('.') - 1)
+				local path_prefix = cursor_before_line:match('[%w%-%./~]+$') or ''
+				local dir = vim.fn.expand('%:p:h')
+				if path_prefix:match('^[/~]') then
+					dir = vim.fn.fnamemodify(path_prefix, ':h')
+				elseif path_prefix:match('/') then
+					dir = dir .. '/' .. vim.fn.fnamemodify(path_prefix, ':h')
+				end
+
+				local stat1 = vim.loop.fs_stat(dir .. '/' .. path1)
+				local stat2 = vim.loop.fs_stat(dir .. '/' .. path2)
+
+				if stat1 and stat2 then
+					local ctime1 = stat1.ctime and stat1.ctime.sec or 0
+					local ctime2 = stat2.ctime and stat2.ctime.sec or 0
+					if ctime1 ~= ctime2 then
+						return ctime1 > ctime2
+					end
+				end
+
+				return nil
+			end)
+			if not ok then
+				cmp_log("compare_by_ctime error: " .. tostring(result))
+				return nil
+			end
+			return result
 		end
 
 		-- Custom comparator for async_path alphabetical sorting
 		local function compare_alphabetically(entry1, entry2)
-			local source1 = entry1.source.name
-			local source2 = entry2.source.name
+			local ok, result = pcall(function()
+				local source1 = entry1.source.name
+				local source2 = entry2.source.name
 
-			if async_path_sort_mode ~= "alpha" then
+				if async_path_sort_mode ~= "alpha" then
+					return nil
+				end
+
+				-- Prioritize async_path over other sources when in alpha mode
+				if source1 == "async_path" and source2 ~= "async_path" then
+					return true
+				end
+				if source1 ~= "async_path" and source2 == "async_path" then
+					return false
+				end
+
+				-- Only sort alphabetically for async_path entries
+				if source1 ~= "async_path" or source2 ~= "async_path" then
+					return nil
+				end
+
+				local label1 = entry1:get_completion_item().label
+				local label2 = entry2:get_completion_item().label
+
+				if label1 ~= label2 then
+					return label1 < label2
+				end
+
+				return nil
+			end)
+			if not ok then
+				cmp_log("compare_alphabetically error: " .. tostring(result))
 				return nil
 			end
-
-			-- Prioritize async_path over other sources when in alpha mode
-			if source1 == "async_path" and source2 ~= "async_path" then
-				return true
-			end
-			if source1 ~= "async_path" and source2 == "async_path" then
-				return false
-			end
-
-			-- Only sort alphabetically for async_path entries
-			if source1 ~= "async_path" or source2 ~= "async_path" then
-				return nil
-			end
-
-			local label1 = entry1:get_completion_item().label
-			local label2 = entry2:get_completion_item().label
-
-			if label1 ~= label2 then
-				return label1 < label2
-			end
-
-			return nil
+			return result
 		end
 
 		-- modes: `i`nsert, `s`elect, `c`ommand
@@ -160,14 +182,16 @@ return {
 					max_item_count = 12,
 					-- when inputting an argument, suggest only values with this in mind
 					entry_filter = function(entry, _context)
-						local success = pcall(function()
+						local ok, result = pcall(function()
 							local node = vim.treesitter.get_node()
 							if node and node:type() == "arguments" then
-								local kind = entry:get_kind()
-								return kind == 6
+								return entry:get_kind() == 6
 							end
 						end)
-						return success or true
+						if not ok then
+							cmp_log("entry_filter error: " .. tostring(result))
+						end
+						return (ok and result ~= false) or true
 					end,
 				},
 				{ name = 'luasnip',   keyword_length = 1, max_item_count = 8 },

@@ -49,7 +49,7 @@ return require('lazy').setup({
 	{ import = "valera.plugins.dap" },
 	{ -- Lsp
 		'VonHeikemen/lsp-zero.nvim',
-		branch = 'v3.x',
+		branch = 'v4.x',
 		dependencies = {
 			-- LSP Support
 			'neovim/nvim-lspconfig',          -- Cornerstone. lsp-zero is built on top of it.
@@ -66,8 +66,8 @@ return require('lazy').setup({
 			ft = 'rust',
 		},
 	},
-	{                         -- Math
-		'valeratrades/lean.nvim', --TODO: switch to master, once [my pr](https://github.com/Julian/lean.nvim/pull/485) is accepted
+	{                            -- Math
+		dir = '/home/v/g/lean.nvim', --TODO: switch to 'Julian/lean.nvim', once [my pr](https://github.com/Julian/lean.nvim/pull/485) is accepted
 		event = { 'BufReadPre *.lean', 'BufNewFile *.lean' },
 		dependencies = {
 			'neovim/nvim-lspconfig',

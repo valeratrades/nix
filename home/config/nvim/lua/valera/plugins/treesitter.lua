@@ -10,6 +10,15 @@ return {
 			auto_install = true,
 		}
 
+		vim.api.nvim_create_autocmd('FileType', {
+			callback = function(args)
+				if pcall(vim.treesitter.start, args.buf) then
+					vim.bo[args.buf].syntax = 'ON' -- additional_vim_regex_highlighting equivalent
+					vim.bo[args.buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+				end
+			end,
+		})
+
 		-- textobjects
 		local select = require 'nvim-treesitter-textobjects.select'
 		local move = require 'nvim-treesitter-textobjects.move'

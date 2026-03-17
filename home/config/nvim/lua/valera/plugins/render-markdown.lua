@@ -1,3 +1,5 @@
+--TODO: render-markdown is only here because we need it for inline images. If we find a way to get
+-- inline images without it, remove this plugin entirely.
 return require("lazier")({
 	"MeanderingProgrammer/render-markdown.nvim",
 	ft = { "markdown" },

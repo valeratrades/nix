@@ -20,6 +20,7 @@ return require "lazier" {
 		function SetThemeLight()
 			vim.cmd.colorscheme("github_light_high_contrast")
 			--vim.cmd.colorscheme("github_light")
+
 		end
 
 		function SetThemeSystem()

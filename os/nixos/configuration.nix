@@ -331,6 +331,7 @@ in {
       # canvas npm package doesn't build with nodejs v24's V8 API changes
       excalidraw_export = super.excalidraw_export.override { buildNpmPackage = super.buildNpmPackage.override { nodejs = super.nodejs_22; }; };
     })
+    inputs.neovim-nightly-overlay.overlays.default
     (import (mylib.relativeToRoot "overlays/rnote-main.nix"))
     (import (mylib.relativeToRoot "overlays/sierra-chart.nix"))
     (import (mylib.relativeToRoot "overlays/tiger-trade.nix"))
@@ -338,7 +339,7 @@ in {
 
   nix.settings.download-buffer-size = "50G";
 	programs.neovim = {
-		package = pkgs.neovim-unwrapped.override { lua = pkgs.luajit; };
+		package = pkgs.neovim-unwrapped;
 	};
 
   #	neovim = import "${neovim-nightly}/flake/packages/neovim.nix" {

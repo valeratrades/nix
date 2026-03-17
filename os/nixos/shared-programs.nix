@@ -14,7 +14,7 @@
       '';
     };
     neovim = {
-      package = pkgs.neovim-unwrapped.override { lua = pkgs.luajit; };
+      package = pkgs.neovim-unwrapped;
     };
   #	neovim = import "${neovim-nightly}/flake/packages/neovim.nix" {
   #  inherit lib pkgs;

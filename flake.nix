@@ -38,7 +38,7 @@
       url = "github:cachix/pre-commit-hooks.nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    neovim-nightly-overlay.url = "github:nix-community/neovim-nightly-overlay";
+    neovim-nightly-overlay.url = "github:nix-community/neovim-nightly-overlay"; #TODO: switch back to stable once 12.0 is out
 
     disko = {
       url = "github:nix-community/disko/v1.9.0";
