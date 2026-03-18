@@ -144,7 +144,7 @@
 
 (escape) @string.escape
 
-(quote) @markup.quote
+; quotes inherit parent text color — coloring them stands out too much
 
 (linebreak) @punctuation.special
 
