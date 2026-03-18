@@ -311,7 +311,7 @@
 ; -------------------------------------------------------------------
 
 (fraction "/" @operator)
-(prime) @operator
+(prime (letter) @variable)
 (fac "!" @operator)
 (align) @punctuation.special
 

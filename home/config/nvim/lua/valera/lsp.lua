@@ -132,7 +132,7 @@ local on_attach = function(client, bufnr)
 		{ desc = "Reset Tab Settings" })
 
 
-	if client and client.supports_method('textDocument/formatting') then
+	if client and client:supports_method('textDocument/formatting') then
 		if vim.fn.expand('%:e') ~= 'py' and vim.fn.expand('%:e') ~= 'nix' then
 			require('lsp-format').on_attach(client)
 		end
