@@ -210,90 +210,14 @@
 (apply (letter) @variable)
 
 ; -------------------------------------------------------------------
-; Math idents — fallback (low priority, overridden by specific rules below)
+; Math idents — multi-letter idents in math are almost always typst
+; symbols (forall, subset, union, epsilon, etc). Single-letter names
+; use the `letter` node type instead. User-defined names in math go
+; through call/apply which have their own rules above.
 ; -------------------------------------------------------------------
 
-(formula (ident) @variable)
-(attach (ident) @variable)
-
-; -------------------------------------------------------------------
-; Math keywords: quantifiers and membership (priority 105 to beat fallback)
-; -------------------------------------------------------------------
-
-(formula
-  ((ident) @keyword
-    (#any-of? @keyword "in" "forall" "exists" "not" "and" "or" "where")
-    (#set! priority 105)))
-
-(attach
-  ((ident) @keyword
-    (#any-of? @keyword "in" "forall" "exists" "not" "and" "or" "where")
-    (#set! priority 105)))
-
-; Also in field base position: e.g. if someone writes exists.smth
-(field
-  ((ident) @keyword
-    (#any-of? @keyword "in" "forall" "exists" "not" "and" "or" "where")
-    (#set! priority 105)))
-
-; -------------------------------------------------------------------
-; Math operators: set ops, relations, big ops, standard functions (priority 105)
-; -------------------------------------------------------------------
-
-(formula
-  ((ident) @function.builtin
-    (#any-of? @function.builtin
-      "subset" "supset" "union" "inter" "times" "div" "mod"
-      "plus" "minus" "pm" "mp" "dot" "cdot" "ast"
-      "cap" "cup" "oplus" "otimes" "ominus"
-      "sum" "prod" "integral" "iota" "nabla" "partial" "diff"
-      "eq" "neq" "lt" "gt" "leq" "geq" "prec" "succ"
-      "approx" "equiv" "sim" "asymp" "prop" "propto"
-      "lim" "liminf" "limsup" "sup" "inf" "min" "max"
-      "log" "ln" "exp" "sin" "cos" "tan" "det"
-      "sqrt" "root" "abs" "norm" "floor" "ceil" "round"
-      "arrow" "Arrow" "harpoon" "tilde" "hat" "bar" "vec"
-      "therefore" "because" "qed" "compose" "nothing" "emptyset"
-      "oo" "infinity"
-      )
-    (#set! priority 105)))
-
-(attach
-  ((ident) @function.builtin
-    (#any-of? @function.builtin
-      "subset" "supset" "union" "inter" "times" "div" "mod"
-      "plus" "minus" "pm" "mp" "dot" "cdot" "ast"
-      "cap" "cup" "oplus" "otimes" "ominus"
-      "sum" "prod" "integral" "iota" "nabla" "partial" "diff"
-      "eq" "neq" "lt" "gt" "leq" "geq" "prec" "succ"
-      "approx" "equiv" "sim" "asymp" "prop" "propto"
-      "lim" "liminf" "limsup" "sup" "inf" "min" "max"
-      "log" "ln" "exp" "sin" "cos" "tan" "det"
-      "sqrt" "root" "abs" "norm" "floor" "ceil" "round"
-      "arrow" "Arrow" "harpoon" "tilde" "hat" "bar" "vec"
-      "therefore" "because" "qed" "compose" "nothing" "emptyset"
-      "oo" "infinity"
-      )
-    (#set! priority 105)))
-
-; Field base position: subset in subset.eq, union in union.big
-(field
-  ((ident) @function.builtin
-    (#any-of? @function.builtin
-      "subset" "supset" "union" "inter" "times" "div" "mod"
-      "plus" "minus" "pm" "mp" "dot" "cdot" "ast"
-      "cap" "cup" "oplus" "otimes" "ominus"
-      "sum" "prod" "integral" "iota" "nabla" "partial" "diff"
-      "eq" "neq" "lt" "gt" "leq" "geq" "prec" "succ"
-      "approx" "equiv" "sim" "asymp" "prop" "propto"
-      "lim" "liminf" "limsup" "sup" "inf" "min" "max"
-      "log" "ln" "exp" "sin" "cos" "tan" "det"
-      "sqrt" "root" "abs" "norm" "floor" "ceil" "round"
-      "arrow" "Arrow" "harpoon" "tilde" "hat" "bar" "vec"
-      "therefore" "because" "qed" "compose" "nothing" "emptyset"
-      "oo" "infinity"
-      )
-    (#set! priority 105)))
+(formula (ident) @constant.builtin)
+(attach (ident) @constant.builtin)
 
 ; -------------------------------------------------------------------
 ; Number-like sets: RR, QQ, NN, ZZ, CC, etc. (all-caps 2+ letters)
@@ -352,16 +276,28 @@
   item: (_) @function.call)
 
 ; -------------------------------------------------------------------
-; Math field access: .eq, .big — the accessor part
+; Math field access: subset.eq, union.big
+; Base ident (subset, union) matches the bare symbol color.
+; Accessor (.eq, .big) gets @variable.member.
 ; -------------------------------------------------------------------
 
 (formula
   (field
-    field: (ident) @variable.member))
+    (ident) @constant.builtin))
 
 (attach
   (field
-    field: (ident) @variable.member))
+    (ident) @constant.builtin))
+
+(formula
+  (field
+    field: (ident) @variable.member
+    (#set! priority 105)))
+
+(attach
+  (field
+    field: (ident) @variable.member
+    (#set! priority 105)))
 
 ; -------------------------------------------------------------------
 ; Subscript/superscript markers
