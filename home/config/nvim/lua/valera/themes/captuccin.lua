@@ -936,14 +936,14 @@ hi(0, 'rainbow4', { fg = '#a6e3a2' })
 hi(0, 'rainbow5', { fg = '#74c7ed' })
 hi(0, 'rainbow6', { fg = '#b4beff' })
 
--- Typst headings: progressive purple, same pattern as bracket grey (step ~8% lightness)
--- hsl(270, 80%, L) where L = 80, 72, 64, 56, 48, 40
-hi(0, '@markup.heading.1.typst', { fg = '#cca3f5', bold = true })
-hi(0, '@markup.heading.2.typst', { fg = '#b87ef1', bold = true })
-hi(0, '@markup.heading.3.typst', { fg = '#a35aed', bold = true })
-hi(0, '@markup.heading.4.typst', { fg = '#8f35e9', bold = true })
-hi(0, '@markup.heading.5.typst', { fg = '#7a18dc', bold = true })
-hi(0, '@markup.heading.6.typst', { fg = '#6614b8', bold = true })
+-- Typst headings: progressive purple, fading darker per level
+do
+	local rp = require("rust_plugins")
+	local shades = rp.gradient7(-53.0, 0.05)
+	for i = 1, 7 do
+		hi(0, '@markup.heading.' .. i .. '.typst', { fg = shades[i], bold = true })
+	end
+end
 
 hi(0, 'zshKSHFunction', { link = 'Function' })
 

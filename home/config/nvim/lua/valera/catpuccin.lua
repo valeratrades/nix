@@ -817,17 +817,8 @@ hi(0, 'PreProc', { fg = '#f5c2e8' })
 hi(0, 'Question', { fg = '#89b4fb' })
 hi(0, 'QuickFixLine', { bg = '#45475b', bold = true })
 
-local rainbow_colors = {
-	-- shades of grey, generated procedurally {{{1
-	'#cccccc',
-	'#b3b3b3',
-	'#999999',
-	'#808080',
-	'#666666',
-	'#4c4c4c',
-	'#333333',
-	--,}}}1
-}
+local rp = require("rust_plugins")
+local rainbow_colors = rp.gradient7(0.0, 0.0)
 hi(0, 'RainbowRed', { fg = rainbow_colors[1] })
 hi(0, 'RainbowYellow', { fg = rainbow_colors[2] })
 hi(0, 'RainbowBlue', { fg = rainbow_colors[3] })
@@ -954,14 +945,13 @@ hi(0, 'rainbow4', { fg = '#a6e3a2' })
 hi(0, 'rainbow5', { fg = '#74c7ed' })
 hi(0, 'rainbow6', { fg = '#b4beff' })
 
--- Typst headings: progressive purple, same pattern as bracket grey (step ~8% lightness)
--- hsl(270, 80%, L) where L = 80, 72, 64, 56, 48, 40
-hi(0, '@markup.heading.1.typst', { fg = '#cca3f5', bold = true })
-hi(0, '@markup.heading.2.typst', { fg = '#b87ef1', bold = true })
-hi(0, '@markup.heading.3.typst', { fg = '#a35aed', bold = true })
-hi(0, '@markup.heading.4.typst', { fg = '#8f35e9', bold = true })
-hi(0, '@markup.heading.5.typst', { fg = '#7a18dc', bold = true })
-hi(0, '@markup.heading.6.typst', { fg = '#6614b8', bold = true })
+-- Typst headings: progressive purple, fading darker per level
+do
+	local shades = rp.gradient7(-53.0, 0.05)
+	for i = 1, 7 do
+		hi(0, '@markup.heading.' .. i .. '.typst', { fg = shades[i], bold = true })
+	end
+end
 
 hi(0, 'zshKSHFunction', { link = 'Function' })
 

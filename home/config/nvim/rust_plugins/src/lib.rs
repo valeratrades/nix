@@ -1,3 +1,5 @@
+#![allow(clippy::doc_lazy_continuation)]
+
 use std::{
 	fs,
 	path::{Path, PathBuf},
@@ -8,6 +10,7 @@ use std::{
 use nvim_oxi::{api, Array, Dictionary, Function, Object};
 
 mod autoreload;
+mod colors;
 mod comment;
 mod lsp;
 mod remap;
@@ -42,10 +45,7 @@ fn find_todo_impl() {
 
 	// 1. Search for dbg markers (highest priority: 1000)
 	let dbg_pattern = format!(r#"{}dbg"#, comment_prefixes);
-	if let Ok(output) = Command::new("rg")
-		.args(["--line-number", "-e", &dbg_pattern])
-		.output()
-	{
+	if let Ok(output) = Command::new("rg").args(["--line-number", "-e", &dbg_pattern]).output() {
 		if output.status.success() {
 			let stdout = String::from_utf8_lossy(&output.stdout);
 			for line in stdout.lines() {
@@ -64,10 +64,7 @@ fn find_todo_impl() {
 
 	// 2. Search for TEST markers (priority: 900)
 	let test_pattern = format!(r#"{}TEST"#, comment_prefixes);
-	if let Ok(output) = Command::new("rg")
-		.args(["--line-number", "-e", &test_pattern])
-		.output()
-	{
+	if let Ok(output) = Command::new("rg").args(["--line-number", "-e", &test_pattern]).output() {
 		if output.status.success() {
 			let stdout = String::from_utf8_lossy(&output.stdout);
 			for line in stdout.lines() {
@@ -86,10 +83,7 @@ fn find_todo_impl() {
 
 	// 3. Search for XXX markers (priority: 100)
 	let xxx_pattern = format!(r#"{}XXX"#, comment_prefixes);
-	if let Ok(output) = Command::new("rg")
-		.args(["--line-number", "-e", &xxx_pattern])
-		.output()
-	{
+	if let Ok(output) = Command::new("rg").args(["--line-number", "-e", &xxx_pattern]).output() {
 		if output.status.success() {
 			let stdout = String::from_utf8_lossy(&output.stdout);
 			for line in stdout.lines() {
@@ -132,10 +126,7 @@ fn find_todo_impl() {
 
 	// 5. Search for DEPRECATE markers (lowest priority: -1000)
 	let deprecate_pattern = format!(r#"{}DEPRECATE"#, comment_prefixes);
-	if let Ok(output) = Command::new("rg")
-		.args(["--line-number", "-e", &deprecate_pattern])
-		.output()
-	{
+	if let Ok(output) = Command::new("rg").args(["--line-number", "-e", &deprecate_pattern]).output() {
 		if output.status.success() {
 			let stdout = String::from_utf8_lossy(&output.stdout);
 			for line in stdout.lines() {
@@ -510,6 +501,11 @@ fn rust_plugins() -> nvim_oxi::Result<Dictionary> {
 		}
 	});
 
+	let gradient7_fn = Function::from_fn(|(hue, chroma): (f64, f64)| -> Array {
+		let result = colors::gradient7(hue, chroma);
+		Array::from_iter(result.into_iter().map(Object::from))
+	});
+
 	Ok(Dictionary::from_iter([
 		("find_todo", Object::from(find_todo)),
 		("should_rebuild", Object::from(should_rebuild_fn)),
@@ -536,5 +532,6 @@ fn rust_plugins() -> nvim_oxi::Result<Dictionary> {
 		("yank_diagnostic_popup", Object::from(yank_diagnostic_popup_fn)),
 		("show_markdown_popup", Object::from(show_markdown_popup_fn)),
 		("three_way_merge", Object::from(three_way_merge_fn)),
+		("gradient7", Object::from(gradient7_fn)),
 	]))
 }

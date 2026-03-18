@@ -1,5 +1,4 @@
-local util = require('ts_context_commentstring.utils')
-local config = {
+require('Comment').setup({
 	padding = false,
 	sticky = true,
 	ignore = nil,
@@ -7,24 +6,9 @@ local config = {
 	opleader = { line = 'gc', block = 'gb' },
 	extra = { above = 'gcO', below = 'gco', eol = 'gcA' },
 	mappings = { basic = true, extra = false }, -- reimplementing `extra` myself, to have padding on these and not on others
-	pre_hook = function(ctx)
-		if vim.bo.filetype == "typescript" then
-			local location = nil
-			if ctx.ctype == util.ctype.blockwise then
-				location = require("ts_context_commentstring.utils").get_cursor_location()
-			elseif ctx.cmotion == util.cmotion.v or ctx.cmotion == util.cmotion.V then
-				location = require("ts_context_commentstring.utils").get_visual_start_location()
-			end
-
-			return require("ts_context_commentstring.internal").calculate_commentstring({
-				key = ctx.ctype == util.ctype.linewise and "__default" or "__multiline",
-				location = location,
-			})
-		end
-	end,
+	pre_hook = require('ts_context_commentstring.integrations.comment_nvim').create_pre_hook(),
 	post_hook = nil,
-}
-require('Comment').setup(config)
+})
 
 function CommentCopilotEsc()
 	vim.b.copilot_enabled = false
