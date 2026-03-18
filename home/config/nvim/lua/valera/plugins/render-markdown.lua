@@ -6,7 +6,6 @@ return require("lazier")({
 	dependencies = {
 		"nvim-treesitter/nvim-treesitter",
 		"echasnovski/mini.icons",
-		"3rd/image.nvim",
 	},
 	opts = {
 		enabled = false,
@@ -19,6 +18,7 @@ return require("lazier")({
 
 		vim.api.nvim_create_user_command("MarkdownInline", function()
 			require("render-markdown").enable()
+			require("lazy").load({ plugins = { "image.nvim" } })
 			require("image").enable()
 			vim.cmd("doautocmd BufWinEnter")
 		end, { desc = "Render markdown inline (with images)" })

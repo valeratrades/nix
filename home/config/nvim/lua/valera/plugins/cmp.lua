@@ -10,7 +10,7 @@ return {
 		"onsails/lspkind.nvim",
 		"L3MON4D3/LuaSnip",
 		"Saecki/crates.nvim",
-		"https://codeberg.org/FelipeLema/cmp-async-path",
+		"valeratrades/cmp-async-path",
 	},
 	config = function()
 		local cmp = require('cmp')

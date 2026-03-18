@@ -25,7 +25,10 @@ return require('lazy').setup({
 	{ import = "valera.plugins.telescope" },
 	{ import = "valera.plugins.lualine" },
 	"numToStr/Comment.nvim",
-	"JoosepAlviste/nvim-ts-context-commentstring",
+	{
+		"JoosepAlviste/nvim-ts-context-commentstring",
+		opts = { enable_autocmd = false },
+	},
 	{ import = "valera.plugins.signature" },
 	{ import = "valera.plugins.oil" },
 	{ import = "valera.plugins.webdevicons" },
@@ -140,7 +143,7 @@ return require('lazy').setup({
 	"Makaze/AnsiEsc",
 	{ import = "valera.plugins.speeddating" },
 	"stevearc/aerial.nvim",
-	"https://codeberg.org/FelipeLema/cmp-async-path",
+	"valeratrades/cmp-async-path",
 	{ import = "valera.plugins.guess-indent" },
 	{ import = "valera.plugins.wakatime" },
 	--{ "tjdevries/ocaml.nvim",  build = "make" }, -- requires 3.17 dune, but my nix only has 3.16
