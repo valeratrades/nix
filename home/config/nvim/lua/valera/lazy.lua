@@ -139,7 +139,23 @@ return require('lazy').setup({
 	"DreamMaoMao/yazi.nvim",
 	"norcalli/nvim-colorizer.lua",
 	{ import = "valera.plugins.nvim-highlight-colors" },
-	"hiphish/rainbow-delimiters.nvim", -- alternate bracket colors
+	{
+		"hiphish/rainbow-delimiters.nvim",
+		config = function()
+			-- Register a typst query without math $ (we color those separately)
+			vim.treesitter.query.set('typst', 'rainbow-delimiters-nomathdollar', [[
+				(group "(" @delimiter ")" @delimiter @sentinel) @container
+				(block "{" @delimiter "}" @delimiter @sentinel) @container
+				(content "[" @delimiter "]" @delimiter @sentinel) @container
+				(call "(" @delimiter ")" @delimiter @sentinel) @container
+			]])
+			vim.g.rainbow_delimiters = {
+				query = {
+					typst = 'rainbow-delimiters-nomathdollar',
+				},
+			}
+		end,
+	},
 	"Makaze/AnsiEsc",
 	{ import = "valera.plugins.speeddating" },
 	"stevearc/aerial.nvim",

@@ -953,7 +953,7 @@ do
 	end
 end
 
--- Typst math $ delimiters: hint of yellow — oklch(0.80, 0.08, 95)
+-- Typst math $ delimiters: hint of yellow
 hi(0, '@punctuation.delimiter.math.typst', { fg = rp.oklch(0.80, 0.08, 95) })
 
 -- Typst refs/labels: visually distinct from body text
