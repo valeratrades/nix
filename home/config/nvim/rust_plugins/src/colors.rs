@@ -12,13 +12,12 @@ starting luminosity fixed at 0.85
 pub fn gradient7(hue: f64, chroma: f64) -> [String; 7] {
 	static START_LUMINOSITY: f64 = 0.85;
 
-	let h = hue.to_radians();
 	let end_l = START_LUMINOSITY * 0.4;
 	let step = (START_LUMINOSITY - end_l) / 6.0;
 
 	std::array::from_fn(|i| {
 		let l = START_LUMINOSITY - step * i as f64;
-		oklch_to_hex(l, chroma, h)
+		oklch_to_hex(l, chroma, hue)
 	})
 }
 
@@ -47,7 +46,9 @@ fn oklab_to_linear_rgb(l: f64, a: f64, b: f64) -> (f64, f64, f64) {
 	(r, g, b)
 }
 
-fn oklch_to_hex(l: f64, c: f64, h: f64) -> String {
+/// Convert OKLCH to hex color string. `h` is in degrees.
+pub fn oklch_to_hex(l: f64, c: f64, h: f64) -> String {
+	let h = h.to_radians();
 	let a = c * h.cos();
 	let b = c * h.sin();
 	let (lr, lg, lb) = oklab_to_linear_rgb(l, a, b);

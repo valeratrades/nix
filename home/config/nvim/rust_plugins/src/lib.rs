@@ -506,6 +506,10 @@ fn rust_plugins() -> nvim_oxi::Result<Dictionary> {
 		Array::from_iter(result.into_iter().map(Object::from))
 	});
 
+	let oklch_fn = Function::from_fn(|(l, c, h): (f64, f64, f64)| -> String {
+		colors::oklch_to_hex(l, c, h)
+	});
+
 	Ok(Dictionary::from_iter([
 		("find_todo", Object::from(find_todo)),
 		("should_rebuild", Object::from(should_rebuild_fn)),
@@ -533,5 +537,6 @@ fn rust_plugins() -> nvim_oxi::Result<Dictionary> {
 		("show_markdown_popup", Object::from(show_markdown_popup_fn)),
 		("three_way_merge", Object::from(three_way_merge_fn)),
 		("gradient7", Object::from(gradient7_fn)),
+		("oklch", Object::from(oklch_fn)),
 	]))
 }

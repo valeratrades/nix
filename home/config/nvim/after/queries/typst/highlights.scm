@@ -187,6 +187,11 @@
 
 (math) @markup.math
 
+; $ / $$ delimiters — highlighted separately from formula body
+((math
+  "$" @punctuation.delimiter.math)
+  (#set! priority 105))
+
 ; -------------------------------------------------------------------
 ; Math punctuation-symbols (the `symbol` node type): , ; < > + - = :
 ; -------------------------------------------------------------------
