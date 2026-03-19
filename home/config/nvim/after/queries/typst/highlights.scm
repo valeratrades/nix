@@ -223,6 +223,7 @@
 
 (formula (ident) @constant.builtin)
 (attach (ident) @constant.builtin)
+(prime (ident) @constant.builtin)
 
 ; -------------------------------------------------------------------
 ; Number-like sets: RR, QQ, NN, ZZ, CC, etc. (all-caps 2+ letters)
@@ -261,6 +262,19 @@
     (#set! priority 105)))
 
 (attach
+  ((ident) @variable.parameter
+    (#any-of? @variable.parameter
+      "alpha" "beta" "gamma" "delta" "epsilon" "zeta" "eta" "theta"
+      "iota" "kappa" "lambda" "mu" "nu" "xi" "omicron" "pi" "rho"
+      "sigma" "tau" "upsilon" "phi" "chi" "psi" "omega"
+      "Alpha" "Beta" "Gamma" "Delta" "Epsilon" "Zeta" "Eta" "Theta"
+      "Iota" "Kappa" "Lambda" "Mu" "Nu" "Xi" "Omicron" "Pi" "Rho"
+      "Sigma" "Tau" "Upsilon" "Phi" "Chi" "Psi" "Omega"
+      "ell" "hbar" "planck"
+      )
+    (#set! priority 105)))
+
+(prime
   ((ident) @variable.parameter
     (#any-of? @variable.parameter
       "alpha" "beta" "gamma" "delta" "epsilon" "zeta" "eta" "theta"
