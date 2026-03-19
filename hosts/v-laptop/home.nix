@@ -187,6 +187,8 @@ in {
 
         pkgs-ollama.ollama-cuda # pinned nixpkgs to avoid rebuilds
 
+        ghostty # in case I need inline images
+
         powershell # for shit and giggles
 
         # for my laptop's hardware

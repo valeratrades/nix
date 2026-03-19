@@ -945,6 +945,10 @@ do
 	end
 end
 
+-- Typst refs/labels: visually distinct from body text
+hi(0, '@markup.link.typst', { fg = colors.blue, underline = true })
+hi(0, '@markup.link.label.typst', { fg = colors.cyan, underline = true })
+
 hi(0, 'zshKSHFunction', { link = 'Function' })
 
 -- Terminal colors

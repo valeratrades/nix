@@ -27,6 +27,7 @@
         rs = v-utils.rs { inherit pkgs rust; };
         github = v-utils.github {
           inherit pkgs pname rs;
+          enable = true;
           lastSupportedVersion = "CURRENT_NIGHTLY_BY_DATE";
           langs = [ "rs" ];
           jobs.default = true;

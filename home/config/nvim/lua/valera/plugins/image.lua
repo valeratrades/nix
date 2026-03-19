@@ -1,10 +1,21 @@
 return require("lazier")({
 	"3rd/image.nvim",
 	build = false, -- no luarocks needed with magick_cli
-	lazy = true, -- only loaded explicitly (via MarkdownInline or telescope)
+	lazy = true, -- only loaded explicitly (via MarkdownUberzug or telescope)
 	opts = {
 		processor = "magick_cli", -- avoids luarocks dependency
-		backend = "ueberzug", -- works with alacritty
+		backend = (function()
+			local term = vim.env.TERM_PROGRAM or ""
+			-- also check through tmux, which strips TERM_PROGRAM
+			if term == "" and vim.env.TMUX then
+				term = vim.fn.system("tmux show-environment TERM_PROGRAM 2>/dev/null"):match("=(.+)") or ""
+			end
+			local kitty_terms = { kitty = true, ghostty = true, WezTerm = true }
+			if vim.env.KITTY_WINDOW_ID or kitty_terms[term] then
+				return "kitty"
+			end
+			return "ueberzug"
+		end)(),
 		integrations = {
 			markdown = {
 				enabled = true,
@@ -12,10 +23,10 @@ return require("lazier")({
 					if image_url:match("%.excalidraw$") then
 						local abs = fallback(document_path, image_url)
 						if vim.fn.filereadable(abs) == 1 then
-							local svg = abs .. ".svg"
-							-- regenerate if svg is missing or older than the source
+							local svg = "/tmp/markdown_svg_compile" .. abs .. ".svg"
+							vim.fn.mkdir(vim.fn.fnamemodify(svg, ":h"), "p")
 							if vim.fn.filereadable(svg) == 0 or vim.fn.getftime(svg) < vim.fn.getftime(abs) then
-								vim.fn.system({ "excalidraw_export", abs })
+								vim.fn.system({ "excalidraw_export", abs, svg })
 							end
 							return svg
 						end

@@ -264,8 +264,7 @@ return {
 				completion = cmp.config.window.bordered(),
 				documentation = cmp.config.window.bordered(),
 			},
-			--mapping = cmp.mapping.preset.insert(mappings),
-			mapping = mappings,
+			mapping = cmp.mapping.preset.insert(mappings),
 			-- Stolen from prof in its entirety
 			sorting = {
 				priority_weight = 1,
