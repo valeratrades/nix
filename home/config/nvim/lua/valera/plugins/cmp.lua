@@ -130,8 +130,8 @@ return {
 			['<C-s>'] = cmp_action.luasnip_supertab(),
 			['<C-y>'] = cmp.mapping.confirm({ select = true }),
 
-			['<Down>'] = cmp.mapping(cmp.mapping.select_next_item({ behavior = cmp.SelectBehavior.Select }), { 'c' }),
-			['<Up>'] = cmp.mapping(cmp.mapping.select_prev_item({ behavior = cmp.SelectBehavior.Select }), { 'c' }),
+			['<Down>'] = cmp.mapping(cmp.mapping.select_next_item({ behavior = cmp.SelectBehavior.Select }), { 'i', 'c' }),
+			['<Up>'] = cmp.mapping(cmp.mapping.select_prev_item({ behavior = cmp.SelectBehavior.Select }), { 'i', 'c' }),
 
 			['<C-d>'] = cmp.mapping(function()
 				if cmp.visible() then

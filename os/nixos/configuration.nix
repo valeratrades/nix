@@ -92,6 +92,17 @@ in {
   boot = {
     kernelPackages = pkgs.linuxPackages_6_12; # 6.12 LTS - has DMCUB fix (6.12.32+), 6.18 breaks nvidia driver
 
+    kernelPatches = [{
+      name = "hibernate-lz4";
+      patch = null;
+      structuredExtraConfig = with lib.kernel; {
+        HIBERNATION_COMP_LZ4 = yes;
+        HIBERNATION_COMP_LZO = no;
+        CRYPTO_LZ4 = yes; # must be built-in (not module) for hibernate
+        SUSPEND_SKIP_SYNC = yes; # skip filesystem sync before hibernate — saves seconds, no real risk on journaled fs
+      };
+    }];
+
     tmp.useTmpfs = true;
     loader = {
       systemd-boot = {
@@ -130,6 +141,8 @@ in {
 			"amd_pstate=passive"
 			# mt7925e WiFi suspend fix - disable ASPM to prevent suspend timeout
 			"pcie_aspm.policy=performance"
+			# LZ4 is ~3x faster than LZO for hibernate image compression
+			"hibernate.compressor=lz4"
 		];
 
 		kernel.sysctl = {
@@ -340,6 +353,8 @@ in {
   nix.settings.download-buffer-size = "50G";
 	programs.neovim = {
 		package = pkgs.neovim-unwrapped;
+		# temporary: parsers not covered by nvim-treesitter auto_install (until 0.12 is in nixpkgs and we restore withAllGrammars)
+		plugins = [ pkgs.tree-sitter-grammars.tree-sitter-lean ];
 	};
 
   #	neovim = import "${neovim-nightly}/flake/packages/neovim.nix" {
@@ -537,6 +552,7 @@ in {
           starship
 
 					neovim
+					tree-sitter # needed by nvim-treesitter to compile parsers (temporary until 0.12 is in nixpkgs and we restore withAllGrammars)
 					luajitPackages.luarocks-nix # install some lua plugins as isolated packages
 					vimPlugins.nvim-dap-python
 					vimPlugins.luasnip
@@ -611,6 +627,15 @@ in {
   powerManagement = {
     enable = true;
   };
+
+  # Hint for target hibernate image size (default is 2/5 of RAM ≈ 25 GB).
+  # 0 = "as small as possible". The kernel drops page cache to reach the target
+  # but can't drop anonymous pages, so the actual image will be ~1-2 GB
+  # (kernel state + remaining processes after pre-sleep kills).
+  # It's just a hint — if it can't shrink enough, it writes a bigger image rather than failing.
+  systemd.tmpfiles.rules = [
+    "w /sys/power/image_size - - - - 0"
+  ];
 
   #TODO!: make specific to the host
   networking = {

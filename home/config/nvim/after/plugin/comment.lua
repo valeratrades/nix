@@ -1,3 +1,24 @@
+-- nvim 0.12: `vim.treesitter.get_parser()` returns nil instead of throwing, breaking
+-- both `ts_context_commentstring` and `Comment.nvim`'s internal `ft.calculate`.
+-- Patch `ft.calculate` to handle nil parser, and wrap the pre_hook with pcall.
+do
+	local F = require('Comment.ft')
+	local A = vim.api
+	function F.calculate(ctx)
+		local parser = vim.treesitter.get_parser(A.nvim_get_current_buf())
+		if not parser then
+			return F.get(vim.bo.filetype, ctx.ctype)
+		end
+		local lang = F.contains(parser, {
+			ctx.range.srow - 1,
+			ctx.range.scol,
+			ctx.range.erow - 1,
+			ctx.range.ecol,
+		}):lang()
+		return F.get(lang, ctx.ctype) or F.get(vim.bo.filetype, ctx.ctype)
+	end
+end
+
 require('Comment').setup({
 	padding = false,
 	sticky = true,
@@ -6,7 +27,10 @@ require('Comment').setup({
 	opleader = { line = 'gc', block = 'gb' },
 	extra = { above = 'gcO', below = 'gco', eol = 'gcA' },
 	mappings = { basic = true, extra = false }, -- reimplementing `extra` myself, to have padding on these and not on others
-	pre_hook = require('ts_context_commentstring.integrations.comment_nvim').create_pre_hook(),
+	pre_hook = function(ctx)
+		local ok, result = pcall(require('ts_context_commentstring.integrations.comment_nvim').create_pre_hook(), ctx)
+		if ok then return result end
+	end,
 	post_hook = nil,
 })
 

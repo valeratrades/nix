@@ -13,7 +13,58 @@
   };
 
   powerManagement = {
-    powerUpCommands = "systemctl --user restart wlr-gamma\nsystemctl --user restart auto_redshift\n";
+    powerDownCommands = ''
+      # Kill memory-heavy processes before hibernate to minimize image size.
+      # The kernel's hibernate writer is single-threaded synchronous IO at 228 MB/s,
+      # so every GB we avoid snapshotting saves ~4.5s of wall time.
+
+      # LSPs (~5 GB combined) - nvim restarts them on demand
+      ${pkgs.procps}/bin/pkill -f 'lua-language-server' || true
+      ${pkgs.procps}/bin/pkill -f 'rust-analyzer' || true
+      ${pkgs.procps}/bin/pkill -f 'rust-analyzer-proc-macro-srv' || true
+
+      # Browsers (~3 GB combined) - session restore handles state
+      ${pkgs.procps}/bin/pkill -f 'chrome' || true
+      ${pkgs.procps}/bin/pkill -f 'firefox' || true
+
+      # Services that restart losslessly
+      ${pkgs.procps}/bin/pkill -f 'openclaw-gateway' || true
+      ${pkgs.procps}/bin/pkill -f 'tailscaled' || true
+      ${pkgs.procps}/bin/pkill -f 'clickhouse' || true
+
+      # Gracefully shut down QEMU VM (~2 GB)
+      echo 'system_powerdown' | ${pkgs.socat}/bin/socat - TCP:localhost:7100 || true
+      ${pkgs.coreutils}/bin/sleep 5
+      ${pkgs.procps}/bin/pkill -f 'qemu-system' || true
+
+      # Drop filesystem caches right before snapshot
+      ${pkgs.coreutils}/bin/sync
+      echo 3 > /proc/sys/vm/drop_caches
+    '';
+    powerUpCommands = ''
+      systemctl restart tailscaled || true
+      systemctl restart clickhouse-server || true
+      systemctl --user restart wlr-gamma
+      systemctl --user restart auto_redshift
+    '';
+  };
+
+  # Disable all PCI wakeup sources — only lid switch and power button (ACPI) should wake from hibernate.
+  # Without this, USB controllers, GPU, WiFi, NVMe, and ethernet can all trigger spurious wakeups.
+  systemd.services.disable-acpi-wakeup = {
+    description = "Disable PCI ACPI wakeup sources";
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    script = ''
+      for dev in GPP0 GPP1 GPP3 GPP5 GP17 XHC0 XHC1 XHC2; do
+        if grep -q "$dev.*enabled" /proc/acpi/wakeup; then
+          echo "$dev" > /proc/acpi/wakeup
+        fi
+      done
+    '';
   };
 
   system.activationScripts.copyAlacrittyConfig = {

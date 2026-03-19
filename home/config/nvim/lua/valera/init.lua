@@ -48,4 +48,4 @@ require("valera.opts")
 require("valera.autocommands")
 require("valera.termfilechooser")
 
-require("valera.catpuccin")
+require("valera.themes.captuccin")
