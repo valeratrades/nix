@@ -34,9 +34,9 @@ require('Comment').setup({
 	post_hook = nil,
 })
 
-function CommentCopilotEsc()
-	vim.b.copilot_enabled = false
-end
+--function CommentCopilotEsc()
+--	vim.b.copilot_enabled = false
+--end
 
 --NB: this overwrites the default `extra` mappings from `Comment.nvim`; making this file necessary to be loaded in the old style, as doing it through `lazy.nvim`'s `config` field would source the default mappings second, overwriting these.
 K('n', 'gcO', function()

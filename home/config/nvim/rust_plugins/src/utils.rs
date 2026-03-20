@@ -1,8 +1,5 @@
 use nvim_oxi::{
-	api::{
-		self,
-		types::{WindowAnchor, WindowBorder, WindowConfig, WindowRelativeTo, WindowStyle},
-	},
+	api::{self},
 	Dictionary, Function, Object,
 };
 
@@ -39,6 +36,8 @@ pub fn show_markdown_popup(text: String) {
 }
 
 /// Makes a popup with the given text and options.
+/// Uses luaeval to call nvim_open_win, bypassing nvim-oxi's WindowConfig serialization
+/// which has broken mask bit ordering on nvim 0.12.
 pub fn show_popup_with_options(text: String, options: PopupOptions) {
 	// Create scratch buffer
 	let mut buf = match api::create_buf(false, true) {
@@ -59,61 +58,47 @@ pub fn show_popup_with_options(text: String, options: PopupOptions) {
 	}
 
 	// Calculate width (max line length, minimum 10)
-	let width = lines.iter().map(|line| line.chars().count()).max().unwrap_or(10).max(10) as u32;
+	let width = lines.iter().map(|line| line.chars().count()).max().unwrap_or(10).max(10);
 
 	// Calculate height (minimum 1 to avoid Neovim error)
-	let height = (lines.len() as u32).max(1);
+	let height = lines.len().max(1);
 
-	// Build window config based on sticky option
-	let config = if options.sticky {
-		// Position relative to cursor
-		// Check if there's enough space above cursor, otherwise go below
+	let bufnr = buf.handle();
+	let enter = !options.sticky;
+
+	// Build and execute nvim_open_win via Lua to avoid nvim-oxi mask bit mismatch
+	let (relative, anchor, row, col) = if options.sticky {
 		let cursor_row: i64 = api::call_function("line", (".".to_string(),)).unwrap_or(1);
 		let win_height: i64 = api::call_function("winheight", (0,)).unwrap_or(24);
-
-		// If cursor is in the top half, show below; otherwise show above
-		let (row_offset, anchor) = if cursor_row < win_height / 2 {
-			// Show below cursor (NW anchor = top-left at position)
-			(1.0, WindowAnchor::NorthWest)
+		if cursor_row < win_height / 2 {
+			("cursor", "NW", 1i64, 0i64)
 		} else {
-			// Show above cursor (SW anchor = bottom-left at position)
-			(0.0, WindowAnchor::SouthWest)
-		};
-
-		WindowConfig::builder()
-			.relative(WindowRelativeTo::Cursor)
-			.anchor(anchor)
-			.row(row_offset)
-			.col(0)
-			.width(width)
-			.height(height)
-			.style(WindowStyle::Minimal)
-			.border(WindowBorder::Rounded)
-			.focusable(true)
-			.build()
+			("cursor", "SW", 0i64, 0i64)
+		}
 	} else {
-		// Center in editor
 		let editor_lines: i64 = api::call_function("nvim_get_option", ("lines",)).unwrap_or(24);
 		let editor_columns: i64 = api::call_function("nvim_get_option", ("columns",)).unwrap_or(80);
-
-		let row = ((editor_lines - height as i64) / 2).max(0);
-		let col = ((editor_columns - width as i64) / 2).max(0);
-
-		WindowConfig::builder()
-			.relative(WindowRelativeTo::Editor)
-			.row(row as f64)
-			.col(col as f64)
-			.width(width)
-			.height(height)
-			.style(WindowStyle::Minimal)
-			.border(WindowBorder::Rounded)
-			.focusable(true)
-			.build()
+		let r = ((editor_lines - height as i64) / 2).max(0);
+		let c = ((editor_columns - width as i64) / 2).max(0);
+		("editor", "NW", r, c)
 	};
 
-	// Open the window (don't enter it if sticky)
-	let win = match api::open_win(&buf, !options.sticky, &config) {
-		Ok(w) => w,
+	let lua_code = format!(
+		r#"return vim.api.nvim_open_win({bufnr}, {enter}, {{
+			relative = "{relative}",
+			anchor = "{anchor}",
+			row = {row},
+			col = {col},
+			width = {width},
+			height = {height},
+			style = "minimal",
+			border = "rounded",
+			focusable = true,
+		}})"#
+	);
+
+	let win_id: i64 = match api::call_function("luaeval", (lua_code,)) {
+		Ok(id) => id,
 		Err(e) => {
 			api::err_writeln(&format!("Failed to open window: {e}"));
 			return;
@@ -124,37 +109,36 @@ pub fn show_popup_with_options(text: String, options: PopupOptions) {
 	for hl in &options.highlights {
 		let _ = api::call_function::<_, ()>(
 			"nvim_buf_add_highlight",
-			(buf.handle(), -1i64, hl.hl_group.as_str(), hl.line as i64, hl.col_start as i64, hl.col_end as i64),
+			(bufnr, -1i64, hl.hl_group.as_str(), hl.line as i64, hl.col_start as i64, hl.col_end as i64),
 		);
 	}
 
 	// Set keymap to close with 'q'
 	let keymap_opts = Dictionary::from_iter([("nowait", Object::from(true)), ("noremap", Object::from(true)), ("silent", Object::from(true))]);
-	let _ = api::call_function::<_, ()>("nvim_buf_set_keymap", (buf.handle(), "n", "q", ":close<CR>", keymap_opts));
+	let _ = api::call_function::<_, ()>("nvim_buf_set_keymap", (bufnr, "n", "q", ":close<CR>", keymap_opts));
 
 	// Set buffer options
-	let _ = api::call_function::<_, ()>("nvim_set_option_value", ("modifiable", false, Dictionary::from_iter([("buf", Object::from(buf.handle()))])));
-	let _ = api::call_function::<_, ()>("nvim_set_option_value", ("bufhidden", "wipe", Dictionary::from_iter([("buf", Object::from(buf.handle()))])));
+	let _ = api::call_function::<_, ()>("nvim_set_option_value", ("modifiable", false, Dictionary::from_iter([("buf", Object::from(bufnr))])));
+	let _ = api::call_function::<_, ()>("nvim_set_option_value", ("bufhidden", "wipe", Dictionary::from_iter([("buf", Object::from(bufnr))])));
 
 	if !options.sticky {
 		// Enable cursorline for centered popups
-		let _ = api::call_function::<_, ()>("nvim_set_option_value", ("cursorline", true, Dictionary::from_iter([("win", Object::from(win.handle()))])));
+		let _ = api::call_function::<_, ()>("nvim_set_option_value", ("cursorline", true, Dictionary::from_iter([("win", Object::from(win_id))])));
 	}
 
 	// Set filetype to markdown for syntax highlighting
-	let _ = api::call_function::<_, ()>("nvim_set_option_value", ("filetype", "markdown", Dictionary::from_iter([("buf", Object::from(buf.handle()))])));
+	let _ = api::call_function::<_, ()>("nvim_set_option_value", ("filetype", "markdown", Dictionary::from_iter([("buf", Object::from(bufnr))])));
 
 	// For sticky popups, close on cursor move
 	if options.sticky {
-		let win_handle = win.handle();
 		let lua_code = format!(
 			r#"
             vim.api.nvim_create_autocmd({{"CursorMoved", "CursorMovedI", "BufLeave"}}, {{
                 buffer = vim.api.nvim_get_current_buf(),
                 once = true,
                 callback = function()
-                    if vim.api.nvim_win_is_valid({win_handle}) then
-                        vim.api.nvim_win_close({win_handle}, true)
+                    if vim.api.nvim_win_is_valid({win_id}) then
+                        vim.api.nvim_win_close({win_id}, true)
                     end
                 end,
             }})

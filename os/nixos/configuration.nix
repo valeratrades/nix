@@ -92,16 +92,17 @@ in {
   boot = {
     kernelPackages = pkgs.linuxPackages_6_12; # 6.12 LTS - has DMCUB fix (6.12.32+), 6.18 breaks nvidia driver
 
-    kernelPatches = [{
-      name = "hibernate-lz4";
-      patch = null;
-      structuredExtraConfig = with lib.kernel; {
-        HIBERNATION_COMP_LZ4 = yes;
-        HIBERNATION_COMP_LZO = no;
-        CRYPTO_LZ4 = yes; # must be built-in (not module) for hibernate
-        SUSPEND_SKIP_SYNC = yes; # skip filesystem sync before hibernate — saves seconds, no real risk on journaled fs
-      };
-    }];
+    #TODO: uncomment when kernel compile time is available (~2h min)
+    # kernelPatches = [{
+    #   name = "hibernate-lz4";
+    #   patch = null;
+    #   structuredExtraConfig = with lib.kernel; {
+    #     HIBERNATION_COMP_LZ4 = yes;
+    #     HIBERNATION_COMP_LZO = no;
+    #     CRYPTO_LZ4 = yes; # must be built-in (not module) for hibernate
+    #     SUSPEND_SKIP_SYNC = yes; # skip filesystem sync before hibernate — saves seconds, no real risk on journaled fs
+    #   };
+    # }];
 
     tmp.useTmpfs = true;
     loader = {
@@ -141,8 +142,8 @@ in {
 			"amd_pstate=passive"
 			# mt7925e WiFi suspend fix - disable ASPM to prevent suspend timeout
 			"pcie_aspm.policy=performance"
-			# LZ4 is ~3x faster than LZO for hibernate image compression
-			"hibernate.compressor=lz4"
+			#TODO: uncomment with kernelPatches above
+			# "hibernate.compressor=lz4" # LZ4 is ~3x faster than LZO for hibernate image compression
 		];
 
 		kernel.sysctl = {
@@ -354,7 +355,7 @@ in {
 	programs.neovim = {
 		package = pkgs.neovim-unwrapped;
 		# temporary: parsers not covered by nvim-treesitter auto_install (until 0.12 is in nixpkgs and we restore withAllGrammars)
-		plugins = [ pkgs.tree-sitter-grammars.tree-sitter-lean ];
+		#plugins = [ pkgs.tree-sitter-grammars.tree-sitter-lean ]; #TODO: tree-sitter-lean removed from nixpkgs
 	};
 
   #	neovim = import "${neovim-nightly}/flake/packages/neovim.nix" {

@@ -3,6 +3,7 @@
 let
   #TODO: `ssh-add ~/.ssh/id_ed25519` as part of the setup
   sshConfigPath = "${config.home.homeDirectory}/.ssh";
+  tgPkg = inputs.tg.packages.${pkgs.stdenv.hostPlatform.system}.default;
 in {
   nix.extraOptions = "!include ${config.home.homeDirectory}/s/g/private/sops/";
   # ref: https://www.youtube.com/watch?v=G5f6GC7SnhU
@@ -21,6 +22,7 @@ in {
     secrets.mail_spam_pass = { mode = "0400"; };
     secrets.alpaca_api_pubkey = { mode = "0400"; };
     secrets.alpaca_api_secret = { mode = "0400"; };
+    secrets.openai_api_key = { mode = "0400"; };
   };
 
   tg = {
@@ -43,6 +45,21 @@ in {
     alpacaKey = config.sops.secrets.alpaca_api_pubkey.path;
     alpacaSecret = config.sops.secrets.alpaca_api_secret.path;
   };
+
+  # Write secrets to environment.d so ALL systemd user services (openclaw-gateway, tg-server, etc.)
+  # inherit them automatically. Generated from sops-decrypted files at `home-manager switch` time.
+  home.activation.writeSecretsEnvd = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    mkdir -p "${config.home.homeDirectory}/.config/environment.d"
+    dest="${config.home.homeDirectory}/.config/environment.d/30-secrets.conf"
+    {
+      echo "OPENAI_API_KEY=$(cat ${config.sops.secrets.openai_api_key.path})"
+      echo "OPENAI_KEY=$(cat ${config.sops.secrets.openai_api_key.path})"
+      echo "TELEGRAM_MAIN_BOT_TOKEN=$(cat ${config.sops.secrets.telegram_token_main.path})"
+      echo "TELEGRAM_BOT_KEY=$(cat ${config.sops.secrets.telegram_token_main.path})"
+    } > "$dest"
+    chmod 600 "$dest"
+    ${pkgs.systemd}/bin/systemctl --user daemon-reload || true
+  '';
 
   # Fix sops-nix.service to remain active after completion
   # Without this, oneshot services exit immediately and can't satisfy Requires= dependencies
@@ -76,6 +93,9 @@ in {
       # Wait for the sops-nix secret file to exist before systemd tries to load it
       ExecStartPre = lib.mkBefore "${pkgs.bash}/bin/bash -c 'while [ ! -f ${config.sops.secrets.telegram_token_main.path} ]; do ${pkgs.coreutils}/bin/sleep 0.1; done'";
       RestartSec = 5;
+      # Inject OpenAI key so tg-server can do voice transcription
+      LoadCredential = lib.mkAfter [ "openai_key:${config.sops.secrets.openai_api_key.path}" ];
+      ExecStart = lib.mkForce "/bin/sh -c 'TELEGRAM_API_HASH=\"$(cat %d/tg_api_hash)\" PHONE_NUMBER_FR=\"$(cat %d/tg_phone)\" TELEGRAM_ALERTS_CHANNEL_ID=\"$(cat %d/tg_alerts_channel)\" OPENAI_API_KEY=\"$(cat %d/openai_key)\" ${tgPkg}/bin/tg --token \"$(cat %d/tg_token)\" server'";
     };
   };
 
