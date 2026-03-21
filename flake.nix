@@ -78,6 +78,9 @@
     btc_line = {
       url = "github:valeratrades/btc_line?ref=release";
     };
+    decant = {
+      url = "github:valeratrades/decant";
+    };
     discretionary_engine = {
       url = "git+https://github.com/valeratrades/discretionary_engine?submodules=1";
     };

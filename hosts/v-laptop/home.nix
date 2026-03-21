@@ -295,6 +295,7 @@ in {
         inputs.cargo_sort_derives.packages.${pkgs.stdenv.hostPlatform.system}.default
         inputs.btc_line.packages.${pkgs.stdenv.hostPlatform.system}.default
         inputs.wallpaper_carousel.packages.${pkgs.stdenv.hostPlatform.system}.default
+        inputs.decant.packages.${pkgs.stdenv.hostPlatform.system}.default
 
         #inputs.aggr_orderbook.packages.${pkgs.stdenv.hostPlatform.system}.default
         #inputs.orderbook_3d.packages.${pkgs.stdenv.hostPlatform.system}.default
