@@ -18,6 +18,8 @@
     You also generate the implementation plan, and once accepted, you push it as a comment under that tracking issue.
     When done, you PR the change and ask me for review. If green-lighted, you handle merge conflicts if any appear.
 
+- if you have implemented over a `TODO` / `DO`, or other comments explaining target future state, which I myself wrote; - then when you think that with your implementation the comments are now redundant, you add `//REVIEW` comment right below, instead of deleting them
+
 - prefer running `cargo b` and `cargo r` instead of `cargo build` and `cargo run`, - under my config they skip warnings if any errors exist, which is always desirable.
 
 ## Testing

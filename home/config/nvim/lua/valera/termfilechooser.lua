@@ -171,6 +171,7 @@ function M.setup_save(statusfile)
   -- Get the original suggested filename from the prefilled path
   local original_path = vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] or ''
   local original_filename = original_path:match('[^/]+$') or 'file'
+  local original_ext = original_filename:match('%.([^.]+)$')
 
   -- Debug: log to file
   local function log(msg)
@@ -217,6 +218,12 @@ function M.setup_save(statusfile)
       log(string.format('directory detected, using final_path=[%s]', final_path))
       finalize_save(final_path)
     else
+      -- If the provided filename has no extension, carry over from original
+      local basename = path:match('[^/]+$') or ''
+      if original_ext and not basename:match('%.') then
+        path = path .. '.' .. original_ext
+        log(string.format('extension inferred, final path=[%s]', path))
+      end
       finalize_save(path)
     end
   end

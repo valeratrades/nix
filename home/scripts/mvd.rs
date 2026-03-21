@@ -202,8 +202,16 @@ fn main() {
         Some(from_path) => {
             // Determine the final destination with filename
             let final_destination = match explicit_filename.or(extracted_filename) {
-                // If explicit filename provided, use it as-is (don't sanitize)
-                Some(fname) => to_dir.join(fname),
+                Some(fname) => {
+                    let mut dest = PathBuf::from(&fname);
+                    // If the provided name has no extension, carry over from source
+                    if dest.extension().is_none() {
+                        if let Some(ext) = from_path.extension() {
+                            dest.set_extension(ext);
+                        }
+                    }
+                    to_dir.join(dest)
+                }
                 // If no explicit filename, sanitize the original filename
                 None => {
                     if let Some(original_filename) = from_path.file_name() {
