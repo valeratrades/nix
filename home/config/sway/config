@@ -130,13 +130,13 @@ set $all_possible_output_monitors "HDMI-A-1" "DP-1"
 set $primary $all_possible_output_monitors $output_laptop
 mode "monitors" {
 	# in the perfect world would have primary set
-	bindsym a exec $switch_out && 'set $primary $all_possible_output_monitors $output_laptop'
-	bindsym s exec $switch_out && 'set $primary $output_laptop'
+	bindsym a exec "$switch_out && 'set $primary $all_possible_output_monitors $output_laptop'"
+	bindsym s exec "$switch_out && 'set $primary $output_laptop'"
 
-	bindsym t exec $switch_out &&  swaymsg 'output $output_monitor toggle'
+	bindsym t exec "$switch_out && swaymsg 'output $output_monitor toggle'"
 
 	# university/projector mode: 1080p, all workspaces to external
-	bindsym u exec $switch_out && swaymsg 'output HDMI-A-1 mode 1920x1080@60Hz pos 0 0; output eDP-1 pos 0 1080'
+	bindsym u exec "$switch_out && swaymsg 'output HDMI-A-1 mode 1920x1080@60Hz pos 0 0; output eDP-1 pos 0 1080'"
 
 	bindsym $mod+k exec $switch_out
 	bindsym $mod+c exec $switch_out
@@ -250,10 +250,10 @@ bindsym $mod+Ctrl+g exec tg $(wl-paste)
 set $eww_visibility_toggle ~/.config/sway/eww_visibility_toggle.sh
 bindsym $mod+Shift+e exec $eww_visibility_toggle
 mode "eww" {
-	bindsym h exec $switch_out && $eww_visibility_toggle
-	bindsym f exec $switch_out && ${NIXOS_CONFIG}/home/scripts/eww_open_on.rs focused
-	bindsym a exec $switch_out && ${NIXOS_CONFIG}/home/scripts/eww_open_on.rs all
-	bindsym c exec $switch_out && ~/.config/eww/scripts/toggle_claude_sessions.sh
+	bindsym h exec "$switch_out && $eww_visibility_toggle"
+	bindsym f exec "$switch_out && ${NIXOS_CONFIG}/home/scripts/eww_open_on.rs focused"
+	bindsym a exec "$switch_out && ${NIXOS_CONFIG}/home/scripts/eww_open_on.rs all"
+	bindsym c exec "$switch_out && ~/.config/eww/scripts/toggle_claude_sessions.sh"
 
 	bindsym $mod+e exec $switch_out
 	bindsym $mod+c exec $switch_out
@@ -317,13 +317,13 @@ mode "screenshot" {
 	set $fullscreen_screenshot grim $scrn_path && $swappy_last
 	set $delayed_screenshot slurp | { sleep 5; grim -g - $scrn_path } && $swappy_last
 
-	bindsym i exec $switch_out && $important_screenshot
-	bindsym t exec $switch_out && $trading_screenshot
+	bindsym i exec "$switch_out && $important_screenshot"
+	bindsym t exec "$switch_out && $trading_screenshot"
 	# doesn't work for some reason
-	bindsym f exec $switch_out && $fullscrseen_screenshot
-	bindsym d exec $switch_out && $delayed_screenshot
-	bindsym o exec $switch_out && $swappy_last
-	bindsym Insert exec $switch_out && throwaway_screenshot
+	bindsym f exec "$switch_out && $fullscrseen_screenshot"
+	bindsym d exec "$switch_out && $delayed_screenshot"
+	bindsym o exec "$switch_out && $swappy_last"
+	bindsym Insert exec "$switch_out && throwaway_screenshot"
 
 	bindsym $mod+Insert exec $switch_out
 	bindsym $mod+c exec $switch_out
@@ -400,25 +400,25 @@ mode "obs" {
 	set $obs_send /home/v/.config/sway/send_keypress_to_window.rs com.obsproject.Studio
 
 	# Virtual Camera
-	bindsym v exec $switch_out && $obs_send v
-	bindsym Shift+v exec $switch_out && $obs_send e
+	bindsym v exec "$switch_out && $obs_send v"
+	bindsym Shift+v exec "$switch_out && $obs_send e"
 	# Start/Stop Recording
-	bindsym r exec $switch_out && $obs_send r
+	bindsym r exec "$switch_out && $obs_send r"
 	#NB: highly un-intuitive, - make sure to configure OBS to `g` not `R`, - we don't seem to be able to send modifiers over
-	bindsym Shift+r exec $switch_out && $obs_send g
+	bindsym Shift+r exec "$switch_out && $obs_send g"
 	# Pause/Unpause Recording
-	bindsym p exec $switch_out && $obs_send p
+	bindsym p exec "$switch_out && $obs_send p"
 	#NB: same story as Shift+r -> g
-	bindsym Shift+p exec $switch_out && $obs_send u
+	bindsym Shift+p exec "$switch_out && $obs_send u"
 	## Disable Preview
-	#bindsym d exec $switch_out && $obs_send d
+	#bindsym d exec "$switch_out && $obs_send d"
 
 	## Scenes: Both, Stream, Camera //"t" is to transition to it immediately
-	bindsym b exec $switch_out && $obs_send b
+	bindsym b exec "$switch_out && $obs_send b"
 #"bt"
-	bindsym s exec $switch_out && $obs_send s
+	bindsym s exec "$switch_out && $obs_send s"
 #"st"
-	bindsym c exec $switch_out && $obs_send c
+	bindsym c exec "$switch_out && $obs_send c"
 #"ct"
 
 

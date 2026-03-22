@@ -84,7 +84,7 @@ pub fn show_popup_with_options(text: String, options: PopupOptions) {
 	};
 
 	let lua_code = format!(
-		r#"return vim.api.nvim_open_win({bufnr}, {enter}, {{
+		r#"vim.api.nvim_open_win({bufnr}, {enter}, {{
 			relative = "{relative}",
 			anchor = "{anchor}",
 			row = {row},
