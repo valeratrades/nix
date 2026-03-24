@@ -73,8 +73,8 @@
     home-manager.enable = true; # let it manage itself
   };
 
-  xdg.desktopEntries.obs-studio = {
-    name = "OBS Studio";
+  xdg.desktopEntries."com.obsproject.Studio" = {
+    name = "OBS";
     genericName = "Streaming/Recording Software";
     comment = "Free and Open Source Streaming/Recording Software";
     exec = "obs";
@@ -84,7 +84,7 @@
     categories = [ "AudioVideo" "Recorder" ];
     startupNotify = true;
     settings.StartupWMClass = "obs";
-    settings.Keywords = "obs;";
+    settings.Keywords = "obs;studio;streaming;recording;";
   };
 
   dconf = {
@@ -98,6 +98,7 @@
       name = "Materia-dark"; # dbg: want Adwaita-dark
       package = pkgs.materia-theme;
     };
+    gtk4.theme = config.gtk.theme;
   };
 
   #REF: example of working service setup here: https://github.com/nix-community/home-manager/blob/master/modules/services/polybar.nix
@@ -213,7 +214,7 @@
               --replace-fail "Exec=Telegram" "Exec=$out/bin/Telegram"
           '')
           element-desktop # GUI matrix client
-          iamb # TUI matrix client (rust)
+          #iamb # TUI matrix client (rust) #dbg: broken in nixpkgs - type recursion limit in matrix-sdk
           zulip
         ]
         [

@@ -134,7 +134,8 @@ o.spellfile = os.getenv("NIXOS_CONFIG") .. "/home/config/nvim/spell/en.utf-8.add
 vim.g.tex_flavor = 'latex'
 vim.g.vimtex_view_method = 'zathura'
 vim.g.vimtex_quickfix_mode = 0
-vim.o.conceallevel = 1
+vim.o.conceallevel = 0
+vim.api.nvim_create_autocmd("FileType", { pattern = { "tex", "latex" }, callback = function() vim.opt_local.conceallevel = 1 end })
 vim.g.tex_conceal = 'abdmg'
 vim.g.vimtex_compiler_latexmk = { options = { 'notes.tex', '-shell-escape', '-interaction=nonstopmode' } }
 vim.g.vimtex_complete_enabled = 1

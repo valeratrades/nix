@@ -134,7 +134,7 @@
           # Lean
           [
             #lean4 # want to use elan instead
-            leanblueprint
+            #leanblueprint #dbg: broken in nixpkgs - needs plastexshowmore>=0.0.2, only 0.0.1 available
             elan # rustup for lean. May or may not be outdated.
           ]
           # Js / Ts

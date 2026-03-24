@@ -189,7 +189,7 @@ in {
         chromium
         #en-croissant # chess analysis GUI #dbg: may be bringing in `webkitgtk`
         ncspot
-				neofetch # main system info
+				fastfetch # main system info
         libinput
         virt-viewer
         gnome-boxes
