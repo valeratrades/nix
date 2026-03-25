@@ -43,9 +43,9 @@
     '';
     powerUpCommands = ''
       systemctl restart tailscaled || true
-      systemctl restart clickhouse-server || true
-      systemctl --user restart wlr-gamma
-      systemctl --user restart auto_redshift
+      systemctl restart clickhouse || true
+      systemctl --user -M v@ restart wlr-gamma || true
+      systemctl --user -M v@ restart auto_redshift || true
     '';
   };
 

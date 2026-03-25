@@ -87,6 +87,8 @@ in
 		".claude/settings.json".source =
 			(pkgs.formats.json { }).generate "claude.json" {
 				alwaysThinkingEnabled = false;
+				skipDangerousModePermissionPrompt =  true;
+				trustedWorkspaces = [ "/" ]; # auto-handles subpaths
 				enabledPlugins = plugins.enabled;
 				hooks = {
 					Stop = [

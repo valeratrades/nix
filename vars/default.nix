@@ -33,7 +33,7 @@ in
     defaultUsername = "valeratrades";
     defaultUserEmail = "v79166789533@gmail.com";
     masterUserEmail = "valeratrades@gmail.com";
-    wakeTime = "05:10"; # matches system time, (my system time is utc)
+    wakeTime = "07:10"; # matches system time, (my system time is utc)
     fontSize = 10;
 		kbd = "ansi";
 		sccache = true;

@@ -54,11 +54,11 @@ return require "lazier" {
 			"location",
 			padding = 0,
 		}
-		----:h lualine-filename-component-options
-		--local filename = {
-		--	'filename',
-		--	path = 1,
-		--}
+		local filepath = {
+			'filename',
+			path = 1, -- relative path
+			shorting_target = 0, -- don't abbreviate at all; only truncate when we'd cover the right side
+		}
 		local diff = {
 			"diff",
 			symbols = { added = " ", modified = " ", removed = " " },
@@ -90,8 +90,8 @@ return require "lazier" {
 				lualine_a = { 'mode' },
 				lualine_d = { { "b:gitsigns_head", icon = "" } },
 				lualine_b = { diagnostics, --[[n_misspelled]] },
-				--TODO!: figure out how to display `example/m.rs` instead of `mod.rs`
-				lualine_c = { 'filename' }, -- does repeat one indicated at the top of the tab, but this one has consistent location rel to pane's pos.
+				--REVIEW: was TODO! to display `example/m.rs` instead of `mod.rs` — now showing full relative path
+				lualine_c = { filepath },
 				lualine_x = { diff, spaces, 'encoding' },
 				lualine_y = { 'progress' },
 				lualine_z = { location }
@@ -99,7 +99,7 @@ return require "lazier" {
 			inactive_sections = {
 				lualine_a = {},
 				lualine_b = {},
-				lualine_c = { 'filename' },
+				lualine_c = { filepath },
 				lualine_x = { location },
 				lualine_y = {},
 				lualine_z = {}
