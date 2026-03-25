@@ -1,5 +1,6 @@
 brightness_range = [0.35, 1]
 temperature_range = [2300, 6500]
+update_interval_m = 10
 
 [wallpapers]
 #root = { env = "${NIXOS_CONFIG}/home/config/sway/wallpapers" }

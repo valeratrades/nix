@@ -35,6 +35,8 @@
 
     "math -> code -> trade -> sleep; repeat"
 
+    "do not risk new addictions"
+
     "knowing math is akin to having\nx-ray glasses for logical rels"
 
     "momento mori"

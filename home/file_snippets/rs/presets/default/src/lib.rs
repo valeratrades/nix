@@ -1,0 +1,5 @@
+#![feature(trait_alias)]
+#![feature(type_changing_struct_update)]
+#![feature(stmt_expr_attributes)]
+#![feature(error_generic_member_access)]
+#![feature(default_field_values)]

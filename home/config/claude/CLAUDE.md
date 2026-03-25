@@ -61,3 +61,5 @@
 - NO FALLBACKS. we do not do fallbacks. If state is tainted, we error the fuck out as soon as possible. Think 10 times before adding `unwrap_or` or `let _ =` anywhere, - most likely you're trying to patch up a corrupted state. If that's the case, undo and instead just make it panic out.
 
 - investment into better errors (miette, thiserror, color_eyre), additional **standard** trait impls (derive_more, strum), improving testing infrastructure, are always justified. Procedurally improving our visibility into a group of bugs is as good as solving any one of them.
+
+- if you just wrote `tokio::spawn` in any context, stop immediately, and find a way to implement it with structured concurrency, where nothing happens until explicitly awaited. If you are unable to do so, - stop, explain why it's impossible to me, and only proceed after explicit go-ahead to use it

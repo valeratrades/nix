@@ -58,6 +58,23 @@ return require "lazier" {
 			'filename',
 			path = 1, -- relative path
 			shorting_target = 0, -- don't abbreviate at all; only truncate when we'd cover the right side
+			fmt = function(name)
+				local buf = vim.api.nvim_get_current_buf()
+				local ft = vim.api.nvim_get_option_value("filetype", { buf = buf })
+				if ft ~= "oil" then return name end
+				local ok, oil = pcall(require, "oil")
+				if not ok then return name end
+				local dir = oil.get_current_dir(buf)
+				if not dir then return name end
+				local root = vim.fn.getcwd()
+				if not root:match("/$") then root = root .. "/" end
+				if dir:sub(1, #root) == root then
+					local rel = dir:sub(#root + 1)
+					if rel == "" then return "./" end
+					return rel
+				end
+				return dir
+			end,
 		}
 		local diff = {
 			"diff",
