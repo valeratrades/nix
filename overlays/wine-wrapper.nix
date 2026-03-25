@@ -1,13 +1,13 @@
 # Shared Wine wrapper for Sway - fixes cursor by temporarily resetting monitor positions
 # Usage: wineApp { name, winePrefix, setupScript, runCmd, runtimeInputs ? [] }
-{ lib, writeShellApplication, wineWowPackages, winetricks, curl, unzip, coreutils, sway, jq }:
+{ lib, writeShellApplication, wineWow64Packages, winetricks, curl, unzip, coreutils, sway, jq }:
 
 { name, winePrefix, setupScript ? "", runCmd, runtimeInputs ? [] }:
 
 writeShellApplication {
   inherit name;
   runtimeInputs = [
-    wineWowPackages.waylandFull
+    wineWow64Packages.waylandFull
     winetricks
     curl
     unzip

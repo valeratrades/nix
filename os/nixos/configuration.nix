@@ -472,7 +472,7 @@ in {
           wireplumber
           wl-clipboard
           wl-gammactl
-          xorg.xkbcomp
+          xkbcomp
           xz
         ]
 

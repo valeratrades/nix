@@ -12,36 +12,52 @@
     __GL_LOG_MAX_ANISO = "0";    # disable anisotropic filtering
   };
 
-  powerManagement = {
-    powerDownCommands = ''
+  systemd.services.hibernate-prepare = {
+    description = "Prepare for hibernate by killing memory-heavy processes";
+    before = [ "systemd-hibernate.service" "systemd-suspend-then-hibernate.service" ];
+    requiredBy = [ "systemd-hibernate.service" "systemd-suspend-then-hibernate.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+    };
+    path = [ pkgs.procps pkgs.socat pkgs.coreutils ];
+    script = ''
       # Kill memory-heavy processes before hibernate to minimize image size.
       # The kernel's hibernate writer is single-threaded synchronous IO at 228 MB/s,
       # so every GB we avoid snapshotting saves ~4.5s of wall time.
 
       # LSPs (~5 GB combined) - nvim restarts them on demand
-      ${pkgs.procps}/bin/pkill -f 'lua-language-server' || true
-      ${pkgs.procps}/bin/pkill -f 'rust-analyzer' || true
-      ${pkgs.procps}/bin/pkill -f 'rust-analyzer-proc-macro-srv' || true
+      pkill -f 'lua-language-server' || true
+      pkill -f 'rust-analyzer' || true
+      pkill -f 'rust-analyzer-proc-macro-srv' || true
 
       # Browsers (~3 GB combined) - session restore handles state
-      ${pkgs.procps}/bin/pkill -f 'chrome' || true
-      ${pkgs.procps}/bin/pkill -f 'firefox' || true
+      pkill -f 'chrome' || true
+      pkill -f 'firefox' || true
 
       # Services that restart losslessly
-      ${pkgs.procps}/bin/pkill -f 'openclaw-gateway' || true
-      ${pkgs.procps}/bin/pkill -f 'tailscaled' || true
-      ${pkgs.procps}/bin/pkill -f 'clickhouse' || true
+      pkill -f 'openclaw-gateway' || true
+      pkill -f 'tailscaled' || true
+      pkill -f 'clickhouse' || true
 
       # Gracefully shut down QEMU VM (~2 GB)
-      echo 'system_powerdown' | ${pkgs.socat}/bin/socat - TCP:localhost:7100 || true
-      ${pkgs.coreutils}/bin/sleep 5
-      ${pkgs.procps}/bin/pkill -f 'qemu-system' || true
+      echo 'system_powerdown' | socat - TCP:localhost:7100 || true
+      sleep 5
+      pkill -f 'qemu-system' || true
 
       # Drop filesystem caches right before snapshot
-      ${pkgs.coreutils}/bin/sync
+      sync
       echo 3 > /proc/sys/vm/drop_caches
     '';
-    powerUpCommands = ''
+  };
+
+  systemd.services.hibernate-resume = {
+    description = "Restart services after hibernate resume";
+    after = [ "systemd-hibernate.service" "systemd-suspend-then-hibernate.service" ];
+    requiredBy = [ "systemd-hibernate.service" "systemd-suspend-then-hibernate.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+    };
+    script = ''
       systemctl restart tailscaled || true
       systemctl restart clickhouse || true
       systemctl --user -M v@ restart wlr-gamma || true

@@ -70,15 +70,15 @@
         # Windows
         [
           #DEPRECATE: a bunch of stuff here seems to be bringing the same thing in
-          #wineWowPackages.stable
+          #wineWow64Packages.stable
           #wine
           #(wine.override { wineBuild = "wine64"; })
           #wine64
-					#wineWowPackages.stable
-     #     wineWowPackages.staging
-					wineWowPackages.waylandFull
-          #wineWowPackages.wayland
-          #wineWowPackages.unstableFull
+					#wineWow64Packages.stable
+     #     wineWow64Packages.staging
+					wineWow64Packages.waylandFull
+          #wineWow64Packages.wayland
+          #wineWow64Packages.unstableFull
           #winePackages.stagingFull
           #wine-staging # nightly wine
           winetricks # install deps for wine
@@ -159,7 +159,7 @@
 
             # formatters
             [
-              nixfmt-rfc-style
+              nixfmt
               nixpkgs-fmt
               alejandra # Nix Code Formatter; not sure how it compares with nixpkgs-fmt
             ]
