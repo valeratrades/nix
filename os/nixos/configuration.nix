@@ -140,6 +140,8 @@ in {
 			"clocksource=hpet"
 			#dbg: override nixos-hardware's amd_pstate=active - try passive for stability
 			"amd_pstate=passive"
+			#dbg: force IOMMU full flush - prevents AMD-Vi Completion-Wait timeout that causes system-wide I/O stalls
+			"amd_iommu=fullflush"
 			# mt7925e WiFi suspend fix - disable ASPM to prevent suspend timeout
 			"pcie_aspm.policy=performance"
 			#TODO: uncomment with kernelPatches above

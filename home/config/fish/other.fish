@@ -56,7 +56,7 @@ function matrix
 end
 
 alias fd="fd -I --full-path" # Ignores .gitignore, etc.
-alias rg="rg -I --glob '!.git'" # Ignores case sensitivity and .git directories.
+alias rg="rg -I --glob '!.git' -H" # Ignores case sensitivity and .git directories.
 function pkill
     for arg in $argv
         if string match -qr '^[^-]' $arg

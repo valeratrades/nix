@@ -148,6 +148,21 @@ vim.g.cpp_recommended_style = false
 --,}}}
 
 -- Set default configuration for all LSP servers
+vim.api.nvim_create_user_command('LspRestart', function(opts)
+	local name = opts.args ~= '' and opts.args or nil
+	for _, c in ipairs(vim.lsp.get_clients({ name = name })) do
+		c:stop()
+	end
+	-- reattach after clients shut down
+	vim.defer_fn(function() vim.cmd('e') end, 100)
+end, {
+	nargs = '?',
+	complete = function()
+		return vim.tbl_map(function(c) return c.name end, vim.lsp.get_clients())
+	end,
+	desc = 'Restart LSP clients (optionally filter by name)',
+})
+
 vim.lsp.config('*', {
 	capabilities = capabilities,
 	on_attach = on_attach,

@@ -846,7 +846,7 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
 
         // Window must have "claude" in its name OR the pane command must be "claude"
         let is_claude_window = window_name.eq("claude") || window_name.starts_with("claude") || window_name.contains("claude");
-        let is_claude_pane = pane_command == "claude" || pane_command == "claude-raw";
+        let is_claude_pane = pane_command.contains("claude");
         if !is_claude_window && !is_claude_pane {
             continue;
         }

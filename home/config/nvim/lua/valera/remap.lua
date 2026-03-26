@@ -273,7 +273,8 @@ local function copyFileLineCol()
 end
 
 local function copyFilePath()
-	return vim.fn.expand('%:p') -- absolute path
+	local path = vim.fn.expand('%:p')
+	return (path:gsub("^oil://", ""))
 end
 
 K("", "<Space>ay", function() vim.fn.setreg('"', copyFileLineCol()) end, { desc = "copy file:line:col to \" buffer" })
