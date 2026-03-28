@@ -292,6 +292,7 @@
       # # my file arch consequences
       mkdir = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
         mkdir -p $HOME/tmp/
+        mkdir -p $HOME/tmp/msg_drafts/
         mkdir -p $HOME/Videos/obs/
         mkdir -p $HOME/tmp/Screenshots/
       '';
@@ -303,10 +304,8 @@
       "s/g/README.md".source = "${self}/home/fs/s/g/README.md";
       "s/l/README.md".source = "${self}/home/fs/s/l/README.md";
       "s/tmp/README.md".source = "${self}/home/fs/s/tmp/README.md";
-      "tmp" = {
-				source = "${self}/home/fs/tmp";
-				recursive = true;
-			};
+      "tmp/README.md".source = "${self}/home/fs/tmp/README.md";
+      "tmp/msg_drafts/README.md".source = "${self}/home/fs/tmp/msg_drafts/README.md";
       #
 
       ".config/tg_admin.toml".source = "${self}/home/config/tg_admin.toml";

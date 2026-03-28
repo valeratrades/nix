@@ -4,7 +4,7 @@
     rust-overlay.url = "github:oxalica/rust-overlay";
     flake-utils.url = "github:numtide/flake-utils";
     pre-commit-hooks.url = "github:cachix/git-hooks.nix";
-    v-utils.url = "github:valeratrades/.github?ref=v1.4";
+    v-utils.url = "github:valeratrades/.github?ref=v1.5";
   };
   outputs = { self, nixpkgs, rust-overlay, flake-utils, pre-commit-hooks, v-utils }:
     flake-utils.lib.eachDefaultSystem (
@@ -29,7 +29,6 @@
           inherit pkgs pname rs;
           enable = true;
           lastSupportedVersion = "CURRENT_NIGHTLY_BY_DATE";
-          langs = [ "rs" ];
           jobs.default = true;
         };
         readme = v-utils.readme-fw {
