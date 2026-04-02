@@ -1,16 +1,43 @@
 #!/home/v/nix/home/scripts/nix-run-cached
+---cargo
 
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+---
+
+use clap::Parser;
 use std::{
     env,
     path::{Path, PathBuf},
     process::{Command, exit},
 };
 
-fn clone_repo(args: &[String]) -> Result<PathBuf, String> {
+/// git clone on rails.
+/// Give repo name, it clones into /tmp or provided directory.
+///
+/// ex 1: gc neovim/neovim .     # clone to current directory
+/// ex 2: gc neovim/neovim       # clone to /tmp/neovim
+/// ex 3: gc openai/gpt . -c     # clone to current directory and cd into it
+#[derive(Parser)]
+#[command(name = "gc")]
+struct Args {
+    /// Repository: "owner/repo", "repo" (uses $GITHUB_USERNAME), or full URL
+    repo: String,
+
+    /// Target directory (defaults to /tmp)
+    target: Option<String>,
+
+    /// Print the cloned path for shell cd integration
+    #[arg(short)]
+    c: bool,
+}
+
+fn clone_repo(args: &Args) -> Result<PathBuf, String> {
     let github_username = env::var("GITHUB_USERNAME").ok();
 
-    let repo_payload = args[0].trim_end_matches("/").to_string();
-    let repo = if let Some((owner, repo)) = repo_payload.split_once('/') {
+    let repo_payload = args.repo.trim_end_matches('/').to_string();
+    let repo = if repo_payload.contains('/') {
+        let (owner, repo) = repo_payload.split_once('/').unwrap();
         format!("{}/{}", owner, repo)
     } else if let Some(username) = github_username {
         format!("{}/{}", username, repo_payload)
@@ -20,7 +47,7 @@ fn clone_repo(args: &[String]) -> Result<PathBuf, String> {
         );
     };
 
-    let url = if args[0].contains("://") {
+    let url = if args.repo.contains("://") {
         repo_payload.clone()
     } else {
         format!("https://github.com/{}", repo)
@@ -33,62 +60,41 @@ fn clone_repo(args: &[String]) -> Result<PathBuf, String> {
         .trim_end_matches(".git")
         .to_string();
 
-    if args.len() == 1 {
-        let tmp_path = PathBuf::from(format!("/tmp/{}", filename));
-        Command::new("rm")
-            .arg("-rf")
-            .arg(&tmp_path)
-            .status()
-            .map_err(|_| "Failed to remove existing directory".to_string())?;
-
-        let status = Command::new("git")
-            .args(["clone", "--depth=1", &url, &tmp_path.display().to_string()])
-            .status()
-            .map_err(|_| "Failed to run git clone".to_string())?;
-
-        if status.success() {
-            Ok(tmp_path)
-        } else {
-            Err("Git clone failed".to_string())
+    let target = match &args.target {
+        None => {
+            let tmp_path = PathBuf::from(format!("/tmp/{}", filename));
+            Command::new("rm")
+                .arg("-rf")
+                .arg(&tmp_path)
+                .status()
+                .map_err(|_| "Failed to remove existing directory".to_string())?;
+            tmp_path
         }
-    } else if args.len() == 2 {
-        let target = if Path::new(&args[1]).is_dir() {
-            PathBuf::from(args[1].clone()).join(filename)
-        } else {
-            PathBuf::from(args[1].clone())
-        };
-
-        let status = Command::new("git")
-            .args(["clone", "--depth=1", &url, &target.display().to_string()])
-            .status()
-            .map_err(|_| "Failed to run git clone".to_string())?;
-
-        if status.success() {
-            Ok(target)
-        } else {
-            Err("Git clone failed".to_string())
+        Some(t) => {
+            if Path::new(t).is_dir() {
+                PathBuf::from(t).join(&filename)
+            } else {
+                PathBuf::from(t)
+            }
         }
+    };
+
+    let status = Command::new("git")
+        .args(["clone", "--depth=1", &url, &target.display().to_string()])
+        .status()
+        .map_err(|_| "Failed to run git clone".to_string())?;
+
+    if status.success() {
+        Ok(target)
     } else {
-        Err("Invalid number of arguments".to_string())
+        Err("Git clone failed".to_string())
     }
 }
 
 fn main() {
-    let args: Vec<String> = env::args().skip(1).collect();
-    let help_message = "\
-git clone on rails.
-give repo name, it clones into /tmp or provided directory.
-
-ex 1: gc neovim/neovim . # will clone to current directory
-ex 2: gc neovim/neovim # will clone to /tmp/neovim";
-
-    if args.is_empty() || matches!(args[0].as_str(), "-h" | "--help" | "help") {
-        println!("{}", help_message);
-        return;
-    }
-
+    let args = Args::parse();
     match clone_repo(&args) {
-        Ok(message) => println!("{}", message.display()),
+        Ok(path) => println!("{}", path.display()),
         Err(error) => {
             eprintln!("{}", error);
             exit(1);

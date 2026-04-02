@@ -19,6 +19,11 @@
       recursive = true;
     };
 
+    ".claude/hooks" = {
+      source = "${self}/home/config/claude/hooks";
+      recursive = true;
+    };
+
     # ind files
     ".config/auto_redshift.toml".source =
       "${self}/home/config/auto_redshift.toml";

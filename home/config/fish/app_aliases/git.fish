@@ -60,7 +60,7 @@ alias ggw="gg -p wip"
 alias ggb="gg -p bump" # bump deps
 alias ggl="gg -p logging"
 
-alias gup="git commit -a --fixup (git rev-parse HEAD)"
+alias gup="git add -A . && git commit --fixup (git rev-parse HEAD)"
 alias gupp="gup && git push --follow-tags"
 
 function gbl

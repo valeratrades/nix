@@ -52,8 +52,12 @@ alias gpl="$__fish_scripts_dir/git_scripts.rs push --force-with-lease"
 alias gbd="$__fish_scripts_dir/git_scripts.rs delete"
 
 function gc
-	set -l result ($__fish_scripts_dir/git_clone.rs $argv)
-	and cd $result
+	if contains -- -c $argv
+		set -l result ($__fish_scripts_dir/git_clone.rs $argv)
+		and cd $result
+	else
+		$__fish_scripts_dir/git_clone.rs $argv
+	end
 end
 
 alias choose_port="$__fish_scripts_dir/choose_port.sh"

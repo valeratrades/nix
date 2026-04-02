@@ -301,8 +301,31 @@ output $output_laptop pos 0 1080
 
 exec_always "sh -c -- pkill -f 'todo monitor'; todo monitor"
 
-bindsym $mod+w exec "wallpaper_carousel circle -f"
-bindsym $mod+Shift+w exec "wallpaper_carousel circle -b"
+bindsym $mod+Ctrl+w exec "wallpaper_carousel circle -f"
+bindsym $mod+Ctrl+Shift+w exec "wallpaper_carousel circle -b"
+
+# # Speech-to-text mode (Win+w = whisper)
+# Drivers: w=whisper-cpp (local), g=gpt-4o-transcribe (OpenAI API)
+# Usage: enter mode, optionally press w/g to pick driver, then hold space to record.
+mode "speech" {
+	# Switch driver without exiting mode
+	bindsym w exec ~/.config/sway/speech-set-driver.sh whisper
+	bindsym g exec ~/.config/sway/speech-set-driver.sh gpt4o
+
+	# Hold space to record; release to transcribe + type result
+	# bindcode 65 = spacebar; --no-repeat prevents repeat-fire while held; --release fires on key-up
+	bindcode --no-repeat 65 exec ~/.config/sway/speech-record-start.sh
+	bindcode --release 65 exec ~/.config/sway/speech-record-stop.sh
+
+	bindsym $mod+w exec $switch_out
+	bindsym $mod+c exec $switch_out
+	bindsym $mod+q exec $switch_out
+	bindsym Ctrl+c exec $switch_out
+	bindsym Escape exec $switch_out
+	bindsym Return exec $switch_out
+	bindsym q exec $switch_out
+}
+bindsym $mod+w exec "swaymsg mode speech && eww update sway_mode='speech (w=whisper,g=gpt4o,hold_space=record)'"
 
 bindsym $mod+d exec zathura "~/Downloads/$(ls -t ~/Downloads | head -n 1)"
 bindsym $mod+i exec xdg-open ~/tmp/Screenshots/"$(ls -t ~/tmp/Screenshots | head -n 1)"

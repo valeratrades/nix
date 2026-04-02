@@ -243,6 +243,8 @@ in {
         inputs.claude_code_nix.packages.${pkgs.stdenv.hostPlatform.system}.default
 
         libreoffice-still
+    
+        gnuplot # plot functions for visual exploration (good for ones outside of 2d)
 
         ols
         magic-wormhole # transfer files easily between computers

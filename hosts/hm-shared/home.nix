@@ -197,6 +197,8 @@
           cowsay
           xdotool # most options don't work on wayland though
           wlrctl # wayland mouse/keyboard emulation for sway
+          wtype # wl-clipboard-compatible xdotool type for Wayland (used by speech-to-text)
+          whisper-cpp # local STT via whisper-cli (speech mode driver "w")
         ]
         [
           # messengers
