@@ -359,11 +359,11 @@ bindsym $mod+Insert exec "swaymsg mode screenshot && eww update sway_mode='scree
 #
 
 mode "size_presets" {
-	bindsym 1 resize set 350px 650px
-	bindsym 2 resize set 576px 768px
-	bindsym 3 resize set 768px 768px
-	bindsym 4 resize set 992px 768px
-	bindsym 5 resize set 1200px 768px
+	bindsym 1 resize set 350px 650px; $switch_out
+	bindsym 2 resize set 576px 768px; $switch_out
+	bindsym 3 resize set 768px 768px; $switch_out
+	bindsym 4 resize set 992px 768px; $switch_out
+	bindsym 5 resize set 1200px 768px; $switch_out
 
 	bindsym $left move left
 	bindsym $down move down

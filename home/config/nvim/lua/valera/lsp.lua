@@ -42,8 +42,12 @@ end
 --
 
 
-local on_attach = function(client, bufnr)
-	local telescope_builtin = require("telescope.builtin")
+local function on_attach(client, bufnr)
+	local telescope_builtin = setmetatable({}, {
+		__index = function(_, key)
+			return function(...) require("telescope.builtin")[key](...) end
+		end
+	})
 
 	local function buf_set_keymap(mode, lhs, rhs, opts)
 		opts = opts or {}
@@ -139,6 +143,18 @@ local on_attach = function(client, bufnr)
 	end
 end
 
+-- LspAttach fires after all config-level on_attach callbacks and cannot be
+-- overwritten by per-server configs (e.g. nvim-lspconfig's clangd.lua on_attach
+-- would clobber vim.lsp.config('*', { on_attach = ... }) via tbl_deep_extend).
+vim.api.nvim_create_autocmd('LspAttach', {
+	callback = function(args)
+		local client = vim.lsp.get_client_by_id(args.data.client_id)
+		if client then
+			on_attach(client, args.buf)
+		end
+	end,
+})
+
 
 -- these set a bunch of indent presets in a very weird manner; making consequences very difficult to debug {{{
 vim.g.rust_recommended_style = false
@@ -165,7 +181,6 @@ end, {
 
 vim.lsp.config('*', {
 	capabilities = capabilities,
-	on_attach = on_attach,
 })
 
 -- lua_ls
@@ -360,16 +375,6 @@ local function rustCheckWith(cmd)
 end
 K("n", "<space>rwl", function() rustCheckWith("clippy") end, { desc = "Rust: switch to checking with `clippy`" })
 K("n", "<space>rwe", function() rustCheckWith("check") end, { desc = "Rust: switch to checking with `check`" })
-
--- LspAttach hook for rustaceanvim - must be set up BEFORE vim.g.rustaceanvim
-vim.api.nvim_create_autocmd('LspAttach', {
-	callback = function(args)
-		local client = vim.lsp.get_client_by_id(args.data.client_id)
-		if client and client.name == 'rust-analyzer' then
-			on_attach(client, args.buf)
-		end
-	end,
-})
 
 vim.g.rustaceanvim = {
 	tools = {

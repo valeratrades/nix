@@ -137,7 +137,8 @@ in {
 			#dbg: limit CPU to shallow C-states (C0/C1 only) - testing if deep sleep triggers IRQ storms
 			"processor.max_cstate=1"
 			#dbg: TSC showing ~5 billion cycle warp between CPUs - try HPET instead
-			"clocksource=hpet"
+			# commented out: processor.max_cstate=1 already prevents TSC drift from deep C-states, making HPET unnecessary; HPET is ~75x slower than TSC and causes system-wide sluggishness - see ongoing_debug/2026-03-26_amd-vi-iommu-stall.md
+			# "clocksource=hpet"
 			#dbg: override nixos-hardware's amd_pstate=active - try passive for stability
 			"amd_pstate=passive"
 			#dbg: force IOMMU strict TLB invalidation - prevents AMD-Vi Completion-Wait timeout that causes system-wide I/O stalls
