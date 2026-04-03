@@ -56,9 +56,18 @@ alias ggd="gg -p docs"
 alias ggi="gg -p ci"
 alias ggm="gg -p move"
 alias ggn="gg -p nuke" # important to have this here, as it additionally promotes simplification whenever possible
-alias ggw="gg -p wip"
 alias ggb="gg -p bump" # bump deps
 alias ggl="gg -p logging"
+
+function ggw
+	if test (count $argv) -gt 0
+		set msg "wip: $argv[1]"
+	else
+		set msg 'wip: _'
+	end
+
+	git add -A . && git commit --no-verify -m "$msg"
+end
 
 alias gup="git add -A . && git commit --fixup (git rev-parse HEAD)"
 alias gupp="gup && git push --follow-tags"

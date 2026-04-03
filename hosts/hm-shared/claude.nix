@@ -88,6 +88,7 @@ in
 			(pkgs.formats.json { }).generate "claude.json" {
 				alwaysThinkingEnabled = false;
 				skipDangerousModePermissionPrompt =  true;
+				showClearContextOnPlanAccept = true;
 				#trustedWorkspaces = [ "/" ]; #NB: doesn't actually exist. Instead, opoen in `/` and accept it as trusted manually once.
 				enabledPlugins = plugins.enabled;
 				hooks = {
