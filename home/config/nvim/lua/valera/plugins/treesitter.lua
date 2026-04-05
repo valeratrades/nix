@@ -14,7 +14,10 @@ return {
 			callback = function(args)
 				if pcall(vim.treesitter.start, args.buf) then
 					vim.bo[args.buf].syntax = 'ON' -- additional_vim_regex_highlighting equivalent
-					vim.bo[args.buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+					local lang = vim.treesitter.language.get_lang(vim.bo[args.buf].filetype)
+					if lang and pcall(vim.treesitter.query.get, lang, 'indents') and vim.treesitter.query.get(lang, 'indents') then
+						vim.bo[args.buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+					end
 				end
 			end,
 		})
