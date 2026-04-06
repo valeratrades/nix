@@ -1,6 +1,7 @@
 --NB: to init, the first time must auth with `Copilot auth`
 return require "lazier" {
 	"zbirenbaum/copilot.lua",
+	event = "VeryLazy",
 	dependencies = {
 		"copilotlsp-nvim/copilot-lsp", -- (optional) for NES functionality
 	},
