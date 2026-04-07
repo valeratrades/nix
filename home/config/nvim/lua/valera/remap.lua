@@ -112,6 +112,7 @@ for i = 1, 8 do
 end
 K("", "<A-o>", "<nop>", { desc = "Nop" })
 K("", "<A-O>", "<nop>", { desc = "Nop" })
+K({ "i", "" }, "<C-S-t>", "<Esc><cmd>lua ReopenLastClosedTab()<cr>", { desc = "Tab reopen last closed" })
 K({ "i", "" }, "<A-u>", "<Esc><cmd>tabmove -<cr>", { desc = "Tab move left" })
 K({ "i", "" }, "<A-y>", "<Esc><cmd>tabmove +<cr>", { desc = "Tab move right" })
 K({ "i", "" }, "<A-U>", "<Esc><cmd>tabmove 0<cr>", { desc = "Tab move first" })

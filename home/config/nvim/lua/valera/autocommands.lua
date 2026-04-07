@@ -1,3 +1,59 @@
+-- Track closed tabs for reopen with Ctrl+Shift+T
+do
+	local tab_buffers = {}    -- tabnr -> list of file paths (snapshot before leave)
+	local closed_tabs = {}    -- stack of {files, cwd}
+
+	vim.api.nvim_create_autocmd("TabLeave", {
+		callback = function()
+			local tabnr = vim.api.nvim_get_current_tabpage()
+			local wins = vim.api.nvim_tabpage_list_wins(tabnr)
+			local files = {}
+			for _, win in ipairs(wins) do
+				local buf = vim.api.nvim_win_get_buf(win)
+				local name = vim.api.nvim_buf_get_name(buf)
+				if name ~= "" and vim.bo[buf].buftype == "" then
+					files[#files + 1] = name
+				end
+			end
+			tab_buffers[tabnr] = { files = files, cwd = vim.fn.getcwd(-1, vim.fn.tabpagenr()) }
+		end,
+		desc = "Snapshot tab buffers before leaving",
+	})
+
+	vim.api.nvim_create_autocmd("TabClosed", {
+		callback = function(args)
+			local tabnr = tonumber(args.file)
+			local saved = tab_buffers[tabnr]
+			if saved and #saved.files > 0 then
+				closed_tabs[#closed_tabs + 1] = saved
+			end
+			tab_buffers[tabnr] = nil
+		end,
+		desc = "Push closed tab buffers to reopen stack",
+	})
+
+	function ReopenLastClosedTab()
+		if #closed_tabs == 0 then
+			vim.notify("No closed tabs to reopen", vim.log.levels.INFO)
+			return
+		end
+		local entry = table.remove(closed_tabs)
+		vim.cmd("tabnew")
+		if entry.cwd then
+			vim.cmd("tcd " .. vim.fn.fnameescape(entry.cwd))
+		end
+		local first = true
+		for _, path in ipairs(entry.files) do
+			if first then
+				vim.cmd("edit " .. vim.fn.fnameescape(path))
+				first = false
+			else
+				vim.cmd("vsplit " .. vim.fn.fnameescape(path))
+			end
+		end
+	end
+end
+
 -- Save/restore views (folds, cursor) - skip special buffers like oil
 vim.api.nvim_create_autocmd("BufWinLeave", {
 	callback = function()
