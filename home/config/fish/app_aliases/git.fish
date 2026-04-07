@@ -69,7 +69,7 @@ function ggw
 	git add -A . && git commit --no-verify -m "$msg"
 end
 
-alias gup="git add -A . && git commit --fixup (git rev-parse HEAD)"
+alias gup="git add -A && git commit --fixup (git rev-parse HEAD)"
 alias gupp="gup && git push --follow-tags"
 
 function gbl

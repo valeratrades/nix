@@ -84,10 +84,12 @@ in
 	'';
 
 	home.file = {
-		".claude/settings.json".source =
+		".claude/settings.json" = {
+			source =
 			(pkgs.formats.json { }).generate "claude.json" {
 				alwaysThinkingEnabled = false;
 				skipDangerousModePermissionPrompt =  true;
+				model = "claude-sonnet-4-6"; #HACK: currently is better than default Opus. Keep until default becomes the best choice again.
 				showClearContextOnPlanAccept = true;
 				#trustedWorkspaces = [ "/" ]; #NB: doesn't actually exist. Instead, opoen in `/` and accept it as trusted manually once.
 				enabledPlugins = plugins.enabled;
@@ -114,6 +116,8 @@ in
 					];
 				};
 			};
+			force = true; # claude code started writing its own temp settings in the same place now. Well fuck them, I'd rather go without temp settings than accept that.
+		};
 
 		".claude/plugins/known_marketplaces.json".source =
 			(pkgs.formats.json { }).generate "known_marketplaces.json" (

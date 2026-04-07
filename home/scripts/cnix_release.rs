@@ -510,13 +510,10 @@ fn main() {
             eprintln!("error: git add failed");
             exit(1);
         }
-        if !run("git", &["commit", "-m", msg]) {
-            eprintln!("error: git commit failed (nothing to commit?)");
-            exit(1);
-        }
+        let committed = run("git", &["commit", "-m", msg]);
 
-        // Push commit to default branch (AFTER commit includes version bump)
-        if !run("git", &["push", "origin", &default_branch]) {
+        // Push commit to default branch only if we actually committed something
+        if committed && !run("git", &["push", "origin", &default_branch]) {
             eprintln!("error: failed to push to {default_branch}");
             exit(1);
         }
@@ -605,7 +602,8 @@ fn main() {
                 eprintln!("error: failed to create branch {branch}");
                 exit(1);
             }
-            if !run("git", &["push", "--force", "origin", branch]) {
+            let refspec = format!("refs/heads/{branch}:refs/heads/{branch}");
+            if !run("git", &["push", "--force", "origin", &refspec]) {
                 eprintln!("error: failed to push branch {branch}");
                 exit(1);
             }

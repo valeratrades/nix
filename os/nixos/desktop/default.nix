@@ -211,6 +211,7 @@
               cargo-rr # wrapper around rr debugger. Q: should it ever be used over gdb?
               cargo-tarpaulin # code coverage. Q: is it ever useful?
               cargo-sort # format Cargo.toml
+              cargo-autoinherit # auto DRY workspace deps
               cargo-insta # snapshot tests
               cargo-mutants # fuzzy finding
               cargo-update # `cargo add` command
