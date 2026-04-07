@@ -1,21 +1,26 @@
 -- Track closed tabs for reopen with Ctrl+Shift+T
 do
-	local tab_buffers = {}    -- tabnr -> list of file paths (snapshot before leave)
-	local closed_tabs = {}    -- stack of {files, cwd}
+	local tab_buffers = {}    -- tabnr -> snapshot before leave
+	local closed_tabs = {}    -- stack of {wins, cwd}
 
 	vim.api.nvim_create_autocmd("TabLeave", {
 		callback = function()
 			local tabnr = vim.api.nvim_get_current_tabpage()
 			local wins = vim.api.nvim_tabpage_list_wins(tabnr)
-			local files = {}
+			local current_win = vim.api.nvim_get_current_win()
+			local snapshots = {}
 			for _, win in ipairs(wins) do
 				local buf = vim.api.nvim_win_get_buf(win)
 				local name = vim.api.nvim_buf_get_name(buf)
 				if name ~= "" and vim.bo[buf].buftype == "" then
-					files[#files + 1] = name
+					snapshots[#snapshots + 1] = {
+						path = name,
+						cursor = vim.api.nvim_win_get_cursor(win),
+						focused = win == current_win,
+					}
 				end
 			end
-			tab_buffers[tabnr] = { files = files, cwd = vim.fn.getcwd(-1, vim.fn.tabpagenr()) }
+			tab_buffers[tabnr] = { wins = snapshots, cwd = vim.fn.getcwd(-1, vim.fn.tabpagenr()) }
 		end,
 		desc = "Snapshot tab buffers before leaving",
 	})
@@ -24,7 +29,7 @@ do
 		callback = function(args)
 			local tabnr = tonumber(args.file)
 			local saved = tab_buffers[tabnr]
-			if saved and #saved.files > 0 then
+			if saved and #saved.wins > 0 then
 				closed_tabs[#closed_tabs + 1] = saved
 			end
 			tab_buffers[tabnr] = nil
@@ -42,15 +47,19 @@ do
 		if entry.cwd then
 			vim.cmd("tcd " .. vim.fn.fnameescape(entry.cwd))
 		end
+		local focus_win = nil
 		local first = true
-		for _, path in ipairs(entry.files) do
+		for _, w in ipairs(entry.wins) do
 			if first then
-				vim.cmd("edit " .. vim.fn.fnameescape(path))
+				vim.cmd("edit " .. vim.fn.fnameescape(w.path))
 				first = false
 			else
-				vim.cmd("vsplit " .. vim.fn.fnameescape(path))
+				vim.cmd("vsplit " .. vim.fn.fnameescape(w.path))
 			end
+			vim.api.nvim_win_set_cursor(0, w.cursor)
+			if w.focused then focus_win = vim.api.nvim_get_current_win() end
 		end
+		if focus_win then vim.api.nvim_set_current_win(focus_win) end
 	end
 end
 
