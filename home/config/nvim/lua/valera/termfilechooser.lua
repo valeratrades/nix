@@ -10,6 +10,17 @@ local CONFIRM_KEYS = { '<CR>', '<M-a>' }
 _G.filechooser_marks = {}
 _G.filechooser_ns = vim.api.nvim_create_namespace('filechooser')
 
+local function resolve_path(path)
+  if vim.fn.isdirectory(path) == 1 then
+    local name = path:match('([^/]+)/*$')
+    local parent = path:match('^(.*)/[^/]+/*$') or '.'
+    local zip = '/tmp/' .. name .. '.zip'
+    vim.fn.system(string.format('cd %s && zip -r %s %s', vim.fn.shellescape(parent), vim.fn.shellescape(zip), vim.fn.shellescape(name)))
+    return zip
+  end
+  return path
+end
+
 function M.setup_open(tmpfile)
   -- When a regular file is opened, capture path and exit immediately
   -- Use BufReadCmd to completely intercept the file load
@@ -38,7 +49,7 @@ function M.setup_open(tmpfile)
       -- 's' to mark/unmark files
       vim.keymap.set('n', 's', function()
         local entry = oil.get_cursor_entry()
-        if entry and entry.type == 'file' then
+        if entry and (entry.type == 'file' or entry.type == 'directory') then
           local path = oil.get_current_dir() .. entry.name
           local lnum = vim.fn.line('.')
           if _G.filechooser_marks[path] then
@@ -64,7 +75,7 @@ function M.setup_open(tmpfile)
           local f = io.open(tmpfile, 'w')
           if f then
             for i, p in ipairs(paths) do
-              f:write(p)
+              f:write(resolve_path(p))
               if i < #paths then f:write('\n') end
             end
             f:close()
@@ -84,7 +95,7 @@ function M.setup_open(tmpfile)
         local paths = {}
         for lnum = start_line, end_line do
           local entry = oil.get_entry_on_line(0, lnum)
-          if entry and entry.type == 'file' then
+          if entry and (entry.type == 'file' or entry.type == 'directory') then
             table.insert(paths, dir .. entry.name)
           end
         end
@@ -92,7 +103,7 @@ function M.setup_open(tmpfile)
           local f = io.open(tmpfile, 'w')
           if f then
             for i, p in ipairs(paths) do
-              f:write(p)
+              f:write(resolve_path(p))
               if i < #paths then f:write('\n') end
             end
             f:close()
