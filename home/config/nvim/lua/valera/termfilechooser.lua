@@ -15,7 +15,16 @@ local function resolve_path(path)
     local name = path:match('([^/]+)/*$')
     local parent = path:match('^(.*)/[^/]+/*$') or '.'
     local zip = '/tmp/' .. name .. '.zip'
-    vim.fn.system(string.format('cd %s && zip -r %s %s', vim.fn.shellescape(parent), vim.fn.shellescape(zip), vim.fn.shellescape(name)))
+    local is_git = vim.fn.executable('git') == 1
+      and vim.fn.system(string.format('git -C %s rev-parse --is-inside-work-tree 2>/dev/null', vim.fn.shellescape(path))):match('true')
+    if is_git then
+      -- NB: git archive only includes tracked files (respects .gitignore), but archives HEAD, not working tree
+      vim.fn.system(string.format('git -C %s archive --format=zip --prefix=%s/ HEAD -o %s',
+        vim.fn.shellescape(path), vim.fn.shellescape(name .. '/'), vim.fn.shellescape(zip)))
+    else
+      vim.fn.system(string.format('cd %s && zip -r %s %s',
+        vim.fn.shellescape(parent), vim.fn.shellescape(zip), vim.fn.shellescape(name)))
+    end
     return zip
   end
   return path
