@@ -53,6 +53,18 @@ enum Commands {
         /// Branch name to delete
         branch: String,
     },
+    /// Reword a commit message by hash without interactive rebase
+    Reword {
+        /// Commit hash to reword (any ancestor of HEAD)
+        commit: String,
+        /// New commit message
+        message: String,
+    },
+    /// Extract a commit from history, leaving it as stashed uncommitted changes
+    Extract {
+        /// Commit hash to extract
+        commit: String,
+    },
     /// Create a new GitHub repository with standard labels and milestones
     Publish {
         /// Repository name (defaults to current directory name)
@@ -897,6 +909,172 @@ fn publish(repo_name: Option<String>, private: bool, public: bool, commit: Optio
     println!("\nRepository {repo_name} created successfully!");
 }
 
+fn reword(commit_str: String, new_message: String) {
+    let repo = open_repo();
+
+    let target_id = repo
+        .rev_parse_single(commit_str.as_str())
+        .unwrap_or_else(|e| {
+            eprintln!("ERROR: not a commit '{commit_str}': {e}");
+            std::process::exit(1);
+        })
+        .detach();
+
+    let head_id = repo.head_commit().unwrap_or_else(|e| {
+        eprintln!("ERROR: could not read HEAD: {e}");
+        std::process::exit(1);
+    }).id;
+
+    // Verify target is ancestor of HEAD
+    if !is_ancestor(&repo, target_id, head_id) {
+        eprintln!("ERROR: {commit_str} is not an ancestor of HEAD");
+        std::process::exit(1);
+    }
+
+    // Collect descendants oldest-first (target excluded).
+    // rev_walk from HEAD yields newest-first; stop when we reach target.
+    let descendants: Vec<gix::ObjectId> = {
+        let walk = repo.rev_walk([head_id]).all().unwrap_or_else(|e| {
+            eprintln!("ERROR: rev_walk failed: {e}");
+            std::process::exit(1);
+        });
+        let mut v: Vec<gix::ObjectId> = walk
+            .filter_map(|r| r.ok())
+            .map(|info| info.id().detach())
+            .take_while(|id| *id != target_id)
+            .collect();
+        v.reverse(); // oldest-first
+        v
+    };
+
+    // Rewrite a single commit object, replacing its message and optionally its first parent
+    let rewrite = |orig: gix::ObjectId, new_msg: &str, new_parent: Option<gix::ObjectId>| -> gix::ObjectId {
+        let obj = repo.find_object(orig).unwrap_or_else(|e| {
+            eprintln!("ERROR: find_object {orig}: {e}");
+            std::process::exit(1);
+        });
+        let commit = obj.peel_to_commit().unwrap_or_else(|e| {
+            eprintln!("ERROR: peel_to_commit {orig}: {e}");
+            std::process::exit(1);
+        });
+        let raw = commit.decode().unwrap_or_else(|e| {
+            eprintln!("ERROR: decode commit {orig}: {e}");
+            std::process::exit(1);
+        });
+
+        let parents: Vec<gix::ObjectId> = if let Some(p) = new_parent {
+            // Replace only first parent, keep any extra parents (merge commits)
+            let mut ps: Vec<gix::ObjectId> = raw.parents().collect();
+            if ps.is_empty() {
+                ps.push(p);
+            } else {
+                ps[0] = p;
+            }
+            ps
+        } else {
+            raw.parents().collect()
+        };
+
+        let new_commit = gix::objs::Commit {
+            tree: raw.tree(),
+            parents: parents.into(),
+            author: raw
+                .author()
+                .unwrap_or_else(|e| { eprintln!("ERROR: author parse: {e}"); std::process::exit(1); })
+                .to_owned()
+                .unwrap_or_else(|e| { eprintln!("ERROR: author date: {e}"); std::process::exit(1); }),
+            committer: raw
+                .committer()
+                .unwrap_or_else(|e| { eprintln!("ERROR: committer parse: {e}"); std::process::exit(1); })
+                .to_owned()
+                .unwrap_or_else(|e| { eprintln!("ERROR: committer date: {e}"); std::process::exit(1); }),
+            encoding: raw.encoding.map(|e| e.into()),
+            message: if new_msg.is_empty() { raw.message.into() } else { new_msg.as_bytes().into() },
+            extra_headers: raw.extra_headers
+                .iter()
+                .map(|(k, v)| (k.to_owned().into(), v.as_ref().to_owned().into()))
+                .collect(),
+        };
+
+        repo.write_object(&new_commit).unwrap_or_else(|e| {
+            eprintln!("ERROR: write_object: {e}");
+            std::process::exit(1);
+        }).detach()
+    };
+
+    // 1. Rewrite target with new message
+    let mut prev = rewrite(target_id, &new_message, None);
+    println!("reworded: {target_id} -> {prev}");
+
+    // 2. Replay each descendant, reparenting first parent to the new chain
+    for desc in descendants {
+        let next = rewrite(desc, "", Some(prev));
+        println!("replayed: {desc} -> {next}");
+        prev = next;
+    }
+
+    // 3. Move branch ref to new tip
+    let branch_ref = repo.head_name().unwrap_or_else(|e| {
+        eprintln!("ERROR: head_name: {e}");
+        std::process::exit(1);
+    }).unwrap_or_else(|| {
+        eprintln!("ERROR: HEAD is detached");
+        std::process::exit(1);
+    });
+
+    repo.edit_reference(gix::refs::transaction::RefEdit {
+        change: gix::refs::transaction::Change::Update {
+            log: gix::refs::transaction::LogChange {
+                mode: gix::refs::transaction::RefLog::AndReference,
+                force_create_reflog: false,
+                message: "reword".into(),
+            },
+            expected: gix::refs::transaction::PreviousValue::MustExistAndMatch(
+                gix::refs::Target::Object(head_id),
+            ),
+            new: gix::refs::Target::Object(prev),
+        },
+        name: branch_ref.clone(),
+        deref: false,
+    }).unwrap_or_else(|e| {
+        eprintln!("ERROR: update-ref: {e}");
+        std::process::exit(1);
+    });
+
+    println!("branch updated: {} -> {prev}", branch_ref.as_bstr());
+}
+
+fn extract(commit: String) {
+    // Create/reset bak branch at current HEAD
+    // -f forces overwrite if it already exists
+    if !run_cmd("git", &["branch", "-f", "bak", "HEAD"]) {
+        eprintln!("ERROR: Failed to create/reset bak branch");
+        std::process::exit(1);
+    }
+
+    // Remove the commit from history: replay everything after `commit` onto `commit^`
+    let onto = format!("{commit}^");
+    if !run_cmd("git", &["rebase", "--onto", &onto, &commit]) {
+        eprintln!("ERROR: rebase failed - bak branch preserves original state");
+        std::process::exit(1);
+    }
+
+    // Stage the commit's changes without creating a new commit
+    if !run_cmd("git", &["cherry-pick", "-n", &commit]) {
+        eprintln!("ERROR: cherry-pick failed");
+        std::process::exit(1);
+    }
+
+    // Stash the staged changes
+    let stash_msg = format!("extracted {commit}");
+    if !run_cmd("git", &["stash", "push", "--staged", "-m", &stash_msg]) {
+        eprintln!("ERROR: stash failed");
+        std::process::exit(1);
+    }
+
+    println!("Extracted {commit} into stash. Original state saved in 'bak' branch.");
+}
+
 fn main() {
     let args = Args::parse();
 
@@ -912,6 +1090,8 @@ fn main() {
             args,
         } => push(force_with_lease, force, args),
         Commands::Delete { branch } => delete(branch),
+        Commands::Reword { commit, message } => reword(commit, message),
+        Commands::Extract { commit } => extract(commit),
         Commands::Publish {
             repo_name,
             private,

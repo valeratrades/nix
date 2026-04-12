@@ -69,13 +69,15 @@ function _G.custom_tabline()
 		end
 
 		local is_current = (i == vim.fn.tabpagenr())
+		s = s .. "%" .. i .. "T"
 		s = s .. (is_current and "%#TabLineSel#" or "%#TabLine#")
 		s = s .. " " .. name .. " "
 	end
-	s = s .. "%#TabLineFill#"
+	s = s .. "%T%#TabLineFill#"
 	return s
 end
 
+o.mouse = "a"
 o.showtabline = 2 -- tabline shown even if only 1 file is open // reason: consistency
 o.tabline = "%!v:lua.custom_tabline()"
 

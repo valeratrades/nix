@@ -7,7 +7,7 @@
   bybit = {
     api_pubkey.env = "QUANTM_BYBIT_SUB_PUBKEY";
     api_secret.env = "QUANTM_BYBIT_SUB_SECRET";
-    instruments = ["Perp"];
+    instruments = ["Perp" "Spot"];
   };
   mexc = {
     api_pubkey.env = "MEXC_READ_PUBKEY";

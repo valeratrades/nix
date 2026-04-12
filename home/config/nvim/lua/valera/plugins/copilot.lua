@@ -1,4 +1,5 @@
 --NB: to init, the first time must auth with `Copilot auth`
+--NB: use :CopilotToggle, not :Copilot disable/enable -- the latter causes a benign ServerNotInitialized RPC error on re-enable (race between enable and async server init)
 return require "lazier" {
 	"zbirenbaum/copilot.lua",
 	event = "VeryLazy",

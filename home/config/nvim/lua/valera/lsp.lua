@@ -63,7 +63,35 @@ local function on_attach(client, bufnr)
 			vim.lsp.buf.hover()
 		end
 	end, { desc = "Hover Info / Focus Popup", overwrite = true })
-	buf_set_keymap('n', 'gd', vim.lsp.buf.definition, { desc = "Go to Definition", overwrite = true })
+	buf_set_keymap('n', 'gd', function()
+		vim.lsp.buf.definition({
+			on_list = function(opts)
+				-- Deduplicate by uri+range
+				local seen = {}
+				local unique = {}
+				for _, item in ipairs(opts.items) do
+					local key = item.filename .. ':' .. item.lnum .. ':' .. item.col
+					if not seen[key] then
+						seen[key] = true
+						unique[#unique + 1] = item
+					end
+				end
+				if #unique == 1 then
+					vim.lsp.util.jump_to_location(
+						{ uri = vim.uri_from_fname(unique[1].filename), range = {
+							start = { line = unique[1].lnum - 1, character = unique[1].col - 1 },
+							['end'] = { line = unique[1].lnum - 1, character = unique[1].col - 1 },
+						}},
+						'utf-8'
+					)
+				else
+					opts.items = unique
+					vim.fn.setqflist({}, ' ', opts)
+					vim.cmd('copen')
+				end
+			end,
+		})
+	end, { desc = "Go to Definition", overwrite = true })
 	buf_set_keymap('n', '<space>lR', vim.lsp.buf.rename, { desc = "Rename" })
 	buf_set_keymap('n', '<space>lh', function() vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled()) end,
 		{ desc = "Toggle Inlay Hints" })
