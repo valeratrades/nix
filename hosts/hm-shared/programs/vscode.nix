@@ -40,7 +40,7 @@
 				name = "codeviz";
 				publisher = "CodeViz";
 				version = "1.6.9";
-				sha256 = "0ark96ifgjn8w5s7vw7rr9lfxr1iv4ylxibhx77f9m927k9gqcbc";
+				sha256 = "01n9kjj8ys36x58a8l6k9mpnilwjsydqzkwk28n8pjxkdjjprr6h";
 			}
 			{
 				#HACK: rn supports only py/go/js/ts

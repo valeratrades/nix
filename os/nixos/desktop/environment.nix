@@ -14,7 +14,8 @@
 
   systemd.services.hibernate-prepare = {
     description = "Prepare for hibernate by killing memory-heavy processes";
-    before = [ "systemd-hibernate.service" "systemd-suspend-then-hibernate.service" ];
+    # Must run before nvidia-hibernate so GPU clients are dead when nvidia saves VRAM state
+    before = [ "systemd-hibernate.service" "systemd-suspend-then-hibernate.service" "nvidia-hibernate.service" ];
     requiredBy = [ "systemd-hibernate.service" "systemd-suspend-then-hibernate.service" ];
     serviceConfig = {
       Type = "oneshot";

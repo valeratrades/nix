@@ -43,10 +43,11 @@ in
 			# RTX 5060 is Blackwell (GB206) - use open kernel modules
 			open = true;
 
-			# Disable power management - nvidia-powerd spams JPAC errors and causes system freezes
-			powerManagement.enable = false;
-			#dbg: investigating hard lockups (2025-12-09) - disable fine-grained power management to prevent GPU sleep/wake cycles
-			powerManagement.finegrained = false; #TEST: supposed to prevent GPU wake-up
+			# Enable hibernate/suspend support: activates nvidia-sleep.sh hooks (saves/restores VRAM)
+			# and sets NVreg_PreserveVideoMemoryAllocations=1 (exposes /proc/driver/nvidia/suspend).
+			# This is NOT nvidia-powerd (that's dynamicBoost.enable below) — no JPAC errors.
+			powerManagement.enable = true;
+			powerManagement.finegrained = false;
 			dynamicBoost.enable = false;
 
 			# PRIME configuration for hybrid graphics (AMD iGPU + NVIDIA dGPU)
