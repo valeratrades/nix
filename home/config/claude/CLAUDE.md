@@ -45,8 +45,6 @@
 
 - oftentimes I will request a change that will modify some key primitives used throughout the codebase. You must not attempt to minimize number of necessary changes by introducing a sneaky fallback function that replicates the old behavior in a slightly different way. Simplicity is measured in the correctness of the final interface, not how long it took you to rewrite to it. Semantic correctness of the architecture is most important.
 
-- if you've just added `unwrap_or(_else)`, - stop and think hard. Almost always it's much much preferable to just panic and see the error clearly than to continue with faulty state (which this unwrap_or_else oftentimes is a symptom of).
-
 - avoid implementing and using helper functions at all costs. Minimize communication boundary of the modules ruthlessly. Every single `pub` fn is future pain. Every single `pub` function you manage to refactor out is considered a huge win.
     // implementing std traits like From and using them to shorten evocations is however highly encouraged
 
@@ -62,4 +60,9 @@
 
 - investment into better errors (miette, thiserror, color_eyre), additional **standard** trait impls (derive_more, strum), improving testing infrastructure, are always justified. Procedurally improving our visibility into a group of bugs is as good as solving any one of them.
 
+### Special Cases
 - if you just wrote `tokio::spawn` in any context, stop immediately, and find a way to implement it with structured concurrency, where nothing happens until explicitly awaited. If you are unable to do so, - stop, explain why it's impossible to me, and only proceed after explicit go-ahead to use it
+
+- when writing `.expect()`, explain **why** not **what**. Eg: `map.get(&a).expect("element always in map")` - bad, but `map.get(&a).expect("inserted on init")` - good.
+
+- if you've just added `unwrap_or(_else)`, - stop and think hard. Almost always it's much much preferable to just panic and see the error clearly than to continue with faulty state (which this unwrap_or_else oftentimes is a symptom of).

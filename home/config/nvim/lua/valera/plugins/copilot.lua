@@ -68,6 +68,32 @@ return require "lazier" {
 			end,
 		})
 
+		-- Suppress suggestions inside comments. Wraps update_preview (the single
+		-- choke-point for all suggestion rendering) so the check is race-free.
+		-- NB: col-1 because in insert mode the cursor sits one past the last char,
+		--     which lands outside the comment node range.
+		local function cursor_in_comment()
+			local buf = vim.api.nvim_get_current_buf()
+			local ok, parser = pcall(vim.treesitter.get_parser, buf)
+			if not ok or not parser then return false end
+			local row, col = unpack(vim.api.nvim_win_get_cursor(0))
+			local node = vim.treesitter.get_node({ bufnr = buf, pos = { row - 1, math.max(0, col - 1) } })
+			while node do
+				if node:type():find("comment") then return true end
+				node = node:parent()
+			end
+			return false
+		end
+
+		local suggestion_mod = require('copilot.suggestion')
+		local orig_update_preview = suggestion_mod.update_preview
+		suggestion_mod.update_preview = function(ctx)
+			orig_update_preview(ctx)
+			if cursor_in_comment() then
+				suggestion_mod.clear_preview()
+			end
+		end
+
 		vim.api.nvim_create_user_command("CopilotToggle", function()
 			vim.g.copilot_kill = not vim.g.copilot_kill
 			if vim.g.copilot_kill then

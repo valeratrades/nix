@@ -121,6 +121,8 @@
         merge = { conflictStyle = "zdiff3"; };
         "includeIf \"gitdir:/home/${user.username}/.local/\"".path = "/etc/gitconfig-no-lfs";
         "includeIf \"gitdir:/home/${user.username}/.cache/\"".path = "/etc/gitconfig-no-lfs";
+        # Submodules store their gitdir under <parent>/.git/modules/ — clear global attrs without touching LFS
+        "includeIf \"gitdir:**/.git/modules/**/\"".path = "/etc/gitconfig-no-global-attrs";
       };
     };
   };

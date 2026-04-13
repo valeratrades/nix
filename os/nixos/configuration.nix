@@ -220,6 +220,11 @@ in {
     Disable=Headset
   '';
 
+  environment.etc."gitconfig-no-global-attrs".text = ''
+    [core]
+    	attributesfile =
+  '';
+
   environment.etc."gitconfig-no-lfs".text = ''
     [filter "lfs"]
     	smudge = cat

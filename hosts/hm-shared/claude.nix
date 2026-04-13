@@ -90,6 +90,7 @@ in
 				alwaysThinkingEnabled = false;
 				skipDangerousModePermissionPrompt =  true;
 				model = "claude-sonnet-4-6"; #HACK: currently is better than default Opus. Keep until default becomes the best choice again.
+				effort = "high"; # they switched the default, and now problem gives up more often
 				showClearContextOnPlanAccept = true;
 				#trustedWorkspaces = [ "/" ]; #NB: doesn't actually exist. Instead, opoen in `/` and accept it as trusted manually once.
 				enabledPlugins = plugins.enabled;

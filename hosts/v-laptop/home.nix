@@ -196,8 +196,12 @@ in {
 
         ringboard-wayland
 
-        gitui
-        lazygit
+        # repo history interactions
+        [
+          gitui #DEPRECATE: pretty sure lazygit is just better
+          lazygit # tui interface for common git operations
+          gource # visualize git history (animates how repo graph grew)
+        ]
 
         # excalidraw
         [

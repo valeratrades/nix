@@ -4,6 +4,7 @@ alias cpad="cargo publish --allow-dirty"
 alias cflags="set -x RUST_LOG 'debug,hyper=info'; set -x RUST_BACKTRACE 1; set -x RUST_LIB_BACKTRACE 0"
 alias cscript="cargo +nightly -Zscript" # https://doc.rust-lang.org/cargo/reference/unstable.html#script
 alias nextest_examples="cargo nextest run --examples"
+alias cb="cargo b --release && ./target/release/$(basename $(pwd))"
 
 # cargo build install
 function cbi
