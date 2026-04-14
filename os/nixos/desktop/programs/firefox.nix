@@ -109,10 +109,12 @@
     };
 
     preferences = {
-      # Enable WebRender but keep video acceleration disabled to prevent crashes
+      # GPU acceleration — WebRender + VA-API via AMD iGPU (radeonsi, safe on Wayland)
+      # NVIDIA dGPU excluded: crash-prone with Firefox hardware decoding
       "gfx.webrender.all" = true;
-      "media.hardware-video-decoding.enabled" = false;
-      "media.hardware-video-decoding.force-enabled" = false;
+      "media.hardware-video-decoding.enabled" = true;
+      "media.ffmpeg.vaapi.enabled" = true;  # VA-API path for Wayland
+      "media.hardware-video-decoding.force-enabled" = false;  # don't force-override driver blacklist
       "browser.newtabpage.activity-stream.showSponsored" = false;
       "browser.newtabpage.activity-stream.system.showSponsored" = false;
       "browser.newtabpage.activity-stream.showSponsoredTopSites" = false;
