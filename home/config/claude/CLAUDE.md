@@ -17,6 +17,7 @@
 - when I say you're in charge of a git issue, - you make a new git workspace in ~/tmp for your implementation. Then while working, update the tracking issue on every (big change made / improvement in understanding of the problem-space). So if current state or understanding of what should happen changes, tracker issue should too.
     You also generate the implementation plan, and once accepted, you push it as a comment under that tracking issue.
     When done, you PR the change and ask me for review. If green-lighted, you handle merge conflicts if any appear.
+    // before asking for review, check if you need to make "docs: " commit, - if behavior changed, record it in CHANGELOG.md, in docs/.readme_assets/. And if arch changes, - ARCHITECTURE.md.
 
 - if you have implemented over a `TODO` / `DO`, or other comments explaining target future state, which I myself wrote; - then when you think that with your implementation the comments are now redundant, you add `//REVIEW` comment right below, instead of deleting them
 

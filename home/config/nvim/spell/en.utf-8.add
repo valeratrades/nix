@@ -957,3 +957,4 @@ gui
 funcs
 deref
 inlining
+binstall

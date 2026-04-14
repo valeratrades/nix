@@ -6,18 +6,36 @@ return {
 		"nvim-treesitter/nvim-treesitter-context",
 	},
 	config = function()
-		require('nvim-treesitter').setup {
-			auto_install = true,
-		}
+		require('nvim-treesitter').setup {}
 
+		-- Parsers needed for markdown injections (no FileType event fires for injected langs).
+		vim.schedule(function()
+			local install = require('nvim-treesitter.install')
+			local installed = require('nvim-treesitter.config').get_installed('parsers')
+			for _, lang in ipairs({ 'mermaid' }) do
+				if not vim.list_contains(installed, lang) then
+					install.install({ lang })
+				end
+			end
+		end)
+
+		-- auto_install is not supported in nvim-treesitter main branch; install manually
+		-- via the FileType autocmd so parsers are fetched on demand.
 		vim.api.nvim_create_autocmd('FileType', {
 			callback = function(args)
-				if pcall(vim.treesitter.start, args.buf) then
-					vim.bo[args.buf].syntax = 'ON' -- additional_vim_regex_highlighting equivalent
-					local lang = vim.treesitter.language.get_lang(vim.bo[args.buf].filetype)
-					if lang and pcall(vim.treesitter.query.get, lang, 'indents') and vim.treesitter.query.get(lang, 'indents') then
-						vim.bo[args.buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+				local ft = vim.bo[args.buf].filetype
+				local lang = vim.treesitter.language.get_lang(ft) or ft
+				if not pcall(vim.treesitter.start, args.buf) then
+					-- parser missing: install it then retry
+					local ok, install = pcall(require, 'nvim-treesitter.install')
+					if ok then
+						install.install({ lang })
 					end
+					return
+				end
+				vim.bo[args.buf].syntax = 'ON' -- additional_vim_regex_highlighting equivalent
+				if pcall(vim.treesitter.query.get, lang, 'indents') and vim.treesitter.query.get(lang, 'indents') then
+					vim.bo[args.buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
 				end
 			end,
 		})
