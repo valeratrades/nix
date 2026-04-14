@@ -36,6 +36,10 @@ in
       target_path = "$HOME/.claude/hooks";
       config_path = "$NIXOS_CONFIG/home/config/claude/hooks";
     };
+    claude_code_rules = mkSymlink {
+      target_path = "$HOME/.claude/rules";
+      config_path = "$NIXOS_CONFIG/home/config/claude/rules";
+    };
     wallpaper_carousel = mkSymlink { target_path_postfix = "wallpaper_carousel.nix"; };
     discretionary_engine = mkSymlink { target_path_postfix = "discretionary_engine.nix"; };
     shared = mkSymlink { target_path_postfix = "shared"; };

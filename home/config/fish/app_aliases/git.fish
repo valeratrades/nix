@@ -71,6 +71,7 @@ end
 
 alias gup="git add -A && git commit --fixup (git rev-parse HEAD)"
 alias gupp="gup && git push --follow-tags"
+alias gups="gup && git -c sequence.editor=true rebase -i --autosquash HEAD~2"
 
 function gbl
 	# get branches sorted by date, with HEAD, name, commit hash, subject and author

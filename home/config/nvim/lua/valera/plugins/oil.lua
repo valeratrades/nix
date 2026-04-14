@@ -1,7 +1,8 @@
 return require "lazier" {
 	"stevearc/oil.nvim",
-	dependencies = { "nvim-tree/nvim-web-devicons" },
+	dependencies = { "echasnovski/mini.icons" },
 	config = function()
+		require("mini.icons").setup()
 		local oil = require("oil")
 
 		-- Session-wide toggle for detail columns (default: show details)

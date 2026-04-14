@@ -133,6 +133,10 @@ struct Args {
     /// Bump major version from latest tag (e.g., v1.2.3 -> v2.0.0)
     #[arg(long, conflicts_with_all = ["version", "patch", "minor"])]
     major: bool,
+
+    /// Ignore Cargo.toml and use global git tag for versioning
+    #[arg(long)]
+    ignore_cargo: bool,
 }
 
 fn run(cmd: &str, args: &[&str]) -> bool {
@@ -382,7 +386,7 @@ fn get_default_branch() -> Option<String> {
 
 fn main() {
     let args = Args::parse();
-    let is_rust = rust::has_cargo_toml();
+    let is_rust = rust::has_cargo_toml() && !args.ignore_cargo;
 
     // Error early if -v provided for Rust project
     if args.version.is_some() && is_rust {
