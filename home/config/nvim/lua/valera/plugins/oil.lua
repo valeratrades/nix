@@ -2,7 +2,11 @@ return require "lazier" {
 	"stevearc/oil.nvim",
 	dependencies = { "echasnovski/mini.icons" },
 	config = function()
-		require("mini.icons").setup()
+		require("mini.icons").setup({
+			file = {
+				[".rs"] = { glyph = "", hl = "MiniIconsOrange" },
+			},
+		})
 		local oil = require("oil")
 
 		-- Session-wide toggle for detail columns (default: show details)

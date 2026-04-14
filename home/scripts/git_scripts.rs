@@ -3,12 +3,11 @@
 
 [dependencies]
 clap = { version = "4.5.49", features = ["derive"] }
-gix = { version = "0.78", features = ["merge", "blocking-network-client", "blocking-http-transport-reqwest-rust-tls", "worktree-mutation"] }
+gix = { version = "0.78", features = ["blocking-network-client", "blocking-http-transport-reqwest-rust-tls", "worktree-mutation"] }
 serde_json = "1"
 ---
 
 use clap::{Parser, Subcommand};
-use gix::merge::tree::TreatAsUnresolved;
 use std::env;
 use std::process::{Command, Stdio};
 
@@ -496,58 +495,6 @@ fn is_ancestor(repo: &gix::Repository, ancestor: gix::ObjectId, descendant: gix:
         .unwrap_or(false)
 }
 
-/// Check if merging their_tree into our_tree would have conflicts
-fn merge_would_conflict(
-    repo: &gix::Repository,
-    base_tree: gix::ObjectId,
-    our_tree: gix::ObjectId,
-    their_tree: gix::ObjectId,
-) -> bool {
-    let outcome = repo.merge_trees(
-        base_tree,
-        our_tree,
-        their_tree,
-        Default::default(),
-        Default::default(),
-    );
-
-    match outcome {
-        Ok(result) => result.has_unresolved_conflicts(TreatAsUnresolved::default()),
-        Err(_) => true, // assume conflict on error
-    }
-}
-
-/// Check if two trees have the same content (ignoring history)
-fn trees_have_same_content(
-    _repo: &gix::Repository,
-    tree1: gix::ObjectId,
-    tree2: gix::ObjectId,
-) -> bool {
-    // Trees with same OID have identical content
-    tree1 == tree2
-}
-
-/// Check if remote's tree appears in local's commit history
-fn remote_tree_in_local_history(
-    repo: &gix::Repository,
-    local_commit: gix::ObjectId,
-    remote_tree: gix::ObjectId,
-) -> bool {
-    let Ok(walk) = repo.rev_walk([local_commit]).all() else {
-        return false;
-    };
-
-    for info in walk {
-        let Ok(info) = info else { continue };
-        let Ok(obj) = info.id().object() else { continue };
-        let Ok(commit) = obj.try_into_commit() else { continue };
-        let Ok(tree_id) = commit.tree_id() else { continue };
-        if tree_id.detach() == remote_tree {
-            return true;
-        }
-    }
-    false
-}
 
 fn push(force_with_lease: bool, force: bool, extra_args: Vec<String>) {
     let repo = open_repo();
@@ -628,43 +575,34 @@ fn push(force_with_lease: bool, force: bool, extra_args: Vec<String>) {
     // Check if we actually need a force push (histories diverged)
     let needs_force = !local_is_ancestor && !remote_is_ancestor;
 
-    // Check if local contains remote's content
+    // Check if local contains all of remote's content (nothing lost, regardless of history shape).
+    // Strategy: a conflict-free merge of remote into local means local has all remote changes.
+    // Use `git merge-tree` CLI which handles edge cases (no merge-base, etc.) more robustly.
     let local_contains_remote_content = needs_force && {
-        let (local_tree, remote_tree) = match (&local_tree, &remote_tree) {
-            (Some(l), Some(r)) => (*l, *r),
-            _ => {
-                // Can't check, assume unsafe
-                (gix::ObjectId::null(gix::hash::Kind::Sha1), gix::ObjectId::null(gix::hash::Kind::Sha1))
+        // Find merge base
+        let merge_base = run_cmd_output("git", &["merge-base", &local_commit.to_string(), &remote_commit.to_string()])
+            .map(|s| s.trim().to_string());
+
+        match merge_base {
+            Some(base) => {
+                // `git merge-tree base local remote` exits 0 if merge is clean
+                Command::new("git")
+                    .args(["merge-tree", "--write-tree", &base, &local_commit.to_string(), &remote_commit.to_string()])
+                    .stdout(Stdio::null())
+                    .stderr(Stdio::null())
+                    .status()
+                    .map(|s| s.success())
+                    .unwrap_or(false)
             }
-        };
-
-        // Check 1: exact tree match in history
-        let tree_in_history = remote_tree_in_local_history(&repo, local_commit, remote_tree);
-
-        // Check 2: merging remote into local would be conflict-free
-        // Find merge-base to use as ancestor for three-way merge simulation
-        let merge_would_be_clean = repo
-            .merge_base(local_commit, remote_commit)
-            .ok()
-            .map(|base| {
-                let base_tree = repo
-                    .find_object(base)
-                    .ok()
-                    .and_then(|o| o.peel_to_commit().ok())
-                    .and_then(|c| c.tree_id().ok())
-                    .map(|id| id.detach());
-
-                match base_tree {
-                    Some(base_tree) => !merge_would_conflict(&repo, base_tree, local_tree, remote_tree),
-                    None => false,
-                }
-            })
-            .unwrap_or(false);
-
-        // Check 3: no actual content difference (just history rewrite)
-        let no_content_diff = trees_have_same_content(&repo, local_tree, remote_tree);
-
-        tree_in_history || merge_would_be_clean || no_content_diff
+            None => {
+                // No merge base: check if trees are content-identical via diff
+                Command::new("git")
+                    .args(["diff", "--quiet", &local_commit.to_string(), &remote_commit.to_string()])
+                    .status()
+                    .map(|s| s.success())
+                    .unwrap_or(false)
+            }
+        }
     };
 
     if explicit_force && is_main_branch(&branch) {
