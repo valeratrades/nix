@@ -423,6 +423,11 @@
         cargo-new = { vcs = "none"; };
       } // lib.optionalAttrs (user ? sccache && user.sccache) {
         build = { rustc-wrapper = "sccache"; };
+      } // {
+        target."x86_64-unknown-linux-gnu" = {
+          linker = "clang";
+          rustflags = ["-C" "link-arg=-fuse-ld=/run/current-system/sw/bin/ld.lld"];
+        };
       });
 			".config/zathura" = {
 				source = "${self}/home/config/zathura";
