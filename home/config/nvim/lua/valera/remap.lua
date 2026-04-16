@@ -256,7 +256,7 @@ K("t", "<C-w>n", "<C-\\><C-N><C-w>k", { desc = "Win up from terminal" })
 K("t", "<C-w>t", "<C-\\><C-N><C-w>l", { desc = "Win right from terminal" })
 --
 
-local function copyFileLineCol()
+local function copyFileLineCol(with_col)
 	local file = vim.fn.expand('%:p') -- absolute path
 	local mode = vim.fn.mode()
 
@@ -265,11 +265,19 @@ local function copyFileLineCol()
 		local end_pos = vim.fn.getpos(".")
 		local start_line, start_col = start_pos[2], start_pos[3]
 		local end_line, end_col = end_pos[2], end_pos[3]
-		return string.format("%s:{%d:%d; %d:%d}", file, start_line, start_col, end_line, end_col)
+		if with_col then
+			return string.format("%s:{%d:%d; %d:%d}", file, start_line, start_col, end_line, end_col)
+		else
+			return string.format("%s:{%d; %d}", file, start_line, end_line)
+		end
 	else
 		local line = vim.fn.line('.')
-		local col = vim.fn.col('.')
-		return string.format("%s:%d:%d", file, line, col)
+		if with_col then
+			local col = vim.fn.col('.')
+			return string.format("%s:%d:%d", file, line, col)
+		else
+			return string.format("%s:%d", file, line)
+		end
 	end
 end
 
@@ -278,11 +286,9 @@ local function copyFilePath()
 	return (path:gsub("^oil://", ""))
 end
 
-K("", "<Space>ay", function() vim.fn.setreg('"', copyFileLineCol()) end, { desc = "copy file:line:col to \" buffer" })
-K("", "<Space>a<Space>y", function() vim.fn.setreg('+', copyFileLineCol()) end,
-	{ desc = "copy file:line:col to + buffer" })
-K("", "<Space>aY", function() vim.fn.setreg('"', copyFilePath()) end, { desc = "copy filepath to \" buffer" })
-K("", "<Space>a<Space>Y", function() vim.fn.setreg('+', copyFilePath()) end, { desc = "copy filepath to + buffer" })
+K("", "<Space>af", function() vim.fn.setreg('+', copyFilePath()) end, { desc = "copy filepath to + buffer" })
+K("", "<Space>al", function() vim.fn.setreg('+', copyFileLineCol(false)) end, { desc = "copy file:line to + buffer" })
+K("", "<Space>ae", function() vim.fn.setreg('+', copyFileLineCol(true)) end, { desc = "copy file:line:col to + buffer" })
 
 vim.api.nvim_create_user_command("Gf", function(opts)
 	local arg = opts.fargs[1]
