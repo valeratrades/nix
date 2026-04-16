@@ -94,6 +94,7 @@ in
 				showClearContextOnPlanAccept = true;
 				#trustedWorkspaces = [ "/" ]; #NB: doesn't actually exist. Instead, opoen in `/` and accept it as trusted manually once.
 				enabledPlugins = plugins.enabled;
+				showThinkingSummaries = true; # `redact-thinking-2026-02-12` started to hide it by default cause latency. Useful for debugging though.
 				hooks = {
 					Stop = [
 						{
