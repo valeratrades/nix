@@ -26,11 +26,6 @@ return {
 				local ft = vim.bo[args.buf].filetype
 				local lang = vim.treesitter.language.get_lang(ft) or ft
 				if not pcall(vim.treesitter.start, args.buf) then
-					-- parser missing: install it then retry
-					local ok, install = pcall(require, 'nvim-treesitter.install')
-					if ok then
-						install.install({ lang })
-					end
 					return
 				end
 				vim.bo[args.buf].syntax = 'ON' -- additional_vim_regex_highlighting equivalent

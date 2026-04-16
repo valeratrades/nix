@@ -3,9 +3,9 @@ return require "lazier" {
 	dependencies = { "echasnovski/mini.icons" },
 	config = function()
 		require("mini.icons").setup({
-			file = {
-				[".rs"] = { glyph = "", hl = "MiniIconsOrange" },
-			},
+			--file = {
+			--	[".rs"] = { glyph = "", hl = "MiniIconsOrange" },
+			--},
 		})
 		local oil = require("oil")
 
