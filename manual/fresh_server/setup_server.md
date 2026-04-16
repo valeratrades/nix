@@ -83,6 +83,9 @@ else
     exit 1
 fi
 
+# upgrade direnv (distro packages are too old for PowerShell support, need 2.37+)
+curl -L -o /tmp/direnv https://github.com/direnv/direnv/releases/latest/download/direnv.linux-amd64 && chmod +x /tmp/direnv && mv /tmp/direnv /usr/bin/direnv
+
 git lfs install
 git config --global alias.pl '!git pull && git lfs pull'
 systemctl enable clickhouse-server
@@ -135,6 +138,13 @@ fi
 systemctl mask tmp.mount
 echo 'q /tmp 1777 root root 1d' > /etc/tmpfiles.d/tmp.conf
 # reboot required for /tmp to move to disk
+
+# create 32GB swapfile (Rust/Nix builds can OOM a 4GB box without this)
+fallocate -l 16G /swapfile
+chmod 600 /swapfile
+mkswap /swapfile
+swapon /swapfile
+echo '/swapfile none swap sw 0 0' >> /etc/fstab
 
 # install Nix
 sh <(curl -L https://nixos.org/nix/install) --daemon --yes
