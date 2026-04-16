@@ -87,6 +87,14 @@ in
 		".claude/settings.json" = {
 			source =
 			(pkgs.formats.json { }).generate "claude.json" {
+				#HACK: hm doesn't set these correctly, - moved to ../../os/nixos/desktop/environment.nix
+				#env = {
+				#	# https://github.com/anthropics/claude-code/issues/42796#issuecomment-4194007103
+				#	DISABLE_TELEMETRY = "1";
+				#	CLAUDE_CODE_DISABLE_1M_CONTEXT = "1";
+				#	CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING = "1";
+				#	MAX_THINKING_TOKENS = "63999";
+				#};
 				alwaysThinkingEnabled = false;
 				skipDangerousModePermissionPrompt =  true;
 				model = "claude-sonnet-4-6"; #HACK: currently is better than default Opus. Keep until default becomes the best choice again.

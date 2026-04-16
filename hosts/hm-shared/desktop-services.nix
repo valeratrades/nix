@@ -10,6 +10,7 @@
   #   preset = "headphone-safety-limiter";
   # };
 
+  #XXX: don't seem to be picked up (eg try to echo `TERMCMD` one)
   home.sessionVariables = {
     QT_QPA_PLATFORMTHEME = "xdgdesktopportal";
     GTK_USE_PORTAL = "1";

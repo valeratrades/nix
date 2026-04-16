@@ -561,8 +561,6 @@ in {
 
         # Terminals + Editors + Shells
         [
-          starship
-
 					neovim
 					tree-sitter # needed by nvim-treesitter to compile parsers (temporary until 0.12 is in nixpkgs and we restore withAllGrammars)
 					luajitPackages.luarocks-nix # install some lua plugins as isolated packages
@@ -570,6 +568,9 @@ in {
 					vimPlugins.luasnip
 					vimPlugins.lean-nvim
 
+          codex
+
+          starship
           fish
           dash
         ]
