@@ -527,6 +527,117 @@ fn trees_have_same_content(
     tree1 == tree2
 }
 
+/// Check if every change in remote (relative to base) is already present in local.
+/// This catches the fixup-squash case: local squashed remote's commit plus more fixup
+/// changes, so local's tree is a strict superset of remote's changes from the same base.
+fn remote_changes_subsumed_by_local(
+    repo: &gix::Repository,
+    base_commit: gix::ObjectId,
+    local_tree: gix::ObjectId,
+    remote_tree: gix::ObjectId,
+) -> bool {
+    let base_tree = match repo
+        .find_object(base_commit)
+        .ok()
+        .and_then(|o| o.peel_to_commit().ok())
+        .and_then(|c| c.tree_id().ok())
+        .map(|id| id.detach())
+    {
+        Some(t) => t,
+        None => return false,
+    };
+
+    // Collect (path, remote_oid) for each addition/modification remote made vs base,
+    // and paths for deletions.
+    let mut remote_changes: Vec<(gix::bstr::BString, gix::ObjectId)> = Vec::new();
+    let mut remote_deletions: Vec<gix::bstr::BString> = Vec::new();
+
+    {
+        // Scope so base_tree_obj and remote_tree_obj borrows are released before local lookup
+        let base_tree_obj = match repo.find_object(base_tree).ok().and_then(|o| o.try_into_tree().ok()) {
+            Some(t) => t,
+            None => return false,
+        };
+        let mut platform = match base_tree_obj.changes() {
+            Ok(p) => p,
+            Err(_) => return false,
+        };
+        let remote_tree_obj = match repo.find_object(remote_tree).ok().and_then(|o| o.try_into_tree().ok()) {
+            Some(t) => t,
+            None => return false,
+        };
+        let result = platform.for_each_to_obtain_tree(&remote_tree_obj, |change| {
+            use gix::object::tree::diff::Change;
+            match change {
+                Change::Addition { location, id, .. } => {
+                    remote_changes.push((location.to_owned(), id.detach()));
+                }
+                Change::Modification { location, id, .. } => {
+                    remote_changes.push((location.to_owned(), id.detach()));
+                }
+                Change::Deletion { location, .. } => {
+                    remote_deletions.push(location.to_owned());
+                }
+                Change::Rewrite { location, id, .. } => {
+                    remote_changes.push((location.to_owned(), id.detach()));
+                }
+            }
+            Ok::<_, std::convert::Infallible>(std::ops::ControlFlow::Continue(()))
+        });
+        if result.is_err() {
+            return false;
+        }
+    }
+
+    if remote_changes.is_empty() && remote_deletions.is_empty() {
+        return false; // no remote changes at all — not a meaningful subsumption
+    }
+
+    // For each path remote changed, local must have the exact same blob OID
+    for (path, remote_oid) in &remote_changes {
+        match lookup_tree_entry(repo, local_tree, path) {
+            Some(oid) if oid == *remote_oid => {} // local has same content as remote for this path
+            _ => return false,
+        }
+    }
+
+    // For deletions: local must also not have the entry
+    for path in &remote_deletions {
+        if lookup_tree_entry(repo, local_tree, path).is_some() {
+            return false; // local still has it, not subsumed
+        }
+    }
+
+    true
+}
+
+/// Look up a (possibly nested) path in a tree OID, returning the entry OID.
+/// `path` uses `/` as separator (as returned by gix diff location).
+fn lookup_tree_entry(
+    repo: &gix::Repository,
+    tree_oid: gix::ObjectId,
+    path: &[u8],
+) -> Option<gix::ObjectId> {
+    let mut segments = path.split(|&b| b == b'/');
+    let first = segments.next()?;
+    let rest: Vec<&[u8]> = segments.collect();
+
+    let tree_obj = repo.find_object(tree_oid).ok()?.try_into_tree().ok()?;
+    let entry = tree_obj
+        .iter()
+        .filter_map(|e| e.ok())
+        .find(|e| e.filename() == first)?;
+
+    let entry_oid = entry.object_id();
+
+    if rest.is_empty() {
+        Some(entry_oid)
+    } else {
+        let remaining: Vec<u8> = rest.join(&b'/');
+        lookup_tree_entry(repo, entry_oid, &remaining)
+    }
+}
+
 /// Check if remote's tree appears in local's commit history
 fn remote_tree_in_local_history(
     repo: &gix::Repository,
@@ -643,9 +754,8 @@ fn push(force_with_lease: bool, force: bool, extra_args: Vec<String>) {
 
         // Check 2: merging remote into local would be conflict-free
         // Find merge-base to use as ancestor for three-way merge simulation
-        let merge_would_be_clean = repo
-            .merge_base(local_commit, remote_commit)
-            .ok()
+        let merge_base: Option<gix::ObjectId> = repo.merge_base(local_commit, remote_commit).ok().map(|id| id.detach());
+        let merge_would_be_clean = merge_base
             .map(|base| {
                 let base_tree = repo
                     .find_object(base)
@@ -664,7 +774,13 @@ fn push(force_with_lease: bool, force: bool, extra_args: Vec<String>) {
         // Check 3: no actual content difference (just history rewrite)
         let no_content_diff = trees_have_same_content(&repo, local_tree, remote_tree);
 
-        tree_in_history || merge_would_be_clean || no_content_diff
+        // Check 4: fixup-squash — every change remote made (vs merge base) is already
+        // present in local's tree, meaning local squashed remote's work plus more on top.
+        let fixup_squash = merge_base
+            .map(|base| remote_changes_subsumed_by_local(&repo, base, local_tree, remote_tree))
+            .unwrap_or(false);
+
+        tree_in_history || merge_would_be_clean || no_content_diff || fixup_squash
     };
 
     if explicit_force && is_main_branch(&branch) {
