@@ -15,24 +15,20 @@ $env:MAIN_SERVER_SSH_HOST = "user@your-server-ip"
 ssh-copy-id -i ~/.ssh/id_ed25519.pub $env:MAIN_SERVER_SSH_HOST
 ```
 
-```pwsh
+```sh
 # setup tmux
-ssh $env:MAIN_SERVER_SSH_HOST 'mkdir -p ~/.config/tmux ~/.config'
-scp ~/.config/tmux/tmux.conf "${env:MAIN_SERVER_SSH_HOST}:~/.config/tmux/"
+ssh $MAIN_SERVER_SSH_HOST 'mkdir -p ~/.config/tmux ~/.config ~/.ssh'
+scp ~/.config/tmux/tmux.conf "$MAIN_SERVER_SSH_HOST:~/.config/tmux/"
 
 # copy SSH keys (for git access on server)
-scp ~/.ssh/id_ed25519 "${env:MAIN_SERVER_SSH_HOST}:~/.ssh/"
-scp ~/.ssh/id_ed25519.pub "${env:MAIN_SERVER_SSH_HOST}:~/.ssh/"
+scp ~/.ssh/id_ed25519 ~/.ssh/id_ed25519.pub "$MAIN_SERVER_SSH_HOST:~/.ssh/"
 
 # setup pwsh profile
-$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-ssh $env:MAIN_SERVER_SSH_HOST 'mkdir -p ~/.config/powershell'
-scp "$ScriptDir/Microsoft.PowerShell_profile.ps1" "${env:MAIN_SERVER_SSH_HOST}:~/.config/powershell/"
+ssh $MAIN_SERVER_SSH_HOST 'mkdir -p ~/.config/powershell'
+scp "$(dirname $0)/Microsoft.PowerShell_profile.ps1" "$MAIN_SERVER_SSH_HOST:~/.config/powershell/"
 
-# setup app configs (with env substitution)
-Get-Content ~/.config/social_networks.toml | reasonable_envsubst - | ssh $env:MAIN_SERVER_SSH_HOST 'cat > ~/.config/social_networks.toml'
-Get-Content ~/.config/site.nix | reasonable_envsubst - | ssh $env:MAIN_SERVER_SSH_HOST 'cat > ~/.config/site.nix'
-Get-Content ~/.config/polymarket_mm.toml | reasonable_envsubst - | ssh $env:MAIN_SERVER_SSH_HOST 'cat > ~/.config/polymarket_mm.toml'
+# push app configs (with env substitution, prints diffs)
+fish "$(dirname $0)/sink_configs.fish"
 ```
 
 ---
