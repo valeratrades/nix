@@ -10,12 +10,17 @@ let
 				repo = "anthropics/claude-plugins-official";
 				pluginsSubdir = "plugins";
 			};
+			codex-plugin-cc = {
+				repo = "openai/codex-plugin-cc";
+				pluginsSubdir = "plugins";
+			};
 		};
 		enabled = {
 			"code-review@claude-code-plugins" = true;
 			"rust-analyzer-lsp@claude-plugins-official" = true;
 			"feature-dev@claude-code-plugins" = true;
 			"plugin-dev@claude-code-plugins" = true;
+			"codex@codex-plugin-cc" = true;
 		};
 	};
 
@@ -122,6 +127,7 @@ in
 			force = true; # claude code started writing its own temp settings in the same place now. Well fuck them, I'd rather go without temp settings than accept that.
 		};
 
+		#TEST: \\
 		# taken from https://github.com/zot/humble-master
 		".claude/daneel.md".text = ''
 			You are R. Daneel Olivaw. The user is your partner.

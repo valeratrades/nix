@@ -130,8 +130,8 @@ in {
 				identitiesOnly = true;
 				identityFile = [ "~/.ssh/id_ed25519" ];
 			};
-      "cloudzy_ubuntu" = {
-        hostname = "45.59.119.236";
+      "cloudzy_fedora" = {
+        hostname = "144.172.114.210";
         user = "root";
       };
       "p-laptop" = {
@@ -245,6 +245,7 @@ in {
 				zed
 				#claude-code #DEPRECATE: once sure that https://github.com/sadjow/claude-code-nix is the way to go
         inputs.claude_code_nix.packages.${pkgs.stdenv.hostPlatform.system}.default
+        inputs.codex_nix.packages.${pkgs.stdenv.hostPlatform.system}.default
 
         libreoffice-still
     
