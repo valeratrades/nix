@@ -210,6 +210,25 @@ ssh $env:MAIN_SERVER_SSH_HOST
 
 ## Step 3: Server — Install Custom Tools
 
+First set up tmux and clone projects (cargo installs are long, run them inside tmux):
+
+```pwsh
+New-Item -ItemType Directory -Force -Path ~/s
+Set-Location ~/s
+
+# clone projects
+git clone git@github.com:valeratrades/site.git
+
+# start tmux session with a window per service
+tmux new-session -d -s main -c ~/s
+tmux rename-window -t main:0 social_networks
+tmux new-window -t main -n site -c ~/s/site
+tmux new-window -t main -n server_upkeep -c ~/s
+tmux attach -t main
+```
+
+Then in a separate tmux window (or window 0 before the service starts), install the tools:
+
 ```pwsh
 # add GitHub to known hosts
 ssh-keyscan github.com 2>$null >> ~/.ssh/known_hosts
@@ -218,10 +237,8 @@ ssh-keyscan github.com 2>$null >> ~/.ssh/known_hosts
 Start-Service ssh-agent -ErrorAction SilentlyContinue
 ssh-add ~/.ssh/id_ed25519
 
-# install social_networks
+# install sequentially (parallel cargo builds will OOM a 4GB box)
 cargo install --git https://github.com/valeratrades/social_networks --branch master
-
-# install server_upkeep
 cargo install --git https://github.com/valeratrades/server_upkeep --branch master
 ```
 
@@ -229,26 +246,9 @@ cargo install --git https://github.com/valeratrades/server_upkeep --branch maste
 
 ## Step 4: Server — Running Scripts
 
-```pwsh
-New-Item -ItemType Directory -Force -Path ~/s
-Set-Location ~/s
-
-# clone projects
-git clone git@github.com:valeratrades/site.git
-```
-
-Start a tmux session with windows for each service:
-```pwsh
-tmux new-session -d -s main -c ~/s
-tmux rename-window -t main:0 social_networks
-tmux new-window -t main -n site -c ~/s/site
-tmux new-window -t main -n server_upkeep -c ~/s
-tmux attach -t main
-```
-
-- **Window 0**: `social_networks`
-- **Window 1**: `site` (see [site README installation section](https://github.com/valeratrades/site#installation) for setup)
-- **Window 2**: `server_upkeep`
+- **Window 0** (`social_networks`): run `social_networks`
+- **Window 1** (`site`): see [site README installation section](https://github.com/valeratrades/site#installation) for setup
+- **Window 2** (`server_upkeep`): run `server_upkeep`
 
 ---
 
