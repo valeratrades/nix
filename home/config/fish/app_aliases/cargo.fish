@@ -4,7 +4,22 @@ alias cpad="cargo publish --allow-dirty"
 alias cflags="set -x RUST_LOG 'debug,hyper=info'; set -x RUST_BACKTRACE 1; set -x RUST_LIB_BACKTRACE 0"
 alias cscript="cargo +nightly -Zscript" # https://doc.rust-lang.org/cargo/reference/unstable.html#script
 alias nextest_examples="cargo nextest run --examples"
-alias cb="cargo b --release && ./target/release/$(basename $(pwd))"
+function cb
+	set binary ./target/release/(basename (pwd))
+	set needs_build true
+	if test -f $binary
+		set binary_mtime (stat --format=%Y $binary)
+		set ts (date -d @$binary_mtime "+%Y-%m-%d %H:%M:%S")
+		set changed (fd '(\.rs|Cargo\.toml|Cargo\.lock)$' --changed-after $ts .)
+		if test -z "$changed"
+			set needs_build false
+		end
+	end
+	if test "$needs_build" = true
+		cargo b --release || return 1
+	end
+	$binary $argv
+end
 
 # cargo build install
 function cbi

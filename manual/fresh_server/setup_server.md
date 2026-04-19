@@ -181,6 +181,7 @@ systemctl enable --now nix-gc.timer
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 source "$HOME/.cargo/env"
 rustup default nightly
+rustup target add wasm32-unknown-unknown
 
 # install evil-helix (vim-like helix editor)
 EVIL_HELIX_VERSION=$(curl -s https://api.github.com/repos/usagi-flow/evil-helix/releases/latest | grep -oP '"tag_name": "\K[^"]+')

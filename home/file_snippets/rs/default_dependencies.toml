@@ -13,6 +13,7 @@ doc_lazy_continuation = "allow" # tries to make me add a newline after a list in
 # const fns, so actually more performant
 get_first = "allow"
 get_last_with_len = "allow"
+manual_is_multiple_of = "allow"
 
 
 [dependencies]
