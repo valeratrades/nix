@@ -72,31 +72,34 @@ fn main() {
         exit(1);
     }
 
-    // Use wtype with stdin (-) to type the text
-    // This avoids issues with special characters in shell arguments
-    use std::io::Write;
-    use std::process::Stdio;
+    // Build wtype args explicitly: wtype stdin mode (-) eats '_' and the char before it.
+    // Instead, split on special chars and emit -k flags for them.
+    let mut cmd = Command::new("wtype");
+    for (i, segment) in text.split('_').enumerate() {
+        if i > 0 {
+            cmd.arg("-k").arg("underscore");
+        }
+        for (j, line) in segment.split('\n').enumerate() {
+            if j > 0 {
+                cmd.arg("-k").arg("Return");
+            }
+            if !line.is_empty() {
+                cmd.arg(line);
+            }
+        }
+    }
 
-    let mut child = Command::new("wtype")
-        .arg("-")
-        .stdin(Stdio::piped())
+    let status = cmd
         .spawn()
         .unwrap_or_else(|e| {
             eprintln!("Failed to execute wtype: {e}");
             exit(1)
-        });
-
-    if let Some(mut stdin) = child.stdin.take() {
-        stdin.write_all(text.as_bytes()).unwrap_or_else(|e| {
-            eprintln!("Failed to write to wtype stdin: {e}");
+        })
+        .wait()
+        .unwrap_or_else(|e| {
+            eprintln!("Failed to wait for wtype: {e}");
             exit(1)
         });
-    }
-
-    let status = child.wait().unwrap_or_else(|e| {
-        eprintln!("Failed to wait for wtype: {e}");
-        exit(1)
-    });
 
     if !status.success() {
         let code = status.code();

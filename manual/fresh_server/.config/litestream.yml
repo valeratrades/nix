@@ -1,0 +1,15 @@
+dbs:
+  - path: /root/.local/state/social_networks/db.sqlite3
+    replicas:
+      - type: s3
+        endpoint: https://${CLOUDFLARE_ACC_ID}.r2.cloudflarestorage.com
+        bucket: social-networks
+        access-key-id: ${CLOUDFLARE_API_R2_PUBKEY}
+        secret-access-key: ${CLOUDFLARE_API_R2_SECRET}
+  - path: /root/.local/state/site/db.sqlite3
+    replicas:
+      - type: s3
+        endpoint: https://${CLOUDFLARE_ACC_ID}.r2.cloudflarestorage.com
+        bucket: site
+        access-key-id: ${CLOUDFLARE_API_R2_PUBKEY}
+        secret-access-key: ${CLOUDFLARE_API_R2_SECRET}

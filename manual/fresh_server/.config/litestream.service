@@ -1,0 +1,11 @@
+[Unit]
+Description=Litestream
+After=network.target
+
+[Service]
+User=root
+Restart=always
+ExecStart=/usr/bin/litestream replicate -config /root/.config/litestream.yml
+
+[Install]
+WantedBy=multi-user.target

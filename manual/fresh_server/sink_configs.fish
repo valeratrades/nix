@@ -28,3 +28,6 @@ for local_file in $config_dir/*
         ssh $server "cat > $remote_path" < /tmp/_sink_substituted
     end
 end
+
+# install litestream service (file was pushed above by the loop)
+ssh $server "cp ~/.config/litestream.service /etc/systemd/system/litestream.service && systemctl daemon-reload && systemctl enable --now litestream"

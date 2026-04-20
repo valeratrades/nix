@@ -49,11 +49,6 @@ if [ -f /etc/os-release ]; then
         ubuntu|debian)
             apt update
             apt install -y build-essential pkg-config libssl-dev git-lfs apt-transport-https ca-certificates curl gnupg fzf direnv tmux caddy
-            # ClickHouse (official repo - Ubuntu's default is ancient 18.x, we need 21.8+)
-            curl -fsSL 'https://packages.clickhouse.com/rpm/lts/repodata/repomd.xml.key' | gpg --dearmor -o /usr/share/keyrings/clickhouse-keyring.gpg
-            echo "deb [signed-by=/usr/share/keyrings/clickhouse-keyring.gpg] https://packages.clickhouse.com/deb stable main" | tee /etc/apt/sources.list.d/clickhouse.list
-            apt update
-            apt install -y clickhouse-server clickhouse-client
             # PowerShell
             curl -sSL https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/prod.list | tee /etc/apt/sources.list.d/microsoft-prod.list
             curl -sSL https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
@@ -62,9 +57,6 @@ if [ -f /etc/os-release ]; then
             ;;
         fedora)
             dnf install -y gcc gcc-c++ make pkg-config openssl-devel git-lfs ca-certificates curl gnupg fzf direnv tmux caddy
-            # ClickHouse (official repo)
-            curl -fsSL https://packages.clickhouse.com/rpm/clickhouse.repo | tee /etc/yum.repos.d/clickhouse.repo
-            dnf install -y clickhouse-server clickhouse-client
             # PowerShell
             curl -sSL https://packages.microsoft.com/config/rhel/9/prod.repo | tee /etc/yum.repos.d/microsoft-prod.repo
             dnf install -y powershell
@@ -84,42 +76,15 @@ curl -L -o /tmp/direnv https://github.com/direnv/direnv/releases/latest/download
 
 git lfs install
 git config --global alias.pl '!git pull && git lfs pull'
-systemctl enable clickhouse-server
-systemctl start clickhouse-server
 
-# disable verbose ClickHouse system logs (saves ~100GB+ disk over time)
-cat > /etc/clickhouse-server/config.d/disable-logs.xml << 'CLICKHOUSE_EOF'
-<clickhouse>
-    <!-- Disable verbose system logs that cause unnecessary disk/CPU usage -->
-    <asynchronous_metric_log remove="1"/>
-    <metric_log remove="1"/>
-    <trace_log remove="1"/>
-    <part_log remove="1"/>
-    <query_thread_log remove="1"/>
-    <query_views_log remove="1"/>
-    <session_log remove="1"/>
-    <text_log remove="1"/>
-    <processors_profile_log remove="1"/>
-    <opentelemetry_span_log remove="1"/>
-    <crash_log remove="1"/>
-    <backup_log remove="1"/>
-    <blob_storage_log remove="1"/>
-    <s3_queue_log remove="1"/>
-    <azure_queue_log remove="1"/>
-    <zookeeper_log remove="1"/>
-    <error_log remove="1"/>
-
-    <!-- Keep only query_log for debugging, with 7-day TTL -->
-    <query_log>
-        <database>system</database>
-        <table>query_log</table>
-        <flush_interval_milliseconds>7500</flush_interval_milliseconds>
-        <ttl>event_date + INTERVAL 7 DAY DELETE</ttl>
-    </query_log>
-</clickhouse>
-CLICKHOUSE_EOF
-chown clickhouse:clickhouse /etc/clickhouse-server/config.d/disable-logs.xml
-systemctl restart clickhouse-server
+# install litestream (SQLite replication to R2)
+LITESTREAM_VERSION=$(curl -s https://api.github.com/repos/benbjohnson/litestream/releases/latest | grep -oP '"tag_name": "v\K[^"]+')
+case "$ID" in
+    ubuntu|debian) pkg_ext=deb; pkg_cmd="dpkg -i" ;;
+    fedora)        pkg_ext=rpm; pkg_cmd="rpm -i" ;;
+esac
+$pkg_cmd "https://github.com/benbjohnson/litestream/releases/download/v${LITESTREAM_VERSION}/litestream-${LITESTREAM_VERSION}-linux-x86_64.${pkg_ext}"
+# service is created and enabled by sink_configs.fish
 
 # set PowerShell as default shell
 chsh -s /usr/bin/pwsh root
@@ -242,6 +207,13 @@ cargo install --git https://github.com/valeratrades/server_upkeep --branch maste
 ---
 
 ## Step 4: Server — Running Scripts
+
+Before starting services, restore the DB from R2 if one exists:
+```sh
+mkdir -p /root/.local/state/social_networks
+litestream restore -config /root/.config/litestream.yml /root/.local/state/social_networks/db.sqlite3
+# exits non-zero if no backup exists yet — that's fine on first deploy
+```
 
 - **Window 0** (`social_networks`): run `social_networks`
 - **Window 1** (`site`): see [site README installation section](https://github.com/valeratrades/site#installation) for setup

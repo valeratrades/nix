@@ -27,7 +27,7 @@ in
     site = mkSymlink { target_path_postfix = "site.nix"; };
     sway = mkSymlink { target_path_postfix = "sway"; };
     btc_line = mkSymlink { target_path_postfix = "btc_line.nix"; };
-    social_networks = mkSymlink { target_path_postfix = "social_networks.toml"; };
+    social_networks = mkSymlink { target_path_postfix = "social_networks.nix"; };
     claude_code_global_CLAUDE_md = mkSymlink {
       target_path = "$HOME/.claude/CLAUDE.md";
       config_path = "$NIXOS_CONFIG/home/config/claude/CLAUDE.md";
