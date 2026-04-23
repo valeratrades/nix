@@ -22,27 +22,29 @@
 	programs.vscode = {
 		enable = true;
 		package = pkgs.vscodium;
-		userSettings = {
-			"git.openRepositoryInParentFolders" = "always";
-			"security.workspace.trust.untrustedFiles" = "open";
-			"python.languageServer" = "ty";
-			"[python]" = {
-				"editor.formatOnType" = true;
-				"editor.formatOnSave" = true;
-				"editor.defaultFormatter" = "charliermarsh.ruff";
+		profiles.default = {
+			userSettings = {
+				"git.openRepositoryInParentFolders" = "always";
+				"security.workspace.trust.untrustedFiles" = "open";
+				"python.languageServer" = "ty";
+				"[python]" = {
+					"editor.formatOnType" = true;
+					"editor.formatOnSave" = true;
+					"editor.defaultFormatter" = "charliermarsh.ruff";
+				};
+				"workbench.colorTheme" = "Dark Theme (*Preferred)";
+				"extensions.experimental.affinity" = {
+					"asvetliakov.vscode-neovim" = 1;
+				};
 			};
-			"workbench.colorTheme" = "Dark Theme (*Preferred)";
-			"extensions.experimental.affinity" = {
-				"asvetliakov.vscode-neovim" = 1;
-			};
-		};
-		extensions = with pkgs.vscode-extensions; [
-			#bbenoist.nix # nix language support (not sure why not nil)
-			ms-python.python #Q: wait what exactly does it provide?
-			#ms-azuretools.vscode-docker
-			ms-vscode-remote.remote-ssh
+			extensions = with pkgs.vscode-extensions; [
+				#bbenoist.nix # nix language support (not sure why not nil)
+				ms-python.python #Q: wait what exactly does it provide?
+				#ms-azuretools.vscode-docker
+				ms-vscode-remote.remote-ssh
+				ms-toolsai.jupyter
 
-		] ++ pkgs.vscode-utils.extensionsFromVscodeMarketplace [
+			] ++ pkgs.vscode-utils.extensionsFromVscodeMarketplace [
 			{
 				name = "remote-ssh-edit";
 				publisher = "ms-vscode-remote";
@@ -64,5 +66,6 @@
 				sha256 = "0vba1df2wspn02b7hfjaiyz1cw0ygvhjnyvdqszyfs2xw0f839xw";
 			}
 		];
+		}; # profiles.default
 	};
 }
