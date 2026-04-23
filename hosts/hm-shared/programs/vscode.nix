@@ -22,6 +22,20 @@
 	programs.vscode = {
 		enable = true;
 		package = pkgs.vscodium;
+		userSettings = {
+			"git.openRepositoryInParentFolders" = "always";
+			"security.workspace.trust.untrustedFiles" = "open";
+			"python.languageServer" = "ty";
+			"[python]" = {
+				"editor.formatOnType" = true;
+				"editor.formatOnSave" = true;
+				"editor.defaultFormatter" = "charliermarsh.ruff";
+			};
+			"workbench.colorTheme" = "Dark Theme (*Preferred)";
+			"extensions.experimental.affinity" = {
+				"asvetliakov.vscode-neovim" = 1;
+			};
+		};
 		extensions = with pkgs.vscode-extensions; [
 			#bbenoist.nix # nix language support (not sure why not nil)
 			ms-python.python #Q: wait what exactly does it provide?

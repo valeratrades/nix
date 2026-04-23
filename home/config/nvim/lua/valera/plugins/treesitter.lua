@@ -12,7 +12,7 @@ return {
 		vim.schedule(function()
 			local install = require('nvim-treesitter.install')
 			local installed = require('nvim-treesitter.config').get_installed('parsers')
-			for _, lang in ipairs({ 'mermaid' }) do
+			for _, lang in ipairs({ 'mermaid', 'xml' }) do
 				if not vim.list_contains(installed, lang) then
 					install.install({ lang })
 				end

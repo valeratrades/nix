@@ -49,6 +49,15 @@ for ext, parser in pairs(lang_map) do
 	vim.treesitter.language.register(parser, ext .. ".bak")
 end
 
+-- drawio/dio files are XML; use XML treesitter parser
+vim.filetype.add({
+	extension = {
+		drawio = "drawio",
+		dio = "drawio",
+	},
+})
+vim.treesitter.language.register("xml", "drawio")
+
 -- Prevent LSP from attaching to .bak files
 vim.api.nvim_create_autocmd("LspAttach", {
 	pattern = "*.bak",
