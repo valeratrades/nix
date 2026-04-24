@@ -226,6 +226,11 @@ in {
           tiger-trade
         ]
 
+        # Trading bots
+        [
+          metascalp
+        ]
+
         # Windows (via WinApps/Docker VM)
         [
           inputs.winapps.packages.${pkgs.stdenv.hostPlatform.system}.winapps

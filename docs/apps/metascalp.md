@@ -5,7 +5,7 @@ Binance→MEXC delta arbitrage bot from metascalp.io. Watches Binance futures pr
 ## Running
 
 ```
-~/metascalp/run
+metascalp
 ```
 
 On first launch after setup (or if the MEXC session expires): Chrome opens to MEXC futures, log in manually, press Enter in the terminal. Session is saved to `~/metascalp/mexc_session/` — subsequent runs skip the browser entirely.
@@ -13,15 +13,17 @@ On first launch after setup (or if the MEXC session expires): Chrome opens to ME
 ## Files
 
 ```
-~/metascalp/
-  run                  # launcher (nix-shell wrapper)
-  shell.nix            # nix-shell dependency spec
-  main.pyc             # app entry point (Python 3.12 bytecode)
-  core/__pycache__/    # app modules (contract_info, logger, mexc_http_order, state, ui, wss)
-  data/config.ini      # trading config (see below)
-  logs/                # daily trade logs (YYYY-MM-DD.log)
-  mexc_session/        # Chromium user data dir — MEXC login session
+~/metascalp/                 # mutable state — NOT in the Nix store
+  main.pyc                   # app entry point (Python 3.12 bytecode)
+  core/__pycache__/          # app modules (contract_info, logger, mexc_http_order, state, ui, wss)
+  data/config.ini            # trading config (see below)
+  logs/                      # daily trade logs (YYYY-MM-DD.log)
+  mexc_session/              # Chromium user data dir — MEXC login session
+
+~/nix/overlays/metascalp.nix # Nix package definition
 ```
+
+The `metascalp` binary in PATH is a `writeShellApplication` wrapper that puts a `python312.withPackages` env on PATH and `exec`s into `~/metascalp/main.pyc`.
 
 ## Config (`data/config.ini`)
 
@@ -83,7 +85,7 @@ systemd.tmpfiles.rules = [
 ];
 ```
 
-Python deps served via `nix-shell`: `python312`, `aiohttp`, `orjson`, `colorama`, `playwright`, `websockets`.
+Python deps are wrapped natively via `overlays/metascalp.nix` using `python312.withPackages`: `aiohttp`, `orjson`, `colorama`, `playwright`, `websockets`. The overlay is registered in `os/nixos/configuration.nix` and the package is included in `hosts/v-laptop/home.nix`.
 
 ## Re-setup from scratch
 
@@ -111,19 +113,4 @@ cp data/config.ini ~/metascalp/data/
 cp -r mexc_session/. ~/metascalp/mexc_session/
 ```
 
-Recreate `~/metascalp/run` (chmod +x after):
-
-```bash
-#!/usr/bin/env bash
-set -e
-cd "$(dirname "$(readlink -f "$0")")"
-
-exec nix-shell \
-  -p python312 \
-  -p python312Packages.aiohttp \
-  -p python312Packages.orjson \
-  -p python312Packages.colorama \
-  -p python312Packages.playwright \
-  -p python312Packages.websockets \
-  --run "python3 main.pyc"
-```
+The `metascalp` command comes from `overlays/metascalp.nix` — no manual launcher needed. Just `nixos-rebuild switch` and it's in PATH.
