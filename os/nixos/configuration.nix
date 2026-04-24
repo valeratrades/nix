@@ -648,6 +648,9 @@ in {
   # It's just a hint — if it can't shrink enough, it writes a bigger image rather than failing.
   systemd.tmpfiles.rules = [
     "w /sys/power/image_size - - - - 0"
+    # Playwright channel='chrome' looks for Chrome here
+    "d /opt/google/chrome 0755 root root -"
+    "L /opt/google/chrome/chrome - - - - ${pkgs.google-chrome}/bin/google-chrome-stable"
   ];
 
   #TODO!: make specific to the host
