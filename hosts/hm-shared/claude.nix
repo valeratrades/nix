@@ -6,6 +6,14 @@ let
 	skillsRepos = {
 		"mattpocock-skills" = {
 			repo = "mattpocock/skills";
+			skills = [
+				"ubiquitous-language"
+				"improve-codebase-architecture"
+				"edit-article"
+				"caveman"
+				"write-a-skill"
+				"triage-issue"
+			];
 		};
 	};
 
@@ -108,13 +116,14 @@ let
 				mkdir -p "$CACHE_DIR/.claude-plugin" "$CACHE_DIR/skills"
 				echo '{"name":"${name}","version":"latest","description":"Skills from github.com/${cfg.repo}"}' \
 					> "$CACHE_DIR/.claude-plugin/plugin.json"
-				for skill_dir in "$SKILLS_REPO_DIR"/*/; do
-					skill_name=$(basename "$skill_dir")
-					if [ -f "$skill_dir/SKILL.md" ]; then
-						mkdir -p "$CACHE_DIR/skills/$skill_name"
-						cp "$skill_dir/SKILL.md" "$CACHE_DIR/skills/$skill_name/SKILL.md"
+				${lib.concatMapStringsSep "\n" (skill: ''
+					if [ -f "$SKILLS_REPO_DIR/${skill}/SKILL.md" ]; then
+						mkdir -p "$CACHE_DIR/skills/${skill}"
+						cp "$SKILLS_REPO_DIR/${skill}/SKILL.md" "$CACHE_DIR/skills/${skill}/SKILL.md"
+					else
+						echo "WARNING: skill ${skill} not found in ${name}"
 					fi
-				done
+				'') cfg.skills}
 				INSTALLED=$(echo "$INSTALLED" | ${pkgs.jq}/bin/jq \
 					--arg key "${name}@${name}" \
 					--arg path "$CACHE_DIR" \
