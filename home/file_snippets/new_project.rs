@@ -34,6 +34,10 @@ enum ProjectCommand {
         /// Project preset
         #[arg(long, default_value = "default")]
         preset: RustPreset,
+
+        /// Generate as a Cargo workspace (with a single member crate) instead of a standalone crate
+        #[arg(long, default_value_t = true)]
+        workspace: bool,
     },
     /// Create a new Python project
     Python {
@@ -487,6 +491,92 @@ fn typst(name: &str) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+fn rust_workspace(name: &str, preset: &RustPreset) -> Result<(), Box<dyn std::error::Error>> {
+    let file_snippets = get_file_snippets_path();
+    let lang = "rs";
+
+    fs::create_dir_all(name)?;
+    shared_before(name, lang)?;
+    // cwd is now the workspace root
+
+    fs::create_dir_all(".cargo")?;
+    fs::write(
+        ".cargo/rust-toolchain.toml",
+        r#"
+[toolchain]
+channel = "nightly"
+components = ["rustc-codegen-cranelift-preview"]"#,
+    )?;
+
+    // Create member crate without vcs (we handle git in shared_after)
+    run_cmd!(cargo new $name --vcs none)?;
+
+    // Build workspace root Cargo.toml from template + preset-specific deps
+    let workspace_root_src = file_snippets.join(format!("{lang}/workspace_root.toml"));
+    let mut workspace_cargo = fs::read_to_string(&workspace_root_src)?;
+    let preset_workspace_deps = match preset {
+        RustPreset::Default => {
+            "clap = { version = \"^4.5.4\", features = [\"derive\"] }\nv_utils = { version = \"^2.15.0\", features = [\"io\", \"macros\", \"cli\"] }\n"
+        }
+        RustPreset::Light => "clap = { version = \"^4.5.4\", features = [\"derive\"] }\n",
+        _ => "",
+    };
+    workspace_cargo.push_str(preset_workspace_deps);
+    fs::write("Cargo.toml", &workspace_cargo)?;
+
+    // Build member Cargo.toml with workspace dep references
+    let base_deps = ["derive-new", "color-eyre", "miette"];
+    let preset_deps: &[&str] = match preset {
+        RustPreset::Default => &["clap", "v_utils"],
+        RustPreset::Light => &["clap"],
+        _ => &[],
+    };
+    let mut member_cargo = "[package]\nname = \"PROJECT_NAME_PLACEHOLDER\"\nversion = \"0.1.0\"\nedition = \"2024\"\n\n[dependencies]\n".to_string();
+    for dep in base_deps.iter().chain(preset_deps) {
+        member_cargo.push_str(&format!("{dep}.workspace = true\n"));
+    }
+    member_cargo.push_str("\n[lints]\nworkspace = true\n");
+    fs::write(format!("{name}/Cargo.toml"), &member_cargo)?;
+
+    // Replace generated src with preset files
+    let _ = fs::remove_dir_all(format!("{name}/src"));
+    let preset_name = match preset {
+        RustPreset::Clap => "clap",
+        RustPreset::Tokio => "tokio",
+        RustPreset::Leptos => "leptos",
+        RustPreset::Light => "light",
+        RustPreset::Default => "default",
+    };
+    let preset_dir = file_snippets.join(format!("{lang}/presets/{preset_name}"));
+    match preset {
+        RustPreset::Leptos => {
+            if preset_dir.exists() {
+                for entry in fs::read_dir(&preset_dir)? {
+                    let entry = entry?;
+                    let dest = PathBuf::from(name).join(entry.file_name());
+                    if entry.path().is_dir() {
+                        copy_dir_all(&entry.path(), &dest)?;
+                    } else {
+                        fs::copy(entry.path(), &dest)?;
+                    }
+                }
+            }
+        }
+        _ => {
+            let src_dir = preset_dir.join("src");
+            if src_dir.exists() {
+                copy_dir_all(&src_dir, &PathBuf::from(format!("{name}/src")))?;
+            }
+        }
+    }
+
+    fs::write(format!("{name}/src/lib.rs"), "")?;
+
+    shared_after(name, lang)?;
+
+    Ok(())
+}
+
 fn main() {
     let args = Args::parse();
 
@@ -495,7 +585,14 @@ fn main() {
             name,
             toolchain,
             preset,
-        } => rust(&name, &toolchain, &preset),
+            workspace,
+        } => {
+            if workspace {
+                rust_workspace(&name, &preset)
+            } else {
+                rust(&name, &toolchain, &preset)
+            }
+        }
         ProjectCommand::Python { name } => python(&name),
         ProjectCommand::Golang { name } => golang(&name),
         ProjectCommand::Lean { name } => lean(&name),

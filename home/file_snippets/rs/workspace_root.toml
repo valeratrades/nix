@@ -1,0 +1,21 @@
+cargo-features = ["codegen-backend"]
+
+[workspace]
+members = ["PROJECT_NAME_PLACEHOLDER", "PROJECT_NAME_PLACEHOLDER_*"]
+resolver = "3"
+default-members = ["PROJECT_NAME_PLACEHOLDER"]
+
+[workspace.lints.clippy]
+float_cmp = "allow"
+len_zero = "allow"
+undocumented_unsafe_blocks = "warn"
+tabs_in_doc_comments = "allow"
+doc_lazy_continuation = "allow"
+get_first = "allow"
+get_last_with_len = "allow"
+manual_is_multiple_of = "allow"
+
+[workspace.dependencies]
+derive-new = "^0"
+color-eyre = "^0.6.5"
+miette = { version = "^7.6.0", features = ["fancy", "serde", "syntect-highlighter"] }
