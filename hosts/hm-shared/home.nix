@@ -229,6 +229,12 @@
               "--disable-accelerated-video-decode"
               "--disable-accelerated-video-encode"
               "--silent-debugger-extension-api" # suppress OpenClaw Auto Relay debug bar
+              "--remote-debugging-port=9222"
+              # Chrome blocks the debug port when using its default data dir path, even
+              # if --user-data-dir is explicitly set to the same path (canonical comparison).
+              # A symlink to the same dir looks like a non-default path → unblocks CDP.
+              # The symlink is created by home.activation.chromeDebugSymlink below.
+              "--user-data-dir=${config.home.homeDirectory}/.config/google-chrome-cdp"
             ];
           })
           alacritty
@@ -451,4 +457,11 @@
 			};
 		};
 	};
+
+	# Create a symlink that gives Chrome a non-default-looking data dir path,
+	# which is required for --remote-debugging-port to be accepted.
+	home.activation.chromeDebugSymlink = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+		ln -sfn "${config.home.homeDirectory}/.config/google-chrome" \
+		        "${config.home.homeDirectory}/.config/google-chrome-cdp"
+	'';
 }
