@@ -249,7 +249,10 @@ in {
         zed-editor-fhs
 				zed
 				#claude-code #DEPRECATE: once sure that https://github.com/sadjow/claude-code-nix is the way to go
-        inputs.claude_code_nix.packages.${pkgs.stdenv.hostPlatform.system}.default
+        (import ./patched-claude-code.nix {
+          inherit pkgs;
+          claude-code = inputs.claude_code_nix.packages.${pkgs.stdenv.hostPlatform.system}.default;
+        })
         inputs.codex_nix.packages.${pkgs.stdenv.hostPlatform.system}.default
 
         libreoffice-still
