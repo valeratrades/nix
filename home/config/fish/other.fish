@@ -124,7 +124,8 @@ function ubuntu_vm
 
 	# Find existing ISO if already downloaded
 	set -l existing (ls "$iso_dir"/ubuntu-24.04*-desktop-amd64.iso 2>/dev/null | head -1)
-	if test -n "$existing"
+	#if test -n "$existing"
+	if [ -n "$existing" ]
 		gnome-boxes "$existing"
 		return
 	end
@@ -144,11 +145,6 @@ function ubuntu_vm
 	or return 1
 
 	gnome-boxes "$iso_dir/$iso_name"
-end
-
-
-function tge
-	q "answer concisely. Translate from german: $argv"
 end
 
 

@@ -438,6 +438,8 @@ mode "obs" {
 
 	## Scenes: Both, Stream, Camera //"t" is to transition to it immediately
 	bindsym b exec "$switch_out && $obs_send b"
+	# also `both`, but camera at the top
+	bindsym t exec "$switch_out && $obs_send t"
 #"bt"
 	bindsym s exec "$switch_out && $obs_send s"
 #"st"

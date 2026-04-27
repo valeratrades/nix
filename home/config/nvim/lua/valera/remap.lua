@@ -158,6 +158,9 @@ K("n", "<Esc>", function()
 	vim.cmd.noh()
 	require('rust_plugins').kill_popups()
 	--vim.cmd("PeekClose")
+	if vim.bo.filetype ~= 'qf' and vim.fn.getqflist({ winid = 0 }).winid ~= 0 then
+		vim.cmd('cclose')
+	end
 	print(" ")
 end, { desc = "Clear search and popups" })
 
