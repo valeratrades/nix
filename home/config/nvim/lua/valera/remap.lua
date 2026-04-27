@@ -84,6 +84,14 @@ K('n', 'gw', function()
 	vim.api.nvim_feedkeys('g', 'm', false)
 end, { desc = 'Execute g command in vsplit', silent = true, overwrite = true })
 
+-- execute any command in a new vsplit (generalizes gw; works in oil with <Space>v<CR>)
+K('n', '<Space>v', function()
+	local char = vim.fn.getchar()
+	local key = type(char) == 'number' and vim.fn.nr2char(char) or char
+	vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<C-w><C-v>', true, false, true), 'n', false)
+	vim.api.nvim_feedkeys(key, 'm', false)
+end, { desc = 'Execute next command in vsplit' })
+
 -- <C-w>= for normalizing
 --
 
