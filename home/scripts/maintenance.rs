@@ -36,7 +36,7 @@ fn main() {
     let tasks: Vec<&str> = if let Some(ref only) = args.only {
         only.split(',').collect()
     } else {
-        vec!["clean", "cache", "nightly", "rebuild"]
+        vec!["clean", "cache", "nightly", "shadows", "rebuild"]
     };
 
     let mut handles = vec![];
@@ -71,6 +71,19 @@ fn main() {
                 println!("\x1b[32mRefreshed nightly version file cache\x1b[0m");
             } else {
                 eprintln!("\x1b[31mFailed to refresh nightly version cache\x1b[0m");
+            }
+        }));
+    }
+
+    if tasks.contains(&"shadows") {
+        handles.push(std::thread::spawn(|| {
+            let conflicts = check_cargo_nix_shadows();
+            if conflicts.is_empty() {
+                println!("\x1b[32mNo cargo/nix binary shadows\x1b[0m");
+            } else {
+                for name in &conflicts {
+                    eprintln!("\x1b[31mcargo shadow: `{}` exists in ~/.cargo/bin but is also provided by nix — remove the cargo-installed copy\x1b[0m", name);
+                }
             }
         }));
     }
@@ -185,6 +198,48 @@ fn clean_old_build_artefacts() -> bool {
     }
 
     true
+}
+
+fn check_cargo_nix_shadows() -> Vec<String> {
+    let home = std::env::var("HOME").unwrap_or_else(|_| "/home/v".to_string());
+    let cargo_bin = PathBuf::from(&home).join(".cargo/bin");
+
+    let nix_dirs: &[&str] = &[
+        "/home/v/.nix-profile/bin",
+        "/run/current-system/sw/bin",
+        "/home/v/.local/state/nix/profile/bin",
+        "/etc/profiles/per-user/v/bin",
+    ];
+
+    let mut conflicts = vec![];
+
+    let entries = match fs::read_dir(&cargo_bin) {
+        Ok(e) => e,
+        Err(_) => return conflicts,
+    };
+
+    for entry in entries.flatten() {
+        let name = entry.file_name();
+        let name_str = name.to_string_lossy();
+        let nix_match = nix_dirs.iter().find_map(|nix_dir| {
+            let nix_path = PathBuf::from(nix_dir).join(&*name_str);
+            if !nix_path.exists() {
+                return None;
+            }
+            let real = fs::canonicalize(&nix_path).unwrap_or(nix_path);
+            // Rustup shims appear in nix because rustup itself is nix-managed — not a real conflict.
+            if real.to_string_lossy().contains("-rustup-") {
+                return None;
+            }
+            Some(real)
+        });
+        if nix_match.is_some() {
+            conflicts.push(name_str.into_owned());
+        }
+    }
+
+    conflicts.sort();
+    conflicts
 }
 
 fn check_caches() -> bool {

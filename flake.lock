@@ -868,7 +868,6 @@
       "original": {
         "owner": "numtide",
         "repo": "flake-utils",
-        "rev": "11707dc2f618dd54ca8739b309ec4fc024de578b",
         "type": "github"
       }
     },
@@ -2470,8 +2469,8 @@
       },
       "original": {
         "owner": "NixOS",
+        "ref": "nixos-unstable",
         "repo": "nixpkgs",
-        "rev": "3e2499d5539c16d0d173ba53552a4ff8547f4539",
         "type": "github"
       }
     },
@@ -2869,7 +2868,6 @@
       "original": {
         "owner": "cachix",
         "repo": "git-hooks.nix",
-        "rev": "f0927703b7b1c8d97511c4116eb9b4ec6645a0fa",
         "type": "github"
       }
     },
@@ -3230,7 +3228,6 @@
       "original": {
         "owner": "oxalica",
         "repo": "rust-overlay",
-        "rev": "91e1f7a0017065360f447622d11b7ce6ed04772f",
         "type": "github"
       }
     },
@@ -3804,15 +3801,16 @@
         "v-utils": "v-utils_9"
       },
       "locked": {
-        "lastModified": 1777123672,
-        "narHash": "sha256-Ej3ko6m7MMP5IkdNO5cUXchgoyoDQfeTRXM1q+xH2f4=",
+        "lastModified": 1777055746,
+        "narHash": "sha256-f4Exit9TpzD2NlxrTTsAWdklH42TrahhVV3ZwxB1cmE=",
         "owner": "valeratrades",
         "repo": "tedi",
-        "rev": "01e39c1e384acff748f45ddf2843630d427c6095",
+        "rev": "234f6d8b8070ae00b28ea702ccf7ddae2f5f8260",
         "type": "github"
       },
       "original": {
         "owner": "valeratrades",
+        "ref": "release",
         "repo": "tedi",
         "type": "github"
       }
@@ -4062,8 +4060,8 @@
       },
       "original": {
         "owner": "valeratrades",
+        "ref": "v1.6",
         "repo": "v_flakes",
-        "rev": "8f303402daf15d26afa177d724643644c06b7d0e",
         "type": "github"
       }
     },
@@ -4097,11 +4095,11 @@
         "wrap-it": "wrap-it"
       },
       "locked": {
-        "lastModified": 1776083349,
-        "narHash": "sha256-uKzxwUgpbu4ryUe/9OQ4fyL83dc7JhwijzOjM87kABM=",
+        "lastModified": 1776790992,
+        "narHash": "sha256-sVnxm0CKLQLa5F8mBz4SDQC3d1wAZqZyiJ8CCIdX85M=",
         "owner": "valeratrades",
         "repo": "wallpaper_carousel",
-        "rev": "52180be7fdb1677b7947503d3708b3f735cc41e0",
+        "rev": "a1fee2b2b17b794cb60bfeaf7c89e202b5c731a3",
         "type": "github"
       },
       "original": {

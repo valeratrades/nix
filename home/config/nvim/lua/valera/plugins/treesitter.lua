@@ -28,7 +28,6 @@ return {
 				if not pcall(vim.treesitter.start, args.buf) then
 					return
 				end
-				vim.bo[args.buf].syntax = 'ON' -- additional_vim_regex_highlighting equivalent
 				if pcall(vim.treesitter.query.get, lang, 'indents') and vim.treesitter.query.get(lang, 'indents') then
 					vim.bo[args.buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
 				end
