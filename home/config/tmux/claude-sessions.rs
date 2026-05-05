@@ -1075,6 +1075,215 @@ fn determine_claude_activity(session: &str, window_index: u32) -> ActivityResult
     ActivityResult { state: ClaudeState::Finished, draft_content: None, question_content: None }
 }
 
+// ----- 5-hour usage % from Claude Code's OAuth-authenticated /api/oauth/usage -----
+
+#[derive(Default, Clone, Copy, Serialize, Deserialize)]
+struct UsageInfo {
+    /// Percent of 5h limit used [0, 100]. None = unknown.
+    five_hour_used_pct: Option<f64>,
+    /// Unix epoch seconds at which the 5h window resets. None = unknown.
+    five_hour_resets_at: Option<i64>,
+}
+
+#[derive(Default, Serialize, Deserialize)]
+struct CacheState {
+    /// "session:window_index" -> state name (as_str)
+    window_states: HashMap<String, String>,
+    usage: UsageInfo,
+    /// Unix epoch of last fetch attempt (success or fail). Throttles retries
+    /// so we don't hammer the endpoint when it's per-minute rate-limited.
+    last_fetch_attempt_at: Option<i64>,
+}
+
+#[derive(Deserialize)]
+struct OauthUsageResponse {
+    five_hour: FiveHour,
+}
+
+#[derive(Deserialize)]
+struct FiveHour {
+    utilization: f64,
+    resets_at: String,
+}
+
+#[derive(Deserialize)]
+struct ClaudeCreds {
+    #[serde(rename = "claudeAiOauth")]
+    claude_ai_oauth: ClaudeOauth,
+}
+
+#[derive(Deserialize)]
+struct ClaudeOauth {
+    #[serde(rename = "accessToken")]
+    access_token: String,
+}
+
+fn cache_path() -> Option<PathBuf> {
+    std::env::var("HOME")
+        .ok()
+        .map(|h| PathBuf::from(h).join(".cache/claude-sessions-state.json"))
+}
+
+fn load_cache() -> CacheState {
+    let Some(p) = cache_path() else { return CacheState::default() };
+    let Ok(s) = fs::read_to_string(&p) else { return CacheState::default() };
+    serde_json::from_str(&s).unwrap_or_default()
+}
+
+fn save_cache(cache: &CacheState) {
+    let Some(p) = cache_path() else { return };
+    if let Some(parent) = p.parent() {
+        let _ = fs::create_dir_all(parent);
+    }
+    if let Ok(s) = serde_json::to_string(cache) {
+        let _ = fs::write(&p, s);
+    }
+}
+
+/// Fetch 5h utilization % from api.anthropic.com using Claude Code's OAuth bearer.
+/// HTTP 429 from this endpoint means we're past the limit — report 100%.
+/// Returns None on any other failure (missing creds, network, parse, auth).
+fn fetch_usage() -> Option<UsageInfo> {
+    let home = std::env::var("HOME").ok()?;
+    let creds_raw = fs::read_to_string(PathBuf::from(home).join(".claude/.credentials.json")).ok()?;
+    let creds: ClaudeCreds = serde_json::from_str(&creds_raw).ok()?;
+
+    // Use -w to get HTTP status code on a separate trailing line so we can
+    // separate transient failures from real responses.
+    // Without the Claude-CLI-style headers, the endpoint returns 429 to
+    // discourage scraping; with them it answers normally.
+    let output = Command::new("curl")
+        .args([
+            "-s",
+            "-o", "/dev/stdout",
+            "-w", "\n%{http_code}",
+            "-H",
+            &format!("Authorization: Bearer {}", creds.claude_ai_oauth.access_token),
+            "-H", "anthropic-beta: oauth-2025-04-20",
+            "-H", "anthropic-version: 2023-06-01",
+            "-H", "User-Agent: claude-cli/1.0.119 (external, cli)",
+            "-H", "x-app: cli",
+            "https://api.anthropic.com/api/oauth/usage",
+        ])
+        .output()
+        .ok()?;
+
+    if !output.status.success() {
+        return None;
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let (body, status) = stdout.rsplit_once('\n')?;
+    let status: u16 = status.trim().parse().ok()?;
+
+    // 200 → real data. Anything else (including 429: the endpoint itself is
+    // per-minute rate-limited and refusing to answer) → we genuinely don't know.
+    if status != 200 {
+        return None;
+    }
+    let resp: OauthUsageResponse = serde_json::from_str(body).ok()?;
+    Some(UsageInfo {
+        five_hour_used_pct: Some(resp.five_hour.utilization),
+        five_hour_resets_at: parse_iso_to_epoch(&resp.five_hour.resets_at),
+    })
+}
+
+fn parse_iso_to_epoch(s: &str) -> Option<i64> {
+    let out = Command::new("date")
+        .args(["-u", "-d", s, "+%s"])
+        .output()
+        .ok()?;
+    if !out.status.success() {
+        return None;
+    }
+    String::from_utf8_lossy(&out.stdout).trim().parse().ok()
+}
+
+fn now_epoch() -> i64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0)
+}
+
+fn format_duration_until(target: i64) -> String {
+    let remaining = target - now_epoch();
+    if remaining <= 0 {
+        return "?".to_string();
+    }
+    let hours = remaining / 3600;
+    let mins = (remaining % 3600) / 60;
+    if hours > 0 {
+        format!("{}h{:02}m", hours, mins)
+    } else {
+        format!("{}m", mins)
+    }
+}
+
+fn format_usage_header(u: &UsageInfo) -> String {
+    let pct_left = match u.five_hour_used_pct {
+        Some(used) => format!("{:.0}%", (100.0 - used).max(0.0)),
+        None => "?".to_string(),
+    };
+    let time_left = match u.five_hour_resets_at {
+        Some(t) => format_duration_until(t),
+        None => "?".to_string(),
+    };
+    format!("{time_left} · {pct_left}")
+}
+
+fn current_state_map(windows: &[ClaudeWindow]) -> HashMap<String, String> {
+    windows
+        .iter()
+        .map(|w| (format!("{}:{}", w.session, w.window_index), w.state.as_str().to_string()))
+        .collect()
+}
+
+/// Minimum seconds between fetch attempts. The /api/oauth/usage endpoint
+/// applies a sticky per-token rate-limit; this throttle prevents storming it.
+const FETCH_THROTTLE_SECS: i64 = 60;
+
+/// Refetch when:
+/// - no prior state to compare against, or
+/// - cached usage is unknown (never fetched successfully), or
+/// - cached resets_at is unknown or has elapsed, or
+/// - a window just transitioned INTO active/finished/question.
+/// Always gated by FETCH_THROTTLE_SECS since last attempt.
+fn should_recompute(prev: &CacheState, windows: &[ClaudeWindow]) -> bool {
+    // Throttle: respect minimum gap between attempts (success OR failure)
+    if let Some(last) = prev.last_fetch_attempt_at {
+        if now_epoch() - last < FETCH_THROTTLE_SECS {
+            return false;
+        }
+    }
+
+    if prev.window_states.is_empty() {
+        return true;
+    }
+    if prev.usage.five_hour_used_pct.is_none() {
+        return true;
+    }
+    match prev.usage.five_hour_resets_at {
+        None => return true, // never got a successful fetch
+        Some(reset) if now_epoch() >= reset => return true, // window elapsed
+        _ => {}
+    }
+    for w in windows {
+        let key = format!("{}:{}", w.session, w.window_index);
+        let new_state = w.state.as_str();
+        let old_state = prev.window_states.get(&key).map(|s| s.as_str()).unwrap_or("");
+        if old_state != new_state
+            && matches!(
+                w.state,
+                ClaudeState::Active | ClaudeState::Finished | ClaudeState::Question
+            )
+        {
+            return true;
+        }
+    }
+    false
+}
+
 fn main() {
     let args = Args::parse();
 
@@ -1152,9 +1361,29 @@ fn main() {
         );
     }
 
+    // Refetch 5h utilization on state flip, on cache time-staleness,
+    // or when prior usage is unknown. Throttled. Otherwise reuse cache.
+    let cache = load_cache();
+    let did_attempt = should_recompute(&cache, &windows);
+    let usage = if did_attempt {
+        fetch_usage().unwrap_or(cache.usage)
+    } else {
+        cache.usage
+    };
+    save_cache(&CacheState {
+        window_states: current_state_map(&windows),
+        usage,
+        last_fetch_attempt_at: if did_attempt {
+            Some(now_epoch())
+        } else {
+            cache.last_fetch_attempt_at
+        },
+    });
+
     if args.json {
         println!("{}", serde_json::to_string(&sessions.entries).unwrap());
     } else {
+        println!("{}", format_usage_header(&usage).dimmed());
         println!("{}", sessions);
     }
 }
