@@ -1221,6 +1221,15 @@ fn format_duration_until(target: i64) -> String {
 }
 
 fn format_usage_header(u: &UsageInfo) -> String {
+    // If we know when the window resets and that moment has passed, the window
+    // has rolled over without us refetching — assume the allocation is fresh
+    // (100% left) and drop the countdown entirely.
+    if let Some(reset) = u.five_hour_resets_at {
+        if now_epoch() >= reset {
+            return "100%".to_string();
+        }
+    }
+
     let pct_left = match u.five_hour_used_pct {
         Some(used) => format!("{:.0}%", (100.0 - used).max(0.0)),
         None => "?".to_string(),
