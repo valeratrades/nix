@@ -44,6 +44,9 @@ enum Commands {
         /// Use --force (dangerous, overwrites remote unconditionally)
         #[arg(long, short, conflicts_with = "force_with_lease")]
         force: bool,
+        /// Print decision and final args without invoking git push
+        #[arg(long)]
+        dry_run: bool,
         /// Additional arguments to pass to git push
         #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
         args: Vec<String>,
@@ -638,6 +641,63 @@ fn lookup_tree_entry(
     }
 }
 
+/// Strip leading `fixup! `/`squash! `/`amend! ` prefixes (recursively, to handle
+/// `fixup! fixup! foo`).
+fn strip_autosquash_prefix(mut s: &str) -> &str {
+    loop {
+        let stripped = s
+            .strip_prefix("fixup! ")
+            .or_else(|| s.strip_prefix("squash! "))
+            .or_else(|| s.strip_prefix("amend! "));
+        match stripped {
+            Some(rest) => s = rest,
+            None => return s,
+        }
+    }
+}
+
+/// Collect commit subjects walking from `tip` until we hit `stop` (exclusive).
+fn collect_subjects(repo: &gix::Repository, tip: gix::ObjectId, stop: gix::ObjectId) -> Vec<String> {
+    let Ok(walk) = repo.rev_walk([tip]).all() else {
+        return Vec::new();
+    };
+    let mut out = Vec::new();
+    for info in walk.filter_map(|r| r.ok()) {
+        let oid = info.id().detach();
+        if oid == stop {
+            break;
+        }
+        let Ok(obj) = repo.find_object(oid) else { continue };
+        let Ok(commit) = obj.try_into_commit() else { continue };
+        let Ok(msg) = commit.message() else { continue };
+        out.push(msg.summary().to_string());
+    }
+    out
+}
+
+/// Check whether every remote commit since merge-base has a corresponding local
+/// commit (matching by subject, after stripping `fixup!`/`squash!`/`amend!`
+/// prefixes). This catches the post-`gups` case where the fixup was squashed
+/// into its target — the squashed commit keeps the original subject, so the
+/// mapping is trivial.
+fn subjects_subsume(
+    repo: &gix::Repository,
+    base: gix::ObjectId,
+    local_tip: gix::ObjectId,
+    remote_tip: gix::ObjectId,
+) -> bool {
+    let local = collect_subjects(repo, local_tip, base);
+    let remote = collect_subjects(repo, remote_tip, base);
+    if remote.is_empty() {
+        return false;
+    }
+    use std::collections::HashSet;
+    let local_norm: HashSet<&str> = local.iter().map(|s| strip_autosquash_prefix(s)).collect();
+    remote
+        .iter()
+        .all(|s| local_norm.contains(strip_autosquash_prefix(s)))
+}
+
 /// Check if remote's tree appears in local's commit history
 fn remote_tree_in_local_history(
     repo: &gix::Repository,
@@ -660,7 +720,7 @@ fn remote_tree_in_local_history(
     false
 }
 
-fn push(force_with_lease: bool, force: bool, extra_args: Vec<String>) {
+fn push(force_with_lease: bool, force: bool, dry_run: bool, extra_args: Vec<String>) {
     let repo = open_repo();
 
     let branch = match repo.head_name() {
@@ -705,6 +765,10 @@ fn push(force_with_lease: bool, force: bool, extra_args: Vec<String>) {
             let extra_refs: Vec<&str> = extra_args.iter().map(|s| s.as_str()).collect();
             let mut args = vec!["push", "--follow-tags"];
             args.extend(extra_refs);
+            if dry_run {
+                println!("DRY-RUN: git {}", args.join(" "));
+                return;
+            }
             if !run_cmd("git", &args) {
                 std::process::exit(1);
             }
@@ -780,7 +844,16 @@ fn push(force_with_lease: bool, force: bool, extra_args: Vec<String>) {
             .map(|base| remote_changes_subsumed_by_local(&repo, base, local_tree, remote_tree))
             .unwrap_or(false);
 
-        tree_in_history || merge_would_be_clean || no_content_diff || fixup_squash
+        // Check 5: every remote commit subject (since merge-base) has a local
+        // commit subject (after stripping fixup!/squash!/amend! prefixes).
+        // Catches the gups case where a fixup overwrote the same lines as its
+        // target — blob OIDs differ so check 4 fails, and 3-way merge conflicts
+        // so check 2 fails, but autosquash preserved the subject.
+        let subjects_match = merge_base
+            .map(|base| subjects_subsume(&repo, base, local_commit, remote_commit))
+            .unwrap_or(false);
+
+        tree_in_history || merge_would_be_clean || no_content_diff || fixup_squash || subjects_match
     };
 
     if explicit_force && is_main_branch(&branch) {
@@ -813,6 +886,11 @@ fn push(force_with_lease: bool, force: bool, extra_args: Vec<String>) {
     }
     args.push("--follow-tags");
     args.extend(extra_refs);
+
+    if dry_run {
+        println!("DRY-RUN: git {}", args.join(" "));
+        return;
+    }
 
     if !run_cmd("git", &args) {
         std::process::exit(1);
@@ -1203,8 +1281,9 @@ fn main() {
         Commands::Push {
             force_with_lease,
             force,
+            dry_run,
             args,
-        } => push(force_with_lease, force, args),
+        } => push(force_with_lease, force, dry_run, args),
         Commands::Delete { branch } => delete(branch),
         Commands::Reword { commit, message } => reword(commit, message),
         Commands::Extract { commit } => extract(commit),
