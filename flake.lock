@@ -3126,11 +3126,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1765370242,
-        "narHash": "sha256-n/EJTGWDfcfJuGizmhXuK5OTy3U2vl0LTlTmAbIKIOY=",
+        "lastModified": 1778075442,
+        "narHash": "sha256-7JETjALK5wxQD62d2lva3a2+D3J1kKVZ9omV9DnlUUs=",
         "owner": "valeratrades",
         "repo": "reasonable_envsubst",
-        "rev": "f97faa678f6aee89d76bec8f006b5835ed9bb4cd",
+        "rev": "04f8105d610bf4671e320a8a1d0bbf44585f0124",
         "type": "github"
       },
       "original": {
