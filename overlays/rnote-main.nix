@@ -17,5 +17,8 @@ in {
       inherit version src;
       hash = "sha256-fr1bDTzTKx7TLBqw94CyaB0/Jo2x1BzZcM6dcen1PHc=";
     };
+
+    # rnote >=0.13 needs poppler (PDF import); upstream derivation predates this dep.
+    buildInputs = (old.buildInputs or []) ++ [ prev.poppler ];
   });
 }
