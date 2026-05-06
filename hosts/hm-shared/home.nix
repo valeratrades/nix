@@ -233,6 +233,9 @@
               # Block silent ~4GB Gemini Nano (weights.bin under OptGuideOnDeviceModel)
               # download. Disables the optimization-guide on-device model + its downloader.
               "--disable-features=OptimizationGuideOnDeviceModel,OptimizationGuideModelDownloading,TextSafetyClassifier,OnDeviceModelPerformanceParams"
+              # Allow extensions (Vimium etc.) to inject into chrome:// pages and the NTP.
+              # Chrome Web Store remains blocked (separate hardcoded restriction).
+              "--extensions-on-chrome-urls"
               # Chrome blocks the debug port when using its default data dir path, even
               # if --user-data-dir is explicitly set to the same path (canonical comparison).
               # A symlink to the same dir looks like a non-default path → unblocks CDP.
