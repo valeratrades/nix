@@ -230,6 +230,9 @@
               "--disable-accelerated-video-encode"
               "--silent-debugger-extension-api" # suppress OpenClaw Auto Relay debug bar
               "--remote-debugging-port=9222"
+              # Block silent ~4GB Gemini Nano (weights.bin under OptGuideOnDeviceModel)
+              # download. Disables the optimization-guide on-device model + its downloader.
+              "--disable-features=OptimizationGuideOnDeviceModel,OptimizationGuideModelDownloading,TextSafetyClassifier,OnDeviceModelPerformanceParams"
               # Chrome blocks the debug port when using its default data dir path, even
               # if --user-data-dir is explicitly set to the same path (canonical comparison).
               # A symlink to the same dir looks like a non-default path → unblocks CDP.
