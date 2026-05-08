@@ -236,6 +236,13 @@
               # Allow extensions (Vimium etc.) to inject into chrome:// pages and the NTP.
               # Chrome Web Store remains blocked (separate hardcoded restriction).
               "--extensions-on-chrome-urls"
+              # Stop Google's server-side Finch/Variations from remote-toggling features
+              # mid-day without our consent (UI redesigns, extension restrictions, etc.).
+              "--disable-field-trial-config"
+              "--variations-server-url="
+              # Stop Chrome's Component Updater from pulling things outside nix
+              # (incl. AI model weights, side-channel updates).
+              "--disable-component-update"
               # Chrome blocks the debug port when using its default data dir path, even
               # if --user-data-dir is explicitly set to the same path (canonical comparison).
               # A symlink to the same dir looks like a non-default path → unblocks CDP.

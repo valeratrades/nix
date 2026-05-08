@@ -453,3 +453,17 @@ function log
 	#eval "$argv" ^| tee -a $log_file
 	eval "$argv" > $log_file
 end
+
+function meet_cam
+	# Sandboxed chromium for Meet/Zoom: hides /dev/video0 (real cam, typically held
+	# by OBS) so chromium falls back to /dev/video1 (OBS Cam). Uses a dedicated
+	# profile dir so it runs alongside the normal chromium session.
+	set -l profile $HOME/.config/chromium-meet
+	set -l url $argv[1]
+	test -z "$url"; and set url "https://meet.google.com/"
+
+	bwrap --dev-bind / / \
+		--bind /dev/null /dev/video0 \
+		chromium --user-data-dir=$profile $url >/dev/null 2>&1 &
+	disown
+end

@@ -38,6 +38,9 @@
         obs-cli
         ffmpeg
 
+        bubblewrap # used by `meet_cam` fish fn to hide /dev/video0 from chromium
+        chromium # and well install chromium itself
+
         # OBS
         (pkgs.wrapOBS {
           plugins = with pkgs.obs-studio-plugins; [

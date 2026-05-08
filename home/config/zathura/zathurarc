@@ -20,7 +20,7 @@ map u scroll half-up
 map <C-d> toggle_page_mode
 # I think `u` wasn't taken
 
-map j rotate
+map R rotate
 map z reload
 
 map <C-\=> zoom in
@@ -42,5 +42,6 @@ map f zoom width
 set selection-clipboard clipboard
 set adjust-open "best-fit"
 set recolor true
+set adjust-open "none" # prevents jumps when I actively edit the doc near the pagebreaks
 
 #set font "{{ font.monospace }} {{ font.size }}"

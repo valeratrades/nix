@@ -351,6 +351,11 @@ in {
         doCheck = false;
         doInstallCheck = false;
       });
+      # openldap upstream test017-syncreplication-refresh is timing-flaky;
+      # not on hydra cache for some configurations, so skip the test suite locally.
+      openldap = super.openldap.overrideAttrs (old: {
+        doCheck = false;
+      });
       # canvas npm package doesn't build with nodejs v24's V8 API changes
       excalidraw_export = super.excalidraw_export.override { buildNpmPackage = super.buildNpmPackage.override { nodejs = super.nodejs_22; }; };
     })
