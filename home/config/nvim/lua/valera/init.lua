@@ -47,5 +47,6 @@ require("valera.log")
 require("valera.opts")
 require("valera.autocommands")
 require("valera.termfilechooser")
+require("valera.legacy")
 
 require("valera.themes.captuccin")

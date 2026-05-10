@@ -38,6 +38,8 @@ in
 		kbd = "ansi";
 		sccache = true;
 		disableNvidia = false;  # set to true to use AMD iGPU only (better battery, fewer driver issues)
+		clickhouse = false;
+		openclaw = true;
   };
   maria = {
     inherit sshAuthorizedKeys;
@@ -51,6 +53,8 @@ in
     wakeTime = "06:00";
     fontSize = 11;
 		kbd = "iso";
+		clickhouse = true;
+		openclaw = false;
     };
   timur = {
     inherit sshAuthorizedKeys;
@@ -64,6 +68,8 @@ in
     wakeTime = "05:00";
     fontSize = 12;
 		kbd = "ansi";
+		clickhouse = true;
+		openclaw = false;
   };
   #
 

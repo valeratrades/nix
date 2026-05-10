@@ -192,21 +192,6 @@ vim.g.cpp_recommended_style = false
 --,}}}
 
 -- Set default configuration for all LSP servers
-vim.api.nvim_create_user_command('LspRestart', function(opts)
-	local name = opts.args ~= '' and opts.args or nil
-	for _, c in ipairs(vim.lsp.get_clients({ name = name })) do
-		c:stop()
-	end
-	-- reattach after clients shut down
-	vim.defer_fn(function() vim.cmd('e') end, 100)
-end, {
-	nargs = '?',
-	complete = function()
-		return vim.tbl_map(function(c) return c.name end, vim.lsp.get_clients())
-	end,
-	desc = 'Restart LSP clients (optionally filter by name)',
-})
-
 vim.lsp.config('*', {
 	capabilities = capabilities,
 })
@@ -234,8 +219,16 @@ vim.lsp.config('lua_ls', {
 vim.lsp.enable('lua_ls')
 
 -- tailwindcss
+-- default filetypes pulled in markdown/mdx/php/blade/etc, which I don't want it
+-- attaching to. Restrict to the web stack.
 vim.lsp.config('tailwindcss', {
 	cmd = { 'tailwindcss-language-server', '--stdio' },
+	filetypes = {
+		'html', 'css', 'scss', 'sass', 'less', 'postcss',
+		'javascript', 'javascriptreact',
+		'typescript', 'typescriptreact',
+		'vue', 'svelte', 'astro',
+	},
 })
 vim.lsp.enable('tailwindcss')
 

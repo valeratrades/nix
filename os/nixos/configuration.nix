@@ -450,10 +450,10 @@ in {
         # dbs
         [
           redis
-					clickhouse
           #awscli2 #dbg: builds long
           postgresql
         ]
+        (lib.optional user.clickhouse clickhouse)
 
         # gnome
         [

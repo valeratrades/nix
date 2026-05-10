@@ -1,4 +1,4 @@
-{ pkgs, user, ... }: {
+{ pkgs, lib, user, ... }: {
   environment.variables = {
     QT_QPA_PLATFORMTHEME = "xdgdesktopportal";
     GTK_USE_PORTAL = "1";
@@ -42,9 +42,9 @@
       pkill -f 'firefox' || true
 
       # Services that restart losslessly
-      pkill -f 'openclaw-gateway' || true
+      ${lib.optionalString user.openclaw "pkill -f 'openclaw-gateway' || true"}
       pkill -f 'tailscaled' || true
-      pkill -f 'clickhouse' || true
+      ${lib.optionalString user.clickhouse "pkill -f 'clickhouse' || true"}
 
       # Gracefully shut down QEMU VM (~2 GB)
       echo 'system_powerdown' | socat - TCP:localhost:7100 || true
@@ -66,7 +66,7 @@
     };
     script = ''
       systemctl restart tailscaled || true
-      systemctl restart clickhouse || true
+      ${lib.optionalString user.clickhouse "systemctl restart clickhouse || true"}
       systemctl --user -M v@ restart wlr-gamma || true
       systemctl --user -M v@ restart auto_redshift || true
     '';

@@ -39,8 +39,20 @@ in {
       };
     };
 
-    clickhouse.enable = true;
-    clickhouse.extraServerConfig = ''
+    openssh = {
+      enable = true;
+      settings = {
+        KbdInteractiveAuthentication = true;
+        UseDns = true;
+        X11Forwarding = true;
+        PermitRootLogin = "yes";
+      };
+    };
+  };
+
+  services.clickhouse = lib.mkIf user.clickhouse {
+    enable = true;
+    extraServerConfig = ''
         <clickhouse>
           <!-- Disable verbose system logs that cause unnecessary CPU usage -->
           <asynchronous_metric_log remove="1"/>
@@ -70,21 +82,11 @@ in {
           </query_log>
         </clickhouse>
       '';
-
-    openssh = {
-      enable = true;
-      settings = {
-        KbdInteractiveAuthentication = true;
-        UseDns = true;
-        X11Forwarding = true;
-        PermitRootLogin = "yes";
-      };
-    };
   };
 
   # ClickHouse 25.x has a known slow shutdown bug (~39s delay).
   # Just kill it fast - data is trivial.
-  systemd.services.clickhouse.serviceConfig = {
+  systemd.services.clickhouse.serviceConfig = lib.mkIf user.clickhouse {
     TimeoutStopSec = 5;
     KillMode = "mixed";  # SIGTERM main, then SIGKILL all after timeout
   };
