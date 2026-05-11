@@ -45,13 +45,25 @@ vim.api.nvim_create_user_command("LspFormatters", function()
 	print(table.concat(lines, "\n"))
 end, { desc = "list LSP clients on current buffer with their formatting capabilities" })
 
--- `:LspRestart [name]` — stop matching clients, then re-edit to reattach.
+-- `:LspRestart [name]` — stop matching clients, then refire FileType on the
+-- buffers they were attached to so nvim's autostart re-attaches them (avoids
+-- the E37 you'd get from `:edit` on a modified buffer).
 vim.api.nvim_create_user_command("LspRestart", function(opts)
 	local name = opts.args ~= "" and opts.args or nil
+	local affected = {}
 	for _, c in ipairs(vim.lsp.get_clients({ name = name })) do
+		for bufnr in pairs(c.attached_buffers) do
+			affected[bufnr] = true
+		end
 		c:stop()
 	end
-	vim.defer_fn(function() vim.cmd("e") end, 100)
+	vim.defer_fn(function()
+		for bufnr in pairs(affected) do
+			if vim.api.nvim_buf_is_valid(bufnr) then
+				vim.api.nvim_exec_autocmds("FileType", { buffer = bufnr })
+			end
+		end
+	end, 100)
 end, {
 	nargs = "?",
 	complete = client_name_complete,

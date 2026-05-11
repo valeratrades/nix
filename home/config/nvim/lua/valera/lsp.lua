@@ -165,7 +165,7 @@ local function on_attach(client, bufnr)
 
 
 	if client and client:supports_method('textDocument/formatting') then
-		if vim.fn.expand('%:e') ~= 'py' and vim.fn.expand('%:e') ~= 'nix' then
+		if vim.fn.expand('%:e') ~= 'py' and vim.fn.expand('%:e') ~= 'nix' and vim.fn.expand('%:e') ~= 'typ' then
 			require('lsp-format').on_attach(client)
 		end
 	end
@@ -293,6 +293,7 @@ vim.lsp.config('tinymist', {
 		--exportPdf = "onType",
 		--outputPath = "/tmp/typ/$name", -- put PDFs in /tmp, instead of littering next to the source
 		exportPdf = 'never', -- currently always using `TypstWatch` of `typst.vim`
+		formatterMode = 'disable',
 	},
 })
 vim.lsp.enable('tinymist')
