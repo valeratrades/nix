@@ -123,6 +123,37 @@ function M.setup_open(tmpfile)
       vim.keymap.set('v', '<Tab>', confirm_visual_selection, { buffer = true })
       vim.keymap.set('v', '<CR>', confirm_visual_selection, { buffer = true })
 
+      -- Normal-mode <CR>: if buffer has unsaved edits with lines ending in ` .`,
+      -- treat those as the selection; otherwise fall back to oil's default select.
+      vim.keymap.set('n', '<CR>', function()
+        if vim.bo.modified then
+          local dir = oil.get_current_dir()
+          local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+          local paths = {}
+          for lnum, line in ipairs(lines) do
+            if line:match(' %.$') then
+              local entry = oil.get_entry_on_line(0, lnum)
+              if entry and (entry.type == 'file' or entry.type == 'directory') then
+                table.insert(paths, dir .. entry.name)
+              end
+            end
+          end
+          if #paths > 0 then
+            local f = io.open(tmpfile, 'w')
+            if f then
+              for i, p in ipairs(paths) do
+                f:write(resolve_path(p))
+                if i < #paths then f:write('\n') end
+              end
+              f:close()
+            end
+            vim.cmd('qa!')
+            return
+          end
+        end
+        require('oil').select()
+      end, { buffer = true })
+
       -- S to jump to Screenshots
       vim.keymap.set('n', 'S', function()
         oil.open(vim.fn.expand('~/tmp/Screenshots/'))

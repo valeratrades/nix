@@ -4,9 +4,9 @@
     rust-overlay.url = "github:oxalica/rust-overlay";
     flake-utils.url = "github:numtide/flake-utils";
     pre-commit-hooks.url = "github:cachix/git-hooks.nix";
-    v-utils.url = "github:valeratrades/.github?ref=v1.5";
+    v_flakes.url = "github:valeratrades/v_flakes?ref=v1.6";
   };
-  outputs = { self, nixpkgs, rust-overlay, flake-utils, pre-commit-hooks, v-utils }:
+  outputs = { self, nixpkgs, rust-overlay, flake-utils, pre-commit-hooks, v_flakes }:
     flake-utils.lib.eachDefaultSystem (
       system:
       let
@@ -19,26 +19,26 @@
         rust = pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default.override {
           extensions = [ "rust-src" "rust-analyzer" "rust-docs" "rustc-codegen-cranelift-preview" ];
         });
-        pre-commit-check = pre-commit-hooks.lib.${system}.run (v-utils.files.preCommit { inherit pkgs; });
+        pre-commit-check = pre-commit-hooks.lib.${system}.run (v_flakes.files.preCommit { inherit pkgs; });
         manifest = (pkgs.lib.importTOML ./Cargo.toml).package;
         pname = manifest.name;
         stdenv = pkgs.stdenvAdapters.useMoldLinker pkgs.stdenv;
 
-        rs = v-utils.rs { inherit pkgs rust; };
-        github = v-utils.github {
+        rs = v_flakes.rs { inherit pkgs rust; };
+        github = v_flakes.github {
           inherit pkgs pname rs;
           enable = true;
           lastSupportedVersion = "CURRENT_NIGHTLY_BY_DATE";
           jobs.default = true;
         };
-        readme = v-utils.readme-fw {
+        readme = v_flakes.readme-fw {
           inherit pkgs pname;
           defaults = true;
           lastSupportedVersion = "nightly-RUSTC_CURRENT_VERSION";
           rootDir = ./.;
           badges = [ "msrv" "crates_io" "docs_rs" "loc" "ci" ];
         };
-        combined = v-utils.utils.combine [ rs github readme ];
+        combined = v_flakes.utils.combine [ rs github readme ];
       in
       {
         packages =
@@ -72,7 +72,7 @@
               pre-commit-check.shellHook
               + combined.shellHook
               + ''
-                cp -f ${(v-utils.files.treefmt) { inherit pkgs; }} ./.treefmt.toml
+                cp -f ${(v_flakes.files.treefmt) { inherit pkgs; }} ./.treefmt.toml
               '';
 
             packages = [
