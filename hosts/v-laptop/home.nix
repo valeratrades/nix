@@ -122,6 +122,17 @@ in {
         hostname = "144.172.114.210";
         user = "root";
       };
+      "win_dima_tokyo" = {
+        hostname = "38.180.201.212";
+        user = "Administrator";
+        identitiesOnly = true;
+        identityFile = [ "~/.ssh/id_ed25519" ];
+        extraOptions = {
+          PreferredAuthentications = "publickey,keyboard-interactive,password";
+          PubkeyAuthentication = "yes";
+          StrictHostKeyChecking = "accept-new";
+        };
+      };
       "p-laptop" = {
         hostname = "p-laptop";
         user = "p";

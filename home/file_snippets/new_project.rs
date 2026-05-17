@@ -572,6 +572,19 @@ components = ["rustc-codegen-cranelift-preview"]"#,
 
     fs::write(format!("{name}/src/lib.rs"), "")?;
 
+    // Point flake.nix manifest at the member crate's Cargo.toml
+    let flake_path = PathBuf::from("flake.nix");
+    if flake_path.exists() {
+        let flake = fs::read_to_string(&flake_path)?;
+        let needle = "manifest = (pkgs.lib.importTOML ./Cargo.toml).package;";
+        assert!(
+            flake.contains(needle),
+            "flake.nix template missing expected manifest line"
+        );
+        let replacement = format!("manifest = (pkgs.lib.importTOML ./{name}/Cargo.toml).package;");
+        fs::write(&flake_path, flake.replace(needle, &replacement))?;
+    }
+
     shared_after(name, lang)?;
 
     Ok(())
