@@ -91,7 +91,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     btc_line = {
-      url = "github:valeratrades/btc_line/b8b410eb9d18a9e58fef054a7316aba23ee6f434";
+      url = "github:valeratrades/btc_line";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.rust-overlay.follows = "rust-overlay";
       inputs.flake-utils.follows = "flake-utils";
