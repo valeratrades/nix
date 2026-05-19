@@ -5,6 +5,8 @@
 
 - NEVER stop and ask for permission mid-implementation. If you understand the task, execute it completely.
 
+- if during the implementation, you have discovered that one of the assumptions my prompt relied on is invalid, you stop and report it. To make it clearer, I will often add e.g., "if I remember correctly" next to reasoning I'm not certain of.
+
 ## Workflow
 - always work todos first, - creating and keeping the todos list relevant is first concern in any implementation
 

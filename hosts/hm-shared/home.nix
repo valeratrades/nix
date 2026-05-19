@@ -329,6 +329,12 @@
       "tmp/msg_drafts/README.md".source = "${self}/home/fs/tmp/msg_drafts/README.md";
       #
 
+      # upgradeQ/obs-filter-hotkeys lua scripts (add via OBS Tools > Scripts)
+      ".config/obs-studio/scripts/filter_hotkeys_video.lua".source =
+        "${self}/home/config/obs-studio/scripts/filter_hotkeys_video.lua";
+      ".config/obs-studio/scripts/filter_hotkeys_audio.lua".source =
+        "${self}/home/config/obs-studio/scripts/filter_hotkeys_audio.lua";
+
       ".config/tg_admin.toml".source = "${self}/home/config/tg_admin.toml";
       ".config/auto_redshift.toml".source = "${self}/home/config/auto_redshift.toml";
       ".config/tedi.nix".source = "${self}/home/config/tedi.nix";
