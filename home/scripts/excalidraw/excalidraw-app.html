@@ -79,7 +79,7 @@
       }
     });
 
-    setInterval(function() {
+    function sendHeartbeat() {
       fetch('/api/heartbeat', { method: 'POST' }).catch(function() {
         document.getElementById('root').style.display = 'none';
         document.body.style.background = '#1e1e1e';
@@ -90,7 +90,10 @@
         document.body.style.font = '24px monospace';
         document.body.textContent = 'server stopped';
       });
-    }, 3000);
+    }
+    // Arm the server watchdog ASAP — first setInterval tick is 3s away.
+    sendHeartbeat();
+    setInterval(sendHeartbeat, 3000);
 
     fetch('/api/load')
       .then(function(r) { return r.json(); })

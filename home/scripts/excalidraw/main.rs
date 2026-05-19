@@ -17,7 +17,7 @@ use std::{
 	process::{Command, ExitCode},
 	sync::{
 		Arc,
-		atomic::{AtomicU64, Ordering},
+		atomic::{AtomicBool, AtomicU64, Ordering},
 	},
 	time::{SystemTime, UNIX_EPOCH},
 };
@@ -156,6 +156,9 @@ fn main() -> ExitCode {
 	};
 
 	let last_heartbeat = Arc::new(AtomicU64::new(now_ms()));
+	// Watchdog only arms after the first heartbeat — otherwise a slow browser
+	// cold-start would race the timeout and kill the server right after the tab opens.
+	let heartbeat_armed = Arc::new(AtomicBool::new(false));
 
 	let (listener, port) = {
 		let mut last_err = None;
@@ -193,9 +196,10 @@ fn main() -> ExitCode {
 	});
 
 	let hb = Arc::clone(&last_heartbeat);
+	let armed = Arc::clone(&heartbeat_armed);
 	std::thread::spawn(move || loop {
 		std::thread::sleep(std::time::Duration::from_secs(3));
-		if now_ms() - hb.load(Ordering::Relaxed) > HEARTBEAT_TIMEOUT_MS {
+		if armed.load(Ordering::Relaxed) && now_ms() - hb.load(Ordering::Relaxed) > HEARTBEAT_TIMEOUT_MS {
 			eprintln!("Tab closed, shutting down.");
 			std::process::exit(0);
 		}
@@ -243,6 +247,7 @@ fn main() -> ExitCode {
 			}
 			("POST", "/api/heartbeat") => {
 				last_heartbeat.store(now_ms(), Ordering::Relaxed);
+				heartbeat_armed.store(true, Ordering::Relaxed);
 				let _ = write!(stream, "HTTP/1.1 204 No Content\r\n{cors}\r\n\r\n");
 			}
 			("GET", "/api/libraries") => {
