@@ -43,6 +43,7 @@
 				#ms-azuretools.vscode-docker
 				ms-vscode-remote.remote-ssh
 				ms-toolsai.jupyter
+				asvetliakov.vscode-neovim # applies nvim config (motions, keybinds) to vscode
 
 			] ++ pkgs.vscode-utils.extensionsFromVscodeMarketplace [
 			{
@@ -65,6 +66,19 @@
 				version = "1.2.1";
 				sha256 = "0vba1df2wspn02b7hfjaiyz1cw0ygvhjnyvdqszyfs2xw0f839xw";
 			}
+			] ++ [
+				# Neovim Buffer Sync: only on Open VSX (not on MS Marketplace), so fetched directly
+				(pkgs.vscode-utils.buildVscodeMarketplaceExtension {
+					mktplcRef = {
+						publisher = "karolfrankiewicz";
+						name = "nvim-buffer-sync";
+						version = "0.1.0";
+					};
+					vsix = pkgs.fetchurl {
+						url = "https://open-vsx.org/api/karolfrankiewicz/nvim-buffer-sync/0.1.0/file/karolfrankiewicz.nvim-buffer-sync-0.1.0.vsix";
+						sha256 = "0c5i911xfs3z3x5p677vicqq48kb523a7zrg0q1x4fhxc72f05zl";
+					};
+				})
 		];
 		}; # profiles.default
 	};
