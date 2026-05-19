@@ -25,6 +25,7 @@ alias smart_shutdown="$__fish_scripts_dir/smart_shutdown.rs"
 alias profile_shell_init="$__fish_scripts_dir/maintenance/profile_shell_init.rs"
 alias ambiance="$__fish_scripts_dir/ambiance.rs"
 alias pp="$__fish_scripts_dir/pp.rs"
+alias ex="$__fish_scripts_dir/excalidraw/main.rs"
 
 function __run_pic_script
     set -l ext png

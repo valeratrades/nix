@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>arch -- Excalidraw</title>
+  <style>
+    html, body, #root { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
+    #save-indicator {
+      position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.7); color: #fff; padding: 4px 14px;
+      border-radius: 6px; font: 13px monospace; opacity: 0;
+      transition: opacity 0.3s; pointer-events: none; z-index: 9999;
+    }
+  </style>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@excalidraw/excalidraw@0.17.6/dist/excalidraw.production.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <div id="save-indicator">saved</div>
+  <script>
+    var Excalidraw = ExcalidrawLib.Excalidraw;
+    var excalidrawAPI = null;
+    var indicator = document.getElementById('save-indicator');
+    var indicatorTimer = null;
+
+    function showIndicator(msg) {
+      indicator.textContent = msg;
+      indicator.style.opacity = '1';
+      clearTimeout(indicatorTimer);
+      indicatorTimer = setTimeout(function() { indicator.style.opacity = '0'; }, 1500);
+    }
+
+    var SAVE_APP_STATE_KEYS = [
+      'gridSize', 'viewBackgroundColor', 'theme',
+      'currentItemStrokeColor', 'currentItemBackgroundColor',
+      'currentItemFillStyle', 'currentItemStrokeWidth',
+      'currentItemStrokeStyle', 'currentItemRoughness',
+      'currentItemOpacity', 'currentItemFontFamily',
+      'currentItemFontSize', 'currentItemTextAlign',
+      'currentItemStartArrowhead', 'currentItemEndArrowhead',
+      'currentItemRoundness', 'exportBackground',
+      'exportWithDarkMode', 'exportScale', 'exportEmbedScene',
+      'name', 'zenModeEnabled', 'objectsSnapModeEnabled'
+    ];
+
+    function saveNow() {
+      if (!excalidrawAPI) return;
+      var elements = excalidrawAPI.getSceneElements();
+      var fullState = excalidrawAPI.getAppState();
+      var files     = excalidrawAPI.getFiles();
+      var appState = {};
+      SAVE_APP_STATE_KEYS.forEach(function(k) {
+        if (k in fullState) appState[k] = fullState[k];
+      });
+      fetch('/api/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'excalidraw',
+          version: 2,
+          source: 'http://localhost:3741',
+          elements: elements,
+          appState: appState,
+          files: files || {}
+        })
+      }).then(function() {
+        showIndicator('saved');
+      }).catch(function() {
+        showIndicator('save failed');
+      });
+    }
+
+    document.addEventListener('keydown', function(e) {
+      if (e.altKey && e.key === 'w') {
+        e.preventDefault();
+        saveNow();
+      }
+    });
+
+    setInterval(function() {
+      fetch('/api/heartbeat', { method: 'POST' }).catch(function() {
+        document.getElementById('root').style.display = 'none';
+        document.body.style.background = '#1e1e1e';
+        document.body.style.color = '#aaa';
+        document.body.style.display = 'flex';
+        document.body.style.alignItems = 'center';
+        document.body.style.justifyContent = 'center';
+        document.body.style.font = '24px monospace';
+        document.body.textContent = 'server stopped';
+      });
+    }, 3000);
+
+    fetch('/api/load')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        ReactDOM.render(
+          React.createElement(Excalidraw, {
+            theme: '__THEME__',
+            initialData: {
+              elements: data.elements || [],
+              appState: Object.assign({ currentItemFontFamily: 3, currentItemOpacity: 50, currentItemStrokeWidth: 1 }, data.appState || {}, { currentItemStrokeColor: '__STROKE_COLOR__', viewBackgroundColor: '__VIEW_BG_COLOR__' }),
+              files: data.files || {}
+            },
+            excalidrawAPI: function(api) {
+              excalidrawAPI = api;
+              fetch('/api/libraries')
+                .then(function(r) { return r.json(); })
+                .then(function(libs) {
+                  if (!libs || !libs.length) return;
+                  var items = [];
+                  libs.forEach(function(lib) {
+                    // v2 format: lib.libraryItems is array of {id, status, elements, ...}
+                    if (lib.libraryItems) {
+                      lib.libraryItems.forEach(function(item) { items.push(item); });
+                    }
+                    // v1 format: lib.library is array of element-arrays
+                    if (lib.library) {
+                      lib.library.forEach(function(elements, i) {
+                        items.push({
+                          id: lib.source + '_' + i,
+                          status: 'published',
+                          elements: elements,
+                          created: 1
+                        });
+                      });
+                    }
+                  });
+                  if (items.length) {
+                    api.updateLibrary({ libraryItems: items, merge: true });
+                  }
+                });
+            }
+          }),
+          document.getElementById('root')
+        );
+      });
+  </script>
+</body>
+</html>
