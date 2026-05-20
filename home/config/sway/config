@@ -196,13 +196,13 @@ assign [app_id="spotube"] 4
 assign [app_id="org.telegram.desktop"] 4
 assign [app_id="com.github.flxzt.rnote"] 9
 assign [app_id="com.obsproject.Studio"] 8
+# Push declarative filter settings when OBS window first appears (not on sway startup)
+for_window [app_id="com.obsproject.Studio"] exec obs-update-filters
 for_window [app_id="ringboard-egui"] floating enable
 # doesn't work, as netrw sets the title as "nvim: [No name]"
 #assign [app_id="Alacritty" title="nvim: ~/Todo*$"] 4
 exec "~/.config/sway/restore_session.sh"
 exec "~/.config/sway/start_doc_scraper.sh"
-# Push declarative filter settings to OBS (retries until websocket is up)
-exec obs-update-filters
 
 bindsym $mod+c kill
 bindsym $mod+x exec swaymsg '[workspace=__focused__] kill'

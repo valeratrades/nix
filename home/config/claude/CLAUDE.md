@@ -45,6 +45,7 @@
     if it's triggered by user interaction, we exit with a good error.
     If it's something we don't control, - we propagate the error to the level where we can recover or exit.
     If it's internal logical error, we panic out.
+  NB: this only applies to cases where continuing could lead to difficult to reverse states. Eg writing a bunch of code to get around a fundamental architectural problem, or starting to get more destructive when debugging a live system. If the corruption in question can be resolved without commitment, - do so.
 
 - oftentimes I will request a change that will modify some key primitives used throughout the codebase. You must not attempt to minimize number of necessary changes by introducing a sneaky fallback function that replicates the old behavior in a slightly different way. Simplicity is measured in the correctness of the final interface, not how long it took you to rewrite to it. Semantic correctness of the architecture is most important.
 
