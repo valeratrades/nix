@@ -483,4 +483,15 @@
 		ln -sfn "${config.home.homeDirectory}/.config/google-chrome" \
 		        "${config.home.homeDirectory}/.config/google-chrome-cdp"
 	'';
+
+	# Force obs-websocket server enabled. OBS rewrites this file on shutdown,
+	# so we patch it on every home-manager generation rather than symlinking.
+	# Used by sway obs-mode `f` keybind to toggle the camera blur filter.
+	home.activation.obsWebsocketEnable = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+		cfg="${config.home.homeDirectory}/.config/obs-studio/plugin_config/obs-websocket/config.json"
+		if [ -f "$cfg" ]; then
+			tmp=$(mktemp)
+			${pkgs.jq}/bin/jq '.server_enabled = true' "$cfg" > "$tmp" && mv "$tmp" "$cfg"
+		fi
+	'';
 }

@@ -531,12 +531,25 @@ components = ["rustc-codegen-cranelift-preview"]"#,
         RustPreset::Light => &["clap"],
         _ => &[],
     };
+    let macros_name = format!("{name}_macros");
     let mut member_cargo = "[package]\nname = \"PROJECT_NAME_PLACEHOLDER\"\nversion = \"0.1.0\"\nedition = \"2024\"\n\n[dependencies]\n".to_string();
     for dep in base_deps.iter().chain(preset_deps) {
         member_cargo.push_str(&format!("{dep}.workspace = true\n"));
     }
+    member_cargo.push_str(&format!(
+        "{macros_name} = {{ path = \"../{macros_name}\" }}\n"
+    ));
     member_cargo.push_str("\n[lints]\nworkspace = true\n");
     fs::write(format!("{name}/Cargo.toml"), &member_cargo)?;
+
+    // Create the sibling macros crate so the workspace has multiple members
+    // out of the box (matches the `PROJECT_NAME_PLACEHOLDER_*` glob).
+    fs::create_dir_all(format!("{macros_name}/src"))?;
+    let macros_cargo = format!(
+        "[package]\nname = \"{macros_name}\"\nversion = \"0.1.0\"\nedition = \"2024\"\n\n[lib]\nproc-macro = true\n\n[lints]\nworkspace = true\n"
+    );
+    fs::write(format!("{macros_name}/Cargo.toml"), &macros_cargo)?;
+    fs::write(format!("{macros_name}/src/lib.rs"), "")?;
 
     // Replace generated src with preset files
     let _ = fs::remove_dir_all(format!("{name}/src"));
@@ -572,17 +585,32 @@ components = ["rustc-codegen-cranelift-preview"]"#,
 
     fs::write(format!("{name}/src/lib.rs"), "")?;
 
-    // Point flake.nix manifest at the member crate's Cargo.toml
+    // Point flake.nix manifest at the member crate's Cargo.toml and enable
+    // v_flakes' workspace mode so build.rs gets generated inside the member.
     let flake_path = PathBuf::from("flake.nix");
     if flake_path.exists() {
         let flake = fs::read_to_string(&flake_path)?;
-        let needle = "manifest = (pkgs.lib.importTOML ./Cargo.toml).package;";
+        let manifest_needle = "manifest = (pkgs.lib.importTOML ./Cargo.toml).package;";
         assert!(
-            flake.contains(needle),
+            flake.contains(manifest_needle),
             "flake.nix template missing expected manifest line"
         );
-        let replacement = format!("manifest = (pkgs.lib.importTOML ./{name}/Cargo.toml).package;");
-        fs::write(&flake_path, flake.replace(needle, &replacement))?;
+        let manifest_replacement =
+            format!("manifest = (pkgs.lib.importTOML ./{name}/Cargo.toml).package;");
+
+        let rs_needle = "rs = v_flakes.rs { inherit pkgs rust; };";
+        assert!(
+            flake.contains(rs_needle),
+            "flake.nix template missing expected v_flakes.rs line"
+        );
+        let rs_replacement = format!(
+            "rs = v_flakes.rs {{\n          inherit pkgs rust;\n          build = {{\n            deny = false;\n            workspace = let deprecate_by = \"v1.0.0\"; in {{\n              \"./{name}/\" = [ \"git_version\" \"log_directives\" {{ deprecate = {{ by_version = deprecate_by; force = true; }}; }} ];\n            }};\n          }};\n        }};"
+        );
+
+        let new_flake = flake
+            .replace(manifest_needle, &manifest_replacement)
+            .replace(rs_needle, &rs_replacement);
+        fs::write(&flake_path, new_flake)?;
     }
 
     shared_after(name, lang)?;

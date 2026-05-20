@@ -36,6 +36,7 @@
         mpv
         chafa
         obs-cli
+        obs-cmd # obs-websocket-v5 CLI; used by sway obs-mode `f` (blur toggle)
         ffmpeg
 
         bubblewrap # used by `meet_cam` fish fn to hide /dev/video0 from chromium

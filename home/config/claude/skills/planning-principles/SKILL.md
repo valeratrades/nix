@@ -10,3 +10,5 @@ Do NOT include the "Out of scope" section at the end, - in testing has been obse
 Make it clear that no patches are allowed. Plan must be implemented following the optimal design patterns it implies, - make it clear that accomplishing the individual sub-tasks at whatever cost is not enough and is worth nothing if it leads to deviation from architectural intent and its coherence.
 
 do not write essays. Minimize size of the plan. Since you will be adding more context, you will sacrifice anything you're not certain in, the damn `Out of scope` section (never add it to plans, just skip it. Skip.), and that follow naturally (like what files get changed)
+
+if some sort of migration or any one-off action is required, that needs to be scripted, - you always put related code in ./tmp/, **never** in src/

@@ -452,6 +452,10 @@ mode "obs" {
 	bindsym c exec "$switch_out && $obs_send c"
 #"ct"
 
+	# Toggle Background Removal filter on Camera scene (background blur).
+	# Goes via obs-websocket (obs-cmd), so OBS focus is not required.
+	bindsym f exec "$switch_out && /home/v/.config/sway/obs_filter_toggle.sh Camera 'Background Removal'"
+
 
 	bindsym $mod+comma exec $switch_out
 	bindsym $mod+c exec $switch_out
@@ -461,4 +465,4 @@ mode "obs" {
 	bindsym q exec $switch_out
 
 }
-bindsym $mod+comma exec "swaymsg mode obs && eww update sway_mode='obs (v,r,p,b,s,c)'"
+bindsym $mod+comma exec "swaymsg mode obs && eww update sway_mode='obs (v,r,p,b,s,c,f)'"

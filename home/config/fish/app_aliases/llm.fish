@@ -10,6 +10,7 @@ function cl
         else
             set -a passthrough_args $arg
         end
+        #TODO: add `-p` for opening in plan mode over a specific file
     end
 
     if [ $no_verify -eq 0 ] && [ -n "$repo" ] && [ -f "$repo/AGENTS.md" ]
@@ -27,3 +28,14 @@ function cl
     command $base_cmd --append-system-prompt (cat $HOME/.claude/daneel.md) $passthrough_args
 end
 complete -c cl -w claude
+
+function cld
+    set -lx ANTHROPIC_BASE_URL 'https://api.deepseek.com/anthropic'
+    set -lx ANTHROPIC_AUTH_TOKEN "$DEEPSEEK_KEY"
+    set -lx ANTHROPIC_MODEL 'deepseek-v4-pro[1m]'
+    set -lx ANTHROPIC_DEFAULT_SONNET_MODEL 'deepseek-v4-pro[1m]'
+    set -lx ANTHROPIC_DEFAULT_OPUS_MODEL 'deepseek-v4-pro[1m]'
+    set -lx ANTHROPIC_DEFAULT_HAIKU_MODEL 'deepseek-v4-flash[1m]'
+
+    cl $argv
+end

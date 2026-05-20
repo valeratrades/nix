@@ -3,7 +3,6 @@ cargo-features = ["codegen-backend"]
 [workspace]
 members = ["PROJECT_NAME_PLACEHOLDER", "PROJECT_NAME_PLACEHOLDER_*"]
 resolver = "3"
-default-members = ["PROJECT_NAME_PLACEHOLDER"]
 
 [workspace.lints.clippy]
 float_cmp = "allow"
