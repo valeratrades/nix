@@ -113,6 +113,7 @@
       # NVIDIA dGPU excluded: crash-prone with Firefox hardware decoding
       "gfx.webrender.all" = true;
       "media.hardware-video-decoding.enabled" = true;
+      "media.peerconnection.ice.no_host" = true;
       "media.ffmpeg.vaapi.enabled" = true;  # VA-API path for Wayland
       "media.hardware-video-decoding.force-enabled" = false;  # don't force-override driver blacklist
       "browser.newtabpage.activity-stream.showSponsored" = false;
@@ -127,7 +128,9 @@
       "geo.enabled" = false;
       "network.dns.disablePrefetch" =
         true; # prevent DNS-based location inference
-      "media.peerconnection.enabled" = false; # prevent IP leaks
+      "media.peerconnection.enabled" =
+        true; # WebRTC required for Meet/Discord/etc; was disabled previously to prevent IP leaks but that broke video calling
+
       #,}}}
     };
   };

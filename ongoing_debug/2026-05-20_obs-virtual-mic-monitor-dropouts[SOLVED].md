@@ -1,3 +1,8 @@
+# SOLUTION
+start two browsers. Idk exactly what happens, but if browser is an input to virtual mic, trying to pass virtual mic to another app on that browser leads to it missing that browser's input.
+
+No clue why, but solved by using 2 browsers. Ie if you want to pass google meets incoming voice, you pipe it with obs virtual mic through firefox
+
 # OBS Virtual Mic — browser audio doesn't reach virtual mic, but other apps do
 
 ## Symptom

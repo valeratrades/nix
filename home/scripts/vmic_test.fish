@@ -28,12 +28,18 @@ function _have_virtual_mic
 end
 
 function _obs_running
-	pgrep -x obs >/dev/null 2>&1
+	# OBS binary's `comm` is `.obs-wrapped` on this nix-wrapped install,
+	# not `obs`. Match via argv0 ("obs" or ".obs-wrapped") which pgrep -f sees.
+	pgrep -f '(^|/)\.?obs(-wrapped)?($| )' >/dev/null 2>&1
 end
 
 function _obs_writes_to_vmic
 	# Is OBS's monitor bus actually wired to obs-virtual-mic?
-	pw-link -l 2>/dev/null | grep -E 'OBS(-Monitor)?:output.*-> obs-virtual-mic' -q
+	# `pw-link -lo` lists each output port on its own line, followed by
+	# `  |-> target` indented lines per connection. We need OBS-Monitor's
+	# children to include obs-virtual-mic:playback.
+	pw-link -lo 2>/dev/null | grep -A1 '^OBS-Monitor:output' \
+		| grep -q 'obs-virtual-mic:playback'
 end
 
 function _rms_db --argument-names wav
@@ -56,9 +62,9 @@ end
 function _pass_fail --argument-names rms_db
 	if test "$rms_db" = "ERR"; echo "ERR"; return; end
 	if test "$rms_db" = "-inf"; echo "FAIL"; return; end
-	# Numeric compare. Strip any non-numeric trailing noise.
+	# Numeric compare. fish `math` doesn't support `>`, use awk for float cmp.
 	if string match -rq '^-?[0-9]+(\.[0-9]+)?$' -- $rms_db
-		if test (math "$rms_db > $RMS_PASS_THRESHOLD_DB") = 1
+		if awk -v a=$rms_db -v b=$RMS_PASS_THRESHOLD_DB 'BEGIN{exit !(a>b)}'
 			echo "PASS"
 		else
 			echo "FAIL"
@@ -71,11 +77,15 @@ end
 function _capture --argument-names duration_s out_wav
 	# Records `duration_s` seconds from obs_virtual_mic into `out_wav` (s16le 48k stereo).
 	# Synchronous: returns when capture is done.
+	# NOTE: parecord on this system ignores SIGINT; must use SIGTERM, with
+	# SIGKILL fallback. SIGINT + wait hangs forever.
 	parecord --device=obs_virtual_mic --rate=48000 --channels=2 \
 		--format=s16le --file-format=wav $out_wav >/dev/null 2>&1 &
 	set -l pid $last_pid
 	sleep $duration_s
-	kill -INT $pid 2>/dev/null
+	kill $pid 2>/dev/null
+	sleep 0.2
+	kill -KILL $pid 2>/dev/null
 	wait $pid 2>/dev/null
 end
 
