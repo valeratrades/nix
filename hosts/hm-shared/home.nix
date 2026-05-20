@@ -334,6 +334,9 @@
         "${self}/home/config/obs-studio/scripts/filter_hotkeys_video.lua";
       ".config/obs-studio/scripts/filter_hotkeys_audio.lua".source =
         "${self}/home/config/obs-studio/scripts/filter_hotkeys_audio.lua";
+      # Declarative filter settings, pushed to OBS via obs-websocket by obs-update-filters
+      ".config/obs-studio/filter_settings.nix".source =
+        "${self}/home/config/obs-studio/filter_settings.nix";
 
       ".config/tg_admin.toml".source = "${self}/home/config/tg_admin.toml";
       ".config/auto_redshift.toml".source = "${self}/home/config/auto_redshift.toml";

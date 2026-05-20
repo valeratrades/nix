@@ -37,6 +37,9 @@
         chafa
         obs-cli
         obs-cmd # obs-websocket-v5 CLI; used by sway obs-mode `f` (blur toggle)
+        (pkgs.writeShellScriptBin "obs-update-filters" ''
+          exec "$HOME/.config/sway/obs_apply_filter_settings.rs" "$@"
+        '')
         ffmpeg
 
         bubblewrap # used by `meet_cam` fish fn to hide /dev/video0 from chromium

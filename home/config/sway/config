@@ -201,6 +201,8 @@ for_window [app_id="ringboard-egui"] floating enable
 #assign [app_id="Alacritty" title="nvim: ~/Todo*$"] 4
 exec "~/.config/sway/restore_session.sh"
 exec "~/.config/sway/start_doc_scraper.sh"
+# Push declarative filter settings to OBS (retries until websocket is up)
+exec obs-update-filters
 
 bindsym $mod+c kill
 bindsym $mod+x exec swaymsg '[workspace=__focused__] kill'
