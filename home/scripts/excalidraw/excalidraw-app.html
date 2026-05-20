@@ -108,6 +108,10 @@
             },
             excalidrawAPI: function(api) {
               excalidrawAPI = api;
+              // Force theme + canvas bg AFTER mount. initialData.appState gets
+              // mangled by Excalidraw's internal restore(), so we re-assert here
+              // via the public updateScene API which nothing can override.
+              api.updateScene({ appState: { viewBackgroundColor: '__VIEW_BG_COLOR__', theme: '__THEME__' } });
               fetch('/api/libraries')
                 .then(function(r) { return r.json(); })
                 .then(function(libs) {

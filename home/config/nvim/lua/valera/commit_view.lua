@@ -2,8 +2,9 @@
 -- When opening a file from lazygit's commit-files panel, we get the commit SHA
 -- and call gitsigns.change_base to scope all hunk signs/nav to that commit's diff.
 --
--- IPC via tempfile: lazygit customCommand writes /tmp/nvim-commit-view,
--- this module's timer picks it up.
+-- IPC: lazygit customCommand writes <sha> <path> to /tmp/nvim-commit-view,
+-- then pings nvim via --remote-expr → M.wakeup() which reads the file immediately.
+-- If --remote-expr fails ($NVIM unset, no server), a uv timer polls as fallback.
 
 local M = {}
 
@@ -11,7 +12,34 @@ local TRIGGER_FILE = '/tmp/nvim-commit-view'
 local POLL_MS = 200
 
 -- ---------------------------------------------------------------------------
--- Poll the trigger file (written by lazygit's customCommand)
+-- Check trigger file (called by --remote-expr for immediate wake-up, or timer)
+-- ---------------------------------------------------------------------------
+
+function M.wakeup()
+  local f = io.open(TRIGGER_FILE, 'r')
+  if not f then
+    return
+  end
+
+  local line = f:read('*l')
+  f:close()
+  os.remove(TRIGGER_FILE)
+
+  if not line or line == '' then
+    return
+  end
+
+  local sha, path = line:match('^(%S+)%s+(.+)$')
+  if not sha or not path then
+    vim.notify('CommitView: malformed trigger line: ' .. line, vim.log.levels.ERROR)
+    return
+  end
+
+  M.open(sha, path)
+end
+
+-- ---------------------------------------------------------------------------
+-- Poll the trigger file (fallback for when --remote-expr isn't available)
 -- ---------------------------------------------------------------------------
 
 local function start_polling()
@@ -21,27 +49,7 @@ local function start_polling()
   end
 
   timer:start(0, POLL_MS, vim.schedule_wrap(function()
-    local f = io.open(TRIGGER_FILE, 'r')
-    if not f then
-      return
-    end
-
-    local line = f:read('*l')
-    f:close()
-    os.remove(TRIGGER_FILE)
-
-    if not line or line == '' then
-      return
-    end
-
-    -- Format: <sha> <path>
-    local sha, path = line:match('^(%S+)%s+(.+)$')
-    if not sha or not path then
-      vim.notify('CommitView: malformed trigger line: ' .. line, vim.log.levels.ERROR)
-      return
-    end
-
-    M.open(sha, path)
+    M.wakeup()
   end))
 end
 
@@ -202,10 +210,12 @@ end, {})
 -- Init
 -- ---------------------------------------------------------------------------
 
--- Clear stale trigger file from a previous session
-os.remove(TRIGGER_FILE)
+-- Ensure an nvim server is running so that lazygit's customCommand can reach us
+-- via --remote-expr (and so $NVIM is exported to child processes).
+vim.fn.serverstart()
 
--- Start file poller immediately on module load
+-- File-based fallback: poll for trigger file in case --remote-expr isn't available
+os.remove(TRIGGER_FILE)
 start_polling()
 
 return M
