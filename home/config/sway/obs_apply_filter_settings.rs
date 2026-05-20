@@ -5,18 +5,16 @@
 clap = { version = "4.5.49", features = ["derive"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-tungstenite = "0.24"
 sha2 = "0.10"
 base64 = "0.22"
-url = "2"
 ---
 
 use base64::{Engine as _, engine::general_purpose::STANDARD as B64};
 use clap::Parser;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
-use std::io::{BufRead, BufReader, Write};
+use std::io::{Read, Write};
 use std::net::TcpStream;
 use std::path::PathBuf;
 use std::process::{Command, exit};
@@ -70,11 +68,10 @@ struct HelloD {
 }
 
 /// Read exactly one WebSocket frame as a UTF-8 string.
-fn ws_read(reader: &mut BufReader<TcpStream>) -> Result<String, String> {
+fn ws_read(stream: &mut TcpStream) -> Result<String, String> {
     // Read first 2 bytes to get opcode and length
     let mut header = [0u8; 2];
-    reader
-        .get_mut()
+    stream
         .read_exact(&mut header)
         .map_err(|e| format!("read ws header: {e}"))?;
 
@@ -87,25 +84,25 @@ fn ws_read(reader: &mut BufReader<TcpStream>) -> Result<String, String> {
     }
 
     let mut len = (header[1] & 0x7F) as u64;
-    let mut masked = (header[1] & 0x80) != 0;
+    let masked = (header[1] & 0x80) != 0;
 
     if len == 126 {
         let mut ext = [0u8; 2];
-        reader.get_mut().read_exact(&mut ext).map_err(|e| format!("read ext2: {e}"))?;
+        stream.read_exact(&mut ext).map_err(|e| format!("read ext2: {e}"))?;
         len = u16::from_be_bytes(ext) as u64;
     } else if len == 127 {
         let mut ext = [0u8; 8];
-        reader.get_mut().read_exact(&mut ext).map_err(|e| format!("read ext8: {e}"))?;
+        stream.read_exact(&mut ext).map_err(|e| format!("read ext8: {e}"))?;
         len = u64::from_be_bytes(ext);
     }
 
     let mut mask_key = [0u8; 4];
     if masked {
-        reader.get_mut().read_exact(&mut mask_key).map_err(|e| format!("read mask: {e}"))?;
+        stream.read_exact(&mut mask_key).map_err(|e| format!("read mask: {e}"))?;
     }
 
     let mut payload = vec![0u8; len as usize];
-    reader.get_mut().read_exact(&mut payload).map_err(|e| format!("read payload ({len} bytes): {e}"))?;
+    stream.read_exact(&mut payload).map_err(|e| format!("read payload ({len} bytes): {e}"))?;
 
     if masked {
         for (i, b) in payload.iter_mut().enumerate() {
@@ -177,7 +174,7 @@ fn main() {
     .join(".config/obs-studio/plugin_config/obs-websocket/config.json");
 
     let max_attempts = if args.no_wait { 1 } else { 5 };
-    let mut cfg: ObsWebsocketConfig = loop {
+    let cfg: ObsWebsocketConfig = loop {
         match std::fs::read_to_string(&obs_cfg_path) {
             Ok(s) => match serde_json::from_str(&s) {
                 Ok(c) => break c,
@@ -200,7 +197,7 @@ fn main() {
     };
 
     // Connect
-    let stream = (|| {
+    let mut stream = (|| {
         for attempt in 0..max_attempts {
             match TcpStream::connect(format!("127.0.0.1:{}", cfg.server_port)) {
                 Ok(s) => return Ok(s),
@@ -227,33 +224,35 @@ fn main() {
 
     // WebSocket upgrade
     let host = format!("localhost:{}", cfg.server_port);
-    let key: String = B64.encode(&[0u8; 16]); // random base64 key
+    let key: String = B64.encode(&[0u8; 16]);
     let upgrade_req = format!(
         "GET / HTTP/1.1\r\nHost: {host}\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: {key}\r\nSec-WebSocket-Version: 13\r\n\r\n"
     );
-    let mut stream = stream;
     stream.write_all(upgrade_req.as_bytes()).expect("ws upgrade write");
-    let mut reader = BufReader::new(stream.try_clone().expect("clone stream"));
 
-    // Read HTTP upgrade response
-    let mut response_line = String::new();
-    reader.read_line(&mut response_line).expect("read status line");
-    if !response_line.contains("101") {
-        eprintln!("WebSocket upgrade failed: {response_line}");
-        exit(1);
-    }
-    // Read until empty line (end of headers)
+    // Read HTTP response byte-by-byte until \r\n\r\n (no buffering, to avoid
+    // consuming WebSocket frames into a BufReader buffer).
+    let mut buf = Vec::new();
+    let mut prev = [0u8; 4];
     loop {
-        let mut line = String::new();
-        reader.read_line(&mut line).expect("read header");
-        if line.trim().is_empty() {
+        let mut b = [0u8; 1];
+        stream.read_exact(&mut b).expect("read http status line");
+        buf.push(b[0]);
+        prev.copy_within(1.., 0);
+        prev[3] = b[0];
+        if &prev == b"\r\n\r\n" {
             break;
         }
+    }
+    let response = String::from_utf8_lossy(&buf);
+    if !response.contains("101") {
+        eprintln!("WebSocket upgrade failed:\n{response}");
+        exit(1);
     }
 
     // --- obs-websocket v5 auth handshake ---
     // 1. Read Hello
-    let hello_raw = ws_read(&mut reader).expect("read hello");
+    let hello_raw = ws_read(&mut stream).expect("read hello");
     let hello: HelloMsg = serde_json::from_str(&hello_raw).expect("parse hello");
     let auth = hello.d.authentication.expect("no auth in hello");
 
@@ -271,7 +270,7 @@ fn main() {
         },
     });
     ws_write(&mut stream, &identify.to_string()).expect("send identify");
-    let identified_raw = ws_read(&mut reader).expect("read identified");
+    let identified_raw = ws_read(&mut stream).expect("read identified");
     let identified: Value = serde_json::from_str(&identified_raw).expect("parse identified");
     if identified["op"] != 2 {
         eprintln!("Identify failed: {identified_raw}");
@@ -300,7 +299,7 @@ fn main() {
                 eprintln!("Failed to send settings for '{}' on '{}': {e}", entry.filter, entry.source);
             });
 
-        match ws_read(&mut reader) {
+        match ws_read(&mut stream) {
             Ok(resp) => {
                 let v: Value = serde_json::from_str(&resp).unwrap_or_default();
                 if v["op"] == 7 && v["d"]["requestStatus"]["result"].as_bool() == Some(true) {
@@ -321,6 +320,6 @@ fn main() {
         }
     }
 
-    // Close
+    // Clean close
     let _ = ws_write(&mut stream, &serde_json::json!({"op": 7, "d": {"requestType": "Noop", "requestId": "bye"}}).to_string());
 }

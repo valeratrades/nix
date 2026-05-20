@@ -39,3 +39,7 @@ function cld
 
     cl $argv
 end
+
+function clp
+    cl --permission-mode plan "Plan file: $argv[1]. Select it and submit for approval (approval, - do not start execution)" $argv[2..]
+end
