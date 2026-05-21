@@ -146,6 +146,6 @@ vim.g.vimtex_complete_ignore_case = 1
 vim.g.vimtex_complete_smart_case = 1
 --
 
--- Make :wa not ask for confirmation (skip unwritable buffers silently)
-vim.api.nvim_create_user_command('Wa', 'silent! wa', {})
+-- Make :wa not ask for confirmation (force past "file changed on disk" prompts)
+vim.api.nvim_create_user_command('Wa', 'silent! wa!', {})
 vim.cmd.cnoreabbrev('wa', 'Wa')

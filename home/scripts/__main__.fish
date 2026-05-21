@@ -78,5 +78,3 @@ else
 end
 
 alias cross_project_version_alignment="$__fish_scripts_dir/maintenance/cross_project_version_alignment.rs"
-
-alias vmic_test="$__fish_scripts_dir/vmic_test.fish"
