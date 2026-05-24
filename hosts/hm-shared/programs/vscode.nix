@@ -66,6 +66,12 @@
 				version = "1.2.1";
 				sha256 = "0vba1df2wspn02b7hfjaiyz1cw0ygvhjnyvdqszyfs2xw0f839xw";
 			}
+			{
+				name = "pine-script-syntax-highlighter";
+				publisher = "ex-codes";
+				version = "1.0.5";
+				sha256 = "06svwyqjzzgffyiymcs3vp90r93zz8x7sfm41kgi8qfyw1k5g1qz";
+			}
 			] ++ [
 				# Neovim Buffer Sync: only on Open VSX (not on MS Marketplace), so fetched directly
 				(pkgs.vscode-utils.buildVscodeMarketplaceExtension {

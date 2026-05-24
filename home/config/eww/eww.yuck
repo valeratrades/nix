@@ -124,7 +124,8 @@
 (defwidget bluetooth []
 	(box
 		:visible {bluetooth_connection != ""}
-		"${bluetooth_connection}"
+		:class {bluetooth_connection != "" && bluetooth_connection != "_" && bluetooth_connection < 20 ? "warn" : ""}
+		" ${bluetooth_connection == "_" ? "" : "${bluetooth_connection}%"}"
 	)
 )
 
