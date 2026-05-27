@@ -343,6 +343,15 @@
       ".config/tedi.nix".source = "${self}/home/config/tedi.nix";
 
       ".lesskey".source = "${self}/home/config/lesskey";
+
+      # Compose-key sequences. `include "%L"` pulls in the system defaults so
+      # standard compose bindings keep working; entries below extend them.
+      ".XCompose".text = ''
+        include "%L"
+
+        <Multi_key> <e> <i> : "∈" U2208 # ELEMENT OF
+        <Multi_key> <n> <i> : "∉" U2209 # NOT AN ELEMENT OF
+      '';
       ".config/fish/conf.d/sway.fish".source =
         "${self}/home/config/fish/conf.d/sway.fish";
 
