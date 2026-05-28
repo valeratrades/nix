@@ -148,7 +148,7 @@ in
 				alwaysThinkingEnabled = false;
 				skipDangerousModePermissionPrompt =  true;
 				#model = "claude-sonnet-4-6"; #HACK: currently is better than default Opus. Keep until default becomes the best choice again.
-				model = "claude-opus-4-7"; # seem to be using this one more these days
+				model = "claude-opus-4-8";
 				effortLevel = "high"; # they switched the default, and now problem gives up more often
 				showClearContextOnPlanAccept = true;
 				#trustedWorkspaces = [ "/" ]; #NB: doesn't actually exist. Instead, opoen in `/` and accept it as trusted manually once.

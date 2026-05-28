@@ -5,7 +5,8 @@
     bluetooth.hsphfpd.enable = false;
     bluetooth = {
       enable = true;
-      powerOnBoot = true;
+      powerOnBoot = false; # manual only - `bluetooth headphones` powers the adapter on itself
+
       settings.General.Experimental = true;
     };
   };
