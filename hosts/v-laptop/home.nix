@@ -248,10 +248,10 @@ in {
         zed-editor-fhs
 				zed
 				#claude-code #DEPRECATE: once sure that https://github.com/sadjow/claude-code-nix is the way to go
-        (import ./patched-claude-code.nix {
-          inherit pkgs;
-          claude-code = inputs.claude_code_nix.packages.${pkgs.stdenv.hostPlatform.system}.default;
-        })
+        # NB: per-Read malware-reminder was removed upstream as of claude-code 2.1.154,
+        # so the strip patch (patched-claude-code.nix / strip-claude-reminders.py) is no
+        # longer needed. Reintroduce the override if the reminder ever comes back.
+        inputs.claude_code_nix.packages.${pkgs.stdenv.hostPlatform.system}.default
         inputs.codex_nix.packages.${pkgs.stdenv.hostPlatform.system}.default
 
         libreoffice-still

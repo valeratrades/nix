@@ -136,6 +136,7 @@ let
 	'';
 in
 {
+	#DEPRECATE: malware reminder has been stripped in later versions; keeping it here for posterity (or situations of them adding sth similar)
 	home.activation.claudePluginSync = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
 		${syncScript}
 	'';
