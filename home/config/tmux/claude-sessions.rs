@@ -856,23 +856,31 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
             // Claude is running - get session info first, then determine activity
             let metadata = get_session_info_for_pane(pane_pid, &tmux_target);
 
-            // Use session metadata to determine state
-            if let Some(ref meta) = metadata {
-                if meta.has_active_todos {
-                    // Has active todos = Claude is definitively active
-                    (ClaudeState::Active, meta.display_todo.clone(), None, None, meta.summary.clone())
-                } else {
-                    // No active todos - check terminal for state
-                    // We always fall back to terminal parsing here because:
-                    // - Session might be resumed (new file has no conversation but old one does)
-                    // - Session might be finished/waiting for input
-                    let activity = determine_claude_activity(session, window_index);
-                    (activity.state, None, activity.draft_content, activity.question_content, meta.summary.clone())
-                }
-            } else {
-                // Couldn't find session info - fall back to terminal parsing
-                let activity = determine_claude_activity(session, window_index);
-                (activity.state, None, activity.draft_content, activity.question_content, None)
+            // Terminal parsing is the source of truth for "is Claude blocked on
+            // me right now": a session can have active todos yet still be paused
+            // on a question/draft mid-task. So we ALWAYS parse the terminal and
+            // only let active-todos UPGRADE an otherwise-Finished reading to
+            // Active. Anything the terminal recognizes as blocking
+            // (Question/Draft/Error) or working (Active) wins over todo state.
+            let activity = determine_claude_activity(session, window_index);
+            let summary = metadata.as_ref().and_then(|m| m.summary.clone());
+
+            match activity.state {
+                ClaudeState::Finished => match &metadata {
+                    // Finished terminal + active todos = Claude is mid-task,
+                    // between tool calls (no spinner captured this frame).
+                    Some(meta) if meta.has_active_todos => {
+                        (ClaudeState::Active, meta.display_todo.clone(), None, None, summary)
+                    }
+                    _ => (ClaudeState::Finished, None, None, None, summary),
+                },
+                _ => (
+                    activity.state,
+                    None,
+                    activity.draft_content,
+                    activity.question_content,
+                    summary,
+                ),
             }
         } else {
             (ClaudeState::Empty, None, None, None, None)
@@ -931,6 +939,53 @@ fn determine_claude_activity(session: &str, window_index: u32) -> ActivityResult
         .collect();
 
     let has_prompt_at_end = last_few_lines.iter().any(|l| l.starts_with("> "));
+
+    // Check for question state FIRST: a blocking selection prompt is the
+    // highest-priority signal — it means Claude has stopped and is waiting on me,
+    // and it must win over leftover spinner text or active todos. Two distinct
+    // renderings both mean "waiting for me to pick an option":
+    //   1. Permission/selector menu: "❯ 1. Option text" (the ❯ marks the cursor)
+    //   2. AskUserQuestion widget: a boxed question whose footer reads
+    //      "Enter to select · ↑/↓ to navigate". This footer is unique to the
+    //      widget — normal output never prints it — so it's the reliable marker.
+    // The widget can be tall, so we match against the full capture, not just the
+    // last 15 lines (the question header may have scrolled above last_portion).
+    // The live AskUserQuestion footer is left-aligned widget chrome: trimmed, the
+    // line STARTS with "Enter to select". Anchoring on the start (not a substring
+    // match) rejects scrollback that merely quotes the footer mid-line — e.g. a
+    // session debugging this very script, or one that captured another's pane,
+    // where the text is always preceded by line numbers, prose, or code.
+    let question_selector_pattern = Regex::new(r"(?m)^\s*❯\s*\d+\.\s+.+$").unwrap();
+    let is_selector = question_selector_pattern.is_match(&last_portion);
+    let is_askquestion = last_portion
+        .lines()
+        .any(|l| l.trim_start().starts_with("Enter to select") && l.contains("↑/↓ to navigate"));
+    if is_selector || is_askquestion {
+        // Extract the question text - the nearest line ending with "?" searching
+        // upward from the bottom (skip prompt lines and option rows).
+        let question_text = content
+            .lines()
+            .rev()
+            .take(30)
+            .find(|line| {
+                let trimmed = line.trim();
+                trimmed.ends_with('?') && !trimmed.starts_with('>') && !trimmed.contains('❯')
+            })
+            .map(|s| {
+                let trimmed = s.trim().to_string();
+                if trimmed.len() > 60 {
+                    format!("{}...", &trimmed[..60])
+                } else {
+                    trimmed
+                }
+            });
+
+        return ActivityResult {
+            state: ClaudeState::Question,
+            draft_content: None,
+            question_content: question_text,
+        };
+    }
 
     // Match spinner pattern: "Word…" (capitalized word followed by ellipsis)
     // Examples: Running…, Thinking…, Cogitating…, Summarizing…
@@ -1021,37 +1076,6 @@ fn determine_claude_activity(session: &str, window_index: u32) -> ActivityResult
                 }
             }
         }
-    }
-
-    // Check for question state: Claude is asking with numbered options
-    // Pattern: "❯ 1. Option text" - the ❯ character indicates a selection menu
-    // This is distinct from regular numbered lists in Claude's output
-    // The question text usually appears as "Question?" followed by options
-    let question_selector_pattern = Regex::new(r"(?m)^\s*❯\s*\d+\.\s+.+$").unwrap();
-    if question_selector_pattern.is_match(&last_portion) {
-        // Extract the question text - look for line ending with "?" before the options
-        let question_text = content
-            .lines()
-            .rev()
-            .take(20)
-            .find(|line| {
-                let trimmed = line.trim();
-                trimmed.ends_with('?') && !trimmed.starts_with('>') && !trimmed.contains("❯")
-            })
-            .map(|s| {
-                let trimmed = s.trim().to_string();
-                if trimmed.len() > 60 {
-                    format!("{}...", &trimmed[..60])
-                } else {
-                    trimmed
-                }
-            });
-
-        return ActivityResult {
-            state: ClaudeState::Question,
-            draft_content: None,
-            question_content: question_text,
-        };
     }
 
     // Check for fresh session (welcome screen) - after draft check

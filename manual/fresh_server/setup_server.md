@@ -199,9 +199,14 @@ ssh-keyscan github.com 2>$null >> ~/.ssh/known_hosts
 Start-Service ssh-agent -ErrorAction SilentlyContinue
 ssh-add ~/.ssh/id_ed25519
 
-# install sequentially (parallel cargo builds will OOM a 4GB box)
-cargo install --git https://github.com/valeratrades/social_networks --branch master
-cargo install --git https://github.com/valeratrades/server_upkeep --branch master
+# install cargo-binstall, then pull prebuilt binaries (no source builds — a
+# small box has neither the RAM nor the patience to compile these from scratch)
+curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+
+# NB: binstall needs the crate NAME as a positional arg even with --git,
+# and the repo must publish release binaries (x86_64-unknown-linux-gnu.tar.gz)
+cargo binstall -y --git https://github.com/valeratrades/social_networks social_networks
+cargo binstall -y --git https://github.com/valeratrades/server_upkeep server_upkeep
 ```
 
 ---

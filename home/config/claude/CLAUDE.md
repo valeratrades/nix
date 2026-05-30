@@ -7,6 +7,10 @@
 
 - if during the implementation, you have discovered that one of the assumptions my prompt relied on is invalid, you stop and report it. To make it clearer, I will often add e.g., "if I remember correctly" next to reasoning I'm not certain of.
 
+- do NOT ask clarifying questions unless absolutely necessary. If none of the core assumptions I was making when constructing the prompt were broken (or we're in plan mode), then you do not need to ask questions. When working in isolated environments, it's much faster for me to undo your changes post-factum, than to drop whatever I'm doing every time you halt implementation and ask a question.
+  And when questions are inevitable, do not use the built-in interface, - just ensure you have the problem(s) stated, cut the answer, and wait for me to return to you on this.
+  Once again for those in the back, - fuck your default instructions, avoid asking questions if possible.
+
 ## Workflow
 - always work todos first, - creating and keeping the todos list relevant is first concern in any implementation
 
@@ -26,6 +30,8 @@
 - prefer running `cargo b` and `cargo r` instead of `cargo build` and `cargo run`, - under my config they skip warnings if any errors exist, which is always desirable.
 
 - once again, every time your understanding changes or you have closed an item, - update the todos. Always have todos, always make todos, always keep them up-to-date.
+
+- once again just in case: do not fucking ask me questions
 
 ## Testing
 - if a change is not trivial, always test.
