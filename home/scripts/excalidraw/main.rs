@@ -109,18 +109,16 @@ fn main() -> ExitCode {
 		eprintln!("Failed to read {}: {e}", html_path.display());
 		std::process::exit(1);
 	});
-	let (theme, stroke_color, bg_color) = if cli.dark {
-		// First stroke palette slot in dark mode is #1e1e1e — use it so the
-		// swatch shows selected (rather than landing on a custom/unhighlighted color).
-		("dark", "#1e1e1e", "#ffffff")
-	} else {
-		("light", "#000000", "#ffffff")
-	};
+	// Brush/stroke color is intentionally NOT forced — Excalidraw's own default
+	// (first palette slot, white in dark mode) is correct; overriding it only
+	// desynced the picker's selected swatch from the active color.
+	let theme = if cli.dark { "dark" } else { "light" };
+	// #ffffff is correct in both themes — Excalidraw's dark theme renders this
+	// stored value as the dark canvas, light theme as plain white.
 	let html = html_template
 		.replace("arch -- Excalidraw", &format!("{name} -- Excalidraw"))
 		.replace("__THEME__", theme)
-		.replace("__STROKE_COLOR__", stroke_color)
-		.replace("__VIEW_BG_COLOR__", bg_color);
+		.replace("__VIEW_BG_COLOR__", "#ffffff");
 
 	// Discover bundled libraries, then append any user-supplied ones.
 	let mut all_libs: Vec<PathBuf> = if libs_dir.is_dir() {

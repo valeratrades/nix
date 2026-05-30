@@ -103,7 +103,7 @@
             theme: '__THEME__',
             initialData: {
               elements: data.elements || [],
-              appState: Object.assign({ currentItemFontFamily: 3, currentItemOpacity: 50, currentItemStrokeWidth: 1 }, data.appState || {}, { currentItemStrokeColor: '__STROKE_COLOR__', viewBackgroundColor: '__VIEW_BG_COLOR__' }),
+              appState: Object.assign({ currentItemFontFamily: 3, currentItemOpacity: 50, currentItemStrokeWidth: 1 }, data.appState || {}, { viewBackgroundColor: '__VIEW_BG_COLOR__' }),
               files: data.files || {}
             },
             excalidrawAPI: function(api) {
@@ -111,7 +111,7 @@
               // Force theme + canvas bg AFTER mount. initialData.appState gets
               // mangled by Excalidraw's internal restore(), so we re-assert here
               // via the public updateScene API which nothing can override.
-              api.updateScene({ appState: { viewBackgroundColor: '__VIEW_BG_COLOR__', theme: '__THEME__', currentItemStrokeColor: '__STROKE_COLOR__' } });
+              api.updateScene({ appState: { viewBackgroundColor: '__VIEW_BG_COLOR__', theme: '__THEME__' } });
               fetch('/api/libraries')
                 .then(function(r) { return r.json(); })
                 .then(function(libs) {
