@@ -111,11 +111,23 @@
     preferences = {
       # GPU acceleration — WebRender + VA-API via AMD iGPU (radeonsi, safe on Wayland)
       # NVIDIA dGPU excluded: crash-prone with Firefox hardware decoding
+      # History: GPU rendering was fully disabled in Dec 2025 after amdgpu hangs; the real
+      # fix turned out to be kernel-level (amdgpu.sg_display=0, iommu.strict=1 — see
+      # ongoing_debug/firefox-gpu-acceleration.md), so these prefs were safely re-enabled.
       "gfx.webrender.all" = true;
       "media.hardware-video-decoding.enabled" = true;
       "media.peerconnection.ice.no_host" = true;
       "media.ffmpeg.vaapi.enabled" = true;  # VA-API path for Wayland
       "media.hardware-video-decoding.force-enabled" = false;  # don't force-override driver blacklist
+
+      # WebGL/canvas apps (Excalidraw etc.) — safe acceleration without touching the
+      # AMD DMA paths that caused the original hangs. See ongoing_debug doc above.
+      "widget.dmabuf.force-enabled" = true;   # zero-copy GPU buffer sharing on Wayland (radeonsi-stable)
+      "gfx.webrender.compositor" = true;       # let the Wayland compositor do final composite (native, no extra GPU copies)
+      "layers.gpu-process.enabled" = true;     # isolate GPU work in its own process — a WebGL crash recovers instead of nuking the page
+      "layers.gpu-process.max_restarts" = 5;   # auto-respawn the GPU process a few times before falling back to software
+      # NB: deliberately NOT setting gfx.canvas.accelerated.force-enabled / webgl.force-enabled —
+      # force-overriding the driver blacklist is exactly what risks re-triggering the amdgpu hang.
       "browser.newtabpage.activity-stream.showSponsored" = false;
       "browser.newtabpage.activity-stream.system.showSponsored" = false;
       "browser.newtabpage.activity-stream.showSponsoredTopSites" = false;

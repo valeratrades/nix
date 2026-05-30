@@ -110,7 +110,9 @@ fn main() -> ExitCode {
 		std::process::exit(1);
 	});
 	let (theme, stroke_color, bg_color) = if cli.dark {
-		("dark", "#ffffff", "#ffffff")
+		// First stroke palette slot in dark mode is #1e1e1e — use it so the
+		// swatch shows selected (rather than landing on a custom/unhighlighted color).
+		("dark", "#1e1e1e", "#ffffff")
 	} else {
 		("light", "#000000", "#ffffff")
 	};
