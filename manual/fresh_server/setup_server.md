@@ -209,6 +209,20 @@ cargo binstall -y --git https://github.com/valeratrades/social_networks social_n
 cargo binstall -y --git https://github.com/valeratrades/server_upkeep server_upkeep
 ```
 
+> [!WARNING]
+> **GLIBC mismatch.** The release binaries are built on `ubuntu-latest` (24.04,
+> GLIBC 2.39). If this box is older (e.g. Ubuntu 22.04 = GLIBC 2.35) the binstall'd
+> binaries install fine but won't run (`GLIBC_2.38 not found`). Two fixes:
+> - Provision a box whose Ubuntu matches the CI runner (24.04+), **or**
+> - Cross-build locally against the box's glibc and scp the executables. From a
+>   machine with docker (see `build_in_2204.sh`):
+>   ```sh
+>   docker run --rm -v ~/tmp:/work -v ~/tmp/.cargo-cache:/root/.cargo/registry \
+>     ubuntu:22.04 bash /work/build_in_2204.sh   # builds both repos @ GLIBC 2.34
+>   scp ~/tmp/social_networks/target-2204/release/social_networks SERVER:~/.cargo/bin/
+>   scp ~/tmp/server_upkeep/target-2204/release/server_upkeep   SERVER:~/.cargo/bin/
+>   ```
+
 ---
 
 ## Step 4: Server — Running Scripts
