@@ -133,6 +133,18 @@ in {
           StrictHostKeyChecking = "accept-new";
         };
       };
+      # inferno VPS (Tokyo) — main server, runs site/social_networks/server_upkeep
+      "inferno_vps_tokyo" = {
+        hostname = "176.97.73.24";
+        user = "root";
+        identitiesOnly = true;
+        identityFile = [ "~/.ssh/id_ed25519" ];
+        extraOptions = {
+          PreferredAuthentications = "publickey,keyboard-interactive,password";
+          PubkeyAuthentication = "yes";
+          StrictHostKeyChecking = "accept-new";
+        };
+      };
       "p-laptop" = {
         hostname = "p-laptop";
         user = "p";
