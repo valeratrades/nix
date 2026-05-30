@@ -91,7 +91,7 @@ alias book="booktyping run --myopia"
 alias tokio-console="tokio-console --lang en_US.UTF-8"
 alias tokio_console="tokio-console"
 alias fm="yazi" # File manager
-alias t="eza -snew -r | head -n 1"
+alias t="eza --no-quotes -snew -r | head -n 1" # --no-quotes: else eza wraps space-containing names in '' when piped, breaking `unzip (t)` etc.
 alias mongodb="mongosh \"mongodb+srv://test.di2kklr.mongodb.net/\" --apiVersion 1 --username valeratrades --password qOcydRtmgFfJnnpd"
 alias sql="sqlite3"
 alias poetry="POETRY_KEYRING_DISABLED=true poetry"

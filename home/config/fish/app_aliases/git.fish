@@ -69,6 +69,88 @@ function ggw
 	git add -A . && git commit --no-verify -m "$msg"
 end
 
+function gcr --description 'git commit rename: gcr <commit_hash> "new title" (reword any commit non-interactively)'
+	if not set -q argv[2]
+		echo 'usage: gcr <commit_hash> "new title"' >&2
+		return 1
+	end
+	set -l target $argv[1]
+	set -l title $argv[2]
+
+	set -l full (git rev-parse --verify "$target^{commit}" 2>/dev/null)
+	if not string length -q -- "$full"
+		echo "gcr: '$target' is not a valid commit" >&2
+		return 1
+	end
+
+	# fast path: it's the tip → plain amend, no rebase
+	if string match -q -- (git rev-parse HEAD) "$full"
+		git -c core.hooksPath=/dev/null commit --amend -m "$title"
+		return $status
+	end
+
+	# older commit → non-interactive reword. hooks off so the format pre-commit can't jam the replay.
+	set -l msg_file (mktemp)
+	printf '%s\n' "$title" >$msg_file
+	set -l short (git rev-parse --short "$full") # same abbrev git writes into the rebase todo (unique → no false match)
+
+	GIT_SEQUENCE_EDITOR="sed -i 's/^pick $short /reword $short /'" \
+	GIT_EDITOR="cp $msg_file" \
+	git -c core.hooksPath=/dev/null rebase -i "$full^"
+	set -l code $status
+
+	rm -f $msg_file
+	return $code
+end
+
+function gcs --description 'git commit squash: gcs <commit_hash> ["new title"] (meld commit into its parent)'
+	if not set -q argv[1]
+		echo 'usage: gcs <commit_hash> ["new title"]' >&2
+		return 1
+	end
+
+	set -l full (git rev-parse --verify "$argv[1]^{commit}" 2>/dev/null)
+	if not string length -q -- "$full"
+		echo "gcs: '$argv[1]' is not a valid commit" >&2
+		return 1
+	end
+	set -l parent (git rev-parse --verify "$full^" 2>/dev/null)
+	if not string length -q -- "$parent"
+		echo "gcs: '$argv[1]' is the root commit — nothing to squash into" >&2
+		return 1
+	end
+
+	set -l short (git rev-parse --short "$full")
+	set -l pshort (git rev-parse --short "$parent")
+
+	# child → fixup (melds into the preceding parent line). given a title, parent → reword so the result carries it.
+	set -l seq "sed -i -e 's/^pick $short /fixup $short /'"
+	set -l editor true
+	set -l msg_file
+	if set -q argv[2]
+		set msg_file (mktemp)
+		printf '%s\n' "$argv[2]" >$msg_file
+		set seq "$seq -e 's/^pick $pshort /reword $pshort /'"
+		set editor "cp $msg_file"
+	end
+
+	# base = grandparent, or --root when the parent itself is the repo root
+	set -l base "$parent^"
+	if not git rev-parse --verify "$parent^" >/dev/null 2>&1
+		set base --root
+	end
+
+	GIT_SEQUENCE_EDITOR="$seq" \
+	GIT_EDITOR="$editor" \
+	git -c core.hooksPath=/dev/null rebase -i $base
+	set -l code $status
+
+	if string length -q -- "$msg_file"
+		rm -f $msg_file
+	end
+	return $code
+end
+
 alias gup="git add -A && git commit --fixup (git rev-parse HEAD)"
 alias gupp="gup && git push --follow-tags"
 alias gups="gup && git -c sequence.editor=true rebase -i --autosquash HEAD~2"

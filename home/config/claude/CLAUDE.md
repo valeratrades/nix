@@ -25,6 +25,8 @@
 
 - prefer running `cargo b` and `cargo r` instead of `cargo build` and `cargo run`, - under my config they skip warnings if any errors exist, which is always desirable.
 
+- once again, every time your understanding changes or you have closed an item, - update the todos. Always have todos, always make todos, always keep them up-to-date.
+
 ## Testing
 - if a change is not trivial, always test.
     And any time you write actual tests in code, - read https://matklad.github.io/2021/05/31/how-to-test.html

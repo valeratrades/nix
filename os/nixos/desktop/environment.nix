@@ -11,13 +11,18 @@
     VDPAU_DRIVER = "radeonsi";
     __GL_FSAA_MODE = "0";        # disable antialiasing
     __GL_LOG_MAX_ANISO = "0";    # disable anisotropic filtering
-    # claude code (https://github.com/anthropics/claude-code/issues/42796#issuecomment-4194007103)
+    
+# claude code (https://github.com/anthropics/claude-code/issues/42796#issuecomment-4194007103) {{{1
     DISABLE_TELEMETRY = "1";
     CLAUDE_CODE_DISABLE_1M_CONTEXT = "1";
-    CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING = "1";
+
+    # starting from 4.8, adaptive thinking is the native model. Hopefully, it's somewhat working now. If not, - fuck it, downgrade.
+    #CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING = "1";
+    #MAX_THINKING_TOKENS = 63999;
+
     CLAUDE_CODE_DISABLE_AUTO_MEMORY = "1";
     CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = "1"; # serveys and shit
-    MAX_THINKING_TOKENS = 63999;
+#,}}}1
   };
 
   systemd.services.hibernate-prepare = {

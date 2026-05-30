@@ -12,3 +12,5 @@ Make it clear that no patches are allowed. Plan must be implemented following th
 do not write essays. Minimize size of the plan. Since you will be adding more context, you will sacrifice anything you're not certain in, the damn `Out of scope` section (never add it to plans, just skip it. Skip.), and that follow naturally (like what files get changed)
 
 if some sort of migration or any one-off action is required, that needs to be scripted, - you always put related code in ./tmp/, **never** in src/
+
+During implementation: if any duplication you find would require a major refactor to unify (beyond this plan's scope), do not silently leave it - persist it to tmp/ongoing_dev/logic_duplication.md (create the dir/file) with file:line, what's duplicated, and why it's hard. The bar is high: only log it if unifying genuinely needs its own plan; default protocol is fix as found.
