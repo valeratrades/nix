@@ -1,4 +1,4 @@
-(defwidget reveal_on_hover [var varname ?transition ?label_text ?label_class ?visible]
+(defwidget reveal_on_hover [var varname ?transition ?label_text ?label_markup ?label_class ?visible]
 	(eventbox
 		:class "eventbox"
 		:onhover "eww update ${varname}=true"
@@ -14,8 +14,14 @@
 				(children)
 				)
 			)
+			; markup and text are mutually exclusive content props in eww, and
+			; markup holds the marked-up STRING (not a bool). Pick one per caller:
+			; callers wanting colored spans pass label_markup, plain ones label_text.
+			(label :class label_class :markup {label_markup ?: ""}
+				:visible {(visible ?: var == "false") && (label_markup ?: "") != ""}
+			)
 			(label :class label_class :text label_text
-				:visible {visible ?: var == "false"}
+				:visible {(visible ?: var == "false") && (label_markup ?: "") == ""}
 			)
 		)
 	)

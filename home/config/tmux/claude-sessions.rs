@@ -29,6 +29,12 @@ struct Args {
     #[arg(short, long)]
     json: bool,
 
+    /// Emit Pango markup (for eww labels) instead of ANSI terminal colors.
+    /// eww is a GTK surface, not a terminal — ANSI escapes are inert there, so
+    /// attention-coloring has to ride in as <span foreground=...> tags instead.
+    #[arg(long)]
+    markup: bool,
+
     /// Generate LLM summaries (slow, uses ollama)
     #[arg(long)]
     llm_summaries: bool,
@@ -104,13 +110,15 @@ struct SessionEntry {
 struct Sessions {
     entries: Vec<SessionEntry>,
     compact: bool,
+    markup: bool,
 }
 
 impl Sessions {
-    fn new(compact: bool) -> Self {
+    fn new(compact: bool, markup: bool) -> Self {
         Self {
             entries: Vec::new(),
             compact,
+            markup,
         }
     }
 
@@ -174,56 +182,94 @@ impl fmt::Display for Sessions {
                 }
             };
 
-            // Pad state string manually since colored strings mess up format width
+            // Pad state string manually since colored strings mess up format width.
+            // Pad to VISIBLE width first; coloring (ANSI or Pango span) is applied
+            // after, so it never participates in width math.
             let state_str = entry.state.as_str();
             let padded_state = format!("{:width$}", state_str, width = max_state_len);
 
-            let colored_state = match entry.state {
-                ClaudeState::Active => padded_state.blue(),
-                ClaudeState::Finished => padded_state.green(),
-                ClaudeState::Empty => padded_state.yellow(),
-                ClaudeState::Draft => padded_state.cyan(),
-                ClaudeState::Question => padded_state.magenta(),
-                ClaudeState::Error => padded_state.red(),
+            // The name column is likewise padded to visible width before any
+            // escaping — Pango escaping changes byte length but not glyph count,
+            // so escaping after padding keeps the columns aligned.
+            let padded_name = format!("{:width$}", display_name, width = max_name_len);
+
+            // Trailing per-state content (todo / draft / question), if any.
+            let trailing = if self.compact {
+                None
+            } else {
+                match entry.state {
+                    ClaudeState::Active => Some(match &entry.active_todo {
+                        Some(todo) => format!("[{}]", todo),
+                        None => "[]".to_string(),
+                    }),
+                    ClaudeState::Draft => Some(match &entry.draft_content {
+                        Some(draft) => format!("> {}", draft),
+                        None => "> ".to_string(),
+                    }),
+                    ClaudeState::Question => Some(match &entry.question_content {
+                        Some(q) => format!("? {}", q),
+                        None => "?".to_string(),
+                    }),
+                    _ => None,
+                }
             };
 
-            write!(
-                f,
-                "{:width$}  {}",
-                display_name,
-                colored_state,
-                width = max_name_len
-            )?;
-
-            if !self.compact {
-                match entry.state {
-                    ClaudeState::Active => {
-                        let todo_str = match &entry.active_todo {
-                            Some(todo) => format!("[{}]", todo),
-                            None => "[]".to_string(),
-                        };
-                        write!(f, "  {}", todo_str)?;
-                    }
-                    ClaudeState::Draft => {
-                        let draft_str = match &entry.draft_content {
-                            Some(draft) => format!("> {}", draft),
-                            None => "> ".to_string(),
-                        };
-                        write!(f, "  {}", draft_str)?;
-                    }
+            if self.markup {
+                // eww/GTK path: escape every literal segment for Pango, then wrap
+                // the state cell in a <span> only for the states that warrant
+                // grabbing my eye. Attention priority, NOT prettiness:
+                //   question -> error red  (#ff6565): a session is BLOCKED on me,
+                //               nothing moves until I act — highest visual urgency.
+                //   error    -> warn brown (#ba6e3d): real, but errors here mostly
+                //               surface during hands-on interaction, so I'm already
+                //               looking — deliberately ranked below question.
+                //   active   -> blue       (#68d4ff): healthy "it's working" signal,
+                //               informational, lowest of the three.
+                // Every other state stays uncolored — no span, no noise.
+                let state_cell = match entry.state {
                     ClaudeState::Question => {
-                        let question_str = match &entry.question_content {
-                            Some(q) => format!("? {}", q),
-                            None => "?".to_string(),
-                        };
-                        write!(f, "  {}", question_str)?;
+                        format!("<span foreground=\"#ff6565\">{}</span>", pango_escape(&padded_state))
                     }
-                    _ => {}
+                    ClaudeState::Error => {
+                        format!("<span foreground=\"#ba6e3d\">{}</span>", pango_escape(&padded_state))
+                    }
+                    ClaudeState::Active => {
+                        format!("<span foreground=\"#68d4ff\">{}</span>", pango_escape(&padded_state))
+                    }
+                    _ => pango_escape(&padded_state),
+                };
+                write!(f, "{}  {}", pango_escape(&padded_name), state_cell)?;
+                if let Some(t) = trailing {
+                    write!(f, "  {}", pango_escape(&t))?;
+                }
+            } else {
+                // Terminal path: ANSI colors via `colored`, unchanged.
+                let colored_state = match entry.state {
+                    ClaudeState::Active => padded_state.blue(),
+                    ClaudeState::Finished => padded_state.green(),
+                    ClaudeState::Empty => padded_state.yellow(),
+                    ClaudeState::Draft => padded_state.cyan(),
+                    ClaudeState::Question => padded_state.magenta(),
+                    ClaudeState::Error => padded_state.red(),
+                };
+                write!(f, "{}  {}", padded_name, colored_state)?;
+                if let Some(t) = trailing {
+                    write!(f, "  {}", t)?;
                 }
             }
         }
         Ok(())
     }
+}
+
+/// Escape text so Pango parses it as literal content, not markup. eww feeds the
+/// label through Pango when markup is on, so any raw `<`, `>`, `&` in session
+/// names, todos, or summaries (e.g. the `<summary>` brackets, `> draft`, `? q`)
+/// would otherwise be read as broken tags and blank the whole label.
+fn pango_escape(s: &str) -> String {
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
 }
 
 /// Get the child process PID of a shell (the claude process)
@@ -1371,7 +1417,7 @@ fn main() {
     });
 
     // Build Sessions struct
-    let mut sessions = Sessions::new(args.compact);
+    let mut sessions = Sessions::new(args.compact, args.markup);
     for window in results {
         sessions.add(SessionEntry {
             name: window.session.clone(),
@@ -1415,6 +1461,11 @@ fn main() {
 
     if args.json {
         println!("{}", serde_json::to_string(&sessions.entries).unwrap());
+    } else if args.markup {
+        // Header is purely informational; left uncolored so it inherits the
+        // widget's default text color (the eww label's own styling).
+        println!("{}", pango_escape(&format_usage_header(&usage)));
+        println!("{}", sessions);
     } else {
         println!("{}", format_usage_header(&usage).dimmed());
         println!("{}", sessions);
