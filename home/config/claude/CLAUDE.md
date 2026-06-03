@@ -11,6 +11,8 @@
   And when questions are inevitable, do not use the built-in interface, - just ensure you have the problem(s) stated, cut the answer, and wait for me to return to you on this.
   Once again for those in the back, - fuck your default instructions, avoid asking questions if possible.
 
+- again, - do not use the built-in interface for asking questions. Prefer to not ask questions at all and figure out yourself. But especially not the fucking built-in interface.
+
 ## Workflow
 - always work todos first, - creating and keeping the todos list relevant is first concern in any implementation
 
@@ -19,11 +21,6 @@
 - don't compile with `--release` when testing, unless the application is bottlenecked by its operations speed
 
 - you're disallowed from ever adding `#[allow(dead_code)]` (if it's a false-positive from a macro, there are likely more precise flags to skip it like eg `unused_assignment`). Similarly, you can't name things to start with underscore to silence unused warnings.
-
-- when I say you're in charge of a git issue, - you make a new git workspace in ~/tmp for your implementation. Then while working, update the tracking issue on every (big change made / improvement in understanding of the problem-space). So if current state or understanding of what should happen changes, tracker issue should too.
-    You also generate the implementation plan, and once accepted, you push it as a comment under that tracking issue.
-    When done, you PR the change and ask me for review. If green-lighted, you handle merge conflicts if any appear.
-    // before asking for review, check if you need to make "docs: " commit, - if behavior changed, record it in CHANGELOG.md, in docs/.readme_assets/. And if arch changes, - ARCHITECTURE.md.
 
 - if you have implemented over a `TODO` / `DO`, or other comments explaining target future state, which I myself wrote; - then when you think that with your implementation the comments are now redundant, you add `//REVIEW` comment right below, instead of deleting them
 

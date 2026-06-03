@@ -26,6 +26,37 @@
     };
   };
 
+  # Battery conservation mode: cap charging to extend Li-ion cell life.
+  # Li-ion cells age from time-at-high-SoC + heat; holding at 100% sits the cell
+  # at ~4.2V/cell and accelerates capacity loss. Capping near 80% (~4.0V/cell)
+  # slows that dramatically. Approx cycle life to 80% health vs. charge ceiling:
+  #
+  #   Charge ceiling | Cycles to 80% health | Relative lifespan
+  #   ---------------+----------------------+------------------
+  #   100%           | ~300-500             | 1x (baseline)
+  #   90%            | ~600-1000            | ~2x
+  #   80%            | ~1200-2000           | ~3-4x
+  #
+  # NB: I wanted 85%, but the Legion EC exposes only a *fixed* firmware
+  # conservation cap (~80%), enforced in hardware, not a free-form percentage.
+  # The legion_cli `custom-conservation-mode-apply LOWER UPPER` band exists but
+  # only emulates a custom limit via a continuous software poll-and-toggle loop,
+  # i.e. a breakable soft cap. We take the firmware-enforced ~80% instead; the
+  # 80-vs-85 longevity difference is within the noise of the table above.
+  systemd.services.legion-battery-conservation = {
+    description = "Enable Legion firmware battery conservation mode (~80% charge cap)";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "systemd-modules-load.service" ];
+    # legion_cli shells out to `bash` internally, so it needs it on PATH;
+    # systemd units run with an empty PATH by default.
+    path = [ pkgs.bash pkgs.coreutils ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = "${pkgs.lenovo-legion}/bin/legion_cli batteryconservation-enable";
+    };
+  };
+
   # Userspace utility for Legion fan control
   environment.systemPackages = [ pkgs.lenovo-legion ];
 

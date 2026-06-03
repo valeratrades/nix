@@ -73,6 +73,19 @@
 				sha256 = "06svwyqjzzgffyiymcs3vp90r93zz8x7sfm41kgi8qfyw1k5g1qz";
 			}
 			] ++ [
+				# Remote SSH (jajera): pure-Open-VSX remote-ssh, works on VSCodium
+				# (the MS remote-ssh above won't connect under VSCodium's licensing)
+				(pkgs.vscode-utils.buildVscodeMarketplaceExtension {
+					mktplcRef = {
+						publisher = "jajera";
+						name = "vsx-remote-ssh";
+						version = "1.1.2";
+					};
+					vsix = pkgs.fetchurl {
+						url = "https://open-vsx.org/api/jajera/vsx-remote-ssh/1.1.2/file/jajera.vsx-remote-ssh-1.1.2.vsix";
+						sha256 = "sha256-NRhTt8j4bNsN+kCTbD8+P9Yh/DEkGqSZ8J5Owjl0uw4=";
+					};
+				})
 				# Neovim Buffer Sync: only on Open VSX (not on MS Marketplace), so fetched directly
 				(pkgs.vscode-utils.buildVscodeMarketplaceExtension {
 					mktplcRef = {

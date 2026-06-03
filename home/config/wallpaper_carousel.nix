@@ -73,15 +73,7 @@
 
     "#14: pose as a friend,\nwork as a spy"
 
-    "#15: crush your enemy totally"
-
-    "#16: use absence to increase\nrespect and honor"
-
     "#17: keep others in suspended terror:\ncultivate an air of unpredictability"
-
-    "#18: do not build fortresses to protect yourself\n- isolation is dangerous"
-
-    "#19: know who you're dealing with\n- do not offend the wrong person"
 
     "#20: do not commit to anyone"
 

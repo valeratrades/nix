@@ -47,6 +47,14 @@ return require "lazier" {
 				conceallevel = 3,
 				concealcursor = "nvic",
 			},
+			-- LSP file operations (workspace/willRenameFiles). In big Rust repos a
+			-- busy rust-analyzer can exceed the 1000ms default and Oil silently SKIPS
+			-- the rename. Give it room and autosave the edits it does produce.
+			lsp_file_methods = {
+				enabled = true,
+				timeout_ms = 5000,
+				autosave_changes = true,
+			},
 			-- Skip the confirmation popup for simple operations
 			skip_confirm_for_simple_edits = true,
 			-- Selecting a new/moved/renamed file or directory will prompt you to save changes first
