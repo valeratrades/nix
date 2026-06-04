@@ -148,6 +148,8 @@
           [
             nodejs_22
             deno
+            typescript # `tsc`; peer dep that ts_ls needs to resolve project types
+            typescript-language-server # `ts_ls`
           ]
 
           # typst

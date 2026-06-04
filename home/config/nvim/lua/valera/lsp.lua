@@ -232,6 +232,28 @@ vim.lsp.config('tailwindcss', {
 })
 vim.lsp.enable('tailwindcss')
 
+-- ts_ls (typescript-language-server)
+vim.lsp.config('ts_ls', {
+	cmd = { 'typescript-language-server', '--stdio' },
+	settings = {
+		typescript = {
+			inlayHints = {
+				includeInlayParameterNameHints = 'all',
+				includeInlayFunctionLikeReturnTypeHints = true,
+				includeInlayVariableTypeHints = true,
+			},
+		},
+		javascript = {
+			inlayHints = {
+				includeInlayParameterNameHints = 'all',
+				includeInlayFunctionLikeReturnTypeHints = true,
+				includeInlayVariableTypeHints = true,
+			},
+		},
+	},
+})
+vim.lsp.enable('ts_ls')
+
 -- gopls
 vim.lsp.config('gopls', {
 	settings = {
