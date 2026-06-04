@@ -985,17 +985,6 @@ fn determine_claude_activity(session: &str, window_index: u32) -> ActivityResult
         .collect::<Vec<_>>()
         .join("\n");
 
-    // Check if there's a prompt line at the very end (last few non-empty lines)
-    // If so, Claude is waiting for input even if there's spinner text from earlier
-    let last_few_lines: Vec<&str> = content
-        .lines()
-        .rev()
-        .filter(|l| !l.trim().is_empty())
-        .take(5)
-        .collect();
-
-    let has_prompt_at_end = last_few_lines.iter().any(|l| is_prompt_line(l));
-
     // Check for question state FIRST: a blocking selection prompt is the
     // highest-priority signal — it means Claude has stopped and is waiting on me,
     // and it must win over leftover spinner text or active todos. Two distinct
@@ -1045,10 +1034,14 @@ fn determine_claude_activity(session: &str, window_index: u32) -> ActivityResult
 
     // Match spinner pattern: "Word…" (capitalized word followed by ellipsis)
     // Examples: Running…, Thinking…, Cogitating…, Summarizing…
-    // Only match if there's no prompt at the end (meaning Claude is still working)
+    // A live spinner is unambiguous: Claude is working THIS frame. We do NOT gate
+    // it on has_prompt_at_end — the TUI always renders its input box ("❯ ") at the
+    // bottom of the pane even while the spinner runs above it, so that guard would
+    // veto Active on essentially every frame. The genuine "stopped, waiting on me"
+    // cases (selector / AskUserQuestion) are matched earlier and already returned.
     let spinner_pattern = Regex::new(r"[A-Z][a-z]+…").unwrap();
 
-    if spinner_pattern.is_match(&last_portion) && !has_prompt_at_end {
+    if spinner_pattern.is_match(&last_portion) {
         return ActivityResult { state: ClaudeState::Active, draft_content: None, question_content: None };
     }
 

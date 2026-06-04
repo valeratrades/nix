@@ -99,17 +99,12 @@ fn main() {
                 Ok(out) if out.status.success() => {
                     let sessions = String::from_utf8_lossy(&out.stdout);
                     if !sessions.trim().is_empty() {
+                        // Pass the whole output as a positional argument, NOT via stdin `-`.
+                        // The `-` stdin path in `tg send` truncates multi-line input to its
+                        // last line; a positional arg preserves every line.
                         let tg_result = Command::new("tg")
-                            .args(["send", "-c", "general", "-"])
-                            .stdin(Stdio::piped())
-                            .spawn()
-                            .and_then(|mut child| {
-                                use std::io::Write;
-                                if let Some(ref mut stdin) = child.stdin {
-                                    stdin.write_all(sessions.as_bytes())?;
-                                }
-                                child.wait()
-                            });
+                            .args(["send", "-c", "general", sessions.as_ref()])
+                            .status();
 
                         match tg_result {
                             Ok(status) if status.success() => println!("Claude sessions sent to telegram"),

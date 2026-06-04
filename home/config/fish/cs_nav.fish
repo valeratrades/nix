@@ -18,6 +18,15 @@ function css
 end
 complete -c css -x -a "(cd $HOME/s/ 2>/dev/null && __fish_complete_directories | string replace -r '^' '')"
 
+function cse
+    set _path "$HOME/s/ev_invest/"
+    if test -n "$argv[1]"
+        set _path "$_path$argv[1]"
+    end
+    cs $_path
+end
+complete -c cse -x -a "(cd $HOME/s/ev_invest/ 2>/dev/null && __fish_complete_directories | string replace -r '^' '')"
+
 function csh
     set _path "$NIXOS_CONFIG/home/scripts/"
     if test -n "$argv[1]"
