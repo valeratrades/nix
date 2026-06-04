@@ -953,6 +953,16 @@ struct ActivityResult {
     question_content: Option<String>,
 }
 
+/// True if a captured line is Claude's "waiting for input" prompt. Modern
+/// Claude Code prints "❯ " (U+276F); older builds printed "> ". The glyph sits
+/// at the start of the line (after any leading box-chrome whitespace), so we
+/// trim_start before matching — and require the trailing space so we don't trip
+/// on a bare ">"/"❯" embedded in other output.
+fn is_prompt_line(line: &str) -> bool {
+    let t = line.trim_start();
+    t.starts_with("> ") || t.starts_with("❯ ") || t.starts_with("❯\u{00A0}")
+}
+
 fn determine_claude_activity(session: &str, window_index: u32) -> ActivityResult {
     let target = format!("{}:{}", session, window_index);
 
@@ -984,7 +994,7 @@ fn determine_claude_activity(session: &str, window_index: u32) -> ActivityResult
         .take(5)
         .collect();
 
-    let has_prompt_at_end = last_few_lines.iter().any(|l| l.starts_with("> "));
+    let has_prompt_at_end = last_few_lines.iter().any(|l| is_prompt_line(l));
 
     // Check for question state FIRST: a blocking selection prompt is the
     // highest-priority signal — it means Claude has stopped and is waiting on me,
@@ -1129,14 +1139,25 @@ fn determine_claude_activity(session: &str, window_index: u32) -> ActivityResult
         return ActivityResult { state: ClaudeState::Empty, draft_content: None, question_content: None };
     }
 
-    // Check if there's an input prompt line ("> ") - indicates waiting for input
-    let has_prompt = content.lines().any(|line| line.starts_with("> "));
+    // Check if there's an input prompt line - indicates Claude is waiting for
+    // input (task done). Modern Claude Code renders the prompt as "❯ "; older
+    // builds used "> ". Either one means Finished.
+    let has_prompt = content.lines().any(is_prompt_line);
     if has_prompt {
         return ActivityResult { state: ClaudeState::Finished, draft_content: None, question_content: None };
     }
 
-    // Check for error patterns (rate limit, panics, errors)
-    let error_pattern = Regex::new(r"(?i)(rate.?limit|error:|panicked|PANIC|timed.?out)").unwrap();
+    // Error state is reserved for Claude actually being WEDGED — chiefly running
+    // out of the usage allowance. We get here only when no prompt line was
+    // captured (a live prompt always means Finished, even if earlier output
+    // mentioned an error). The pattern is intentionally narrow: it matches the
+    // verbatim strings Claude Code prints when blocked on limits, NOT prose that
+    // happens to contain the word "error" — Claude narrating a build failure in
+    // its recap ("Error: No repository field…") is a finished, healthy session,
+    // not an errored one.
+    let error_pattern =
+        Regex::new(r"(?i)(usage limit reached|approaching usage limit|5-hour limit|rate limit exceeded|too many requests)")
+            .unwrap();
 
     if error_pattern.is_match(&last_portion) {
         return ActivityResult { state: ClaudeState::Error, draft_content: None, question_content: None };

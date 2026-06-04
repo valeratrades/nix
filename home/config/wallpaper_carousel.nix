@@ -18,6 +18,8 @@
     { text = ''if it's not a "hell yes",
     it's a "no"''; author = "Derek Sivers"; }
 
+    { text = "maniacal sense of urgency\nis our operating principle"; author = "Elon Must";}
+
     { text = ''your "best" is not good enough
     Do what is required.''; author = "Alex Hormozi"; }
 
