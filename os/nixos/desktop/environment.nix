@@ -49,7 +49,8 @@
       pkill -f 'firefox' || true
 
       # Services that restart losslessly
-      ${lib.optionalString user.openclaw "pkill -f 'openclaw-gateway' || true"}
+      # `openclaw` flag now gates the zeroclaw daemon (the agent runtime that replaced openclaw here).
+      ${lib.optionalString user.openclaw "pkill -f 'zeroclaw daemon' || true"}
       pkill -f 'tailscaled' || true
       ${lib.optionalString user.clickhouse "pkill -f 'clickhouse' || true"}
 

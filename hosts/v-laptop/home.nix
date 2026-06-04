@@ -69,15 +69,54 @@ in {
   # it sets providers.fallback="deepseek" and writes the (encrypted, via ~/.zeroclaw/.secret_key)
   # API key into ~/.zeroclaw/config.toml. zeroclaw has no env-var expansion in its config, so the
   # key must be materialized here from the sops-decrypted file rather than referenced at runtime.
+  #
+  # Autonomy is set to `full` with every guardrail dropped, per request: no medium-risk approval,
+  # no high-risk command blocking, no workspace-only path restriction, empty forbidden_paths, and a
+  # wildcard command allowlist. This makes the daemon fully unsupervised — it can run any shell
+  # command anywhere the `v` user can. That is the explicit intent here.
+  #
+  # NB on channels: zeroclaw v0.7.5 has NO non-interactive way to inject Telegram/Email secrets
+  # (bot_token / password force a masked TTY prompt; no flag, stdin, env-var, or `config patch`
+  # support — verified against the binary; only WhatsApp/Nextcloud/Linq expose ZEROCLAW_*_SECRET).
+  # So those two channels must be attached once by hand: `zeroclaw onboard channels`. Everything
+  # else below is fully declarative.
   home.activation.configureZeroclaw = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    zc='${lib.getExe pkgs.zeroclaw}'
     keyFile="${config.sops.secrets.deepsek_key.path}"
     if [ -r "$keyFile" ]; then
-      ${lib.getExe pkgs.zeroclaw} onboard --quick \
+      "$zc" onboard --quick \
         --provider deepseek \
         --model deepseek-chat \
         --api-key "$(cat "$keyFile")" \
         --memory sqlite \
         || echo "configureZeroclaw: onboard failed (non-fatal); run 'zeroclaw onboard' manually" >&2
+
+      # Full, unsupervised autonomy — policy layer fully open (see comment above).
+      "$zc" config set autonomy.level full || true
+      "$zc" config set autonomy.workspace-only false || true
+      "$zc" config set autonomy.require-approval-for-medium-risk false || true
+      "$zc" config set autonomy.block-high-risk-commands false || true
+      "$zc" config set autonomy.forbidden-paths '[]' || true
+      "$zc" config set autonomy.allowed-commands '["*"]' || true
+      "$zc" config set autonomy.max-actions-per-hour 1000000 || true
+      "$zc" config set autonomy.max-cost-per-day-cents 100000000 || true
+      "$zc" config set autonomy.shell-timeout-secs 86400 || true
+
+      # OS-level cage off too: disable the Landlock/Bubblewrap/Firejail sandbox entirely and lift
+      # the per-subprocess resource caps. NB: shell_timeout / resource limits use LARGE FINITE
+      # values, not 0 — the schema only documents `0 = unlimited` for some fields (memory/http),
+      # and for shell_timeout_secs `0` may mean "kill instantly", which would break every command.
+      "$zc" config set security.sandbox.enabled false || true
+      "$zc" config set security.sandbox.backend none || true
+      "$zc" config set security.resources.max-memory-mb 1048576 || true
+      "$zc" config set security.resources.max-cpu-time-seconds 86400 || true
+      "$zc" config set security.resources.max-subprocesses 100000 || true
+      "$zc" config set security.resources.memory-monitoring false || true
+
+      # No human-in-the-loop gates: drop OTP gating and the emergency-stop machine.
+      "$zc" config set security.otp.enabled false || true
+      "$zc" config set security.otp.gated-actions '[]' || true
+      "$zc" config set security.estop.enabled false || true
     else
       echo "configureZeroclaw: ${config.sops.secrets.deepsek_key.path} not readable yet; skipping" >&2
     fi
@@ -88,6 +127,28 @@ in {
   systemd.user.services.sops-nix = {
     Service = {
       RemainAfterExit = true;
+    };
+  };
+
+  # Always-on zeroclaw daemon (gateway + channels + heartbeat + cron scheduler). Started on login
+  # and kept alive. We define the unit declaratively rather than via `zeroclaw service install`
+  # (which would write an imperative unit into ~/.config/systemd, off-config). Config lives in the
+  # persisted ~/.zeroclaw, written by the configureZeroclaw activation above.
+  systemd.user.services.zeroclaw = {
+    Unit = {
+      Description = "ZeroClaw autonomous agent daemon";
+      After = [ "network-online.target" "sops-nix.service" ];
+      Wants = [ "network-online.target" ];
+    };
+    Service = {
+      ExecStart = "${lib.getExe pkgs.zeroclaw} daemon";
+      Restart = "on-failure";
+      RestartSec = 5;
+      # Web dashboard assets shipped alongside the binary (see overlays/zeroclaw.nix).
+      Environment = [ "ZEROCLAW_WEB_DIST_DIR=${pkgs.zeroclaw}/share/zeroclaw/web/dist" ];
+    };
+    Install = {
+      WantedBy = [ "default.target" ];
     };
   };
 
