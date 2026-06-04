@@ -23,6 +23,8 @@ in {
     secrets.alpaca_api_pubkey = { mode = "0400"; };
     secrets.alpaca_api_secret = { mode = "0400"; };
     secrets.openai_api_key = { mode = "0400"; };
+    # NB: sops key is misspelled upstream as `deepsek_key` (single `e`); keep matching the stored name.
+    secrets.deepsek_key = { mode = "0400"; };
   };
 
   tg = {
@@ -56,9 +58,29 @@ in {
       echo "OPENAI_KEY=$(cat ${config.sops.secrets.openai_api_key.path})"
       echo "TELEGRAM_MAIN_BOT_TOKEN=$(cat ${config.sops.secrets.telegram_token_main.path})"
       echo "TELEGRAM_BOT_KEY=$(cat ${config.sops.secrets.telegram_token_main.path})"
+      # DEEPSEEK_KEY is consumed by the `cld` fish function (home/config/fish/app_aliases/llm.fish)
+      echo "DEEPSEEK_KEY=$(cat ${config.sops.secrets.deepsek_key.path})"
     } > "$dest"
     chmod 600 "$dest"
     ${pkgs.systemd}/bin/systemctl --user daemon-reload || true
+  '';
+
+  # Configure zeroclaw to use DeepSeek. `onboard --quick` is non-interactive and idempotent:
+  # it sets providers.fallback="deepseek" and writes the (encrypted, via ~/.zeroclaw/.secret_key)
+  # API key into ~/.zeroclaw/config.toml. zeroclaw has no env-var expansion in its config, so the
+  # key must be materialized here from the sops-decrypted file rather than referenced at runtime.
+  home.activation.configureZeroclaw = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    keyFile="${config.sops.secrets.deepsek_key.path}"
+    if [ -r "$keyFile" ]; then
+      ${lib.getExe pkgs.zeroclaw} onboard --quick \
+        --provider deepseek \
+        --model deepseek-chat \
+        --api-key "$(cat "$keyFile")" \
+        --memory sqlite \
+        || echo "configureZeroclaw: onboard failed (non-fatal); run 'zeroclaw onboard' manually" >&2
+    else
+      echo "configureZeroclaw: ${config.sops.secrets.deepsek_key.path} not readable yet; skipping" >&2
+    fi
   '';
 
   # Fix sops-nix.service to remain active after completion
@@ -240,6 +262,11 @@ in {
         # Trading bots
         [
           metascalp
+        ]
+
+        # Autonomous AI agent runtime (DeepSeek provider; configured via activation below)
+        [
+          zeroclaw
         ]
 
         # Windows (via WinApps/Docker VM)

@@ -77,6 +77,12 @@
           directory = ".ssh";
           mode = "0700";
         }
+        {
+          # zeroclaw runtime state: .secret_key (encrypts the provider API key),
+          # memory sqlite, audit log, workspace. Must survive reboots.
+          directory = ".zeroclaw";
+          mode = "0700";
+        }
 
         # atuin, nvim, remmina, flatpak, ...
         ".local/share"
