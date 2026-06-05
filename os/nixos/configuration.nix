@@ -77,6 +77,19 @@ in {
 	};
 
   systemd = {
+		# `shutdown now` hangs for minutes (often requiring a hard power-off). The
+		# persistent journal stops at the read-only remount, so the stall lives in
+		# the late `systemd-shutdown` phase (leftover-process SIGKILL + final
+		# unmount/detach), which the journal can't capture. Two-part remedy:
+		#
+		#   1. Cap any unit's stop to 15s so a single hung service can never eat the
+		#      90s default again (precedent: clickhouse cap in shared-services.nix).
+		#   2. Capture the late phase: shutdownRamfs gives a clean final-unmount env,
+		#      and `systemd.log_level=debug` (kernelParam below) makes the stuck
+		#      step print to the console so the next slow shutdown names the culprit.
+		settings.Manager.DefaultTimeoutStopSec = "15s";
+		shutdownRamfs.enable = true;
+
 		services = {
 			dlm.wantedBy = [ "multi-user.target" ];
 			nix-daemon = {
@@ -146,6 +159,10 @@ in {
 			"iommu.strict=1"
 			# mt7925e WiFi suspend fix - disable ASPM to prevent suspend timeout
 			"pcie_aspm.policy=performance"
+			#dbg: slow-shutdown hunt - make the late systemd-shutdown phase (post-journal
+			# unmount/detach/leftover-kill) log to the console so the stuck step is named.
+			# Remove once the culprit is found and fixed.
+			"systemd.log_level=debug"
 			#TODO: uncomment with kernelPatches above
 			# "hibernate.compressor=lz4" # LZ4 is ~3x faster than LZO for hibernate image compression
 		];

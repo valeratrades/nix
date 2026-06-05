@@ -40,68 +40,34 @@ SSH into the server (initially via bash):
 ssh $env:MAIN_SERVER_SSH_HOST
 ```
 
-Install base packages and PowerShell (run in bash):
-```sh
-# detect OS and install packages
-if [ -f /etc/os-release ]; then
-    . /etc/os-release
-    case "$ID" in
-        ubuntu|debian)
-            apt update
-            apt install -y build-essential pkg-config libssl-dev git-lfs apt-transport-https ca-certificates curl gnupg fzf direnv tmux caddy
-            # PowerShell
-            curl -sSL https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/prod.list | tee /etc/apt/sources.list.d/microsoft-prod.list
-            curl -sSL https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
-            apt update
-            apt install -y powershell
-            ;;
-        fedora)
-            dnf install -y gcc gcc-c++ make pkg-config openssl-devel git-lfs ca-certificates curl gnupg fzf direnv tmux caddy
-            # PowerShell
-            curl -sSL https://packages.microsoft.com/config/rhel/9/prod.repo | tee /etc/yum.repos.d/microsoft-prod.repo
-            dnf install -y powershell
-            ;;
-        *)
-            echo "Unsupported OS: $ID"
-            exit 1
-            ;;
-    esac
-else
-    echo "Cannot detect OS"
-    exit 1
-fi
+**First, install base packages, Caddy, PowerShell, litestream, and (Fedora only)
+disable SELinux — these are OS-specific. Follow the file matching your distro:**
+- **[ubuntu_specific.md](./ubuntu_specific.md)** (also covers the GLIBC 2.35 gotchas for prebuilt binaries)
+- **[fedora_specific.md](./fedora_specific.md)**
 
+The litestream service itself is created and enabled later by `sink_configs.fish`.
+
+Then continue with the OS-agnostic steps below (run in bash):
+```sh
 # upgrade direnv (distro packages are too old for PowerShell support, need 2.37+)
 curl -L -o /tmp/direnv https://github.com/direnv/direnv/releases/latest/download/direnv.linux-amd64 && chmod +x /tmp/direnv && mv /tmp/direnv /usr/bin/direnv
 
 git lfs install
 git config --global alias.pl '!git pull && git lfs pull'
 
-# install litestream (SQLite replication to R2)
-LITESTREAM_VERSION=$(curl -s https://api.github.com/repos/benbjohnson/litestream/releases/latest | grep -oP '"tag_name": "v\K[^"]+')
-case "$ID" in
-    ubuntu|debian) pkg_ext=deb; pkg_cmd="dpkg -i" ;;
-    fedora)        pkg_ext=rpm; pkg_cmd="rpm -i" ;;
-esac
-$pkg_cmd "https://github.com/benbjohnson/litestream/releases/download/v${LITESTREAM_VERSION}/litestream-${LITESTREAM_VERSION}-linux-x86_64.${pkg_ext}"
-# service is created and enabled by sink_configs.fish
-
 # set PowerShell as default shell
 chsh -s /usr/bin/pwsh root
-
-# disable SELinux (required for Nix on Fedora)
-if command -v setenforce &> /dev/null; then
-    setenforce 0
-    sed -i 's/SELINUX=enforcing/SELINUX=permissive/' /etc/selinux/config
-fi
 
 # switch /tmp from tmpfs to disk (more space, auto-cleaned daily)
 systemctl mask tmp.mount
 echo 'q /tmp 1777 root root 1d' > /etc/tmpfiles.d/tmp.conf
 # reboot required for /tmp to move to disk
 
-# create 32GB swapfile (Rust/Nix builds can OOM a 4GB box without this)
-fallocate -l 16G /swapfile
+# create swapfile (Rust/Nix builds can OOM a small box without this).
+# SIZE IT TO THE DISK: a 16G swapfile on a 30G disk fills it to 100% once nix +
+# rustup land, which breaks builds. ~4G is right for a 2-4G-RAM / 30G-disk box.
+SWAP_SIZE=4G
+fallocate -l $SWAP_SIZE /swapfile
 chmod 600 /swapfile
 mkswap /swapfile
 swapon /swapfile
@@ -199,9 +165,13 @@ ssh-keyscan github.com 2>$null >> ~/.ssh/known_hosts
 Start-Service ssh-agent -ErrorAction SilentlyContinue
 ssh-add ~/.ssh/id_ed25519
 
-# install cargo-binstall, then pull prebuilt binaries (no source builds — a
-# small box has neither the RAM nor the patience to compile these from scratch)
+# install cargo-binstall itself (not bundled with rustup), then pull prebuilt
+# binaries (no source builds — a small box has neither the RAM nor the patience
+# to compile these from scratch)
 curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+
+# disk-usage explorer, handy for the cleanup pass at the end
+yes | cargo binstall du-dust
 
 # NB: binstall needs the crate NAME as a positional arg even with --git,
 # and the repo must publish release binaries (x86_64-unknown-linux-gnu.tar.gz)
@@ -210,33 +180,41 @@ cargo binstall -y --git https://github.com/valeratrades/server_upkeep server_upk
 ```
 
 > [!WARNING]
-> **GLIBC mismatch.** The release binaries are built on `ubuntu-latest` (24.04,
-> GLIBC 2.39). If this box is older (e.g. Ubuntu 22.04 = GLIBC 2.35) the binstall'd
-> binaries install fine but won't run (`GLIBC_2.38 not found`). Two fixes:
-> - Provision a box whose Ubuntu matches the CI runner (24.04+), **or**
-> - Cross-build locally against the box's glibc and scp the executables. From a
->   machine with docker (see `build_in_2204.sh`):
->   ```sh
->   docker run --rm -v ~/tmp:/work -v ~/tmp/.cargo-cache:/root/.cargo/registry \
->     ubuntu:22.04 bash /work/build_in_2204.sh   # builds both repos @ GLIBC 2.34
->   scp ~/tmp/social_networks/target-2204/release/social_networks SERVER:~/.cargo/bin/
->   scp ~/tmp/server_upkeep/target-2204/release/server_upkeep   SERVER:~/.cargo/bin/
->   ```
+> **GLIBC mismatch.** The release binaries (including `du-dust`) are built on
+> `ubuntu-latest` (24.04, GLIBC 2.39). On an older box (e.g. Ubuntu 22.04 = GLIBC
+> 2.35) they install fine but won't run (`GLIBC_2.38 not found`). See
+> [ubuntu_specific.md](./ubuntu_specific.md) for the per-tool workarounds
+> (cross-build via `build_in_2204.sh`, or copy already-working binaries from an
+> existing 22.04 box like Tokyo). `du-dust` from Tokyo runs on 22.04 (it links
+> only GLIBC ≤2.18).
 
 ---
 
 ## Step 4: Server — Running Scripts
 
-Before starting services, restore the DB from R2 if one exists:
+Before starting services, restore the DBs from R2 if backups exist (litestream.yml
+replicates both `social_networks` and `site`):
 ```sh
-mkdir -p /root/.local/state/social_networks
+mkdir -p /root/.local/state/social_networks /root/.local/state/site
 litestream restore -config /root/.config/litestream.yml /root/.local/state/social_networks/db.sqlite3
+litestream restore -config /root/.config/litestream.yml /root/.local/state/site/db.sqlite3
 # exits non-zero if no backup exists yet — that's fine on first deploy
+# restart litestream afterwards so it picks up the restored files and resumes replicating
+systemctl restart litestream
 ```
 
-- **Window 0** (`social_networks`): run `social_networks`
-- **Window 1** (`site`): see [site README installation section](https://github.com/valeratrades/site#installation) for setup
-- **Window 2** (`server_upkeep`): run `server_upkeep`
+- **Window 0** (`social_networks`): run the four long-lived subcommands, one per pane:
+  `social_networks dms`, `social_networks email`, `social_networks twitter`,
+  `social_networks telegram-channel-watch`
+- **Window 1** (`site`): see [site README installation section](https://github.com/valeratrades/site#installation) for setup.
+  > [!WARNING]
+  > `site`'s `Cargo.toml` has a `[patch.crates-io]` pointing `v_exchanges` and
+  > `v_utils` at sibling checkouts (`../v_exchanges/v_exchanges`, `../v_utils/v_utils`).
+  > `nix build` fails (`failed to load source for dependency v_exchanges`) unless those
+  > repos are also cloned as siblings under `~/s`. They are **not** currently present on
+  > Tokyo either, so site isn't actually running there — clone the siblings first if you
+  > genuinely need site up.
+- **Window 2** (`server_upkeep`): run `server_upkeep monitor`
 
 ---
 
@@ -264,3 +242,37 @@ systemctl status caddy
 ```
 
 DNS must have A records for `valeratrades.com` and `www.valeratrades.com` pointing to the server IP.
+
+---
+
+## Step 6: Server — Disk Cleanup
+
+A 30G disk fills fast: nix store (~4-5G), rustup toolchains+docs (~3G), the swapfile,
+apt/snap caches. Get usage under ~50% before considering the box done.
+
+```sh
+# see what's using space
+dust -d 2 -n 25 /
+
+# nix garbage collect (removes unreferenced store paths, incl. failed-build leftovers)
+nix-collect-garbage -d
+
+# rustup docs are big and regenerable
+rm -rf ~/.rustup/toolchains/*/share/doc
+
+# drop snaps you don't use on a server (lxd is ~600M)
+snap remove --purge lxd
+
+apt-get clean   # ubuntu/debian   (dnf clean all on fedora)
+```
+
+If still tight, the swapfile is usually the biggest single file — see the sizing note
+in Step 2 (4G is plenty for a 30G box).
+
+---
+
+> [!NOTE]
+> **root's shell is PowerShell after Step 2.** Any `ssh root@box '<bash syntax>'`
+> one-liner from your local machine runs under pwsh on the server and will choke on
+> bash constructs (`VAR=val cmd`, `&&` chains, `[...]`). Wrap such commands in
+> `ssh root@box bash -c '...'`, or pipe a script via `ssh root@box bash -s < script.sh`.

@@ -1,0 +1,43 @@
+# Fedora specifics
+
+OS-specific steps referenced from [`setup_server.md`](./setup_server.md). Run these
+in bash (before switching root's shell to PowerShell).
+
+> [!NOTE]
+> These are the original instructions as written for Fedora. They have not been
+> re-verified against a fresh Fedora box recently (the boxes currently in use are
+> Ubuntu 22.04), so treat with mild suspicion — but they were correct historically.
+
+## Base packages (+ Caddy, which IS in the Fedora repos)
+
+```sh
+dnf install -y gcc gcc-c++ make pkg-config openssl-devel git-lfs ca-certificates \
+    curl gnupg fzf direnv tmux caddy
+```
+
+## PowerShell
+
+```sh
+curl -sSL https://packages.microsoft.com/config/rhel/9/prod.repo | tee /etc/yum.repos.d/microsoft-prod.repo
+dnf install -y powershell
+```
+
+## Litestream
+
+`dpkg -i <URL>` does not work — download the rpm first, then install:
+
+```sh
+LITESTREAM_VERSION=$(curl -s https://api.github.com/repos/benbjohnson/litestream/releases/latest | grep -oP '"tag_name": "v\K[^"]+')
+curl -L -o /tmp/litestream.rpm "https://github.com/benbjohnson/litestream/releases/download/v${LITESTREAM_VERSION}/litestream-${LITESTREAM_VERSION}-linux-x86_64.rpm"
+rpm -i /tmp/litestream.rpm
+rm /tmp/litestream.rpm
+```
+
+## SELinux (required for Nix)
+
+```sh
+if command -v setenforce &> /dev/null; then
+    setenforce 0
+    sed -i 's/SELINUX=enforcing/SELINUX=permissive/' /etc/selinux/config
+fi
+```
