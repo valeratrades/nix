@@ -1132,6 +1132,27 @@ fn determine_claude_activity(session: &str, window_index: u32) -> ActivityResult
         return ActivityResult { state: ClaudeState::Empty, draft_content: None, question_content: None };
     }
 
+    // API errors render as Claude Code's own tool-result chrome: a result row
+    // led by the "⎿" glyph whose body is "API Error: <code> <reason>" (e.g.
+    // "⎿  API Error: 529 Overloaded.", "⎿  API Error: Connection error.").
+    // Unlike usage-limit wedges, these abort the turn and DROP BACK to a live
+    // prompt — so this MUST be checked before the prompt-line gate below, which
+    // would otherwise mis-read the idle "❯ " as Finished and bury the failure.
+    //
+    // Two guards keep this from firing on Claude's own narration that QUOTES the
+    // chrome (e.g. a session — like this one — discussing an API error it saw):
+    //   1. A live spinner already returned Active above, so a working session
+    //      that mentions the error never reaches here.
+    //   2. The row must be GENUINE chrome, not quoted: the line, once trimmed,
+    //      STARTS with "⎿" and "API Error:" is its IMMEDIATE body — only
+    //      whitespace between them. Quoted narration nests a second glyph
+    //      ("⎿  ⎿  API Error:") or wraps it in prose, so "API Error:" is not the
+    //      row's own first token and the anchored match rejects it.
+    let api_error_pattern = Regex::new(r"(?m)^\s*⎿\s+API Error:").unwrap();
+    if api_error_pattern.is_match(&last_portion) {
+        return ActivityResult { state: ClaudeState::Error, draft_content: None, question_content: None };
+    }
+
     // Check if there's an input prompt line - indicates Claude is waiting for
     // input (task done). Modern Claude Code renders the prompt as "❯ "; older
     // builds used "> ". Either one means Finished.

@@ -104,7 +104,7 @@
         };
         url."git@gist.github.com:" = { pushInsteadOf = "https://gist.github.com/"; };
         url."git@gitlab.com:" = { pushInsteadOf = "https://gitlab.com/"; };
-        init = { defaultBranch = "master"; };
+        init = { defaultBranch = "main"; };
         push = {
           autoSetupRemote = true;
           default = "current";

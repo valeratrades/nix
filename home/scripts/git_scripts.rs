@@ -1068,8 +1068,12 @@ fn publish(repo_name: Option<String>, private: bool, public: bool, commit: Optio
         std::process::exit(1);
     }
 
-    // git push
-    if !run_cmd("git", &["push", "-u", "origin", "master"]) {
+    // git push — push the actual current branch (whatever init.defaultBranch produced)
+    let branch = current_branch(&open_repo()).unwrap_or_else(|| {
+        eprintln!("ERROR: Could not determine current branch after commit");
+        std::process::exit(1);
+    });
+    if !run_cmd("git", &["push", "-u", "origin", &branch]) {
         eprintln!("ERROR: git push failed");
         std::process::exit(1);
     }
