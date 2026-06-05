@@ -31,6 +31,13 @@ let
 				repo = "openai/codex-plugin-cc";
 				pluginsSubdir = "plugins";
 			};
+			# Impeccable ships its plugin body at the repo-root `plugin/` dir (not under a
+			# `plugins/<name>` subdir), so override the source path away from the default
+			# `<pluginsSubdir>/<plugin-name>` convention.
+			impeccable = {
+				repo = "pbakaus/impeccable";
+				pluginSrc = "plugin";
+			};
 		};
 		enabled = {
 			"code-review@claude-code-plugins" = true;
@@ -39,6 +46,7 @@ let
 			"plugin-dev@claude-code-plugins" = true;
 			"codex@codex-plugin-cc" = true;
 			"mattpocock-skills@mattpocock-skills" = true;
+			"impeccable@impeccable" = true;
 		};
 	};
 
@@ -77,8 +85,11 @@ let
 		# Cache each enabled plugin, build installed_plugins.json incrementally
 		${lib.concatStringsSep "\n" (map (p: let
 			mcfg = plugins.marketplaces.${p.marketplace};
+			# A marketplace may pin an explicit `pluginSrc` (relative to the repo root) when its
+			# plugin body doesn't live at the conventional `<pluginsSubdir>/<plugin-name>` path.
+			pluginRelPath = if mcfg ? pluginSrc then mcfg.pluginSrc else "${mcfg.pluginsSubdir}/${p.plugin}";
 		in ''
-			PLUGIN_SRC="$PLUGINS_DIR/marketplaces/${p.marketplace}/${mcfg.pluginsSubdir}/${p.plugin}"
+			PLUGIN_SRC="$PLUGINS_DIR/marketplaces/${p.marketplace}/${pluginRelPath}"
 			if [ -d "$PLUGIN_SRC" ]; then
 				VERSION="unknown"
 				if [ -f "$PLUGIN_SRC/.claude-plugin/plugin.json" ]; then
