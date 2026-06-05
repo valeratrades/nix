@@ -1,0 +1,11 @@
+---
+source: claude-sessions.rs
+expression: result
+---
+ActivityResult {
+    state: Draft,
+    draft_content: Some(
+        "add a dark mode toggle to the settings page",
+    ),
+    question_content: None,
+}

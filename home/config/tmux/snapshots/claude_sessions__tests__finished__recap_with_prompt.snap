@@ -1,0 +1,9 @@
+---
+source: claude-sessions.rs
+expression: result
+---
+ActivityResult {
+    state: Finished,
+    draft_content: None,
+    question_content: None,
+}

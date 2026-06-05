@@ -1,0 +1,143 @@
+● Background command "Verify musl target can be added to nightly toolchain" failed with exit code 143
+
+● It evaluated far enough (just hit my 200s timeout while building the toolchain derivation — that's fine, it means the targets = [...] override is valid). The musl target can be added to the nightly toolchain via rust-overlay.
+
+  Now let me design the flake addition. The structure I need:
+
+  1. A musl rust toolchain (rust + musl target).
+  2. A musl static rustPlatform.
+  3. Rebuild boringsslPrebuilt under the musl stdenv (the existing one uses the default glibc stdenv).
+  4. A packages.ubuntu22 buildRustPackage targeting x86_64-unknown-linux-musl with RUSTFLAGS=-C target-feature=+crt-static.
+
+  The boring-sys2 cmake build needs the musl C compiler. Let me refactor boringsslPrebuilt into a function parameterized by stdenv so I can instantiate it for both glibc (devshell) and musl (ubuntu22 package), avoiding duplication. Let me write it.
+
+  Read 1 file (ctrl+o to expand)
+
+● Now I'll refactor boringsslPrebuilt into a function of stdenv and add the musl package. Let me make the edits.
+
+  First, parameterize the boringssl derivation:
+
+● Update(flake.nix)
+  ⎿  Added 27 lines, removed 1 line
+      83              url = "https://crates.io/api/v1/crates/boring-sys2/${boringSysVersion}/download";
+      83              url = "https://crates.io/api/v1/crates/boring-sys2/${boringSysVersion}/download";
+      84              hash = "sha256-RV15ll9RVdzIinq84RLDWQiDiJExt5m+2hC/moE+1mk=";
+      85            };
+      86 -          boringsslPrebuilt = pkgs.stdenv.mkDerivation {
+      86 +          # Parameterized over stdenv so we can build BoringSSL for both the
+      87 +          # native glibc dev shell and the static-musl ubuntu22 package. The
+      88 +          # cmake C/C++ compiler is taken from the supplied stdenv's cc, so a
+      89 +          # musl stdenv yields musl-linked .a files.
+      90 +          mkBoringssl = bStdenv: bStdenv.mkDerivation {
+      91              pname = "boringssl-prebuilt";
+      92              version = boringSysVersion;
+      93              srcs = [ boringSysSrc ];
+     ...
+      117                runHook postInstall
+      118              '';
+      119            };
+      120 +          boringsslPrebuilt = mkBoringssl pkgs.stdenv;
+      121 +
+      122 +          # ─── Static musl build for portable Linux deployment (e.g. Ubuntu 22) ───
+      123 +          # The currently-deployed binary is a static-pie musl ELF with zero
+      124 +          # glibc symbol versions, so it runs on any Linux regardless of the
+      125 +          # host glibc. We reproduce that here as a flake output so the recipe
+      126 +          # is no longer ad-hoc: `nix build .#ubuntu22`.
+      127 +          muslPkgs = pkgs.pkgsCross.musl64;
+      128 +          muslTarget = "x86_64-unknown-linux-musl";
+      129 +          muslRust = pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default.override {
+      130 +            extensions = [ "rust-src" ];
+      131 +            targets = [ muslTarget ];
+      132 +          });
+      133 +          # Static stdenv: links the C/C++ runtime statically so BoringSSL's
+      134 +          # .a files (and the final binary) carry no dynamic libc dependency.
+      135 +          muslStdenv = muslPkgs.stdenvAdapters.useMoldLinker muslPkgs.stdenv;
+      136 +          boringsslPrebuiltMusl = mkBoringssl muslStdenv;
+      137 +          muslRustPlatform = pkgs.makeRustPlatform {
+      138 +            rustc = muslRust;
+      139 +            cargo = muslRust;
+      140 +            stdenv = muslStdenv;
+      141 +          };
+      142          in
+      143          {
+      144            _module.args.pkgs = pkgs;
+
+● Now add the packages.ubuntu22 output. I need to set the cargo target, crt-static, the cross C compiler for any C deps, and BORING_BSSL_PATH to the musl boringssl. The repo's .cargo/config.toml only sets rustflags for the x86_64-unknown-linux-gnu target, so the musl target won't inherit the mold/tokio_unstable flags —
+  but the code needs --cfg tokio_unstable. I must supply those via env for the musl target too.
+
+● Update(flake.nix)
+  ⎿  Added 30 lines
+      157              src = pkgs.lib.cleanSource ./.;
+      158            };
+      159
+      160 +          # Fully-static x86_64 musl binary for deployment on glibc hosts
+      161 +          # (Ubuntu 22.04 etc.). No dynamic libc → runs anywhere.
+      162 +          #   nix build .#ubuntu22 && ./result/bin/zero_fee_arb
+      163 +          packages.ubuntu22 = muslRustPlatform.buildRustPackage {
+      164 +            pname = "${pname}-ubuntu22";
+      165 +            version = manifest.version;
+      166 +
+      167 +            nativeBuildInputs = with pkgs; [ pkg-config cmake perl ];
+      168 +
+      169 +            cargoBuildFlags = [ "-p" "zero_fee_arb" "--target" muslTarget ];
+      170 +            doCheck = false; # cross target: host can't necessarily run musl test bins under the sandbox
+      171 +
+      172 +            cargoLock.lockFile = ./Cargo.lock;
+      173 +            src = pkgs.lib.cleanSource ./.;
+      174 +
+      175 +            # Link the C runtime statically so the result has no libc.so dep.
+      176 +            CARGO_BUILD_TARGET = muslTarget;
+      177 +            CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER = "${muslStdenv.cc}/bin/cc";
+      178 +            # The repo .cargo/config.toml only injects these cfgs for the gnu
+      179 +            # target; the code relies on tokio_unstable at compile time, so we
+      180 +            # must pass them (plus crt-static) for the musl target explicitly.
+      181 +            CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static --cfg tokio_unstable --cfg web_sys_unstable_apis";
+      182 +            # boring-sys2 links the prebuilt musl BoringSSL and skips its own
+      183 +            # patch+cmake step (see mkBoringssl note above).
+      184 +            BORING_BSSL_PATH = "${boringsslPrebuiltMusl}";
+      185 +            # cc crate / cmake for any C deps must target musl.
+      186 +            CC_x86_64_unknown_linux_musl = "${muslStdenv.cc}/bin/cc";
+      187 +            CXX_x86_64_unknown_linux_musl = "${muslStdenv.cc}/bin/c++";
+      188 +          };
+      189 +
+      190            devenv.shells.default = {
+      191              languages.python = {
+      192                enable = true;
+
+● Now let me build it. This will be a long compile (heavy dep tree + BoringSSL). Let me run it in the background and monitor.
+
+● Bash(cd /home/v/s/zero_fee_arb; nix build .#ubuntu22 --print-build-logs 2>&1 | tee /tmp/zfa_musl_build.log | tail -5; echo "[EXIT $?]")
+  ⎿  Running in the background (↓ to manage)
+
+❯ continue
+  ⎿  529 Overloaded
+     Retrying in 31s · attempt 10/10
+
+✽ Building and verifying static musl binary… (2m 59s)
+  ⎿  Next: Deploy new binary to VPS and relaunch
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · esc to interrupt · ctrl+t to show tasks
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

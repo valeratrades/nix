@@ -1,0 +1,15 @@
+╭───────────────────────────────────────────────────╮
+│ ✻ Welcome to Claude Code                           │
+╰───────────────────────────────────────────────────╯
+
+ Tips for getting started
+
+ 1. Run /init to create a CLAUDE.md file
+ 2. Ask Claude to create a new app or clone a repository
+
+ No recent activity in this folder
+
+────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle)

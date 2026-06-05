@@ -1,0 +1,5 @@
+Do you want to allow this command?
+
+  ❯ 1. Yes, allow this command
+    2. Yes, and don't ask again for bash commands
+    3. No, and tell Claude what to do differently

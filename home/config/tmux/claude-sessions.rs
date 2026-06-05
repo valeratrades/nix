@@ -6,6 +6,9 @@ colored = "2"
 regex = "1"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+
+[dev-dependencies]
+insta = "1"
 ---
 
 use clap::Parser;
@@ -947,6 +950,7 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
 }
 
 /// Result of activity detection including state and optional draft/question content
+#[derive(Debug)]
 struct ActivityResult {
     state: ClaudeState,
     draft_content: Option<String>,
@@ -975,6 +979,33 @@ fn determine_claude_activity(session: &str, window_index: u32) -> ActivityResult
         _ => return ActivityResult { state: ClaudeState::Finished, draft_content: None, question_content: None },
     };
 
+    // The draft/dim-suggestion branch needs a SECOND, escape-coded capture to
+    // tell real typed input from greyed-out ghost suggestions. It's only ever
+    // consulted inside the "bypass permissions" branch, so we hand classify the
+    // capture lazily — production pays the extra tmux call only when that branch
+    // is reached, and tests can feed a fixture (or `|| None`) instead.
+    classify_activity(&content, || {
+        Command::new("tmux")
+            .args(["capture-pane", "-t", &target, "-p", "-e", "-S", "-10"])
+            .output()
+            .ok()
+            .filter(|o| o.status.success())
+            .map(|o| String::from_utf8_lossy(&o.stdout).to_string())
+    })
+}
+
+/// Pure terminal-state classifier: the heart of this script and the source of
+/// every historical regression. Given a plain `capture-pane -p` dump (`content`)
+/// and a lazy provider for the escape-coded capture (`capture_escaped`, only
+/// invoked in the draft branch), decide which `ClaudeState` the pane is in.
+///
+/// Kept free of tmux/process/fs I/O specifically so it can be exercised by
+/// snapshot fixtures — see the `tests` module. Add a new captured pane dump
+/// under `tests/fixtures/` and it's covered here with no mocking.
+fn classify_activity(
+    content: &str,
+    capture_escaped: impl FnOnce() -> Option<String>,
+) -> ActivityResult {
     // Look at the last portion for various indicators
     // Filter empty lines first, then take last 15 non-empty lines
     let last_portion: String = content
@@ -1032,14 +1063,21 @@ fn determine_claude_activity(session: &str, window_index: u32) -> ActivityResult
         };
     }
 
-    // Match spinner pattern: "Word…" (capitalized word followed by ellipsis)
-    // Examples: Running…, Thinking…, Cogitating…, Summarizing…
+    // Match spinner pattern: a status phrase ending in the ellipsis glyph "…".
+    // Single-word labels render as "Running…", "Cogitating…" — but Claude Code
+    // also emits MULTI-WORD labels whose "…" trails a lowercase tail word, e.g.
+    // "Building and verifying static musl binary…", "Baking the response…". The
+    // old `[A-Z][a-z]+…` required the capitalized word to sit IMMEDIATELY before
+    // "…", so every multi-word spinner was misread as Finished — an active
+    // session looking idle. Matching "<letters>…" (any cased word right before
+    // the ellipsis) covers both; the spinner glyph leader + timer suffix make
+    // false positives from prose vanishingly unlikely in the last 15 lines.
     // A live spinner is unambiguous: Claude is working THIS frame. We do NOT gate
     // it on has_prompt_at_end — the TUI always renders its input box ("❯ ") at the
     // bottom of the pane even while the spinner runs above it, so that guard would
     // veto Active on essentially every frame. The genuine "stopped, waiting on me"
     // cases (selector / AskUserQuestion) are matched earlier and already returned.
-    let spinner_pattern = Regex::new(r"[A-Z][a-z]+…").unwrap();
+    let spinner_pattern = Regex::new(r"\p{L}…").unwrap();
 
     if spinner_pattern.is_match(&last_portion) {
         return ActivityResult { state: ClaudeState::Active, draft_content: None, question_content: None };
@@ -1080,12 +1118,7 @@ fn determine_claude_activity(session: &str, window_index: u32) -> ActivityResult
     // This must come BEFORE the fresh session check, as user may type on welcome screen
     if last_portion.contains("bypass permissions") {
         // Re-capture with escape codes to detect dim text (suggestions)
-        let output_with_escapes = Command::new("tmux")
-            .args(["capture-pane", "-t", &target, "-p", "-e", "-S", "-10"])
-            .output();
-
-        if let Ok(out) = output_with_escapes {
-            let content_esc = String::from_utf8_lossy(&out.stdout);
+        if let Some(content_esc) = capture_escaped() {
             // Find the current prompt line - it has "[0m>" pattern (reset then prompt)
             // The prompt may be followed by regular space or NBSP
             if let Some(prompt_line) = content_esc.lines().find(|l| l.contains("\x1b[0m>"))
@@ -1504,5 +1537,95 @@ fn main() {
     } else {
         println!("{}", format_usage_header(&usage).dimmed());
         println!("{}", sessions);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    //! Snapshot tests for the terminal-state classifier.
+    //!
+    //! Every regression this script has ever had lived in `classify_activity`:
+    //! a real pane that got read as the wrong `ClaudeState`. These tests pin that
+    //! function against REAL captured pane dumps — no tmux, no /proc, no mocks.
+    //!
+    //! ## Fixture layout (`tests/fixtures/`)
+    //! - `<state>__<name>.txt`  — plain `tmux capture-pane -p` output. The
+    //!   `<state>` prefix (before `__`) is the EXPECTED state and is asserted.
+    //! - `<state>__<name>.esc`  — OPTIONAL companion: escape-coded
+    //!   `tmux capture-pane -p -e` output. Only the draft path consults it; if
+    //!   absent the classifier is told the escaped capture is unavailable.
+    //!
+    //! ## Adding a case (the whole point — trivial, no code edit)
+    //! Capture a live pane in the state you want to lock in:
+    //!     tmux capture-pane -t <sess>:<win> -p -S -50   > tests/fixtures/question__askwidget.txt
+    //!     # only for draft cases, also grab the escaped capture:
+    //!     tmux capture-pane -t <sess>:<win> -p -e -S -10 > tests/fixtures/draft__typed.esc
+    //! Then `cargo insta accept` to record its full ActivityResult snapshot.
+    //! The filename-prefix assertion runs automatically.
+
+    use super::*;
+    use std::fs;
+    use std::path::{Path, PathBuf};
+
+    fn fixtures_dir() -> PathBuf {
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures")
+    }
+
+    /// Parse the expected state out of a fixture filename's `<state>__` prefix.
+    fn expected_state_from_name(stem: &str) -> ClaudeState {
+        let prefix = stem.split("__").next().expect("fixture name has a prefix");
+        match prefix {
+            "empty" => ClaudeState::Empty,
+            "active" => ClaudeState::Active,
+            "finished" => ClaudeState::Finished,
+            "draft" => ClaudeState::Draft,
+            "question" => ClaudeState::Question,
+            "error" => ClaudeState::Error,
+            other => panic!(
+                "fixture {stem:?} has unknown state prefix {other:?}; \
+                 name it <state>__<desc>.txt"
+            ),
+        }
+    }
+
+    /// Walk every `*.txt` fixture, classify it, and assert two things:
+    ///   1. the classified state equals the filename's `<state>__` prefix, and
+    ///   2. the full ActivityResult matches its recorded insta snapshot.
+    /// Drop a new correctly-named `.txt` in and it's covered with zero code edits.
+    #[test]
+    fn fixtures_classify_to_their_named_state() {
+        let dir = fixtures_dir();
+        let mut txts: Vec<PathBuf> = fs::read_dir(&dir)
+            .unwrap_or_else(|e| panic!("read {dir:?}: {e}"))
+            .filter_map(|e| e.ok().map(|e| e.path()))
+            .filter(|p| p.extension().is_some_and(|x| x == "txt"))
+            .collect();
+        // Deterministic order so the snapshot review list is stable run-to-run.
+        txts.sort();
+
+        assert!(
+            !txts.is_empty(),
+            "no *.txt fixtures in {dir:?} — capture one with `tmux capture-pane -p`"
+        );
+
+        for txt in txts {
+            let stem = txt.file_stem().unwrap().to_string_lossy().to_string();
+            let plain = fs::read_to_string(&txt).unwrap_or_else(|e| panic!("read {txt:?}: {e}"));
+
+            // Companion escaped capture, only present for draft fixtures.
+            let esc = fs::read_to_string(txt.with_extension("esc")).ok();
+            let result = classify_activity(&plain, || esc.clone());
+
+            let expected = expected_state_from_name(&stem);
+            assert_eq!(
+                result.state, expected,
+                "fixture {stem:?} classified as {:?}, expected {expected:?}",
+                result.state
+            );
+
+            // Full-result snapshot catches subtler drift (wrong extracted
+            // question text, wrong truncation) the state check alone can't see.
+            insta::assert_debug_snapshot!(stem.clone(), result);
+        }
     }
 }

@@ -1,0 +1,4 @@
+────────────────────────────────────────────────────
+> add a dark mode toggle to the settings page
+────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle)
