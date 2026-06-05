@@ -42,7 +42,8 @@
       'currentItemStartArrowhead', 'currentItemEndArrowhead',
       'currentItemRoundness', 'exportBackground',
       'exportWithDarkMode', 'exportScale', 'exportEmbedScene',
-      'name', 'zenModeEnabled', 'objectsSnapModeEnabled'
+      'name', 'zenModeEnabled', 'objectsSnapModeEnabled',
+      'scrollX', 'scrollY', 'zoom'
     ];
 
     function saveNow() {
@@ -90,11 +91,36 @@
       excalidrawAPI.updateScene({ appState: { zoom: { value: next }, scrollX: scrollX, scrollY: scrollY } });
     }
 
+    // Pan the viewport by a fraction of its size, in scene units (so the visual
+    // distance is constant regardless of zoom). Excalidraw maps scene->screen as
+    // screen = (scene + scroll) * zoom, so a screen delta of d px is d/zoom in scroll.
+    function panBy(dxScreen, dyScreen) {
+      if (!excalidrawAPI) return;
+      var st = excalidrawAPI.getAppState();
+      var z = (st.zoom && st.zoom.value) || 1;
+      excalidrawAPI.updateScene({ appState: {
+        scrollX: st.scrollX - dxScreen / z,
+        scrollY: st.scrollY - dyScreen / z
+      } });
+    }
+
+    var PAN_KEYS = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+
+    function inTextInput(t) {
+      return t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
+    }
+
     document.addEventListener('keydown', function(e) {
+      // Save fires from anywhere, including mid text-edit.
       if (e.altKey && e.key === 'w') {
         e.preventDefault();
         saveNow();
-      } else if (!e.ctrlKey && !e.altKey && !e.metaKey && (e.key === '-' || e.key === '_')) {
+        return;
+      }
+      // The remaining bare-key bindings must not fire while editing text — let
+      // the keys reach the input (cursor movement, typing literal -/=/0).
+      if (inTextInput(e.target)) return;
+      if (!e.ctrlKey && !e.altKey && !e.metaKey && (e.key === '-' || e.key === '_')) {
         e.preventDefault();
         stepZoom(1 / 1.1);
       } else if (!e.ctrlKey && !e.altKey && !e.metaKey && (e.key === '=' || e.key === '+')) {
@@ -105,6 +131,16 @@
         // the current zoom level (no fit, so it won't rescale your drawing).
         e.preventDefault();
         if (excalidrawAPI) excalidrawAPI.scrollToContent(undefined, { fitToContent: false });
+      } else if (PAN_KEYS[e.key] && !e.ctrlKey && !e.altKey && !e.metaKey && excalidrawAPI) {
+        // Arrows pan the viewport — but only when nothing is selected, so the
+        // native "nudge selected element" behavior is preserved when it matters.
+        var sel = excalidrawAPI.getAppState().selectedElementIds || {};
+        if (Object.keys(sel).length) return;
+        e.preventDefault();
+        // 80px screen step, ×4 with Shift for coarse panning.
+        var step = e.shiftKey ? 320 : 80;
+        var dir = PAN_KEYS[e.key];
+        panBy(dir[0] * step, dir[1] * step);
       }
     });
 
@@ -140,7 +176,14 @@
               // Force theme + canvas bg AFTER mount. initialData.appState gets
               // mangled by Excalidraw's internal restore(), so we re-assert here
               // via the public updateScene API which nothing can override.
-              api.updateScene({ appState: { viewBackgroundColor: '__VIEW_BG_COLOR__', theme: '__THEME__' } });
+              var post = { viewBackgroundColor: '__VIEW_BG_COLOR__', theme: '__THEME__' };
+              // restore() also drops the saved viewport, so re-assert scroll/zoom
+              // from the loaded file to reopen at the same place and zoom level.
+              var saved = data.appState || {};
+              if (typeof saved.scrollX === 'number') post.scrollX = saved.scrollX;
+              if (typeof saved.scrollY === 'number') post.scrollY = saved.scrollY;
+              if (saved.zoom && typeof saved.zoom.value === 'number') post.zoom = { value: saved.zoom.value };
+              api.updateScene({ appState: post });
               fetch('/api/libraries')
                 .then(function(r) { return r.json(); })
                 .then(function(libs) {
