@@ -1,16 +1,16 @@
 # tmux config
 
 - `tmux.conf` — tmux configuration.
-- `claude-sessions.rs` — cargo-script that reports the state of every Claude Code
+- `claude_sessions.rs` — cargo-script that reports the state of every Claude Code
   process running in a tmux window (used by the status line / eww widget). Run
   via `nix-run-cached`; aliased to `claude_sessions` in `__main__.fish`.
-- `switch-to-last-session.sh` — helper bound in `tmux.conf`.
-- `tests/` + `snapshots/` — snapshot tests for the `claude-sessions.rs` terminal
+- `switch_to_last_session.sh` — helper bound in `tmux.conf`.
+- `tests/` + `snapshots/` — snapshot tests for the `claude_sessions.rs` terminal
   state classifier (see below).
 
 ## Running the tests
 
-The tests live inside `claude-sessions.rs` itself (it's a single-file
+The tests live inside `claude_sessions.rs` itself (it's a single-file
 cargo-script). The simplest way — a fish helper from `__main__.fish` wraps the
 nightly-toolchain resolution:
 
@@ -30,7 +30,7 @@ If you'd rather not go through the helper, the raw invocation is:
 ```fish
 set RUST_PATH (cat ~/.cargo/target/.rust-store-path)
 env RUSTC_WRAPPER="" PATH="$RUST_PATH/bin:$PATH" \
-    cargo -Zscript test --manifest-path ./claude-sessions.rs
+    cargo -Zscript test --manifest-path ./claude_sessions.rs
 ```
 
 (`RUSTC_WRAPPER=""` disables sccache; the `PATH` prefix points cargo at the

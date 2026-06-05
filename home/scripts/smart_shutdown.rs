@@ -90,8 +90,8 @@ fn main() {
         Some(std::thread::spawn(|| {
             println!("Saving claude sessions to telegram...");
             let claude_sessions_path = std::env::var("HOME")
-                .map(|h| format!("{h}/nix/home/config/tmux/claude-sessions.rs"))
-                .unwrap_or_else(|_| "/home/v/nix/home/config/tmux/claude-sessions.rs".to_string());
+                .map(|h| format!("{h}/nix/home/config/tmux/claude_sessions.rs"))
+                .unwrap_or_else(|_| "/home/v/nix/home/config/tmux/claude_sessions.rs".to_string());
 
             let output = Command::new(&claude_sessions_path).output();
 

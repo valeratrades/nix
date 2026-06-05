@@ -1,5 +1,5 @@
 ---
-source: claude-sessions.rs
+source: claude_sessions.rs
 expression: result
 ---
 ActivityResult {
