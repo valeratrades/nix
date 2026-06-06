@@ -106,8 +106,66 @@
 
     var PAN_KEYS = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
 
+    // Scale the selected elements by `factor` about their common bounding-box
+    // center, so the group stays put while growing/shrinking. Geometry, font size,
+    // and relative line/arrow/freedraw points all scale together.
+    function scaleSelection(factor) {
+      if (!excalidrawAPI) return;
+      var sel = excalidrawAPI.getAppState().selectedElementIds || {};
+      var all = excalidrawAPI.getSceneElements();
+      var picked = all.filter(function(el) { return sel[el.id] && !el.isDeleted; });
+      if (!picked.length) return;
+      // Common center of the selection's bounding box.
+      var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      picked.forEach(function(el) {
+        minX = Math.min(minX, el.x); minY = Math.min(minY, el.y);
+        maxX = Math.max(maxX, el.x + el.width); maxY = Math.max(maxY, el.y + el.height);
+      });
+      var cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+      var picks = {};
+      picked.forEach(function(el) { picks[el.id] = true; });
+      var next = all.map(function(el) {
+        if (!picks[el.id]) return el;
+        var u = {
+          x: cx + (el.x - cx) * factor,
+          y: cy + (el.y - cy) * factor,
+          width: el.width * factor,
+          height: el.height * factor
+        };
+        if (typeof el.fontSize === 'number') u.fontSize = el.fontSize * factor;
+        // Line/arrow/freedraw carry geometry as points relative to (x,y).
+        if (el.points) u.points = el.points.map(function(p) { return [p[0] * factor, p[1] * factor]; });
+        return Object.assign({}, el, u);
+      });
+      excalidrawAPI.updateScene({ elements: next });
+    }
+
     function inTextInput(t) {
       return t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
+    }
+
+    // Click the Nth button of the Stroke color row in the left panel (1-5 are the
+    // quick-pick swatches, 6 is the active-color button that opens the full
+    // picker pane). Position-based: whatever color sits there is what gets picked.
+    // The Stroke section is the one whose active-color button is aria-labelled
+    // "Stroke"; Background has its own identical row we must not hit.
+    function clickStrokeSwatch(n) {
+      var actives = document.querySelectorAll('.color-picker__button.active-color');
+      var strokeActive = null;
+      for (var i = 0; i < actives.length; i++) {
+        var lbl = (actives[i].getAttribute('aria-label') || '').toLowerCase();
+        if (lbl.indexOf('stroke') !== -1) { strokeActive = actives[i]; break; }
+      }
+      // Fallback: the Stroke row is the first color picker rendered in the panel.
+      if (!strokeActive && actives.length) strokeActive = actives[0];
+      if (!strokeActive) return false;
+      if (n === 6) { strokeActive.click(); return true; }
+      var picks = strokeActive.parentElement.querySelector('.color-picker__top-picks');
+      if (!picks) return false;
+      var btn = picks.querySelectorAll('button')[n - 1];
+      if (!btn) return false;
+      btn.click();
+      return true;
     }
 
     document.addEventListener('keydown', function(e) {
@@ -117,9 +175,32 @@
         saveNow();
         return;
       }
-      // The remaining bare-key bindings must not fire while editing text — let
-      // the keys reach the input (cursor movement, typing literal -/=/0).
+      // Every binding below is canvas-only: while editing text, do nothing custom
+      // and (crucially) never preventDefault, so the keypress lands in the input
+      // normally — Shift+- types '_', arrows move the caret, Esc exits the editor.
       if (inTextInput(e.target)) return;
+      // Esc — deselect everything if anything is selected (like clicking away).
+      if (e.key === 'Escape' && !e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey && excalidrawAPI) {
+        var s = excalidrawAPI.getAppState();
+        if (Object.keys(s.selectedElementIds || {}).length || Object.keys(s.selectedGroupIds || {}).length) {
+          excalidrawAPI.updateScene({ appState: { selectedElementIds: {}, selectedGroupIds: {} } });
+          return;
+        }
+      }
+      // Shift +/- — grow/shrink the selected elements. Shift+= yields '+' and
+      // Shift+- yields '_' on most layouts, so match those glyphs directly.
+      if (e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey && (e.key === '+' || e.key === '_')) {
+        e.preventDefault();
+        scaleSelection(e.key === '_' ? 1 / 1.1 : 1.1);
+        return;
+      }
+      // Ctrl+1..6 — pick the Nth button in the Stroke color row of the panel.
+      if (e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey && e.key >= '1' && e.key <= '6') {
+        if (clickStrokeSwatch(+e.key)) {
+          e.preventDefault();
+          return;
+        }
+      }
       if (!e.ctrlKey && !e.altKey && !e.metaKey && (e.key === '-' || e.key === '_')) {
         e.preventDefault();
         stepZoom(1 / 1.1);
