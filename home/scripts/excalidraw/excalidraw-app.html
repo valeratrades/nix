@@ -177,16 +177,8 @@
       }
       // Every binding below is canvas-only: while editing text, do nothing custom
       // and (crucially) never preventDefault, so the keypress lands in the input
-      // normally — Shift+- types '_', arrows move the caret, Esc exits the editor.
+      // normally — Shift+- types '_', arrows move the caret.
       if (inTextInput(e.target)) return;
-      // Esc — deselect everything if anything is selected (like clicking away).
-      if (e.key === 'Escape' && !e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey && excalidrawAPI) {
-        var s = excalidrawAPI.getAppState();
-        if (Object.keys(s.selectedElementIds || {}).length || Object.keys(s.selectedGroupIds || {}).length) {
-          excalidrawAPI.updateScene({ appState: { selectedElementIds: {}, selectedGroupIds: {} } });
-          return;
-        }
-      }
       // Shift +/- — grow/shrink the selected elements. Shift+= yields '+' and
       // Shift+- yields '_' on most layouts, so match those glyphs directly.
       if (e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey && (e.key === '+' || e.key === '_')) {
@@ -224,6 +216,26 @@
         panBy(dir[0] * step, dir[1] * step);
       }
     });
+
+    // Esc deselect lives in its own CAPTURE-phase listener: Excalidraw's own
+    // document keydown calls stopImmediatePropagation on Escape, so a bubble-phase
+    // handler never sees it. Capture runs on the way down, before Excalidraw can
+    // stop it. We don't preventDefault — Excalidraw still gets to run its Escape
+    // (closing popups etc.); we just additionally force-clear the selection on the
+    // next macrotask so the cleared state is the one that sticks.
+    document.addEventListener('keydown', function(e) {
+      if (e.key !== 'Escape' || e.ctrlKey || e.altKey || e.metaKey || e.shiftKey || !excalidrawAPI) return;
+      // If we're editing text, this Esc just exits the editor (default behavior
+      // already drops back to the element being selected). Don't also deselect —
+      // that takes a second, separate Esc.
+      if (inTextInput(e.target)) return;
+      setTimeout(function() {
+        var s = excalidrawAPI.getAppState();
+        if (Object.keys(s.selectedElementIds || {}).length || Object.keys(s.selectedGroupIds || {}).length) {
+          excalidrawAPI.updateScene({ appState: { selectedElementIds: {}, selectedGroupIds: {} } });
+        }
+      }, 0);
+    }, true);
 
     function sendHeartbeat() {
       fetch('/api/heartbeat', { method: 'POST' }).catch(function() {
