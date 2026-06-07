@@ -65,6 +65,10 @@
 
 - asserts are wonderful. Any expectation you're relying on inside the scope, would do well to be asserted. They cost nothing at runtime, use them to catch expectation bugs early.
 
+- never ignore invalid state. \
+  there hardly ever is a case where eg `.ok()?` is justified. Instead produce an error or panic.
+  Each and every case where you swipe any Error type under the rug, MUST have justification in a comment after it. If while writing the justification, you see that it is possible to panic on it, then go back and switch to error/panic, as it should be.
+
 ### Special Cases
 - if you just wrote `tokio::spawn` in any context, stop immediately, and find a way to implement it with structured concurrency, where nothing happens until explicitly awaited. If you are unable to do so, - stop, explain why it's impossible to me, and only proceed after explicit go-ahead to use it
 

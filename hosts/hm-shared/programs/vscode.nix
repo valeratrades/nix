@@ -73,6 +73,18 @@
 				sha256 = "06svwyqjzzgffyiymcs3vp90r93zz8x7sfm41kgi8qfyw1k5g1qz";
 			}
 			] ++ [
+				# Excalidraw: draw schemas in-editor (.excalidraw files). From Open VSX.
+				(pkgs.vscode-utils.buildVscodeMarketplaceExtension {
+					mktplcRef = {
+						publisher = "pomdtr";
+						name = "excalidraw-editor";
+						version = "3.9.0";
+					};
+					vsix = pkgs.fetchurl {
+						url = "https://open-vsx.org/api/pomdtr/excalidraw-editor/3.9.0/file/pomdtr.excalidraw-editor-3.9.0.vsix";
+						sha256 = "05k41b0m4g5d9wpcbj891gya6s80fic6gas2f8jpk5zlpva9rr5c";
+					};
+				})
 				# Remote SSH (jajera): pure-Open-VSX remote-ssh, works on VSCodium
 				# (the MS remote-ssh above won't connect under VSCodium's licensing)
 				(pkgs.vscode-utils.buildVscodeMarketplaceExtension {

@@ -118,6 +118,22 @@ cached_init atuin "atuin init fish --disable-up-arrow --disable-ctrl-r"
 bind \cr "_atuin_bind_up" # configured in $XDG_CONFIG_HOME/atuin/config.toml
 bind \cg "_atuin_search" # global search
 
+# Drop command-not-found (exit 127, usually typos) from atuin history right after it's recorded.
+# Defined after atuin's init so this fish_postexec handler runs after atuin's own (which fires the
+# `atuin history start`/`history end` pair). The `--exit 127` filter is the safety anchor: it can
+# only ever match the just-failed lookup, never a successful command sharing the same text, so a
+# successful `foo` is never collateral-deleted even when an earlier `foo` 127'd in this session.
+# atuin writes the exit code via a disowned background job, so if our delete loses that race the
+# typo simply survives in history — benign, never a wrong deletion. `atuin search --delete` is the
+# only sync-safe path (it writes a deletion record to the store; a raw sqlite edit to history.db
+# would be resurrected on next sync).
+function _atuin_drop_not_found --on-event fish_postexec
+    test $status -eq 127; or return
+    set -q ATUIN_SESSION; or return
+    ATUIN_LOG=error atuin search --filter-mode session --exit 127 --search-mode full-text --delete -- "$argv[1]" &>/dev/null &
+    disown
+end
+
 cached_init starship "starship init fish --print-full-init" # somehow fixes the psub bug that happens when using tmux with my config, initiated via standard nixos's `enable`
 #,}}}
 

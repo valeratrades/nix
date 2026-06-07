@@ -56,7 +56,16 @@
       enable = true; # dbg
       keyMode = "vi";
       shortcut = "e";
-      package = pkgs.tmux;
+      # Build tmux WITHOUT systemd integration. With it (nixpkgs default
+      # withSystemd=true), tmux places every pane in its own systemd scope
+      # (tmux-spawn-*.scope). That scope creation fails — "Couldn't move process
+      # … Permission denied" (319+ times in the journal) — leaving the scope in a
+      # broken cgroup state. At shutdown, systemd's control-group SIGTERM can't
+      # reach the process, so the scope rides out its full stop timeout before
+      # SIGKILL — THE slow-shutdown bug. Without systemd, panes are plain children
+      # of the tmux server and get killed cleanly.
+      # See ongoing_debug/2026-06-05_slow-shutdown.md.
+      package = pkgs.tmux.override { withSystemd = false; };
       plugins = with pkgs; [
         #tmuxPlugins.resurrect # persist sessions
         tmuxPlugins.open # open files

@@ -88,6 +88,13 @@ in {
 		#      and `systemd.log_level=debug` (kernelParam below) makes the stuck
 		#      step print to the console so the next slow shutdown names the culprit.
 		settings.Manager.DefaultTimeoutStopSec = "15s";
+		# The system cap above only covers PID-1 units. The 2026-06-06 slow shutdown
+		# was the USER manager (user@1000.service) waiting 90s on a tmux pane running
+		# nvim (nvim ignores SIGTERM → scope rides out the full default). user.conf is
+		# a separate file, so cap it too. See ongoing_debug/2026-06-05_slow-shutdown.md.
+		user.extraConfig = ''
+			DefaultTimeoutStopSec=15s
+		'';
 		shutdownRamfs.enable = true;
 
 		services = {

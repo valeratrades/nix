@@ -152,11 +152,11 @@
         "v_flakes": "v_flakes_2"
       },
       "locked": {
-        "lastModified": 1779120899,
-        "narHash": "sha256-K4F9cimeUIVt7TiB5NiHS6BBESCIs9EByYYNSpFDTXA=",
+        "lastModified": 1780780182,
+        "narHash": "sha256-U5JzIubTNVkxCfiSsYzNhnM3jxaqwIIHAfJCDfOmwCY=",
         "owner": "valeratrades",
         "repo": "btc_line",
-        "rev": "169b633e1d8a4a5232b1c52f904f9ea86834965c",
+        "rev": "c0fc624f6a7faaa345db0a3c969400a925ca6216",
         "type": "github"
       },
       "original": {
@@ -3570,17 +3570,17 @@
         "rust-overlay": "rust-overlay_2"
       },
       "locked": {
-        "lastModified": 1778075834,
-        "narHash": "sha256-UEzlXbhJYr1T1ZmCvtJhhHO/phUDgkG1CHbmkCkosew=",
+        "lastModified": 1780707186,
+        "narHash": "sha256-toSS3oBXO3eajGUQXwaNsKimMJy2YALLXoOv7CPNb38=",
         "owner": "valeratrades",
         "repo": "v_flakes",
-        "rev": "1ca8693d97857937e29211f4491a77cdf74cb1e1",
+        "rev": "d4737aa179386874334cb1b2b21f174d11957fc4",
         "type": "github"
       },
       "original": {
         "owner": "valeratrades",
         "repo": "v_flakes",
-        "rev": "1ca8693d97857937e29211f4491a77cdf74cb1e1",
+        "rev": "d4737aa179386874334cb1b2b21f174d11957fc4",
         "type": "github"
       }
     },
