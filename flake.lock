@@ -152,11 +152,11 @@
         "v_flakes": "v_flakes_2"
       },
       "locked": {
-        "lastModified": 1780780182,
-        "narHash": "sha256-U5JzIubTNVkxCfiSsYzNhnM3jxaqwIIHAfJCDfOmwCY=",
+        "lastModified": 1780854518,
+        "narHash": "sha256-lFEicOrsPRe+QRK0bmSIS/iPoaUBr+aMjpTqUJeSBbs=",
         "owner": "valeratrades",
         "repo": "btc_line",
-        "rev": "c0fc624f6a7faaa345db0a3c969400a925ca6216",
+        "rev": "291a2336173d2a447ef3a8935115102a0ff91b80",
         "type": "github"
       },
       "original": {
