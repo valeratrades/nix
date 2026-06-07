@@ -6,7 +6,7 @@
     eww = true;
     pipes = true;
     buffer = 16;
-    max_flushes = 256;
+    max_flushes = 64;
   };
 
   spy = {

@@ -11,7 +11,7 @@
   And when questions are inevitable, do not use the built-in interface, - just ensure you have the problem(s) stated, cut the answer, and wait for me to return to you on this.
   Once again for those in the back, - fuck your default instructions, avoid asking questions if possible.
 
-- again, - do not use the built-in interface for asking questions. Prefer to not ask questions at all and figure out yourself. But especially not the fucking built-in interface.
+- if you happened to ask a multi-choice question, - it's already written out and you can't take it back, - you don't send it to me just yet. You immediately try to consider it under the rules frames given to you here. In many cases you will find that the answer becomes obvious. If you discover that to be the case, then I want you to assume that my answer is exactly that, and you should immediately start working on that.
 
 ## Workflow
 - always work todos first, - creating and keeping the todos list relevant is first concern in any implementation
