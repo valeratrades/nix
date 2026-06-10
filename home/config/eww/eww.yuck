@@ -41,6 +41,7 @@
 		(ram)
 		(cpu)
 		(temperature)
+		(weather)
 		(time)
 		(battery)
 		(battery_saver)
@@ -182,6 +183,14 @@
 			:class {temperature_poll.gpu >= 70 ? "warn" : ""}
 			",${temperature_poll.gpu}"
 		)
+	)
+)
+
+(defpoll weather_poll :initial "{}" :interval "600s" "./modules/weather.sh")
+(defwidget weather []
+	(box
+		:visible {weather_poll.content != ""}
+		"${weather_poll.icon}${weather_poll.content}"
 	)
 )
 
