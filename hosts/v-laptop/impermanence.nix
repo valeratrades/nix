@@ -78,12 +78,11 @@
           mode = "0700";
         }
         {
-          # zeroclaw runtime state: .secret_key (encrypts the provider API key),
-          # memory sqlite, audit log, workspace. Must survive reboots.
-          directory = ".zeroclaw";
+          # openclaw runtime state: openclaw.json (config + stored DeepSeek key), credentials,
+          # sessions, memory, and the agent workspace. Must survive reboots.
+          directory = ".openclaw";
           mode = "0700";
         }
-
         # atuin, nvim, remmina, flatpak, ...
         ".local/share"
         ".local/state"

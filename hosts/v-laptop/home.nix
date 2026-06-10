@@ -12,6 +12,8 @@ in {
     defaultSopsFile = "${self}/secrets/users/v/default.json";
     defaultSopsFormat = "json";
     secrets.telegram_token_main = { mode = "0400"; };
+    # openclaw's Telegram channel binds to the *test* bot (@test_my_nonsense_bot) so it doesn't
+    # fight tg-server over the main bot's getUpdates long-poll (one consumer per bot token).
     secrets.telegram_token_test = { mode = "0400"; };
     secrets.telegram_api_hash = { mode = "0400"; };
     secrets.telegram_phone = { mode = "0400"; };
@@ -59,10 +61,61 @@ in {
       echo "TELEGRAM_MAIN_BOT_TOKEN=$(cat ${config.sops.secrets.telegram_token_main.path})"
       echo "TELEGRAM_BOT_KEY=$(cat ${config.sops.secrets.telegram_token_main.path})"
       # DEEPSEEK_KEY is consumed by the `cld` fish function (home/config/fish/app_aliases/llm.fish)
+      # and by the openclaw gateway (DeepSeek is OpenAI-compatible; see configureOpenclaw below).
       echo "DEEPSEEK_KEY=$(cat ${config.sops.secrets.deepsek_key.path})"
+      echo "DEEPSEEK_API_KEY=$(cat ${config.sops.secrets.deepsek_key.path})"
     } > "$dest"
     chmod 600 "$dest"
     ${pkgs.systemd}/bin/systemctl --user daemon-reload || true
+  '';
+
+  # OpenClaw — multi-channel AI gateway, run from the checkout at ~/g/openclaw.
+  # Configured for DeepSeek (OpenAI-compatible endpoint) via a non-interactive onboard pass.
+  # `onboard --non-interactive` / `config set` / `channels add` are all idempotent and merge into
+  # ~/.openclaw/openclaw.json, so this whole block re-runs safely on every `home-manager switch`
+  # and fully reproduces config on a clean ~/.openclaw. We materialize secrets from the
+  # sops-decrypted files here (openclaw has no env-var expansion in its config), and gate the
+  # whole thing on the openclaw checkout actually being present.
+  home.activation.configureOpenclaw = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    repo="${config.home.homeDirectory}/g/openclaw"
+    keyFile="${config.sops.secrets.deepsek_key.path}"
+    tgTokenFile="${config.sops.secrets.telegram_token_test.path}"
+    node="${lib.getExe pkgs.nodejs_22}"
+    oc() { "$node" "$repo/openclaw.mjs" "$@"; }
+    if [ -d "$repo" ] && [ -r "$keyFile" ]; then
+      # DeepSeek provider + default model (deepseek-chat -> deepseek-v4 family).
+      oc onboard --non-interactive --accept-risk \
+        --mode local \
+        --auth-choice custom-api-key \
+        --custom-provider-id deepseek \
+        --custom-base-url "https://api.deepseek.com/v1" \
+        --custom-model-id "deepseek-chat" \
+        --custom-api-key "$(cat "$keyFile")" \
+        --custom-compatibility openai \
+        --gateway-port 18789 \
+        --gateway-bind loopback \
+        --no-install-daemon \
+        --skip-channels \
+        --skip-skills \
+        --skip-ui \
+        --skip-health \
+        || echo "configureOpenclaw: onboard failed (non-fatal); run 'oclaw' / 'openclaw onboard' manually" >&2
+
+      # The custom-provider onboard defaults the model to a tiny 4096-token window; DeepSeek v4
+      # actually serves 128k context / 8k output. Correct it so the agent doesn't over-truncate.
+      oc config set 'models.providers.deepseek.models[0].contextWindow' 131072 || true
+      oc config set 'models.providers.deepseek.models[0].maxTokens' 8192 || true
+
+      # Telegram channel on the *test* bot (distinct token from tg-server's main bot — see secrets).
+      if [ -r "$tgTokenFile" ]; then
+        oc plugins enable telegram || true
+        oc channels add --channel telegram --token "$(cat "$tgTokenFile")" --name "test_my_nonsense_bot" || true
+      else
+        echo "configureOpenclaw: $tgTokenFile not readable; skipping telegram channel" >&2
+      fi
+    else
+      echo "configureOpenclaw: $repo missing or $keyFile not readable yet; skipping" >&2
+    fi
   '';
 
   # Fix sops-nix.service to remain active after completion
@@ -73,22 +126,27 @@ in {
     };
   };
 
-  # Always-on zeroclaw daemon (gateway + channels + heartbeat + cron scheduler). Started on login
-  # and kept alive. We define the unit declaratively rather than via `zeroclaw service install`
-  # (which would write an imperative unit into ~/.config/systemd, off-config). Config lives in the
-  # persisted ~/.zeroclaw, written by the configureZeroclaw activation above.
-  systemd.user.services.zeroclaw = {
+  # Always-on OpenClaw gateway (WebSocket gateway + connected channels + control UI on :18789).
+  # Runs the checkout at ~/g/openclaw directly via node — the repo ships a prebuilt dist/, so no
+  # build step is needed at start. Config + state live in the persisted ~/.openclaw, written by
+  # the configureOpenclaw activation above. Started on login and kept alive across crashes.
+  # NB: gated on the openclaw checkout existing so a fresh machine without it doesn't fail to boot
+  # into the user session — the ExecStartPre guard exits 0 (skips start) when the repo is absent.
+  systemd.user.services.openclaw-gateway = lib.mkIf user.openclaw {
     Unit = {
-      Description = "ZeroClaw autonomous agent daemon";
+      Description = "OpenClaw multi-channel AI gateway (DeepSeek)";
       After = [ "network-online.target" "sops-nix.service" ];
       Wants = [ "network-online.target" ];
     };
     Service = {
-      ExecStart = "${lib.getExe pkgs.zeroclaw} daemon";
+      Type = "simple";
+      # Skip cleanly if the checkout isn't there yet (first boot before `git clone`).
+      ExecStartPre = "${pkgs.bash}/bin/bash -c '[ -f ${config.home.homeDirectory}/g/openclaw/openclaw.mjs ]'";
+      ExecStart = "${lib.getExe pkgs.nodejs_22} ${config.home.homeDirectory}/g/openclaw/openclaw.mjs gateway --port 18789";
       Restart = "on-failure";
       RestartSec = 5;
-      # Web dashboard assets shipped alongside the binary (see overlays/zeroclaw.nix).
-      Environment = [ "ZEROCLAW_WEB_DIST_DIR=${pkgs.zeroclaw}/share/zeroclaw/web/dist" ];
+      # openclaw resolves its own paths under ~/.openclaw by default; be explicit for the service.
+      Environment = [ "OPENCLAW_STATE_DIR=${config.home.homeDirectory}/.openclaw" ];
     };
     Install = {
       WantedBy = [ "default.target" ];
@@ -278,11 +336,6 @@ in {
         # Trading bots
         [
           metascalp
-        ]
-
-        # Autonomous AI agent runtime (DeepSeek provider; configured via activation below)
-        [
-          zeroclaw
         ]
 
         # Windows (via WinApps/Docker VM)

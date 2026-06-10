@@ -49,11 +49,9 @@
       pkill -f 'firefox' || true
 
       # Services that restart losslessly
-      # Full switch away from openclaw: the legacy `user.openclaw` flag no longer gates anything.
-      # The zeroclaw daemon (the runtime that replaced openclaw) restarts losslessly on resume, so
-      # we just kill it unconditionally on suspend like the other stateless services above.
-      # ${lib.optionalString user.openclaw "pkill -f 'zeroclaw daemon' || true"}
-      pkill -f 'zeroclaw daemon' || true
+      # openclaw gateway resumes losslessly (state in ~/.openclaw); kill it to shrink the image.
+      # NB: the worker process renames its argv[0] to `openclaw-gateway`, so match on that.
+      ${lib.optionalString user.openclaw "pkill -f 'openclaw-gateway' || true"}
       pkill -f 'tailscaled' || true
       ${lib.optionalString user.clickhouse "pkill -f 'clickhouse' || true"}
 

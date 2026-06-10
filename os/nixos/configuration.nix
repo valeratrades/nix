@@ -178,6 +178,10 @@ in {
 			# disable memory allocation profiling - its bookkeeping can fail under memory pressure,
 			# causing kernel warnings that trigger panic with panic_on_oops=1
 			"vm.mem_profiling" = 0;
+			# prefer reclaiming page cache; only swap out genuinely idle anon pages.
+			# default is 60 (swaps fairly readily); 10 keeps active app memory resident
+			# while still offloading cold pages — the usual desktop/laptop sweet spot.
+			"vm.swappiness" = 10;
 		};
 
     # for obs's Virtual Camera
@@ -388,7 +392,6 @@ in {
     (import (mylib.relativeToRoot "overlays/sierra-chart.nix"))
     (import (mylib.relativeToRoot "overlays/tiger-trade.nix"))
     (import (mylib.relativeToRoot "overlays/metascalp.nix"))
-    (import (mylib.relativeToRoot "overlays/zeroclaw.nix"))
   ];
 
   nix.settings.download-buffer-size = "50G";

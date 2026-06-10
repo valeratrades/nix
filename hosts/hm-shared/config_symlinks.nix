@@ -44,12 +44,6 @@ in
       target_path = "$HOME/.claude/skills";
       config_path = "$NIXOS_CONFIG/home/config/claude/skills";
     };
-    # zeroclaw config lives at ~/.zeroclaw/config.toml (NOT under ~/.config), so the postfix
-    # form (which assumes $XDG_CONFIG_HOME) doesn't apply — give explicit target/config paths.
-    zeroclaw = mkSymlink {
-      target_path = "$HOME/.zeroclaw/config.toml";
-      config_path = "$NIXOS_CONFIG/home/config/zeroclaw/config.toml";
-    };
     pipewire = mkSymlink { target_path_postfix = "pipewire"; };
     wallpaper_carousel = mkSymlink { target_path_postfix = "wallpaper_carousel.nix"; };
     discretionary_engine = mkSymlink { target_path_postfix = "discretionary_engine.nix"; };
