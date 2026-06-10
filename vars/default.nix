@@ -38,6 +38,7 @@ in
 		kbd = "ansi";
 		sccache = true;
 		disableNvidia = false;  # set to true to use AMD iGPU only (better battery, fewer driver issues)
+		gpuAcceleration = false;  # forced Firefox GPU rendering (webrender compositor + dmabuf + gpu-process). Off: runs hot on this chassis.
 		clickhouse = false;
 		openclaw = true;
   };
@@ -53,6 +54,7 @@ in
     wakeTime = "06:00";
     fontSize = 11;
 		kbd = "iso";
+		gpuAcceleration = true;
 		clickhouse = true;
 		openclaw = false;
     };
@@ -68,6 +70,7 @@ in
     wakeTime = "05:00";
     fontSize = 12;
 		kbd = "ansi";
+		gpuAcceleration = true;
 		clickhouse = true;
 		openclaw = false;
   };

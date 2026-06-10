@@ -1,4 +1,8 @@
-{ pkgs, ... }: {
+{ pkgs, lib, user, ... }:
+let
+  # 10-day-old change (71dd4ee6): forced Firefox GPU rendering. Gated per-user — runs hot on this chassis.
+  gpuAcceleration = user.gpuAcceleration or true;
+in {
   environment.systemPackages = [ pkgs.firefox ];
   programs.firefox = {
     enable = true;
@@ -119,15 +123,6 @@
       "media.peerconnection.ice.no_host" = true;
       "media.ffmpeg.vaapi.enabled" = true;  # VA-API path for Wayland
       "media.hardware-video-decoding.force-enabled" = false;  # don't force-override driver blacklist
-
-      # WebGL/canvas apps (Excalidraw etc.) — safe acceleration without touching the
-      # AMD DMA paths that caused the original hangs. See ongoing_debug doc above.
-      "widget.dmabuf.force-enabled" = true;   # zero-copy GPU buffer sharing on Wayland (radeonsi-stable)
-      "gfx.webrender.compositor" = true;       # let the Wayland compositor do final composite (native, no extra GPU copies)
-      "layers.gpu-process.enabled" = true;     # isolate GPU work in its own process — a WebGL crash recovers instead of nuking the page
-      "layers.gpu-process.max_restarts" = 5;   # auto-respawn the GPU process a few times before falling back to software
-      # NB: deliberately NOT setting gfx.canvas.accelerated.force-enabled / webgl.force-enabled —
-      # force-overriding the driver blacklist is exactly what risks re-triggering the amdgpu hang.
       "browser.newtabpage.activity-stream.showSponsored" = false;
       "browser.newtabpage.activity-stream.system.showSponsored" = false;
       "browser.newtabpage.activity-stream.showSponsoredTopSites" = false;
@@ -144,6 +139,15 @@
         true; # WebRTC required for Meet/Discord/etc; was disabled previously to prevent IP leaks but that broke video calling
 
       #,}}}
+    } // lib.optionalAttrs gpuAcceleration {
+      # WebGL/canvas apps (Excalidraw etc.) — forced GPU rendering. Gated per-user (user.gpuAcceleration):
+      # drives the AMD iGPU hard and runs hot on thin chassis, so disabled where heat is a concern.
+      # NB: deliberately NOT setting gfx.canvas.accelerated.force-enabled / webgl.force-enabled —
+      # force-overriding the driver blacklist is exactly what risks re-triggering the amdgpu hang.
+      "widget.dmabuf.force-enabled" = true;   # zero-copy GPU buffer sharing on Wayland (radeonsi-stable)
+      "gfx.webrender.compositor" = true;       # let the Wayland compositor do final composite (native, no extra GPU copies)
+      "layers.gpu-process.enabled" = true;     # isolate GPU work in its own process — a WebGL crash recovers instead of nuking the page
+      "layers.gpu-process.max_restarts" = 5;   # auto-respawn the GPU process a few times before falling back to software
     };
   };
 }
