@@ -18,7 +18,7 @@
 #  })
 #];
 
-{ pkgs, ... }: {
+{ pkgs, inputs, ... }: {
 	programs.vscode = {
 		enable = true;
 		package = pkgs.vscodium;
@@ -73,17 +73,15 @@
 				sha256 = "06svwyqjzzgffyiymcs3vp90r93zz8x7sfm41kgi8qfyw1k5g1qz";
 			}
 			] ++ [
-				# Excalidraw: draw schemas in-editor (.excalidraw files). From Open VSX.
+				# Excalidraw: draw schemas in-editor (.excalidraw files). Personal fork
+				# (valeratrades.excalidraw-editor) built from source by its own flake.
 				(pkgs.vscode-utils.buildVscodeMarketplaceExtension {
 					mktplcRef = {
-						publisher = "pomdtr";
+						publisher = "valeratrades";
 						name = "excalidraw-editor";
-						version = "3.9.0";
+						version = "3.9.3";
 					};
-					vsix = pkgs.fetchurl {
-						url = "https://open-vsx.org/api/pomdtr/excalidraw-editor/3.9.0/file/pomdtr.excalidraw-editor-3.9.0.vsix";
-						sha256 = "05k41b0m4g5d9wpcbj891gya6s80fic6gas2f8jpk5zlpva9rr5c";
-					};
+					vsix = "${inputs.excalidraw-vscode.packages.${pkgs.system}.default}/excalidraw-editor-3.9.3.vsix";
 				})
 				# Remote SSH (jajera): pure-Open-VSX remote-ssh, works on VSCodium
 				# (the MS remote-ssh above won't connect under VSCodium's licensing)

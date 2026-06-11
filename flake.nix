@@ -178,6 +178,14 @@
       inputs.flake-utils.follows = "flake-utils";
     };
 
+    # Personal fork of pomdtr.excalidraw-editor (VSCode/VSCodium). Exposes a
+    # packages.default that builds the .vsix from source; consumed in vscode.nix.
+    excalidraw-vscode = {
+      url = "github:valeratrades/excalidraw-vscode-ext";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+    };
+
     #aggr_orderbook = {
     #	url = "github:valeratrades/aggr_orderbook";
     #	inputs.nixpkgs.follows = "nixpkgs";

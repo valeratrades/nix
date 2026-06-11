@@ -3,14 +3,25 @@ function cl
     set -l repo (command git rev-parse --show-toplevel 2>/dev/null)
     set -l no_verify 0
     set -l passthrough_args
+    set -l expect_model 0
 
     for arg in $argv
-        if [ "$arg" = --no-verify ]
+        if [ $expect_model -eq 1 ]
+            set -a passthrough_args --model $arg
+            set expect_model 0
+        else if [ "$arg" = --no-verify ]
             set no_verify 1
+        else if [ "$arg" = -m ]
+            set expect_model 1
         else
             set -a passthrough_args $arg
         end
         #TODO: add `-p` for opening in plan mode over a specific file
+    end
+
+    if [ $expect_model -eq 1 ]
+        echo "cl: -m requires a model argument" >&2
+        return 1
     end
 
     if [ $no_verify -eq 0 ] && [ -n "$repo" ] && [ -f "$repo/AGENTS.md" ]

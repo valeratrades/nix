@@ -31,8 +31,9 @@
 - once again, every time your understanding changes or you have closed an item, - update the todos. Always have todos, always make todos, always keep them up-to-date.
 
 - remember that you have ability to spawn explorer agents. When working on large projects, avoid looking through the codebase yourself, - spawn a few helpers instead. They are fast, cheap and stupid.
+  If your model is Mythos (fable), I especially want you to use these as much as possible. Their work is much cheaper than yours. And in this case, don't limit yourself to default Haiku deployments, - you can even spawn Sonnet/Opus agents for any part of the process that is not cognition-critical (eg finding sth, testing, fixing env, etc)
 
-- and just in case: do not fucking ask me questions
+- minimize amount of questions you ask me. Most of them can be resolved on your own, by listing out pros and cons, then referencing this CLAUDE.md file for guiding principles, from which most often the decision becomes obvious.
 
 ## Testing
 - if a change is not trivial, always test.
