@@ -160,13 +160,14 @@ in
 				alwaysThinkingEnabled = false;
 				skipDangerousModePermissionPrompt =  true;
 				#model = "claude-sonnet-4-6"; #HACK: currently is better than default Opus. Keep until default becomes the best choice again.
-				model = "claude-opus-4-8";
+				model = "claude-fable-5";
 				effortLevel = "high"; # they switched the default, and now problem gives up more often
 				showClearContextOnPlanAccept = true;
 				#trustedWorkspaces = [ "/" ]; #NB: doesn't actually exist. Instead, opoen in `/` and accept it as trusted manually once.
 				enabledPlugins = plugins.enabled;
 				showThinkingSummaries = true; # is now set to false for some reason. Idk if it's still a valid setting and even will be read btw
-				thinking = true;
+				#thinking = true;
+				thinking.display = "summarized"; # if I understood correctly https://platform.claude.com/docs/en/about-claude/models/introducing-claude-fable-5-and-claude-mythos-5#raw-thinking-content-is-never-returned
 				hooks = {
 					Stop = [
 						{

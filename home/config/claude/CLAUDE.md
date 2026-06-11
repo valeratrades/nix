@@ -69,6 +69,9 @@
   there hardly ever is a case where eg `.ok()?` is justified. Instead produce an error or panic.
   Each and every case where you swipe any Error type under the rug, MUST have justification in a comment after it. If while writing the justification, you see that it is possible to panic on it, then go back and switch to error/panic, as it should be.
 
+- never add comments explaining *what* happens. We never wish to hardcode any part of the behavior in the description, only to see it get changed later, while description remains stale. Instead, only add comments when we have something to say about *why*. Why some decision was made. It can be a general invariant in the codebase, or a comment about a specific line, explaining its presence. Remember, - best comment is no comment at all. You only add them when just reading code would be insufficient to reason about it.
+  A lot of the code you will see will have too many comments. Reducing their amount is always good.
+
 ### Special Cases
 - if you just wrote `tokio::spawn` in any context, stop immediately, and find a way to implement it with structured concurrency, where nothing happens until explicitly awaited. If you are unable to do so, - stop, explain why it's impossible to me, and only proceed after explicit go-ahead to use it
 
