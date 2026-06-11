@@ -190,7 +190,7 @@
 (defwidget weather []
 	(box
 		:visible {weather_poll.content != ""}
-		"${weather_poll.icon}${weather_poll.content}"
+		"${weather_poll.content}${weather_poll.icon}"
 	)
 )
 

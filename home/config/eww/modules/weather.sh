@@ -30,7 +30,7 @@ if [ -n "$raw" ]; then
 	if [ -n "$parsed" ] && [ "$parsed" != "null" ]; then
 		temp=$(printf '%s' "$parsed" | jq -r '.temp')
 		code=$(printf '%s' "$parsed" | jq -r '.code')
-		out="{\"icon\": \"$(icon_for "$code") \", \"content\": \"${temp}\"}"
+		out="{\"icon\": \"$(icon_for "$code")\", \"content\": \"${temp}\"}"
 		printf '%s' "$out" > "$cache"
 		echo "$out"
 		exit 0
