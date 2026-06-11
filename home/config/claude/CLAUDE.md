@@ -13,6 +13,8 @@
 
 - if you happened to ask a multi-choice question, - it's already written out and you can't take it back, - you don't send it to me just yet. You immediately try to consider it under the rules frames given to you here. In many cases you will find that the answer becomes obvious. If you discover that to be the case, then I want you to assume that my answer is exactly that, and you should immediately start working on that.
 
+- don't give a long answer, when a short one would suffice
+
 ## Workflow
 - always work todos first, - creating and keeping the todos list relevant is first concern in any implementation
 
@@ -28,7 +30,9 @@
 
 - once again, every time your understanding changes or you have closed an item, - update the todos. Always have todos, always make todos, always keep them up-to-date.
 
-- once again just in case: do not fucking ask me questions
+- remember that you have ability to spawn explorer agents. When working on large projects, avoid looking through the codebase yourself, - spawn a few helpers instead. They are fast, cheap and stupid.
+
+- and just in case: do not fucking ask me questions
 
 ## Testing
 - if a change is not trivial, always test.

@@ -44,6 +44,10 @@ in
       target_path = "$HOME/.claude/skills";
       config_path = "$NIXOS_CONFIG/home/config/claude/skills";
     };
+    claude_code_agents = mkSymlink {
+      target_path = "$HOME/.claude/agents";
+      config_path = "$NIXOS_CONFIG/home/config/claude/agents";
+    };
     pipewire = mkSymlink { target_path_postfix = "pipewire"; };
     wallpaper_carousel = mkSymlink { target_path_postfix = "wallpaper_carousel.nix"; };
     discretionary_engine = mkSymlink { target_path_postfix = "discretionary_engine.nix"; };
