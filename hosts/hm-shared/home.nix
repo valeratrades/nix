@@ -423,6 +423,10 @@
              "directory"; # `_bind_up_search` will now only search in current dir
            sync.records = true;
            enter_accept = true;
+           # commands starting with these prefixes are never recorded
+           history_filter = map (p: "^${p}") [
+             "tg"
+           ];
          };
 
       # configured via hm, can't just symlink it in my host's config
