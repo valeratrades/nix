@@ -52,10 +52,6 @@ in
       target_path = "$HOME/.gitattributes";
       config_path = "$NIXOS_CONFIG/home/config/gitattributes";
     };
-    git_config = mkSymlink {
-      target_path = "$HOME/.gitconfig";
-      config_path = "$NIXOS_CONFIG/home/config/gitconfig";
-    };
     pipewire = mkSymlink { target_path_postfix = "pipewire"; };
     wallpaper_carousel = mkSymlink { target_path_postfix = "wallpaper_carousel.nix"; };
     discretionary_engine = mkSymlink { target_path_postfix = "discretionary_engine.nix"; };
