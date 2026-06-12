@@ -18,6 +18,14 @@
 #  })
 #];
 
+# NOTE: with the default `mutableExtensionsDir = true`, VSCodium loads from a
+# generated `~/.vscode-oss/extensions/extensions.json` registry, not from the
+# extension dirs directly. HM only refreshes that registry via an onChange hook
+# that sometimes doesn't fire on rebuild — so a newly added/renamed extension
+# can be symlinked in yet stay invisible (stale registry from the previous gen).
+# Fix without rebuilding:
+#   rm -f ~/.vscode-oss/extensions/{extensions.json,.init-default-profile-extensions}
+#   codium --list-extensions   # forces a rescan + registry regen
 { pkgs, inputs, ... }: {
 	programs.vscode = {
 		enable = true;

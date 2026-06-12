@@ -1,0 +1,35 @@
+      36 +      config
+      37 +  }
+  ⎿  Found 1 new diagnostic issue in 1 file (ctrl+o to expand)
+
+● The strict config has an unused mut. Let me fix and bless:
+
+● Update(v_utils_macros/tests/compile_fail.rs)
+  ⎿  Added 1 line, removed 1 line
+        7    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+        8
+        9    // Strict suite: every diagnostic must be annotated (these pin exact macro-expansion errors)
+       10 -  let mut strict = base_config(root.join("tests/compile_fail"), root);
+       10 +  let strict = base_config(root.join("tests/compile_fail"), root);
+       11    // Cascade suite: the `SettingsNested` trait-bound failure necessarily repeats across every
+       12    // site that names `<T as SettingsNested>::Flags`. Annotating each is brittle, so this dir
+       13    // runs with annotations off and and pins the full `.stderr` snapshot instead.
+
+● Bash(nix develop --command cargo test --test compile_fail -- --bless 2>&1 | tail -25)
+  ⎿  /home/v/s/v_utils/v_utils_macros/tests/compile_fail/scream_it_on_struct.rs ... ok
+     /home/v/s/v_utils/v_utils_macros/tests/compile_fail/primitives_unknown_struct_value.rs ... ok
+     /home/v/s/v_utils/v_utils_macros/tests/compile_fail/primitives_unknown_field_value.rs ... ok
+     … +21 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+  ⎿  You've hit your session limit · resets 12:30am (UTC)
+
+✻ Worked for 26m 13s
+
+  /rate-limit-options
+
+What do you want to do?
+
+❯ 1. Stop and wait for limit to reset
+  2. Upgrade your plan
+
+Enter to confirm · Esc to cancel

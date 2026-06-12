@@ -1,4 +1,10 @@
 exec systemctl --user import-environment
+# Start the gnome-keyring secrets component in-session and publish its
+# control/SSH env to systemd+dbus, so the Secret Service that D-Bus
+# activates is this PAM-unlocked daemon (not a fresh, locked one). Without
+# this on a non-GNOME WM the default collection stays Locked and every
+# libsecret/keyring call errors. See pluely keychain rework.
+exec eval $(gnome-keyring-daemon --start --components=secrets,ssh) && systemctl --user import-environment GNOME_KEYRING_CONTROL SSH_AUTH_SOCK && dbus-update-activation-environment --systemd GNOME_KEYRING_CONTROL SSH_AUTH_SOCK
 exec dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=sway
 exec systemctl --user start sway-session.target
 exec /usr/lib/xdg-desktop-portal -r & exec /usr/lib/xdg-desktop-portal-wlr

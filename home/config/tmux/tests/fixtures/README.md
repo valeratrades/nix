@@ -16,7 +16,7 @@ No tmux / `/proc` / network / mocks are involved — just text in, state out.
 <state>__<description>.esc        # OPTIONAL: capture-pane -p -e (only the draft path reads it)
 ```
 
-`<state>` ∈ `empty active finished draft question error`.
+`<state>` ∈ `empty active finished draft question error limit`.
 
 ## Add a new case (no code edit needed)
 

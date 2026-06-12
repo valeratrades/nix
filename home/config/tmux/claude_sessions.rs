@@ -72,6 +72,7 @@ enum ClaudeState {
     Draft,    // User is typing a message (bypass permissions prompt visible)
     Question, // Claude is asking a question (numbered options visible)
     Error,    // Claude hit an error (rate limit, panic, etc.)
+    Limit,    // Session usage limit hit ("You've hit your session limit · resets ...")
 }
 
 impl ClaudeState {
@@ -83,6 +84,7 @@ impl ClaudeState {
             ClaudeState::Draft => "draft",
             ClaudeState::Question => "question",
             ClaudeState::Error => "error",
+            ClaudeState::Limit => "limit",
         }
     }
 }
@@ -228,10 +230,15 @@ impl fmt::Display for Sessions {
                 //               looking — deliberately ranked below question.
                 //   active   -> blue       (#68d4ff): healthy "it's working" signal,
                 //               informational, lowest of the three.
+                //   limit    -> white      (#ffffff): wedged on the usage clock —
+                //               nothing to act on, but worth seeing at a glance.
                 // Every other state stays uncolored — no span, no noise.
                 let state_cell = match entry.state {
                     ClaudeState::Question => {
                         format!("<span foreground=\"#ff6565\">{}</span>", pango_escape(&padded_state))
+                    }
+                    ClaudeState::Limit => {
+                        format!("<span foreground=\"#ffffff\">{}</span>", pango_escape(&padded_state))
                     }
                     ClaudeState::Error => {
                         format!("<span foreground=\"#ba6e3d\">{}</span>", pango_escape(&padded_state))
@@ -254,6 +261,7 @@ impl fmt::Display for Sessions {
                     ClaudeState::Draft => padded_state.cyan(),
                     ClaudeState::Question => padded_state.magenta(),
                     ClaudeState::Error => padded_state.red(),
+                    ClaudeState::Limit => padded_state.white(),
                 };
                 write!(f, "{}  {}", padded_name, colored_state)?;
                 if let Some(t) = trailing {
@@ -1016,6 +1024,20 @@ fn classify_activity(
         .collect::<Vec<_>>()
         .join("\n");
 
+    // Hitting the session/usage limit renders as a result row
+    // "⎿  You've hit your session limit · resets ..." usually followed by the
+    // /rate-limit-options selector ("❯ 1. Stop and wait for limit to reset").
+    // That selector would be claimed by the Question branch below — but this
+    // isn't a question in any meaningful sense: no answer I pick unblocks the
+    // session before the reset clock does. So it gets its own state, checked
+    // before everything else. Anchored the same way as the API-error chrome:
+    // trimmed line STARTS with "⎿" with the limit text as its immediate body,
+    // so narration that merely QUOTES the chrome doesn't fire.
+    let limit_pattern = Regex::new(r"(?m)^\s*⎿\s+You['’]ve hit your session limit").unwrap();
+    if limit_pattern.is_match(&last_portion) {
+        return ActivityResult { state: ClaudeState::Limit, draft_content: None, question_content: None };
+    }
+
     // Check for question state FIRST: a blocking selection prompt is the
     // highest-priority signal — it means Claude has stopped and is waiting on me,
     // and it must win over leftover spinner text or active todos. Two distinct
@@ -1581,6 +1603,7 @@ mod tests {
             "draft" => ClaudeState::Draft,
             "question" => ClaudeState::Question,
             "error" => ClaudeState::Error,
+            "limit" => ClaudeState::Limit,
             other => panic!(
                 "fixture {stem:?} has unknown state prefix {other:?}; \
                  name it <state>__<desc>.txt"
