@@ -47,9 +47,9 @@ struct Cli {
 	#[arg(short, long)]
 	touch: bool,
 
-	/// Open in dark mode (default: light)
-	#[arg(short, long)]
-	dark: bool,
+	/// Open in light mode (default: dark)
+	#[arg(long)]
+	light: bool,
 }
 
 fn now_ms() -> u64 {
@@ -112,7 +112,7 @@ fn main() -> ExitCode {
 	// Brush/stroke color is intentionally NOT forced — Excalidraw's own default
 	// (first palette slot, white in dark mode) is correct; overriding it only
 	// desynced the picker's selected swatch from the active color.
-	let theme = if cli.dark { "dark" } else { "light" };
+	let theme = if cli.light { "light" } else { "dark" };
 	// #ffffff is correct in both themes — Excalidraw's dark theme renders this
 	// stored value as the dark canvas, light theme as plain white.
 	let html = html_template
@@ -180,7 +180,7 @@ fn main() -> ExitCode {
 
 	eprintln!("Excalidraw ready: http://localhost:{port}");
 	eprintln!("Editing: {}", file_path.display());
-	eprintln!("Alt+W to save. Ctrl+C to stop.");
+	eprintln!("Alt+W to save, Alt+R to toggle theme. Ctrl+C to stop.");
 
 	let url = format!("http://localhost:{port}");
 	let browser_cmd = cli.browser.clone();

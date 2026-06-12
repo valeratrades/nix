@@ -175,6 +175,16 @@
         saveNow();
         return;
       }
+      // Alt+R — flip light/dark. Works at runtime because the `theme` prop only
+      // forces state when the prop itself changes (it never does after mount).
+      if (e.altKey && e.key === 'r') {
+        e.preventDefault();
+        if (excalidrawAPI) {
+          var cur = excalidrawAPI.getAppState().theme;
+          excalidrawAPI.updateScene({ appState: { theme: cur === 'dark' ? 'light' : 'dark' } });
+        }
+        return;
+      }
       // Every binding below is canvas-only: while editing text, do nothing custom
       // and (crucially) never preventDefault, so the keypress lands in the input
       // normally — Shift+- types '_', arrows move the caret.
