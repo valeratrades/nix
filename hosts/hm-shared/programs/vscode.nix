@@ -23,9 +23,7 @@
 # extension dirs directly. HM only refreshes that registry via an onChange hook
 # that sometimes doesn't fire on rebuild — so a newly added/renamed extension
 # can be symlinked in yet stay invisible (stale registry from the previous gen).
-# Fix without rebuilding:
-#   rm -f ~/.vscode-oss/extensions/{extensions.json,.init-default-profile-extensions}
-#   codium --list-extensions   # forces a rescan + registry regen
+# Fix without rebuilding: run `codium_refresh` (defined below in home.packages).
 { pkgs, inputs, ... }: {
 	programs.vscode = {
 		enable = true;
@@ -119,4 +117,13 @@
 		];
 		}; # profiles.default
 	};
+
+	# See the note above: forces VSCodium to rebuild its extensions.json registry
+	# when a newly added/renamed HM extension is symlinked in but stays invisible.
+	home.packages = [
+		(pkgs.writeShellScriptBin "codium_refresh" ''
+			rm -f ~/.vscode-oss/extensions/{extensions.json,.init-default-profile-extensions}
+			${pkgs.vscodium}/bin/codium --list-extensions
+		'')
+	];
 }

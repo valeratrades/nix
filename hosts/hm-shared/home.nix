@@ -360,6 +360,9 @@
 
         <Multi_key> <e> <i> : "∈" U2208 # ELEMENT OF
         <Multi_key> <n> <i> : "∉" U2209 # NOT AN ELEMENT OF
+        
+        <Multi_key> <g> <s> : "σ" U03C3
+        <Multi_key> <g> <S> : "Σ" U03A3
       '';
       ".config/fish/conf.d/sway.fish".source =
         "${self}/home/config/fish/conf.d/sway.fish";
