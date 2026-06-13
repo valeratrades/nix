@@ -80,6 +80,10 @@
       var st = excalidrawAPI.getAppState();
       var cur = (st.zoom && st.zoom.value) || 1;
       var next = Math.min(30, Math.max(0.1, cur * factor));
+      // Snap to exactly 100% when passing near it: canvas text is rasterized at
+      // zoom*dpr, and only an exact 1.0 keeps glyphs on the pixel grid; the
+      // multiplicative ladder would otherwise drift fractional forever.
+      if (Math.abs(next - 1) < 0.01) next = 1;
       var cx = st.width / 2, cy = st.height / 2;
       // Anchor the zoom on the viewport center. Excalidraw maps scene->screen as
       // screen = (scene + scroll) * zoom, so scene = screen/zoom - scroll. Keep the
@@ -105,6 +109,25 @@
     }
 
     var PAN_KEYS = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+
+    // Excalidraw caches a raster per element keyed by zoom but NOT by
+    // devicePixelRatio, so after a browser-zoom (Ctrl+±) or display-scale change
+    // every untouched element keeps rendering from a wrong-resolution raster —
+    // text turns fat and smeared until the element is edited. Regen is gated on
+    // an exact zoom.value inequality, so an invisible epsilon nudge flushes all
+    // caches at the new dpr.
+    function watchDpr() {
+      var mq = matchMedia('(resolution: ' + window.devicePixelRatio + 'dppx)');
+      mq.addEventListener('change', function onchange() {
+        mq.removeEventListener('change', onchange);
+        if (excalidrawAPI) {
+          var z = excalidrawAPI.getAppState().zoom.value;
+          excalidrawAPI.updateScene({ appState: { zoom: { value: z + z * 1e-9 } } });
+        }
+        watchDpr();
+      });
+    }
+    watchDpr();
 
     // Scale the selected elements by `factor` about their common bounding-box
     // center, so the group stays put while growing/shrinking. Geometry, font size,
@@ -168,6 +191,10 @@
       return true;
     }
 
+    // CAPTURE phase: Excalidraw's actionManager claims Shift+= / Shift+- / Shift+0
+    // (its own zoom steps) with stopPropagation at the React root, so a bubble-phase
+    // document listener never sees them. Capture runs first; branches that fully
+    // handle a key also stopPropagation so the native action doesn't double-fire.
     document.addEventListener('keydown', function(e) {
       // Save fires from anywhere, including mid text-edit.
       if (e.altKey && e.key === 'w') {
@@ -189,11 +216,15 @@
       // and (crucially) never preventDefault, so the keypress lands in the input
       // normally — Shift+- types '_', arrows move the caret.
       if (inTextInput(e.target)) return;
-      // Shift +/- — grow/shrink the selected elements. Shift+= yields '+' and
-      // Shift+- yields '_' on most layouts, so match those glyphs directly.
+      // Shift +/- — grow/shrink the selected elements; with nothing selected it's
+      // just another way to zoom (same split as arrows: nudge vs pan). Shift+=
+      // yields '+' and Shift+- yields '_' on most layouts, so match those glyphs.
       if (e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey && (e.key === '+' || e.key === '_')) {
         e.preventDefault();
-        scaleSelection(e.key === '_' ? 1 / 1.1 : 1.1);
+        e.stopPropagation();
+        var factor = e.key === '_' ? 1 / 1.1 : 1.1;
+        var picked = excalidrawAPI ? excalidrawAPI.getAppState().selectedElementIds || {} : {};
+        if (Object.keys(picked).length) scaleSelection(factor); else stepZoom(factor);
         return;
       }
       // Ctrl+1..6 — pick the Nth button in the Stroke color row of the panel.
@@ -205,14 +236,17 @@
       }
       if (!e.ctrlKey && !e.altKey && !e.metaKey && (e.key === '-' || e.key === '_')) {
         e.preventDefault();
+        e.stopPropagation();
         stepZoom(1 / 1.1);
       } else if (!e.ctrlKey && !e.altKey && !e.metaKey && (e.key === '=' || e.key === '+')) {
         e.preventDefault();
+        e.stopPropagation();
         stepZoom(1.1);
       } else if (e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey && (e.key === '0' || e.key === ')')) {
         // Re-anchor: scroll the content back to the viewport center, preserving
         // the current zoom level (no fit, so it won't rescale your drawing).
         e.preventDefault();
+        e.stopPropagation();
         if (excalidrawAPI) excalidrawAPI.scrollToContent(undefined, { fitToContent: false });
       } else if (PAN_KEYS[e.key] && !e.ctrlKey && !e.altKey && !e.metaKey && excalidrawAPI) {
         // Arrows pan the viewport — but only when nothing is selected, so the
@@ -220,12 +254,13 @@
         var sel = excalidrawAPI.getAppState().selectedElementIds || {};
         if (Object.keys(sel).length) return;
         e.preventDefault();
+        e.stopPropagation();
         // 80px screen step, ×4 with Shift for coarse panning.
         var step = e.shiftKey ? 320 : 80;
         var dir = PAN_KEYS[e.key];
         panBy(dir[0] * step, dir[1] * step);
       }
-    });
+    }, true);
 
     // Esc deselect lives in its own CAPTURE-phase listener: Excalidraw's own
     // document keydown calls stopImmediatePropagation on Escape, so a bubble-phase
