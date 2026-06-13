@@ -26,16 +26,27 @@ function tk --description "Kill tmux session + direnv deny its root"
 end
 
 function tmux_new_session_base
+	set -l cs_cmd 'cs'
+	set -l args
+	for arg in $argv
+		switch $arg
+			case -a --allow
+				set cs_cmd 'cs -a'
+			case '*'
+				set -a args $arg
+		end
+	end
+
 	if test -n "$TMUX"
 		echo "Already in a tmux session."
 		return 1
 	end
-	if test -n "$argv[2]"
-		cd $argv[2]; or return 1
+	if test -n "$args[2]"
+		cd $args[2]; or return 1
 	end
 	set -l SESSION_NAME (basename (pwd))
-	if test -n "$argv[1]"
-		set SESSION_NAME $argv[1]
+	if test -n "$args[1]"
+		set SESSION_NAME $args[1]
 	end
 	set SESSION_NAME (echo "$SESSION_NAME" | sed 's/\./_/g')
 	# add tmp- prefix if any ancestor directory is named "tmp" and session name doesn't already start with it
@@ -60,11 +71,11 @@ function tmux_new_session_base
 
 	# Build window
 	tmux new-window -t "$SESSION_NAME" -n "build"
-	tmux send-keys -t "$SESSION_NAME:build.0" 'cs .' Enter
+	tmux send-keys -t "$SESSION_NAME:build.0" "$cs_cmd ." Enter
 	tmux split-window -h -t "$SESSION_NAME:build"
-	tmux send-keys -t "$SESSION_NAME:build.1" 'cs .' Enter
+	tmux send-keys -t "$SESSION_NAME:build.1" "$cs_cmd ." Enter
 	tmux split-window -v -t "$SESSION_NAME:build.1"
-	tmux send-keys -t "$SESSION_NAME:build.2" 'cs .; clear' Enter
+	tmux send-keys -t "$SESSION_NAME:build.2" "$cs_cmd .; clear" Enter
 	tmux resize-pane -t "$SESSION_NAME:build.2" -D 30
 	tmux select-pane -t "$SESSION_NAME:build.0"
 
@@ -99,9 +110,18 @@ function tn
 	end
 	set -l session_name $session_name_or_err
 
+	set -l positionals
+	for arg in $argv
+		switch $arg
+			case -a --allow
+			case '*'
+				set -a positionals $arg
+		end
+	end
+
 	set -l assume_project_name (basename (pwd))
-	if test -n "$argv[1]"
-		set assume_project_name $argv[1]
+	if test -n "$positionals[1]"
+		set assume_project_name $positionals[1]
 	end
 
 	set -l log_dir "$XDG_STATE_HOME/$assume_project_name/"

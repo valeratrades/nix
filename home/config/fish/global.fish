@@ -22,15 +22,27 @@ alias mkf="mkfile"
 
 function cs
     set -l tmux_after 0
+    set -l direnv_allow 0
     set -l args
 
     for arg in $argv
         switch $arg
             case -t --tmux
                 set tmux_after 1
+            case -a --allow
+                set direnv_allow 1
             case '*'
                 set -a args $arg
         end
+    end
+
+    if test $tmux_after = 1
+        if test (count $args) -gt 0
+            direnv deny "$args[1]"
+            cd "$args[1]" || return 1
+        end
+        tn -a
+        return
     end
 
     if test (count $args) -gt 0; and test -f "$args[1]"
@@ -38,6 +50,10 @@ function cs
     else
         if test (count $args) -gt 0
             cd "$args" || return 1
+        end
+
+        if test $direnv_allow = 1
+            direnv allow
         end
 
         source "./.local.fish" > /dev/null 2>&1 || true
@@ -48,11 +64,7 @@ function cs
             set -e VIRTUAL_ENV
         end
 
-        if test $tmux_after = 1
-            tn
-        else
-            sl
-        end
+        sl
     end
 end
 

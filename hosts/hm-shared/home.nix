@@ -158,6 +158,18 @@
         }/bin/wlr-gamma-service";
     };
   };
+  systemd.user.services.mpris-proxy = {
+    Unit = {
+      Description = "Forward bluetooth AVRCP media buttons to MPRIS";
+      After = [ "network.target" "sound.target" ];
+      PartOf = "graphical-session.target";
+    };
+    Install = { WantedBy = [ "graphical-session.target" ]; };
+    Service = {
+      Type = "simple";
+      ExecStart = "${pkgs.bluez}/bin/mpris-proxy";
+    };
+  };
   systemd.user.services.ssh-add-ed25119 = {
     Unit = { PartOf = "multi-user.target"; };
     Install = { WantedBy = [ "default.target" ]; };
@@ -207,6 +219,7 @@
           xdotool # most options don't work on wayland though
           wlrctl # wayland mouse/keyboard emulation for sway
           wtype # wl-clipboard-compatible xdotool type for Wayland (used by speech-to-text)
+          playerctl # MPRIS CLI; drives XF86AudioPlay / $mod+F5 media bindings in sway
           whisper-cpp # local STT via whisper-cli (speech mode driver "w")
         ]
         [
@@ -257,6 +270,13 @@
               # A symlink to the same dir looks like a non-default path → unblocks CDP.
               # The symlink is created by home.activation.chromeDebugSymlink below.
               "--user-data-dir=${config.home.homeDirectory}/.config/google-chrome-cdp"
+              # Diagnostics for a recurring browser-main-thread SIGSEGV (NULL deref at
+              # a fixed instruction, identical stack across crashes) on the CDP instance.
+              # GUI launch has no usable stderr, so log to a file that survives the crash;
+              # pair with the Crashpad minidump to find the DevTools command that triggers it.
+              "--enable-logging"
+              "--log-file=${config.home.homeDirectory}/.config/google-chrome-cdp/chrome_debug.log"
+              "--v=1"
             ];
           })
           alacritty
