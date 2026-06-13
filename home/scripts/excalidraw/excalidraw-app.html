@@ -167,6 +167,30 @@
       return t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
     }
 
+    // Drive the Opacity slider in the left panel. React owns the input, so the
+    // value must go through the native setter for the synthetic onChange to see it.
+    function setPanelOpacity(value) {
+      var slider = document.querySelector('.excalidraw input[type="range"]');
+      if (!slider) return false;
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(slider, value);
+      slider.dispatchEvent(new Event('input', { bubbles: true }));
+      return true;
+    }
+
+    // Click the Nth (0-based) radio in the Stroke width row: thin / bold / extra-bold.
+    function setStrokeWidth(n) {
+      var sets = document.querySelectorAll('.excalidraw fieldset');
+      for (var i = 0; i < sets.length; i++) {
+        var legend = sets[i].querySelector('legend');
+        if (legend && /stroke width/i.test(legend.textContent)) {
+          var radios = sets[i].querySelectorAll('input[type="radio"]');
+          if (radios[n]) { radios[n].click(); return true; }
+          return false;
+        }
+      }
+      return false;
+    }
+
     // Click the Nth button of the Stroke color row in the left panel (1-5 are the
     // quick-pick swatches, 6 is the active-color button that opens the full
     // picker pane). Position-based: whatever color sits there is what gets picked.
@@ -209,6 +233,19 @@
         if (excalidrawAPI) {
           var cur = excalidrawAPI.getAppState().theme;
           excalidrawAPI.updateScene({ appState: { theme: cur === 'dark' ? 'light' : 'dark' } });
+        }
+        return;
+      }
+      // Alt+1/2 — opacity 50/100; Alt+3/4/5 — stroke width thin/bold/extra-bold.
+      // Inert unless the properties panel is open (its controls exist in the DOM);
+      // allowed mid text-edit since Alt+digit never types a character.
+      if (e.altKey && !e.ctrlKey && !e.metaKey && e.key >= '1' && e.key <= '5') {
+        var done = e.key === '1' ? setPanelOpacity(50)
+          : e.key === '2' ? setPanelOpacity(100)
+          : setStrokeWidth(e.key - '3');
+        if (done) {
+          e.preventDefault();
+          e.stopPropagation();
         }
         return;
       }
