@@ -80,7 +80,7 @@ in {
         (extension "browsec" "browsec@browsec.com")
         (extension "wappalyzer" "wappalyzer@crunchlabz.com")
         (extension "socialfocus" "{26b4f076-089c-4c69-8497-44b7e5c9faef}")
-        (extension "ether-metamask" "webextension@metamask.io")
+        #(extension "ether-metamask" "webextension@metamask.io")
         (extension "tampermonkey" "firefox@tampermonkey.net")
         #(extension "sponsorblock" "sponsorBlocker@ajay.app")
         (extension "sponsorblock" "{76383ca8-fe81-4645-b91f-d28e319619ad}")

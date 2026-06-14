@@ -38,15 +38,24 @@ let
 				repo = "pbakaus/impeccable";
 				pluginSrc = "plugin";
 			};
+			# Ponytail ships its plugin body at the repo root (marketplace.json `source: "./"`),
+			# so point pluginSrc at "." instead of the default `<pluginsSubdir>/<plugin-name>`.
+			ponytail = {
+				repo = "DietrichGebert/ponytail";
+				pluginSrc = ".";
+			};
 		};
 		enabled = {
 			"code-review@claude-code-plugins" = true;
 			"rust-analyzer-lsp@claude-plugins-official" = true;
 			"feature-dev@claude-code-plugins" = true;
+			# Marketplace plugin is named `frontend-design`, not `frontend-dev` (no such id exists).
+			"frontend-design@claude-code-plugins" = true;
 			"plugin-dev@claude-code-plugins" = true;
 			"codex@codex-plugin-cc" = true;
 			"mattpocock-skills@mattpocock-skills" = true;
 			"impeccable@impeccable" = true;
+			"ponytail@ponytail" = true;
 		};
 	};
 

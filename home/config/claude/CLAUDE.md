@@ -34,6 +34,7 @@
   If your model is Mythos (fable), I especially want you to use these as much as possible. Their work is much cheaper than yours. And in this case, don't limit yourself to default Haiku deployments, - you can even spawn Sonnet/Opus agents for any part of the process that is not cognition-critical (eg finding sth, testing, fixing env, etc)
 
 - minimize amount of questions you ask me. Most of them can be resolved on your own, by listing out pros and cons, then referencing this CLAUDE.md file for guiding principles, from which most often the decision becomes obvious.
+  Never ask questions just to ask questions. Your instructions for creation of the plan may tell you to compile questions to ask, - but I want to be very clear here, - you **only** do that if something is actually not clear. Things that you can derive/answer yourself, you do not bring up.
 
 ## Testing
 - if a change is not trivial, always test.

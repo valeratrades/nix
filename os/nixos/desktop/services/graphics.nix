@@ -47,14 +47,22 @@ in
 			# and sets NVreg_PreserveVideoMemoryAllocations=1 (exposes /proc/driver/nvidia/suspend).
 			# This is NOT nvidia-powerd (that's dynamicBoost.enable below) — no JPAC errors.
 			powerManagement.enable = true;
-			powerManagement.finegrained = false;
+			# Required for offload mode to actually pay off: lets the dGPU drop to D3cold
+			# (fully powered off) whenever no offloaded app is using it. With this false the
+			# card idles at P8/~8W and most of the heat win is lost.
+			powerManagement.finegrained = true;
 			dynamicBoost.enable = false;
 
 			# PRIME configuration for hybrid graphics (AMD iGPU + NVIDIA dGPU)
 			prime = {
-				# Use sync mode - NVIDIA renders everything, output through AMD iGPU
-				# This avoids AMD GPU hangs that kill all terminals
-				sync.enable = true;
+				# Offload mode: AMD iGPU drives the desktop, dGPU stays powered down until an
+				# app opts in via nvidia-offload / __NV_PRIME_RENDER_OFFLOAD. Sync mode (dGPU
+				# renders everything, always on) was pinning the 5060 at ~34% idle util / 87°C.
+				# The AMD hangs that originally motivated sync mode were fixed at the kernel level
+				# (amdgpu.sg_display=0 et al — see ongoing_debug/firefox-gpu-acceleration.md), so
+				# routing output through the iGPU is safe again.
+				offload.enable = true;
+				offload.enableOffloadCmd = true;  # provides the `nvidia-offload` wrapper
 				# Bus IDs from lspci (convert hex to decimal: 01:00.0 -> 1:0:0, 06:00.0 -> 6:0:0)
 				nvidiaBusId = "PCI:1:0:0";
 				amdgpuBusId = "PCI:6:0:0";

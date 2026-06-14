@@ -196,10 +196,10 @@
       return true;
     }
 
-    // CAPTURE phase: Excalidraw's actionManager claims Shift+= / Shift+- / Shift+0
-    // (its own zoom steps) with stopPropagation at the React root, so a bubble-phase
-    // document listener never sees them. Capture runs first; branches that fully
-    // handle a key also stopPropagation so the native action doesn't double-fire.
+    // Bubble phase, preventDefault only — never stopPropagation. Capture phase plus
+    // blanket stopPropagation here froze the app: keyups still reached Excalidraw
+    // while their keydowns were swallowed, desyncing its key/pan state machine.
+    // preventDefault is enough to keep our zoom/pan from also triggering natives.
     document.addEventListener('keydown', function(e) {
       // Save fires from anywhere, including mid text-edit.
       if (e.altKey && e.key === 'w') {
@@ -226,8 +226,7 @@
           : setStrokeWidth(e.key - '3');
         if (done) {
           e.preventDefault();
-          e.stopPropagation();
-        }
+            }
         return;
       }
       // Every binding below is canvas-only: while editing text, do nothing custom
@@ -239,8 +238,7 @@
       // yields '+' and Shift+- yields '_' on most layouts, so match those glyphs.
       if (e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey && (e.key === '+' || e.key === '_')) {
         e.preventDefault();
-        e.stopPropagation();
-        var factor = e.key === '_' ? 1 / 1.1 : 1.1;
+          var factor = e.key === '_' ? 1 / 1.1 : 1.1;
         var picked = excalidrawAPI ? excalidrawAPI.getAppState().selectedElementIds || {} : {};
         if (Object.keys(picked).length) scaleSelection(factor); else stepZoom(factor);
         return;
@@ -254,31 +252,27 @@
       }
       if (!e.ctrlKey && !e.altKey && !e.metaKey && (e.key === '-' || e.key === '_')) {
         e.preventDefault();
-        e.stopPropagation();
-        stepZoom(1 / 1.1);
+          stepZoom(1 / 1.1);
       } else if (!e.ctrlKey && !e.altKey && !e.metaKey && (e.key === '=' || e.key === '+')) {
         e.preventDefault();
-        e.stopPropagation();
-        stepZoom(1.1);
+          stepZoom(1.1);
       } else if (e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey && (e.key === '0' || e.key === ')')) {
         // Re-anchor: scroll the content back to the viewport center, preserving
         // the current zoom level (no fit, so it won't rescale your drawing).
         e.preventDefault();
-        e.stopPropagation();
-        if (excalidrawAPI) excalidrawAPI.scrollToContent(undefined, { fitToContent: false });
+          if (excalidrawAPI) excalidrawAPI.scrollToContent(undefined, { fitToContent: false });
       } else if (PAN_KEYS[e.key] && !e.ctrlKey && !e.altKey && !e.metaKey && excalidrawAPI) {
         // Arrows pan the viewport — but only when nothing is selected, so the
         // native "nudge selected element" behavior is preserved when it matters.
         var sel = excalidrawAPI.getAppState().selectedElementIds || {};
         if (Object.keys(sel).length) return;
         e.preventDefault();
-        e.stopPropagation();
-        // 80px screen step, ×4 with Shift for coarse panning.
+          // 80px screen step, ×4 with Shift for coarse panning.
         var step = e.shiftKey ? 320 : 80;
         var dir = PAN_KEYS[e.key];
         panBy(dir[0] * step, dir[1] * step);
       }
-    }, true);
+    });
 
     // Esc deselect lives in its own CAPTURE-phase listener: Excalidraw's own
     // document keydown calls stopImmediatePropagation on Escape, so a bubble-phase
