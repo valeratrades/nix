@@ -110,25 +110,6 @@
 
     var PAN_KEYS = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
 
-    // Excalidraw caches a raster per element keyed by zoom but NOT by
-    // devicePixelRatio, so after a browser-zoom (Ctrl+±) or display-scale change
-    // every untouched element keeps rendering from a wrong-resolution raster —
-    // text turns fat and smeared until the element is edited. Regen is gated on
-    // an exact zoom.value inequality, so an invisible epsilon nudge flushes all
-    // caches at the new dpr.
-    function watchDpr() {
-      var mq = matchMedia('(resolution: ' + window.devicePixelRatio + 'dppx)');
-      mq.addEventListener('change', function onchange() {
-        mq.removeEventListener('change', onchange);
-        if (excalidrawAPI) {
-          var z = excalidrawAPI.getAppState().zoom.value;
-          excalidrawAPI.updateScene({ appState: { zoom: { value: z + z * 1e-9 } } });
-        }
-        watchDpr();
-      });
-    }
-    watchDpr();
-
     // Scale the selected elements by `factor` about their common bounding-box
     // center, so the group stays put while growing/shrinking. Geometry, font size,
     // and relative line/arrow/freedraw points all scale together.
