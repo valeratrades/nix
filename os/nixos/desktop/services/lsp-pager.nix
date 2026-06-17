@@ -45,7 +45,9 @@ let
                 ctypes.c_long, ctypes.c_int, ctypes.c_void_p,
                 ctypes.c_ulong, ctypes.c_int, ctypes.c_ulong,
             ]
-            n = libc.syscall(SYS_process_madvise, pidfd, arr, len(ivs), MADV_PAGEOUT, 0)
+            n = libc.syscall(
+                SYS_process_madvise, pidfd, arr, len(ivs), MADV_PAGEOUT, 0
+            )
             return n if n >= 0 else -ctypes.get_errno()
         finally:
             os.close(pidfd)

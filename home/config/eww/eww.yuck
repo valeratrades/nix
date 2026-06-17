@@ -171,7 +171,7 @@
 	)
 )
 
-(defpoll temperature_poll :initial "{}" :interval "15s" "./modules/temperature.sh")
+(defpoll temperature_poll :initial "{}" :interval "15m" "./modules/temperature.sh")
 (defwidget temperature []
 	(box
 		:space-evenly false
