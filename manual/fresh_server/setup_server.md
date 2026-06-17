@@ -3,16 +3,21 @@
 ## Prerequisites
 
 Set the server SSH host in your environment:
-```pwsh
-$env:MAIN_SERVER_SSH_HOST = "user@your-server-ip"
+```sh
+export MAIN_SERVER_SSH_HOST="user@your-server-ip"
 ```
+
+> [!NOTE]
+> Every server-side command in this file is plain POSIX `sh` — it runs identically
+> whether the box's `/bin/sh` is dash (Debian/Ubuntu) or bash, and root keeps its
+> default shell (no shell swap, no PowerShell). Avoid bashisms when editing.
 
 ---
 
 ## Step 1: Local Machine — Copy SSH Keys and Configs
 
-```pwsh
-ssh-copy-id -i ~/.ssh/id_ed25519.pub $env:MAIN_SERVER_SSH_HOST
+```sh
+ssh-copy-id -i ~/.ssh/id_ed25519.pub "$MAIN_SERVER_SSH_HOST"
 ```
 
 ```sh
@@ -23,9 +28,8 @@ scp ~/.config/tmux/tmux.conf "$MAIN_SERVER_SSH_HOST:~/.config/tmux/"
 # copy SSH keys (for git access on server)
 scp ~/.ssh/id_ed25519 ~/.ssh/id_ed25519.pub "$MAIN_SERVER_SSH_HOST:~/.ssh/"
 
-# setup pwsh profile
-ssh $MAIN_SERVER_SSH_HOST 'mkdir -p ~/.config/powershell'
-scp "$(dirname $0)/Microsoft.PowerShell_profile.ps1" "$MAIN_SERVER_SSH_HOST:~/.config/powershell/"
+# install the bashrc (prompt, aliases, cargo/direnv hooks)
+scp "$(dirname $0)/.bashrc" "$MAIN_SERVER_SSH_HOST:~/.bashrc"
 
 # push app configs (with env substitution, prints diffs)
 fish "$(dirname $0)/sink_configs.fish"
@@ -33,30 +37,27 @@ fish "$(dirname $0)/sink_configs.fish"
 
 ---
 
-## Step 2: Server — Install Dependencies & PowerShell
+## Step 2: Server — Install Dependencies
 
-SSH into the server (initially via bash):
-```pwsh
-ssh $env:MAIN_SERVER_SSH_HOST
+SSH into the server:
+```sh
+ssh $MAIN_SERVER_SSH_HOST
 ```
 
-**First, install base packages, Caddy, PowerShell, litestream, and (Fedora only)
+**First, install base packages, Caddy, litestream, and (Fedora only)
 disable SELinux — these are OS-specific. Follow the file matching your distro:**
 - **[ubuntu_specific.md](./ubuntu_specific.md)** (also covers the GLIBC 2.35 gotchas for prebuilt binaries)
 - **[fedora_specific.md](./fedora_specific.md)**
 
 The litestream service itself is created and enabled later by `sink_configs.fish`.
 
-Then continue with the OS-agnostic steps below (run in bash):
+Then continue with the OS-agnostic steps below:
 ```sh
-# upgrade direnv (distro packages are too old for PowerShell support, need 2.37+)
+# upgrade direnv (distro packages can be too old, need 2.37+)
 curl -L -o /tmp/direnv https://github.com/direnv/direnv/releases/latest/download/direnv.linux-amd64 && chmod +x /tmp/direnv && mv /tmp/direnv /usr/bin/direnv
 
 git lfs install
 git config --global alias.pl '!git pull && git lfs pull'
-
-# set PowerShell as default shell
-chsh -s /usr/bin/pwsh root
 
 # switch /tmp from tmpfs to disk (more space, auto-cleaned daily)
 systemctl mask tmp.mount
@@ -123,15 +124,10 @@ ln -sf /opt/evil-helix/hx /usr/local/bin/hx
 rm /tmp/evil-helix.tar.gz
 ```
 
-Now reconnect to get PowerShell:
-```pwsh
+Now reconnect (or `. ~/.bashrc`) so the shell picks up cargo and direnv:
+```sh
 exit
-ssh $env:MAIN_SERVER_SSH_HOST
-```
-
-```pwsh
-# reload profile (picks up cargo, direnv)
-. $PROFILE
+ssh $MAIN_SERVER_SSH_HOST
 ```
 
 ---
@@ -140,9 +136,9 @@ ssh $env:MAIN_SERVER_SSH_HOST
 
 First set up tmux and clone projects (cargo installs are long, run them inside tmux):
 
-```pwsh
-New-Item -ItemType Directory -Force -Path ~/s
-Set-Location ~/s
+```sh
+mkdir -p ~/s
+cd ~/s
 
 # clone projects
 git clone git@github.com:valeratrades/site.git
@@ -157,12 +153,12 @@ tmux attach -t main
 
 Then in a separate tmux window (or window 0 before the service starts), install the tools:
 
-```pwsh
+```sh
 # add GitHub to known hosts
-ssh-keyscan github.com 2>$null >> ~/.ssh/known_hosts
+ssh-keyscan github.com 2>/dev/null >> ~/.ssh/known_hosts
 
 # start ssh-agent and add key (for git access)
-Start-Service ssh-agent -ErrorAction SilentlyContinue
+eval "$(ssh-agent -s)"
 ssh-add ~/.ssh/id_ed25519
 
 # install cargo-binstall itself (not bundled with rustup), then pull prebuilt
@@ -222,9 +218,9 @@ systemctl restart litestream
 
 Caddy auto-manages SSL certificates via Let's Encrypt.
 
-```pwsh
+```sh
 # configure Caddyfile for site
-@'
+cat > /etc/caddy/Caddyfile << 'EOF'
 valeratrades.com {
     reverse_proxy localhost:61156
 }
@@ -232,7 +228,7 @@ valeratrades.com {
 www.valeratrades.com {
     redir https://valeratrades.com{uri} permanent
 }
-'@ | Set-Content /etc/caddy/Caddyfile
+EOF
 
 # enable and start caddy
 systemctl enable --now caddy
@@ -272,7 +268,9 @@ in Step 2 (4G is plenty for a 30G box).
 ---
 
 > [!NOTE]
-> **root's shell is PowerShell after Step 2.** Any `ssh root@box '<bash syntax>'`
-> one-liner from your local machine runs under pwsh on the server and will choke on
-> bash constructs (`VAR=val cmd`, `&&` chains, `[...]`). Wrap such commands in
-> `ssh root@box bash -c '...'`, or pipe a script via `ssh root@box bash -s < script.sh`.
+> **root keeps its default login shell** (no shell swap during setup). `/bin/sh` may
+> be dash (Ubuntu/Debian) or bash depending on the box, so the server-side snippets
+> here are written in portable POSIX `sh` — no bashisms (`[[ ]]`, arrays,
+> `${var^^}`, etc.). `VAR=val cmd`, `&&` chains and `[ ... ]` are all POSIX and work
+> under either. If you ever need a guaranteed-bash construct, wrap it explicitly:
+> `ssh root@box bash -c '...'`, or pipe a script via `ssh root@box sh -s < script.sh`.

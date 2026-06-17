@@ -59,14 +59,14 @@ end
 function clr
     set -l prompts \
         "Find the single worst public function in this codebase that should be private or removed entirely, and refactor to shrink the module boundary. Remove > refactor > add." \
+        "Find a self-contained piece of complex functionality in a large file, and nest it in an inlined module. This reduces entropy, cause piceces of complex machinery there suddenly don't mingle." \
         "Hunt for one fallback that masks tainted state (unwrap_or, let _ =, silent default) and replace it with a loud panic/error at the earliest point the state goes bad." \
         "Find a place where an invariant is assumed but not asserted, and add the assert. Pick the assertion that would catch the nastiest latent bug." \
         "Locate the most duplicated logic in the codebase and collapse it into a single source of truth, preferring std trait impls (From, etc) over a new helper fn." \
         "Find the worst error-handling site (a swallowed error, a vague message, a stringly-typed error) and improve it with thiserror/miette/proper context." \
         "Pick the most confusingly-named symbol in the codebase and rename it to something that matches what it actually does. Update all call sites." \
         "Find dead code, unused pub items, or unreachable branches and delete them. Verify nothing depends on them first." \
-        "Find one function doing too much and split its responsibilities, or find an over-abstracted indirection and inline it. Whichever makes the code simpler." \
-        "Identify the area with the weakest test coverage relative to its importance, and add a focused test that captures real behavior (read matklad's how-to-test first)."
+        "Pick a module and go through tests there. For each you justify why it should be kept. The default action is deletion. Goal is to eliminate all that are tautalogical (eg some logic upstream sets a code to a color, and then in the test we go through the codes and check the colors. This literally adds no value, and must be gone, - things like that)" \
 
     set -l choice $prompts[(random 1 (count $prompts))]
     echo "clr → $choice" >&2

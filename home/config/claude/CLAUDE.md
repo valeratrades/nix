@@ -77,6 +77,18 @@
 
 - never add comments explaining *what* happens. We never wish to hardcode any part of the behavior in the description, only to see it get changed later, while description remains stale. Instead, only add comments when we have something to say about *why*. Why some decision was made. It can be a general invariant in the codebase, or a comment about a specific line, explaining its presence. Remember, - best comment is no comment at all. You only add them when just reading code would be insufficient to reason about it.
   A lot of the code you will see will have too many comments. Reducing their amount is always good.
+  Some things can be left without comments or with a single line comment; as they are self-explicative.
+  Eg
+  ```rust
+  /// run id, to prevent collisions of runs across logic and config version
+  pub fn run_id(config: &crate::config::AppConfig) -> String {
+    format!("{}_{}", env!("CARGO_PKG_VERSION"), config_hash(config))
+  }
+  ```
+  is the correct amount of comments. We had an intern who wrote a damn paragraph above this exact function, which I had to nuke and replace. I expect the same from you. If you are editing something in the codebase and see a bullshit paragraph of comments which can be replaced with one sentence, - do immediately.
+
+- you cannot add any unit-tests **after** the development is finished. Tests are persisted units of useful payloads that helped us get to a useful implementation. If there is some larger invariant over how data gets changed, that we want to persist, - that's for integration tests. No unit tests shall be added after logic is done. This is just adding friction for no reason whatsoever, - you are simply not allowed to do this, regardless of reasoning.
+  Similarly, do not add tests just for the sake of adding them. We must be very precise with what is tested, and don't duplicate the code logic with them. They exist to ensure invariants that our implementation must follow, not to reimplement the same thing again and say hmm yes indeed the same thing does the same thing.
 
 ### Special Cases
 - if you just wrote `tokio::spawn` in any context, stop immediately, and find a way to implement it with structured concurrency, where nothing happens until explicitly awaited. If you are unable to do so, - stop, explain why it's impossible to me, and only proceed after explicit go-ahead to use it

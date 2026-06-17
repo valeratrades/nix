@@ -5,13 +5,9 @@
     GDK_DEBUG = "portals";
     DEFAULT_BROWSER = "${pkgs.google-chrome}/bin/google-chrome-stable";
     WINEPREFIX = "/home/${user.username}/.wine";
-    # Use AMD iGPU for VA-API video acceleration (radeonsi, stable on Wayland)
-    # NVIDIA dGPU was crash-prone so we keep it off; AMD handles decoding instead
-    LIBVA_DRIVER_NAME = "radeonsi";
-    VDPAU_DRIVER = "radeonsi";
     __GL_FSAA_MODE = "0";        # disable antialiasing
     __GL_LOG_MAX_ANISO = "0";    # disable anisotropic filtering
-    
+
 # claude code (https://github.com/anthropics/claude-code/issues/42796#issuecomment-4194007103) {{{1
     DISABLE_TELEMETRY = "1";
     CLAUDE_CODE_DISABLE_1M_CONTEXT = "1";
@@ -23,6 +19,13 @@
     CLAUDE_CODE_DISABLE_AUTO_MEMORY = "1";
     CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = "1"; # serveys and shit
 #,}}}1
+  } // lib.optionalAttrs (user.gpuAcceleration or true) {
+    # GPU video decode for browsers (db0a13fc, 2026-04-14): route VA-API/VDPAU to the AMD iGPU
+    # (radeonsi, stable on Wayland). System-wide, so this covers Chrome/Chromium too, not just Firefox.
+    # NVIDIA dGPU was crash-prone so we keep it off; AMD handles decoding instead.
+    # Gated per-user (user.gpuAcceleration): drives the iGPU hard and runs hot on thin chassis.
+    LIBVA_DRIVER_NAME = "radeonsi";
+    VDPAU_DRIVER = "radeonsi";
   };
 
   systemd.services.hibernate-prepare = {

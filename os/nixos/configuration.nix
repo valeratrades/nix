@@ -281,12 +281,9 @@ in {
 
   systemd = {
     user.services = {
-      # MPRIS integrates with `pause/play` AVRCP actions sent by headphones
-      mpris-proxy = {
-        after = [ "network.target" "sound.target" ];
-        wantedBy = [ "default.target" ];
-        serviceConfig.ExecStart = "${pkgs.bluez}/bin/mpris-proxy";
-      };
+      # mpris-proxy lives in hosts/hm-shared/home.nix (home-manager). A duplicate here
+      # wrote a system-level drop-in with a second ExecStart= onto the same unit, which
+      # systemd refuses ("more than one ExecStart for Type=simple"), failing HM activation.
       #start-ssh-port = {
       #  description = "Start SSH port forwarding on boot";
       #  wantedBy = [ "multi-user.target" ];
@@ -747,6 +744,30 @@ in {
 			enable = true;
 		};
   };
+
+	# mt7925e combo-chip shutdown hang (companion to the pcie_aspm/ASPM kernelParam):
+	# on reboot/poweroff the cfg80211 disconnect_work kworker wedges in D-state holding
+	# a mutex while the radio is still associated, so NetworkManager/wpa_supplicant/
+	# tailscaled all block in-kernel on it and ride out their stop timeouts (even
+	# surviving SIGKILL). Upstream fix is in the BT btusb teardown path and is not yet
+	# in 6.12.85. rfkill-blocking the radio first makes the link teardown a no-op, so
+	# disconnect_work never runs under shutdown time pressure. Ordered After the network
+	# services (not a free-floating shutdown.target timer): stop order is the reverse of
+	# start order, so After=… means this unit's ExecStop fires *before* those services
+	# stop — exactly when we need the radio gone.
+	# Remove once the kernel carries the mt7925 BT-disconnect fix.
+	# See ongoing_debug/2026-06-05_slow-shutdown.md (v4).
+	systemd.services.wifi-rfkill-before-net-teardown = {
+		description = "rfkill-block WiFi before network teardown (mt7925e shutdown-hang workaround)";
+		after = [ "NetworkManager.service" "wpa_supplicant.service" "tailscaled.service" ];
+		wantedBy = [ "NetworkManager.service" ];
+		serviceConfig = {
+			Type = "oneshot";
+			RemainAfterExit = true;
+			ExecStart = "${pkgs.coreutils}/bin/true";
+			ExecStop = "${pkgs.util-linux}/bin/rfkill block wifi";
+		};
+	};
 
   # replaced by `nh.clean`
   #nix.gc = {

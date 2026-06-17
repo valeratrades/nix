@@ -47,11 +47,15 @@
 
     "slack don't skip"
 
+    "arrogance, to believe that resigning\nis worst threat you can make"
+
+    "care more for the result\nthan anyone else"
+
     "#1: never outshine the master"
 
-    "#2: never put too much trust in friends,\nlearn how to use enemies"
+    "#2: no trust in friends,\nlearn how to use enemies"
 
-    "#4: always say less than necessary"
+    "#4: say less than necessary"
 
     "#5: so much depends on reputation\n- guard it with your life"
 

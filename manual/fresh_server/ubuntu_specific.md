@@ -1,7 +1,7 @@
 # Ubuntu / Debian specifics
 
-OS-specific steps referenced from [`setup_server.md`](./setup_server.md). Run these
-in bash (before switching root's shell to PowerShell).
+OS-specific steps referenced from [`setup_server.md`](./setup_server.md). Plain POSIX
+`sh` — runs under dash or bash.
 
 > [!WARNING]
 > **GLIBC age.** Ubuntu 22.04 ships GLIBC 2.35. Several prebuilt binaries in the
@@ -28,15 +28,6 @@ curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmo
 curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list
 apt update
 apt install -y caddy
-```
-
-## PowerShell
-
-```sh
-curl -sSL https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/prod.list | tee /etc/apt/sources.list.d/microsoft-prod.list
-curl -sSL https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
-apt update
-apt install -y powershell
 ```
 
 ## Litestream

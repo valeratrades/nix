@@ -45,7 +45,7 @@
             "ci"
           ];
         };
-        combined = v-utils.utils.combine [ github readme ];
+        combined = v-utils.utils.combine { rust = pkgs.cargo; modules = [ github readme ]; };
       in
       {
         #TODO!: \

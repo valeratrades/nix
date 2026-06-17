@@ -113,16 +113,7 @@ in {
     };
 
     preferences = {
-      # GPU acceleration — WebRender + VA-API via AMD iGPU (radeonsi, safe on Wayland)
-      # NVIDIA dGPU excluded: crash-prone with Firefox hardware decoding
-      # History: GPU rendering was fully disabled in Dec 2025 after amdgpu hangs; the real
-      # fix turned out to be kernel-level (amdgpu.sg_display=0, iommu.strict=1 — see
-      # ongoing_debug/firefox-gpu-acceleration.md), so these prefs were safely re-enabled.
-      "gfx.webrender.all" = true;
-      "media.hardware-video-decoding.enabled" = true;
       "media.peerconnection.ice.no_host" = true;
-      "media.ffmpeg.vaapi.enabled" = true;  # VA-API path for Wayland
-      "media.hardware-video-decoding.force-enabled" = false;  # don't force-override driver blacklist
       "browser.newtabpage.activity-stream.showSponsored" = false;
       "browser.newtabpage.activity-stream.system.showSponsored" = false;
       "browser.newtabpage.activity-stream.showSponsoredTopSites" = false;
@@ -140,8 +131,19 @@ in {
 
       #,}}}
     } // lib.optionalAttrs gpuAcceleration {
-      # WebGL/canvas apps (Excalidraw etc.) — forced GPU rendering. Gated per-user (user.gpuAcceleration):
-      # drives the AMD iGPU hard and runs hot on thin chassis, so disabled where heat is a concern.
+      # GPU acceleration (db0a13fc, 2026-04-14) — WebRender + VA-API hardware video decoding via the
+      # AMD iGPU (radeonsi). Gated per-user (user.gpuAcceleration): drives the iGPU hard and runs hot
+      # on thin chassis, so disabled where heat is a concern.
+      # NVIDIA dGPU excluded: crash-prone with Firefox hardware decoding.
+      # History: GPU rendering was fully disabled in Dec 2025 after amdgpu hangs; the real fix turned
+      # out to be kernel-level (amdgpu.sg_display=0, iommu.strict=1 — see
+      # ongoing_debug/firefox-gpu-acceleration.md), so these prefs were safely re-enabled.
+      "gfx.webrender.all" = true;
+      "media.hardware-video-decoding.enabled" = true;
+      "media.ffmpeg.vaapi.enabled" = true;  # VA-API path for Wayland
+      "media.hardware-video-decoding.force-enabled" = false;  # don't force-override driver blacklist
+
+      # WebGL/canvas apps (Excalidraw etc.) — forced GPU rendering.
       # NB: deliberately NOT setting gfx.canvas.accelerated.force-enabled / webgl.force-enabled —
       # force-overriding the driver blacklist is exactly what risks re-triggering the amdgpu hang.
       "widget.dmabuf.force-enabled" = true;   # zero-copy GPU buffer sharing on Wayland (radeonsi-stable)

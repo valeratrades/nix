@@ -471,7 +471,12 @@
             insta = { opt-level = 3; };
           };
         };
-        alias = {
+        alias =
+          let
+            nextest = "nextest run --workspace";
+            clippy_fix = "clippy --fix --allow-dirty --allow-no-vcs";
+          in
+          {
           w = "watch";
           a = "add";
           u = "update";
@@ -479,17 +484,17 @@
           re = "insta review";
           rt = "insta test --review";
           f = "fmt";
-          x = "fix --allow-dirty --allow-no-vcs";
-          xc = "clippy --fix --allow-dirty --allow-no-vcs";
-          xca = "clippy --fix --all-targets --all-features --allow-dirty --allow-no-vcs --allow-staged";
+          xc = "${clippy_fix}";
+          xca = "${clippy_fix} --all-targets --all-features --allow-staged";
           s = "sweep --recursive --installed";
           rel = "release --no-confirm --execute";
           so = "sort -wg";
           b = "lbuild";
           c = "lcheck";
           r = "lrun";
-          t = "nextest run";
-          ta = "nextest run --no-fail-fast";
+          t = "${nextest}";
+          te = "${nextest} --examples";
+          ta = "${nextest} --no-fail-fast";
           ls = "leptos serve";
           lw = "leptos watch --hot-reload";
         };

@@ -47,10 +47,12 @@ in
 			# and sets NVreg_PreserveVideoMemoryAllocations=1 (exposes /proc/driver/nvidia/suspend).
 			# This is NOT nvidia-powerd (that's dynamicBoost.enable below) — no JPAC errors.
 			powerManagement.enable = true;
-			# Required for offload mode to actually pay off: lets the dGPU drop to D3cold
-			# (fully powered off) whenever no offloaded app is using it. With this false the
-			# card idles at P8/~8W and most of the heat win is lost.
-			powerManagement.finegrained = true;
+			# NB: finegrained (D3cold power-gating, NVreg_DynamicPowerManagement=0x02) wedges the
+			# 5060 on this chassis — the SBIOS can't report power mode/temp (see boot log:
+			# "PlatformRequestHandler failed to get platform power mode from SBIOS"), so the
+			# driver can't safely power-gate and the session fails to come up. Offload mode alone
+			# already drops the dGPU to P8 idle; the big heat win is AMD driving the desktop, not D3cold.
+			powerManagement.finegrained = false;
 			dynamicBoost.enable = false;
 
 			# PRIME configuration for hybrid graphics (AMD iGPU + NVIDIA dGPU)

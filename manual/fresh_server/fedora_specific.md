@@ -1,7 +1,7 @@
 # Fedora specifics
 
-OS-specific steps referenced from [`setup_server.md`](./setup_server.md). Run these
-in bash (before switching root's shell to PowerShell).
+OS-specific steps referenced from [`setup_server.md`](./setup_server.md). Plain POSIX
+`sh` — runs under dash or bash.
 
 > [!NOTE]
 > These are the original instructions as written for Fedora. They have not been
@@ -13,13 +13,6 @@ in bash (before switching root's shell to PowerShell).
 ```sh
 dnf install -y gcc gcc-c++ make pkg-config openssl-devel git-lfs ca-certificates \
     curl gnupg fzf direnv tmux caddy
-```
-
-## PowerShell
-
-```sh
-curl -sSL https://packages.microsoft.com/config/rhel/9/prod.repo | tee /etc/yum.repos.d/microsoft-prod.repo
-dnf install -y powershell
 ```
 
 ## Litestream

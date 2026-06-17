@@ -189,7 +189,7 @@ end
 
 #DEPENDS: [cq]
 function ce
-	set cmd "cq \"nextest run"
+	set cmd "cq \"t"
 	for arg in $argv
 		set cmd "$cmd -E 'test(/$arg/)'"
 	end

@@ -38,7 +38,7 @@
           rootDir = ./.;
           badges = [ "msrv" "crates_io" "docs_rs" "loc" "ci" ];
         };
-        combined = v_flakes.utils.combine [ rs github readme ];
+        combined = v_flakes.utils.combine { inherit rust; modules = [ rs github readme ]; };
       in
       {
         packages =

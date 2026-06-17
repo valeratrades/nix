@@ -190,6 +190,61 @@ New servers are clean from now on.
    - the 15s `DefaultTimeoutStopSec` caps (v1 #1, v2) — worth KEEPING as a cheap
      defensive backstop against any future hung unit. Recommend leaving them.
 
+## v4: mt7925e network-teardown D-state hang (2026-06-15) — DIFFERENT cause, APPLIED
+The tmux fix (v3) holds — a fresh slow shutdown was captured (boot -3, 02:29:33 →
+02:31:20, ~107s) with **zero** tmux-spawn scope timeouts. This is a new, unrelated
+cause: the WiFi/VPN teardown stack wedging in the kernel.
+
+Captured timeline (boot -3), two independent timeout clusters, each stacking the 15s caps:
+```
+02:30:34  tailscaled.service:  final-sigterm timed out, Killing → "Processes still around after final SIGKILL"
+02:31:04  NetworkManager.service: stop-sigterm timed out, Killing → survives SIGKILL until 02:31:20
+          wpa_supplicant.service: same pattern
+          NetworkManager held back the whole time "waiting for: tailscaled.service"
+02:30:49  (user) xdg-desktop-portal + openclaw-gateway + Chrome scope each ride out 15s
+```
+The tell is **"Processes still around after SIGKILL"** — a normal process cannot
+survive SIGKILL; these are stuck in uninterruptible **D-state inside the kernel**.
+Earlier in the session: `wlp4s0: link timed out` / activation failures — the radio
+was already wedged.
+
+### Root cause (not a NM/tailscale bug — they're victims)
+Hardware: MediaTek **MT7925** (`mt7925e`), kernel 6.12.85. This is a known
+combo-chip regression: on reboot/poweroff the cfg80211 **`disconnect_work` kworker
+blocks in D-state holding a mutex** while the radio is still associated, so anything
+touching the link (NetworkManager → wpa_supplicant → tailscaled) blocks in-kernel on
+it and rides out its stop timeout. The upstream fix landed in the **Bluetooth btusb
+teardown path** (BT+WiFi share the combo chip) and is **not yet in 6.12.85**.
+Refs: Ubuntu LP#2092746 (reboot hang, fixed via btusb patches), LP#2141198 +
+Framework community (6.12 mt7925e suspend `-110` timeout). Same family as the
+existing `pcie_aspm.policy=performance` mt7925e kernelParam already in config.
+
+### Fix — rfkill the radio before network teardown (driver-level, not a timer)
+`os/nixos/configuration.nix`, next to the `networkmanager` block:
+```nix
+systemd.services.wifi-rfkill-before-net-teardown = {
+  after = [ "NetworkManager.service" "wpa_supplicant.service" "tailscaled.service" ];
+  wantedBy = [ "NetworkManager.service" ];
+  serviceConfig = {
+    Type = "oneshot"; RemainAfterExit = true;
+    ExecStart = "${pkgs.coreutils}/bin/true";
+    ExecStop  = "${pkgs.util-linux}/bin/rfkill block wifi";
+  };
+};
+```
+`After=` (not `Before=`) because stop order is the reverse of start order — so this
+unit's `ExecStop` fires *before* those three services stop. Blocking the radio first
+makes the link teardown a no-op, so `disconnect_work` never runs under shutdown time
+pressure. NOT a free-floating `shutdown.target` timer — it's strictly ordered against
+the services it protects. Remove once the kernel carries the mt7925 BT-disconnect fix.
+
+### Still TODO for v4
+- `nixos-rebuild switch`, then trigger one `shutdown now` to confirm the network
+  cluster no longer times out.
+- The user-session cluster (`xdg-desktop-portal`, `openclaw-gateway`, Chrome scope)
+  also rode out 15s each — secondary, bounded by the user 15s cap. Separate follow-up.
+- Drop the `systemd.log_level=debug` kernelParam (v1 #3 / TODO #5) once v4 is confirmed.
+
 ## NB — cross-reference
 The hard power-offs caused by THIS bug are the source of the accumulating
 "unsafe shutdowns" count on both NVMe drives (175 noted in
