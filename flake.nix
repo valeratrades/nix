@@ -113,7 +113,7 @@
       inputs.flake-utils.follows = "flake-utils";
     };
     tg = {
-      url = "github:valeratrades/tg"; #dbg: ?ref=release
+      url = "github:valeratrades/tg";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.rust-overlay.follows = "rust-overlay";
       inputs.flake-utils.follows = "flake-utils";
