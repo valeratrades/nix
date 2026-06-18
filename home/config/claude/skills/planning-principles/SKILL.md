@@ -13,4 +13,10 @@ do not write essays. Minimize size of the plan. Since you will be adding more co
 
 if some sort of migration or any one-off action is required, that needs to be scripted, - you always put related code in ./tmp/, **never** in src/
 
-During implementation: if any duplication you find would require a major refactor to unify (beyond this plan's scope), do not silently leave it - persist it to tmp/ongoing_dev/logic_duplication.md (create the dir/file) with file:line, what's duplicated, and why it's hard. The bar is high: only log it if unifying genuinely needs its own plan; default protocol is fix as found.
+during implementation: if any duplication you find would require a major refactor to unify (beyond this plan's scope), do not silently leave it - persist it to tmp/ongoing_dev/logic_duplication.md (create the dir/file) with file:line, what's duplicated, and why it's hard. The bar is high: only log it if unifying genuinely needs its own plan; default protocol is fix as found.
+
+every single question you ask me is a HUGE cost. It is MUCH cheaper for me to analyze the ready implementation once the plan has been thought through by you, and properly compiled. You ONLY ask questions if you can't resolve them yourself based on the principles outlined in CLAUDE.md. Your work is much more valuable if you get there on your own, without needing me to baby-sit you and answer questions.
+
+when you have wrote the plan, I don't want you to immediately present it. Once the plan is ready and you think it's good for submission (fully written out already), - I need you to go into the final review phase, and narrow down on problems and inefficiencies with suggested approach, potentially simplifying/fixing it; maybe discovering other potential bugs, - everything that can go wrong, or can be fixed before we lock the arch.
+
+before using the interface to submit me the plan for acceptance, - imagine that you already did, and I'm asking you "Is this the best that you can do?". If the answer is not certain, - you come back and you work on it further.

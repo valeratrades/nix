@@ -245,10 +245,10 @@
           # Desktop/GUI packages moved from configuration.nix
           libinput-gestures
           #qt5.full #dbg: brings in qtwebengine, which builds for too long
-          # Minimal GPU acceleration - keep video decode/encode disabled to prevent crashes
           (google-chrome.override {
             commandLineArgs = [
-              "--disable-accelerated-video-decode"
+              # Re-enabled GPU video accel: CPU decode pegged renderers at ~190% and
+              # baked the package to 80°C. Encode stays off (more crash-prone than decode).
               "--disable-accelerated-video-encode"
               "--silent-debugger-extension-api" # suppress OpenClaw Auto Relay debug bar
               "--remote-debugging-port=9222"
@@ -265,10 +265,11 @@
               # Stop Chrome's Component Updater from pulling things outside nix
               # (incl. AI model weights, side-channel updates).
               "--disable-component-update"
-              # Chrome blocks the debug port when using its default data dir path, even
-              # if --user-data-dir is explicitly set to the same path (canonical comparison).
-              # A symlink to the same dir looks like a non-default path → unblocks CDP.
-              # The symlink is created by home.activation.chromeDebugSymlink below.
+              # Chrome blocks the debug port when --user-data-dir canonicalizes to the
+              # default profile path. google-chrome-cdp is a bind mount of the real
+              # profile (os/nixos/desktop/services/chrome-cdp.nix) — a distinct path
+              # identity that readlink -f does NOT resolve back to the default, so CDP
+              # opens while we keep using the one real profile underneath.
               "--user-data-dir=${config.home.homeDirectory}/.config/google-chrome-cdp"
               # Diagnostics for a recurring browser-main-thread SIGSEGV (NULL deref at
               # a fixed instruction, identical stack across crashes) on the CDP instance.
@@ -529,13 +530,6 @@
 			};
 		};
 	};
-
-	# Create a symlink that gives Chrome a non-default-looking data dir path,
-	# which is required for --remote-debugging-port to be accepted.
-	home.activation.chromeDebugSymlink = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-		ln -sfn "${config.home.homeDirectory}/.config/google-chrome" \
-		        "${config.home.homeDirectory}/.config/google-chrome-cdp"
-	'';
 
 	# Force obs-websocket server enabled. OBS rewrites this file on shutdown,
 	# so we patch it on every home-manager generation rather than symlinking.

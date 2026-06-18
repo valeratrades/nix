@@ -1,2 +1,4 @@
 **/**.bak
 .direnv/
+result
+__pycache__/

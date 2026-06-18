@@ -34,12 +34,23 @@ let
         if pidfd < 0:
             return -ctypes.get_errno()  # process gone between detection and now
         try:
+            # Only writable, private, anonymous mappings hold swappable heap.
+            # File-backed regions are reclaimable via the page cache, shared ones
+            # aren't ours to evict, and kernel maps ([vdso]/[vvar]/[vsyscall])
+            # EFAULT the whole syscall — including any of these inflated the byte
+            # count (a 1MB-resident process reported ~2GB) or broke the call.
+            # The genuine heap/stack/anon arenas are always rw-p; requiring 'w'
+            # excludes every special region in one stroke.
+            # maps fields: range perms off dev ino path.
             ivs = []
             with open(f"/proc/{pid}/maps") as f:
                 for line in f:
                     p = line.split()
-                    if "r" not in p[1]:
+                    perms = p[1]
+                    if "w" not in perms or "p" not in perms:
                         continue
+                    if len(p) > 5 and p[5] and not p[5].startswith("["):
+                        continue  # skip file-backed (has a real pathname)
                     a, b = (int(x, 16) for x in p[0].split("-"))
                     if b > a:
                         ivs.append(Iovec(a, b - a))
@@ -50,6 +61,9 @@ let
                 ctypes.c_long, ctypes.c_int, ctypes.c_void_p,
                 ctypes.c_ulong, ctypes.c_int, ctypes.c_ulong,
             ]
+            # process_madvise caps one call at ~INT_MAX bytes, so a multi-GB
+            # server pages partially here and finishes on the next poll (2min) —
+            # both happen while it stays idle, so convergence is automatic.
             n = libc.syscall(
                 SYS_process_madvise, pidfd, arr, len(ivs), MADV_PAGEOUT, 0
             )
@@ -67,20 +81,27 @@ in
   # the protocol leaves lifecycle to the editor client, and a single idle
   # rust-analyzer holds 1-3GB resident indefinitely. Each live nvim / Claude
   # session legitimately owns one, so we must NOT kill them — losing the warm
-  # index means a slow cold rebuild on return. Instead, once a server has burned
-  # no CPU for `default_s_inactive_to_retire`, we page its memory out to swap and
-  # leave it running; reactivation is a transparent page-in on the next request
-  # (sub-second even for a multi-GB session on NVMe).
+  # index means a slow cold rebuild on return. Instead, once a server has been
+  # unused by its editor for `default_s_inactive_to_retire`, we page its memory
+  # out to swap and leave it running; reactivation is a transparent page-in on
+  # the next request (sub-second even for a multi-GB session on NVMe).
+  #
+  # "Unused" = no growth in /proc/<pid>/io rchar (cumulative bytes the process
+  # has read). Every LSP request arrives over the editor socket and shows up as
+  # rchar; idle navigation that produces no file writes still counts as use, and
+  # background log writes (wchar) don't, so rchar tracks actual capability use far
+  # better than CPU jiffies — which keep ticking from GC/housekeeping and falsely
+  # reset the clock (and re-page an already-resident server every poll).
   systemd.services.lsp-pager = {
     description = "Retire idle LSP servers to swap to reclaim RAM (keeps them alive)";
     path = [ pkgs.procps pkgs.coreutils pkgs.gnugrep pkgs.gawk ];
     serviceConfig.Type = "oneshot";
     script = ''
-      # Per-pid state holds "<cpu_jiffies> <idle_since_uptime>". CPU-idle = zero
-      # growth in utime+stime (fields 14+15 of /proc/<pid>/stat) since last poll.
-      # `idle_since` is the monotonic /proc/uptime second at which the current
-      # idle streak began; it resets the instant CPU advances. Retirement fires
-      # when now - idle_since >= RETIRE_S, so the threshold is wall-clock and
+      # Per-pid state holds "<rchar> <idle_since_uptime>". Idle = zero growth in
+      # /proc/<pid>/io rchar (cumulative bytes read) since last poll. `idle_since`
+      # is the monotonic /proc/uptime second at which the current idle streak
+      # began; it resets the instant rchar advances. Retirement fires when
+      # now - idle_since >= RETIRE_S, so the threshold is wall-clock and
       # independent of how often this runs.
       STATE=/run/lsp-pager
       mkdir -p "$STATE"
@@ -97,14 +118,15 @@ in
         echo "$comm" | grep -qE "$PATTERN" || continue
         live="$live$pid "
 
-        cpu=$(awk '{print $14+$15}' /proc/$pid/stat 2>/dev/null) || continue
-        read -r prev_cpu idle_since < "$STATE/$pid" 2>/dev/null || { prev_cpu=""; idle_since="$now"; }
+        rchar=$(awk '/^rchar:/{print $2}' /proc/$pid/io 2>/dev/null) || continue
+        [ -n "$rchar" ] || continue
+        read -r prev_rchar idle_since < "$STATE/$pid" 2>/dev/null || { prev_rchar=""; idle_since="$now"; }
 
-        # CPU advanced (or first sighting): the server did work — reset the clock.
-        if [ "$cpu" != "$prev_cpu" ]; then
+        # rchar advanced (or first sighting): the editor used the server — reset.
+        if [ "$rchar" != "$prev_rchar" ]; then
           idle_since="$now"
         fi
-        echo "$cpu $idle_since" > "$STATE/$pid"
+        echo "$rchar $idle_since" > "$STATE/$pid"
 
         if [ "$((now - idle_since))" -ge "$RETIRE_S" ]; then
           rss=$(ps -o rss= -p "$pid" 2>/dev/null | tr -d ' ')
@@ -113,11 +135,12 @@ in
         fi
       done
 
-      # Prune state for pids that are gone or no longer LSPs.
+      # Prune state for pids that are gone or no longer LSPs. Re-glob guard: a pid
+      # can exit between glob and read, so tolerate a vanished entry.
       for f in "$STATE"/*; do
         [ -e "$f" ] || continue
         pid=$(basename "$f")
-        case "$live" in *" $pid "*) : ;; *) rm -f "$f" ;; esac
+        case "$live" in *" $pid "*) : ;; *) rm -f "$f" 2>/dev/null ;; esac
       done
     '';
   };

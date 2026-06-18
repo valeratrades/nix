@@ -1,4 +1,12 @@
-{ self, config, lib, pkgs, user, inputs, ... }: {
+{ self, config, lib, pkgs, user, inputs, ... }:
+let
+  # Close hidden tabs matching a kill-list (bitunix.com/markets — a live-data
+  # listing page that pegs several cores in the background and reopens trivially).
+  # Source of truth is the committed script; writePython3Bin lints it at build.
+  chromeTabReaper = pkgs.writers.writePython3Bin "chrome-tab-reaper" { }
+    (builtins.readFile "${self}/home/scripts/chrome_tab_reaper.py");
+in
+{
   # Desktop-specific home-manager services and programs
 
   # EasyEffects service for audio limiting/protection
@@ -31,5 +39,22 @@
         chmod 0666 "${config.home.homeDirectory}/.config/alacritty/alacritty.toml"
       fi
     '';
+  };
+
+  systemd.user.services.chrome-tab-reaper = {
+    Unit.Description = "Close hidden Chrome tabs matching the CPU-hog kill-list";
+    Service = {
+      Type = "oneshot";
+      ExecStart = "${chromeTabReaper}/bin/chrome-tab-reaper";
+    };
+  };
+
+  systemd.user.timers.chrome-tab-reaper = {
+    Unit.Description = "Periodically reap hidden CPU-hog Chrome tabs";
+    Timer = {
+      OnBootSec = "1min";
+      OnUnitActiveSec = "1min";
+    };
+    Install.WantedBy = [ "timers.target" ];
   };
 }
