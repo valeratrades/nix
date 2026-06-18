@@ -1,5 +1,10 @@
-{ pkgs, ... }:
+{ pkgs, user, ... }:
 let
+  retireSeconds = toString user.default_s_inactive_to_retire;
+  # Poll often enough that we notice a server waking (and reset its idle clock)
+  # well before the retire threshold; the threshold itself is wall-clock, so the
+  # poll rate only affects detection latency, not when retirement actually fires.
+  pollSeconds = "2min";
   # Page a process's resident anon memory out to swap via
   # process_madvise(MADV_PAGEOUT) — pid-targeted, leaves the process alive and
   # fully responsive; the kernel faults pages back in on next access. Requires
@@ -62,22 +67,25 @@ in
   # the protocol leaves lifecycle to the editor client, and a single idle
   # rust-analyzer holds 1-3GB resident indefinitely. Each live nvim / Claude
   # session legitimately owns one, so we must NOT kill them — losing the warm
-  # index means a slow cold rebuild on return. Instead, when a server shows zero
-  # CPU across several consecutive polls, we page its memory out to swap and
-  # leave it running; reactivation is a transparent page-in on the next request.
+  # index means a slow cold rebuild on return. Instead, once a server has burned
+  # no CPU for `default_s_inactive_to_retire`, we page its memory out to swap and
+  # leave it running; reactivation is a transparent page-in on the next request
+  # (sub-second even for a multi-GB session on NVMe).
   systemd.services.lsp-pager = {
-    description = "Page idle LSP servers out to swap to reclaim RAM (keeps them alive)";
+    description = "Retire idle LSP servers to swap to reclaim RAM (keeps them alive)";
     path = [ pkgs.procps pkgs.coreutils pkgs.gnugrep pkgs.gawk ];
     serviceConfig.Type = "oneshot";
     script = ''
-      # Per-pid state file holds "<cpu_jiffies> <consecutive_idle_polls>".
-      # CPU-idle = zero growth in utime+stime (fields 14+15 of /proc/<pid>/stat)
-      # since the previous poll. After IDLE_POLLS consecutive idle polls we page
-      # the process out; the counter keeps climbing while it stays idle, so we
-      # re-page periodically (cheap/idempotent — only newly-resident pages move).
+      # Per-pid state holds "<cpu_jiffies> <idle_since_uptime>". CPU-idle = zero
+      # growth in utime+stime (fields 14+15 of /proc/<pid>/stat) since last poll.
+      # `idle_since` is the monotonic /proc/uptime second at which the current
+      # idle streak began; it resets the instant CPU advances. Retirement fires
+      # when now - idle_since >= RETIRE_S, so the threshold is wall-clock and
+      # independent of how often this runs.
       STATE=/run/lsp-pager
       mkdir -p "$STATE"
-      IDLE_POLLS=3   # with a 10min timer → ~30min of continuous idle before paging out
+      RETIRE_S=${retireSeconds}
+      now=$(awk '{print int($1)}' /proc/uptime)
 
       # Match server *executables*, not wrapper/proxy helpers
       # (e.g. rust-analyzer-proc-macro-srv, which RA spawns and manages itself).
@@ -90,19 +98,17 @@ in
         live="$live$pid "
 
         cpu=$(awk '{print $14+$15}' /proc/$pid/stat 2>/dev/null) || continue
-        read -r prev_cpu idle_count < "$STATE/$pid" 2>/dev/null || { prev_cpu=""; idle_count=0; }
+        read -r prev_cpu idle_since < "$STATE/$pid" 2>/dev/null || { prev_cpu=""; idle_since="$now"; }
 
-        if [ "$cpu" = "$prev_cpu" ]; then
-          idle_count=$((idle_count + 1))
-        else
-          idle_count=0
+        # CPU advanced (or first sighting): the server did work — reset the clock.
+        if [ "$cpu" != "$prev_cpu" ]; then
+          idle_since="$now"
         fi
-        echo "$cpu $idle_count" > "$STATE/$pid"
+        echo "$cpu $idle_since" > "$STATE/$pid"
 
-        if [ "$idle_count" -ge "$IDLE_POLLS" ]; then
-          age=$(ps -o etimes= -p "$pid" 2>/dev/null | tr -d ' ')
+        if [ "$((now - idle_since))" -ge "$RETIRE_S" ]; then
           rss=$(ps -o rss= -p "$pid" 2>/dev/null | tr -d ' ')
-          echo "paging out idle $comm pid=$pid (age=''${age}s rss=$((rss/1024))MB idle_polls=$idle_count)"
+          echo "retiring idle $comm pid=$pid (rss=$((rss/1024))MB idle=$((now - idle_since))s)"
           ${pageout} "$pid"
         fi
       done
@@ -117,11 +123,11 @@ in
   };
 
   systemd.timers.lsp-pager = {
-    description = "Periodically page out idle LSP servers";
+    description = "Periodically retire idle LSP servers to swap";
     wantedBy = [ "timers.target" ];
     timerConfig = {
-      OnBootSec = "10min";
-      OnUnitActiveSec = "10min";
+      OnBootSec = pollSeconds;
+      OnUnitActiveSec = pollSeconds;
     };
   };
 }

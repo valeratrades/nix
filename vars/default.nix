@@ -41,6 +41,7 @@ in
 		gpuAcceleration = false;  # forced Firefox GPU rendering (webrender compositor + dmabuf + gpu-process). Off: runs hot on this chassis.
 		clickhouse = false;
 		openclaw = true;
+		default_s_inactive_to_retire = 1200; # idle LSP servers paged out to swap after this many seconds (20m)
   };
   maria = {
     inherit sshAuthorizedKeys;
@@ -57,6 +58,7 @@ in
 		gpuAcceleration = true;
 		clickhouse = true;
 		openclaw = false;
+		default_s_inactive_to_retire = 1200;
     };
   timur = {
     inherit sshAuthorizedKeys;
@@ -73,6 +75,7 @@ in
 		gpuAcceleration = true;
 		clickhouse = true;
 		openclaw = false;
+		default_s_inactive_to_retire = 1200;
   };
   #
 
