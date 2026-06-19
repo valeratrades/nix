@@ -160,7 +160,7 @@ in {
               statix
             ]
             typos # spell checker
-            nodePackages.prettier # code formatter
+            prettier # code formatter
           ];
         name = "dots";
         shellHook = ''

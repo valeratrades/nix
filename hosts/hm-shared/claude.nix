@@ -49,6 +49,7 @@ let
 			"code-review@claude-code-plugins" = true;
 			"rust-analyzer-lsp@claude-plugins-official" = true;
 			"feature-dev@claude-code-plugins" = true;
+			"figma@claude-plugins-official" = true;
 			# Marketplace plugin is named `frontend-design`, not `frontend-dev` (no such id exists).
 			"frontend-design@claude-code-plugins" = true;
 			"plugin-dev@claude-code-plugins" = true;
@@ -56,6 +57,15 @@ let
 			"mattpocock-skills@mattpocock-skills" = true;
 			"impeccable@impeccable" = true;
 			"ponytail@ponytail" = true;
+		};
+		# Some marketplace.json entries set `source: {source:"url", url, sha}` — the plugin body
+		# lives in a *separate* repo, not under `<marketplace>/<pluginsSubdir>/<plugin>`. Keyed by
+		# the full enabled id so the namespace stays the real marketplace (correct in /plugin UI).
+		srcRepos = {
+			"figma@claude-plugins-official" = {
+				repo = "figma/mcp-server-guide";
+				rev = "2efd0e37d10c35c4a7cf6d2b7381c9dc1a569bd4";
+			};
 		};
 	};
 
@@ -93,12 +103,27 @@ let
 
 		# Cache each enabled plugin, build installed_plugins.json incrementally
 		${lib.concatStringsSep "\n" (map (p: let
+			id = "${p.plugin}@${p.marketplace}";
 			mcfg = plugins.marketplaces.${p.marketplace};
 			# A marketplace may pin an explicit `pluginSrc` (relative to the repo root) when its
 			# plugin body doesn't live at the conventional `<pluginsSubdir>/<plugin-name>` path.
 			pluginRelPath = if mcfg ? pluginSrc then mcfg.pluginSrc else "${mcfg.pluginsSubdir}/${p.plugin}";
+			srcRepo = plugins.srcRepos.${id} or null;
+			# Resolve PLUGIN_SRC: either a `url`-sourced sibling repo clone (pinned sha), or the
+			# conventional path inside the marketplace repo.
+			resolveSrc = if srcRepo != null then ''
+				PLUGIN_SRC="$PLUGINS_DIR/marketplaces/${p.marketplace}__${p.plugin}"
+				if [ ! -d "$PLUGIN_SRC/.git" ]; then
+					echo "Cloning plugin source ${id} (${srcRepo.repo})..."
+					${pkgs.git}/bin/git clone --depth 1 "https://github.com/${srcRepo.repo}.git" "$PLUGIN_SRC" 2>&1 || true
+				fi
+				${pkgs.git}/bin/git -C "$PLUGIN_SRC" fetch --depth 1 origin "${srcRepo.rev}" 2>&1 || true
+				${pkgs.git}/bin/git -C "$PLUGIN_SRC" checkout --detach "${srcRepo.rev}" 2>&1 || true
+			'' else ''
+				PLUGIN_SRC="$PLUGINS_DIR/marketplaces/${p.marketplace}/${pluginRelPath}"
+			'';
 		in ''
-			PLUGIN_SRC="$PLUGINS_DIR/marketplaces/${p.marketplace}/${pluginRelPath}"
+			${resolveSrc}
 			if [ -d "$PLUGIN_SRC" ]; then
 				VERSION="unknown"
 				if [ -f "$PLUGIN_SRC/.claude-plugin/plugin.json" ]; then
