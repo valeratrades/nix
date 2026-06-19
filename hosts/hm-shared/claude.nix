@@ -187,11 +187,20 @@ in
 	'';
 
 	home.file = {
-		".claude/settings.json" = {
+		# Reference snapshot only. The LIVE settings.json is a hand-edited plain file
+		# (home/config/claude/settings.json) live-symlinked via config_symlinks.nix, because
+		# nix-generating it was too high-maintenance. The catch: Claude Code overwrites its own
+		# settings.json (see the corrupted settings.json.backup it left), and since the live one
+		# is a writable symlink into the repo, it CAN clobber/corrupt the committed file.
+		# So we keep this read-only store copy as a known-good reference: periodically run
+		#   diff <(jq -S . ~/.claude/settings.json) <(jq -S . ~/.claude/settings_ref.json)
+		# to catch drift/corruption. When you intentionally change the live file, mirror the
+		# change here so the diff stays clean.
+		".claude/settings_ref.json" = {
 			source =
-			(pkgs.formats.json { }).generate "claude.json" {
+			(pkgs.formats.json { }).generate "claude_settings_ref.json" {
 				#HACK: hm doesn't set env correctly, - so have some associated ones in ../../os/nixos/desktop/environment.nix
-				alwaysThinkingEnabled = false;
+				alwaysThinkingEnabled = true;
 				skipDangerousModePermissionPrompt =  true;
 				#model = "claude-sonnet-4-6"; #HACK: currently is better than default Opus. Keep until default becomes the best choice again.
 				model = "opus"; #claude-fable-5
@@ -225,7 +234,7 @@ in
 					];
 				};
 			};
-			force = true; # claude code started writing its own temp settings in the same place now. Well fuck them, I'd rather go without temp settings than accept that.
+			force = true; # reference copy is read-only on purpose; nothing should write here.
 		};
 
 		#TEST: \\

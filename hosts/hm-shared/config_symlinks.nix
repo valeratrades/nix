@@ -32,6 +32,13 @@ in
       target_path = "$HOME/.claude/CLAUDE.md";
       config_path = "$NIXOS_CONFIG/home/config/claude/CLAUDE.md";
     };
+    # Live (writable) settings. Claude Code may overwrite this through the symlink; the
+    # nix-managed read-only reference is .claude/settings_ref.json (see claude.nix). Diff them
+    # occasionally to catch drift/corruption.
+    claude_code_settings = mkSymlink {
+      target_path = "$HOME/.claude/settings.json";
+      config_path = "$NIXOS_CONFIG/home/config/claude/settings.json";
+    };
     claude_code_hooks = mkSymlink {
       target_path = "$HOME/.claude/hooks";
       config_path = "$NIXOS_CONFIG/home/config/claude/hooks";

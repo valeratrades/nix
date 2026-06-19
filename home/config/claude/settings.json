@@ -1,0 +1,45 @@
+{
+  "alwaysThinkingEnabled": true,
+  "effortLevel": "high",
+  "enabledPlugins": {
+    "code-review@claude-code-plugins": true,
+    "codex@codex-plugin-cc": true,
+    "feature-dev@claude-code-plugins": true,
+    "figma@claude-plugins-official": true,
+    "frontend-design@claude-code-plugins": true,
+    "impeccable@impeccable": true,
+    "mattpocock-skills@mattpocock-skills": true,
+    "plugin-dev@claude-code-plugins": true,
+    "ponytail@ponytail": true,
+    "rust-analyzer-lsp@claude-plugins-official": true
+  },
+  "hooks": {
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "command": "/usr/bin/env fish $HOME/.claude/hooks/notify.fish question",
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "command": "/usr/bin/env fish $HOME/.claude/hooks/notify.fish response",
+            "type": "command"
+          }
+        ]
+      }
+    ]
+  },
+  "model": "opus",
+  "showClearContextOnPlanAccept": true,
+  "showThinkingSummaries": true,
+  "skipDangerousModePermissionPrompt": true,
+  "thinking": {
+    "display": "summarized"
+  }
+}
