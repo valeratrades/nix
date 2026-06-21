@@ -2,6 +2,7 @@ cargo-features = ["codegen-backend"]
 
 [workspace]
 members = ["PROJECT_NAME_PLACEHOLDER", "PROJECT_NAME_PLACEHOLDER_*"]
+default-members = ["PROJECT_NAME_PLACEHOLDER"]
 resolver = "3"
 
 [workspace.lints.clippy]
