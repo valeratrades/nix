@@ -1256,17 +1256,6 @@ struct CacheState {
 }
 
 #[derive(Deserialize)]
-struct OauthUsageResponse {
-    five_hour: FiveHour,
-}
-
-#[derive(Deserialize)]
-struct FiveHour {
-    utilization: f64,
-    resets_at: String,
-}
-
-#[derive(Deserialize)]
 struct ClaudeCreds {
     #[serde(rename = "claudeAiOauth")]
     claude_ai_oauth: ClaudeOauth,
@@ -1300,30 +1289,35 @@ fn save_cache(cache: &CacheState) {
     }
 }
 
-/// Fetch 5h utilization % from api.anthropic.com using Claude Code's OAuth bearer.
-/// HTTP 429 from this endpoint means we're past the limit — report 100%.
-/// Returns None on any other failure (missing creds, network, parse, auth).
+/// Fetch 5h utilization from Claude Code's unified rate-limit headers, read off a
+/// minimal inference call.
+///
+/// The old GET /api/oauth/usage path is dead: as of the inference-only OAuth
+/// token (scopes = ["user:inference"]) it hard-returns 429 rate_limit_error
+/// regardless of CLI-style headers. The live signal now rides on the
+/// `anthropic-ratelimit-unified-5h-*` response headers that come back on every
+/// POST /v1/messages — so we make the cheapest possible call (haiku, max_tokens:1)
+/// and read the headers, discarding the body.
+/// ponytail: costs ~1 token per fetch; FETCH_THROTTLE_SECS keeps it to ≤1/min.
+/// Returns None on any failure so the caller falls back to cached usage.
 fn fetch_usage() -> Option<UsageInfo> {
     let home = std::env::var("HOME").ok()?;
     let creds_raw = fs::read_to_string(PathBuf::from(home).join(".claude/.credentials.json")).ok()?;
     let creds: ClaudeCreds = serde_json::from_str(&creds_raw).ok()?;
 
-    // Use -w to get HTTP status code on a separate trailing line so we can
-    // separate transient failures from real responses.
-    // Without the Claude-CLI-style headers, the endpoint returns 429 to
-    // discourage scraping; with them it answers normally.
+    // -D - dumps response headers to stdout; -o /dev/null drops the body.
     let output = Command::new("curl")
         .args([
-            "-s",
-            "-o", "/dev/stdout",
-            "-w", "\n%{http_code}",
-            "-H",
-            &format!("Authorization: Bearer {}", creds.claude_ai_oauth.access_token),
+            "-s", "-D", "-", "-o", "/dev/null",
+            "-X", "POST",
+            "-H", &format!("Authorization: Bearer {}", creds.claude_ai_oauth.access_token),
             "-H", "anthropic-beta: oauth-2025-04-20",
             "-H", "anthropic-version: 2023-06-01",
             "-H", "User-Agent: claude-cli/1.0.119 (external, cli)",
             "-H", "x-app: cli",
-            "https://api.anthropic.com/api/oauth/usage",
+            "-H", "content-type: application/json",
+            "-d", r#"{"model":"claude-haiku-4-5-20251001","max_tokens":1,"messages":[{"role":"user","content":"hi"}]}"#,
+            "https://api.anthropic.com/v1/messages",
         ])
         .output()
         .ok()?;
@@ -1332,31 +1326,23 @@ fn fetch_usage() -> Option<UsageInfo> {
         return None;
     }
 
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let (body, status) = stdout.rsplit_once('\n')?;
-    let status: u16 = status.trim().parse().ok()?;
-
-    // 200 → real data. Anything else (including 429: the endpoint itself is
-    // per-minute rate-limited and refusing to answer) → we genuinely don't know.
-    if status != 200 {
-        return None;
+    let headers = String::from_utf8_lossy(&output.stdout);
+    let mut util: Option<f64> = None;
+    let mut reset: Option<i64> = None;
+    for line in headers.lines() {
+        let Some((k, v)) = line.split_once(':') else { continue };
+        match k.trim().to_ascii_lowercase().as_str() {
+            "anthropic-ratelimit-unified-5h-utilization" => util = v.trim().parse().ok(),
+            "anthropic-ratelimit-unified-5h-reset" => reset = v.trim().parse().ok(),
+            _ => {}
+        }
     }
-    let resp: OauthUsageResponse = serde_json::from_str(body).ok()?;
+
+    // utilization here is a 0..1 fraction (the old endpoint reported 0..100).
     Some(UsageInfo {
-        five_hour_used_pct: Some(resp.five_hour.utilization),
-        five_hour_resets_at: parse_iso_to_epoch(&resp.five_hour.resets_at),
+        five_hour_used_pct: Some(util? * 100.0),
+        five_hour_resets_at: reset,
     })
-}
-
-fn parse_iso_to_epoch(s: &str) -> Option<i64> {
-    let out = Command::new("date")
-        .args(["-u", "-d", s, "+%s"])
-        .output()
-        .ok()?;
-    if !out.status.success() {
-        return None;
-    }
-    String::from_utf8_lossy(&out.stdout).trim().parse().ok()
 }
 
 fn now_epoch() -> i64 {
