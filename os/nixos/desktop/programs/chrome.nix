@@ -1,12 +1,9 @@
 { ... }:
 {
-  # Google Chrome managed policy: force Memory Saver on and keep only the tabs
-  # we actually care about live; everything else is free to be discarded so it
-  # stops burning CPU/RAM in the background (47 renderers / ~12GB otherwise).
-  # The 3-level aggressiveness slider is a local-pref-only knob policy can't
-  # reach — set it to "Maximum" once in chrome://settings/performance by hand.
+  # Google Chrome managed policy: force Memory Saver on and keep only the tabs we actually care about live; everything else is free to be discarded so it stops burning CPU/RAM in the background (47 renderers / ~12GB otherwise).
   environment.etc."opt/chrome/policies/managed/memory-saver.json".text = builtins.toJSON {
     HighEfficiencyModeEnabled = true;
+    MemorySaverModeSavings = 2; # 0=Moderate, 1=Balanced, 2=Maximum (Chrome 126+)
     # Bare host = that domain + all subdomains (futures.*, app.*, accounts.*).
     # Trading venues: notifications are critical, so keep every venue we might
     # be active on alive. Extra unused entries cost nothing.

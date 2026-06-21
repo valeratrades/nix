@@ -1,6 +1,27 @@
 {
-  "alwaysThinkingEnabled": true,
-  "effortLevel": "high",
+  "model": "opus",
+  "hooks": {
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/env fish $HOME/.claude/hooks/notify.fish question"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/env fish $HOME/.claude/hooks/notify.fish response"
+          }
+        ]
+      }
+    ]
+  },
   "enabledPlugins": {
     "code-review@claude-code-plugins": true,
     "codex@codex-plugin-cc": true,
@@ -11,31 +32,16 @@
     "mattpocock-skills@mattpocock-skills": true,
     "plugin-dev@claude-code-plugins": true,
     "ponytail@ponytail": true,
-    "rust-analyzer-lsp@claude-plugins-official": true
+    "rust-analyzer-lsp@claude-plugins-official": true,
+    "code-simplifier@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true,
+    "hookify@claude-plugins-official": true,
+    "firecrawl@claude-plugins-official": true,
+    "cloudflare@claude-plugins-official": true,
+    "sourcegraph@claude-plugins-official": true
   },
-  "hooks": {
-    "Notification": [
-      {
-        "hooks": [
-          {
-            "command": "/usr/bin/env fish $HOME/.claude/hooks/notify.fish question",
-            "type": "command"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "command": "/usr/bin/env fish $HOME/.claude/hooks/notify.fish response",
-            "type": "command"
-          }
-        ]
-      }
-    ]
-  },
-  "model": "opus",
+  "alwaysThinkingEnabled": true,
+  "effortLevel": "high",
   "showClearContextOnPlanAccept": true,
   "showThinkingSummaries": true,
   "skipDangerousModePermissionPrompt": true,
