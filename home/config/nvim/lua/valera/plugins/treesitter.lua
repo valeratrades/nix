@@ -12,7 +12,9 @@ return {
 		vim.schedule(function()
 			local install = require('nvim-treesitter.install')
 			local installed = require('nvim-treesitter.config').get_installed('parsers')
-			for _, lang in ipairs({ 'mermaid', 'xml' }) do
+			-- `tsx`: .tsx uses the tsx parser (not `typescript`); without it ts_context_commentstring
+			-- can't detect JSX regions and `gcc` wrongly falls back to `//` instead of `{/* */}`.
+			for _, lang in ipairs({ 'mermaid', 'xml', 'tsx' }) do
 				if not vim.list_contains(installed, lang) then
 					install.install({ lang })
 				end
