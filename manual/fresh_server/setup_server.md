@@ -8,9 +8,10 @@ export MAIN_SERVER_SSH_HOST="user@your-server-ip"
 ```
 
 > [!NOTE]
-> Every server-side command in this file is plain POSIX `sh` — it runs identically
-> whether the box's `/bin/sh` is dash (Debian/Ubuntu) or bash, and root keeps its
-> default shell (no shell swap, no PowerShell). Avoid bashisms when editing.
+> Every server-side command in this file is plain POSIX `sh`. Step 2 pins the box's
+> `/bin/sh` to **dash** (Fedora otherwise points it at bash), so every snippet runs
+> identically on every box. Only the script interpreter changes — your interactive
+> login shell stays bash via the installed `.bashrc`. Avoid bashisms when editing.
 
 ---
 
@@ -44,12 +45,19 @@ SSH into the server:
 ssh $MAIN_SERVER_SSH_HOST
 ```
 
-**First, install base packages, Caddy, litestream, and (Fedora only)
-disable SELinux — these are OS-specific. Follow the file matching your distro:**
+**First, install base packages (incl. dash), Caddy, litestream, pin `/bin/sh` to
+dash, and (Fedora only) disable SELinux — these are OS-specific. Follow the file
+matching your distro:**
 - **[ubuntu_specific.md](./ubuntu_specific.md)** (also covers the GLIBC 2.35 gotchas for prebuilt binaries)
 - **[fedora_specific.md](./fedora_specific.md)**
 
 The litestream service itself is created and enabled later by `sink_configs.fish`.
+
+After the OS-specific file, confirm the script interpreter is dash before running
+anything below:
+```sh
+ls -l /bin/sh   # -> dash (NOT bash). If it still points at bash, redo the dash step
+```
 
 Then continue with the OS-agnostic steps below:
 ```sh
@@ -111,7 +119,7 @@ systemctl enable --now nix-gc.timer
 
 # get rust
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-source "$HOME/.cargo/env"
+. "$HOME/.cargo/env"
 rustup default nightly
 rustup target add wasm32-unknown-unknown
 
@@ -268,9 +276,11 @@ in Step 2 (4G is plenty for a 30G box).
 ---
 
 > [!NOTE]
-> **root keeps its default login shell** (no shell swap during setup). `/bin/sh` may
-> be dash (Ubuntu/Debian) or bash depending on the box, so the server-side snippets
-> here are written in portable POSIX `sh` — no bashisms (`[[ ]]`, arrays,
-> `${var^^}`, etc.). `VAR=val cmd`, `&&` chains and `[ ... ]` are all POSIX and work
-> under either. If you ever need a guaranteed-bash construct, wrap it explicitly:
-> `ssh root@box bash -c '...'`, or pipe a script via `ssh root@box sh -s < script.sh`.
+> **`/bin/sh` is pinned to dash** (Step 2), so the server-side snippets here must be
+> portable POSIX `sh` — no bashisms (`[[ ]]`, arrays, `&>`, `source`, `${var^^}`,
+> etc.). `VAR=val cmd`, `&&` chains, `. file` and `[ ... ]` are all POSIX and run
+> under dash. root's **interactive login shell stays bash** (the installed `.bashrc`),
+> so when you ssh in and type commands by hand they run under bash — but anything that
+> shells out via `/bin/sh` (`sh <(curl …)`, systemd `ExecStart`, `system()`) hits dash,
+> which is why these stay POSIX. Need a guaranteed-bash construct in a script? Invoke it
+> explicitly: `bash -c '...'`, or pipe via `ssh root@box bash -s < script.sh`.

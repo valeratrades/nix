@@ -39,6 +39,14 @@
 					"editor.defaultFormatter" = "charliermarsh.ruff";
 				};
 				"workbench.colorTheme" = "Dark Theme (*Preferred)";
+				# never ask "are you sure"
+				"explorer.confirmDelete" = false;
+				"explorer.confirmDragAndDrop" = false;
+				"git.confirmSync" = false;
+				"git.confirmEmptyCommits" = false;
+				"git.confirmNoVerifyCommit" = false;
+				"terminal.integrated.confirmOnExit" = "never";
+				"terminal.integrated.confirmOnKill" = "never";
 				"extensions.experimental.affinity" = {
 					"asvetliakov.vscode-neovim" = 1;
 				};

@@ -12,8 +12,23 @@ OS-specific steps referenced from [`setup_server.md`](./setup_server.md). Plain 
 
 ```sh
 dnf install -y gcc gcc-c++ make pkg-config openssl-devel git-lfs ca-certificates \
-    curl gnupg fzf direnv tmux caddy
+    curl gnupg fzf direnv tmux dash caddy
 ```
+
+## Pin /bin/sh to dash
+
+Fedora points `/bin/sh` at bash by default. Repoint it at dash so the POSIX snippets
+run under the same interpreter as on the Ubuntu boxes:
+
+```sh
+ln -sf /usr/bin/dash /bin/sh
+ls -l /bin/sh   # -> /usr/bin/dash
+```
+
+> [!NOTE]
+> This only swaps the non-interactive script interpreter. root's login shell is
+> unaffected (still bash via `.bashrc`). RPM scriptlets hardcode `#!/bin/sh` but are
+> POSIX, so they keep working under dash.
 
 ## Litestream
 
@@ -29,7 +44,7 @@ rm /tmp/litestream.rpm
 ## SELinux (required for Nix)
 
 ```sh
-if command -v setenforce &> /dev/null; then
+if command -v setenforce >/dev/null 2>&1; then
     setenforce 0
     sed -i 's/SELINUX=enforcing/SELINUX=permissive/' /etc/selinux/config
 fi

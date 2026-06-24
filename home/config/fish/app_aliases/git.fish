@@ -103,15 +103,15 @@ function gcr --description 'git commit rename: gcr <commit_hash> "new title" (re
 	return $code
 end
 
-function gcs --description 'git commit squash: gcs <commit_hash> ["new title"] (meld commit into its parent)'
-	if not set -q argv[1]
-		echo 'usage: gcs <commit_hash> ["new title"]' >&2
-		return 1
+function gcs --description 'git commit squash: gcs [commit_hash] ["new title"] (meld commit into its parent, defaults to HEAD)'
+	set -l target HEAD
+	if set -q argv[1]
+		set target "$argv[1]"
 	end
 
-	set -l full (git rev-parse --verify "$argv[1]^{commit}" 2>/dev/null)
+	set -l full (git rev-parse --verify "$target^{commit}" 2>/dev/null)
 	if not string length -q -- "$full"
-		echo "gcs: '$argv[1]' is not a valid commit" >&2
+		echo "gcs: '$target' is not a valid commit" >&2
 		return 1
 	end
 	set -l parent (git rev-parse --verify "$full^" 2>/dev/null)

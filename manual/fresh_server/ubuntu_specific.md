@@ -15,7 +15,18 @@ OS-specific steps referenced from [`setup_server.md`](./setup_server.md). Plain 
 ```sh
 apt update
 apt install -y build-essential pkg-config libssl-dev git-lfs apt-transport-https \
-    ca-certificates curl gnupg fzf direnv tmux debian-keyring debian-archive-keyring
+    ca-certificates curl gnupg fzf direnv tmux dash debian-keyring debian-archive-keyring
+```
+
+## Pin /bin/sh to dash
+
+Debian/Ubuntu already default `/bin/sh` to dash, but a `dpkg-reconfigure` or upgrade
+can flip it. Pin it non-interactively so the box is deterministic:
+
+```sh
+echo "dash dash/sh boolean true" | debconf-set-selections
+DEBIAN_FRONTEND=noninteractive dpkg-reconfigure dash
+ls -l /bin/sh   # -> /usr/bin/dash
 ```
 
 ## Caddy
