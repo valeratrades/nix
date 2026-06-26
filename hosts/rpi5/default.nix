@@ -17,11 +17,46 @@
   ];
 
   networking.hostName = "rpi5";
-  networking.networkmanager.enable = true; # ethernet DHCP works out of the box; wifi via nmcli/`hardware below`
+  # Plain wpa_supplicant (NOT NetworkManager): the working wifi config needs two
+  # wpa_supplicant globals NM cannot set, both empirically required for this
+  # Livebox + Broadcom chip combo:
+  #   country=FR : the chip's regulatory firmware is self-managed and ignores the
+  #                kernel regdomain; only wpa_supplicant's own country hint sticks,
+  #                and it's what unlocks the AP's 5 GHz channel.
+  #   sae_pwe=2  : the AP mandates WPA3-SAE hash-to-element; the default
+  #                hunting-and-pecking is rejected at association (status 16).
+  # PSK never enters the repo/store: the whole network block (with the inline
+  # passphrase) lives in a device-only file, included at runtime. The
+  # ext_password backend can't be used here — SAE hash-to-element (sae_pwe=2)
+  # must precompute the password token, which needs the passphrase inline.
+  hardware.wirelessRegulatoryDatabase = true;
+  networking.wireless = {
+    enable = true;
+    extraConfig = ''
+      country=FR
+      sae_pwe=2
+    '';
+    # Provision /var/lib/wifi-network.conf (0600 root) on the device with:
+    #   network={
+    #     ssid="Livebox-2890"
+    #     key_mgmt=SAE
+    #     sae_password="<passphrase>"
+    #     ieee80211w=2
+    #   }
+    extraConfigFiles = [ "/var/lib/wifi-network.conf" ];
+  };
 
-  users.users.${user.username} = {
+  # DHCP on ethernet + wifi via networkd (ethernet auto-preferred when both up).
+  networking.useDHCP = false;
+  systemd.network.enable = true;
+  systemd.network.networks = {
+    "10-end0" = { matchConfig.Name = "end0"; networkConfig.DHCP = "yes"; };
+    "20-wlan0" = { matchConfig.Name = "wlan0"; networkConfig.DHCP = "yes"; };
+  };
+
+  users.users.admin = {
     isNormalUser = true;
-    extraGroups = [ "wheel" "networkmanager" ];
+    extraGroups = [ "wheel" ];
     openssh.authorizedKeys.keys = user.sshAuthorizedKeys;
     initialPassword = "nixos"; # console fallback; change after first boot
   };
@@ -30,6 +65,16 @@
   services.openssh = {
     enable = true;
     settings.PermitRootLogin = "prohibit-password";
+  };
+
+  # mDNS: advertise rpi5.local on the LAN so `ssh admin@rpi5.local` resolves.
+  services.avahi = {
+    enable = true;
+    publish = {
+      enable = true;
+      addresses = true;
+      workstation = true;
+    };
   };
 
   environment.systemPackages = with pkgs; [ vim git ];
