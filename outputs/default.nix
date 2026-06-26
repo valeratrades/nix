@@ -79,7 +79,12 @@ in {
   #   system: allSystems.${system}.packages or {}
   # );
 
-  nixosConfigurations = lib.listToAttrs (map (user: {
+  nixosConfigurations = {
+    rpi5 = inputs.nixos-raspberrypi.lib.nixosSystem {
+      specialArgs = { user = myvars.valera; };
+      modules = [ (mylib.relativeToRoot "hosts/rpi5/default.nix") ];
+    };
+  } // lib.listToAttrs (map (user: {
     name = user.desktopHostName;
     value = nixpkgs.lib.nixosSystem {
       specialArgs = {

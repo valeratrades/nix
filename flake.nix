@@ -1,6 +1,11 @@
 {
   description = "OS master";
 
+  nixConfig = {
+    extra-substituters = [ "https://nixos-raspberrypi.cachix.org" ];
+    extra-trusted-public-keys = [ "nixos-raspberrypi.cachix.org-1:4iMO9LXa8BqhU+Rpg6LQKiGa2lsNh/j2oiYLNOQ5sPI=" ];
+  };
+
   #TODO!: setup my [own cache server](<https://nixos-and-flakes.thiscute.world/nix-store/host-your-own-binary-cache-server>). Needed to avoid rebuilding on lower-performance machines, like Rapsberri Pi or old laptops.
 
   inputs = {
@@ -63,6 +68,9 @@
     };
 
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
+
+    # NB: brings its own nixpkgs (vendor kernel/firmware); deliberately not `follows`.
+    nixos-raspberrypi.url = "github:nvmd/nixos-raspberrypi/main";
 
     claude_code_nix.url = "github:sadjow/claude-code-nix";
 
