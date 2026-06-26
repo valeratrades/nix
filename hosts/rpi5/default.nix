@@ -10,7 +10,10 @@
 {
   imports = (with nixos-raspberrypi.nixosModules; [
     raspberry-pi-5.base
-    raspberry-pi-5.page-size-16k
+    # 4K pages (default kernel): 16K-page hosts break qemu-user x86 emulation —
+    # large/threaded amd64 binaries (the evinvest containers) won't start. 4K is the
+    # config qemu-user x86 is actually tested on. Re-add page-size-16k only if we
+    # drop x86 emulation (i.e. once the images are built natively for aarch64).
     raspberry-pi-5.display-vc4
     raspberry-pi-5.bluetooth
     sd-image # provides config.system.build.sdImage
@@ -160,6 +163,10 @@
   # rebuild. ponytail: emulated runtime is fine for low traffic; cross-build the
   # images for aarch64 only if emulation becomes the bottleneck.
   boot.binfmt.emulatedSystems = [ "x86_64-linux" ];
+  # fixBinary (binfmt 'F' flag): the kernel opens the qemu interpreter at
+  # registration so it resolves inside container/chroot mount namespaces — without
+  # it podman foreign-arch runs fail with "no such file or directory" on the binary.
+  boot.binfmt.registrations.x86_64-linux.fixBinary = true;
   virtualisation.podman.enable = true;
   virtualisation.oci-containers.backend = "podman";
 
@@ -168,6 +175,12 @@
     enable = true;
     ensureDatabases = [ "evinvest" ];
     ensureUsers = [{ name = "evinvest"; ensureDBOwnership = true; }];
+    # local-only box: trust loopback so the host-network backend container connects
+    # without a password. mkBefore = matched ahead of the default password rules.
+    authentication = lib.mkBefore ''
+      host all all 127.0.0.1/32 trust
+      host all all ::1/128 trust
+    '';
   };
 
   environment.systemPackages = with pkgs; [ vim git git-lfs cloudflared ];

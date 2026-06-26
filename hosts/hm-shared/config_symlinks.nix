@@ -39,6 +39,10 @@ in
       target_path = "$HOME/.claude/settings.json";
       config_path = "$NIXOS_CONFIG/home/config/claude/settings.json";
     };
+    claude_code_keybindings = mkSymlink {
+      target_path = "$HOME/.claude/keybindings.json";
+      config_path = "$NIXOS_CONFIG/home/config/claude/keybindings.json";
+    };
     claude_code_hooks = mkSymlink {
       target_path = "$HOME/.claude/hooks";
       config_path = "$NIXOS_CONFIG/home/config/claude/hooks";

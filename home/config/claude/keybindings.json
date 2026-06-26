@@ -1,0 +1,6 @@
+{
+  "$schema": "https://www.schemastore.org/claude-code-keybindings.json",
+  "bindings": [
+    { "context": "Chat", "bindings": { "alt+a": "chat:stash", "ctrl+s": null } }
+  ]
+}
