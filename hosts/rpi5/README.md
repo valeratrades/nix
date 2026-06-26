@@ -34,8 +34,8 @@ Then put the card in the Pi and power on. After ~1–2 min: `ssh admin@rpi5.loca
 Built as home-manager for `admin` (`home.nix`) + a couple of host-level bits,
 all reusing the laptops' own config files straight out of the flake (no copies):
 
-- **shell**: `fish` (login shell), sourcing the shared `home/config/fish/__main__.fish`.
-  `starship`/`atuin`/`zoxide`/`direnv` installed so the prompt + history match the laptops.
+- **shell**: bash interactive login, `/bin/sh` pinned to dash (the recipe's split — no fish
+  laptop machinery). `direnv` (+nix-direnv), `atuin`, `starship` wired into bash.
 - **editor**: `evil-helix` (`hx`) with the shared `home/config/helix` config.
 - **multiplexer**: `tmux` (no-systemd build) with the shared `home/config/tmux`.
 - **CLI**: ripgrep, fd, bat, eza, dust, htop, ncdu, fzf, jq, tree, net-tools, lesspipe, git-lfs.
@@ -70,6 +70,30 @@ the unit stays inactive until that file exists. Provision it on the running box 
 sops secrets/users/v/default.json
 ./hosts/rpi5/provision-server-upkeep.sh   # decrypts + scps the env file, restarts the unit
 ```
+
+### public site via Cloudflare tunnel
+
+nginx serves a placeholder on `127.0.0.1:80` (loopback only — never exposed to
+the LAN/internet); `cloudflared` dials Cloudflare outbound and proxies your
+domain back to it. No static IP, no port-forward, immune to CGNAT. The tunnel
+unit stays inactive (`ConditionPathExists`) until its token is provisioned.
+
+One-time, needs your Cloudflare account + a domain on it:
+
+```sh
+# 1. CF dashboard -> Zero Trust -> Networks -> Tunnels -> Create tunnel ("Cloudflared"),
+#    name it (e.g. rpi5), copy the token.
+# 2. Same tunnel -> Public Hostnames -> Add: <your domain> -> HTTP -> localhost:80
+#    (Cloudflare creates the DNS record itself — no A record needed).
+# 3. Stash the token in sops under key `cloudflare_tunnel_token`:
+sops secrets/users/v/default.json
+# 4. Push it + start the tunnel:
+./hosts/rpi5/provision-cloudflared.sh
+```
+
+Swap the placeholder for a real site by pointing nginx's `root` at your content
+(or proxying an app) in `default.nix`. Re-point the tunnel's service URL in the
+CF dashboard if the app isn't on `:80`.
 
 ## Why wifi is provisioned separately
 

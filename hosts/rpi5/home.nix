@@ -1,11 +1,11 @@
 { pkgs, lib, self, user, ... }:
 #############################################################
 #
-# admin's home on the rpi5 server. Deliberately lean (no
-# desktop/sway/eww machinery): just the shell + editor + CLI
-# niceties the `manual/fresh_server` recipe installs by hand,
-# expressed declaratively and reusing the exact same config
-# files the laptops use (sourced straight out of the flake).
+# admin's home on the rpi5 server. It's a server, not a
+# laptop: login shell is plain dash, no fish/prompt/eww
+# machinery — just the editor + tmux + the CLI tools the
+# `manual/fresh_server` recipe installs by hand, sharing the
+# laptops' editor/tmux config files straight out of the flake.
 #
 #############################################################
 {
@@ -16,7 +16,6 @@
     (tmux.override { withSystemd = false; }) # see home/config tmux note: scopes fail under systemd
     git-lfs
     ripgrep
-    fd
     bat
     eza
     dust
@@ -25,36 +24,21 @@
     fzf
     jq
     tree
-    net-tools # `netstat`, used by the .bashrc `ports`/`myip` aliases
-    lesspipe # `lesspipe.sh`, makes `less` peek into archives/binaries
-
-    # the fish config's prompt + history want these at init (zoxide/atuin/starship
-    # are sourced unconditionally in __main__.fish); install so the shell matches
-    # the laptops instead of erroring at every login.
-    starship
-    atuin
-    zoxide
-    direnv
+    net-tools # `netstat`/`ports`
+    lesspipe # makes `less` peek into archives/binaries
   ];
 
-  # Same fish setup as the laptops: a thin shellInit that sources the shared
-  # __main__.fish out of the flake. Everything it pulls in resolves relative to
-  # `${self}` (the whole repo lives in the store), so the server gets the same
-  # aliases/functions/prompt with no copies to keep in sync.
-  programs.fish = {
-    enable = true;
-    shellInit = ''
-      set -g fish_greeting
-      source ${self}/home/config/fish/__main__.fish
-    '';
-  };
-
-  # nix-direnv: faster `.envrc` for the rust/nix projects cloned on-box.
+  # Interactive shell is bash (dash is /bin/sh — see default.nix). bash because
+  # the three tools below only hook into bash/zsh/fish, never dash. HM manages
+  # ~/.bashrc so their init lines get injected.
+  programs.bash.enable = true;
   programs.direnv = {
     enable = true;
-    nix-direnv.enable = true;
+    nix-direnv.enable = true; # faster `.envrc` for the on-box nix/rust projects
     silent = true;
   };
+  programs.atuin.enable = true; # better shell history (its own DB; `atuin login` to sync)
+  programs.starship.enable = true;
 
   # Shared, untouched: editor config + the whole tmux dir (its tmux.conf is
   # self-contained — own prefix, helper scripts alongside it, plugins disabled).

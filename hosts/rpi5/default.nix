@@ -55,16 +55,23 @@
     "10-end0" = { matchConfig.Name = "end0"; networkConfig.DHCP = "yes"; };
     "20-wlan0" = { matchConfig.Name = "wlan0"; networkConfig.DHCP = "yes"; };
   };
-
-  programs.fish.enable = true; # registers fish in /etc/shells + vendor completions
+  # The box is reachable over ethernet OR wifi — usually only one is plugged in.
+  # Without this, networkd-wait-online blocks on the down interface until timeout,
+  # stalling network-online.target (hence multi-user.target + every networked
+  # unit) on every boot/switch. "Online" the moment any interface is up.
+  systemd.network.wait-online.anyInterface = true;
 
   users.users.admin = {
     isNormalUser = true;
     extraGroups = [ "wheel" ];
-    shell = pkgs.fish;
+    shell = pkgs.bashInteractive; # lean standard server shell (not the fish laptop setup)
     openssh.authorizedKeys.keys = user.sshAuthorizedKeys;
     initialPassword = "nixos"; # console fallback; change after first boot
   };
+  # `/bin/sh` = dash, matching the fresh_server recipe: POSIX scripts run identically,
+  # interactive login stays bash (where direnv/atuin/starship can hook in).
+  environment.binsh = "${pkgs.dash}/bin/dash";
+  environment.shells = [ pkgs.bashInteractive pkgs.dash ];
   users.users.root.openssh.authorizedKeys.keys = user.sshAuthorizedKeys;
 
   services.openssh = {
@@ -97,6 +104,41 @@
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
   };
 
+  # Public site via a Cloudflare remote-managed tunnel. nginx serves on
+  # loopback only (NEVER exposed to LAN/internet — the firewall keeps :80 shut);
+  # cloudflared dials Cloudflare outbound and proxies your domain back to it, so
+  # no static IP, no port-forward, no CGNAT problem. All ingress/DNS lives in the
+  # Cloudflare dashboard; the box only needs the tunnel token.
+  services.nginx = {
+    enable = true;
+    virtualHosts."_" = {
+      default = true;
+      listenAddresses = [ "127.0.0.1" "[::1]" ];
+      root = pkgs.writeTextDir "index.html" ''
+        <!doctype html><meta charset=utf-8><title>rpi5</title>
+        <h1>rpi5 is live</h1><p>Served from a Raspberry Pi 5 over a Cloudflare tunnel.</p>
+      '';
+    };
+  };
+
+  # Token-based tunnel (`cloudflared tunnel run`, token via TUNNEL_TOKEN). Secret
+  # lives only in /var/lib/cloudflared.env (never in repo/store) — same pattern as
+  # wifi + server_upkeep. ConditionPathExists keeps the unit inactive until the
+  # token is provisioned; provision-cloudflared.sh pushes it from sops.
+  systemd.services.cloudflared-tunnel = {
+    wantedBy = [ "multi-user.target" ];
+    wants = [ "network-online.target" ];
+    after = [ "network-online.target" ];
+    unitConfig.ConditionPathExists = "/var/lib/cloudflared.env";
+    serviceConfig = {
+      EnvironmentFile = "/var/lib/cloudflared.env";
+      ExecStart = "${pkgs.cloudflared}/bin/cloudflared tunnel --no-autoupdate --loglevel info run";
+      Restart = "on-failure";
+      RestartSec = "5s";
+      DynamicUser = true;
+    };
+  };
+
   # mDNS: advertise rpi5.local on the LAN so `ssh admin@rpi5.local` resolves.
   services.avahi = {
     enable = true;
@@ -107,7 +149,28 @@
     };
   };
 
-  environment.systemPackages = with pkgs; [ vim git git-lfs ];
+  # Tailscale: a stable name (rpi5.<tailnet>.ts.net) reachable from anywhere, so
+  # off-LAN people ssh in with plain `ssh admin@rpi5.<tailnet>.ts.net` once they're
+  # on the tailnet. mDNS rpi5.local stays LAN-only. Authenticate the box ONCE after
+  # deploy: `sudo tailscale up` prints a login URL (no auth key baked into the repo).
+  services.tailscale.enable = true;
+
+  # The evinvest app images (rea, landing backend) were built for the VPS as
+  # x86_64. This box is aarch64 — qemu user emulation runs them as-is, no aarch64
+  # rebuild. ponytail: emulated runtime is fine for low traffic; cross-build the
+  # images for aarch64 only if emulation becomes the bottleneck.
+  boot.binfmt.emulatedSystems = [ "x86_64-linux" ];
+  virtualisation.podman.enable = true;
+  virtualisation.oci-containers.backend = "podman";
+
+  # landing's backend needs Postgres (DATABASE_URL); rea uses its own SQLite.
+  services.postgresql = {
+    enable = true;
+    ensureDatabases = [ "evinvest" ];
+    ensureUsers = [{ name = "evinvest"; ensureDBOwnership = true; }];
+  };
+
+  environment.systemPackages = with pkgs; [ vim git git-lfs cloudflared ];
 
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
   nix.settings.auto-optimise-store = true;
