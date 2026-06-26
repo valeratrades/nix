@@ -3,7 +3,7 @@
 
 set __fish_config_main_dir (dirname (status --current-filename))
 
-source $HOME/s/g/private/credentials.fish
+test -f $HOME/s/g/private/credentials.fish; and source $HOME/s/g/private/credentials.fish # absent on servers
 source $__fish_config_main_dir/global.fish #NB: other things can rely on functions in it
 source $__fish_config_main_dir/other.fish
 

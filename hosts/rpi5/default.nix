@@ -1,4 +1,4 @@
-{ config, pkgs, lib, nixos-raspberrypi, user, ... }:
+{ config, pkgs, lib, nixos-raspberrypi, inputs, user, ... }:
 #############################################################
 #
 # Raspberry Pi 5. Self-contained aarch64 host, built via
@@ -8,12 +8,14 @@
 #
 #############################################################
 {
-  imports = with nixos-raspberrypi.nixosModules; [
+  imports = (with nixos-raspberrypi.nixosModules; [
     raspberry-pi-5.base
     raspberry-pi-5.page-size-16k
     raspberry-pi-5.display-vc4
     raspberry-pi-5.bluetooth
     sd-image # provides config.system.build.sdImage
+  ]) ++ [
+    inputs.server_upkeep.nixosModules.server_upkeep
   ];
 
   networking.hostName = "rpi5";
@@ -54,9 +56,12 @@
     "20-wlan0" = { matchConfig.Name = "wlan0"; networkConfig.DHCP = "yes"; };
   };
 
+  programs.fish.enable = true; # registers fish in /etc/shells + vendor completions
+
   users.users.admin = {
     isNormalUser = true;
     extraGroups = [ "wheel" ];
+    shell = pkgs.fish;
     openssh.authorizedKeys.keys = user.sshAuthorizedKeys;
     initialPassword = "nixos"; # console fallback; change after first boot
   };
@@ -65,6 +70,24 @@
   services.openssh = {
     enable = true;
     settings.PermitRootLogin = "prohibit-password";
+    # Team members ssh in as `admin` and authenticate git with their OWN key via
+    # a forwarded agent (`ssh -A` / `ForwardAgent yes`). No git identity or key is
+    # baked into the box — see hosts/rpi5/home.nix git block. Default is already
+    # on; explicit so it's not silently turned off later.
+    settings.AllowAgentForwarding = "yes";
+  };
+
+  # server watcher: disk + state-dir thresholds -> telegram. Proper system unit
+  # (from the server_upkeep flake), secrets injected out-of-band (see below).
+  services.server_upkeep = {
+    enable = true;
+    maxSize = "50GB";
+    # Provisioned onto the running box, never in the repo/store. Same pattern as
+    # the wifi secret. Format (0600):
+    #   SERVER_UPKEEP__TELEGRAM__BOT_TOKEN=...
+    #   SERVER_UPKEEP__TELEGRAM__ALERTS_CHAT=...
+    # Use hosts/rpi5/provision-server-upkeep.sh to push it from sops.
+    environmentFile = "/var/lib/server_upkeep.env";
   };
 
   # github pre-trusted so `git clone`/`pl` over SSH don't prompt on first contact.

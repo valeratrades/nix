@@ -152,6 +152,12 @@
       url = "github:valeratrades/reasonable_envsubst";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    server_upkeep = {
+      url = "github:valeratrades/server_upkeep";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.rust-overlay.follows = "rust-overlay";
+      inputs.flake-utils.follows = "flake-utils";
+    };
     bad_apple_rs = {
       url = "github:lomirus/bad-apple-rs"; # merged my nix-integration pull
       inputs.nixpkgs.follows = "nixpkgs";
