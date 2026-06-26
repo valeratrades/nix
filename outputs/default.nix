@@ -81,8 +81,21 @@ in {
 
   nixosConfigurations = {
     rpi5 = inputs.nixos-raspberrypi.lib.nixosSystem {
-      specialArgs = { user = myvars.valera; };
-      modules = [ (mylib.relativeToRoot "hosts/rpi5/default.nix") ];
+      specialArgs = { inherit self inputs mylib; user = myvars.valera; };
+      modules = [
+        (mylib.relativeToRoot "hosts/rpi5/default.nix")
+        home-manager.nixosModules.home-manager
+        {
+          home-manager.useGlobalPkgs = true;
+          home-manager.useUserPackages = true;
+          home-manager.extraSpecialArgs = {
+            inherit self inputs mylib;
+            user = myvars.valera;
+          };
+          home-manager.users.admin =
+            import (mylib.relativeToRoot "hosts/rpi5/home.nix");
+        }
+      ];
     };
   } // lib.listToAttrs (map (user: {
     name = user.desktopHostName;

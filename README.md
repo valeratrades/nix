@@ -77,3 +77,7 @@ Same thing applies to notes (don't make folders for a book, - sort ideas out int
 # New pc setup steps
 - disable default F key functions
 - turn off Secure Boot
+
+# Raspberry Pi 5 (`nixosConfigurations.rpi5`)
+Built via `nixos-raspberrypi`; flash `.#nixosConfigurations.rpi5.config.system.build.sdImage` (needs aarch64 emulation — `boot.binfmt.emulatedSystems` is on in v-laptop).
+- WiFi passphrase is the one thing NOT in the repo: after flashing, create `/var/lib/wifi-network.conf` (`0600`) on the card with the wpa_supplicant network block — see comment in `hosts/rpi5/default.nix`. Without it wifi won't come up (ethernet still will).

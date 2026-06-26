@@ -67,6 +67,13 @@
     settings.PermitRootLogin = "prohibit-password";
   };
 
+  # github pre-trusted so `git clone`/`pl` over SSH don't prompt on first contact.
+  programs.ssh.knownHosts.github = {
+    hostNames = [ "github.com" ];
+    publicKey =
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
+  };
+
   # mDNS: advertise rpi5.local on the LAN so `ssh admin@rpi5.local` resolves.
   services.avahi = {
     enable = true;
@@ -77,9 +84,21 @@
     };
   };
 
-  environment.systemPackages = with pkgs; [ vim git ];
+  environment.systemPackages = with pkgs; [ vim git git-lfs ];
 
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  nix.settings.auto-optimise-store = true;
+  # daily GC + store optimise — the recipe's nix-gc.timer, declarative.
+  nix.gc = {
+    automatic = true;
+    dates = "daily";
+    options = "--delete-older-than 14d";
+  };
+
+  # Rust/Nix builds OOM a small box without swap (recipe made a swapfile); zram is
+  # the zero-config nixos equivalent. ponytail: zram over a disk swapfile, fine for a Pi.
+  zramSwap.enable = true;
+  boot.tmp.cleanOnBoot = true;
 
   system.stateVersion = "25.11"; # matches nixos-raspberrypi's nixpkgs; changing requires migration
 
