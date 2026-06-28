@@ -79,5 +79,6 @@ Same thing applies to notes (don't make folders for a book, - sort ideas out int
 - turn off Secure Boot
 
 # Raspberry Pi 5 (`nixosConfigurations.rpi5`)
-Built via `nixos-raspberrypi`; flash `.#nixosConfigurations.rpi5.config.system.build.sdImage` (needs aarch64 emulation — `boot.binfmt.emulatedSystems` is on in v-laptop).
+Host config lives in its own repo (`EV-invest/rpi5.nix`), vendored here as a git submodule at `hosts/rpi5` — run `git submodule update --init` after cloning, and build with `?submodules=1` so Nix sees its files.
+Built via `nixos-raspberrypi`; flash `.?submodules=1#nixosConfigurations.rpi5.config.system.build.sdImage` (needs aarch64 emulation — `boot.binfmt.emulatedSystems` is on in v-laptop).
 - WiFi passphrase is the one thing NOT in the repo: after flashing, create `/var/lib/wifi-network.conf` (`0600`) on the card with the wpa_supplicant network block — see comment in `hosts/rpi5/default.nix`. Without it wifi won't come up (ethernet still will).

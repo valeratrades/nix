@@ -1,0 +1,3 @@
+[submodule "hosts/rpi5"]
+	path = hosts/rpi5
+	url = https://github.com/EV-invest/rpi5.nix.git
