@@ -71,6 +71,7 @@ enum ClaudeState {
     Finished, // Claude waiting for input (> prompt, no spinner)
     Draft,    // User is typing a message (bypass permissions prompt visible)
     Question, // Claude is asking a question (numbered options visible)
+    Input,    // User has typed text into the live input box (not yet sent)
     Error,    // Claude hit an error (rate limit, panic, etc.)
     Limit,    // Session usage limit hit ("You've hit your session limit · resets ...")
 }
@@ -83,6 +84,7 @@ impl ClaudeState {
             ClaudeState::Finished => "finished",
             ClaudeState::Draft => "draft",
             ClaudeState::Question => "question",
+            ClaudeState::Input => "input",
             ClaudeState::Error => "error",
             ClaudeState::Limit => "limit",
         }
@@ -237,7 +239,7 @@ impl fmt::Display for Sessions {
                     ClaudeState::Question => {
                         format!("<span foreground=\"#ff6565\">{}</span>", pango_escape(&padded_state))
                     }
-                    ClaudeState::Limit => {
+                    ClaudeState::Limit | ClaudeState::Input => {
                         format!("<span foreground=\"#ffffff\">{}</span>", pango_escape(&padded_state))
                     }
                     ClaudeState::Error => {
@@ -261,7 +263,7 @@ impl fmt::Display for Sessions {
                     ClaudeState::Draft => padded_state.cyan(),
                     ClaudeState::Question => padded_state.magenta(),
                     ClaudeState::Error => padded_state.red(),
-                    ClaudeState::Limit => padded_state.white(),
+                    ClaudeState::Limit | ClaudeState::Input => padded_state.white(),
                 };
                 write!(f, "{}  {}", padded_name, colored_state)?;
                 if let Some(t) = trailing {
@@ -975,6 +977,20 @@ fn is_prompt_line(line: &str) -> bool {
     t.starts_with("> ") || t.starts_with("❯ ") || t.starts_with("❯\u{00A0}")
 }
 
+/// Text the user has typed into the live input box, if any. The input box is the
+/// bottom-most prompt line; this returns its content with the prompt glyph and
+/// surrounding whitespace/NBSP stripped, or None when the box is empty.
+fn input_box_text(content: &str) -> Option<String> {
+    let line = content.lines().rev().find(|l| is_prompt_line(l))?;
+    let t = line.trim_start();
+    let rest = t
+        .strip_prefix("> ")
+        .or_else(|| t.strip_prefix("❯ "))
+        .or_else(|| t.strip_prefix("❯\u{00A0}"))?;
+    let cleaned = rest.replace('\u{00A0}', " ").trim().to_string();
+    (!cleaned.is_empty()).then_some(cleaned)
+}
+
 fn determine_claude_activity(session: &str, window_index: u32) -> ActivityResult {
     let target = format!("{}:{}", session, window_index);
 
@@ -1053,12 +1069,22 @@ fn classify_activity(
     // match) rejects scrollback that merely quotes the footer mid-line — e.g. a
     // session debugging this very script, or one that captured another's pane,
     // where the text is always preceded by line numbers, prose, or code.
+    // Typed text in the live input box, if any. The box always renders its mode
+    // footer ("⏵⏵ … (shift+tab to cycle)"); real selectors (permission /
+    // AskUserQuestion / limit) carry their own footer instead, never this one. So
+    // a "❯ 1. …" line under this footer is the user typing a numbered list — NOT
+    // a selector — and must suppress the question branch below.
+    let typed_input = last_portion
+        .contains("shift+tab to cycle")
+        .then(|| input_box_text(&last_portion))
+        .flatten();
+
     let question_selector_pattern = Regex::new(r"(?m)^\s*❯\s*\d+\.\s+.+$").unwrap();
     let is_selector = question_selector_pattern.is_match(&last_portion);
     let is_askquestion = last_portion
         .lines()
         .any(|l| l.trim_start().starts_with("Enter to select") && l.contains("↑/↓ to navigate"));
-    if is_selector || is_askquestion {
+    if (is_selector || is_askquestion) && typed_input.is_none() {
         // Extract the question text - the nearest line ending with "?" searching
         // upward from the bottom (skip prompt lines and option rows).
         let question_text = content
@@ -1206,6 +1232,14 @@ fn classify_activity(
     let api_error_pattern = Regex::new(r"(?m)^\s*⎿\s+API Error:").unwrap();
     if api_error_pattern.is_match(&last_portion) {
         return ActivityResult { state: ClaudeState::Error, draft_content: None, question_content: None };
+    }
+
+    // User has typed into the input box but not sent yet. We don't distinguish
+    // empty/finished/input precisely (see README) — a non-empty input line under
+    // the mode footer is enough. Comes after the spinner/draft/error branches so
+    // a genuinely working or errored session still wins.
+    if typed_input.is_some() {
+        return ActivityResult { state: ClaudeState::Input, draft_content: None, question_content: None };
     }
 
     // Check if there's an input prompt line - indicates Claude is waiting for
@@ -1588,6 +1622,7 @@ mod tests {
             "finished" => ClaudeState::Finished,
             "draft" => ClaudeState::Draft,
             "question" => ClaudeState::Question,
+            "input" => ClaudeState::Input,
             "error" => ClaudeState::Error,
             "limit" => ClaudeState::Limit,
             other => panic!(

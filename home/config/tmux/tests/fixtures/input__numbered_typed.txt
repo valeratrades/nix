@@ -1,0 +1,112 @@
+      31 -  mandates SAE hash-to-element); without them association fails. SSID/passphrase
+      32 -  come from sops, never the store.
+      33 -- **Ingress** (current): `cloudflared` tunnel → `nginx` on loopback → Next.js
+      34 -  frontend on `:58843`. No static IP / port-forward. Being replaced by k3s +
+      35 -  Traefik — see Installation.
+      31 +  mandates SAE hash-to-element); SSID/passphrase come from sops, never the store.
+      32 +- **Cluster**: single-node k3s (`k3s.nix`); Traefik fronts `:80/:443`, workloads
+      33 +  are managed by Flux from the cluster repo. `kubectl` is on the box; off-box goes
+      34 +  over Tailscale (API port `6443` is the only LAN firewall hole).
+      35  - **Secrets**: sops-nix; the box decrypts itself (next section).
+      36 +- **server_upkeep**: disk/state-dir watcher alerting to Telegram (token from sops).
+      37
+      38  ## Secrets
+      39
+     ...
+      70    | sudo dd of=/dev/sdX bs=4M conv=fsync iflag=fullblock status=progress
+      71  ```
+      72
+      73 -Then boot the card **on ethernet** (a fresh card's host key isn't a sops recipient
+      74 -yet, so wifi/tunnel stay down until enrolled) and finish manually:
+      73 +Boot the card **on ethernet** (a fresh card's host key isn't a sops recipient yet,
+      80 -3. **Cloudflare tunnel** (if serving publicly): create a tunnel in the CF dashboard
+      81 -   (Zero Trust → Networks → Tunnels), add a Public Hostname → `HTTP localhost:80`,
+      82 -   and put its token in `secrets.json` as `cloudflare_tunnel_token`.
+      83 -
+      84 -### k3s + Flux cutover (optional)
+      85 -
+      86 -`k3s.nix` stands up a single-node k3s server with `kubectl`/`fluxcd`/`kustomize`.
+      87 -It is a **cutover, not additive**: k3s' Traefik binds `:80/:443` and collides with
+      88 -the nginx loopback server. To switch:
+      89 -
+      90 -1. Import `k3s.nix` in `system.nix` and delete the nginx + podman `oci-containers` +
+      91 -   `evinvest-frontend` blocks from `default.nix` in the same change.
+      92 -2. Rebuild, then bootstrap Flux against the cluster repo:
+      77 +   WiFi comes up and ethernet is no longer required.
+      78 +2. **Tailscale**: `sudo tailscale up` — prints a login URL (one-time per box).
+      79 +3. **Flux**: bootstrap against the cluster repo —
+      80     `flux bootstrap github --owner=EV-invest --repository=<cluster> --path=clusters/rpi5`
+      94 -   (needs a GitHub PAT; this step is imperative by design).
+      81 +   (needs a GitHub PAT; imperative by design). Flux then reconciles all workloads.
+
+  Thought for 31s (ctrl+o to expand)
+
+● Config cut over and validated. Now deploy — but first verify the safety net is real (ethernet actually up) and whether remote sudo is non-interactive:
+
+● Bash(ssh -o ConnectTimeout=10 -o BatchMode=yes admin@rpi5.local '
+      echo "--- ethernet up now? (end0 should have a route) ---"…)
+  ⎿  --- ethernet up now? (end0 should have a route) ---
+     end0             UP             192.168.1.14/24 metric 1024 2a01:cb14:8284:c400:5a5d:dba8:6955:5174/64 2a01:cb14:8284:c400:8aa2:9eff:feb2:a8b9/64 fe80::8aa2:9eff:feb2:a8b9/64
+     1.1.1.1 via 192.168.1.1 dev end0 src 192.168.1.14 uid 1000
+      180 -store as cleartext. `country=FR` + `sae_pwe=2` (both empirically required for the
+      181 -Livebox + Broadcom combo) stay as plain `extraConfig`.
+      182 -
+      183 -On an **already-enrolled** box, a rebuild renders wifi automatically. On a *fresh*
+      184 -card, wifi waits until you enroll the new host key (see above) — plug in ethernet
+      185 -for that first deploy.
+       90 +1. Import `k3s.nix` in `system.nix` and delete the nginx + podman `oci-containers` +
+       91 +   `evinvest-frontend` blocks from `default.nix` in the same change.
+       92 +2. Rebuild, then bootstrap Flux against the cluster repo:
+       93 +   `flux bootstrap github --owner=EV-invest --repository=<cluster> --path=clusters/rpi5`
+       94 +   (needs a GitHub PAT; this step is imperative by design).
+
+  Thought for 6s (ctrl+o to expand)
+
+● Now commit + push the submodule README, then bump and push the superproject:
+
+● Bash(cd /home/v/nix/hosts/rpi5
+      git add README.md…)
+  ⎿     715f8a7..f583998  HEAD -> main
+     submodule HEAD: f583998
+     === superproject: bump pointer, push everything ===
+     … +4 lines (ctrl+o to expand)
+
+  Thought for 30s (ctrl+o to expand)
+
+● Pushed both repos. README is rewritten — terse, ## Files + ## What's inside + ## Secrets + ## Installation, all the "decisions"/implementation-log prose gone, cloudflare/nginx down to one factual line each.
+
+  Command automation — checked, conclusion: none worth wiring for a one-box setup.
+  - tailscale up: can be automated (services.tailscale.authKeyFile ← a sops secret), but the box is already authed (persistent state), and minting/managing a reusable authkey is more friction than a one-time login URL for a single box. Left
+  as a documented step. Say the word if you want fleet-reproducible auth.
+  - flux bootstrap: imperative by design (writes to both cluster and repo, needs a GitHub PAT) — can't be declaratized cleanly. Documented.
+  - kubectl: just a CLI, already in k3s.nix's systemPackages. Nothing to do.
+
+  I'm holding the rebuild — two blockers
+
+  1. Lockout risk (the real one). The box is wifi-only right now (default route via wlan0, no ethernet). My change switches wpa_supplicant from the hand-made /var/lib/wifi-network.conf to the sops-rendered config. The catch: the old
+  provision-wifi.sh was stale (wrote wifi.env, not the file the config reads), so that working file was made by hand — meaning the sops wifi_home_pass may never have matched reality. SSID matches (Livebox-2890), but I can't read the box's
+  actual password (needs sudo). If they differ, the switch locks you out with no remote rollback.
+
+  → Easiest fix: plug in ethernet, then I rebuild immediately — a wifi mismatch becomes harmless and fixable. Or paste the current wifi password and I'll verify the sops value matches before touching anything.
+
+  2. "nginx/cloudflare deprecated" isn't true yet. They're the live ingress — cloudflared, nginx, and evinvest-frontend are all active and serving through the tunnel; k3s is off, Flux isn't bootstrapped, no container images exist. So I did
+  not execute the cutover (it would take down the live site). I documented it as the optional path in the README instead.
+
+  → If you want me to actually perform the cutover (import k3s.nix, delete nginx/podman/frontend), confirm two things the staged note leaves open: does cloudflared stay and re-target Traefik :80, and does host postgres stay or move into the
+  cluster?
+
+  The rebuild command is ready the moment you green-light #1:
+  nixos-rebuild switch --flake '/home/v/nix?submodules=1#rpi5' --target-host admin@rpi5.local --use-remote-sudo
+
+✻ Baked for 6m 51s
+
+※ recap: Goal: move rpi5 config and secrets into the EV-invest org repo with sops-nix self-decryption. That's done and pushed. Next: I'm holding the box rebuild until you plug in ethernet, since it's wifi-only and a creds mismatch could
+  lock you out.
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 1. plugged it in. Do note that you will need to finish solving procedural wifi fully in this session, - eth plug can only be temporary, - later on it'll be back to wifi only
+  2. how many fucking times do I need to repeat that I DON'T GIVE A SINGLE FUCK ABOUT TEMPORARY ARTIFACTS. So fuck off, think long term. Long term they don't exist. So we scrap all the menitons of them, kill everything associated them
+  that exists now, and forget they ever were present. What exactly is not clear here, or what not clear about this CORRECT way of thinking in CLAUDE.md
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle)                                                                                                                                                                               86% context used
+

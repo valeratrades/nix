@@ -41,7 +41,7 @@ nix-pinned nightly the runner already cached.)
 Only the part that actually regresses: `classify_activity` — the pure function
 that turns a captured tmux pane (plain text, plus an escape-coded capture for the
 draft case) into a `ClaudeState` (`empty / active / finished / draft / question /
-error`). Everything else in the script is live-environment I/O (`tmux
+input / error / limit`). Everything else in the script is live-environment I/O (`tmux
 list-panes`, `/proc`, `pgrep`, the OAuth usage endpoint, ollama) and is **not**
 unit-tested — it can't be exercised honestly without mocks or a full e2e tmux
 harness.
@@ -49,6 +49,14 @@ harness.
 Each test case is a **real captured pane** stored under `tests/fixtures/`, with
 its expected state encoded in the filename and its full result pinned by an
 `insta` snapshot in `snapshots/`. No mocks.
+
+`finished`, `empty`, and `input` are deliberately **not** held apart with any
+precision — they're treated as interchangeable "nothing's blocked, nothing's
+running" states. `input` (user typed into the box but hasn't sent) is detected
+loosely: a non-empty input line under the `(shift+tab to cycle)` mode footer.
+Its only job is to keep a typed numbered list (`❯ 1. …`) from being misread as a
+`question` selector, and to color such panes white (same as `limit`). A finished
+session showing a dim ghost suggestion may read as `input`; that's fine.
 
 ## Adding a test case
 

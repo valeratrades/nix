@@ -54,6 +54,7 @@
         };
         credential.helper = "store";
         core.attributesfile = "/home/${user.username}/.gitattributes";
+        core.excludesfile = "/home/${user.username}/.gitignore";
         pull = { rebase = true; };
         safe = { directory = "*"; };
         help = { autocorrect = 5; };
