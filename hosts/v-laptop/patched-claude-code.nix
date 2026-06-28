@@ -11,5 +11,6 @@ claude-code.overrideAttrs (old: {
 	postFixup = (old.postFixup or "") + ''
 		${pkgs.python3}/bin/python3 ${./strip-claude-reminders.py} "$out/bin/.claude-unwrapped"
 		${pkgs.python3}/bin/python3 ${./patch-claude-altexit.py} "$out/bin/.claude-unwrapped"
+		${pkgs.python3}/bin/python3 ${./patch-claude-queuejoin.py} "$out/bin/.claude-unwrapped"
 	'';
 })

@@ -36,7 +36,7 @@ enum ProjectCommand {
         preset: RustPreset,
 
         /// Generate as a Cargo workspace (with a single member crate) instead of a standalone crate
-        #[arg(long, default_value_t = true)]
+        #[arg(long, default_value_t = false)]
         workspace: bool,
     },
     /// Create a new Python project

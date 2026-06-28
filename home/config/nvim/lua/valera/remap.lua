@@ -178,6 +178,13 @@ K('n', "<Space><C-z>", "<C-z>", { desc = "Suspend" })
 K({ "", "i" }, "<A-c>", "<cmd>q!<cr>", { desc = "Quit window" })
 K({ "", "i" }, "<A-C>", "<cmd>tabdo bd<cr>", { desc = "Close all buffers" })
 K({ "", "i" }, "<A-a>", function()
+	if vim.bo.filetype == 'oil' then
+		require('oil').save({ confirm = false }, function(err)
+			if err and err ~= 'Canceled' then return vim.notify(err, vim.log.levels.ERROR) end
+			vim.cmd('qa!')
+		end)
+		return
+	end
 	require('rust_plugins').save_session_if_open('qa!', 'wa!')
 end, { desc = "Save and quit all" })
 K({ "", "i" }, "<A-;>", '<cmd>qa!<cr>', { desc = "Quit all" })
