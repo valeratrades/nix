@@ -9,14 +9,8 @@ in
 {
   # Desktop-specific home-manager services and programs
 
-  # EasyEffects service for audio limiting/protection
-  # NOTE: Disabled because limiter plugin is not working correctly yet.
-  # Audio routing is broken - limiter doesn't apply any gain reduction.
-  # Use manually via: ~/nix/home/scripts/easyeffects-spl-limiter
-  # services.easyeffects = {
-  #   enable = true;
-  #   preset = "headphone-safety-limiter";
-  # };
+  # Hearing-safety headphone limiter now lives as a PipeWire smart filter:
+  # home/config/pipewire/pipewire.conf.d/50-headphone-safety.conf
 
   #XXX: don't seem to be picked up (eg try to echo `TERMCMD` one)
   home.sessionVariables = {

@@ -42,6 +42,10 @@ in
 		clickhouse = false;
 		openclaw = true;
 		default_s_inactive_to_retire = 1200; # idle LSP servers paged out to swap after this many seconds (20m)
+		# Hearing-safety: max dB SPL per headphone, keyed by PipeWire node.description.
+		# Mapped to a digital limiter via the model's calibration in
+		# os/nixos/desktop/services/headphone-calibration.nix. 85 dB = OSHA 8h-safe.
+		sound.device_limiters = { "WH-1000XM4" = 85; };
   };
   maria = {
     inherit sshAuthorizedKeys;

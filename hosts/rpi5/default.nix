@@ -10,10 +10,7 @@
 {
   imports = (with nixos-raspberrypi.nixosModules; [
     raspberry-pi-5.base
-    # 4K pages (default kernel): 16K-page hosts break qemu-user x86 emulation —
-    # large/threaded amd64 binaries (the evinvest containers) won't start. 4K is the
-    # config qemu-user x86 is actually tested on. Re-add page-size-16k only if we
-    # drop x86 emulation (i.e. once the images are built natively for aarch64).
+    raspberry-pi-5.page-size-16k
     raspberry-pi-5.display-vc4
     raspberry-pi-5.bluetooth
     sd-image # provides config.system.build.sdImage
@@ -112,15 +109,24 @@
   # cloudflared dials Cloudflare outbound and proxies your domain back to it, so
   # no static IP, no port-forward, no CGNAT problem. All ingress/DNS lives in the
   # Cloudflare dashboard; the box only needs the tunnel token.
+  # Path-routes the evinvest stack behind one hostname, as the VPS's Caddy did:
+  #   /api/v1/, /api-docs/  -> backend  :58844
+  #   /mfe/, /api/embed/    -> rea      :59079  (microfrontend + its embed API)
+  #   everything else       -> frontend :58843  (Next.js)
+  # Loopback-only; cloudflared dials out and fronts TLS.
   services.nginx = {
     enable = true;
+    recommendedProxySettings = true;
     virtualHosts."_" = {
       default = true;
       listenAddresses = [ "127.0.0.1" "[::1]" ];
-      root = pkgs.writeTextDir "index.html" ''
-        <!doctype html><meta charset=utf-8><title>rpi5</title>
-        <h1>rpi5 is live</h1><p>Served from a Raspberry Pi 5 over a Cloudflare tunnel.</p>
-      '';
+      locations = {
+        "/api/v1/".proxyPass = "http://127.0.0.1:58844";
+        "/api-docs/".proxyPass = "http://127.0.0.1:58844";
+        "/api/embed/".proxyPass = "http://127.0.0.1:59079";
+        "/mfe/".proxyPass = "http://127.0.0.1:59079";
+        "/".proxyPass = "http://127.0.0.1:58843";
+      };
     };
   };
 
@@ -158,17 +164,45 @@
   # deploy: `sudo tailscale up` prints a login URL (no auth key baked into the repo).
   services.tailscale.enable = true;
 
-  # The evinvest app images (rea, landing backend) were built for the VPS as
-  # x86_64. This box is aarch64 — qemu user emulation runs them as-is, no aarch64
-  # rebuild. ponytail: emulated runtime is fine for low traffic; cross-build the
-  # images for aarch64 only if emulation becomes the bottleneck.
-  boot.binfmt.emulatedSystems = [ "x86_64-linux" ];
-  # fixBinary (binfmt 'F' flag): the kernel opens the qemu interpreter at
-  # registration so it resolves inside container/chroot mount namespaces — without
-  # it podman foreign-arch runs fail with "no such file or directory" on the binary.
-  boot.binfmt.registrations.x86_64-linux.fixBinary = true;
+  # The evinvest stack runs as native aarch64 here — images are built ON this box
+  # (`nix run .#buildImage` for rea, `nix build .#backend-image` for the API), no
+  # x86 emulation. Containers (rea :59079, backend :58844) on the host network;
+  # the Next.js frontend (:58843) runs as a plain node service; nginx path-routes
+  # all three behind the one cloudflare tunnel, replacing the VPS's Caddy.
   virtualisation.podman.enable = true;
   virtualisation.oci-containers.backend = "podman";
+  virtualisation.oci-containers.containers = {
+    evinvest-rea = {
+      image = "localhost/rea:latest";
+      extraOptions = [ "--network=host" ];
+      volumes = [ "/opt/evinvest/rea-data:/data" ];
+      cmd = [ "--config" "/data/config.toml" ];
+    };
+    evinvest-backend = {
+      image = "localhost/evinvest-backend:latest";
+      extraOptions = [ "--network=host" ];
+      environment = {
+        DATABASE_URL = "postgres://evinvest@127.0.0.1:5432/evinvest";
+        BIND_ADDR = "0.0.0.0:58844";
+        APP_ENV = "production";
+        RUST_LOG = "info";
+      };
+    };
+  };
+
+  # Next.js standalone marketing site (built to /opt/evinvest/app on the box).
+  systemd.services.evinvest-frontend = {
+    wantedBy = [ "multi-user.target" ];
+    after = [ "network.target" ];
+    unitConfig.ConditionPathExists = "/opt/evinvest/app/server.js";
+    environment = { PORT = "58843"; HOSTNAME = "127.0.0.1"; NODE_ENV = "production"; };
+    serviceConfig = {
+      ExecStart = "${pkgs.nodejs}/bin/node /opt/evinvest/app/server.js";
+      WorkingDirectory = "/opt/evinvest/app";
+      Restart = "on-failure";
+      RestartSec = "5s";
+    };
+  };
 
   # landing's backend needs Postgres (DATABASE_URL); rea uses its own SQLite.
   services.postgresql = {
