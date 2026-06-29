@@ -241,6 +241,21 @@ in {
           StrictHostKeyChecking = "accept-new";
         };
       };
+      # rpi5 — home k3s box (site/rea via CF tunnel). LAN-only via mDNS; the box
+      # re-probes and reclaims the bare rpi5.local on every deploy (see its
+      # avahiReclaim activation script). Off-LAN: use the tailscale name instead.
+      "rpi5" = {
+        hostname = "rpi5.local";
+        user = "admin";
+        identitiesOnly = true;
+        identityFile = [ "~/.ssh/id_ed25519" ];
+        extraOptions = {
+          ForwardAgent = "yes"; # git auth on the box uses your forwarded key
+          PreferredAuthentications = "publickey,keyboard-interactive,password";
+          PubkeyAuthentication = "yes";
+          StrictHostKeyChecking = "accept-new";
+        };
+      };
       "p-laptop" = {
         hostname = "p-laptop";
         user = "p";
