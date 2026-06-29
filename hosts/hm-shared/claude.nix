@@ -37,6 +37,10 @@ let
 			impeccable = {
 				repo = "pbakaus/impeccable";
 				pluginSrc = "plugin";
+				# Its PostToolUse hook runs on every Edit/Write and litters `.impeccable/`
+				# sidecars into the cwd. Drop the hook so impeccable is manual-only via
+				# the `/impeccable` commands; skills/agents stay intact.
+				dropHooks = true;
 			};
 			# Ponytail ships its plugin body at the repo root (marketplace.json `source: "./"`),
 			# so point pluginSrc at "." instead of the default `<pluginsSubdir>/<plugin-name>`.
@@ -134,6 +138,7 @@ let
 				rm -rf "$CACHE_DIR"
 				mkdir -p "$CACHE_DIR"
 				cp -r "$PLUGIN_SRC"/. "$CACHE_DIR"/
+				${lib.optionalString (mcfg.dropHooks or false) ''rm -f "$CACHE_DIR/hooks/hooks.json"''}
 				INSTALLED=$(echo "$INSTALLED" | ${pkgs.jq}/bin/jq \
 					--arg key "${p.plugin}@${p.marketplace}" \
 					--arg path "$CACHE_DIR" \
