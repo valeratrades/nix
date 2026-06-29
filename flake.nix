@@ -2,11 +2,12 @@
   description = "OS master";
 
   nixConfig = {
-    extra-substituters = [ "https://nixos-raspberrypi.cachix.org" ];
-    extra-trusted-public-keys = [ "nixos-raspberrypi.cachix.org-1:4iMO9LXa8BqhU+Rpg6LQKiGa2lsNh/j2oiYLNOQ5sPI=" ];
+    extra-substituters = [ "https://nixos-raspberrypi.cachix.org" "https://valeratrades.cachix.org" ];
+    extra-trusted-public-keys = [ "nixos-raspberrypi.cachix.org-1:4iMO9LXa8BqhU+Rpg6LQKiGa2lsNh/j2oiYLNOQ5sPI=" "valeratrades.cachix.org-1:gXVwhzO5YB+BaiEJYT48qZgzdaErGQew6xtZcz4Fo1Q=" ];
   };
 
   #TODO!: setup my [own cache server](<https://nixos-and-flakes.thiscute.world/nix-store/host-your-own-binary-cache-server>). Needed to avoid rebuilding on lower-performance machines, like Rapsberri Pi or old laptops.
+  #REVIEW: the rebuild-avoidance goal is now met by valeratrades.cachix.org (hosted) above; this TODO only remains if you specifically want a self-hosted cache.
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/549bd84d6279f9852cae6225e372cc67fb91a4c1";
@@ -152,18 +153,11 @@
       url = "github:valeratrades/reasonable_envsubst";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    server_upkeep = {
-      url = "github:valeratrades/server_upkeep";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.rust-overlay.follows = "rust-overlay";
-      inputs.flake-utils.follows = "flake-utils";
-    };
-    v_notify = {
-      url = "github:valeratrades/v_notify";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.rust-overlay.follows = "rust-overlay";
-      inputs.flake-utils.follows = "flake-utils";
-    };
+    # No `follows` here on purpose: these build against their OWN locked nixpkgs so the
+    # store paths match what each repo's CI pushes to valeratrades.cachix.org (overriding
+    # nixpkgs would change the hash and miss the cache).
+    server_upkeep.url = "github:valeratrades/server_upkeep";
+    v_notify.url = "github:valeratrades/v_notify";
     bad_apple_rs = {
       url = "github:lomirus/bad-apple-rs"; # merged my nix-integration pull
       inputs.nixpkgs.follows = "nixpkgs";

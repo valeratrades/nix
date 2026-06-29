@@ -255,6 +255,52 @@ fn copy_dir_all(src: &PathBuf, dst: &PathBuf) -> Result<(), Box<dyn std::error::
     Ok(())
 }
 
+const CACHIX_WORKFLOW: &str = r#"name: cachix
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+jobs:
+  build:
+    name: build ${{ matrix.system }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { runner: ubuntu-latest,    system: x86_64-linux }
+          - { runner: ubuntu-24.04-arm, system: aarch64-linux }
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+      - uses: cachix/cachix-action@v17
+        with:
+          name: valeratrades
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+      - run: nix build -L '.#packages.${{ matrix.system }}.default'
+"#;
+
+// Cache nix builds of this crate to valeratrades.cachix.org so other machines/arches
+// (e.g. the aarch64 rpi5) download instead of rebuilding under emulation. The push
+// needs the CACHIX_AUTH_TOKEN repo secret, which can only be set once a GitHub remote
+// exists — best-effort it here, otherwise print the one-liner.
+fn setup_cachix() {
+    fs::create_dir_all(".github/workflows").ok();
+    fs::write(".github/workflows/cachix.yml", CACHIX_WORKFLOW).ok();
+
+    let slug = run_fun!(git remote get-url origin)
+        .ok()
+        .and_then(|o| o.trim().trim_end_matches(".git").rsplit_once("github.com").map(|(_, r)| r.trim_start_matches([':', '/']).to_string()));
+    let token = env::var("CACHIX_TOKEN").unwrap_or_default();
+    match slug {
+        Some(slug) if !token.is_empty() => {
+            let _ = run_cmd!(gh secret set CACHIX_AUTH_TOKEN -R $slug -b $token);
+            println!("cachix: set CACHIX_AUTH_TOKEN on {slug}");
+        }
+        _ => println!("cachix: after creating the GitHub repo, run `gh secret set CACHIX_AUTH_TOKEN -b $CACHIX_TOKEN`"),
+    }
+}
+
 fn rust(
     name: &str,
     _toolchain: &Toolchain,
@@ -368,6 +414,7 @@ components = ["rustc-codegen-cranelift-preview"]"#,
     // Create lib.rs
     fs::write("src/lib.rs", "")?;
 
+    setup_cachix();
     shared_after(name, lang)?;
 
     Ok(())
@@ -613,6 +660,7 @@ components = ["rustc-codegen-cranelift-preview"]"#,
         fs::write(&flake_path, new_flake)?;
     }
 
+    setup_cachix();
     shared_after(name, lang)?;
 
     Ok(())

@@ -35,7 +35,9 @@ let
 			# `plugins/<name>` subdir), so override the source path away from the default
 			# `<pluginsSubdir>/<plugin-name>` convention.
 			impeccable = {
-				repo = "pbakaus/impeccable";
+				# Fork: centralizes per-project state under $XDG_CACHE_HOME/impeccable instead of
+				# littering a `.impeccable/` dir into every project (branch merged to fork main).
+				repo = "valeratrades/impeccable";
 				pluginSrc = "plugin";
 				# Its PostToolUse hook runs on every Edit/Write and litters `.impeccable/`
 				# sidecars into the cwd. Drop the hook so impeccable is manual-only via
