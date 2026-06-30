@@ -124,6 +124,9 @@ in {
           nix.settings.trusted-users =
             [ user.username ]; # all systems assume single-user configurations
         }
+      ] ++ lib.optionals (user.username == "v") [
+        inputs.determinate.nixosModules.default
+        { nix.settings.lazy-trees = true; }
       ];
     };
   }) user-vars);

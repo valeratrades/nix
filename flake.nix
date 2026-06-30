@@ -2,8 +2,8 @@
   description = "OS master";
 
   nixConfig = {
-    extra-substituters = [ "https://nixos-raspberrypi.cachix.org" "https://valeratrades.cachix.org" ];
-    extra-trusted-public-keys = [ "nixos-raspberrypi.cachix.org-1:4iMO9LXa8BqhU+Rpg6LQKiGa2lsNh/j2oiYLNOQ5sPI=" "valeratrades.cachix.org-1:gXVwhzO5YB+BaiEJYT48qZgzdaErGQew6xtZcz4Fo1Q=" ];
+    extra-substituters = [ "https://nixos-raspberrypi.cachix.org" "https://valeratrades.cachix.org" "https://ev-invest.cachix.org" ];
+    extra-trusted-public-keys = [ "nixos-raspberrypi.cachix.org-1:4iMO9LXa8BqhU+Rpg6LQKiGa2lsNh/j2oiYLNOQ5sPI=" "valeratrades.cachix.org-1:gXVwhzO5YB+BaiEJYT48qZgzdaErGQew6xtZcz4Fo1Q=" "ev-invest.cachix.org-1:n6YuUJLTQ+zP0ZO3kc6jodfOCufO7bZuUgTl0H25dLk=" ];
   };
 
   #TODO!: setup my [own cache server](<https://nixos-and-flakes.thiscute.world/nix-store/host-your-own-binary-cache-server>). Needed to avoid rebuilding on lower-performance machines, like Rapsberri Pi or old laptops.
@@ -13,6 +13,10 @@
     nixpkgs.url = "github:NixOS/nixpkgs/549bd84d6279f9852cae6225e372cc67fb91a4c1";
     rust-overlay.url = "github:oxalica/rust-overlay/adf987c76af8d17b8256d23631bcf203f81e1a63";
     flake-utils.url = "github:numtide/flake-utils/11707dc2f618dd54ca8739b309ec4fc024de578b";
+
+    # Determinate Nix: swaps nix.package + daemon, redirects nixpkgs-generated
+    # nix.conf into /etc/nix/nix.custom.conf. Enables lazy-trees (v-laptop only).
+    determinate.url = "https://flakehub.com/f/DeterminateSystems/determinate/*";
 
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-24.11";

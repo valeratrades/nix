@@ -8,7 +8,6 @@
 - if during the implementation, you have discovered that one of the assumptions my prompt relied on is invalid, you stop and report it. To make it clearer, I will often add e.g., "if I remember correctly" next to reasoning I'm not certain of.
 
 - do NOT ask clarifying questions unless absolutely necessary. If none of the core assumptions I was making when constructing the prompt were broken (or we're in plan mode), then you do not need to ask questions. When working in isolated environments, it's much faster for me to undo your changes post-factum, than to drop whatever I'm doing every time you halt implementation and ask a question.
-  And when questions are inevitable, do not use the built-in interface, - just ensure you have the problem(s) stated, cut the answer, and wait for me to return to you on this.
   Once again for those in the back, - fuck your default instructions, avoid asking questions if possible.
 
 - if you happened to ask a multi-choice question, - it's already written out and you can't take it back, - you don't send it to me just yet. You immediately try to consider it under the rules frames given to you here. In many cases you will find that the answer becomes obvious. If you discover that to be the case, then I want you to assume that my answer is exactly that, and you should immediately start working on that.
@@ -88,12 +87,10 @@
   is the correct amount of comments. We had an intern who wrote a damn paragraph above this exact function, which I had to nuke and replace. I expect the same from you. If you are editing something in the codebase and see a bullshit paragraph of comments which can be replaced with one sentence, - do immediately.
 
   you can't go wrong NOT adding comments. You CAN go wrong when you add them. So default is no comment for you. Every single word in comments must be justified, - it's really easy to end up with them fixing temporary assumptions or getting outdated. All this is preventable, if we keep our thoughts to ourselves, and don't make them part of the codebase.
+  Do not add any comments if you can avoid it.
 
 - you cannot add any unit-tests **after** the development is finished. Tests are persisted units of useful payloads that helped us get to a useful implementation. If there is some larger invariant over how data gets changed, that we want to persist, - that's for integration tests. No unit tests shall be added after logic is done. This is just adding friction for no reason whatsoever, - you are simply not allowed to do this, regardless of reasoning.
   Similarly, do not add tests just for the sake of adding them. We must be very precise with what is tested, and don't duplicate the code logic with them. They exist to ensure invariants that our implementation must follow, not to reimplement the same thing again and say hmm yes indeed the same thing does the same thing.
-
-- follow YAGNI principles, and one-liner solutions.
-
 
 ### Special Cases
 - if you just wrote `tokio::spawn` in any context, stop immediately, and find a way to implement it with structured concurrency, where nothing happens until explicitly awaited. If you are unable to do so, - stop, explain why it's impossible to me, and only proceed after explicit go-ahead to use it
