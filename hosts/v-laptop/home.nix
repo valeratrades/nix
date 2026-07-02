@@ -256,6 +256,20 @@ in {
           StrictHostKeyChecking = "accept-new";
         };
       };
+      # rpi5 over tailscale (native node of the personal tailnet, shared into
+      # ev-invest for coworkers). MagicDNS name — survives IP reassignment.
+      "rpi5-ts" = {
+        hostname = "rpi5.taila74a7d.ts.net";
+        user = "admin";
+        identitiesOnly = true;
+        identityFile = [ "~/.ssh/id_ed25519" ];
+        extraOptions = {
+          ForwardAgent = "yes";
+          PreferredAuthentications = "publickey,keyboard-interactive,password";
+          PubkeyAuthentication = "yes";
+          StrictHostKeyChecking = "accept-new";
+        };
+      };
       "p-laptop" = {
         hostname = "p-laptop";
         user = "p";

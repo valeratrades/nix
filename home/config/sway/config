@@ -374,10 +374,13 @@ bindsym $mod+Insert exec "swaymsg mode screenshot && eww update sway_mode='scree
 
 mode "size_presets" {
 	bindsym 1 exec "$resize_centered 350 650 && $switch_out"
-	bindsym 2 exec "$resize_centered 576 768 && $switch_out"
-	bindsym 3 exec "$resize_centered 768 768 && $switch_out"
-	bindsym 4 exec "$resize_centered 992 768 && $switch_out"
-	bindsym 5 exec "$resize_centered 1200 768 && $switch_out"
+	bindsym 2 exec "$resize_centered 576 _ && $switch_out"
+	bindsym 3 exec "$resize_centered 768 _ && $switch_out"
+	bindsym 4 exec "$resize_centered 992 _ && $switch_out"
+	bindsym 5 exec "$resize_centered 1200 _ && $switch_out"
+	bindsym 6 exec "$resize_centered _ 650 && $switch_out"
+	bindsym 7 exec "$resize_centered _ 768 && $switch_out"
+	bindsym 8 exec "$resize_centered _ 1229 && $switch_out"
 
 	bindsym $left move left
 	bindsym $down move down
@@ -392,7 +395,7 @@ mode "size_presets" {
 	bindsym Escape exec $switch_out
 	bindsym q exec $switch_out
 }
-bindsym $mod+apostrophe exec "swaymsg mode size_presets && eww update sway_mode='size_presets (1-5)'"
+bindsym $mod+apostrophe exec "swaymsg mode size_presets && eww update sway_mode='size_presets (1-8)'"
 
 focus_wrapping no
 bindsym $mod+$left focus left

@@ -11,6 +11,13 @@ CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-$HOME/.cargo/target}"
 METADATA_FILE="$CARGO_TARGET_DIR/.script-access-times"
 RUST_STORE_PATH_CACHE="$CARGO_TARGET_DIR/.rust-store-path"
 
+# Skip crates.io network round-trips when the script content is unchanged
+# since the last build that got its deps (recorded in .offline-ok/).
+CONTENT_HASH=$(md5sum "$SCRIPT" | cut -d' ' -f1)
+OFFLINE_MARKER="$CARGO_TARGET_DIR/.offline-ok/$(echo "$SCRIPT" | md5sum | cut -d' ' -f1)"
+OFFLINE=""
+[ -f "$OFFLINE_MARKER" ] && [ "$(cat "$OFFLINE_MARKER")" = "$CONTENT_HASH" ] && OFFLINE="--offline"
+
 NIX_EXPR='let rust_flake = builtins.getFlake "github:oxalica/rust-overlay/7ed7e8c74be95906275805db68201e74e9904f07"; nixpkgs_flake = builtins.getFlake "github:NixOS/nixpkgs/f61125a668a320878494449750330ca58b78c557"; pkgs = import nixpkgs_flake { system = builtins.currentSystem; overlays = [rust_flake.overlays.default]; }; in pkgs.rust-bin.nightly."2025-10-10".default.override { extensions = ["rust-src"]; }'
 
 update_access_time() {
@@ -106,19 +113,34 @@ update_access_time
 cleanup_old_caches
 
 run_cargo() {
-	env RUSTC_WRAPPER="" PATH="$1/bin:$PATH" "$1/bin/cargo" -Zscript -q "$SCRIPT" "${@:2}"
+	env RUSTC_WRAPPER="" PATH="$1/bin:$PATH" "$1/bin/cargo" -Zscript $OFFLINE -q "$SCRIPT" "${@:2}"
+}
+
+# cargo exits 101 on build/resolve errors; anything else means deps are cached.
+# Offline 101 on an unchanged script means the registry cache was gc'd - drop
+# the marker so the next run goes online and refetches.
+finish() {
+	local rc=$1
+	if [ -n "$OFFLINE" ]; then
+		[ "$rc" -eq 101 ] && rm -f "$OFFLINE_MARKER"
+	elif [ "$rc" -ne 101 ]; then
+		mkdir -p "${OFFLINE_MARKER%/*}"
+		echo "$CONTENT_HASH" >"$OFFLINE_MARKER"
+	fi
+	exit "$rc"
 }
 
 # Try to use cached store path for instant startup
 # RUSTC_WRAPPER="" disables sccache from cargo config to avoid version mismatches
 # PATH must include the nix rust bin so cargo finds the correct rustc
 if RUST_PATH=$(get_rust_store_path); then
-	if run_cargo "$RUST_PATH" "$@"; then
-		exit 0
-	elif try_fix_root_owned_dirs; then
-		exec run_cargo "$RUST_PATH" "$@"
+	run_cargo "$RUST_PATH" "$@"
+	rc=$?
+	if [ $rc -ne 0 ] && try_fix_root_owned_dirs; then
+		run_cargo "$RUST_PATH" "$@"
+		rc=$?
 	fi
-	exit 1
+	finish $rc
 fi
 
 # Cache miss - need to fetch
@@ -131,9 +153,10 @@ if ! RUST_PATH=$(nix build --no-link --print-out-paths --impure --expr "$NIX_EXP
 fi
 mkdir -p "$CARGO_TARGET_DIR"
 echo "$RUST_PATH" >"$RUST_STORE_PATH_CACHE"
-if run_cargo "$RUST_PATH" "$@"; then
-	exit 0
-elif try_fix_root_owned_dirs; then
-	exec run_cargo "$RUST_PATH" "$@"
+run_cargo "$RUST_PATH" "$@"
+rc=$?
+if [ $rc -ne 0 ] && try_fix_root_owned_dirs; then
+	run_cargo "$RUST_PATH" "$@"
+	rc=$?
 fi
-exit 1
+finish $rc
