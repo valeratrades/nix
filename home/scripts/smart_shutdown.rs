@@ -13,10 +13,6 @@ use std::process::{Command, Stdio};
 #[command(name = "smart_shutdown")]
 #[command(about = "Clean shutdown: terminates tmux, kills slow services, then shuts down")]
 struct Args {
-    /// Run claude_sessions and send to telegram before shutdown
-    #[arg(short, long)]
-    claude_sessions: bool,
-
     /// Skip the actual shutdown (dry run)
     #[arg(short = 'n', long)]
     dry_run: bool,
@@ -43,9 +39,6 @@ fn main() {
     if !args.detached && std::env::var("TMUX").is_ok() {
         let exe = std::env::current_exe().expect("Failed to get current executable path");
         let mut cmd_args = vec!["--detached".to_string()];
-        if args.claude_sessions {
-            cmd_args.push("--claude-sessions".to_string());
-        }
         if args.dry_run {
             cmd_args.push("--dry-run".to_string());
         }
@@ -86,53 +79,49 @@ fn main() {
         }
     });
 
-    let claude_handle = if args.claude_sessions {
-        Some(std::thread::spawn(|| {
-            println!("Saving claude sessions to telegram...");
-            let claude_sessions_path = std::env::var("HOME")
-                .map(|h| format!("{h}/nix/home/config/tmux/claude_sessions.rs"))
-                .unwrap_or_else(|_| "/home/v/nix/home/config/tmux/claude_sessions.rs".to_string());
+    let claude_handle = std::thread::spawn(|| {
+        println!("Saving claude sessions to telegram...");
+        let claude_sessions_path = std::env::var("HOME")
+            .map(|h| format!("{h}/nix/home/config/tmux/claude_sessions.rs"))
+            .unwrap_or_else(|_| "/home/v/nix/home/config/tmux/claude_sessions.rs".to_string());
 
-            let output = Command::new(&claude_sessions_path).output();
+        let output = Command::new(&claude_sessions_path).output();
 
-            match output {
-                Ok(out) if out.status.success() => {
-                    let sessions = String::from_utf8_lossy(&out.stdout);
-                    if !sessions.trim().is_empty() {
-                        // Pass the whole output as a positional argument, NOT via stdin `-`.
-                        // The `-` stdin path in `tg send` truncates multi-line input to its
-                        // last line; a positional arg preserves every line.
-                        let tg_result = Command::new("tg")
-                            .args(["send", "-c", "general", sessions.as_ref()])
-                            .status();
+        match output {
+            Ok(out) if out.status.success() => {
+                let sessions = String::from_utf8_lossy(&out.stdout);
+                let msg = if sessions.trim().is_empty() {
+                    eprintln!("Warning: claude_sessions output empty");
+                    "warning: claude_sessions output was empty"
+                } else {
+                    sessions.as_ref()
+                };
+                // Pass the whole output as a positional argument, NOT via stdin `-`.
+                // The `-` stdin path in `tg send` truncates multi-line input to its
+                // last line; a positional arg preserves every line.
+                let tg_result = Command::new("tg")
+                    .args(["send", "-c", "general", msg])
+                    .status();
 
-                        match tg_result {
-                            Ok(status) if status.success() => println!("Claude sessions sent to telegram"),
-                            Ok(_) => eprintln!("Warning: tg command failed"),
-                            Err(e) => eprintln!("Warning: failed to run tg: {e}"),
-                        }
-                    } else {
-                        println!("No claude sessions to send");
-                    }
-                }
-                Ok(out) => {
-                    let stderr = String::from_utf8_lossy(&out.stderr);
-                    eprintln!("Warning: claude_sessions failed: {stderr}");
-                }
-                Err(e) => {
-                    eprintln!("Warning: failed to run claude_sessions: {e}");
+                match tg_result {
+                    Ok(status) if status.success() => println!("Claude sessions sent to telegram"),
+                    Ok(_) => eprintln!("Warning: tg command failed"),
+                    Err(e) => eprintln!("Warning: failed to run tg: {e}"),
                 }
             }
-        }))
-    } else {
-        None
-    };
+            Ok(out) => {
+                let stderr = String::from_utf8_lossy(&out.stderr);
+                eprintln!("Warning: claude_sessions failed: {stderr}");
+            }
+            Err(e) => {
+                eprintln!("Warning: failed to run claude_sessions: {e}");
+            }
+        }
+    });
 
     // Wait for both to finish before proceeding with shutdown
     tedi_handle.join().expect("tedi thread panicked");
-    if let Some(h) = claude_handle {
-        h.join().expect("claude_sessions thread panicked");
-    }
+    claude_handle.join().expect("claude_sessions thread panicked");
 
     // 2. Kill tmux sessions
     println!("Terminating tmux sessions...");

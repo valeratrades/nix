@@ -16,6 +16,15 @@ in {
       "https://cache.nixos.org"
       "https://nix-community.cachix.org"
       "https://devenv.cachix.org"
+      "https://nixos-raspberrypi.cachix.org"
+      "https://valeratrades.cachix.org"
+      "https://ev-invest.cachix.org"
+    ];
+    trusted-public-keys = [
+      "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+      "nixos-raspberrypi.cachix.org-1:4iMO9LXa8BqhU+Rpg6LQKiGa2lsNh/j2oiYLNOQ5sPI="
+      "valeratrades.cachix.org-1:gXVwhzO5YB+BaiEJYT48qZgzdaErGQew6xtZcz4Fo1Q="
+      "ev-invest.cachix.org-1:n6YuUJLTQ+zP0ZO3kc6jodfOCufO7bZuUgTl0H25dLk="
     ];
   };
 
