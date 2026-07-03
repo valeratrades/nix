@@ -12,6 +12,7 @@ let
 in {
   nix.settings = {
     experimental-features = [ "nix-command" "flakes" ];
+    accept-flake-config = true;
     trusted-substituters = [
       "https://cache.nixos.org"
       "https://nix-community.cachix.org"
