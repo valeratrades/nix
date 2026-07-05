@@ -1074,9 +1074,13 @@ fn classify_activity(
     // AskUserQuestion / limit) carry their own footer instead, never this one. So
     // a "❯ 1. …" line under this footer is the user typing a numbered list — NOT
     // a selector — and must suppress the question branch below.
+    // Search `content` (top-down order), NOT `last_portion`: last_portion is
+    // built bottom-up, so input_box_text's own rev() would cancel out and pick
+    // the TOPMOST ">"-looking line — e.g. quoted npm output ("> playwright …")
+    // in a tool result — instead of the live input box at the bottom.
     let typed_input = last_portion
         .contains("shift+tab to cycle")
-        .then(|| input_box_text(&last_portion))
+        .then(|| input_box_text(content))
         .flatten();
 
     let question_selector_pattern = Regex::new(r"(?m)^\s*❯\s*\d+\.\s+.+$").unwrap();
