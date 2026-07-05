@@ -234,6 +234,9 @@ impl fmt::Display for Sessions {
                 //               informational, lowest of the three.
                 //   limit    -> white      (#ffffff): wedged on the usage clock —
                 //               nothing to act on, but worth seeing at a glance.
+                //   finished -> faint green (#b8d8b4): oklch(0.85 0.06 142), green
+                //               with chroma pulled near grey — distinguishable from
+                //               empty without popping.
                 // Every other state stays uncolored — no span, no noise.
                 let state_cell = match entry.state {
                     ClaudeState::Question => {
@@ -247,6 +250,9 @@ impl fmt::Display for Sessions {
                     }
                     ClaudeState::Active => {
                         format!("<span foreground=\"#68d4ff\">{}</span>", pango_escape(&padded_state))
+                    }
+                    ClaudeState::Finished => {
+                        format!("<span foreground=\"#b8d8b4\">{}</span>", pango_escape(&padded_state))
                     }
                     _ => pango_escape(&padded_state),
                 };
