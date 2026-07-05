@@ -65,7 +65,7 @@
 
     "#9: win through your actions,\nnever through argument"
 
-    "#10: infection:\navoid the unhappy and unlucky"
+    "ruthlessly optimize\nthe social circle"
 
     "#12: use selective honesty and generosity\nto disarm your victim"
 
