@@ -21,6 +21,7 @@
 		:visible {bar_visible == "true"}
 
 		; ; Rendered conditionally
+		(tg_buffered)
 		(sway_mode)
 		(cargo)
 		(timer)
@@ -50,6 +51,16 @@
 )
 
 ;; bar modules {{{
+; count of tg messages accepted but not yet delivered to telegram (tg server maintains the file)
+(defpoll tg_buffered_poll :initial "0" :interval "2s" "cat ~/.local/state/tg/buffered_count 2>/dev/null || echo 0")
+(defwidget tg_buffered []
+	(box
+		:class "white"
+		:visible {tg_buffered_poll != "0" && tg_buffered_poll != ""}
+		" ${tg_buffered_poll}"
+	)
+)
+
 (defwidget sway_mode []
 	(box
 		:visible {sway_mode != "default"}
