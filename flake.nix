@@ -105,8 +105,6 @@
     };
     btc_line = {
       url = "github:valeratrades/btc_line";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.rust-overlay.follows = "rust-overlay";
       inputs.flake-utils.follows = "flake-utils";
     };
     decant = {
@@ -139,7 +137,6 @@
       url = "github:valeratrades/book_parser";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.rust-overlay.follows = "rust-overlay";
-      inputs.flake-utils.follows = "flake-utils";
     };
     prettify_log = {
       url = "github:valeratrades/prettify_log?ref=release";
