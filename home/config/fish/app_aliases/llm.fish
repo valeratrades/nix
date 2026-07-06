@@ -1,3 +1,33 @@
+# --acc N | -a N selects credentials in ~/.claude-accountN; without it, default ~/.claude (master)
+function claude
+    set -l args
+    set -l acc
+    set -l i 1
+    while [ $i -le (count $argv) ]
+        if contains -- $argv[$i] --acc -a
+            set i (math $i + 1)
+            set acc $argv[$i]
+            if [ -z "$acc" ]
+                echo "claude: --acc requires an account number" >&2
+                return 1
+            end
+        else
+            set -a args $argv[$i]
+        end
+        set i (math $i + 1)
+    end
+    if set -q acc[1]
+        set -lx CLAUDE_CONFIG_DIR $HOME/.claude-account$acc
+        if not test -f $CLAUDE_CONFIG_DIR/.credentials.json
+            echo "claude: no credentials at $CLAUDE_CONFIG_DIR" >&2
+            return 1
+        end
+        command claude $args
+    else
+        command claude $args
+    end
+end
+
 function cl
     set -l base_cmd claude --dangerously-skip-permissions
     set -l repo (command git rev-parse --show-toplevel 2>/dev/null)
@@ -36,7 +66,8 @@ function cl
         end
     end
 
-    command $base_cmd --append-system-prompt (cat $HOME/.claude/daneel.md) $passthrough_args
+    # not `command`: routes through the claude function above so `cl -a 2` works
+    $base_cmd --append-system-prompt (cat $HOME/.claude/daneel.md) $passthrough_args
 end
 complete -c cl -w claude
 
