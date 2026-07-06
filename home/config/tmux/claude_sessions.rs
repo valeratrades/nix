@@ -74,6 +74,7 @@ enum ClaudeState {
     Input,    // User has typed text into the live input box (not yet sent)
     Error,    // Claude hit an error (rate limit, panic, etc.)
     Limit,    // Session usage limit hit ("You've hit your session limit · resets ...")
+    Interrupted, // User aborted the turn (esc); dropped back to a live prompt
 }
 
 impl ClaudeState {
@@ -87,6 +88,7 @@ impl ClaudeState {
             ClaudeState::Input => "input",
             ClaudeState::Error => "error",
             ClaudeState::Limit => "limit",
+            ClaudeState::Interrupted => "interrupted",
         }
     }
 }
@@ -270,6 +272,7 @@ impl fmt::Display for Sessions {
                     ClaudeState::Question => padded_state.magenta(),
                     ClaudeState::Error => padded_state.red(),
                     ClaudeState::Limit | ClaudeState::Input => padded_state.white(),
+                    ClaudeState::Interrupted => padded_state.normal(),
                 };
                 write!(f, "{}  {}", padded_name, colored_state)?;
                 if let Some(t) = trailing {
@@ -1127,15 +1130,17 @@ fn classify_activity(
     // "Building and verifying static musl binary…", "Baking the response…". The
     // old `[A-Z][a-z]+…` required the capitalized word to sit IMMEDIATELY before
     // "…", so every multi-word spinner was misread as Finished — an active
-    // session looking idle. Matching "<letters>…" (any cased word right before
-    // the ellipsis) covers both; the spinner glyph leader + timer suffix make
-    // false positives from prose vanishingly unlikely in the last 15 lines.
+    // session looking idle. But bare "<letters>…" is TOO loose the other way:
+    // the welcome box truncates long model names ("claude-fable-5 with high
+    // effo… ·"), reading an idle session as Active forever. The timer suffix
+    // disambiguates — a live spinner always renders "… (<elapsed>…", truncated
+    // prose never grows a paren — so we require it.
     // A live spinner is unambiguous: Claude is working THIS frame. We do NOT gate
     // it on has_prompt_at_end — the TUI always renders its input box ("❯ ") at the
     // bottom of the pane even while the spinner runs above it, so that guard would
     // veto Active on essentially every frame. The genuine "stopped, waiting on me"
     // cases (selector / AskUserQuestion) are matched earlier and already returned.
-    let spinner_pattern = Regex::new(r"\p{L}…").unwrap();
+    let spinner_pattern = Regex::new(r"\p{L}… \(").unwrap();
 
     if spinner_pattern.is_match(&last_portion) {
         return ActivityResult { state: ClaudeState::Active, draft_content: None, question_content: None };
@@ -1218,6 +1223,19 @@ fn classify_activity(
         }
     }
 
+    // User-aborted turn: esc mid-tool-call renders result-row chrome
+    // "⎿  Interrupted · What should Claude do instead?" and drops back to a live
+    // prompt — same shape as the API-error row, same anchoring. Must precede
+    // BOTH the fresh-session check (a `claude -c` continuation still shows the
+    // welcome box, which reads as Empty on full-content match) and the
+    // prompt-line gate (Finished would bury it — and todos usually still have
+    // pending items here, so the Finished→Active upgrade in get_claude_windows
+    // would then mislabel the session as working).
+    let interrupted_pattern = Regex::new(r"(?m)^\s*⎿\s+Interrupted").unwrap();
+    if interrupted_pattern.is_match(&last_portion) {
+        return ActivityResult { state: ClaudeState::Interrupted, draft_content: None, question_content: None };
+    }
+
     // Check for fresh session (welcome screen) - after draft check
     if content.contains("No recent activity") || content.contains("Tips for getting started") {
         return ActivityResult { state: ClaudeState::Empty, draft_content: None, question_content: None };
@@ -1243,6 +1261,7 @@ fn classify_activity(
     if api_error_pattern.is_match(&last_portion) {
         return ActivityResult { state: ClaudeState::Error, draft_content: None, question_content: None };
     }
+
 
     // User has typed into the input box but not sent yet. We don't distinguish
     // empty/finished/input precisely (see README) — a non-empty input line under
@@ -1635,6 +1654,7 @@ mod tests {
             "input" => ClaudeState::Input,
             "error" => ClaudeState::Error,
             "limit" => ClaudeState::Limit,
+            "interrupted" => ClaudeState::Interrupted,
             other => panic!(
                 "fixture {stem:?} has unknown state prefix {other:?}; \
                  name it <state>__<desc>.txt"
