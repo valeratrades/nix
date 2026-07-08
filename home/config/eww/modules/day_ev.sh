@@ -35,12 +35,12 @@ if [ -f "$temp_var_file" ]; then
 	fi
 fi
 if [ "$success" != 1 ]; then
-	healthcheck_status_file="$(tedi_cmd milestones healthcheck | head -n 1)"
+	healthcheck_status_file="$(tedi_cmd sprints healthcheck | head -n 1)"
 	echo "$healthcheck_status_file" > "$temp_var_file"
 fi
 
 if [ "$(find "$healthcheck_status_file" -mmin +120)" ]; then
-	tedi_cmd milestones healthcheck
+	tedi_cmd sprints healthcheck
 	wait $!
 fi
 if [ -f "$healthcheck_status_file" ]; then
