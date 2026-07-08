@@ -94,7 +94,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     tedi = {
-      url = "github:valeratrades/tedi?ref=val/v2_rewrite"; #dbg
+      url = "github:valeratrades/tedi";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.rust-overlay.follows = "rust-overlay";
       inputs.flake-utils.follows = "flake-utils";
