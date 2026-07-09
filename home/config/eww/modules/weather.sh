@@ -1,6 +1,8 @@
 #!/usr/bin/env sh
 
 # Current weather via open-meteo, coords from ipinfo.io geo-IP (no API keys).
+# Geo-IP is wrong on mobile (CGNAT egresses at the carrier hub, eg Orange -> Lyon);
+# write "lat,lon" to ~/.config/eww/location to override.
 # wttr.in was dropped: when its geo-IP lookup fails it silently serves its
 # default location (central Paris) instead of erroring.
 # Output: {"icon": "<condition glyph>", "content": "<temp>"}
@@ -22,7 +24,8 @@ icon_for() {
 	esac
 }
 
-loc=$(timeout 5 curl -s 'https://ipinfo.io/loc' 2>/dev/null | tr -d '[:space:]')
+loc=$(cat "${XDG_CONFIG_HOME:-$HOME/.config}/eww/location" 2>/dev/null | tr -d '[:space:]')
+[ -z "$loc" ] && loc=$(timeout 5 curl -s 'https://ipinfo.io/loc' 2>/dev/null | tr -d '[:space:]')
 case "$loc" in
 	*[0-9],*[0-9]*)
 		lat=${loc%,*}
