@@ -63,6 +63,8 @@ K("n", "<C-w>O", "<C-w><C-v>", { desc = "windows: new vertical" })
 
 K("n", "<C-w>k", "<cmd>tab sb<cr>", { desc = "C-w>t that is consistent with <C-w>v and <C-w>h" })
 K("n", "<C-w>K", function() MoveToNewTab() end, { desc = "windows: move to new tab" })
+K("n", "<C-w>y", function() CloneTab() end, { desc = "windows: clone whole tab to the right" })
+K("n", "yt", function() CloneTab() end, { desc = "windows: clone whole tab to the right" })
 
 --Q: is this the correct place for it?
 K('n', '<C-w>v', '<C-w>w', { desc = 'windows: literally <C-w>w' })
@@ -76,6 +78,34 @@ function MoveToNewTab()
 	local current_win = vim.api.nvim_get_current_win()
 	vim.cmd("tab sb")
 	vim.api.nvim_win_close(current_win, false)
+end
+
+function CloneTab()
+	local src_cur = vim.api.nvim_get_current_win()
+	local focus
+	local function build(node)
+		local kind, data = node[1], node[2]
+		if kind == 'leaf' then
+			vim.api.nvim_win_set_buf(0, vim.api.nvim_win_get_buf(data))
+			pcall(vim.api.nvim_win_set_cursor, 0, vim.api.nvim_win_get_cursor(data))
+			if data == src_cur then focus = vim.api.nvim_get_current_win() end
+		else
+			local wins = { vim.api.nvim_get_current_win() }
+			for _ = 2, #data do
+				vim.cmd(kind == 'row' and 'rightbelow vsplit' or 'rightbelow split')
+				table.insert(wins, vim.api.nvim_get_current_win())
+			end
+			for i, child in ipairs(data) do
+				vim.api.nvim_set_current_win(wins[i])
+				build(child)
+			end
+		end
+	end
+	local layout = vim.fn.winlayout()
+	vim.cmd('tabnew')
+	build(layout)
+	vim.cmd('wincmd =')
+	if focus then vim.api.nvim_set_current_win(focus) end
 end
 
 -- execute any `g` command in a new vsplit
