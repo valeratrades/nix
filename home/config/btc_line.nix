@@ -10,7 +10,7 @@
   };
 
   spy = {
-    alpaca_key = "PKTJYTJNKYSBHAZYT3CO";
+    alpaca_key = { env = "ALPACA_API_KEY"; };
     alpaca_secret = { env = "ALPACA_API_SECRET"; };
   };
 }

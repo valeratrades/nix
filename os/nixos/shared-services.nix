@@ -91,10 +91,11 @@ in {
     KillMode = "mixed";  # SIGTERM main, then SIGKILL all after timeout
   };
 
+  # ENCRYPTION_KEY moved to sops (secrets/users/v/default.json) and is delivered
+  # per-user via environment.d — see writeSecretsEnvd in hosts/v-laptop/home.nix.
   environment.variables = {
     POSTGRESQL_PORT = postgresqlPort;
     REDIS_PORT = redisPort;
     REDIS_DB = "0";
-    ENCRYPTION_KEY = "lwLC4GH5UnAYdmHVyfD9UClbMh/saKnRPS+5nILfV2k=";
   };
 }

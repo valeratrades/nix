@@ -27,6 +27,7 @@ in {
     secrets.openai_api_key = { mode = "0400"; };
     # NB: sops key is misspelled upstream as `deepsek_key` (single `e`); keep matching the stored name.
     secrets.deepsek_key = { mode = "0400"; };
+    secrets.encryption_key = { mode = "0400"; };
   };
 
   tg = {
@@ -64,6 +65,12 @@ in {
       # and by the openclaw gateway (DeepSeek is OpenAI-compatible; see configureOpenclaw below).
       echo "DEEPSEEK_KEY=$(cat ${config.sops.secrets.deepsek_key.path})"
       echo "DEEPSEEK_API_KEY=$(cat ${config.sops.secrets.deepsek_key.path})"
+      # btc_line's ~/.config/btc_line.nix references these via { env = ... }.
+      echo "ALPACA_API_KEY=$(cat ${config.sops.secrets.alpaca_api_pubkey.path})"
+      echo "ALPACA_API_SECRET=$(cat ${config.sops.secrets.alpaca_api_secret.path})"
+      # Was environment.variables.ENCRYPTION_KEY in os/nixos/shared-services.nix
+      # (committed in plaintext, since burned). Session-scoped now.
+      echo "ENCRYPTION_KEY=$(cat ${config.sops.secrets.encryption_key.path})"
     } > "$dest"
     chmod 600 "$dest"
     ${pkgs.systemd}/bin/systemctl --user daemon-reload || true

@@ -145,6 +145,9 @@ in {
         #deadnix.enable = true; # detect unused variable bindings in `*.nix`. Also fails if false, so maybe this shouldn't be a hook.
         statix.enable =
           true; # lints and suggestions for Nix code(auto suggestions)
+
+        ripsecrets.enable =
+          true; # block committing secret keys (API tokens, private keys)
       };
     };
   });
@@ -180,6 +183,16 @@ in {
           if [ -n "$GIT_WC" ] && [ -f "$GIT_WC/.git/hooks/pre-commit" ]; then
             printf '%s\n' '#!/usr/bin/env bash' \
               '# Resilient pre-commit hook: resolves pre-commit from PATH.' \
+              '# Dependency-free secret gate FIRST: unlike the pre-commit suite' \
+              '# below, this runs even outside nix develop — whether a leaked' \
+              '# token gets committed must not depend on which shell the commit' \
+              '# happened from.' \
+              '# --no-ext-diff: difftastic is configured as the external differ' \
+              '# and its output has no "+" line markers to anchor on.' \
+              'if git diff --cached --no-ext-diff -U0 --no-color | grep -nE "^\+.*(sk-ant-(api|oat)[0-9a-zA-Z_-]{10}|ghp_[A-Za-z0-9]{20}|github_pat_[A-Za-z0-9_]{20}|AKIA[0-9A-Z]{16}|xox[baprs]-[0-9A-Za-z]{8}|-----BEGIN [A-Z ]*PRIVATE KEY)"; then' \
+              '  echo "ERROR: staged changes contain what looks like a secret (matches above). Commit blocked." >&2' \
+              '  exit 1' \
+              'fi' \
               '# If not in nix develop (pre-commit not on PATH), warn and skip.' \
               'if ! command -v pre-commit &>/dev/null; then' \
               '  echo "WARNING: pre-commit not found on PATH (not in nix develop?), skipping hook." >&2' \

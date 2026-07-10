@@ -23,6 +23,11 @@ A `.jsonl` companion means the pane text alone reads Finished and the transcript
 arbitrates; `<state>` then names the FINAL verdict. The same pane dump can back
 both an `active__*` and a `finished__*` fixture with different transcript tails.
 
+**Fixtures are raw transcript/pane dumps — they contain whatever the session saw,
+including env dumps and tool outputs. `grep -iE 'sk-ant|token|secret'` every new
+fixture before committing.** (One already leaked a live API key; the pre-commit
+hook now greps staged diffs for known token shapes, but don't lean on it.)
+
 ## Add a new case (no code edit needed)
 
 When you hit a pane that classifies wrong — or want to lock in a tricky one —
