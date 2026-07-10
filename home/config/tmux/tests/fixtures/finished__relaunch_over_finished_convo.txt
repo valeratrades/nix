@@ -1,0 +1,143 @@
+       9    - Current Signals (recent launches, earnings highlights, employee sentiment, executive posts)
+      10    - Interview Questions (3–7 sharp, specific questions that show I did my homework. Questions should reference the info above and connect it back to the role/team).
+     … +2 lines (ctrl+o to expand)
+
+● Transcribed.
+
+✻ Sautéed for 32s
+
+※ recap: Transcribed the interview research assistant prompt image into interviews/pre/company_research_prompt.md, verbatim with no changes. Task is complete; no next action pending unless you want edits. (disable recaps in /config)
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+                                                                                                                                              Save and close editor to continue...
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭─── Claude Code v2.1.154 ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                    │ Tips for getting started                                                                                                                                                                                                                  │
+│                Welcome back Valera!                │ Run /init to create a CLAUDE.md file with instructions for Claude                                                                                                                                                                         │
+│                                                    │ ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
+│                       ▐▛███▜▌                      │ What's new                                                                                                                                                                                                                                │
+│                      ▝▜█████▛▘                     │ Added `--bare` flag for scripted `-p` calls — skips hooks, LSP, plugin sync, and skill directory walks; requires `ANTHROPIC_API_KEY` or an `apiKeyHelper` via `--settings` (OAuth and keychain auth disabled); auto-memory fully disabled │
+│                        ▘▘ ▝▝                       │ Added `--channels` permission relay — channel servers that declare the permission capability can forward tool approval prompts to your phone                                                                                              │
+│      Opus 4.8 with high effort · Claude Max ·      │ Fixed multiple concurrent Claude Code sessions requiring repeated re-authentication when one session refreshes its OAuth token                                                                                                            │
+│      v79166789533@gmail.com's Organization         │ /release-notes for more                                                                                                                                                                                                                   │
+│                      ~/s/g/cv                      │                                                                                                                                                                                                                                           │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+❯ transcribe [Image #1] into /home/v/s/g/cv/interviews/pre/company_research_prompt.md
+  For now no changes
+  ⎿  [Image #1]
+
+● Just transcribing, no changes.
+
+● Write(interviews/pre/company_research_prompt.md)
+  ⎿  Error writing file
+
+  Thought for 3s, read 1 file (ctrl+o to expand)
+
+● Write(interviews/pre/company_research_prompt.md)
+  ⎿  Wrote 12 lines to interviews/pre/company_research_prompt.md
+       1 # ChatGPT prompt on screen and have (prompts in description)
+       2
+       3 "You are acting as my interview research assistant. Below is a collection of raw notes, copy-pasted text, and links about a company. It may include their website, Wikipedia, press releases, earnings calls, Glassdoor reviews, leaked interview questions, and executive social posts."
+       4
+       5 Your tasks:
+       6 1. Organize everything into a clean company cheat sheet to be used during interview
+       7 2. Structure the output into these sections:
+       8    - Company Background (origin story, founding year, mission, market position, competitors)
+       9    - Current Signals (recent launches, earnings highlights, employee sentiment, executive posts)
+      10    - Interview Questions (3–7 sharp, specific questions that show I did my homework. Questions should reference the info above and connect it back to the role/team).
+     … +2 lines (ctrl+o to expand)
+
+● Transcribed.
+
+✻ Sautéed for 32s
+
+※ recap: Transcribed the interview research assistant prompt image into interviews/pre/company_research_prompt.md, verbatim with no changes. Task is complete; no next action pending unless you want edits. (disable recaps in /config)
+
+❯ great. Now read /home/v/s/g/cv/interviews/pre/company_research.typ. The prompt must reference this document explicitly at least once, and then be rewritten around it. It must be split to phases. You will also make this into a proper `SKILL`, that I'll be able to link directly to ~/.claude/skills/.
+  Oh, and it should do nothing and request data if it wasn't given any, and can't infer:
+  - position listing link
+  - link to interviewer findable there or provided separately (or explicit mention that we don't have it)
+  - point to the dir, company research and materials should go under. Within it, agent gets to create/claim `tmp/` sub-directory, and all the unstructured data (and scripts for parsing/analyzing it) get dumped there.
+
+  The first phase will start by pulling the job description into `job_description.md` in the owned tmp/ dir, then all the company info pulled and organized (an agent per channel we're collecting data from (+ one for interviewer), - parallelize).
+  Phase two: analyze the company data we got (and pull more if needed for any of the inferrence we're doing here), - and determine the key points I outlined in the linked document (on you to create a good list of actions here)
+  Phase three: compile questions.
+
+  Thought for 1m 51s, read 1 file, listed 2 directories (ctrl+o to expand)
+
+● Now I understand the setup. There's already company_research_prompt.typ holding the prompt, and company_research.typ is the spec doc. Let me build the skill.
+
+● Bash(mkdir -p interviews/pre/company_research && ln -sf ../company_research.typ interviews/pre/company_research/company_research.typ && ls -la interviews/pre/company…)
+  ⎿  total 8
+     drwxr-xr-x 2 v users 4096 Jul 10 15:19 .
+     drwxr-xr-x 3 v users 4096 Jul 10 15:19 ..
+     lrwxrwxrwx 1 v users   23 Jul 10 15:19 company_research.typ -> ../company_research.typ
+
+● Write(interviews/pre/company_research/SKILL.md)
+  ⎿  Wrote 55 lines to interviews/pre/company_research/SKILL.md
+       2 name: company-research
+       3 description: Prep for a specific job interview — research the company and the interviewer, then compile a scannable cheat sheet plus sharp questions to ask. Trigger when the user points at a job listing / says they have an interview coming up and wants company research, an interview cheat sheet, or ques
+         tions to ask the interviewer.
+       4 ---
+       5
+       6 # Company Research
+       7
+       8 You are the user's interview research assistant. Goal: turn a specific job opening into a scannable mid-interview cheat sheet and a set of sharp, homework-proving questions.
+       9
+      10 **The spec for *what* to extract lives in `./company_research.typ`. Read it first — its "Key Points" and "Pre-compile questions" sections drive Phases 2 and 3. This skill defines the *process*; that document defines the *content*.**
+     … +47 lines (ctrl+o to expand)
+
+● Now update the == Automate link in the spec doc to point at the skill instead of the old prompt file:
+
+● Update(interviews/pre/company_research.typ)
+  ⎿  Added 1 line, removed 1 line
+      57  - If during research found some overlap between us, - mention it.
+      58
+      59  == Automate
+      60 -[Prompt](./company_research_prompt.md)
+      60 +[Skill](./company_research/SKILL.md)
+
+  Thought for 9s (ctrl+o to expand)
+
+● Done. Layout:
+
+  interviews/pre/company_research/
+    SKILL.md                 # phased process, gates on the 3 inputs
+    company_research.typ ->  # symlink to ../company_research.typ (the content spec)
+
+  The symlink means when you link the whole skill dir into ~/.claude/skills/, ./company_research.typ still resolves to the real repo doc — single source of truth, survives symlinking.
+
+  Link it:
+  ln -s /home/v/s/g/cv/interviews/pre/company_research ~/.claude/skills/company-research
+
+  SKILL.md references company_research.typ explicitly as the content spec, gates on the three required inputs (listing link / interviewer-or-explicit-none / target dir), owns tmp/, and runs Phase 1 gather (job desc → parallel agent-per-channel + interviewer) → Phase 2 analyze against the doc's Key Points → Phase 3
+  compile cheat sheet + filled-in questions.
+
+  skipped: the old company_research_prompt.typ left as-is (your source doc); repoint or delete it if you want. The .typ's Automate link now points at the skill.
+
+✻ Worked for 2m 40s
+
+※ recap: Building a company-research interview-prep skill from your spec docs. Created interviews/pre/company_research/SKILL.md (phased process referencing company_research.typ via symlink) and repointed the doc's Automate link. Next: symlink the skill dir into ~/.claude/skills/ to activate it. (disable recaps in
+  /config)
+
+❯ link it in now pls
+
+● Bash(ln -s /home/v/s/g/cv/interviews/pre/company_research ~/.claude/skills/company-research && ls -la ~/.claude/skills/company-research/)
+  ⎿  total 16
+     drwxr-xr-x 2 v users 4096 Jul 10 15:20 .
+     drwxr-xr-x 3 v users 4096 Jul 10 16:11 ..
+     … +2 lines (ctrl+o to expand)
+
+● Linked. ~/.claude/skills/company-research → repo dir, and the inner company_research.typ symlink resolves through it to the live spec. Available as /company-research after a restart/reload.
+
+✻ Cooked for 11s
+
+※ recap: Building a company-research interview-prep skill from your typ docs. Done: created interviews/pre/company_research/SKILL.md (phased process referencing company_research.typ spec) and symlinked it into ~/.claude/skills/company-research. Next: reload Claude Code to pick up the new skill. (disable recaps in
+  /config)
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← for agents
+

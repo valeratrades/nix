@@ -1,0 +1,14 @@
+---
+source: claude_sessions.rs
+expression: "(result, verdict)"
+---
+(
+    ActivityResult {
+        state: Finished,
+        draft_content: None,
+        question_content: None,
+    },
+    Some(
+        false,
+    ),
+)

@@ -79,6 +79,18 @@ enum ClaudeState {
 }
 
 impl ClaudeState {
+    /// The pane's Finished reading flip-flops between tool calls; the transcript
+    /// verdict is authoritative, active todos are the fallback when it abstains.
+    /// Lives here (not inline in get_claude_windows) so the fixture tests replay
+    /// the exact production deliberation.
+    fn refine_finished(transcript_working: Option<bool>, has_active_todos: bool) -> ClaudeState {
+        if transcript_working.unwrap_or(has_active_todos) {
+            ClaudeState::Active
+        } else {
+            ClaudeState::Finished
+        }
+    }
+
     fn as_str(&self) -> &'static str {
         match self {
             ClaudeState::Empty => "empty",
@@ -99,6 +111,10 @@ struct ClaudeWindow {
     session: String,
     window_index: u32,
     state: ClaudeState,
+    /// A claude process is live in the pane. Distinguishes a fresh-but-real
+    /// session (Empty state, welcome screen) from a claude-NAMED window that's
+    /// just sitting at a shell — only the latter get deduped away in main().
+    claude_running: bool,
     active_todo: Option<String>,
     draft_content: Option<String>,
     question_content: Option<String>,
@@ -692,60 +708,72 @@ fn extract_session_fingerprint(tmux_target: &str) -> Option<String> {
 
     let content = String::from_utf8_lossy(&output.stdout);
 
-    // Strategy 1: Find the FIRST user message in the conversation (most unique)
-    // Look for the pattern after the welcome screen / initial prompt
-    // User messages appear as "> message text" but we want the earliest one
+    // A visible user message is the fingerprint — its text exists verbatim in
+    // exactly the transcripts that contain that conversation. v2 renders past
+    // user messages as "❯ message" (regular space; the live input box uses an
+    // NBSP and is deliberately NOT matched — unsent text exists in no file);
+    // older builds used "> ". Nothing else is a safe fingerprint: file paths /
+    // tool banners repeat across every session working in the same cwd, and
+    // matching on those attributed windows to their neighbours' transcripts.
+    // The LAST visible message wins: the matcher scans each transcript's head
+    // and 256KB tail, and in a long session only the most RECENT messages are
+    // still within the tail window — the earliest visible one can sit megabytes
+    // before EOF.
+    let mut fingerprint = None;
+    let selector_row = Regex::new(r"^\d+\.\s").unwrap();
     for line in content.lines() {
         let trimmed = line.trim();
-
-        // Skip empty lines and suggestions
-        if trimmed.is_empty() {
+        if trimmed.len() <= 15 {
             continue;
         }
 
-        // User prompt lines start with "> "
-        if trimmed.starts_with("> ") && trimmed.len() > 15 {
-            let msg = &trimmed[2..]; // Skip "> "
+        let Some(msg) = trimmed
+            .strip_prefix("> ")
+            .or_else(|| trimmed.strip_prefix("❯ "))
+        else {
+            continue;
+        };
 
-            // Skip suggestions and meta-text
-            if msg.starts_with("Try ") || msg.contains("bypass") || msg.starts_with("──") {
-                continue;
-            }
-
-            // This looks like an actual user message - use first 40 chars as fingerprint
-            // The first user message is usually unique to this session
-            let fingerprint = if msg.len() > 40 { &msg[..40] } else { msg };
-            return Some(fingerprint.to_string());
+        // Skip suggestions, meta-text, and selector rows ("❯ 1. Option") — the
+        // ❯ glyph doubles as the selection cursor.
+        if msg.starts_with("Try ")
+            || msg.contains("bypass")
+            || msg.starts_with("──")
+            || selector_row.is_match(msg)
+        {
+            continue;
         }
+
+        // User messages are usually unique to their session; 40 chars is
+        // plenty of entropy while staying inside one rendered line.
+        fingerprint = Some(msg.chars().take(40).collect::<String>());
     }
 
-    // Strategy 2: Look for Claude's response patterns with unique paths
-    for line in content.lines() {
-        // Look for file operations with full paths (more unique)
-        if line.contains("Update(") || line.contains("Write(") {
-            if let Some(start) = line.find('(') {
-                if let Some(end) = line.find(')') {
-                    let inner = &line[start + 1..end];
-                    // Only use paths, not short commands
-                    if inner.contains('/') && inner.len() > 20 {
-                        return Some(inner.to_string());
-                    }
-                }
-            }
-        }
-    }
-
-    None
+    fingerprint
 }
 
 /// Find session file by matching screen content fingerprint in USER messages
 /// Returns the OLDEST matching file (by creation time) since that's likely the original source
+///
+/// Both ends of each transcript are searched: the head holds a session's opening
+/// messages (all a short/fresh session has), while for a LONG session the pane
+/// shows recent messages — which live in the tail, far past any head window.
 fn find_session_by_fingerprint(project_dir: &Path, fingerprint: &str) -> Option<PathBuf> {
     use std::io::{BufRead, BufReader};
 
     let entries = fs::read_dir(project_dir).ok()?;
 
     let mut matches: Vec<(PathBuf, std::time::SystemTime)> = Vec::new();
+
+    // Genuine typed messages only: tool_result entries are ALSO type "user", and
+    // they embed captured pane text — without this filter a session that ran
+    // this very script (or read another's pane) would claim its neighbours'
+    // fingerprints.
+    let is_user_hit = |line: &str| {
+        line.contains("\"type\":\"user\"")
+            && !line.contains("tool_use_id")
+            && line.contains(fingerprint)
+    };
 
     for entry in entries.filter_map(|e| e.ok()) {
         let name = entry.file_name();
@@ -756,25 +784,30 @@ fn find_session_by_fingerprint(project_dir: &Path, fingerprint: &str) -> Option<
 
         let path = entry.path();
 
-        // Search for fingerprint specifically in user messages
         let file = match fs::File::open(&path) {
             Ok(f) => f,
             Err(_) => continue,
         };
-        let reader = BufReader::new(file);
+        let mut found = BufReader::new(file)
+            .lines()
+            .take(100)
+            .map_while(Result::ok)
+            .any(|l| is_user_hit(&l));
 
-        let mut found_in_user_msg = false;
-        for line in reader.lines().take(100) {
-            if let Ok(line) = line {
-                // Only match in user message lines
-                if line.contains("\"type\":\"user\"") && line.contains(fingerprint) {
-                    found_in_user_msg = true;
-                    break;
-                }
-            }
+        if !found {
+            // Tail window, same size rationale as transcript_working.
+            found = (|| -> Option<bool> {
+                let mut file = fs::File::open(&path).ok()?;
+                let len = file.metadata().ok()?.len();
+                file.seek(SeekFrom::Start(len.saturating_sub(256 * 1024))).ok()?;
+                let mut bytes = Vec::new();
+                file.read_to_end(&mut bytes).ok()?;
+                Some(String::from_utf8_lossy(&bytes).lines().any(|l| is_user_hit(l)))
+            })()
+            .unwrap_or(false);
         }
 
-        if found_in_user_msg {
+        if found {
             if let Ok(metadata) = fs::metadata(&path) {
                 if let Ok(created) = metadata.created() {
                     matches.push((path, created));
@@ -790,10 +823,20 @@ fn find_session_by_fingerprint(project_dir: &Path, fingerprint: &str) -> Option<
 
 /// Find session file for a project by matching to process start time
 /// For resumed sessions, uses screen content matching as fallback
+///
+/// Attribution here must be conservative: several live claude processes can
+/// share one cwd (and thus one project dir), and a transcript attributed to the
+/// wrong window poisons everything downstream — its summary, its todos, and the
+/// transcript-based active↔finished verdict. None is strictly better than a
+/// neighbour's file.
 fn find_session_file_for_process(project_dir: &Path, process_start: Option<std::time::SystemTime>, tmux_target: &str) -> Option<PathBuf> {
+    // Without /proc visibility of the process there is nothing to anchor
+    // attribution to — every heuristic below degenerates into "some file in
+    // this dir", i.e. a guess.
+    let proc_start = process_start?;
     let entries = fs::read_dir(project_dir).ok()?;
 
-    let mut session_files: Vec<_> = entries
+    let session_files: Vec<_> = entries
         .filter_map(|e| e.ok())
         .filter(|e| {
             let name = e.file_name();
@@ -809,61 +852,55 @@ fn find_session_file_for_process(project_dir: &Path, process_start: Option<std::
         })
         .collect();
 
-    if let Some(proc_start) = process_start {
-        // Strategy 1: Find sessions CREATED after process start
-        // This is the most reliable - a new session file was created for this process
-        // Note: we do NOT require session_has_conversation here because a fresh session
-        // will have an empty file, and we need to detect that to return Empty state
-        let mut new_sessions: Vec<_> = session_files
-            .iter()
-            .filter_map(|(path, created, _)| {
-                let created = (*created)?;
-                if created >= proc_start {
-                    let diff = created.duration_since(proc_start).ok()?;
-                    if diff.as_secs() <= 60 {
-                        return Some((path.clone(), diff));
-                    }
+    // Strategy 1: Find sessions CREATED shortly after process start — a new
+    // session file was created for this process. The 60s window is what keeps
+    // this from stealing files that a LATER-started neighbour created in the
+    // same dir. (v2 creates the .jsonl lazily on first message, so a fresh
+    // untouched session has NO file at all and correctly matches nothing.)
+    let mut new_sessions: Vec<_> = session_files
+        .iter()
+        .filter_map(|(path, created, _)| {
+            let created = (*created)?;
+            if created >= proc_start {
+                let diff = created.duration_since(proc_start).ok()?;
+                if diff.as_secs() <= 60 {
+                    return Some((path.clone(), diff));
                 }
-                None
-            })
-            .collect();
-
-        new_sessions.sort_by_key(|(_, diff)| *diff);
-
-        if let Some((path, _)) = new_sessions.first() {
-            return Some(path.clone());
-        }
-
-        // Strategy 2: For resumed sessions, use screen content fingerprinting
-        // This finds the original session file by matching visible conversation content
-        if let Some(fingerprint) = extract_session_fingerprint(tmux_target) {
-            if let Some(path) = find_session_by_fingerprint(project_dir, &fingerprint) {
-                return Some(path);
             }
-        }
+            None
+        })
+        .collect();
 
-        // Strategy 3: Find sessions MODIFIED after process start (active writing)
-        // Only use this if fingerprinting failed
-        let mut active_sessions: Vec<_> = session_files
-            .iter()
-            .filter(|(_, _, modified)| *modified >= proc_start)
-            .filter(|(path, _, _)| session_has_conversation(path))
-            .map(|(path, _, modified)| (path.clone(), *modified))
-            .collect();
+    new_sessions.sort_by_key(|(_, diff)| *diff);
 
-        active_sessions.sort_by(|a, b| b.1.cmp(&a.1));
+    if let Some((path, _)) = new_sessions.first() {
+        return Some(path.clone());
+    }
 
-        if let Some((path, _)) = active_sessions.first() {
-            return Some(path.clone());
+    // Strategy 2: For resumed sessions, use screen content fingerprinting
+    // This finds the original session file by matching visible conversation content
+    if let Some(fingerprint) = extract_session_fingerprint(tmux_target) {
+        if let Some(path) = find_session_by_fingerprint(project_dir, &fingerprint) {
+            return Some(path);
         }
     }
 
-    // Fallback: return most recently modified with conversation content
-    session_files.sort_by(|a, b| b.2.cmp(&a.2));
-    session_files
+    // Strategy 3: sessions MODIFIED after process start. mtime records only the
+    // LAST write, so with several live sessions in one cwd all of their files
+    // pass this filter — and picking "most recent" handed every window the
+    // busiest neighbour's transcript (wrong summary, wrong active↔finished
+    // verdict). Only an unambiguous single candidate is trustworthy.
+    let candidates: Vec<_> = session_files
         .iter()
-        .find(|(path, _, _)| session_has_conversation(path))
-        .map(|(path, _, _)| path.clone())
+        .filter(|(_, _, modified)| *modified >= proc_start)
+        .filter(|(path, _, _)| session_has_conversation(path))
+        .collect();
+
+    if let [(path, _, _)] = candidates.as_slice() {
+        return Some(path.clone());
+    }
+
+    None
 }
 
 /// Get process start time from /proc/PID/stat
@@ -975,46 +1012,89 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
 
         let tmux_target = format!("{}:{}", session, window_index);
         let (state, active_todo, draft_content, question_content, summary) = if is_claude_pane {
-            // Claude is running - get session info first, then determine activity
-            let metadata = get_session_info_for_pane(pane_pid, &tmux_target);
-
             // Terminal parsing decides the blocking states (Question/Draft/Error)
             // and the working state, but active↔finished flip-flops between tool
             // calls when no spinner is captured. For that one reading we defer to
             // the transcript, which deterministically says whether a turn is still
             // in flight; active todos remain the fallback when it can't decide.
             let activity = determine_claude_activity(session, window_index);
-            let summary = metadata.as_ref().and_then(|m| m.summary.clone());
 
-            match activity.state {
-                ClaudeState::Finished => {
-                    let working = match metadata.as_ref().and_then(|m| m.transcript_working) {
-                        Some(w) => w,
-                        None => matches!(&metadata, Some(m) if m.has_active_todos),
-                    };
-                    if working {
-                        let todo = metadata.as_ref().and_then(|m| m.display_todo.clone());
-                        (ClaudeState::Active, todo, None, None, summary)
-                    } else {
-                        (ClaudeState::Finished, None, None, None, summary)
+            // Empty takes precedence over any transcript deliberation: a fresh
+            // pane has no session file at all (v2 creates the .jsonl on first
+            // message), so a metadata lookup could only mis-attribute a
+            // neighbour's transcript to it.
+            if activity.state == ClaudeState::Empty {
+                (ClaudeState::Empty, None, None, None, None)
+            } else {
+                let metadata = get_session_info_for_pane(pane_pid, &tmux_target);
+                let summary = metadata.as_ref().and_then(|m| m.summary.clone());
+
+                match activity.state {
+                    ClaudeState::Finished => {
+                        let refined = ClaudeState::refine_finished(
+                            metadata.as_ref().and_then(|m| m.transcript_working),
+                            matches!(&metadata, Some(m) if m.has_active_todos),
+                        );
+                        if refined == ClaudeState::Active {
+                            let todo = metadata.as_ref().and_then(|m| m.display_todo.clone());
+                            (ClaudeState::Active, todo, None, None, summary)
+                        } else {
+                            (ClaudeState::Finished, None, None, None, summary)
+                        }
                     }
+                    _ => (
+                        activity.state,
+                        None,
+                        activity.draft_content,
+                        activity.question_content,
+                        summary,
+                    ),
                 }
-                _ => (
-                    activity.state,
-                    None,
-                    activity.draft_content,
-                    activity.question_content,
-                    summary,
-                ),
             }
         } else {
-            (ClaudeState::Empty, None, None, None, None)
+            // Claude-named window sitting at a shell. Usually a pre-created
+            // empty slot — but if a claude EXITED here, its parting
+            // "claude --resume <uuid>" chrome both marks the finished
+            // conversation and names its transcript, so the session keeps its
+            // summary after death. No transcript refinement for the dead:
+            // nothing can be in flight there.
+            let tail = Command::new("tmux")
+                .args(["capture-pane", "-t", &tmux_target, "-p", "-S", "-50"])
+                .output()
+                .ok()
+                .filter(|o| o.status.success())
+                .map(|o| {
+                    String::from_utf8_lossy(&o.stdout)
+                        .lines()
+                        .rev()
+                        .filter(|l| !l.trim().is_empty())
+                        .take(15)
+                        .collect::<Vec<_>>()
+                        .join("\n")
+                })
+                .unwrap_or_default();
+
+            match dead_claude_resume_id(&tail) {
+                Some(id) => {
+                    let summary = get_process_cwd(pane_pid).and_then(|cwd| {
+                        let home = std::env::var("HOME").ok()?;
+                        let file = PathBuf::from(home)
+                            .join(".claude/projects")
+                            .join(path_to_project_name(&cwd))
+                            .join(format!("{id}.jsonl"));
+                        get_session_summary(&file)
+                    });
+                    (ClaudeState::Finished, None, None, None, summary)
+                }
+                None => (ClaudeState::Empty, None, None, None, None),
+            }
         };
 
         claude_windows.push(ClaudeWindow {
             session: session.to_string(),
             window_index,
             state,
+            claude_running: is_claude_pane,
             active_todo,
             draft_content,
             question_content,
@@ -1031,6 +1111,17 @@ struct ActivityResult {
     state: ClaudeState,
     draft_content: Option<String>,
     question_content: Option<String>,
+}
+
+/// Session id from Claude Code's exit chrome ("Resume this session with:" /
+/// "claude --resume <uuid>"). Anchored at line start: a user-TYPED resume
+/// command sits after a prompt glyph and doesn't match.
+fn dead_claude_resume_id(tail: &str) -> Option<String> {
+    Regex::new(r"(?m)^claude --resume ([0-9a-f-]{36})\s*$")
+        .unwrap()
+        .captures_iter(tail)
+        .last()
+        .map(|c| c[1].to_string())
 }
 
 /// True if a captured line is Claude's "waiting for input" prompt. Modern
@@ -1198,7 +1289,15 @@ fn classify_activity(
     // bottom of the pane even while the spinner runs above it, so that guard would
     // veto Active on essentially every frame. The genuine "stopped, waiting on me"
     // cases (selector / AskUserQuestion) are matched earlier and already returned.
-    let spinner_pattern = Regex::new(r"[\p{L}\p{N}]… \(").unwrap();
+    // Anchored to a line-leading spinner glyph: sessions QUOTE spinner lines in
+    // prose (e.g. a recap discussing "…R2… (3m 56s…"), and an unanchored match
+    // read those idle panes as Active. Real spinners always render as their own
+    // line — glyph, space, phrase, "… (<elapsed>" — while quoted ones sit mid-line
+    // or behind list/chrome prefixes ("- ", "⎿  "). [^…]* keeps the match inside
+    // one spinner phrase so a lazy dot can't bridge from a literal "…" in prose to
+    // a later "… (". If the glyph alphabet ever grows past this set, the
+    // transcript override in get_claude_windows still catches the missed Active.
+    let spinner_pattern = Regex::new(r"(?m)^\s*[·✢✳✶✻✽∗*]\s+[^…]*[\p{L}\p{N}]… \(").unwrap();
 
     if spinner_pattern.is_match(&last_portion) {
         return ActivityResult { state: ClaudeState::Active, draft_content: None, question_content: None };
@@ -1294,11 +1393,6 @@ fn classify_activity(
         return ActivityResult { state: ClaudeState::Interrupted, draft_content: None, question_content: None };
     }
 
-    // Check for fresh session (welcome screen) - after draft check
-    if content.contains("No recent activity") || content.contains("Tips for getting started") {
-        return ActivityResult { state: ClaudeState::Empty, draft_content: None, question_content: None };
-    }
-
     // API errors render as Claude Code's own tool-result chrome: a result row
     // led by the "⎿" glyph whose body is "API Error: <code> <reason>" (e.g.
     // "⎿  API Error: 529 Overloaded.", "⎿  API Error: Connection error.").
@@ -1324,9 +1418,35 @@ fn classify_activity(
     // User has typed into the input box but not sent yet. We don't distinguish
     // empty/finished/input precisely (see README) — a non-empty input line under
     // the mode footer is enough. Comes after the spinner/draft/error branches so
-    // a genuinely working or errored session still wins.
+    // a genuinely working or errored session still wins — but BEFORE the fresh
+    // welcome check: typing on the welcome screen is input, not an empty pane.
     if typed_input.is_some() {
         return ActivityResult { state: ClaudeState::Input, draft_content: None, question_content: None };
+    }
+
+    // Check for fresh session (welcome screen) - after the draft/typed branches.
+    // v2.1.15x dropped the old standalone "Tips for getting started"/"No recent
+    // activity" text in favor of the banner logo, but the "Welcome back" box of
+    // a RELAUNCHED claude still carries the "Tips" string. Every marker is gated
+    // on the absence of conversation bullets ("●"): a relaunch/resume paints its
+    // welcome UNDER the previous session's rows, and a pane that still shows a
+    // conversation is that conversation's state (usually Finished via the prompt
+    // gate below), not an empty one.
+    if !content.contains('●')
+        && (content.contains("▐▛███▜▌")
+            || content.contains("No recent activity")
+            || content.contains("Tips for getting started"))
+    {
+        return ActivityResult { state: ClaudeState::Empty, draft_content: None, question_content: None };
+    }
+
+    // A dead claude: on exit the TUI prints "Resume this session with:" and the
+    // bare `claude --resume <uuid>` command, then hands the pane back to the
+    // shell. The conversation is over — Finished. Restricted to the recent tail:
+    // an exit hint deep in scrollback under a RELAUNCHED claude must not shadow
+    // the live session's state.
+    if dead_claude_resume_id(&last_portion).is_some() {
+        return ActivityResult { state: ClaudeState::Finished, draft_content: None, question_content: None };
     }
 
     // Check if there's an input prompt line - indicates Claude is waiting for
@@ -1579,25 +1699,31 @@ fn main() {
             .push(window);
     }
 
-    // Find sessions that have at least one non-empty window
+    // Find sessions that have at least one real session slot: a non-empty
+    // window OR a live (if fresh) claude. Used below to hide shell-only
+    // claude-named windows in sessions where actual claudes exist.
     let sessions_with_non_empty: HashSet<String> = session_windows
         .iter()
-        .filter(|(_, wins)| wins.iter().any(|w| w.state != ClaudeState::Empty))
+        .filter(|(_, wins)| {
+            wins.iter()
+                .any(|w| w.state != ClaudeState::Empty || w.claude_running)
+        })
         .map(|(session, _)| session.clone())
         .collect();
 
-    // Collect results: show all windows, but skip empty ones if session has non-empty
-    // If all windows in a session are empty, show only one empty
+    // Collect results. Empty DEDUP applies only to claude-named windows sitting
+    // at a shell — a live claude on its welcome screen is a real session the
+    // user opened and must always be shown ("skip empty" used to swallow it):
+    //   - shell windows in sessions that have real claudes are hidden entirely
+    //   - all-shell sessions collapse to a single empty row
     let mut results: Vec<&ClaudeWindow> = Vec::new();
     let mut seen_empty_session: HashSet<&str> = HashSet::new();
 
     for window in &windows {
-        if window.state == ClaudeState::Empty {
+        if window.state == ClaudeState::Empty && !window.claude_running {
             if sessions_with_non_empty.contains(&window.session) {
-                // Skip empty windows in sessions that have non-empty ones
                 continue;
             }
-            // For all-empty sessions, only show one empty
             if seen_empty_session.contains(window.session.as_str()) {
                 continue;
             }
@@ -1683,12 +1809,19 @@ mod tests {
     //! - `<state>__<name>.esc`  — OPTIONAL companion: escape-coded
     //!   `tmux capture-pane -p -e` output. Only the draft path consults it; if
     //!   absent the classifier is told the escaped capture is unavailable.
+    //! - `<state>__<name>.jsonl` — OPTIONAL companion: tail of the session's
+    //!   transcript. States now come from pane text AND the transcript (the
+    //!   active↔finished deliberation), so fixtures for that path persist both.
+    //!   The prefix names the FINAL state after `refine_finished`, letting one
+    //!   pane dump pin both verdicts (same .txt, different .jsonl).
     //!
     //! ## Adding a case (the whole point — trivial, no code edit)
     //! Capture a live pane in the state you want to lock in:
     //!     tmux capture-pane -t <sess>:<win> -p -S -50   > tests/fixtures/question__askwidget.txt
     //!     # only for draft cases, also grab the escaped capture:
     //!     tmux capture-pane -t <sess>:<win> -p -e -S -10 > tests/fixtures/draft__typed.esc
+    //!     # for active/finished deliberation cases, persist the transcript tail:
+    //!     tail -n 15 ~/.claude/projects/<proj>/<session>.jsonl > tests/fixtures/finished__idle.jsonl
     //! Then `cargo insta accept` to record its full ActivityResult snapshot.
     //! The filename-prefix assertion runs automatically.
 
@@ -1748,16 +1881,41 @@ mod tests {
             let esc = fs::read_to_string(txt.with_extension("esc")).ok();
             let result = classify_activity(&plain, || esc.clone());
 
+            // Companion transcript tail, only present for fixtures pinning the
+            // active↔finished deliberation. Replayed through the same
+            // refine_finished the production Finished arm uses (todos-fallback
+            // pinned to false — fixtures carry no todo files).
+            let jsonl = txt.with_extension("jsonl");
+            let (final_state, verdict) = if jsonl.exists() {
+                assert_eq!(
+                    result.state,
+                    ClaudeState::Finished,
+                    "fixture {stem:?} has a .jsonl companion but the pane classified as \
+                     {:?} — the transcript is only consulted for Finished panes",
+                    result.state
+                );
+                let verdict = transcript_working(&jsonl);
+                (ClaudeState::refine_finished(verdict, false), verdict)
+            } else {
+                (result.state, None)
+            };
+
             let expected = expected_state_from_name(&stem);
             assert_eq!(
-                result.state, expected,
-                "fixture {stem:?} classified as {:?}, expected {expected:?}",
+                final_state, expected,
+                "fixture {stem:?} resolved to {final_state:?} (pane: {:?}, transcript: {verdict:?}), \
+                 expected {expected:?}",
                 result.state
             );
 
             // Full-result snapshot catches subtler drift (wrong extracted
             // question text, wrong truncation) the state check alone can't see.
-            insta::assert_debug_snapshot!(stem.clone(), result);
+            // Transcript-arbitrated fixtures also pin the verdict itself.
+            if jsonl.exists() {
+                insta::assert_debug_snapshot!(stem.clone(), (result, verdict));
+            } else {
+                insta::assert_debug_snapshot!(stem.clone(), result);
+            }
         }
     }
 }

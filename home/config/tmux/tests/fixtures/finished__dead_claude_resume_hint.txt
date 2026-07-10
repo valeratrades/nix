@@ -1,0 +1,143 @@
+      152      } else {
+      153          println!("Shutting down...");
+      152 -        let status = Command::new("sudo")
+      153 -            .args(["shutdown", "now"])
+      154 -            .status();
+      155 -
+      156 -        if let Err(e) = status {
+      157 -            eprintln!("Failed to shutdown: {e}");
+      158 -            std::process::exit(1);
+      154 +        match Command::new("sudo").args(["systemctl", "poweroff"]).status() {
+      155 +            Ok(s) if s.success() => {}
+      156 +            Ok(s) => {
+      157 +                eprintln!("poweroff exited with {:?}", s.code());
+      158 +                std::process::exit(1);
+      159 +            }
+      160 +            Err(e) => {
+      161 +                eprintln!("Failed to power off: {e}");
+      125                      _ => {
+      126                          let s = idle_streak.entry(name.clone()).or_insert(0);
+      127                          *s += 1;
+      146 -                        (*s >= args.idle_reads).then(|| (name.clone(), state.to_string()))
+      128 +                        (*s >= idle_reads).then(|| (name.clone(), state.to_string()))
+      129                      }
+      130                  }
+      131              })
+     ...
+      145          if remaining.is_empty() {
+      146              tg("supervise: all sessions settled — shutting down");
+      147              shutdown(dry_run);
+      166 -            return;
+      148 +            std::process::exit(0);
+      149          }
+      150      }
+      151  }
+      152
+      171 -// Block until the watchdog thread fires. Diverges so it satisfies the `let ... else`.
+      172 -fn park() -> ! {
+      173 -    loop {
+      174 -        std::thread::sleep(Duration::from_secs(3600));
+      175 -    }
+      153 +fn main() {
+      154 +    let args = Args::parse();
+      155 +    let horizon = Duration::from_secs(args.timeout_m * 60);
+      156 +
+      157 +    std::thread::spawn(move || poll_until_settled(args.idle_reads, args.dry_run));
+      158 +
+      159 +    // The main thread IS the termination horizon: a pure sleep nothing can block.
+      160 +    std::thread::sleep(horizon);
+      161 +    tg(&format!("supervise: {}m horizon reached — shutting down", args.timeout_m));
+      162 +    shutdown(args.dry_run);
+      163  }
+
+● Now the root fix in smart_shutdown.rs — use systemctl poweroff and actually check the exit status:
+
+● Update(home/scripts/smart_shutdown.rs)
+  ⎿  Added 14 lines, removed 9 lines
+      144      // postgresql if it's running
+      145      run_cmd_silent("sudo", &["systemctl", "stop", "postgresql"]);
+      146
+      147 -    // 4. Shutdown
+      147 +    // 4. Shutdown. `shutdown now` is the ambiguous compat interface (halt vs
+      148 +    // poweroff) — use systemctl poweroff, and treat a non-zero exit as failure so
+      149 +    // callers can't mistake "poweroff refused" for success.
+      150      if args.dry_run {
+      149 -        println!("Dry run - would run: sudo shutdown now");
+      151 +        println!("Dry run - would run: sudo systemctl poweroff");
+      152      } else {
+      153          println!("Shutting down...");
+      152 -        let status = Command::new("sudo")
+      153 -            .args(["shutdown", "now"])
+      154 -            .status();
+      155 -
+      156 -        if let Err(e) = status {
+      157 -            eprintln!("Failed to shutdown: {e}");
+      158 -            std::process::exit(1);
+      154 +        match Command::new("sudo").args(["systemctl", "poweroff"]).status() {
+      155 +            Ok(s) if s.success() => {}
+      156 +            Ok(s) => {
+      157 +                eprintln!("poweroff exited with {:?}", s.code());
+      158 +                std::process::exit(1);
+      159 +            }
+      160 +            Err(e) => {
+      161 +                eprintln!("Failed to power off: {e}");
+      162 +                std::process::exit(1);
+      163 +            }
+      164          }
+      165      }
+      166  }
+
+❯ did you just run it or sth? I had my tmux sessions close. Do not do that if you did
+
+  Thought for 18s (ctrl+o to expand)
+
+● Checking honestly whether I left anything running — I don't believe I did (my last runs were --help and --dry-run only, never a real launch), but let me verify rather than guess:
+
+● Bash(echo "== any supervise/smart_shutdown/claude_sessions procs? =="
+      ps aux | rg -i 'supervise_sessions|smart_shutdown|claude_sessions' | rg -v rg…)
+  ⎿  == any supervise/smart_shutdown/claude_sessions procs? ==
+     == tmux server up? sessions? ==
+     nix: 5 windows (created Fri Jul 10 13:05:47 2026)
+     … +8 lines (ctrl+o to expand)
+
+  Thought for 13s (ctrl+o to expand)
+  ⎿  Interrupted · What should Claude do instead?
+
+❯ whatever, just don't do that in the future. Finishe the impl
+
+  Thought for 8s (ctrl+o to expand)
+
+● Understood — won't run those again. Verified: no lingering procs, tmux's up with your sessions, no poweroff in the journal. I didn't close them.
+
+  Compile-checking smart_shutdown safely (--help exits at clap, before any tmux-kill/poweroff logic — the only safe way to run it):
+
+● Bash(cd ~/nix/home/scripts && timeout 180 ./smart_shutdown.rs --help >/dev/null 2>/tmp/ss_err; echo "exit=$?"; tail -20 /tmp/ss_err)
+  ⎿  exit=0
+
+● Both compile. Impl is complete.
+
+  Final state:
+
+  supervise_sessions.rs
+  - Horizon on the main thread (pure sleep, nothing can block it) → guaranteed shutdown at --timeout-m (default 45) even if claude_sessions is broken/hung. Polling runs on a spawned thread. No park.
+  - snapshot() is non-fatal — a broken claude_sessions returns None and the loop just retries; it never panics/exits the supervisor.
+  - shutdown() never trusts smart_shutdown's exit code — runs it, waits 20s for graceful cleanup to take us down, then forces sudo systemctl poweroff.
+
+  smart_shutdown.rs (root fix)
+  - sudo shutdown now → sudo systemctl poweroff (unambiguous; shutdown now is the halt-vs-poweroff compat interface).
+  - Checks the exit status — Ok(non-zero) now exit(1) instead of silently returning success.
+
+  Skipped: touching claude_sessions.rs (you're rewriting it) — the supervisor works regardless of its state.
+
+✻ Sautéed for 30s
+
+※ recap: Goal: get OpenClaw babysitting overnight Claude sessions then powering off. Done: supervise_sessions.rs now guarantees shutdown at the horizon, and smart_shutdown.rs reports failure honestly. Next: launch it via the OpenClaw skill and confirm a real overnight run shuts down. (disable recaps in /config)
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Press Ctrl-C again to exit                                                                                                                                                                                                                                                                                 100% context used
+
+Resume this session with:
+claude --resume 66d7dd30-3fe2-4bb1-9dd7-71b44657af6e
+0 ❯                                                                                                                                                                                                                                                                                           ~/nix main [!?]  - 31m8s 13:36:58

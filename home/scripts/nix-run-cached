@@ -11,14 +11,6 @@ CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-$HOME/.cargo/target}"
 METADATA_FILE="$CARGO_TARGET_DIR/.script-access-times"
 RUST_STORE_PATH_CACHE="$CARGO_TARGET_DIR/.rust-store-path"
 
-# Skip crates.io network round-trips when a build with this exact script
-# content already got its deps (recorded in .offline-ok/). Keyed by content,
-# not path: home-manager runs these from /nix/store paths that change every
-# generation, which used to invalidate all markers on each rebuild.
-OFFLINE_MARKER="$CARGO_TARGET_DIR/.offline-ok/$(md5sum "$SCRIPT" | cut -d' ' -f1)"
-OFFLINE=""
-[ -f "$OFFLINE_MARKER" ] && OFFLINE="--offline"
-
 NIX_EXPR='let rust_flake = builtins.getFlake "github:oxalica/rust-overlay/7ed7e8c74be95906275805db68201e74e9904f07"; nixpkgs_flake = builtins.getFlake "github:NixOS/nixpkgs/f61125a668a320878494449750330ca58b78c557"; pkgs = import nixpkgs_flake { system = builtins.currentSystem; overlays = [rust_flake.overlays.default]; }; in pkgs.rust-bin.nightly."2025-10-10".default.override { extensions = ["rust-src"]; }'
 
 update_access_time() {
@@ -113,51 +105,60 @@ get_rust_store_path() {
 update_access_time
 cleanup_old_caches
 
+# Always run offline: cargo resolves from the local registry cache even for
+# scripts it has never built, so the network is only ever needed for deps that
+# were genuinely never downloaded. RUSTC_WRAPPER="" disables sccache from cargo
+# config to avoid version mismatches; PATH must include the nix rust bin so
+# cargo finds the correct rustc.
 run_cargo() {
-	env RUSTC_WRAPPER="" PATH="$1/bin:$PATH" "$1/bin/cargo" -Zscript $OFFLINE -q "$SCRIPT" "${@:2}"
+	env RUSTC_WRAPPER="" PATH="$1/bin:$PATH" "$1/bin/cargo" -Zscript --offline -q "$SCRIPT" "${@:2}"
 }
 
-# cargo exits 101 on build/resolve errors; anything else means deps are cached.
-# Offline 101 on an unchanged script means the registry cache was gc'd - drop
-# the marker so the next run goes online and refetches.
-finish() {
-	local rc=$1
-	if [ -n "$OFFLINE" ]; then
-		[ "$rc" -eq 101 ] && rm -f "$OFFLINE_MARKER"
-	elif [ "$rc" -ne 101 ]; then
-		mkdir -p "${OFFLINE_MARKER%/*}"
-		touch "$OFFLINE_MARKER"
+# rc 101 is ambiguous: program panic, compile error, or offline resolution
+# failure. A build-only probe (no program output mixed in, so stderr is safe to
+# capture) tells them apart: probe succeeds -> the program itself exited 101;
+# probe fails mentioning offline -> fetch deps online once, then run offline;
+# otherwise -> compile error, already printed by the run attempt.
+recover_101() {
+	local err
+	if err=$(env RUSTC_WRAPPER="" PATH="$1/bin:$PATH" "$1/bin/cargo" build -Zscript -q --offline --manifest-path "$SCRIPT" 2>&1); then
+		exit 101
 	fi
-	exit "$rc"
+	if ! grep -q offline <<<"$err"; then
+		exit 101
+	fi
+	notify-send "fetching crates for $(basename "$SCRIPT")..." -t 3000 2>/dev/null &
+	env RUSTC_WRAPPER="" PATH="$1/bin:$PATH" "$1/bin/cargo" build -Zscript -q --manifest-path "$SCRIPT" || exit $?
+	run_cargo "$1" "${@:2}"
+	exit $?
+}
+
+run_script() {
+	run_cargo "$1" "${@:2}"
+	local rc=$?
+	if [ $rc -ne 0 ] && try_fix_root_owned_dirs; then
+		run_cargo "$1" "${@:2}"
+		rc=$?
+	fi
+	[ $rc -eq 101 ] && recover_101 "$1" "${@:2}"
+	exit $rc
 }
 
 # Try to use cached store path for instant startup
-# RUSTC_WRAPPER="" disables sccache from cargo config to avoid version mismatches
-# PATH must include the nix rust bin so cargo finds the correct rustc
 if RUST_PATH=$(get_rust_store_path); then
-	run_cargo "$RUST_PATH" "$@"
-	rc=$?
-	if [ $rc -ne 0 ] && try_fix_root_owned_dirs; then
-		run_cargo "$RUST_PATH" "$@"
-		rc=$?
-	fi
-	finish $rc
+	run_script "$RUST_PATH" "$@"
 fi
 
 # Cache miss - need to fetch
 notify-send "nix cache miss, fetching..." -t 3000 2>/dev/null &
 
-# Build and cache the store path, then run
-if ! RUST_PATH=$(nix build --no-link --print-out-paths --impure --expr "$NIX_EXPR" 2>/dev/null); then
+# Build and cache the store path; -o registers a gc root so the toolchain
+# can't be garbage-collected out from under us (which would force this
+# network-requiring nix eval at some random later run).
+mkdir -p "$CARGO_TARGET_DIR"
+if ! RUST_PATH=$(nix build -o "$CARGO_TARGET_DIR/.rust-toolchain" --print-out-paths --impure --expr "$NIX_EXPR" 2>/dev/null); then
 	echo "nix build failed" >&2
 	exit 1
 fi
-mkdir -p "$CARGO_TARGET_DIR"
 echo "$RUST_PATH" >"$RUST_STORE_PATH_CACHE"
-run_cargo "$RUST_PATH" "$@"
-rc=$?
-if [ $rc -ne 0 ] && try_fix_root_owned_dirs; then
-	run_cargo "$RUST_PATH" "$@"
-	rc=$?
-fi
-finish $rc
+run_script "$RUST_PATH" "$@"

@@ -144,18 +144,23 @@ fn main() {
     // postgresql if it's running
     run_cmd_silent("sudo", &["systemctl", "stop", "postgresql"]);
 
-    // 4. Shutdown
+    // 4. Shutdown. `shutdown now` is the ambiguous compat interface (halt vs
+    // poweroff) — use systemctl poweroff, and treat a non-zero exit as failure so
+    // callers can't mistake "poweroff refused" for success.
     if args.dry_run {
-        println!("Dry run - would run: sudo shutdown now");
+        println!("Dry run - would run: sudo systemctl poweroff");
     } else {
         println!("Shutting down...");
-        let status = Command::new("sudo")
-            .args(["shutdown", "now"])
-            .status();
-
-        if let Err(e) = status {
-            eprintln!("Failed to shutdown: {e}");
-            std::process::exit(1);
+        match Command::new("sudo").args(["systemctl", "poweroff"]).status() {
+            Ok(s) if s.success() => {}
+            Ok(s) => {
+                eprintln!("poweroff exited with {:?}", s.code());
+                std::process::exit(1);
+            }
+            Err(e) => {
+                eprintln!("Failed to power off: {e}");
+                std::process::exit(1);
+            }
         }
     }
 }

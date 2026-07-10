@@ -14,9 +14,14 @@ No tmux / `/proc` / network / mocks are involved — just text in, state out.
 ```
 <state>__<description>.txt        # plain capture-pane -p
 <state>__<description>.esc        # OPTIONAL: capture-pane -p -e (only the draft path reads it)
+<state>__<description>.jsonl      # OPTIONAL: session transcript tail (only the active↔finished deliberation reads it)
 ```
 
-`<state>` ∈ `empty active finished draft question input error limit`.
+`<state>` ∈ `empty active finished draft question input error limit interrupted`.
+
+A `.jsonl` companion means the pane text alone reads Finished and the transcript
+arbitrates; `<state>` then names the FINAL verdict. The same pane dump can back
+both an `active__*` and a `finished__*` fixture with different transcript tails.
 
 ## Add a new case (no code edit needed)
 
@@ -29,6 +34,9 @@ tmux capture-pane -t <session>:<window> -p -S -50 > question__some_widget.txt
 
 # ONLY for draft cases (typed-vs-ghost-suggestion needs the escape-coded capture):
 tmux capture-pane -t <session>:<window> -p -e -S -10 > draft__typed.esc
+
+# ONLY for active/finished deliberation cases (idle-looking pane, transcript decides):
+tail -n 15 ~/.claude/projects/<proj-dir>/<session-id>.jsonl > finished__idle.jsonl
 ```
 
 Then record its snapshot and confirm it's green:

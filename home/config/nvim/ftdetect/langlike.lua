@@ -58,6 +58,9 @@ vim.filetype.add({
 })
 vim.treesitter.language.register("xml", "drawio")
 
+-- ```md raw blocks in typst: resolve alias to the markdown parser
+vim.treesitter.language.register("markdown", "md")
+
 -- Prevent LSP from attaching to .bak files
 vim.api.nvim_create_autocmd("LspAttach", {
 	pattern = "*.bak",
