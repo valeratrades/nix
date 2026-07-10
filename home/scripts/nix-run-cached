@@ -11,12 +11,13 @@ CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-$HOME/.cargo/target}"
 METADATA_FILE="$CARGO_TARGET_DIR/.script-access-times"
 RUST_STORE_PATH_CACHE="$CARGO_TARGET_DIR/.rust-store-path"
 
-# Skip crates.io network round-trips when the script content is unchanged
-# since the last build that got its deps (recorded in .offline-ok/).
-CONTENT_HASH=$(md5sum "$SCRIPT" | cut -d' ' -f1)
-OFFLINE_MARKER="$CARGO_TARGET_DIR/.offline-ok/$(echo "$SCRIPT" | md5sum | cut -d' ' -f1)"
+# Skip crates.io network round-trips when a build with this exact script
+# content already got its deps (recorded in .offline-ok/). Keyed by content,
+# not path: home-manager runs these from /nix/store paths that change every
+# generation, which used to invalidate all markers on each rebuild.
+OFFLINE_MARKER="$CARGO_TARGET_DIR/.offline-ok/$(md5sum "$SCRIPT" | cut -d' ' -f1)"
 OFFLINE=""
-[ -f "$OFFLINE_MARKER" ] && [ "$(cat "$OFFLINE_MARKER")" = "$CONTENT_HASH" ] && OFFLINE="--offline"
+[ -f "$OFFLINE_MARKER" ] && OFFLINE="--offline"
 
 NIX_EXPR='let rust_flake = builtins.getFlake "github:oxalica/rust-overlay/7ed7e8c74be95906275805db68201e74e9904f07"; nixpkgs_flake = builtins.getFlake "github:NixOS/nixpkgs/f61125a668a320878494449750330ca58b78c557"; pkgs = import nixpkgs_flake { system = builtins.currentSystem; overlays = [rust_flake.overlays.default]; }; in pkgs.rust-bin.nightly."2025-10-10".default.override { extensions = ["rust-src"]; }'
 
@@ -125,7 +126,7 @@ finish() {
 		[ "$rc" -eq 101 ] && rm -f "$OFFLINE_MARKER"
 	elif [ "$rc" -ne 101 ]; then
 		mkdir -p "${OFFLINE_MARKER%/*}"
-		echo "$CONTENT_HASH" >"$OFFLINE_MARKER"
+		touch "$OFFLINE_MARKER"
 	fi
 	exit "$rc"
 }

@@ -69,12 +69,15 @@ fn main() {
         }
     }
 
-    // 1. Pre-shutdown async tasks: claude_sessions->tg and tedi blocker halt
+    // 1. Pre-shutdown async tasks: claude_sessions->tg and tedi tracking halt
     let tedi_handle = std::thread::spawn(|| {
-        println!("Halting tedi blocker...");
-        match Command::new("tedi").args(["blocker", "halt"]).status() {
-            Ok(s) if s.success() => println!("tedi blocker halted"),
-            Ok(_) => eprintln!("Warning: tedi blocker halt failed"),
+        println!("Halting tedi tracking...");
+        match Command::new("tedi")
+            .args(["-y", "sprints", "selected", "halt"])
+            .status()
+        {
+            Ok(s) if s.success() => println!("tedi tracking halted"),
+            Ok(_) => eprintln!("Warning: tedi halt failed"),
             Err(e) => eprintln!("Warning: failed to run tedi: {e}"),
         }
     });
