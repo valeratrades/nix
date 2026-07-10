@@ -47,5 +47,8 @@
   "skipDangerousModePermissionPrompt": true,
   "thinking": {
     "display": "summarized"
+  },
+  "sandbox": {
+    "enabled": false
   }
 }

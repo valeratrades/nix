@@ -219,6 +219,7 @@ in
 				showThinkingSummaries = true; # is now set to false for some reason. Idk if it's still a valid setting and even will be read btw
 				#thinking = true;
 				thinking.display = "summarized"; # if I understood correctly https://platform.claude.com/docs/en/about-claude/models/introducing-claude-fable-5-and-claude-mythos-5#raw-thinking-content-is-never-returned
+				sandbox.enabled = false; # otherwise will ask for permission on `sudo`
 				hooks = {
 					Stop = [
 						{

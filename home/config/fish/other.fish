@@ -119,6 +119,7 @@ alias ytd "yt-dlp -x --audio-format mp3 --cookies-from-browser firefox " # downl
 alias dr="deno run -A ./tmp/cmd.ts" # `dr` for `deno run`; follows https://matklad.github.io/2026/01/27/make-ts.html
 
 alias oclaw="cd ~/.openclaw/workspace && tn openclaw" # openclaw agent workspace in a named tmux session
+alias oc="node ~/g/openclaw/openclaw.mjs" # openclaw CLI, same invocation as configureOpenclaw's local helper
 
 function ubuntu_vm
 	set -l iso_dir "$HOME/.cache/gnome-boxes/isos"
