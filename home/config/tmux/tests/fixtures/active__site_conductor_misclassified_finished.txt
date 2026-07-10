@@ -1,0 +1,143 @@
+  ⎿  /tmp/rea_prod_drill
+     /tmp/rea_prod_drill/dashboard_layout.json
+     /tmp/rea_prod_drill/app.db-shm
+     … +23 lines (ctrl+o to expand)
+  ⎿  (timeout 3m)
+
+  Thought for 19s (ctrl+o to expand)
+
+● Real prod data in hand. Running the actual server binary against it (import runs at startup):
+
+● Bash(cat > /tmp/rea_drill_config.toml <<'EOF'
+      maps_api_key = "dummy"…)
+  ⎿     Compiling real_estate_allocation v0.1.0 (/home/v/s/ev_invest/real_estate_allocation/real_estate_allocation)
+         Finished `dev` profile [unoptimized + debuginfo] target(s) in 4.04s
+     warning: unreachable statement
+     … +30 lines (ctrl+o to expand)
+  ⎿  Shell cwd was reset to /home/v/s/ev_invest/site_conductor
+  ⎿  (timeout 5m)
+
+  Thought for 12s (ctrl+o to expand)
+
+● Bash(rm -rf /tmp/rea_prod_drill && mkdir /tmp/rea_prod_drill && tar xzf /tmp/rea_prod_pvc.tgz -C /tmp/rea_prod_drill && rm /tmp/rea_prod_drill/properties/9a5a7d3b-cd…)
+  ⎿  Error: repository error: legacy import: read /tmp/rea_prod_drill/properties/9a5a7d3b-cd42-4d65-a426-5b705a3d0cc9/636b499f-1b47-4919-ac52-b039d8ea5540__building.jpg: No such file or directory (os error 2)
+     ---
+     app.db
+     … +6 lines (ctrl+o to expand)
+  ⎿  Shell cwd was reset to /home/v/s/ev_invest/site_conductor
+  ⎿  (timeout 5m)
+
+  Thought for 15s (ctrl+o to expand)
+
+● Missing-file → loud fatal error naming the exact path, sources untouched. Phase 4a fully verified. Now Phase 4b — gitops:
+
+● Update(~/s/ev_invest/gitops/flake.nix)
+  ⎿  Added 8 lines, removed 6 lines
+      130            data."config.toml" = ''
+      131              cors_allowed_origins = ["https://${mkHost ""}"]
+      132            '';
+      133 -          # Continuous WAL replication of the sqlite DB (litestream sidecar below).
+      134 -          # Same bucket as `db push`/`pull` snapshots, nested under their prefix —
+      135 -          # snapshot keys are flat (manifest.json, data-N.tgz), so no collision.
+      136 -          # Replicate-only: restore stays a manual operator action, so it never
+      137 -          # races the app's own R2 bootstrap pull on a fresh PVC.
+      133 +          # Continuous WAL replication of the sqlite DB (litestream sidecar below),
+      134 +          # which since the all-state-into-sqlite migration IS the whole backup +
+      135 +          # restore story: the initContainer below restores fresh PVCs from it, and
+      136 +          # rea's `nix run .#pull-prod-db` restores dev copies. 168h retention with
+      137 +          # daily snapshots: litestream is the only backup, so a corruption noticed
+      138 +          # on day 3 must still be recoverable.
+      139            data."litestream.yml" = ''
+      140              dbs:
+      141                - path: /data/app.db
+     ...
+      144                      endpoint: https://1dbedc392b294bdef442b64e9030ba96.r2.cloudflarestorage.com
+      145                      bucket: ev-invest-state
+      146                      path: real-estate-allocation/litestream
+      146 -                    retention: 24h
+      147 +                    retention: 168h
+      148 +                    snapshot-interval: 24h
+      149            '';
+      150          };
+      151          reaBase = v_flakes.container.toManifests {
+
+● Update(~/s/ev_invest/gitops/flake.nix)
+  ⎿  Added 16 lines, removed 4 lines
+      167              };
+      168              # R2 creds come from the same sops-rendered secret the app reads;
+      169              # litestream honors the LITESTREAM_* env pair globally.
+      170 -            litestream = {
+      171 -              name = "litestream";
+      172 -              image = "litestream/litestream:0.3.13";
+      173 -              args = [ "replicate" "-config" "/etc/litestream.yml" ];
+      170 +            litestreamEnvMounts = {
+      171                env = map (k: {
+      172                  name = "LITESTREAM_${k}";
+      173                  valueFrom.secretKeyRef = { name = "kubernetes-${k8sName reaContract.name}"; key = "R2_${k}"; };
+     ...
+      177                  { name = "config"; mountPath = "/etc/litestream.yml"; subPath = "litestream.yml"; }
+      178                ];
+      179              };
+      180 +            litestream = litestreamEnvMounts // {
+      181 +              name = "litestream";
+      182 +              image = "litestream/litestream:0.3.13";
+      183 +              args = [ "replicate" "-config" "/etc/litestream.yml" ];
+      184 +            };
+      185 +            # Fresh-PVC bootstrap. `-if-db-not-exists` only (a live PVC no-ops) —
+      186 +            # deliberately NOT `-if-replica-exists`: with prod data + generations
+      187 +            # already in R2 there is no legitimate empty start left, so a fresh PVC
+      188 +            # with unreachable/missing R2 must fail the pod loudly, never boot empty.
+      189 +            litestreamRestore = litestreamEnvMounts // {
+      190 +              name = "litestream-restore";
+      191 +              image = "litestream/litestream:0.3.13";
+      192 +              args = [ "restore" "-if-db-not-exists" "-config" "/etc/litestream.yml" "/data/app.db" ];
+      193 +            };
+      194              spec' = spec // {
+      195                containers = [ container' litestream ];
+      196 +              initContainers = [ litestreamRestore ];
+      197                imagePullSecrets = [{ name = "ghcr"; }];
+      198                volumes = spec.volumes ++ [{
+      199                  name = "config";
+
+  Thought for 6s (ctrl+o to expand)
+
+● Bash(cd /home/v/s/ev_invest/gitops && git status --short && nix run .#materialize 2>&1 | tail -3 && git diff --stat && git diff clusters/rpi5/apps/real-estate/manife…)
+  ⎿   M flake.nix
+     building '/nix/store/3bdrqjyvify9igjpa3ask46vylb55085-real-estate-manifests.yaml.drv'...
+     building '/nix/store/57sv6r0k2rpwsq3vi378zj0b5bkxpq9i-materialize.drv'...
+     … +65 lines (ctrl+o to expand)
+  ⎿  Shell cwd was reset to /home/v/s/ev_invest/site_conductor
+  ⎿  (timeout 10m)
+
+  Thought for 11s (ctrl+o to expand)
+
+● Bash(cd /home/v/s/ev_invest/gitops && git diff clusters/rpi5/apps/site-conductor/manifests.yaml | head; grep -n "imagepolicy" clusters/rpi5/apps/real-estate/manifest…)
+  ⎿  clusters/rpi5/apps/site-conductor/manifests.yaml --- YAML
+     139 139     services:
+     140 140     - name: site-conductor-frontend
+     … +6 lines (ctrl+o to expand)
+  ⎿  Shell cwd was reset to /home/v/s/ev_invest/site_conductor
+
+  Thought for 20s, read 1 file (ctrl+o to expand)
+
+● Bash(ssh rpi5-ts 'psql -h 127.0.0.1 -U evinvest -l 2>&1 | head -8; pg_dump --version' ; nix develop --command pg_restore --version 2>/dev/null | tail -1)
+  ⎿  template0 | postgres | UTF8     | libc            | en_US.UTF-8 | en_US.UTF-8 |        |           | =c/postgres          +
+                |          |          |                 |             |             |        |           | postgres=CTc/postgres
+      template1 | postgres | UTF8     | libc            | en_US.UTF-8 | en_US.UTF-8 |        |           | =c/postgres          +
+     pg_dump (PostgreSQL) 17.9
+     +5 lines (25s · timeout 2m)
+     (ctrl+b ctrl+b (twice) to run in background)
+
+· Wiring Postgres backups to R2… (3m 56s · ↓ 7.2k tokens)
+  ⎿  ◼ Phase 1: Postgres backups on rpi5 (postgresqlBackup + pg-backup-r2 → R2)
+     ◼ Phase 2: tigerbeetle.nix module on rpi5 (3 replicas, format gate, backup timers)
+     ◼ Phase 4b: gitops — litestream initContainer restore + retention 168h
+     ◻ Phase 5: site_conductor pull-prod-db flake app
+     ◻ Verification pass (per plan checklist)
+      … +3 completed
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── persistence-backup-sync-arch ──
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · esc to interrupt · ctrl+t to hide tasks                                                                                                                                                                                                                    100% context used
+

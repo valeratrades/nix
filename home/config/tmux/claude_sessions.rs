@@ -18,6 +18,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::fs;
+use std::io::{Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -522,6 +523,56 @@ fn generate_summary_with_llm(first_message: &str) -> Option<String> {
     }
 }
 
+/// Deterministic idle check from the transcript, deciding the flip-floppy
+/// active↔finished case the terminal can't. Returns:
+///   Some(true)  — work in flight (last message is a pending tool_use, or a user
+///                 message whose assistant reply hasn't landed yet)
+///   Some(false) — genuinely idle (last message is a completed assistant turn)
+///   None        — undetermined (no message in the tail); caller falls back
+///
+/// Only the tail is read: transcripts reach tens of MB, but the last message is
+/// near the end. ponytail: 256KB window; a single message can't exceed it in
+/// practice (largest observed line ~35KB), and if it somehow does we return None.
+fn transcript_working(session_file: &Path) -> Option<bool> {
+    const TAIL_BYTES: u64 = 256 * 1024;
+    let mut file = fs::File::open(session_file).ok()?;
+    let len = file.metadata().ok()?.len();
+    let start = len.saturating_sub(TAIL_BYTES);
+    file.seek(SeekFrom::Start(start)).ok()?;
+    let mut bytes = Vec::new();
+    file.read_to_end(&mut bytes).ok()?;
+    let buf = String::from_utf8_lossy(&bytes); // tail seek may split a char/line
+
+    let mut lines = buf.lines();
+    if start > 0 {
+        lines.next(); // first line is likely a partial record
+    }
+    for line in lines.collect::<Vec<_>>().into_iter().rev() {
+        let v: serde_json::Value = match serde_json::from_str(line) {
+            Ok(v) => v,
+            Err(_) => continue,
+        };
+        let entry_type = v.get("type").and_then(|x| x.as_str()).unwrap_or("");
+        if entry_type != "user" && entry_type != "assistant" {
+            continue;
+        }
+        let role = v
+            .get("message")
+            .and_then(|m| m.get("role"))
+            .and_then(|x| x.as_str())
+            .unwrap_or(entry_type);
+        return Some(if role == "assistant" {
+            // A completed turn ends with a non-tool stop_reason; "tool_use" means
+            // a tool call is outstanding, i.e. still working.
+            v.get("message").and_then(|m| m.get("stop_reason")).and_then(|x| x.as_str()) == Some("tool_use")
+        } else {
+            // Last message is the user's — assistant reply is still pending.
+            true
+        });
+    }
+    None
+}
+
 /// Deserialize summary entries from session file
 #[derive(Deserialize)]
 struct SummaryEntry {
@@ -845,6 +896,8 @@ struct SessionMetadata {
     display_todo: Option<String>,
     /// Session summary
     summary: Option<String>,
+    /// Transcript verdict on whether work is in flight (see transcript_working)
+    transcript_working: Option<bool>,
 }
 
 /// Get session info (todo and summary) for a tmux pane
@@ -873,6 +926,7 @@ fn get_session_info_for_pane(shell_pid: u32, tmux_target: &str) -> Option<Sessio
         has_active_todos: todo_result.has_active_todos,
         display_todo: todo_result.display_todo,
         summary,
+        transcript_working: transcript_working(&session_file),
     })
 }
 
@@ -924,24 +978,27 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
             // Claude is running - get session info first, then determine activity
             let metadata = get_session_info_for_pane(pane_pid, &tmux_target);
 
-            // Terminal parsing is the source of truth for "is Claude blocked on
-            // me right now": a session can have active todos yet still be paused
-            // on a question/draft mid-task. So we ALWAYS parse the terminal and
-            // only let active-todos UPGRADE an otherwise-Finished reading to
-            // Active. Anything the terminal recognizes as blocking
-            // (Question/Draft/Error) or working (Active) wins over todo state.
+            // Terminal parsing decides the blocking states (Question/Draft/Error)
+            // and the working state, but active↔finished flip-flops between tool
+            // calls when no spinner is captured. For that one reading we defer to
+            // the transcript, which deterministically says whether a turn is still
+            // in flight; active todos remain the fallback when it can't decide.
             let activity = determine_claude_activity(session, window_index);
             let summary = metadata.as_ref().and_then(|m| m.summary.clone());
 
             match activity.state {
-                ClaudeState::Finished => match &metadata {
-                    // Finished terminal + active todos = Claude is mid-task,
-                    // between tool calls (no spinner captured this frame).
-                    Some(meta) if meta.has_active_todos => {
-                        (ClaudeState::Active, meta.display_todo.clone(), None, None, summary)
+                ClaudeState::Finished => {
+                    let working = match metadata.as_ref().and_then(|m| m.transcript_working) {
+                        Some(w) => w,
+                        None => matches!(&metadata, Some(m) if m.has_active_todos),
+                    };
+                    if working {
+                        let todo = metadata.as_ref().and_then(|m| m.display_todo.clone());
+                        (ClaudeState::Active, todo, None, None, summary)
+                    } else {
+                        (ClaudeState::Finished, None, None, None, summary)
                     }
-                    _ => (ClaudeState::Finished, None, None, None, summary),
-                },
+                }
                 _ => (
                     activity.state,
                     None,
@@ -1134,13 +1191,14 @@ fn classify_activity(
     // the welcome box truncates long model names ("claude-fable-5 with high
     // effo… ·"), reading an idle session as Active forever. The timer suffix
     // disambiguates — a live spinner always renders "… (<elapsed>…", truncated
-    // prose never grows a paren — so we require it.
+    // prose never grows a paren — so we require it. The word before "…" can end
+    // in a digit too ("Wiring Postgres backups to R2…"), hence \p{N}.
     // A live spinner is unambiguous: Claude is working THIS frame. We do NOT gate
     // it on has_prompt_at_end — the TUI always renders its input box ("❯ ") at the
     // bottom of the pane even while the spinner runs above it, so that guard would
     // veto Active on essentially every frame. The genuine "stopped, waiting on me"
     // cases (selector / AskUserQuestion) are matched earlier and already returned.
-    let spinner_pattern = Regex::new(r"\p{L}… \(").unwrap();
+    let spinner_pattern = Regex::new(r"[\p{L}\p{N}]… \(").unwrap();
 
     if spinner_pattern.is_match(&last_portion) {
         return ActivityResult { state: ClaudeState::Active, draft_content: None, question_content: None };
