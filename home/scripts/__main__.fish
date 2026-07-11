@@ -27,6 +27,7 @@ alias profile_shell_init="$__fish_scripts_dir/maintenance/profile_shell_init.rs"
 alias ambiance="$__fish_scripts_dir/ambiance.rs"
 alias pp="$__fish_scripts_dir/pp.rs"
 alias ex="$__fish_scripts_dir/excalidraw/main.rs"
+alias supervise_sessions="$__fish_scripts_dir/supervise_sessions.rs"
 
 function __run_pic_script
     set -l ext png
