@@ -43,6 +43,7 @@ struct Args {
 #[derive(Deserialize)]
 struct Entry {
     name: String,
+    window_index: u32,
     state: String,
 }
 
@@ -55,7 +56,9 @@ fn snapshot() -> Option<HashMap<String, String>> {
         return None;
     }
     let entries: Vec<Entry> = serde_json::from_slice(&out.stdout).ok()?;
-    Some(entries.into_iter().map(|e| (e.name, e.state)).collect())
+    // Keyed by name:window — several claude windows can live in one tmux session,
+    // and keying by name alone collapsed them into a single watched entry.
+    Some(entries.into_iter().map(|e| (format!("{}:{}", e.name, e.window_index), e.state)).collect())
 }
 
 // Best-effort: a failed notification must not block the shutdown.
