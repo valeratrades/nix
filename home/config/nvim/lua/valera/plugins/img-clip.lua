@@ -3,7 +3,11 @@ return require("lazier")({
 	event = "VeryLazy",
 	opts = {
 		default = {
-			dir_path = "assets",
+			dir_path = function()
+				local root = assert(vim.fs.root(0, ".git"), "img-clip: not in a git repo")
+				return root .. "/docs/.assets"
+			end,
+			relative_to_current_file = false,
 		},
 		filetypes = {
 			markdown = {

@@ -134,21 +134,34 @@ in {
   };
 
   # Always-on OpenClaw gateway (WebSocket gateway + connected channels + control UI on :18789).
-  # Runs the checkout at ~/g/openclaw directly via node — the repo ships a prebuilt dist/, so no
-  # build step is needed at start. Config + state live in the persisted ~/.openclaw, written by
+  # Runs the checkout at ~/g/openclaw directly via node, from its locally-built dist/ (untracked;
+  # produced by `openclaw-rebuild`). Config + state live in the persisted ~/.openclaw, written by
   # the configureOpenclaw activation above. Started on login and kept alive across crashes.
-  # NB: gated on the openclaw checkout existing so a fresh machine without it doesn't fail to boot
-  # into the user session — the ExecStartPre guard exits 0 (skips start) when the repo is absent.
+  # The preflight refuses to start on a dist/ built from a different commit than the checkout's
+  # HEAD: a stale dist against a moved tree crash-loops on plugin/config validation (2026-07-11
+  # outage), so fail immediately with an actionable message instead.
   systemd.user.services.openclaw-gateway = lib.mkIf user.openclaw {
     Unit = {
       Description = "OpenClaw multi-channel AI gateway (DeepSeek)";
       After = [ "network-online.target" "sops-nix.service" ];
       Wants = [ "network-online.target" ];
+      # Crash-looping forever helps nobody: after the burst, give up and page via telegram.
+      StartLimitIntervalSec = 600;
+      StartLimitBurst = 20;
+      OnFailure = [ "openclaw-gateway-alert.service" ];
     };
     Service = {
       Type = "simple";
-      # Skip cleanly if the checkout isn't there yet (first boot before `git clone`).
-      ExecStartPre = "${pkgs.bash}/bin/bash -c '[ -f ${config.home.homeDirectory}/g/openclaw/openclaw.mjs ]'";
+      ExecStartPre = "${pkgs.writeShellScript "openclaw-preflight" ''
+        repo="${config.home.homeDirectory}/g/openclaw"
+        [ -f "$repo/openclaw.mjs" ] || { echo "openclaw checkout missing at $repo" >&2; exit 1; }
+        built=$(${pkgs.jq}/bin/jq -r .commit "$repo/dist/build-info.json")
+        head=$(${pkgs.git}/bin/git -C "$repo" rev-parse HEAD)
+        if [ "$built" != "$head" ]; then
+          echo "dist/ built from $built but checkout is at $head — run openclaw-rebuild" >&2
+          exit 1
+        fi
+      ''}";
       ExecStart = "${lib.getExe pkgs.nodejs_22} ${config.home.homeDirectory}/g/openclaw/openclaw.mjs gateway --port 18789";
       Restart = "on-failure";
       RestartSec = 5;
@@ -159,6 +172,24 @@ in {
       WantedBy = [ "default.target" ];
     };
   };
+
+  systemd.user.services.openclaw-gateway-alert = lib.mkIf user.openclaw {
+    Unit.Description = "Telegram alert when openclaw-gateway exhausts its restart budget";
+    Service = {
+      Type = "oneshot";
+      # Test-bot token, not main: telegram_token_main is currently revoked (401 on getMe,
+      # 2026-07-11), and Bot API sends don't conflict with the gateway's getUpdates poll anyway —
+      # least of all when this fires, i.e. when the gateway is down.
+      ExecStart = "${pkgs.writeShellScript "openclaw-alert" ''
+        token=$(cat ${config.sops.secrets.telegram_token_test.path})
+        chat=$(cat ${config.sops.secrets.telegram_alerts_channel.path})
+        ${pkgs.curl}/bin/curl -fsS -m 10 "https://api.telegram.org/bot$token/sendMessage" \
+          -d chat_id="$chat" \
+          --data-urlencode text="openclaw-gateway is DOWN on ${user.desktopHostName} (start limit hit). If ~/g/openclaw HEAD moved without a rebuild, run: openclaw-rebuild. Logs: journalctl --user -u openclaw-gateway"
+      ''}";
+    };
+  };
+
 
   # Ensure tg-server waits for sops-nix secrets to be available
   systemd.user.services.tg-server = {
@@ -329,6 +360,21 @@ in {
     packages = with pkgs;
       builtins.trace "DEBUG: sourcing Valera-specific home.nix"
       lib.lists.flatten [
+        # The full update dance for the openclaw checkout — anything less than all of these steps
+        # after moving HEAD leaves the gateway broken (stale dist) or crash-looping (schema drift).
+        (pkgs.writeShellScriptBin "openclaw-rebuild" ''
+          set -euo pipefail
+          cd "$HOME/g/openclaw"
+          export CI=true COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+          export PATH="${pkgs.nodejs_22}/bin:$PATH"
+          corepack pnpm install --frozen-lockfile
+          corepack pnpm build
+          node openclaw.mjs doctor --fix
+          systemctl --user restart openclaw-gateway
+          sleep 20
+          node openclaw.mjs channels status --probe
+        '')
+
         chromium
         #en-croissant # chess analysis GUI #dbg: may be bringing in `webkitgtk`
         ncspot

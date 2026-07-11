@@ -1206,7 +1206,7 @@ fn classify_activity(
     // before everything else. Anchored the same way as the API-error chrome:
     // trimmed line STARTS with "⎿" with the limit text as its immediate body,
     // so narration that merely QUOTES the chrome doesn't fire.
-    let limit_pattern = Regex::new(r"(?m)^\s*⎿\s+You['’]ve hit your session limit").unwrap();
+    let limit_pattern = Regex::new(r"(?m)^\s*⎿\s+You['’]ve hit your (session )?limit").unwrap();
     if limit_pattern.is_match(&last_portion) {
         return ActivityResult { state: ClaudeState::Limit, draft_content: None, question_content: None };
     }

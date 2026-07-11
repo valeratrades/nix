@@ -102,7 +102,7 @@ fn poll_until_settled(idle_reads: u8, dry_run: bool) {
     }
     tg(&format!("supervise: watching {} session(s): {}", watched.len(), watched.iter().cloned().collect::<Vec<_>>().join(", ")));
 
-    let total = watched.len();
+    let mut total = watched.len();
     let mut remaining = watched;
     let mut idle_streak: HashMap<String, u8> = HashMap::new();
 
@@ -110,6 +110,15 @@ fn poll_until_settled(idle_reads: u8, dry_run: bool) {
         std::thread::sleep(POLL);
 
         let Some(snap) = snapshot() else { continue }; // transient failure: retry; horizon still guaranteed
+
+        // Adopt sessions that turned active after we started (also re-adopts a
+        // settled one that woke back up — it must settle again before shutdown).
+        for name in snap.iter().filter(|(_, s)| *s == "active").map(|(n, _)| n) {
+            if remaining.insert(name.clone()) {
+                total += 1;
+                tg(&format!("supervise: + {name} became active — now watching {}", remaining.len()));
+            }
+        }
 
         let settled: Vec<(String, String)> = remaining
             .iter()

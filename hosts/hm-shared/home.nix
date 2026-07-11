@@ -47,6 +47,16 @@
         });
       };
       silent = true;
+      # Any existing nix-direnv cache is used as-is: no re-evaluation, no network,
+      # even if flake.{nix,lock} changed. `nix-direnv-reload` (`dirr`) is the only
+      # way to update. A project with no cache at all still evaluates automatically
+      # (stock nix_direnv_manual_reload would just warn and leave you with no env).
+      # See ongoing_debug/2026-07-11_nix-develop-direnv-offline.md
+      stdlib = ''
+        if compgen -G "$(direnv_layout_dir)/*-profile-*.rc" >/dev/null; then
+          _nix_direnv_manual_reload=1
+        fi
+      '';
     };
 
     eza.enable = true;

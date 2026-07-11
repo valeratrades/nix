@@ -1,0 +1,143 @@
+
+● Update(home/config/fish/app_aliases/nix/__main__.fish)
+  ⎿  Added 25 lines
+       1  alias n="nix"
+       2  complete -c n -w nix
+       3 +
+       4 +# `nix develop`: fully offline when the env is already realized locally; online only
+       5 +# when something is genuinely missing. The probe realizes the same env, so the offline
+       6 +# develop after it is instant. --max-jobs 0 makes the probe fail fast instead of
+       7 +# silently source-building GC'd deps. A genuine eval error gets evaluated twice (cheap).
+       8 +# See ongoing_debug/2026-07-11_nix-develop-direnv-offline.md
+       9 +function nix --wraps nix
+      10 +  if test "$argv[1]" = develop
+      11 +    # --command/-c consumes everything after it; strip for the probe
+      12 +    set -l probe_args
+      13 +    for a in $argv[2..]
+      14 +      if contains -- $a --command -c
+      15 +        break
+      16 +      end
+      17 +      set -a probe_args $a
+      18 +    end
+      19 +    if command nix print-dev-env --offline --max-jobs 0 $probe_args &>/dev/null
+      20 +      command nix develop --offline $argv[2..]
+      21 +    else
+      22 +      command nix $argv
+      23 +    end
+      24 +  else
+      25 +    command nix $argv
+      26 +  end
+      27 +end
+      28  alias flake-build="sudo nixos-rebuild switch --flake .#myhost --show-trace -L -v"
+      29  #TODO!: make into a function and git-commit with $argv concatenation for message
+      30  alias nixup="git -C '$NIXOS_CONFIG' add -A && nix flake update --flake '$NIXOS_CONFIG' && sudo nixos-rebuild switch --show-trace -v --impure --fast && git_upload '$NIXOS_CONFIG'"
+
+  Thought for 6s (ctrl+o to expand)
+
+● Now update dirr to use the designed force-reload path (nuking .direnv also nukes gcroots):
+
+  Read 1 file (ctrl+o to expand)
+
+● Update(home/config/fish/app_aliases/direnv.fish)
+  ⎿  Added 11 lines, removed 1 line
+       7    direnv deny
+       8  end
+       9  complete -c dirw -w direnv
+      10 -alias dirr="rm -r .direnv; dira" # for `direnv reload`
+      10 +# manual reload: with global _nix_direnv_manual_reload this is THE way to update an env.
+      11 +# nix-direnv-reload force-rebuilds in place (keeps gcroots); nuking .direnv is the fallback.
+      12 +function dirr
+      13 +  git add -A
+      14 +  if test -x .direnv/bin/nix-direnv-reload
+      15 +    .direnv/bin/nix-direnv-reload
+      16 +  else
+      17 +    rm -rf .direnv
+      18 +    direnv allow
+      19 +  end
+      20 +end
+      21  complete -c dirr -w direnv
+      22  alias dird="direnv deny"
+      23  complete -c dird -w direnv
+
+● Now nix.settings hardening in configuration.nix:
+
+  Read 1 file (ctrl+o to expand)
+
+● Update(os/nixos/configuration.nix)
+  ⎿  Added 5 lines
+      13    nix.settings = {
+      14      experimental-features = [ "nix-command" "flakes" ];
+      15      accept-flake-config = true;
+      16 +    # never re-check cached tarballs / the global flake registry (default: hourly);
+      17 +    # dep updates are manual (`nup`). See ongoing_debug/2026-07-11_nix-develop-direnv-offline.md
+      18 +    tarball-ttl = 4294967295;
+      19 +    # GC keeps the build closure of gcrooted dev shells, so direnv caches stay valid offline
+      20 +    keep-outputs = true;
+      21      trusted-substituters = [
+      22        "https://cache.nixos.org"
+      23        "https://nix-community.cachix.org"
+
+  Thought for 23s (ctrl+o to expand)
+
+● Bash(mkdir -p /tmp/odtest /tmp/odcfg/direnv
+      cp -r ~/.config/direnv/lib /tmp/odcfg/direnv/lib…)
+  ⎿  error: 'nix develop' only works on derivations that use 'bash' as their builder
+  ⎿  Shell cwd was reset to /home/v/nix
+
+  Thought for 11s (ctrl+o to expand)
+
+● Need a real bash-based shell. Pinning nixpkgs to the exact rev already in the local store:
+
+● Bash(nix eval --raw --impure --expr '(builtins.fromJSON (builtins.readFile ./flake.lock)).nodes.nixpkgs.locked.rev' 2>/dev/null || python3 -c "import json; l=json.lo…)
+  ⎿  a04d33c0c3f1a59a2c1cb0c6e34cd24500e5a1dc
+
+● Bash(cat > /tmp/odtest/flake.nix <<'EOF'
+      {…)
+  ⎿  eval "${shellHook:-}"
+     … +3 lines (ctrl+o to expand)
+  ⎿  Shell cwd was reset to /home/v/nix
+
+  Thought for 7s (ctrl+o to expand)
+
+● Bash(cd /tmp/odtest && time unshare -rn nix print-dev-env --offline --max-jobs 0 .#default >/dev/null 2>/tmp/probe_err; echo "rc=$status"; tail -2 /tmp/probe_err)
+  ⎿  real       0m0,807s
+     user       0m0,430s
+     sys        0m0,168s
+     rc=
+  ⎿  Shell cwd was reset to /home/v/nix
+
+  Thought for 9s (ctrl+o to expand)
+
+● Bash(cd /tmp/odtest && unshare -rn nix print-dev-env --offline --max-jobs 0 .#default >/dev/null 2>&1; echo "probe rc=$?"; unshare -rn nix develop --offline . --comm…)
+  ⎿  Running in the background (↓ to manage)
+
+● Bash(sleep 5; cat /tmp/claude-1000/-home-v-nix/83a38d1d-8679-4f40-b974-1cf3843f6f71/tasks/b9t01s0db.output 2>/dev/null)
+  ⎿  probe rc=0
+     these 217 derivations will be built:
+       /nix/store/026i5h3a3pg28dxgv1x90117z6diha3x-byacc-20240109.tgz.drv
+     … +411 lines (ctrl+o to expand)
+
+  Thought for 36s (ctrl+o to expand)
+  ⎿  You've hit your limit · resets Jul 14, 2pm (UTC)
+
+✻ Cooked for 16m 4s · 1 shell still running
+
+❯ /rate-limit-options
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  What do you want to do?
+
+  ❯ 1. Stop and wait for limit to reset
+    2. Upgrade your plan
+
+  Enter to confirm · Esc to cancel
+
+
+
+
+
+
+
+
+
+

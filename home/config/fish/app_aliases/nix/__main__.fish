@@ -1,5 +1,30 @@
 alias n="nix"
 complete -c n -w nix
+
+# `nix develop`: fully offline when the env is already realized locally; online only
+# when something is genuinely missing. The probe realizes the same env, so the offline
+# develop after it is instant. --max-jobs 0 makes the probe fail fast instead of
+# silently source-building GC'd deps. A genuine eval error gets evaluated twice (cheap).
+# See ongoing_debug/2026-07-11_nix-develop-direnv-offline.md
+function nix --wraps nix
+	if test "$argv[1]" = develop
+		# --command/-c consumes everything after it; strip for the probe
+		set -l probe_args
+		for a in $argv[2..]
+			if contains -- $a --command -c
+				break
+			end
+			set -a probe_args $a
+		end
+		if command nix print-dev-env --offline --max-jobs 0 $probe_args &>/dev/null
+			command nix develop --offline $argv[2..]
+		else
+			command nix $argv
+		end
+	else
+		command nix $argv
+	end
+end
 alias flake-build="sudo nixos-rebuild switch --flake .#myhost --show-trace -L -v"
 #TODO!: make into a function and git-commit with $argv concatenation for message
 alias nixup="git -C '$NIXOS_CONFIG' add -A && nix flake update --flake '$NIXOS_CONFIG' && sudo nixos-rebuild switch --show-trace -v --impure --fast && git_upload '$NIXOS_CONFIG'"

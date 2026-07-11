@@ -13,6 +13,11 @@ in {
   nix.settings = {
     experimental-features = [ "nix-command" "flakes" ];
     accept-flake-config = true;
+    # never re-check cached tarballs / the global flake registry (default: hourly);
+    # dep updates are manual (`nup`). See ongoing_debug/2026-07-11_nix-develop-direnv-offline.md
+    tarball-ttl = 4294967295;
+    # GC keeps the build closure of gcrooted dev shells, so direnv caches stay valid offline
+    keep-outputs = true;
     trusted-substituters = [
       "https://cache.nixos.org"
       "https://nix-community.cachix.org"
