@@ -35,18 +35,33 @@ function cl
     set -l passthrough_args
     set -l expect_model 0
 
+    set -l model
+
     for arg in $argv
         if [ $expect_model -eq 1 ]
-            set -a passthrough_args --model $arg
+            set model $arg
             set expect_model 0
         else if [ "$arg" = --no-verify ]
             set no_verify 1
         else if [ "$arg" = -m ]
             set expect_model 1
+        else if string match -qr '^-[a-z]+$' -- $arg
+            # bundled short flags: extract -o (opus), pass the rest back to claude
+            if string match -q '*o*' -- $arg
+                set model opus
+                set arg (string replace -a o '' -- $arg)
+            end
+            if [ "$arg" != - ]
+                set -a passthrough_args $arg
+            end
         else
             set -a passthrough_args $arg
         end
         #TODO: add `-p` for opening in plan mode over a specific file
+    end
+
+    if [ -n "$model" ]
+        set -a passthrough_args --model $model
     end
 
     if [ $expect_model -eq 1 ]
