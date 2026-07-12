@@ -1484,6 +1484,26 @@ struct UsageInfo {
     five_hour_used_pct: Option<f64>,
     /// Unix epoch seconds at which the 5h window resets. None = unknown.
     five_hour_resets_at: Option<i64>,
+    /// Percent of the weekly (7d) limit used [0, 100] — the fable-constrained
+    /// window. None = unknown. Only overwritten when a fetch reports it, so a
+    /// probe that omits the 7d headers keeps the last known value.
+    weekly_used_pct: Option<f64>,
+    /// Unix epoch seconds at which the weekly window resets. None = unknown.
+    weekly_resets_at: Option<i64>,
+}
+
+impl UsageInfo {
+    /// Field-wise overlay: keep a prior value wherever the fresh fetch is silent.
+    /// This is what makes the fable column stick when a response carries no 7d
+    /// headers — no new info about it seen means no update.
+    fn overlay(self, old: UsageInfo) -> UsageInfo {
+        UsageInfo {
+            five_hour_used_pct: self.five_hour_used_pct.or(old.five_hour_used_pct),
+            five_hour_resets_at: self.five_hour_resets_at.or(old.five_hour_resets_at),
+            weekly_used_pct: self.weekly_used_pct.or(old.weekly_used_pct),
+            weekly_resets_at: self.weekly_resets_at.or(old.weekly_resets_at),
+        }
+    }
 }
 
 #[derive(Default, Serialize, Deserialize)]
@@ -1570,11 +1590,15 @@ fn fetch_usage() -> Option<UsageInfo> {
     let headers = String::from_utf8_lossy(&output.stdout);
     let mut util: Option<f64> = None;
     let mut reset: Option<i64> = None;
+    let mut weekly_util: Option<f64> = None;
+    let mut weekly_reset: Option<i64> = None;
     for line in headers.lines() {
         let Some((k, v)) = line.split_once(':') else { continue };
         match k.trim().to_ascii_lowercase().as_str() {
             "anthropic-ratelimit-unified-5h-utilization" => util = v.trim().parse().ok(),
             "anthropic-ratelimit-unified-5h-reset" => reset = v.trim().parse().ok(),
+            "anthropic-ratelimit-unified-7d-utilization" => weekly_util = v.trim().parse().ok(),
+            "anthropic-ratelimit-unified-7d-reset" => weekly_reset = v.trim().parse().ok(),
             _ => {}
         }
     }
@@ -1583,6 +1607,8 @@ fn fetch_usage() -> Option<UsageInfo> {
     Some(UsageInfo {
         five_hour_used_pct: Some(util? * 100.0),
         five_hour_resets_at: reset,
+        weekly_used_pct: weekly_util.map(|w| w * 100.0),
+        weekly_resets_at: weekly_reset,
     })
 }
 
@@ -1598,34 +1624,61 @@ fn format_duration_until(target: i64) -> String {
     if remaining <= 0 {
         return "?".to_string();
     }
-    let hours = remaining / 3600;
+    let days = remaining / 86400;
+    let hours = (remaining % 86400) / 3600;
     let mins = (remaining % 3600) / 60;
-    if hours > 0 {
+    if days > 0 {
+        format!("{}d{:02}h", days, hours)
+    } else if hours > 0 {
         format!("{}h{:02}m", hours, mins)
     } else {
         format!("{}m", mins)
     }
 }
 
-fn format_usage_header(u: &UsageInfo) -> String {
-    // If we know when the window resets and that moment has passed, the window
-    // has rolled over without us refetching — assume the allocation is fresh
-    // (100% left) and drop the countdown entirely.
-    if let Some(reset) = u.five_hour_resets_at {
-        if now_epoch() >= reset {
-            return "100%".to_string();
+/// One usage limit window. `compact` renders just "<time_left> · <pct_left>";
+/// `full` prefixes the limit's name so a lone value can't be misread.
+struct LimitView {
+    name: &'static str,
+    used_pct: Option<f64>,
+    resets_at: Option<i64>,
+}
+
+impl LimitView {
+    /// "<time_left> · <pct_left>". A reset moment already in the past means the
+    /// window rolled over without a refetch — treat it as fresh (100% left).
+    fn compact(&self) -> String {
+        if let Some(reset) = self.resets_at {
+            if now_epoch() >= reset {
+                return "100%".to_string();
+            }
         }
+        let pct_left = match self.used_pct {
+            Some(used) => format!("{:.0}%", (100.0 - used).max(0.0)),
+            None => "?".to_string(),
+        };
+        let time_left = match self.resets_at {
+            Some(t) => format_duration_until(t),
+            None => "?".to_string(),
+        };
+        format!("{time_left} · {pct_left}")
     }
 
-    let pct_left = match u.five_hour_used_pct {
-        Some(used) => format!("{:.0}%", (100.0 - used).max(0.0)),
-        None => "?".to_string(),
-    };
-    let time_left = match u.five_hour_resets_at {
-        Some(t) => format_duration_until(t),
-        None => "?".to_string(),
-    };
-    format!("{time_left} · {pct_left}")
+    fn full(&self) -> String {
+        format!("{} {}", self.name, self.compact())
+    }
+}
+
+fn format_usage_header(u: &UsageInfo, compact: bool) -> String {
+    let limits = [
+        LimitView { name: "total", used_pct: u.five_hour_used_pct, resets_at: u.five_hour_resets_at },
+        LimitView { name: "fable", used_pct: u.weekly_used_pct, resets_at: u.weekly_resets_at },
+    ];
+    limits
+        .iter()
+        .map(|l| if compact { l.compact() } else { l.full() })
+        .collect::<Vec<_>>()
+        .join(" | ")
 }
 
 fn current_state_map(windows: &[ClaudeWindow]) -> HashMap<String, String> {
@@ -1768,7 +1821,7 @@ fn main() {
     let cache = load_cache();
     let did_attempt = should_recompute(&cache, &windows);
     let usage = if did_attempt {
-        fetch_usage().unwrap_or(cache.usage)
+        fetch_usage().map(|u| u.overlay(cache.usage)).unwrap_or(cache.usage)
     } else {
         cache.usage
     };
@@ -1787,10 +1840,10 @@ fn main() {
     } else if args.markup {
         // Header is purely informational; left uncolored so it inherits the
         // widget's default text color (the eww label's own styling).
-        println!("{}", pango_escape(&format_usage_header(&usage)));
+        println!("{}", pango_escape(&format_usage_header(&usage, args.compact)));
         println!("{}", sessions);
     } else {
-        println!("{}", format_usage_header(&usage).dimmed());
+        println!("{}", format_usage_header(&usage, args.compact).dimmed());
         println!("{}", sessions);
     }
 }

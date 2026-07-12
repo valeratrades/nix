@@ -174,30 +174,52 @@ fn clean_old_build_artefacts() -> bool {
         for entry in WalkDir::new(dir)
             .into_iter()
             .filter_map(|e| e.ok())
-            .filter(|e| e.file_name() == "Cargo.toml")
         {
             let parent_dir = entry.path().parent().unwrap();
-            let target_dir = parent_dir.join("target");
 
-            if target_dir.exists() {
-                if let Ok(metadata) = fs::metadata(parent_dir) {
-                    if let Ok(modified) = metadata.modified() {
-                        if let Ok(elapsed) = modified.elapsed() {
-                            if elapsed > Duration::from_secs(FOUR_WEEKS_SECS) {
-                                println!("\x1b[32mCleaned build artefacts in: {}\x1b[0m", parent_dir.display());
-                                let _ = Command::new("cargo")
-                                    .arg("clean")
-                                    .current_dir(parent_dir)
-                                    .status();
+            match entry.file_name().to_str() {
+                Some("Cargo.toml") if parent_dir.join("target").exists() => {
+                    if is_stale(parent_dir) {
+                        println!("\x1b[32mCleaned build artefacts in: {}\x1b[0m", parent_dir.display());
+                        let _ = Command::new("cargo")
+                            .arg("clean")
+                            .current_dir(parent_dir)
+                            .status();
+                    }
+                }
+                // repo root: clean stale dist/ and result/ (nix build symlink)
+                Some(".git") => {
+                    for name in ["dist", "result"] {
+                        let artefact = parent_dir.join(name);
+                        // symlink_metadata: `result` is a symlink into /nix/store, don't follow it
+                        if artefact.symlink_metadata().is_ok() && is_stale(parent_dir) {
+                            println!("\x1b[32mRemoved stale {}/ in: {}\x1b[0m", name, parent_dir.display());
+                            let meta = artefact.symlink_metadata().unwrap();
+                            let removed = if meta.file_type().is_symlink() {
+                                fs::remove_file(&artefact)
+                            } else {
+                                fs::remove_dir_all(&artefact)
+                            };
+                            if let Err(e) = removed {
+                                eprintln!("\x1b[31mFailed to remove {}: {}\x1b[0m", artefact.display(), e);
                             }
                         }
                     }
                 }
+                _ => {}
             }
         }
     }
 
     true
+}
+
+fn is_stale(dir: &Path) -> bool {
+    fs::metadata(dir)
+        .and_then(|m| m.modified())
+        .ok()
+        .and_then(|m| m.elapsed().ok())
+        .is_some_and(|e| e > Duration::from_secs(FOUR_WEEKS_SECS))
 }
 
 fn check_cargo_nix_shadows() -> Vec<String> {
