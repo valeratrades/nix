@@ -46,10 +46,14 @@ function cl
         else if [ "$arg" = -m ]
             set expect_model 1
         else if string match -qr '^-[a-z]+$' -- $arg
-            # bundled short flags: extract -o (opus), pass the rest back to claude
+            # bundled short flags: extract -o (opus) / -f (fable), pass the rest back to claude
             if string match -q '*o*' -- $arg
                 set model opus
                 set arg (string replace -a o '' -- $arg)
+            end
+            if string match -q '*f*' -- $arg
+                set model claude-fable-5
+                set arg (string replace -a f '' -- $arg)
             end
             if [ "$arg" != - ]
                 set -a passthrough_args $arg
