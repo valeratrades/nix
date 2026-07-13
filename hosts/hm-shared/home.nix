@@ -261,7 +261,7 @@
               # baked the package to 80°C. Encode stays off (more crash-prone than decode).
               "--disable-accelerated-video-encode"
               "--silent-debugger-extension-api" # suppress OpenClaw Auto Relay debug bar
-              "--remote-debugging-port=9222"
+              "--remote-debugging-port=49300" # 9222 normally, but that's default, so some tools choose it to, and then end up messing with my ongoing session
               # Block silent ~4GB Gemini Nano (weights.bin under OptGuideOnDeviceModel)
               # download. Disables the optimization-guide on-device model + its downloader.
               "--disable-features=OptimizationGuideOnDeviceModel,OptimizationGuideModelDownloading,TextSafetyClassifier,OnDeviceModelPerformanceParams"

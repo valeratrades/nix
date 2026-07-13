@@ -1665,7 +1665,7 @@ impl LimitView {
     }
 
     fn full(&self) -> String {
-        format!("{} {}", self.name, self.compact())
+        format!("{}: {}", self.name, self.compact())
     }
 }
 
