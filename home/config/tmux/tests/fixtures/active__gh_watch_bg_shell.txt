@@ -1,0 +1,143 @@
+      167    value: Vec<f64>,
+      168  }
+      169  #[instrument(skip_all)]
+      170 -async fn collect_data(pairs: &[Pair], tf: Timeframe, range: RequestRange, instrument: Instrument, exchange: Arc<Box<dyn Exchange>>) -> Result<HashMap<Pair, Vec<(i64, f64)>>> {
+      170 +async fn collect_data(pairs: &[Pair], tf: Timeframe, range: RequestRange, instrument: Instrument, exchange: &dyn Exchange) -> Result<HashMap<Pair, Vec<(i64, f64)>>> {
+      171    tracing::info!("Starting data collection for {} pairs with tf={tf:?}, range={range:?}", pairs.len());
+      172
+      173    let progress = crate::dashboards::_core::Progress::of::<MarketStructureChart>();
+
+● Update(src/dashboards/market_structure/data.rs)
+  ⎿  Removed 1 line
+      177    // ponytail: fixed cap keeps the per-pair burst under Binance's 2400 weight/min IP limit; tune if the universe grows
+      178    const CONCURRENCY: usize = 12;
+      179    let results: Vec<_> = stream::iter(pairs.to_vec().into_iter().map(|pair| {
+      180 -    let exchange = Arc::clone(&exchange);
+      180      let symbol = Symbol::new(pair, instrument);
+      181      async move {
+      180      let symbol = Symbol::new(pair, instrument);
+      181      async move {
+      182        let r = match get_historical_data(symbol, tf, range, exchange).await {
+
+● Update(src/dashboards/market_structure/data.rs)
+  ⎿  Added 1 line, removed 1 line
+      247    col_volumes: Vec<f64>,
+      248  }
+      249  #[instrument(skip_all, fields(symbol = %symbol))]
+      250 -async fn get_historical_data(symbol: Symbol, tf: Timeframe, range: RequestRange, exchange: Arc<Box<dyn Exchange>>) -> Result<RelevantHistoricalData> {
+      250 +async fn get_historical_data(symbol: Symbol, tf: Timeframe, range: RequestRange, exchange: &dyn Exchange) -> Result<RelevantHistoricalData> {
+      251    tracing::debug!("Fetching klines for {symbol} (tf={tf:?}, range={range:?})");
+      252
+      253    let klines = match exchange.klines(symbol, tf, range).await {
+
+● Now fetch() to lock and reuse the static client:
+
+● Update(src/dashboards/market_structure/data.rs)
+  ⎿  Added 2 lines, removed 1 line
+      304    async fn fetch() -> Result<Self> {
+      305      let tf = "5m".into();
+      306      let range = (24 * 12 + 1).into(); // 24h, given `5m` tf
+      307 -    market_structure_json(range, tf, ExchangeName::Binance, Instrument::Perp).await
+      307 +    let mut exchange = BINANCE.lock().await;
+      308 +    market_structure_json(range, tf, &mut **exchange, Instrument::Perp).await
+      309    }
+      310
+      311    fn fmt_progress(loaded: usize, target: usize) -> String {
+
+  Thought for 5s (ctrl+o to expand)
+
+● Bash(nix develop --command cargo b 2>&1 | grep -iE "error|warning: unused|Finished" | head -30)
+  ⎿      Finished `dev` profile [unoptimized + debuginfo] target(s) in 23.57s
+     warning: the following packages contain code that will be rejected by a future version of Rust: proc-macro-error2 v2.0.1
+  ⎿  (timeout 10m)
+
+  Thought for 22s (ctrl+o to expand)
+
+● Site builds clean, no unused warnings. Let me verify the diff is tight and commit only data.rs (not the pre-existing _core/mod.rs WIP):
+
+● Bash(git status --short && echo "===DATA.RS DIFF===" && git diff --stat src/dashboards/market_structure/data.rs)
+  ⎿   M src/dashboards/market_structure/data.rs
+     ===DATA.RS DIFF===
+      src/dashboards/market_structure/data.rs | 40 +++++++++++++++++++--------------
+      1 file changed, 23 insertions(+), 17 deletions(-)
+
+  Thought for 12s (ctrl+o to expand)
+
+● The _core/mod.rs WIP no longer shows as modified — let me confirm where it went (committed in v0.2.6, or reverted) so I don't lose your work:
+
+● Bash(git log --oneline -3 | cat; echo "---is _core/mod.rs's past() refactor in HEAD?---"; git show HEAD:src/dashboards/_core/mod.rs | grep -n "fn past" | head; echo…)
+  ⎿  0a63c18 bump: v_flakes
+     d5e2a1e chore(deps): bump v_exchanges =0.18.6 (post-ban cooldown gate)
+     8f2eed4 feat(dashboards): single-flight source refresh + stale = interval×1.15 (configurable)
+     … +3 lines (ctrl+o to expand)
+
+  Thought for 10s (ctrl+o to expand)
+
+● Good — your _core WIP is safely committed in 0a63c18 bump: v_flakes; working tree is clean except my data.rs. Let me commit it and cut the site release:
+
+● Bash(nix develop --command git commit -o src/dashboards/market_structure/data.rs -q -m "fix(market_structure): reuse one long-lived exchange client across polls…)
+  ⎿      error: patch failed: src/dashboards/market_structure/data.rs:14
+         error: src/dashboards/market_structure/data.rs: patch does not apply
+     Check the log at /home/v/.cache/pre-commit/pre-commit.log
+     0a63c18 bump: v_flakes
+
+  Thought for 9s (ctrl+o to expand)
+
+● The pre-commit hook reformatted the file mid-commit. Let me retry cleanly:
+
+● Bash(git status --short && git add src/dashboards/market_structure/data.rs && nix develop --command git commit -q -m "fix(market_structure): reuse one long-lived exc…)
+  ⎿   M src/dashboards/market_structure/data.rs
+     [INFO] Stashing unstaged files to /home/v/.cache/pre-commit/patch1783996304-2326645.
+     treefmt..................................................................Passed
+     … +2 lines (ctrl+o to expand)
+
+  Thought for 5s (ctrl+o to expand)
+
+● Committed. Now tag and push the site release:
+
+● Bash(git tag -l 'v0.2*' | sort -V | tail -3; echo "---push---"; git push origin main 2>&1 | tail -3; git tag v0.2.7 && git push origin v0.2.7 2>&1 | tail -3)
+  ⎿  v0.2.4
+     v0.2.5
+     v0.2.6
+     … +5 lines (ctrl+o to expand)
+
+● Bash(gh run list --limit 3 2>&1 | cat)
+  ⎿  queued             fix(market_structure): reuse one long-lived exchange client across polls        Errors  v0.2.7  push    29301298042     3s      2026-07-14T02:31:57Z
+     queued             fix(market_structure): reuse one long-lived exchange client across polls        Warnings        v0.2.7  push    29301298025     3s      2026-07-14T02:31:57Z
+     queued             fix(market_structure): reuse one long-lived exchange client across polls        Release containers      v0.2.7  push    29301297783     3s      2026-07-14T02:31:57Z
+
+  Thought for 19s (ctrl+o to expand)
+
+● Fixed and shipping as v0.2.7 (CI building now). Summary:
+
+  What I got wrong: moving banned_until to a process-global static — you're right, that assumes one egress identity for the whole process and lets one client's ban poison every other client. Reverted; nothing was published (you stopped it before cargo release ran). v_exchanges stays at the published per-client 0.20.6.
+
+  Actual root cause: market_structure_json called exchange_name.init_client() every poll — a fresh client with an empty banned_until. So the gate recorded the ban, then the client was dropped; next poll re-hit Binance, got a fresh 418, and renewed the ban. That's why I watched the unban time march 07:22 → 07:26 live.
+
+  Fix (site-only, no dep bump): hold one long-lived Binance client in a static behind a lock and reuse it across polls, so a recorded ban short-circuits the next poll network-free and the ban expires on its own. collect_data/get_historical_data now borrow &dyn Exchange instead of Arc-cloning a per-poll client.
+
+  And to answer your original question directly: no, it does not crash when the exchange is unavailable — the pod is 1/1 Running, 0 restarts, and the endpoint returns a graceful 500. Your "no containers" was the 5-minute ARM image-pull window during the v0.2.6 rollout, not a panic.
+
+  Once v0.2.7 rolls out I'll verify on the pod that the unban timestamp stops advancing and Binance stops being hit. Let me check the build:
+
+● Bash(gh run list --limit 1 --workflow=release-container.yml 2>&1 | cat)
+  ⎿  in_progress                fix(market_structure): reuse one long-lived exchange client across polls        Release containers      v0.2.7  push    29301297783     31s     2026-07-14T02:31:57Z
+
+  Thought for 13s (ctrl+o to expand)
+
+● Build's running (~13 min + ~5 min ARM pull). Let me watch it in the background and verify on the pod once v0.2.7 lands:
+
+● Bash(gh run watch 29301297783 --exit-status >/dev/null 2>&1; echo "BUILD DONE: exit=$?"; echo "waiting for pod to roll to v0.2.7..."; for i in $(seq 1 40); do img=$(…)
+  ⎿  Running in the background (↓ to manage)
+
+  Thought for 10s (ctrl+o to expand)
+
+● Monitoring the build + rollout in the background (ID b8xrva72z) — it'll notify me when v0.2.7 is live on the pod, then I'll run the verification (hammer the endpoint, confirm the unban timestamp holds steady and the short-circuit fires instead of re-hitting Binance). I'll report back with the result.
+
+✻ Crunched for 7m 36s · 1 shell still running
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── post-ban-cooldown-gate ──
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on · 1 shell · ← for agents · ↓ to manage                                                                                                                                                                                                                                            100% context used
+

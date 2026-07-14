@@ -4,6 +4,7 @@
 clap = { version = "4.5.49", features = ["derive"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+libc = "0.2"
 ---
 
 use clap::Parser;
@@ -14,6 +15,7 @@ use std::time::Duration;
 
 const CLAUDE_SESSIONS: &str = "/home/v/nix/home/config/tmux/claude_sessions.rs";
 const SMART_SHUTDOWN: &str = "/home/v/nix/home/scripts/smart_shutdown.rs";
+const TIMER: &str = "/home/v/nix/home/scripts/timer.rs";
 const TG: &str = "/etc/profiles/per-user/v/bin/tg"; // gateway PATH lacks the user profile; call it explicitly
 const POLL: Duration = Duration::from_secs(60);
 
@@ -162,10 +164,29 @@ fn poll_until_settled(idle_reads: u8, dry_run: bool) {
     }
 }
 
+// Owned countdown showing time-to-horizon. PR_SET_PDEATHSIG makes the kernel send
+// the timer SIGTERM the instant this supervisor dies (early shutdown exits the
+// process, horizon shutdown returns from main) — the timer then self-cleans.
+fn spawn_timer(timeout_m: u64) {
+    use std::os::unix::process::CommandExt;
+    let mut cmd = Command::new(TIMER);
+    cmd.arg(format!("{timeout_m}m"));
+    unsafe {
+        cmd.pre_exec(|| match libc::prctl(libc::PR_SET_PDEATHSIG, libc::SIGTERM) {
+            0 => Ok(()),
+            _ => Err(std::io::Error::last_os_error()),
+        });
+    }
+    if let Err(e) = cmd.spawn() {
+        eprintln!("timer failed to spawn: {e}");
+    }
+}
+
 fn main() {
     let args = Args::parse();
     let horizon = Duration::from_secs(args.timeout_m * 60);
 
+    spawn_timer(args.timeout_m);
     std::thread::spawn(move || poll_until_settled(args.idle_reads, args.dry_run));
 
     // The main thread IS the termination horizon: a pure sleep nothing can block.

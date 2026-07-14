@@ -4,12 +4,13 @@
 [dependencies]
 clap = { version = "4.5.49", features = ["derive"] }
 libc = "0.2"
+crossterm = "0.28"
 ---
 
 use clap::Parser;
 use std::{
     fs,
-    io::ErrorKind,
+    io::{ErrorKind, Write},
     path::PathBuf,
     process::Command,
     sync::atomic::{AtomicBool, Ordering},
@@ -18,6 +19,21 @@ use std::{
 };
 
 static INTERRUPTED: AtomicBool = AtomicBool::new(false);
+// so the signal handler and cleanup can undo raw mode without threading the flag through
+static RAW_MODE: AtomicBool = AtomicBool::new(false);
+
+fn is_tty() -> bool {
+    unsafe { libc::isatty(libc::STDIN_FILENO) == 1 && libc::isatty(libc::STDOUT_FILENO) == 1 }
+}
+
+fn disable_raw() {
+    if RAW_MODE.swap(false, Ordering::Relaxed) {
+        let _ = crossterm::terminal::disable_raw_mode();
+        // leave the countdown line and move to a fresh one
+        print!("\r\n");
+        let _ = std::io::stdout().flush();
+    }
+}
 
 fn control_file() -> PathBuf {
     PathBuf::from("/tmp/timer_control")
@@ -197,15 +213,46 @@ fn format_time(left: i32) -> String {
     }
 }
 
+fn draw_line(left: i32, paused: bool) {
+    let tag = if paused { " [paused]" } else { "" };
+    print!("\r\x1b[K{}{tag}", format_time(left));
+    let _ = std::io::stdout().flush();
+}
+
 extern "C" fn handle_signal(_: libc::c_int) {
     INTERRUPTED.store(true, Ordering::Relaxed);
 }
 
 fn cleanup() {
+    disable_raw();
     clear_control();
     let _ = Command::new("eww")
         .args(["update", "timer="])
         .status();
+}
+
+/// non-blocking: returns true if Enter was pressed within `dur`.
+/// In raw mode Ctrl-C arrives as a key event rather than SIGINT, so honor it here.
+fn enter_pressed_within(dur: Duration) -> Result<bool, String> {
+    use crossterm::event::{poll, read, Event, KeyCode, KeyModifiers};
+    if poll(dur).map_err(|e| e.to_string())? {
+        if let Event::Key(k) = read().map_err(|e| e.to_string())? {
+            if k.code == KeyCode::Char('c') && k.modifiers.contains(KeyModifiers::CONTROL) {
+                INTERRUPTED.store(true, Ordering::Relaxed);
+                return Ok(false);
+            }
+            return Ok(k.code == KeyCode::Enter);
+        }
+    }
+    Ok(false)
+}
+
+fn toggle_pause() -> Result<(), String> {
+    match read_control().as_deref() {
+        Some("running") => write_control("paused"),
+        Some("paused") => write_control("running"),
+        _ => Ok(()),
+    }
 }
 
 fn timer(initial: Option<i32>, quiet: bool) -> Result<(), String> {
@@ -218,6 +265,13 @@ fn timer(initial: Option<i32>, quiet: bool) -> Result<(), String> {
         libc::signal(libc::SIGTERM, handle_signal as libc::sighandler_t);
     }
 
+    let tui = is_tty();
+    if tui {
+        crossterm::terminal::enable_raw_mode().map_err(|e| e.to_string())?;
+        RAW_MODE.store(true, Ordering::Relaxed);
+        println!("Enter: pause/resume, Ctrl-C: quit\r");
+    }
+
     // Mark as running
     write_control("running")?;
 
@@ -227,7 +281,14 @@ fn timer(initial: Option<i32>, quiet: bool) -> Result<(), String> {
         }
         // Check control file for pause state
         while read_control().as_deref() == Some("paused") {
-            sleep(Duration::from_millis(100));
+            if tui {
+                draw_line(left, true);
+                if enter_pressed_within(Duration::from_millis(100))? {
+                    toggle_pause()?;
+                }
+            } else {
+                sleep(Duration::from_millis(100));
+            }
             if INTERRUPTED.load(Ordering::Relaxed) {
                 break;
             }
@@ -242,7 +303,23 @@ fn timer(initial: Option<i32>, quiet: bool) -> Result<(), String> {
             .args(["update", &format!("timer={display}")])
             .status()
             .map_err(|e| e.to_string())?;
-        sleep(Duration::from_secs(1));
+        if tui {
+            draw_line(left, false);
+            // consume the 1s tick while staying responsive to Enter
+            let end = std::time::Instant::now() + Duration::from_secs(1);
+            loop {
+                let now = std::time::Instant::now();
+                if now >= end || INTERRUPTED.load(Ordering::Relaxed) {
+                    break;
+                }
+                if enter_pressed_within(end - now)? {
+                    toggle_pause()?;
+                    break;
+                }
+            }
+        } else {
+            sleep(Duration::from_secs(1));
+        }
         left -= 1;
 
         if left < 0 && notify && !notified {

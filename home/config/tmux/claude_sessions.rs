@@ -1452,6 +1452,19 @@ fn classify_activity(
         return ActivityResult { state: ClaudeState::Finished, draft_content: None, question_content: None };
     }
 
+    // A background shell Claude is actively tailing (e.g. `gh run watch` on a CI
+    // build) leaves the pane on a live "❯ " prompt with no spinner, so the gate
+    // below would read it as Finished — but Claude isn't done, it's blocked on
+    // the shell's result. The footer's "N shell" (and the "N shell still
+    // running" recap line) marks a live background shell. Not every lingering
+    // shell counts — a dev server outlives the turn — so we only upgrade to
+    // Active for known wait-y commands. Expand the list as more turn up.
+    const WATCH_SHELL_PATTERNS: &[&str] = &["gh run watch"];
+    let has_bg_shell = Regex::new(r"\d+ shells?\b").unwrap().is_match(&last_portion);
+    if has_bg_shell && WATCH_SHELL_PATTERNS.iter().any(|p| content.contains(p)) {
+        return ActivityResult { state: ClaudeState::Active, draft_content: None, question_content: None };
+    }
+
     // Check if there's an input prompt line - indicates Claude is waiting for
     // input (task done). Modern Claude Code renders the prompt as "❯ "; older
     // builds used "> ". Either one means Finished.
