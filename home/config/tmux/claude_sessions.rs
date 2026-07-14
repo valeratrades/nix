@@ -2,6 +2,7 @@
 ---cargo
 [dependencies]
 clap = { version = "4.5.49", features = ["derive"] }
+chrono = { version = "0.4", default-features = false, features = ["alloc"] }
 colored = "2"
 regex = "1"
 serde = { version = "1.0", features = ["derive"] }
@@ -1387,9 +1388,11 @@ fn classify_activity(
     // welcome box, which reads as Empty on full-content match) and the
     // prompt-line gate (Finished would bury it — and todos usually still have
     // pending items here, so the Finished→Active upgrade in get_claude_windows
-    // would then mislabel the session as working).
+    // would then mislabel the session as working). But typed input wins: once I
+    // start composing the "what to do instead" reply, the pane is Input, not a
+    // bare interruption — same suppression the question branch uses.
     let interrupted_pattern = Regex::new(r"(?m)^\s*⎿\s+Interrupted").unwrap();
-    if interrupted_pattern.is_match(&last_portion) {
+    if interrupted_pattern.is_match(&last_portion) && typed_input.is_none() {
         return ActivityResult { state: ClaudeState::Interrupted, draft_content: None, question_content: None };
     }
 
@@ -1484,9 +1487,9 @@ struct UsageInfo {
     five_hour_used_pct: Option<f64>,
     /// Unix epoch seconds at which the 5h window resets. None = unknown.
     five_hour_resets_at: Option<i64>,
-    /// Percent of the weekly (7d) limit used [0, 100] — the fable-constrained
-    /// window. None = unknown. Only overwritten when a fetch reports it, so a
-    /// probe that omits the 7d headers keeps the last known value.
+    /// Percent of the fable(Opus) weekly limit used [0, 100]. None = unknown.
+    /// Only overwritten when a fetch reports it, so a response missing the fable
+    /// limit keeps the last known value.
     weekly_used_pct: Option<f64>,
     /// Unix epoch seconds at which the weekly window resets. None = unknown.
     weekly_resets_at: Option<i64>,
@@ -1494,8 +1497,8 @@ struct UsageInfo {
 
 impl UsageInfo {
     /// Field-wise overlay: keep a prior value wherever the fresh fetch is silent.
-    /// This is what makes the fable column stick when a response carries no 7d
-    /// headers — no new info about it seen means no update.
+    /// This is what makes the fable column stick when a response omits its
+    /// limit — no new info about it seen means no update.
     fn overlay(self, old: UsageInfo) -> UsageInfo {
         UsageInfo {
             five_hour_used_pct: self.five_hour_used_pct.or(old.five_hour_used_pct),
@@ -1550,35 +1553,66 @@ fn save_cache(cache: &CacheState) {
     }
 }
 
-/// Fetch 5h utilization from Claude Code's unified rate-limit headers, read off a
-/// minimal inference call.
+/// Utilization windows from Claude Code's OAuth usage endpoint. `utilization`
+/// and `percent` are already 0..100; `resets_at` is RFC3339 (always UTC).
+#[derive(Deserialize)]
+struct OauthUsage {
+    five_hour: UsageWindow,
+    /// One entry per active limit. The fable(Opus) weekly cap is the
+    /// `weekly_scoped` entry whose scope.model.display_name is "Fable" — it is
+    /// NOT the account-wide `seven_day`/`weekly_all` figure.
+    limits: Vec<UsageLimit>,
+}
+
+#[derive(Deserialize)]
+struct UsageWindow {
+    utilization: f64,
+    resets_at: String,
+}
+
+#[derive(Deserialize)]
+struct UsageLimit {
+    percent: f64,
+    resets_at: String,
+    scope: Option<LimitScope>,
+}
+
+#[derive(Deserialize)]
+struct LimitScope {
+    model: Option<LimitModel>,
+}
+
+#[derive(Deserialize)]
+struct LimitModel {
+    display_name: Option<String>,
+}
+
+fn rfc3339_epoch(s: &str) -> Option<i64> {
+    chrono::DateTime::parse_from_rfc3339(s).ok().map(|d| d.timestamp())
+}
+
+/// Fetch usage from Claude Code's OAuth usage endpoint.
 ///
-/// The old GET /api/oauth/usage path is dead: as of the inference-only OAuth
-/// token (scopes = ["user:inference"]) it hard-returns 429 rate_limit_error
-/// regardless of CLI-style headers. The live signal now rides on the
-/// `anthropic-ratelimit-unified-5h-*` response headers that come back on every
-/// POST /v1/messages — so we make the cheapest possible call (haiku, max_tokens:1)
-/// and read the headers, discarding the body.
-/// ponytail: costs ~1 token per fetch; FETCH_THROTTLE_SECS keeps it to ≤1/min.
+/// GET /api/oauth/usage returns every limit window in one JSON body: the 5h
+/// session cap, the account-wide weekly, and the per-model weekly caps. The
+/// fable(Opus) weekly limit lives ONLY here (in `limits[]`, scoped to model
+/// "Fable") — the `anthropic-ratelimit-unified-7d-*` response headers only
+/// carry the account-wide weekly, which is a different, larger pool.
 /// Returns None on any failure so the caller falls back to cached usage.
 fn fetch_usage() -> Option<UsageInfo> {
     let home = std::env::var("HOME").ok()?;
     let creds_raw = fs::read_to_string(PathBuf::from(home).join(".claude/.credentials.json")).ok()?;
     let creds: ClaudeCreds = serde_json::from_str(&creds_raw).ok()?;
 
-    // -D - dumps response headers to stdout; -o /dev/null drops the body.
     let output = Command::new("curl")
         .args([
-            "-s", "-D", "-", "-o", "/dev/null",
-            "-X", "POST",
+            "-s",
             "-H", &format!("Authorization: Bearer {}", creds.claude_ai_oauth.access_token),
             "-H", "anthropic-beta: oauth-2025-04-20",
             "-H", "anthropic-version: 2023-06-01",
             "-H", "User-Agent: claude-cli/1.0.119 (external, cli)",
             "-H", "x-app: cli",
-            "-H", "content-type: application/json",
-            "-d", r#"{"model":"claude-haiku-4-5-20251001","max_tokens":1,"messages":[{"role":"user","content":"hi"}]}"#,
-            "https://api.anthropic.com/v1/messages",
+            "https://api.anthropic.com/api/oauth/usage",
         ])
         .output()
         .ok()?;
@@ -1587,28 +1621,20 @@ fn fetch_usage() -> Option<UsageInfo> {
         return None;
     }
 
-    let headers = String::from_utf8_lossy(&output.stdout);
-    let mut util: Option<f64> = None;
-    let mut reset: Option<i64> = None;
-    let mut weekly_util: Option<f64> = None;
-    let mut weekly_reset: Option<i64> = None;
-    for line in headers.lines() {
-        let Some((k, v)) = line.split_once(':') else { continue };
-        match k.trim().to_ascii_lowercase().as_str() {
-            "anthropic-ratelimit-unified-5h-utilization" => util = v.trim().parse().ok(),
-            "anthropic-ratelimit-unified-5h-reset" => reset = v.trim().parse().ok(),
-            "anthropic-ratelimit-unified-7d-utilization" => weekly_util = v.trim().parse().ok(),
-            "anthropic-ratelimit-unified-7d-reset" => weekly_reset = v.trim().parse().ok(),
-            _ => {}
-        }
-    }
+    let usage: OauthUsage = serde_json::from_slice(&output.stdout).ok()?;
+    let fable = usage.limits.iter().find(|l| {
+        l.scope
+            .as_ref()
+            .and_then(|s| s.model.as_ref())
+            .and_then(|m| m.display_name.as_deref())
+            == Some("Fable")
+    });
 
-    // utilization here is a 0..1 fraction (the old endpoint reported 0..100).
     Some(UsageInfo {
-        five_hour_used_pct: Some(util? * 100.0),
-        five_hour_resets_at: reset,
-        weekly_used_pct: weekly_util.map(|w| w * 100.0),
-        weekly_resets_at: weekly_reset,
+        five_hour_used_pct: Some(usage.five_hour.utilization),
+        five_hour_resets_at: rfc3339_epoch(&usage.five_hour.resets_at),
+        weekly_used_pct: fable.map(|l| l.percent),
+        weekly_resets_at: fable.and_then(|l| rfc3339_epoch(&l.resets_at)),
     })
 }
 
