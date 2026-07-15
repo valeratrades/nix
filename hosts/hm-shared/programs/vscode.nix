@@ -38,18 +38,18 @@
 					"editor.formatOnSave" = true;
 					"editor.defaultFormatter" = "charliermarsh.ruff";
 				};
-				"workbench.colorTheme" = "Dark Theme (*Preferred)";
-				# never ask "are you sure"
-				"explorer.confirmDelete" = false;
+				"extensions.experimental.affinity" = {
+					"asvetliakov.vscode-neovim" = 1;
+				};
+				"explorer.confirmDelete" = false; # never ask "are you sure"
 				"explorer.confirmDragAndDrop" = false;
 				"git.confirmSync" = false;
 				"git.confirmEmptyCommits" = false;
 				"git.confirmNoVerifyCommit" = false;
 				"terminal.integrated.confirmOnExit" = "never";
 				"terminal.integrated.confirmOnKill" = "never";
-				"extensions.experimental.affinity" = {
-					"asvetliakov.vscode-neovim" = 1;
-				};
+				"workbench.colorTheme" = "Dark Theme (*Preferred)";
+				"excalidraw.theme" = "auto";
 			};
 			extensions = with pkgs.vscode-extensions; [
 				#bbenoist.nix # nix language support (not sure why not nil)
