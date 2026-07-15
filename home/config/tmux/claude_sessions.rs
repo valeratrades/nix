@@ -65,12 +65,16 @@ struct MessageContent {
     content: String,
 }
 
+/// A Finished pane whose transcript hasn't been touched in this long is Done.
+const DONE_AFTER: std::time::Duration = std::time::Duration::from_secs(45 * 60);
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
 enum ClaudeState {
     Empty,    // No claude running (shell prompt)
     Active,   // Claude is processing (spinner visible)
     Finished, // Claude waiting for input (> prompt, no spinner)
+    Done,     // Finished, but untouched for over DONE_AFTER — a stale wait, not a fresh one
     Draft,    // User is typing a message (bypass permissions prompt visible)
     Question, // Claude is asking a question (numbered options visible)
     Input,    // User has typed text into the live input box (not yet sent)
@@ -97,6 +101,7 @@ impl ClaudeState {
             ClaudeState::Empty => "empty",
             ClaudeState::Active => "active",
             ClaudeState::Finished => "finished",
+            ClaudeState::Done => "done",
             ClaudeState::Draft => "draft",
             ClaudeState::Question => "question",
             ClaudeState::Input => "input",
@@ -274,6 +279,9 @@ impl fmt::Display for Sessions {
                     ClaudeState::Finished => {
                         format!("<span foreground=\"#b8d8b4\">{}</span>", pango_escape(&padded_state))
                     }
+                    ClaudeState::Done => {
+                        format!("<span foreground=\"#6b6b6b\">{}</span>", pango_escape(&padded_state))
+                    }
                     _ => pango_escape(&padded_state),
                 };
                 write!(f, "{}  {}", pango_escape(&padded_name), state_cell)?;
@@ -285,6 +293,7 @@ impl fmt::Display for Sessions {
                 let colored_state = match entry.state {
                     ClaudeState::Active => padded_state.blue(),
                     ClaudeState::Finished => padded_state.green(),
+                    ClaudeState::Done => padded_state.bright_black(),
                     ClaudeState::Empty => padded_state.yellow(),
                     ClaudeState::Draft => padded_state.cyan(),
                     ClaudeState::Question => padded_state.magenta(),
@@ -936,6 +945,8 @@ struct SessionMetadata {
     summary: Option<String>,
     /// Transcript verdict on whether work is in flight (see transcript_working)
     transcript_working: Option<bool>,
+    /// How long the transcript has sat untouched; the Finished→Done clock.
+    idle_for: Option<std::time::Duration>,
 }
 
 /// Get session info (todo and summary) for a tmux pane
@@ -965,6 +976,10 @@ fn get_session_info_for_pane(shell_pid: u32, tmux_target: &str) -> Option<Sessio
         display_todo: todo_result.display_todo,
         summary,
         transcript_working: transcript_working(&session_file),
+        idle_for: fs::metadata(&session_file)
+            .and_then(|m| m.modified())
+            .ok()
+            .and_then(|t| t.elapsed().ok()),
     })
 }
 
@@ -1040,7 +1055,9 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
                             let todo = metadata.as_ref().and_then(|m| m.display_todo.clone());
                             (ClaudeState::Active, todo, None, None, summary)
                         } else {
-                            (ClaudeState::Finished, None, None, None, summary)
+                            let stale = matches!(&metadata, Some(m) if m.idle_for.is_some_and(|d| d >= DONE_AFTER));
+                            let state = if stale { ClaudeState::Done } else { ClaudeState::Finished };
+                            (state, None, None, None, summary)
                         }
                     }
                     _ => (

@@ -253,7 +253,7 @@ bindsym $mod+Shift+Mod1+7 exec $sway_root/scratchpad_move.sh 7
 bindsym $mod+Shift+Mod1+8 exec $sway_root/scratchpad_move.sh 8
 bindsym $mod+Shift+Mod1+9 exec $sway_root/scratchpad_move.sh 9
 # Move window to first available scratchpad slot
-bindsym $mod+Shift+minus exec $sway_root/scratchpad_assign.sh
+# bindsym $mod+Shift+minus exec $sway_root/scratchpad_assign.sh
 # Forget focused window from scratchpad (remove all scratch marks)
 bindsym $mod+Mod1+minus exec $sway_root/scratchpad_forget.sh
 bindsym Ctrl+Shift+Escape exec alacritty --class btm-float -e btm -u; for_window [app_id="btm-float"] floating enable
