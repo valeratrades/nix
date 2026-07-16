@@ -110,6 +110,11 @@ bindsym $mod+Shift+F2 exec pamixer --default-source --decrease 5
 bindsym $mod+Shift+F3 exec pamixer --default-source --increase 5
 bindsym XF86AudioPlay exec playerctl play-pause
 bindsym F5 exec playerctl play-pause
+bindsym $mod+F12 exec playerctl play-pause
+bindsym $mod+F10 exec playerctl position 10-
+bindsym $mod+F11 exec playerctl position 10+
+bindsym $mod+Shift+F10 exec playerctl previous
+bindsym $mod+Shift+F11 exec playerctl next
 bindsym $mod+F5 exec playerctl next
 bindsym $mod+Shift+F5 exec playerctl previous
 #

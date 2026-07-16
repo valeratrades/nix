@@ -456,6 +456,17 @@ function log
 	eval "$argv" > $log_file
 end
 
+function calendar
+	# Add an .ics event to the valeratrades@gmail.com calendar (account u/1).
+	# Navigates the already-open calendar tab to a pre-filled event; hit Save.
+	# ponytail: Google TEMPLATE URL (no OAuth); one Save click. Full-auto needs gcalcli+OAuth.
+	if not test -f "$argv[1]"
+		echo "Usage: calendar <file.ics>"
+		return 1
+	end
+	python3 $NIXOS_CONFIG/home/scripts/calendar_add.py "$argv[1]"
+end
+
 function meet_cam
 	# Sandboxed chromium for Meet/Zoom: hides /dev/video0 (real cam, typically held
 	# by OBS) so chromium falls back to /dev/video1 (OBS Cam). Uses a dedicated
