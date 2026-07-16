@@ -125,6 +125,7 @@ struct ClaudeWindow {
     draft_content: Option<String>,
     question_content: Option<String>,
     summary: Option<String>,
+    model: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -136,6 +137,7 @@ struct SessionEntry {
     draft_content: Option<String>,
     question_content: Option<String>,
     summary: Option<String>,
+    model: Option<String>,
 }
 
 #[derive(Debug)]
@@ -198,6 +200,17 @@ impl fmt::Display for Sessions {
             .max()
             .unwrap_or(0);
 
+        // Model column width (full view only); 0 when nothing carries a model.
+        let max_model_len = if self.compact {
+            0
+        } else {
+            self.entries
+                .iter()
+                .filter_map(|e| e.model.as_ref().map(|m| m.len()))
+                .max()
+                .unwrap_or(0)
+        };
+
         for (i, entry) in self.entries.iter().enumerate() {
             if i > 0 {
                 writeln!(f)?;
@@ -219,6 +232,13 @@ impl fmt::Display for Sessions {
             // after, so it never participates in width math.
             let state_str = entry.state.as_str();
             let padded_state = format!("{:width$}", state_str, width = max_state_len);
+
+            // Model column (full view only). Padded to the widest model so the
+            // trailing todo/draft/question stays aligned; empty when no session
+            // reports a model at all.
+            let padded_model = (max_model_len > 0).then(|| {
+                format!("{:width$}", entry.model.as_deref().unwrap_or(""), width = max_model_len)
+            });
 
             // The name column is likewise padded to visible width before any
             // escaping — Pango escaping changes byte length but not glyph count,
@@ -285,6 +305,9 @@ impl fmt::Display for Sessions {
                     _ => pango_escape(&padded_state),
                 };
                 write!(f, "{}  {}", pango_escape(&padded_name), state_cell)?;
+                if let Some(m) = &padded_model {
+                    write!(f, "  {}", pango_escape(m))?;
+                }
                 if let Some(t) = trailing {
                     write!(f, "  {}", pango_escape(&t))?;
                 }
@@ -302,6 +325,9 @@ impl fmt::Display for Sessions {
                     ClaudeState::Interrupted => padded_state.normal(),
                 };
                 write!(f, "{}  {}", padded_name, colored_state)?;
+                if let Some(m) = &padded_model {
+                    write!(f, "  {}", m.dimmed())?;
+                }
                 if let Some(t) = trailing {
                     write!(f, "  {}", t)?;
                 }
@@ -595,6 +621,40 @@ fn transcript_working(session_file: &Path) -> Option<bool> {
             // Last message is the user's — assistant reply is still pending.
             true
         });
+    }
+    None
+}
+
+/// Most recent model that produced an assistant turn, "claude-" prefix stripped
+/// ("claude-opus-4-8" -> "opus-4-8"). Reads only the tail, same rationale as
+/// transcript_working. Synthetic messages carry model "<synthetic>" — skipped so
+/// the reported model is a real one the user actually ran.
+fn latest_model(session_file: &Path) -> Option<String> {
+    const TAIL_BYTES: u64 = 256 * 1024;
+    let mut file = fs::File::open(session_file).ok()?;
+    let len = file.metadata().ok()?.len();
+    let start = len.saturating_sub(TAIL_BYTES);
+    file.seek(SeekFrom::Start(start)).ok()?;
+    let mut bytes = Vec::new();
+    file.read_to_end(&mut bytes).ok()?;
+    let buf = String::from_utf8_lossy(&bytes);
+
+    let mut lines = buf.lines();
+    if start > 0 {
+        lines.next(); // likely-partial first record
+    }
+    for line in lines.collect::<Vec<_>>().into_iter().rev() {
+        let v: serde_json::Value = match serde_json::from_str(line) {
+            Ok(v) => v,
+            Err(_) => continue,
+        };
+        let model = v.get("message").and_then(|m| m.get("model")).and_then(|x| x.as_str());
+        match model {
+            Some(m) if m != "<synthetic>" => {
+                return Some(m.strip_prefix("claude-").unwrap_or(m).to_string());
+            }
+            _ => continue,
+        }
     }
     None
 }
@@ -943,6 +1003,8 @@ struct SessionMetadata {
     display_todo: Option<String>,
     /// Session summary
     summary: Option<String>,
+    /// Most recent model that produced an assistant turn (see latest_model)
+    model: Option<String>,
     /// Transcript verdict on whether work is in flight (see transcript_working)
     transcript_working: Option<bool>,
     /// How long the transcript has sat untouched; the Finished→Done clock.
@@ -975,6 +1037,7 @@ fn get_session_info_for_pane(shell_pid: u32, tmux_target: &str) -> Option<Sessio
         has_active_todos: todo_result.has_active_todos,
         display_todo: todo_result.display_todo,
         summary,
+        model: latest_model(&session_file),
         transcript_working: transcript_working(&session_file),
         idle_for: fs::metadata(&session_file)
             .and_then(|m| m.modified())
@@ -1027,7 +1090,7 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
         }
 
         let tmux_target = format!("{}:{}", session, window_index);
-        let (state, active_todo, draft_content, question_content, summary) = if is_claude_pane {
+        let (state, active_todo, draft_content, question_content, summary, model) = if is_claude_pane {
             // Terminal parsing decides the blocking states (Question/Draft/Error)
             // and the working state, but active↔finished flip-flops between tool
             // calls when no spinner is captured. For that one reading we defer to
@@ -1040,10 +1103,11 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
             // message), so a metadata lookup could only mis-attribute a
             // neighbour's transcript to it.
             if activity.state == ClaudeState::Empty {
-                (ClaudeState::Empty, None, None, None, None)
+                (ClaudeState::Empty, None, None, None, None, None)
             } else {
                 let metadata = get_session_info_for_pane(pane_pid, &tmux_target);
                 let summary = metadata.as_ref().and_then(|m| m.summary.clone());
+                let model = metadata.as_ref().and_then(|m| m.model.clone());
 
                 match activity.state {
                     ClaudeState::Finished => {
@@ -1053,11 +1117,11 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
                         );
                         if refined == ClaudeState::Active {
                             let todo = metadata.as_ref().and_then(|m| m.display_todo.clone());
-                            (ClaudeState::Active, todo, None, None, summary)
+                            (ClaudeState::Active, todo, None, None, summary, model)
                         } else {
                             let stale = matches!(&metadata, Some(m) if m.idle_for.is_some_and(|d| d >= DONE_AFTER));
                             let state = if stale { ClaudeState::Done } else { ClaudeState::Finished };
-                            (state, None, None, None, summary)
+                            (state, None, None, None, summary, model)
                         }
                     }
                     _ => (
@@ -1066,6 +1130,7 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
                         activity.draft_content,
                         activity.question_content,
                         summary,
+                        model,
                     ),
                 }
             }
@@ -1094,17 +1159,20 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
 
             match dead_claude_resume_id(&tail) {
                 Some(id) => {
-                    let summary = get_process_cwd(pane_pid).and_then(|cwd| {
+                    let file = get_process_cwd(pane_pid).and_then(|cwd| {
                         let home = std::env::var("HOME").ok()?;
-                        let file = PathBuf::from(home)
-                            .join(".claude/projects")
-                            .join(path_to_project_name(&cwd))
-                            .join(format!("{id}.jsonl"));
-                        get_session_summary(&file)
+                        Some(
+                            PathBuf::from(home)
+                                .join(".claude/projects")
+                                .join(path_to_project_name(&cwd))
+                                .join(format!("{id}.jsonl")),
+                        )
                     });
-                    (ClaudeState::Finished, None, None, None, summary)
+                    let summary = file.as_deref().and_then(get_session_summary);
+                    let model = file.as_deref().and_then(latest_model);
+                    (ClaudeState::Finished, None, None, None, summary, model)
                 }
-                None => (ClaudeState::Empty, None, None, None, None),
+                None => (ClaudeState::Empty, None, None, None, None, None),
             }
         };
 
@@ -1117,6 +1185,7 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
             draft_content,
             question_content,
             summary,
+            model,
         });
     }
 
@@ -1859,6 +1928,7 @@ fn main() {
             draft_content: window.draft_content.clone(),
             question_content: window.question_content.clone(),
             summary: window.summary.clone(),
+            model: window.model.clone(),
         });
     }
     sessions.sort();

@@ -1,3 +1,6 @@
+# dirs where fable is forced and opus is refused; matches the dir itself and anything under it
+set -g utmost_importance_projects $HOME/ev_invest/trading_data $HOME/ev_invest/risk_management
+
 # --acc N | -a N selects credentials in ~/.claude-accountN; without it, default ~/.claude (master)
 function claude
     set -l args
@@ -62,6 +65,22 @@ function cl
             set -a passthrough_args $arg
         end
         #TODO: add `-p` for opening in plan mode over a specific file
+    end
+
+    set -l pwd (pwd -P)
+    for proj in $utmost_importance_projects
+        set -l proj_real (realpath -m -- $proj)
+        if [ "$pwd" = "$proj_real" ] || string match -q -- "$proj_real/*" "$pwd"
+            if [ "$model" = opus ]
+                echo "cl: '$proj' is an utmost-importance project — opus is refused here." >&2
+                echo "    Run on fable (cl -f) or remove '$proj' from utmost_importance_projects in llm.fish." >&2
+                return 1
+            end
+            if [ -z "$model" ]
+                set model claude-fable-5
+            end
+            break
+        end
     end
 
     if [ -n "$model" ]
