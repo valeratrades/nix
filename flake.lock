@@ -534,11 +534,11 @@
         "v_flakes": "v_flakes_3"
       },
       "locked": {
-        "lastModified": 1784387728,
-        "narHash": "sha256-Wv78ipLxWclbDnVtHbv3g75DSRjOz4RWbc1hrrQyN9k=",
+        "lastModified": 1784393782,
+        "narHash": "sha256-lmpkB/o0b7xfvv/E/LuRMDl0h3lfdz7f+Kw/EjHQSYU=",
         "owner": "valeratrades",
         "repo": "excalidraw-vscode-ext",
-        "rev": "49cae2ebbc12775555a279c9e6d345997a74fc31",
+        "rev": "a2c81a01a735d75262c1539042a5efd465b2217c",
         "type": "github"
       },
       "original": {
