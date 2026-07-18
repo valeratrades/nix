@@ -637,13 +637,15 @@ components = ["rustc-codegen-cranelift-preview"]"#,
     let flake_path = PathBuf::from("flake.nix");
     if flake_path.exists() {
         let flake = fs::read_to_string(&flake_path)?;
-        let manifest_needle = "manifest = (pkgs.lib.importTOML ./Cargo.toml).package;";
+        let manifest_needle =
+            "manifest = (builtins.fromTOML (builtins.readFile ./Cargo.toml)).package;";
         assert!(
             flake.contains(manifest_needle),
             "flake.nix template missing expected manifest line"
         );
-        let manifest_replacement =
-            format!("manifest = (pkgs.lib.importTOML ./{name}/Cargo.toml).package;");
+        let manifest_replacement = format!(
+            "manifest = (builtins.fromTOML (builtins.readFile ./{name}/Cargo.toml)).package;"
+        );
 
         let rs_needle = "rs = v_flakes.rs { inherit pkgs rust; };";
         assert!(
