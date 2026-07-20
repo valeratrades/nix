@@ -618,8 +618,17 @@ fn transcript_working(session_file: &Path) -> Option<bool> {
             // a tool call is outstanding, i.e. still working.
             v.get("message").and_then(|m| m.get("stop_reason")).and_then(|x| x.as_str()) == Some("tool_use")
         } else {
-            // Last message is the user's — assistant reply is still pending.
-            true
+            // Last message is the user's — assistant reply is still pending,
+            // EXCEPT Claude Code's synthetic "[Request interrupted by user …]"
+            // marker: the user aborted the turn, so no reply is coming. This is
+            // what an abandoned pre-/clear transcript ends on, and reading it as
+            // working flips a Finished pane to Active.
+            let interrupted = v
+                .get("message")
+                .and_then(|m| m.get("content"))
+                .map(|c| c.to_string().contains("[Request interrupted by user"))
+                .unwrap_or(false);
+            !interrupted
         });
     }
     None
@@ -1170,7 +1179,15 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
                     });
                     let summary = file.as_deref().and_then(get_session_summary);
                     let model = file.as_deref().and_then(latest_model);
-                    (ClaudeState::Finished, None, None, None, summary, model)
+                    // Killed mid-turn (esc, then Ctrl-C) exits with the
+                    // "⎿ Interrupted" row still at the bottom — that's the last
+                    // real state, not a clean Finished.
+                    let state = if shows_interruption(&tail) {
+                        ClaudeState::Interrupted
+                    } else {
+                        ClaudeState::Finished
+                    };
+                    (state, None, None, None, summary, model)
                 }
                 None => (ClaudeState::Empty, None, None, None, None, None),
             }
@@ -1209,6 +1226,16 @@ fn dead_claude_resume_id(tail: &str) -> Option<String> {
         .captures_iter(tail)
         .last()
         .map(|c| c[1].to_string())
+}
+
+/// True if the recent tail shows Claude's interrupted-turn chrome — a result row
+/// "⎿  Interrupted · What should Claude do instead?". Anchored so the trimmed line
+/// STARTS with "⎿" and "Interrupted" is its immediate body; quoted narration
+/// doesn't fire. Shared by the live classifier and the dead-shell branch: a
+/// session killed right after an esc-abort exits with this row still at the
+/// bottom, so it's Interrupted, not Finished.
+fn shows_interruption(tail: &str) -> bool {
+    Regex::new(r"(?m)^\s*⎿\s+Interrupted").unwrap().is_match(tail)
 }
 
 /// True if a captured line is Claude's "waiting for input" prompt. Modern
@@ -1284,6 +1311,41 @@ fn classify_activity(
         .collect::<Vec<_>>()
         .join("\n");
 
+    // Match spinner pattern: a status phrase ending in the ellipsis glyph "…".
+    // Single-word labels render as "Running…", "Cogitating…" — but Claude Code
+    // also emits MULTI-WORD labels whose "…" trails a lowercase tail word, e.g.
+    // "Building and verifying static musl binary…", "Baking the response…". The
+    // old `[A-Z][a-z]+…` required the capitalized word to sit IMMEDIATELY before
+    // "…", so every multi-word spinner was misread as Finished — an active
+    // session looking idle. But bare "<letters>…" is TOO loose the other way:
+    // the welcome box truncates long model names ("claude-fable-5 with high
+    // effo… ·"), reading an idle session as Active forever. The timer suffix
+    // disambiguates — a live spinner always renders "… (<elapsed>…", truncated
+    // prose never grows a paren — so we require it. The word before "…" can end
+    // in a digit too ("Wiring Postgres backups to R2…"), hence \p{N}.
+    // A live spinner is unambiguous: Claude is working THIS frame. We do NOT gate
+    // it on has_prompt_at_end — the TUI always renders its input box ("❯ ") at the
+    // bottom of the pane even while the spinner runs above it, so that guard would
+    // veto Active on essentially every frame. The genuine "stopped, waiting on me"
+    // cases (selector / AskUserQuestion) are matched later and their selectors
+    // never coexist with a live spinner, so they still fire when appropriate.
+    // Checked FIRST — before the limit branch — because after a usage-limit hit
+    // the session can resume working while the "⎿ You've hit your … limit" chrome
+    // still sits in scrollback; a live spinner means it's working NOW, and Active
+    // must win over that stale limit row.
+    // Anchored to a line-leading spinner glyph: sessions QUOTE spinner lines in
+    // prose (e.g. a recap discussing "…R2… (3m 56s…"), and an unanchored match
+    // read those idle panes as Active. Real spinners always render as their own
+    // line — glyph, space, phrase, "… (<elapsed>" — while quoted ones sit mid-line
+    // or behind list/chrome prefixes ("- ", "⎿  "). [^…]* keeps the match inside
+    // one spinner phrase so a lazy dot can't bridge from a literal "…" in prose to
+    // a later "… (". If the glyph alphabet ever grows past this set, the
+    // transcript override in get_claude_windows still catches the missed Active.
+    let spinner_pattern = Regex::new(r"(?m)^\s*[·✢✳✶✻✽∗*]\s+[^…]*[\p{L}\p{N}]… \(").unwrap();
+    if spinner_pattern.is_match(&last_portion) {
+        return ActivityResult { state: ClaudeState::Active, draft_content: None, question_content: None };
+    }
+
     // Hitting the session/usage limit renders as a result row
     // "⎿  You've hit your session limit · resets ..." usually followed by the
     // /rate-limit-options selector ("❯ 1. Stop and wait for limit to reset").
@@ -1357,37 +1419,6 @@ fn classify_activity(
             draft_content: None,
             question_content: question_text,
         };
-    }
-
-    // Match spinner pattern: a status phrase ending in the ellipsis glyph "…".
-    // Single-word labels render as "Running…", "Cogitating…" — but Claude Code
-    // also emits MULTI-WORD labels whose "…" trails a lowercase tail word, e.g.
-    // "Building and verifying static musl binary…", "Baking the response…". The
-    // old `[A-Z][a-z]+…` required the capitalized word to sit IMMEDIATELY before
-    // "…", so every multi-word spinner was misread as Finished — an active
-    // session looking idle. But bare "<letters>…" is TOO loose the other way:
-    // the welcome box truncates long model names ("claude-fable-5 with high
-    // effo… ·"), reading an idle session as Active forever. The timer suffix
-    // disambiguates — a live spinner always renders "… (<elapsed>…", truncated
-    // prose never grows a paren — so we require it. The word before "…" can end
-    // in a digit too ("Wiring Postgres backups to R2…"), hence \p{N}.
-    // A live spinner is unambiguous: Claude is working THIS frame. We do NOT gate
-    // it on has_prompt_at_end — the TUI always renders its input box ("❯ ") at the
-    // bottom of the pane even while the spinner runs above it, so that guard would
-    // veto Active on essentially every frame. The genuine "stopped, waiting on me"
-    // cases (selector / AskUserQuestion) are matched earlier and already returned.
-    // Anchored to a line-leading spinner glyph: sessions QUOTE spinner lines in
-    // prose (e.g. a recap discussing "…R2… (3m 56s…"), and an unanchored match
-    // read those idle panes as Active. Real spinners always render as their own
-    // line — glyph, space, phrase, "… (<elapsed>" — while quoted ones sit mid-line
-    // or behind list/chrome prefixes ("- ", "⎿  "). [^…]* keeps the match inside
-    // one spinner phrase so a lazy dot can't bridge from a literal "…" in prose to
-    // a later "… (". If the glyph alphabet ever grows past this set, the
-    // transcript override in get_claude_windows still catches the missed Active.
-    let spinner_pattern = Regex::new(r"(?m)^\s*[·✢✳✶✻✽∗*]\s+[^…]*[\p{L}\p{N}]… \(").unwrap();
-
-    if spinner_pattern.is_match(&last_portion) {
-        return ActivityResult { state: ClaudeState::Active, draft_content: None, question_content: None };
     }
 
     // Check for external editor with claude-prompt temp file
@@ -1477,8 +1508,7 @@ fn classify_activity(
     // would then mislabel the session as working). But typed input wins: once I
     // start composing the "what to do instead" reply, the pane is Input, not a
     // bare interruption — same suppression the question branch uses.
-    let interrupted_pattern = Regex::new(r"(?m)^\s*⎿\s+Interrupted").unwrap();
-    if interrupted_pattern.is_match(&last_portion) && typed_input.is_none() {
+    if shows_interruption(&last_portion) && typed_input.is_none() {
         return ActivityResult { state: ClaudeState::Interrupted, draft_content: None, question_content: None };
     }
 

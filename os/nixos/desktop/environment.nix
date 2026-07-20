@@ -26,6 +26,8 @@
     # Gated per-user (user.gpuAcceleration): drives the iGPU hard and runs hot on thin chassis.
     LIBVA_DRIVER_NAME = "radeonsi";
     VDPAU_DRIVER = "radeonsi";
+
+    UV_MALWARE_CHECK = "1"; # may become default in the future, - deprecate when it is
   };
 
   systemd.services.hibernate-prepare = {

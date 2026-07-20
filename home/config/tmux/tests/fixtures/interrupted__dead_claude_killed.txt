@@ -1,0 +1,153 @@
+     engine.run() body, moved verbatim. Behavior unchanged.
+     - analysis::trading_data::run(...) — build per-symbol graphs (demo-shaped), drive them from
+     the trade lane (+ OI/MC roots), route the Classify output into the execution bridge.
+
+     TradingData stack compute (in trading_data, demo-shaped)
+
+     Per symbol: the demo graph extended to SPL parity. Driver loop mirrors
+     examples/demo/src/main.rs:
+
+     for trade in trade_lane(symbol) {           // live: socket stream; backtest: LaneReader
+         seed_oi_mc_roots_if_due(&mut graph);    // slow lanes → roots
+         let out = graph.tick(Some(trade));
+         if let Some(dist) = out.classified { exec_bridge.on_classification(symbol, dist, ...) }
+     }
+
+     The backtest/live seam is exactly one thing — where trade_lane comes from (replay reader
+     vs socket) — per trading_data's own ARCHITECTURE. Keep it concrete (a function returning an
+     Iterator/stream); no trait until the live socket lands.
+
+     Execution bridge (concrete, NT-backed)
+
+     The TradingData stack spins an NT engine hosting only the ExecuteActor(s). Classification/
+     intent from the DAG is pushed in; NT owns order lifecycle + fills; fill/position state is fed
+     back to the DAG to drive the situation lifecycle (deep-stream gating). Concrete struct +
+     functions, one impl — no trait.
+     - Live: LiveNode + Bybit exec client; real-venue fills.
+     - Backtest: BacktestEngine + SimulatedVenue; bridge also feeds traded-instrument book/
+     trades into the engine and advances it (Risk #1).
+     Reuse the existing IntentPayload/execution-signal shape, moved to a mode-neutral struct.
+
+     Persisted output
+
+     Both stacks write via scam_pump_liqs::persist (persist::col schema) so the existing viz
+     keeps working for the Nautilus stack for free. TradingData stack reuses those writers where it
+
+     Persisted output
+
+     Both stacks write via scam_pump_liqs::persist (persist::col schema) so the existing viz
+     keeps working for the Nautilus stack for free. TradingData stack reuses those writers where it
+
+     Persisted output
+
+     Both stacks write via scam_pump_liqs::persist (persist::col schema) so the existing viz
+     keeps working for the Nautilus stack for free. TradingData stack reuses those writers where it
+
+     Persisted output
+
+     Both stacks write via scam_pump_liqs::persist (persist::col schema) so the existing viz
+     keeps working for the Nautilus stack for free. TradingData stack reuses those writers where it
+
+     Persisted output
+
+     Both stacks write via scam_pump_liqs::persist (persist::col schema) so the existing viz
+     keeps working for the Nautilus stack for free. TradingData stack reuses those writers where it
+     can; the adjacent viz covers anything divergent. Do not invert viz onto a DataSource trait.
+
+     Changes
+
+     scam_pump_liqs
+
+     - New src/analysis/ module with two submodules (nautilus.rs, trading_data.rs) and the
+     mode-neutral intent struct. Dispatch via match config.analysis_backend from
+     backtest::run/live::run.
+     - analysis::nautilus — move today's pipeline registration here unchanged.
+     - analysis::trading_data — construct per-symbol graphs, the trade-lane drive loop, the
+     OI/MC root seeding, and the online situation-lifecycle state (DAG analogue of
+     IndieAggregator Enter/Exit + exec.active/done feedback) that gates deep graphs/streams.
+     - src/config.rs — add analysis_backend enum.
+     - Cargo.toml — depend on trading_data (facade).
+     - Keep NT-catalog artifacts (plan_slices, SLICE_BUDGET_BYTES, engine.add_data(Vec<Data>))
+     strictly inside analysis::nautilus; the TradingData path is lane-streamed, no slices.
+
+     trading_data
+
+     - Port the analysis nodes from the demo up to SPL parity: the demo already has Bar1m,
+     Cvd, Rsi14, Atr14, Momentum, VolUsd1h, Lambda1m, Screener, Classify. Add
+     Price 3m/1d change, USD volume, and wire OI/MC as root cells read off their existing
+     owned lanes. These are ordinary Node/Cell additions to a graph!. No MarketEvent,
+     no EventFeed trait, no changes to the lane/row types.
+     - Deep path (post-classification): order-book depth + trades footprint as a per-situation
+     graph or roots, opened when a situation enters. This is the execution-adjacent piece; design
+     alongside the bridge, not before.
+     - Later (not v1): live websocket ingestion — the socket source for the trade lane (+ OI/MC).
+     The one true blocker for live-on-TradingData; everything upstream is mode-neutral already.
+     - Optional: viz-schema persist writer — only if the existing viz should read this stack;
+     otherwise the adjacent viz owns it.
+
+     Risks / points to consider
+
+     1. Backtest clock coordination (spike first). DAG drives time; NT SimulatedVenue must be
+     advanced in lockstep to fill. Validate whether BacktestEngine can be stepped incrementally
+     / run-to-timestamp with add_data between steps. Fallback: TradingData-stack backtest
+     fills use a light internal model while live uses the real NT exec client — a divergence
+     likely acceptable since live is primary. Backtest-only risk; does not touch live or the
+     screening line.
+     2. Exec→situation feedback stays online. Model it as a feedback root; no two-pass design.
+     3. OI/MC as roots, not events. Confirm the seeding cadence (update root on each OI/MC lane
+     event, read on the next trade tick) matches SPL's shallow-snapshot semantics.
+     4. Warmup parity. DAG recurrence state must warm like the NT actors if the two stacks are to
+     be cross-checked (Risk #1 unrelated).
+     5. The easy/hard split is real. Up to classification ≈ demo work (low risk). Everything
+     past it (deep streams, situation lifecycle, execution bridge, feedback) is the actual
+     engineering — schedule accordingly.
+
+     Phased plan
+
+     - Phase 0 — Spike (Risk #1). Smallest standalone bin in scam_pump_liqs/examples/: prove
+     NT BacktestEngine incremental stepping alongside an external driver, or decide the fallback.
+     Gate execution work on this.
+     - Phase 1 — Dispatch, no behavior change. Add analysis/ module + analysis_backend enum;
+     move current pipeline into analysis::nautilus. Nautilus reproduces today exactly.
+     - Phase 2 — Screening→classification graph in trading_data. Extend the demo graph to SPL
+     parity (indies + OI/MC roots → screener → classify). Standalone: drive one instrument-day off
+     the trade lane, assert a classification distribution is produced.
+     - Phase 3 — Cross-stack node validation. Run both backends over one shared day; assert the
+     shallow-snapshot columns (price/vol/rsi/momentum/oi/mc) agree within tolerance. Catches
+     node-port bugs before execution matters.
+     - Phase 4 — Execution bridge + feedback + deep path. Wire classification → NT ExecuteActor,
+     fills/positions back to the DAG, situation lifecycle online, deep book/trades graphs. End-to-
+     end backtest on analysis_backend = TradingData.
+     - Phase 5 (later) — Live socket in trading_data + LiveNode bridge. Flips live-on-
+     TradingData on with no compute-path changes.
+
+     Verification
+
+     - Phase 1: cargo r backtest + live dry-run with Nautilus; outputs identical to
+     pre-refactor (existing viz still renders).
+     - Phase 2: standalone example over one instrument-day; assert bars in expected range and ≥1
+     classification (mirrors the demo's own asserts).
+     - Phase 3: cross-stack column diff within tolerance on a shared day.
+     - Phase 4: full backtest on TradingData backend; compare orders/PnL vs Nautilus on the same
+     day (close, not identical — different compute path).
+     - Phase 0: the spike bin is itself the verification.
+
+     "/plan open" to edit this plan in Nvim
+
+❯ no, I want you to work on the plan further now. Changes are under way in `trading_data` repo, - you will read the latest updated state and see what else is missing from that point. You will list it back to me. You will do no changes yourself, - at this moment we're just figuring out what's missing there, and how to
+  add it best without deviating from core principles of speed and directionality
+
+  Thought for 24s (ctrl+o to expand)
+
+● Understood — read-only investigation. I'll map the current trading_data state (it's mid-change), compare against SPL parity + the plan's Phase 2/4 targets, and report the gap. Let me start broad.
+  ⎿  Interrupted · What should Claude do instead?
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── pluggable-analysis-backend ──
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Press Ctrl-C again to exit
+
+Resume this session with:
+claude --resume cb6c3e75-12e0-4fe9-8a76-7aadad58fad4
+warning: venv is older than uv.lock — run uv_sync
+0 ❯                                                                                                                                                                                                                         ~/s/e/scam_pump_liqs val/split_classification_paths [»!?] 1.98.0-nightly 🐍 venv   + 8m4s 22:21:53

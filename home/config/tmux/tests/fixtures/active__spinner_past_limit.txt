@@ -1,0 +1,19 @@
+● Bash(nix develop --command cargo test --test compile_fail -- --bless 2>&1 | tail -25)
+  ⎿  /home/v/s/v_utils/v_utils_macros/tests/compile_fail/scream_it_on_struct.rs ... ok
+     /home/v/s/v_utils/v_utils_macros/tests/compile_fail/primitives_unknown_struct_value.rs ... ok
+     … +21 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+  ⎿  You've hit your session limit · resets 9:50pm (UTC)
+     /upgrade or /usage-credits to finish what you're working on.
+
+✻ Worked for 32m 16s
+
+❯ continue
+
+✻ Sock-hopping… (3m 9s · almost done thinking with high effort)
+  ⎿  Next: Dag: batch-native, multi-root graph!, required_events, observer end-of-batch
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · esc to interrupt · ctrl+t to show tasks

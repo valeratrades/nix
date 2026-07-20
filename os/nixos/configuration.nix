@@ -404,6 +404,7 @@ in {
     (import (mylib.relativeToRoot "overlays/sierra-chart.nix"))
     (import (mylib.relativeToRoot "overlays/tiger-trade.nix"))
     (import (mylib.relativeToRoot "overlays/metascalp.nix"))
+    (import (mylib.relativeToRoot "overlays/graphify.nix"))
   ];
 
   nix.settings.download-buffer-size = "50G";

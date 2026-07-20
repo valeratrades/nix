@@ -31,7 +31,7 @@
         pulseaudio
         pulsemixer
         #mov-cli // errors
-        mpv
+        (mpv.override { scripts = [ mpvScripts.mpris ]; }) # MPRIS so playerctl/media keys can toggle it
         chafa
         obs-cli
         obs-cmd # obs-websocket-v5 CLI; used by sway obs-mode `f` (blur toggle)

@@ -420,6 +420,10 @@ in {
           metascalp
         ]
 
+        [
+          graphify
+        ]
+
         # Windows (via WinApps/Docker VM)
         [
           inputs.winapps.packages.${pkgs.stdenv.hostPlatform.system}.winapps

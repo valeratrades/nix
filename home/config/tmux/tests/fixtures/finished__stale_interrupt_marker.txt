@@ -1,0 +1,12 @@
+● Update(~/s/ev_invest/trading_data/examples/demo/src/nodes.rs)
+  ⎿  Added 1 line
+      22 +const ATR_STOP_K: f64 = 3.0;
+
+● Done — overlay flag threaded through all four layers. trading_data_demo builds clean.
+
+✻ Worked for 2m 59s
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← for agents
