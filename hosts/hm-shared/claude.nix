@@ -209,7 +209,7 @@ in
 				#HACK: hm doesn't set env correctly, - so have some associated ones in ../../os/nixos/desktop/environment.nix
 				alwaysThinkingEnabled = true;
 				skipDangerousModePermissionPrompt =  true;
-				model = "opus"; #claude-fable-5
+				model = "claude-opus-5"; #claude-fable-5
 				#model = "claude-fable-5";
 				effortLevel = "high"; # they switched the default, and now problem gives up more often
 				showClearContextOnPlanAccept = true;

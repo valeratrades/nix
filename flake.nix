@@ -103,10 +103,6 @@
       url = "github:valeratrades/booktyping";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    btc_line = {
-      url = "github:valeratrades/btc_line";
-      inputs.flake-utils.follows = "flake-utils";
-    };
     decant = {
       url = "github:valeratrades/decant";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -159,6 +155,8 @@
     # nixpkgs would change the hash and miss the cache).
     server_upkeep.url = "github:valeratrades/server_upkeep";
     v_notify.url = "github:valeratrades/v_notify";
+    btc_line.url = "github:valeratrades/btc_line";
+    bourso-api.url = "github:valeratrades/bourso-api";
     bad_apple_rs = {
       url = "github:lomirus/bad-apple-rs"; # merged my nix-integration pull
       inputs.nixpkgs.follows = "nixpkgs";

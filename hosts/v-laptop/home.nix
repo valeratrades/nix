@@ -524,6 +524,7 @@ in {
         inputs.translate_infrequent.packages.${pkgs.stdenv.hostPlatform.system}.default
         inputs.cargo_sort_derives.packages.${pkgs.stdenv.hostPlatform.system}.default
         inputs.btc_line.packages.${pkgs.stdenv.hostPlatform.system}.default
+        inputs.bourso-api.packages.${pkgs.stdenv.hostPlatform.system}.default
         inputs.wallpaper_carousel.packages.${pkgs.stdenv.hostPlatform.system}.default
         inputs.decant.packages.${pkgs.stdenv.hostPlatform.system}.default
 

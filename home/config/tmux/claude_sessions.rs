@@ -1702,7 +1702,10 @@ struct UsageWindow {
 #[derive(Deserialize)]
 struct UsageLimit {
     percent: f64,
-    resets_at: String,
+    /// Null for a scoped limit with no activity in the window (the fable cap
+    /// reports `resets_at: null` while it sits at 0%). Required-String here
+    /// failed the WHOLE body's parse, blanking both columns to "?".
+    resets_at: Option<String>,
     scope: Option<LimitScope>,
 }
 
@@ -1735,7 +1738,9 @@ fn fetch_usage() -> Option<UsageInfo> {
 
     let output = Command::new("curl")
         .args([
-            "-s",
+            // -f so an HTTP 429 (the endpoint sticky-throttles a token that
+            // polls it too often) is a failure, not a body we try to parse.
+            "-sf", "-m", "5",
             "-H", &format!("Authorization: Bearer {}", creds.claude_ai_oauth.access_token),
             "-H", "anthropic-beta: oauth-2025-04-20",
             "-H", "anthropic-version: 2023-06-01",
@@ -1763,7 +1768,7 @@ fn fetch_usage() -> Option<UsageInfo> {
         five_hour_used_pct: Some(usage.five_hour.utilization),
         five_hour_resets_at: rfc3339_epoch(&usage.five_hour.resets_at),
         weekly_used_pct: fable.map(|l| l.percent),
-        weekly_resets_at: fable.and_then(|l| rfc3339_epoch(&l.resets_at)),
+        weekly_resets_at: fable.and_then(|l| l.resets_at.as_deref()).and_then(rfc3339_epoch),
     })
 }
 
@@ -1844,8 +1849,10 @@ fn current_state_map(windows: &[ClaudeWindow]) -> HashMap<String, String> {
 }
 
 /// Minimum seconds between fetch attempts. The /api/oauth/usage endpoint
-/// applies a sticky per-token rate-limit; this throttle prevents storming it.
-const FETCH_THROTTLE_SECS: i64 = 60;
+/// applies a sticky per-token rate-limit — at 60s the eww pollers earned a
+/// standing 429 and the header showed "?" for days. Windows are 5h/7d, so
+/// nothing is lost by asking rarely.
+const FETCH_THROTTLE_SECS: i64 = 600;
 
 /// Refetch when:
 /// - no prior state to compare against, or
