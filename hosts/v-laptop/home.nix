@@ -83,23 +83,40 @@ in {
   # and fully reproduces config on a clean ~/.openclaw. We materialize secrets from the
   # sops-decrypted files here (openclaw has no env-var expansion in its config), and gate the
   # whole thing on the openclaw checkout actually being present.
-  home.activation.configureOpenclaw = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+  home.activation.configureOpenclaw = let
+    ocCfg = {
+      provider = "deepseek";
+      baseUrl = "https://api.deepseek.com/v1";
+      model = "deepseek-chat";
+      port = "18789";
+      contextWindow = "131072";
+      maxTokens = "8192";
+    };
+    cfgHash = builtins.hashString "sha256" (builtins.toJSON ocCfg);
+  in lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     repo="${config.home.homeDirectory}/g/openclaw"
     keyFile="${config.sops.secrets.deepsek_key.path}"
     tgTokenFile="${config.sops.secrets.telegram_token_test.path}"
     node="${lib.getExe pkgs.nodejs_22}"
     oc() { "$node" "$repo/openclaw.mjs" "$@"; }
-    if [ -d "$repo" ] && [ -r "$keyFile" ]; then
+    # Each oc call spawns node (~7s), 5 calls => ~35-62s. This block is idempotent but only needs
+    # to actually run when config inputs change. Stamp over the nix config + secret contents and
+    # skip the whole dance on unchanged boots/switches.
+    stamp="${config.home.homeDirectory}/.openclaw/.hm-config-stamp"
+    want="$( { printf '%s' '${cfgHash}'; cat "$keyFile" "$tgTokenFile" 2>/dev/null; } | sha256sum | cut -d' ' -f1 )"
+    if [ -r "$stamp" ] && [ "$(cat "$stamp")" = "$want" ]; then
+      echo "configureOpenclaw: config unchanged, skipping"
+    elif [ -d "$repo" ] && [ -r "$keyFile" ]; then
       # DeepSeek provider + default model (deepseek-chat -> deepseek-v4 family).
       oc onboard --non-interactive --accept-risk \
         --mode local \
         --auth-choice custom-api-key \
-        --custom-provider-id deepseek \
-        --custom-base-url "https://api.deepseek.com/v1" \
-        --custom-model-id "deepseek-chat" \
+        --custom-provider-id ${ocCfg.provider} \
+        --custom-base-url "${ocCfg.baseUrl}" \
+        --custom-model-id "${ocCfg.model}" \
         --custom-api-key "$(cat "$keyFile")" \
         --custom-compatibility openai \
-        --gateway-port 18789 \
+        --gateway-port ${ocCfg.port} \
         --gateway-bind loopback \
         --no-install-daemon \
         --skip-channels \
@@ -110,8 +127,8 @@ in {
 
       # The custom-provider onboard defaults the model to a tiny 4096-token window; DeepSeek v4
       # actually serves 128k context / 8k output. Correct it so the agent doesn't over-truncate.
-      oc config set 'models.providers.deepseek.models[0].contextWindow' 131072 || true
-      oc config set 'models.providers.deepseek.models[0].maxTokens' 8192 || true
+      oc config set 'models.providers.${ocCfg.provider}.models[0].contextWindow' ${ocCfg.contextWindow} || true
+      oc config set 'models.providers.${ocCfg.provider}.models[0].maxTokens' ${ocCfg.maxTokens} || true
 
       # Telegram channel on the *test* bot (distinct token from tg-server's main bot — see secrets).
       if [ -r "$tgTokenFile" ]; then
@@ -120,6 +137,7 @@ in {
       else
         echo "configureOpenclaw: $tgTokenFile not readable; skipping telegram channel" >&2
       fi
+      mkdir -p "$(dirname "$stamp")" && printf '%s' "$want" > "$stamp"
     else
       echo "configureOpenclaw: $repo missing or $keyFile not readable yet; skipping" >&2
     fi
