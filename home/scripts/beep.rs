@@ -31,9 +31,10 @@ struct Args {
 	#[arg(short, long)]
 	quiet: bool,
 
-	/// Absolute output volume (e.g. `40` or `40%`). When omitted, the sound plays at
-	/// the system's current master volume, untouched. When given, master is pinned to
-	/// exactly this value for the beep, then restored. Values outside 0-100% are rejected.
+	/// Absolute output volume (e.g. `40` or `40%`). When omitted, the sound plays at the
+	/// system's current master volume. When given, this beep's own stream is attenuated so
+	/// it lands at this level; master is never touched. Only cuts, never boosts — a master
+	/// below the request just plays quieter. Values outside 0-100% are rejected.
 	#[arg(short, long, value_parser = parse_percent)]
 	volume: Option<PercentU>,
 
@@ -74,22 +75,6 @@ fn get_master() -> f64 {
 		.expect("wpctl prints 'Volume: <n>'")
 		.parse::<f64>()
 		.expect("wpctl prints a float")
-}
-
-fn set_master(v: f64) {
-	let v = format!("{v}");
-	let status = Command::new("wpctl").args(["set-volume", SINK, &v]).status();
-	match status {
-		Ok(s) if s.success() => {}
-		Ok(_) => {
-			eprintln!("wpctl set-volume {v} failed");
-			std::process::exit(1);
-		}
-		Err(e) => {
-			eprintln!("Error setting master volume: {e}");
-			std::process::exit(1);
-		}
-	}
 }
 
 fn pactl(args: &[&str]) -> String {
@@ -164,9 +149,9 @@ fn main() {
 
 	// Play sound unless quiet mode
 	if !args.quiet {
-		// Resolve the absolute master level to pin for this beep. None => leave the
-		// system untouched (default path). The headphone cap can force a pin even when
-		// no --volume was given, if the current master would exceed the ceiling.
+		// Resolve the absolute level this beep should play at. None => whatever master
+		// already is. The headphone cap can force a level even when no --volume was
+		// given, if the current master would exceed the ceiling.
 		let mut target: Option<f64> = args.volume.map(|p| *p);
 
 		if headphones_active() {
@@ -183,19 +168,18 @@ fn main() {
 			}
 		}
 
-		let saved_master = target.map(|t| {
-			let saved = get_master();
-			set_master(t);
-			saved
-		});
-
-		let sound_result = Command::new("ffplay")
-			.args(["-nodisp", "-autoexit", "-loglevel", "quiet", args.sound_file.to_str().unwrap()])
-			.output();
-
-		if let Some(saved) = saved_master {
-			set_master(saved);
+		// Attenuate our own stream rather than pinning system master: concurrent beeps
+		// would otherwise clobber each other's saved master and restore the loud one
+		// mid-playback. Can only cut, never boost, so a quiet master stays quiet.
+		let mut cmd = Command::new("ffplay");
+		cmd.args(["-nodisp", "-autoexit", "-loglevel", "quiet"]);
+		if let Some(t) = target {
+			let master = get_master();
+			assert!(master.is_finite() && master >= 0.0, "wpctl reports a sane volume");
+			let stream = if master <= 0.0 { 0.0 } else { (t / master * 100.0).clamp(0.0, 100.0) };
+			cmd.args(["-volume", &format!("{stream:.0}")]);
 		}
+		let sound_result = cmd.arg(args.sound_file.to_str().unwrap()).output();
 
 		if let Err(e) = sound_result {
 			eprintln!("Error playing sound: {e}");
