@@ -3,8 +3,8 @@ source: claude_sessions.rs
 expression: result
 ---
 ActivityResult {
-    state: Empty,
+    state: Planning,
     draft_content: None,
     question_content: None,
-    plan_mode: false,
+    plan_mode: true,
 }

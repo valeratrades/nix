@@ -73,6 +73,7 @@ const DONE_AFTER: std::time::Duration = std::time::Duration::from_secs(45 * 60);
 enum ClaudeState {
     Empty,    // No claude running (shell prompt)
     Active,   // Claude is processing (spinner visible)
+    Planning, // Active, with plan mode on
     Finished, // Claude waiting for input (> prompt, no spinner)
     Done,     // Finished, but untouched for over DONE_AFTER — a stale wait, not a fresh one
     Draft,    // User is typing a message (bypass permissions prompt visible)
@@ -88,9 +89,13 @@ impl ClaudeState {
     /// verdict is authoritative, active todos are the fallback when it abstains.
     /// Lives here (not inline in get_claude_windows) so the fixture tests replay
     /// the exact production deliberation.
-    fn refine_finished(transcript_working: Option<bool>, has_active_todos: bool) -> ClaudeState {
+    fn refine_finished(
+        transcript_working: Option<bool>,
+        has_active_todos: bool,
+        plan_mode: bool,
+    ) -> ClaudeState {
         if transcript_working.unwrap_or(has_active_todos) {
-            ClaudeState::Active
+            if plan_mode { ClaudeState::Planning } else { ClaudeState::Active }
         } else {
             ClaudeState::Finished
         }
@@ -100,6 +105,7 @@ impl ClaudeState {
         match self {
             ClaudeState::Empty => "empty",
             ClaudeState::Active => "active",
+            ClaudeState::Planning => "planning",
             ClaudeState::Finished => "finished",
             ClaudeState::Done => "done",
             ClaudeState::Draft => "draft",
@@ -250,7 +256,7 @@ impl fmt::Display for Sessions {
                 None
             } else {
                 match entry.state {
-                    ClaudeState::Active => Some(match &entry.active_todo {
+                    ClaudeState::Active | ClaudeState::Planning => Some(match &entry.active_todo {
                         Some(todo) => format!("[{}]", todo),
                         None => "[]".to_string(),
                     }),
@@ -275,7 +281,7 @@ impl fmt::Display for Sessions {
                 //   error    -> warn brown (#ba6e3d): real, but errors here mostly
                 //               surface during hands-on interaction, so I'm already
                 //               looking — deliberately ranked below question.
-                //   active   -> blue       (#68d4ff): healthy "it's working" signal,
+                //   active/planning -> blue (#68d4ff): healthy "it's working" signal,
                 //               informational, lowest of the three.
                 //   limit    -> white      (#ffffff): wedged on the usage clock —
                 //               nothing to act on, but worth seeing at a glance.
@@ -293,7 +299,7 @@ impl fmt::Display for Sessions {
                     ClaudeState::Error => {
                         format!("<span foreground=\"#ba6e3d\">{}</span>", pango_escape(&padded_state))
                     }
-                    ClaudeState::Active => {
+                    ClaudeState::Active | ClaudeState::Planning => {
                         format!("<span foreground=\"#68d4ff\">{}</span>", pango_escape(&padded_state))
                     }
                     ClaudeState::Finished => {
@@ -314,7 +320,7 @@ impl fmt::Display for Sessions {
             } else {
                 // Terminal path: ANSI colors via `colored`, unchanged.
                 let colored_state = match entry.state {
-                    ClaudeState::Active => padded_state.blue(),
+                    ClaudeState::Active | ClaudeState::Planning => padded_state.blue(),
                     ClaudeState::Finished => padded_state.green(),
                     ClaudeState::Done => padded_state.bright_black(),
                     ClaudeState::Empty => padded_state.yellow(),
@@ -1123,10 +1129,11 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
                         let refined = ClaudeState::refine_finished(
                             metadata.as_ref().and_then(|m| m.transcript_working),
                             matches!(&metadata, Some(m) if m.has_active_todos),
+                            activity.plan_mode,
                         );
-                        if refined == ClaudeState::Active {
+                        if refined != ClaudeState::Finished {
                             let todo = metadata.as_ref().and_then(|m| m.display_todo.clone());
-                            (ClaudeState::Active, todo, None, None, summary, model)
+                            (refined, todo, None, None, summary, model)
                         } else {
                             let stale = matches!(&metadata, Some(m) if m.idle_for.is_some_and(|d| d >= DONE_AFTER));
                             let state = if stale { ClaudeState::Done } else { ClaudeState::Finished };
@@ -1215,6 +1222,11 @@ struct ActivityResult {
     state: ClaudeState,
     draft_content: Option<String>,
     question_content: Option<String>,
+    /// Plan mode footer visible. Doesn't change WHETHER Claude is working, only
+    /// what the work is — so it recolors Active as Planning and nothing else.
+    /// Carried out of the classifier because the transcript-arbitrated
+    /// Finished→Active upgrade in get_claude_windows needs it too.
+    plan_mode: bool,
 }
 
 /// Session id from Claude Code's exit chrome ("Resume this session with:" /
@@ -1271,7 +1283,7 @@ fn determine_claude_activity(session: &str, window_index: u32) -> ActivityResult
 
     let content = match output {
         Ok(out) if out.status.success() => String::from_utf8_lossy(&out.stdout).to_string(),
-        _ => return ActivityResult { state: ClaudeState::Finished, draft_content: None, question_content: None },
+        _ => return ActivityResult { state: ClaudeState::Finished, draft_content: None, question_content: None, plan_mode: false },
     };
 
     // The draft/dim-suggestion branch needs a SECOND, escape-coded capture to
@@ -1311,6 +1323,12 @@ fn classify_activity(
         .collect::<Vec<_>>()
         .join("\n");
 
+    // Plan mode swaps the permissions footer for "⏸ plan mode on (shift+tab to
+    // cycle)". A working pane under it is Planning rather than Active; every
+    // other state is unaffected.
+    let plan_mode = last_portion.contains("plan mode on");
+    let working = if plan_mode { ClaudeState::Planning } else { ClaudeState::Active };
+
     // Match spinner pattern: a status phrase ending in the ellipsis glyph "…".
     // Single-word labels render as "Running…", "Cogitating…" — but Claude Code
     // also emits MULTI-WORD labels whose "…" trails a lowercase tail word, e.g.
@@ -1343,7 +1361,7 @@ fn classify_activity(
     // transcript override in get_claude_windows still catches the missed Active.
     let spinner_pattern = Regex::new(r"(?m)^\s*[·✢✳✶✻✽∗*]\s+[^…]*[\p{L}\p{N}]… \(").unwrap();
     if spinner_pattern.is_match(&last_portion) {
-        return ActivityResult { state: ClaudeState::Active, draft_content: None, question_content: None };
+        return ActivityResult { state: working, draft_content: None, question_content: None, plan_mode };
     }
 
     // Hitting the session/usage limit renders as a result row
@@ -1357,7 +1375,7 @@ fn classify_activity(
     // so narration that merely QUOTES the chrome doesn't fire.
     let limit_pattern = Regex::new(r"(?m)^\s*⎿\s+You['’]ve hit your (session )?limit").unwrap();
     if limit_pattern.is_match(&last_portion) {
-        return ActivityResult { state: ClaudeState::Limit, draft_content: None, question_content: None };
+        return ActivityResult { state: ClaudeState::Limit, draft_content: None, question_content: None, plan_mode };
     }
 
     // Check for question state FIRST: a blocking selection prompt is the
@@ -1418,6 +1436,7 @@ fn classify_activity(
             state: ClaudeState::Question,
             draft_content: None,
             question_content: question_text,
+            plan_mode,
         };
     }
 
@@ -1447,6 +1466,7 @@ fn classify_activity(
             state: ClaudeState::Draft,
             draft_content,
             question_content: None,
+            plan_mode,
         };
     }
 
@@ -1491,6 +1511,7 @@ fn classify_activity(
                             state: ClaudeState::Draft,
                             draft_content: if draft_display.is_empty() { None } else { Some(draft_display) },
                             question_content: None,
+                            plan_mode,
                         };
                     }
                 }
@@ -1509,7 +1530,7 @@ fn classify_activity(
     // start composing the "what to do instead" reply, the pane is Input, not a
     // bare interruption — same suppression the question branch uses.
     if shows_interruption(&last_portion) && typed_input.is_none() {
-        return ActivityResult { state: ClaudeState::Interrupted, draft_content: None, question_content: None };
+        return ActivityResult { state: ClaudeState::Interrupted, draft_content: None, question_content: None, plan_mode };
     }
 
     // API errors render as Claude Code's own tool-result chrome: a result row
@@ -1530,7 +1551,7 @@ fn classify_activity(
     //      row's own first token and the anchored match rejects it.
     let api_error_pattern = Regex::new(r"(?m)^\s*⎿\s+API Error:").unwrap();
     if api_error_pattern.is_match(&last_portion) {
-        return ActivityResult { state: ClaudeState::Error, draft_content: None, question_content: None };
+        return ActivityResult { state: ClaudeState::Error, draft_content: None, question_content: None, plan_mode };
     }
 
 
@@ -1540,7 +1561,7 @@ fn classify_activity(
     // a genuinely working or errored session still wins — but BEFORE the fresh
     // welcome check: typing on the welcome screen is input, not an empty pane.
     if typed_input.is_some() {
-        return ActivityResult { state: ClaudeState::Input, draft_content: None, question_content: None };
+        return ActivityResult { state: ClaudeState::Input, draft_content: None, question_content: None, plan_mode };
     }
 
     // Check for fresh session (welcome screen) - after the draft/typed branches.
@@ -1556,7 +1577,7 @@ fn classify_activity(
             || content.contains("No recent activity")
             || content.contains("Tips for getting started"))
     {
-        return ActivityResult { state: ClaudeState::Empty, draft_content: None, question_content: None };
+        return ActivityResult { state: ClaudeState::Empty, draft_content: None, question_content: None, plan_mode };
     }
 
     // A dead claude: on exit the TUI prints "Resume this session with:" and the
@@ -1565,7 +1586,7 @@ fn classify_activity(
     // an exit hint deep in scrollback under a RELAUNCHED claude must not shadow
     // the live session's state.
     if dead_claude_resume_id(&last_portion).is_some() {
-        return ActivityResult { state: ClaudeState::Finished, draft_content: None, question_content: None };
+        return ActivityResult { state: ClaudeState::Finished, draft_content: None, question_content: None, plan_mode };
     }
 
     // A background shell Claude is actively tailing (e.g. `gh run watch` on a CI
@@ -1578,7 +1599,7 @@ fn classify_activity(
     const WATCH_SHELL_PATTERNS: &[&str] = &["gh run watch"];
     let has_bg_shell = Regex::new(r"\d+ shells?\b").unwrap().is_match(&last_portion);
     if has_bg_shell && WATCH_SHELL_PATTERNS.iter().any(|p| content.contains(p)) {
-        return ActivityResult { state: ClaudeState::Active, draft_content: None, question_content: None };
+        return ActivityResult { state: working, draft_content: None, question_content: None, plan_mode };
     }
 
     // Check if there's an input prompt line - indicates Claude is waiting for
@@ -1586,7 +1607,7 @@ fn classify_activity(
     // builds used "> ". Either one means Finished.
     let has_prompt = content.lines().any(is_prompt_line);
     if has_prompt {
-        return ActivityResult { state: ClaudeState::Finished, draft_content: None, question_content: None };
+        return ActivityResult { state: ClaudeState::Finished, draft_content: None, question_content: None, plan_mode };
     }
 
     // Error state is reserved for Claude actually being WEDGED — chiefly running
@@ -1602,10 +1623,10 @@ fn classify_activity(
             .unwrap();
 
     if error_pattern.is_match(&last_portion) {
-        return ActivityResult { state: ClaudeState::Error, draft_content: None, question_content: None };
+        return ActivityResult { state: ClaudeState::Error, draft_content: None, question_content: None, plan_mode };
     }
 
-    ActivityResult { state: ClaudeState::Finished, draft_content: None, question_content: None }
+    ActivityResult { state: ClaudeState::Finished, draft_content: None, question_content: None, plan_mode }
 }
 
 // ----- 5-hour usage % from Claude Code's OAuth-authenticated /api/oauth/usage -----
@@ -1886,7 +1907,7 @@ fn should_recompute(prev: &CacheState, windows: &[ClaudeWindow]) -> bool {
         if old_state != new_state
             && matches!(
                 w.state,
-                ClaudeState::Active | ClaudeState::Finished | ClaudeState::Question
+                ClaudeState::Active | ClaudeState::Planning | ClaudeState::Finished | ClaudeState::Question
             )
         {
             return true;
@@ -2055,6 +2076,7 @@ mod tests {
         match prefix {
             "empty" => ClaudeState::Empty,
             "active" => ClaudeState::Active,
+            "planning" => ClaudeState::Planning,
             "finished" => ClaudeState::Finished,
             "draft" => ClaudeState::Draft,
             "question" => ClaudeState::Question,
@@ -2111,7 +2133,10 @@ mod tests {
                     result.state
                 );
                 let verdict = transcript_working(&jsonl);
-                (ClaudeState::refine_finished(verdict, false), verdict)
+                (
+                    ClaudeState::refine_finished(verdict, false, result.plan_mode),
+                    verdict,
+                )
             } else {
                 (result.state, None)
             };

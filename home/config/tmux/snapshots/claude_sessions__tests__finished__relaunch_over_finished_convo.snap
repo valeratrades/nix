@@ -7,6 +7,7 @@ expression: "(result, verdict)"
         state: Finished,
         draft_content: None,
         question_content: None,
+        plan_mode: false,
     },
     Some(
         false,

@@ -8,4 +8,5 @@ ActivityResult {
     question_content: Some(
         "Do you want to allow this command?",
     ),
+    plan_mode: false,
 }

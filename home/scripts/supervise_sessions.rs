@@ -96,7 +96,10 @@ fn poll_until_settled(idle_reads: u8, dry_run: bool) {
         tg("supervise: can't read sessions — deferring to horizon");
         return;
     };
-    let watched: BTreeSet<String> = initial.into_iter().filter(|(_, s)| s == "active").map(|(n, _)| n).collect();
+    // "planning" is "active" under plan mode — it says what the work is, not whether
+    // there is work, so every watch decision here treats the two identically.
+    let watched: BTreeSet<String> =
+        initial.into_iter().filter(|(_, s)| matches!(s.as_str(), "active" | "planning")).map(|(n, _)| n).collect();
     if watched.is_empty() {
         tg("supervise: no active sessions — shutting down");
         shutdown(dry_run);
@@ -115,7 +118,7 @@ fn poll_until_settled(idle_reads: u8, dry_run: bool) {
 
         // Adopt sessions that turned active after we started (also re-adopts a
         // settled one that woke back up — it must settle again before shutdown).
-        for name in snap.iter().filter(|(_, s)| *s == "active").map(|(n, _)| n) {
+        for name in snap.iter().filter(|(_, s)| matches!(s.as_str(), "active" | "planning")).map(|(n, _)| n) {
             if remaining.insert(name.clone()) {
                 total += 1;
                 tg(&format!("supervise: + {name} became active — now watching {}", remaining.len()));
@@ -128,7 +131,7 @@ fn poll_until_settled(idle_reads: u8, dry_run: bool) {
                 // A session gone from the snapshot (window closed) settles as "gone".
                 let state = snap.get(name).map(String::as_str).unwrap_or("gone");
                 match state {
-                    "active" => {
+                    "active" | "planning" => {
                         idle_streak.insert(name.clone(), 0);
                         None
                     }

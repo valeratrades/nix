@@ -8,4 +8,5 @@ ActivityResult {
         "add a dark mode toggle to the settings page",
     ),
     question_content: None,
+    plan_mode: false,
 }

@@ -6,4 +6,5 @@ ActivityResult {
     state: Empty,
     draft_content: None,
     question_content: None,
+    plan_mode: false,
 }

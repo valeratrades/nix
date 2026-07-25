@@ -17,7 +17,7 @@ No tmux / `/proc` / network / mocks are involved — just text in, state out.
 <state>__<description>.jsonl      # OPTIONAL: session transcript tail (only the active↔finished deliberation reads it)
 ```
 
-`<state>` ∈ `empty active finished draft question input error limit interrupted`.
+`<state>` ∈ `empty active planning finished draft question input error limit interrupted`.
 
 A `.jsonl` companion means the pane text alone reads Finished and the transcript
 arbitrates; `<state>` then names the FINAL verdict. The same pane dump can back
