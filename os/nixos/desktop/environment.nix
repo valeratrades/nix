@@ -19,15 +19,15 @@
     CLAUDE_CODE_DISABLE_AUTO_MEMORY = "1";
     CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = "1"; # serveys and shit
 #,}}}1
-  } // lib.optionalAttrs (user.gpuAcceleration or true) {
+    UV_MALWARE_CHECK = "1"; # may become default in the future, - deprecate when it is
+
     # GPU video decode for browsers (db0a13fc, 2026-04-14): route VA-API/VDPAU to the AMD iGPU
     # (radeonsi, stable on Wayland). System-wide, so this covers Chrome/Chromium too, not just Firefox.
     # NVIDIA dGPU was crash-prone so we keep it off; AMD handles decoding instead.
-    # Gated per-user (user.gpuAcceleration): drives the iGPU hard and runs hot on thin chassis.
+    # NOT gated on user.gpuAcceleration: a fixed-function decode block costs far less power than
+    # software-decoding the same stream on the CPU, so gating this made the thin chassis *hotter*.
     LIBVA_DRIVER_NAME = "radeonsi";
     VDPAU_DRIVER = "radeonsi";
-
-    UV_MALWARE_CHECK = "1"; # may become default in the future, - deprecate when it is
   };
 
   systemd.services.hibernate-prepare = {

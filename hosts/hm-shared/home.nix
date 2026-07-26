@@ -542,4 +542,47 @@
 			${pkgs.jq}/bin/jq '.server_enabled = true' "$cfg" > "$tmp" && mv "$tmp" "$cfg"
 		fi
 	'';
+
+	# Record 3 audio tracks: 1 = full mix (what plays by default), 2 = desktop only, 3 = mic only.
+	# Lets the mic be dropped in post (`ffmpeg -map 0:v -map 0:a:1`) instead of hand-editing a mixdown.
+	# Multi-track needs the Advanced output mode; recording keeps using the stream encoder, so video is
+	# byte-for-byte the same as before. Same rewritten-on-shutdown situation as obs-websocket above.
+	home.activation.obsAudioTracks = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+		obs="${config.home.homeDirectory}/.config/obs-studio/basic"
+		for ini in "$obs"/profiles/*/basic.ini; do
+			[ -f "$ini" ] || continue
+			${pkgs.python3}/bin/python3 - "$ini" "${config.home.homeDirectory}/Videos/obs" <<-'PY'
+				import configparser, sys
+				ini, recdir = sys.argv[1], sys.argv[2]
+				p = configparser.ConfigParser(interpolation=None)
+				p.optionxform = str
+				p.read(ini)
+				def s(sec, key, val):
+				    if not p.has_section(sec): p.add_section(sec)
+				    p[sec][key] = val
+				s("Output", "Mode", "Advanced")
+				s("Output", "FilenameFormatting", "%CCYY-%MM-%DD_%hh-%mm-%ss")
+				s("AdvOut", "RecType", "Standard")
+				s("AdvOut", "RecFilePath", recdir)
+				s("AdvOut", "RecFormat2", "mkv")
+				s("AdvOut", "RecEncoder", "none")  # "use stream encoder"
+				s("AdvOut", "RecTracks", "7")  # bitmask over tracks 1-3
+				s("AdvOut", "AudioEncoder", "ffmpeg_aac")
+				s("AdvOut", "RecAudioEncoder", "ffmpeg_aac")
+				s("AdvOut", "RecSplitFile", "false")
+				s("AdvOut", "RecRB", "false")
+				for t in (1, 2, 3): s("AdvOut", "Track%dBitrate" % t, "160")
+				with open(ini, "w") as f: p.write(f, space_around_delimiters=False)
+			PY
+		done
+		for scene in "$obs"/scenes/*.json; do
+			[ -f "$scene" ] || continue
+			tmp=$(mktemp)
+			${pkgs.jq}/bin/jq '
+				(if .sources then .sources |= map(if (.mixers // 0) != 0 then .mixers = 3 else . end) else . end)
+				| (if .DesktopAudioDevice1 then .DesktopAudioDevice1.mixers = 3 else . end)
+				| (if .AuxAudioDevice1 then .AuxAudioDevice1.mixers = 5 else . end)
+			' "$scene" > "$tmp" && mv "$tmp" "$scene"
+		done
+	'';
 }

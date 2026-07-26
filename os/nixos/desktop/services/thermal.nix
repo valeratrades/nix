@@ -1,6 +1,17 @@
 { pkgs, lib, config, ... }:
+let
+  # Arbitration primitive. Exactly one meaning: the scaling_max_freq this machine should sit at when
+  # it is not thermally stressed. Written by whoever declares a mode (this unit at boot,
+  # optimize_for on demand), read by thermal-guard so an excursion restores the *declared* baseline
+  # instead of inventing one. Previously thermal-guard restored to the hardware ceiling, which would
+  # have silently undone the cap after the first hot spell.
+  baseFreqFile = "/run/optimize_for.base-freq";
+in
 {
-  services.power-profiles-daemon.enable = true;
+  # Explicitly off, not merely unset: something upstream defaults it true. It is a third writer
+  # racing us for platform_profile (its power-saver maps to "quiet"), and nothing here consumed its
+  # D-Bus API. Ownership of platform_profile now sits solely with optimize_for + the boot default.
+  services.power-profiles-daemon.enable = false;
 
   # Allow users in 'wheel' group to control CPU boost and platform profile
   services.udev.extraRules = ''
@@ -14,16 +25,39 @@
     options legion_laptop force=1
   '';
 
-  # Default to performance fan profile and CPU boost off on boot (longevity mode)
+  # Boot default: longevity. Mirrors `optimize_for longevity` so a fresh boot and an explicit
+  # invocation agree.
+  #
+  # Boost off, but NOT capped below the base clock. schedutil already scales the cores with demand
+  # (scaling_min_freq is 400 MHz), so a standing cap buys nothing while browsing and only slows the
+  # work that is actually wanted — compiles get the full 2501 MHz base. Heat is handled reactively
+  # by thermal-guard, on measured temperature.
+  #
+  # platform_profile stays "performance" purely for the fan curve. It does raise PPT/STAPM as a side
+  # effect, which is the price of airflow here: legion_cli's maximumfanspeed would be the principled
+  # way to ask for fans without the power limits, but this firmware silently ignores it (enable
+  # reads back False), so the profile is the only working lever.
   systemd.services.legion-longevity = {
     description = "Set Legion laptop to longevity mode (boost off, fans max)";
     wantedBy = [ "multi-user.target" ];
     after = [ "systemd-modules-load.service" ];
+    path = [ pkgs.bash pkgs.coreutils ];
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
-      ExecStart = "${pkgs.bash}/bin/bash -c 'echo 0 > /sys/devices/system/cpu/cpufreq/boost && echo performance > /sys/firmware/acpi/platform_profile'";
     };
+    script = ''
+      echo 0 > /sys/devices/system/cpu/cpufreq/boost
+      echo performance > /sys/firmware/acpi/platform_profile
+
+      # Read the ceiling only after boost is settled: amd-pstate swings cpuinfo_max_freq between the
+      # base and boost clocks according to it.
+      ceiling=$(cat /sys/devices/system/cpu/cpufreq/policy0/cpuinfo_max_freq)
+      for policy in /sys/devices/system/cpu/cpufreq/policy*/scaling_max_freq; do
+        echo "$ceiling" > "$policy"
+      done
+      echo "$ceiling" > ${baseFreqFile}
+    '';
   };
 
   # Battery conservation mode: cap charging to extend Li-ion cell life.
@@ -77,10 +111,16 @@
   #   };
   # };
 
-  # Throttle CPU at 90°C and manage fan profile to prevent thermal shutdown
+  # Throttle CPU frequency at 90°C to prevent thermal shutdown.
+  #
+  # Deliberately touches frequency ONLY, and only relative to the declared baseline. This loop used
+  # to be a second writer of platform_profile, so a single thermal excursion silently rewrote a
+  # profile the user had chosen; the profile now has exactly one owner.
   systemd.services.thermal-guard = {
-    description = "Throttle CPU and manage fans when temperature exceeds 90C";
+    description = "Throttle CPU frequency when temperature exceeds 90C";
     wantedBy = [ "multi-user.target" ];
+    after = [ "legion-longevity.service" ];  # the baseline must exist before we can restore to it
+    requires = [ "legion-longevity.service" ];
     serviceConfig = {
       Type = "simple";
       Restart = "always";
@@ -89,24 +129,20 @@
     script = ''
       TEMP_HIGH=90000   # Start throttling at 90°C
       TEMP_LOW=80000    # Stop throttling at 80°C (hysteresis)
-      FREQ_THROTTLE=2400000  # ~44% of max
-      FREQ_NORMAL=5461000
-      PLATFORM_PROFILE="/sys/firmware/acpi/platform_profile"
 
       throttled=0
 
+      # Never the hardware ceiling: the baseline is whatever mode is currently declared, so throttling
+      # bites relative to the cap rather than lifting the CPU *up* to the ceiling on restore.
+      # The old code restored a hardcoded 5461000 and throttled to a hardcoded 2400000 — with boost
+      # off the real ceiling is 2501000, making that "throttle" a 4% cut, i.e. very nearly a no-op.
+      # That is why this flapped 79<->91C every few minutes instead of ever settling.
+      base() { cat ${baseFreqFile}; }
+
       set_freq() {
-        for cpu in /sys/devices/system/cpu/cpu*/cpufreq/scaling_max_freq; do
-          echo "$1" > "$cpu" 2>/dev/null || true
+        for policy in /sys/devices/system/cpu/cpufreq/policy*/scaling_max_freq; do
+          echo "$1" > "$policy" 2>/dev/null || true
         done
-      }
-
-      set_fan_profile() {
-        echo "$1" > "$PLATFORM_PROFILE" 2>/dev/null || true
-      }
-
-      get_fan_profile() {
-        cat "$PLATFORM_PROFILE" 2>/dev/null || echo "unknown"
       }
 
       while true; do
@@ -119,24 +155,15 @@
           fi
         done
 
-        # Never allow quiet profile - power-profiles-daemon sets this with power-saver
-        current_profile=$(get_fan_profile)
-        if [ "$current_profile" = "quiet" ]; then
-          set_fan_profile "balanced"
-          echo "Fan profile: quiet -> balanced (quiet not allowed)"
-        fi
-
         if [ -n "$temp" ]; then
           if [ "$temp" -ge "$TEMP_HIGH" ] && [ "$throttled" -eq 0 ]; then
-            set_freq $FREQ_THROTTLE
-            set_fan_profile "performance"
+            set_freq $(( $(base) * 60 / 100 ))
             throttled=1
-            echo "Throttling: $((temp/1000))C >= 90C, fans -> performance"
+            echo "Throttling: $((temp/1000))C >= 90C, freq -> $(( $(base) * 60 / 100 )) kHz"
           elif [ "$temp" -lt "$TEMP_LOW" ] && [ "$throttled" -eq 1 ]; then
-            set_freq $FREQ_NORMAL
-            set_fan_profile "balanced"
+            set_freq $(base)
             throttled=0
-            echo "Restored: $((temp/1000))C < 80C, fans -> balanced"
+            echo "Restored: $((temp/1000))C < 80C, freq -> $(base) kHz"
           fi
         fi
 

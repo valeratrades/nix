@@ -4,7 +4,8 @@ let
 in
 {
 	services = {
-		power-profiles-daemon.enable = true;
+		# power-profiles-daemon is owned (and disabled) by services/thermal.nix — it races our own
+		# thermal management for platform_profile. Nothing graphics-related consumed it.
 		xserver.videoDrivers = if disableNvidia
 			then [ "modesetting" "amdgpu" ]
 			else [ "modesetting" "amdgpu" "nvidia" ];

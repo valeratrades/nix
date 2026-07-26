@@ -3,6 +3,7 @@
 
 [dependencies]
 clap = { version = "4.5.49", features = ["derive"] }
+ctrlc = { version = "3.4", features = ["termination"] }
 v_utils = { version = "2.15.54", default-features = false }
 ---
 
@@ -10,6 +11,7 @@ use clap::Parser;
 use std::process::Command;
 use std::path::PathBuf;
 use std::str::FromStr;
+use std::sync::Mutex;
 use v_utils::other::percent::{Percent, PercentU};
 
 /// Play a sound and show a notification
@@ -32,9 +34,9 @@ struct Args {
 	quiet: bool,
 
 	/// Absolute output volume (e.g. `40` or `40%`). When omitted, the sound plays at the
-	/// system's current master volume. When given, this beep's own stream is attenuated so
-	/// it lands at this level; master is never touched. Only cuts, never boosts — a master
-	/// below the request just plays quieter. Values outside 0-100% are rejected.
+	/// system's current master volume. When given, the beep lands at exactly this level: our
+	/// own stream is attenuated when master is above it, and master is raised for the
+	/// duration when it is below. Values outside 0-100% are rejected.
 	#[arg(short, long, value_parser = parse_percent)]
 	volume: Option<PercentU>,
 
@@ -75,6 +77,37 @@ fn get_master() -> f64 {
 		.expect("wpctl prints 'Volume: <n>'")
 		.parse::<f64>()
 		.expect("wpctl prints a float")
+}
+
+fn set_master(v: f64) {
+	let v = format!("{v}");
+	let status = Command::new("wpctl").args(["set-volume", SINK, &v]).status();
+	match status {
+		Ok(s) if s.success() => {}
+		Ok(_) => {
+			eprintln!("wpctl set-volume {v} failed");
+			std::process::exit(1);
+		}
+		Err(e) => {
+			eprintln!("Error setting master volume: {e}");
+			std::process::exit(1);
+		}
+	}
+}
+
+/// (level we left master at, absolute level to put back). Some only while a raise of ours is live.
+static RAISE: Mutex<Option<(f64, f64)>> = Mutex::new(None);
+
+/// Undo our raise — but only if master still reads exactly what we left it at. Anything else
+/// means someone moved it since (another beep, the user), so it is no longer ours to set.
+/// Both sides of the comparison are parsed from wpctl's own printout, so exact equality holds.
+fn release_raise() {
+	let Some((left_at, restore_to)) = RAISE.lock().expect("only ever locked to take").take() else {
+		return;
+	};
+	if get_master() == left_at {
+		set_master(restore_to);
+	}
 }
 
 fn pactl(args: &[&str]) -> String {
@@ -168,18 +201,39 @@ fn main() {
 			}
 		}
 
-		// Attenuate our own stream rather than pinning system master: concurrent beeps
-		// would otherwise clobber each other's saved master and restore the loud one
-		// mid-playback. Can only cut, never boost, so a quiet master stays quiet.
+		// Land on `target` by attenuating our own stream, and only touch master when it sits
+		// below target and attenuation alone cannot get us there. Cutting via the stream
+		// keeps concurrent beeps from clobbering each other's saved master and restoring the
+		// loud one mid-playback, which is how this used to blow ears out.
 		let mut cmd = Command::new("ffplay");
 		cmd.args(["-nodisp", "-autoexit", "-loglevel", "quiet"]);
 		if let Some(t) = target {
-			let master = get_master();
-			assert!(master.is_finite() && master >= 0.0, "wpctl reports a sane volume");
+			let current = get_master();
+			assert!(current.is_finite() && current >= 0.0, "wpctl reports a sane volume");
+
+			let master = if current < t {
+				ctrlc::set_handler(|| {
+					release_raise();
+					std::process::exit(130);
+				})
+				.expect("installed at most once, before any other handler");
+				// Registered before the raise, so a signal landing mid-raise still restores.
+				*RAISE.lock().expect("handler only takes") = Some((t, current));
+				set_master(t);
+				// Read back rather than trusting `t`: wpctl rounds, and `release_raise` needs the
+				// value master actually holds to recognise it as still ours.
+				let left_at = get_master();
+				*RAISE.lock().expect("handler only takes") = Some((left_at, current));
+				left_at
+			} else {
+				current
+			};
+
 			let stream = if master <= 0.0 { 0.0 } else { (t / master * 100.0).clamp(0.0, 100.0) };
 			cmd.args(["-volume", &format!("{stream:.0}")]);
 		}
 		let sound_result = cmd.arg(args.sound_file.to_str().unwrap()).output();
+		release_raise();
 
 		if let Err(e) = sound_result {
 			eprintln!("Error playing sound: {e}");

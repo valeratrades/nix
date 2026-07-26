@@ -1,9 +1,10 @@
 { pkgs, lib, user, ... }:
 let
-  # 10-day-old change (71dd4ee6): forced Firefox GPU rendering. Gated per-user — runs hot on this chassis.
+  # Gates forced GPU *rendering* only (webrender/dmabuf/gpu-process) — runs the iGPU hot on this
+  # chassis. Video decode is deliberately outside this gate; see the prefs block below.
   gpuAcceleration = user.gpuAcceleration or true;
 in {
-  environment.systemPackages = [ pkgs.firefox ];
+  environment.systemPackages = [ pkgs.firefox pkgs.libva-utils ];  # vainfo: verify hw decode is actually live
   programs.firefox = {
     enable = true;
     languagePacks = [ "en-US" "ru" "fr" "de" ];
@@ -130,18 +131,22 @@ in {
         true; # WebRTC required for Meet/Discord/etc; was disabled previously to prevent IP leaks but that broke video calling
 
       #,}}}
-    } // lib.optionalAttrs gpuAcceleration {
-      # GPU acceleration (db0a13fc, 2026-04-14) — WebRender + VA-API hardware video decoding via the
-      # AMD iGPU (radeonsi). Gated per-user (user.gpuAcceleration): drives the iGPU hard and runs hot
-      # on thin chassis, so disabled where heat is a concern.
+
+      # VA-API hardware video *decoding* via the AMD iGPU (radeonsi). Deliberately NOT gated on
+      # user.gpuAcceleration: the fixed-function decode block burns far less power than
+      # software-decoding the same stream across CPU cores, so gating this made the thin chassis
+      # hotter, not cooler.
       # NVIDIA dGPU excluded: crash-prone with Firefox hardware decoding.
       # History: GPU rendering was fully disabled in Dec 2025 after amdgpu hangs; the real fix turned
       # out to be kernel-level (amdgpu.sg_display=0, iommu.strict=1 — see
       # ongoing_debug/firefox-gpu-acceleration.md), so these prefs were safely re-enabled.
-      "gfx.webrender.all" = true;
       "media.hardware-video-decoding.enabled" = true;
       "media.ffmpeg.vaapi.enabled" = true;  # VA-API path for Wayland
       "media.hardware-video-decoding.force-enabled" = false;  # don't force-override driver blacklist
+    } // lib.optionalAttrs gpuAcceleration {
+      # Forced GPU *rendering*, as opposed to decoding above. This is the half that actually drives
+      # the iGPU hard, so it stays gated per-user.
+      "gfx.webrender.all" = true;
 
       # WebGL/canvas apps (Excalidraw etc.) — forced GPU rendering.
       # NB: deliberately NOT setting gfx.canvas.accelerated.force-enabled / webgl.force-enabled —
