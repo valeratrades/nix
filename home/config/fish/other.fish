@@ -484,7 +484,7 @@ end
 function led -a mode -d "rpi5 ACT led: (off) | on | blink"
 	switch "$mode"
 		case on
-			ssh rpi5-ts 'sudo sh -c "echo none >/sys/class/leds/ACT/trigger; echo 255 >/sys/class/leds/ACT/brightness"'
+			ssh rpi5-ts 'sudo sh -c "echo default-on >/sys/class/leds/ACT/trigger"'
 		case blink
 			ssh rpi5-ts 'sudo sh -c "echo mmc0 >/sys/class/leds/ACT/trigger"'
 		case "" off
