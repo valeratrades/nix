@@ -46,6 +46,24 @@ in {
     };
   };
 
+  # The kernel takes the LAST value for a repeated key and silently ignores the rest. That is how an
+  # imported nixos-hardware module's `amd_pstate=active` sat next to a local `amd_pstate=passive` for
+  # four months: nothing warns, and the config alone doesn't show it — you have to read /proc/cmdline.
+  # To override a param an imported module sets, drop your own definition and change the module's, or
+  # lib.mkForce the whole list. Never just append the value you want.
+  assertions = let
+    key = param: builtins.head (lib.splitString "=" param);
+    keys = map key config.boot.kernelParams;
+    # console= is legitimately repeatable (console=tty0 console=ttyS0). Nothing else here is.
+    repeatable = [ "console" ];
+    duplicated = lib.unique (lib.filter
+      (k: !(lib.elem k repeatable) && lib.count (x: x == k) keys > 1)
+      keys);
+  in [{
+    assertion = duplicated == [ ];
+    message = "boot.kernelParams defines these keys more than once (last wins, silently): ${lib.concatStringsSep ", " duplicated}";
+  }];
+
   imports = [
 		# Using common modules instead of lenovo-legion-16ach6h-hybrid which is for older Legion (Ryzen 5000 + RTX 30xx)
 		# Your laptop has Ryzen 8840U (Raphael/Phoenix) + RTX 5060 - different hardware
@@ -169,17 +187,33 @@ in {
 			"amdgpu.noretry=1"         # disable retry on page faults
 			#dbg: NMI watchdog - detects hard lockups and prints stack trace even when CPU is frozen
 			"nmi_watchdog=1"
-			#dbg: limit CPU to shallow C-states (C0/C1 only) - testing if deep sleep triggers IRQ storms
-			"processor.max_cstate=1"
+			#TEST (2026-07-26): `processor.max_cstate=1` removed. It was only ever a probe ("testing if
+			# deep sleep triggers IRQ storms", 9012b128, 2026-04-02) and no doc ever concluded it helped —
+			# ongoing_debug/2026-03-26_amd-vi-iommu-stall.md lands on iommu.strict=1 as the actual fix and
+			# never mentions C-states again. Meanwhile it cost real heat: it capped cpuidle at POLL+C1, so
+			# 32 threads could never power-gate and the laptop idled at 74-80C.
+			# Revert this line if AMD-Vi Completion-Wait timeouts or hard lockups reappear.
+			#
+			#TEST (2026-07-26): amd_pstate left at `active` from nixos-hardware's common-cpu-amd-pstate.
+			# The local `amd_pstate=passive` override (9012b128, "try passive for stability") is deleted
+			# rather than flipped — appending a second value is what created the silent duplicate the
+			# assertion above now rejects. No ongoing_debug doc ever recorded the instability it was
+			# meant to address. active enables EPP and hardware-chosen operating points.
+			# Revert by setting `common-cpu-amd-pstate`'s param, NOT by appending here.
 			#dbg: TSC showing ~5 billion cycle warp between CPUs - try HPET instead
-			# commented out: processor.max_cstate=1 already prevents TSC drift from deep C-states, making HPET unnecessary; HPET is ~75x slower than TSC and causes system-wide sluggishness - see ongoing_debug/2026-03-26_amd-vi-iommu-stall.md
+			# commented out: HPET is ~75x slower than TSC and causes system-wide sluggishness - see ongoing_debug/2026-03-26_amd-vi-iommu-stall.md
 			# "clocksource=hpet"
-			#dbg: override nixos-hardware's amd_pstate=active - try passive for stability
-			"amd_pstate=passive"
 			#dbg: force IOMMU strict TLB invalidation - prevents AMD-Vi Completion-Wait timeout that causes system-wide I/O stalls
 			#NB: amd_iommu=fullflush is deprecated since ~6.x, replaced by iommu.strict=1
 			"iommu.strict=1"
-			# mt7925e WiFi suspend fix - disable ASPM to prevent suspend timeout
+			# mt7925e WiFi suspend fix - disable ASPM to prevent suspend timeout.
+			# KEPT deliberately: ongoing_debug/2026-06-05_slow-shutdown.md (v4) traced the shutdown hang to
+			# a cfg80211 disconnect_work kworker wedging in D-state, and the upstream fix lives in the
+			# btusb teardown path, which is NOT in 6.12.85. The rfkill-before-teardown service handles the
+			# shutdown case; this param covers suspend.
+			# Trade-off: holds every PCIe link in L0 (no L0s/L1 power states), so NVMe/WiFi/dGPU never
+			# power-gate their links — a standing idle-power cost across the whole bus.
+			# Retest by dropping it once the kernel carries the mt7925 BT-disconnect fix.
 			"pcie_aspm.policy=performance"
 			#dbg: slow-shutdown hunt - make the late systemd-shutdown phase (post-journal
 			# unmount/detach/leftover-kill) log to the console so the stuck step is named.
@@ -560,12 +594,8 @@ in {
           bottom
 					powertop
 					upower
-          lm_sensors # System sensor monitoring
           #ltrace # Library call monitoring #TEST
           strace # System call monitoring
-          iftop # network monitoring
-          iotop # io monitoring
-          sysstat
         ]
 
         # Compression and Archiving
@@ -576,7 +606,6 @@ in {
           poppler-utils
           unzip
           zip
-          xz
           zstd
         ]
 
@@ -592,7 +621,6 @@ in {
           comma # auto nix-shell missing commands, so you can just `, cowsay hello`
           cowsay
           difftastic # better `diff`
-          sudo-rs # `sudo` in rust
           cotp
           as-tree
           eza # better `ls`
@@ -627,26 +655,13 @@ in {
           openssh
           waypipe # similar to X11 forwarding, but for wayland
           bluez
-          dnsutils
-          ipcalc
-          iperf3
-          mtr
-          nmap
-          pciutils # lspci
-          usbutils # lsusb
-          wireplumber
         ]
 
         # File Utilities
         [
-          fd # better `find`
-          file
           gnupg
           gnused
           gnutar
-          jq
-          unzip
-          zip
           pandoc
           wkhtmltopdf
 					texliveTeTeX # theoretically adds extensions to pandoc
@@ -656,7 +671,6 @@ in {
         [
           httpie
           wget
-          aria2
         ]
 
         # VC / deployment

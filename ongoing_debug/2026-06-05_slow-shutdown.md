@@ -219,6 +219,13 @@ Refs: Ubuntu LP#2092746 (reboot hang, fixed via btusb patches), LP#2141198 +
 Framework community (6.12 mt7925e suspend `-110` timeout). Same family as the
 existing `pcie_aspm.policy=performance` mt7925e kernelParam already in config.
 
+> **2026-07-26**: that kernelParam was reviewed during thermal work and **kept** —
+> the btusb fix is still absent from 6.12.85. Its cost is now written into
+> `configuration.nix`: it holds every PCIe link in L0 (no L0s/L1), so NVMe, WiFi and
+> the dGPU never power-gate their links — a standing idle-power draw across the whole
+> bus. Retest by dropping it once the kernel carries the mt7925 BT-disconnect fix.
+> See `2026-07-26_cpu-thermals.md`.
+
 ### Fix — rfkill the radio before network teardown (driver-level, not a timer)
 `os/nixos/configuration.nix`, next to the `networkmanager` block:
 ```nix

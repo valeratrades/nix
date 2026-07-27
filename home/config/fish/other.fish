@@ -480,3 +480,16 @@ function meet_cam
 		chromium --user-data-dir=$profile $url >/dev/null 2>&1 &
 	disown
 end
+
+function led -a mode -d "rpi5 ACT led: (off) | on | blink"
+	switch "$mode"
+		case on
+			ssh rpi5-ts 'sudo sh -c "echo none >/sys/class/leds/ACT/trigger; echo 255 >/sys/class/leds/ACT/brightness"'
+		case blink
+			ssh rpi5-ts 'sudo sh -c "echo mmc0 >/sys/class/leds/ACT/trigger"'
+		case "" off
+			ssh rpi5-ts 'sudo sh -c "echo none >/sys/class/leds/ACT/trigger; echo 0 >/sys/class/leds/ACT/brightness"'
+		case "*"
+			echo "led [off|on|blink]"; return 1
+	end
+end

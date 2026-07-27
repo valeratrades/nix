@@ -33,6 +33,40 @@ Once these landed, the Firefox GPU prefs could be turned back on without regress
 | 2026-01-17 | WebRender back ON; hardware video decode kept OFF             |
 | 2026-04-14 | Hardware video decode + VA-API back ON                        |
 | 2026-05-30 | DMABUF + native compositor + isolated GPU process (this doc)  |
+| 2026-07-26 | Decode split out from the `gpuAcceleration` gate — see below   |
+
+## ⚠️ 2026-07-26 — the prefs above were NOT actually live on this host
+
+Correction to the table: from the `gpuAcceleration` gate landing until 2026-07-26,
+**none of these prefs applied on `v-laptop`**. They sat inside
+`lib.optionalAttrs gpuAcceleration { ... }` in `firefox.nix`, and
+`vars/default.nix` sets `gpuAcceleration = false` for this user. The same flag also
+gated `LIBVA_DRIVER_NAME`/`VDPAU_DRIVER` in `environment.nix`.
+
+Confirmed by reading the running browser's environ — `LIBVA_DRIVER_NAME` was simply
+absent. Every video frame was being decoded on the CPU, at ~115% CPU for the parent
+process. So this doc read as "stable and enabled" while the feature was off.
+
+### The gate's rationale was inverted for decode
+The flag was documented as *"drives the iGPU hard and runs hot on thin chassis"*.
+That holds for forced GPU **rendering**, but not for **decode**: a fixed-function
+decode block costs far less power than software-decoding the same stream across CPU
+cores. Gating decode to stay cool made the chassis hotter.
+
+### Fix — split the gate
+- `media.hardware-video-decoding.enabled`, `media.ffmpeg.vaapi.enabled`,
+  `media.hardware-video-decoding.force-enabled=false`, and the
+  `LIBVA_DRIVER_NAME`/`VDPAU_DRIVER` env vars are now **unconditional**.
+- `gfx.webrender.all`, `widget.dmabuf.force-enabled`, `gfx.webrender.compositor`,
+  `layers.gpu-process.*` stay behind `gpuAcceleration` — that half genuinely does
+  drive the iGPU hard.
+
+The kernel workarounds that made this safe (`amdgpu.sg_display=0`, `iommu.strict=1`,
+et al) are still live in `/proc/cmdline`, so re-enabling decode is not reopening the
+Dec 2025 regression.
+
+`libva-utils` was added to `systemPackages` so `vainfo` exists to check this next
+time — its absence is why the gate went unnoticed for months.
 
 ## Current Firefox GPU prefs and WHY each is safe
 

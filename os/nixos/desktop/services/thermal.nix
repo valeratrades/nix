@@ -127,8 +127,8 @@ in
       RestartSec = 5;
     };
     script = ''
-      TEMP_HIGH=90000   # Start throttling at 90°C
-      TEMP_LOW=80000    # Stop throttling at 80°C (hysteresis)
+      TEMP_HIGH=85000   # Start throttling at 85°C
+      TEMP_LOW=75000    # Stop throttling at 75°C (hysteresis)
 
       throttled=0
 

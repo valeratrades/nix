@@ -58,6 +58,28 @@ in
     vesktop.enable = true;
     discord.openASAR.enable = true;
 
+    # NB: nixcord *copies* this over ~/.config/discord/settings.json on every activation rather than
+    # symlinking, so this attrset is the whole file — anything left out is silently dropped. The
+    # transient keys Discord writes itself (WINDOW_BOUNDS, IS_MAXIMIZED, trayBalloonShown) are
+    # deliberately absent and will simply be re-created at runtime.
+    discord.settings = {
+      # Closing the window quits, rather than parking Discord in the tray. Left to its own devices it
+      # sat "closed" in the tray burning ~32% of a core for ten hours straight.
+      MINIMIZE_TO_TRAY = false;
+      OPEN_ON_STARTUP = false;
+      START_MINIMIZED = false;
+
+      SKIP_HOST_UPDATE = true; # nix owns the package; never let it self-update
+      openasar.setup = true; # matches discord.openASAR.enable above
+      DANGEROUS_ENABLE_DEVTOOLS_ONLY_ENABLE_IF_YOU_KNOW_WHAT_YOURE_DOING = true;
+      BACKGROUND_COLOR = "#2c2d32";
+      enableHardwareAcceleration = true;
+      offloadAdmControls = true;
+      asyncVideoInputDeviceInit = false;
+      openH264Enabled = true;
+      chromiumSwitches = { };
+    };
+
     vesktopConfig = {
       frameless = true;
       enableReactDevtools = true;

@@ -378,6 +378,10 @@ in {
     packages = with pkgs;
       builtins.trace "DEBUG: sourcing Valera-specific home.nix"
       lib.lists.flatten [
+        (pkgs.writeShellScriptBin "openclaw" ''
+          exec ${lib.getExe pkgs.nodejs_22} "$HOME/g/openclaw/openclaw.mjs" "$@"
+        '')
+
         # The full update dance for the openclaw checkout — anything less than all of these steps
         # after moving HEAD leaves the gateway broken (stale dist) or crash-looping (schema drift).
         (pkgs.writeShellScriptBin "openclaw-rebuild" ''

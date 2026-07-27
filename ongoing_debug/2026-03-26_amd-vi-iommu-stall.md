@@ -40,6 +40,20 @@ The flag is **ignored** on this kernel version. The 2026-03-31 incident proves i
 Replaced `amd_iommu=fullflush` with `iommu.strict=1` in `os/nixos/configuration.nix`.
 This is the current kernel-supported equivalent: forces synchronous TLB invalidation on every unmap.
 
+### Sidebar: `processor.max_cstate=1` — REMOVED 2026-07-26
+Added 2026-04-02 (`9012b128`) as a *probe* — "testing if deep sleep triggers IRQ
+storms" — while hunting this stall. **It was never validated.** No entry in this doc
+or any other concluded that it helped; the mitigation line here runs
+v1 → v2 (`iommu.strict=1`) and never mentions C-states again.
+
+Meanwhile it had a large, unrelated cost: it capped `cpuidle` at `POLL`+`C1`, so all
+32 threads could never power-gate, and the laptop idled at 74–80°C. Removed on those
+grounds. See `2026-07-26_cpu-thermals.md`.
+
+**If Completion-Wait timeouts or hard lockups return, put it back first** — it is the
+most recent change to touch this failure class. That would also be the first actual
+evidence that deep C-states are implicated, which we still do not have.
+
 ### v3 (if v2 fails): `iommu=soft` or `amd_iommu=off`
 Nuclear option — disables hardware IOMMU entirely, falling back to software bounce buffers.
 Loses VFIO/passthrough capability and some security isolation, but eliminates the stall entirely.
