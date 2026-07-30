@@ -481,15 +481,16 @@ function meet_cam
 	disown
 end
 
-function led -a mode -d "rpi5 ACT led: (off) | on | blink"
+# The green ACT led only ever lights via its `mmc0` (sd-card io) trigger — driving
+# brightness directly leaves it dark whatever the gpio says — so "on" means
+# flickering on io, which is the only lit state the hardware offers.
+function led -a mode -d "rpi5 ACT led: (off) | on"
 	switch "$mode"
 		case on
-			ssh rpi5-ts 'sudo sh -c "echo default-on >/sys/class/leds/ACT/trigger"'
-		case blink
 			ssh rpi5-ts 'sudo sh -c "echo mmc0 >/sys/class/leds/ACT/trigger"'
 		case "" off
 			ssh rpi5-ts 'sudo sh -c "echo none >/sys/class/leds/ACT/trigger; echo 0 >/sys/class/leds/ACT/brightness"'
 		case "*"
-			echo "led [off|on|blink]"; return 1
+			echo "led [off|on]"; return 1
 	end
 end

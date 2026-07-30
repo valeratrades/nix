@@ -1,0 +1,137 @@
+#!/usr/bin/env python3
+"""stdio LSP shim that hands rust-analyzer off to a shared lspmux instance.
+
+lspmux keys instances on (server binary, args, forwarded env, workspace root), and
+takes the root verbatim from the client's `initialize`. Claude Code sends its session
+cwd there with no project detection, so a session started in a subdirectory would key
+onto its own instance. Normalizing the root here is what actually collapses nvim and
+every Claude Code session in a project onto one rust-analyzer.
+"""
+import json
+import os
+import shutil
+import subprocess
+import sys
+import threading
+from pathlib import Path
+from urllib.parse import unquote, urlparse
+
+
+def cargo_root(start: Path) -> Path:
+	"""Outermost Cargo.toml at or above `start`, never crossing out of the git worktree.
+
+	Bounding the walk at the worktree keeps two worktrees of one repo on separate
+	instances, which is the point — they have divergent sources but identical layout.
+	"""
+	start = start.resolve()
+	top = subprocess.run(
+		["git", "-C", str(start), "rev-parse", "--show-toplevel"],
+		capture_output=True, text=True)
+	limit = Path(top.stdout.strip()).resolve() if top.returncode == 0 else start
+	found, d = None, start
+	while True:
+		if (d / "Cargo.toml").is_file():
+			found = d
+		if d == limit or d == d.parent:
+			break
+		d = d.parent
+	return found or start
+
+
+def read_frame(src):
+	length = None
+	while True:
+		line = src.readline()
+		if not line:
+			return None
+		if line in (b"\r\n", b"\n"):
+			break
+		name, _, value = line.decode("ascii").partition(":")
+		if name.strip().lower() == "content-length":
+			length = int(value.strip())
+	assert length is not None, "LSP frame without Content-Length"
+	return src.read(length)
+
+
+def write_frame(dst, payload: bytes):
+	dst.write(b"Content-Length: %d\r\n\r\n" % len(payload))
+	dst.write(payload)
+	dst.flush()
+
+
+def pump(src, dst):
+	while chunk := src.read1(65536):
+		dst.write(chunk)
+		dst.flush()
+	dst.close()
+
+
+def die(req_id, message):
+	"""stderr only reaches a client's log file; an `initialize` error reaches the user."""
+	write_frame(sys.stdout.buffer, json.dumps({
+		"jsonrpc": "2.0",
+		"id": req_id,
+		"error": {"code": -32603, "message": f"ra-shared: {message}"},
+	}).encode())
+	sys.exit(f"ra-shared: {message}")
+
+
+def claimed_root(params) -> Path:
+	folders = params.get("workspaceFolders")
+	if folders:
+		return Path(unquote(urlparse(folders[0]["uri"]).path))
+	if params.get("rootUri"):
+		return Path(unquote(urlparse(params["rootUri"]).path))
+	if params.get("rootPath"):
+		return Path(params["rootPath"])
+	return Path.cwd()
+
+
+def main() -> int:
+	first = read_frame(sys.stdin.buffer)
+	if first is None:
+		return 0
+	msg = json.loads(first)
+	assert msg.get("method") == "initialize", f"expected initialize first, got {msg.get('method')!r}"
+	req_id = msg.get("id")
+
+	root = cargo_root(claimed_root(msg["params"]))
+	uri = root.as_uri()
+	msg["params"]["rootPath"] = str(root)
+	msg["params"]["rootUri"] = uri
+	msg["params"]["workspaceFolders"] = [{"uri": uri, "name": root.name}]
+
+	if not shutil.which("lspmux"):
+		die(req_id, "no lspmux on PATH; run `home-manager switch` from ~/nix to install it")
+	server = shutil.which("rust-analyzer")
+	if not server:
+		die(req_id, "no rust-analyzer on PATH")
+	server = os.path.realpath(server)
+	if "rustup" in server:
+		die(req_id,
+			f"rust-analyzer resolved to the rustup shim ({server}) instead of a devshell "
+			"toolchain; launch your editor/agent from a direnv-activated shell so the "
+			"project's `nix develop` rust is on PATH, or versions will mismatch")
+
+	child = subprocess.Popen(
+		["lspmux", "client", "--server-path", server],
+		stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+	write_frame(child.stdin, json.dumps(msg).encode())
+	threading.Thread(target=pump, args=(sys.stdin.buffer, child.stdin), daemon=True).start()
+
+	# lspmux never spawns the daemon itself, so a down server shows up only as the client
+	# exiting mute. Its stderr stays inherited rather than piped: nothing drains a pipe once
+	# the session is healthy, and a full one would deadlock it.
+	reply = child.stdout.read1(65536)
+	if not reply:
+		child.wait()
+		die(req_id, "lspmux client exited without replying; check `systemctl --user status lspmux`")
+	sys.stdout.buffer.write(reply)
+	sys.stdout.buffer.flush()
+
+	pump(child.stdout, sys.stdout.buffer)
+	return child.wait()
+
+
+if __name__ == "__main__":
+	sys.exit(main())

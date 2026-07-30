@@ -53,7 +53,9 @@ let
 		};
 		enabled = {
 			"code-review@claude-code-plugins" = true;
-			"rust-analyzer-lsp@claude-plugins-official" = true;
+			# Supersedes rust-analyzer-lsp@claude-plugins-official, which spawns a private
+			# rust-analyzer per session. Only one server may claim `.rs`, so that one stays off.
+			"ra-shared@ra-shared" = true;
 			"feature-dev@claude-code-plugins" = true;
 			"figma@claude-plugins-official" = true;
 			# Marketplace plugin is named `frontend-design`, not `frontend-dev` (no such id exists).
@@ -71,6 +73,20 @@ let
 			"figma@claude-plugins-official" = {
 				repo = "figma/mcp-server-guide";
 				rev = "2efd0e37d10c35c4a7cf6d2b7381c9dc1a569bd4";
+			};
+		};
+	};
+
+	# Claude Code reads LSP server definitions *only* from enabled plugins — there is no
+	# settings.json key for them — so overriding the stock rust-analyzer-lsp (which spawns a
+	# private rust-analyzer per session) requires shipping our own plugin. The whole plugin is
+	# this one server entry pointed at the ra-shared shim.
+	localPlugins = {
+		ra-shared = {
+			description = "rust-analyzer via the shared lspmux instance";
+			lspServers."rust-analyzer" = {
+				command = "/home/${user.username}/nix/home/scripts/ra-shared";
+				extensionToLanguage.".rs" = "rust";
 			};
 		};
 	};
@@ -182,6 +198,21 @@ let
 					'.plugins[$key] = [{"scope":"user","installPath":$path,"version":"latest","installedAt":"2026-01-01T00:00:00.000Z","lastUpdated":"2026-01-01T00:00:00.000Z"}]')
 			fi
 		'') skillsRepos)}
+
+		# Locally-defined plugins: no repo to clone, the manifest is generated from nix.
+		${lib.concatStringsSep "\n" (lib.mapAttrsToList (name: cfg: ''
+			CACHE_DIR="$PLUGINS_DIR/cache/${name}/${name}/local"
+			rm -rf "$CACHE_DIR"
+			mkdir -p "$CACHE_DIR/.claude-plugin"
+			cp ${(pkgs.formats.json { }).generate "claude-plugin-${name}.json" ({
+				inherit name;
+				version = "local";
+			} // cfg)} "$CACHE_DIR/.claude-plugin/plugin.json"
+			INSTALLED=$(echo "$INSTALLED" | ${pkgs.jq}/bin/jq \
+				--arg key "${name}@${name}" \
+				--arg path "$CACHE_DIR" \
+				'.plugins[$key] = [{"scope":"user","installPath":$path,"version":"local","installedAt":"2026-01-01T00:00:00.000Z","lastUpdated":"2026-01-01T00:00:00.000Z"}]')
+		'') localPlugins)}
 
 		echo "$INSTALLED" > "$PLUGINS_DIR/installed_plugins.json"
 		echo "Claude plugins synced."

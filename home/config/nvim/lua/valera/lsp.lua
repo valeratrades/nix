@@ -439,6 +439,9 @@ vim.g.rustaceanvim = {
 		adapter = codelldb_adapter(),
 	},
 	server = {
+		-- shim onto the shared lspmux instance, so having a project open here and pointing
+		-- Claude Code sessions at it costs one rust-analyzer between them, not one each
+		cmd = { vim.env.HOME .. "/nix/home/scripts/ra-shared" },
 		logfile = "/home/v/.local/state/nvim/rustaceanvim.log", --XXX: not user-agnostic
 		status_notify_level = rustaceanvim.disable,           -- doesn't work
 		--XXX: does nothing. Atm can't get it to use anything but default "utf-8"
@@ -453,9 +456,6 @@ vim.g.rustaceanvim = {
 				local settings = {
 					dap = {
 						autoload_configuration = true,
-					},
-					cmd = {
-						"rust-analyzer",
 					},
 					cargo = {
 						BuildScripts = {

@@ -189,6 +189,29 @@
     };
   };
 
+  # One rust-analyzer per (toolchain, PATH, cargo workspace) instead of one per client.
+  # `home/scripts/ra-shared` is the stdio shim both nvim and Claude Code point at.
+  systemd.user.services.lspmux = {
+    Unit = {
+      Description = "Share one language server instance between multiple LSP clients";
+      PartOf = "default.target";
+    };
+    Install = { WantedBy = [ "default.target" ]; };
+    Service = {
+      Type = "simple";
+      ExecStart = "${pkgs.lspmux}/bin/lspmux server";
+      Restart = "on-failure";
+    };
+  };
+  xdg.configFile."lspmux/config.toml".text = ''
+    # rust-analyzer shells out to cargo/rustc and the project's native build inputs, none of
+    # which exist in the daemon's login env, so the client's PATH has to come along. Cost:
+    # PATH is part of the instance key, so clients whose PATH drifted apart (different direnv
+    # evaluation) split into separate instances rather than sharing. Correct either way.
+    pass_environment = ["PATH"]
+    instance_timeout = 3600
+  '';
+
   auto_redshift = {
     enable = true;
     wakeTime = user.wakeTime;
@@ -302,6 +325,10 @@
         [
           # nix
           nix-tree # analyse nix-store
+        ]
+        [
+          # dev
+          lspmux # one language server shared across nvim + every Claude Code session
         ]
         [
           # zathura

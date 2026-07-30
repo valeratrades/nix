@@ -31,7 +31,7 @@
     "impeccable@impeccable": true,
     "plugin-dev@claude-code-plugins": true,
     "ponytail@ponytail": true,
-    "rust-analyzer-lsp@claude-plugins-official": true,
+    "ra-shared@ra-shared": true,
     "code-simplifier@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true,
     "hookify@claude-plugins-official": true,
