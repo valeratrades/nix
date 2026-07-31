@@ -500,5 +500,5 @@ function active_agents -d "count busy claude panes in the current tmux session"
 		echo "not in a tmux session"
 		return 1
 	end
-	$NIXOS_CONFIG/home/config/tmux/claude_sessions.rs -c | rg -cI "^"(tmux display-message -p '#S')'\s+(active|question|limit)\s*$'; or echo 0
+	$NIXOS_CONFIG/home/config/tmux/claude_sessions.rs -c | rg -cI "^"(tmux display-message -p '#S')'\s+(active|limit)\s*$'; or echo 0
 end
