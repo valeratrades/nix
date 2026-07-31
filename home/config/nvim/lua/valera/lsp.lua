@@ -440,9 +440,12 @@ vim.g.rustaceanvim = {
 		adapter = codelldb_adapter(),
 	},
 	server = {
-		-- No `cmd`: rustaceanvim connects to a running lspmux on its own, and setting one
-		-- would switch that off (its `lspmux.enable` defaults to `server.cmd == nil`).
-		-- The ra-shared shim stays for Claude Code, which has no such support.
+		-- Shim onto the shared lspmux instance, so a project open here plus any number of
+		-- Claude Code sessions cost one rust-analyzer between them, not one each.
+		-- Setting `cmd` also switches off rustaceanvim's own lspmux support (it keys on
+		-- `server.cmd == nil`), which is deliberate: that path yields no client at all here,
+		-- while the shim is verified to hand two clients the same server.
+		cmd = { vim.env.HOME .. "/nix/home/scripts/ra-shared" },
 		logfile = "/home/v/.local/state/nvim/rustaceanvim.log", --XXX: not user-agnostic
 		status_notify_level = false,                         -- doesn't work
 		--REVIEW: it was the stale `require` above, not this; `rustaceanvim.disable` was nil anyway
