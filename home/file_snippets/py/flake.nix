@@ -65,7 +65,9 @@
             + combined.shellHook
             + ''
               cp -f ${(v_flakes.files.treefmt) { inherit pkgs; }} ./.treefmt.toml
-              [ -f uv.lock ] || uv_sync
+              # Unconditional: uv.lock is committed, so gating on its absence left a
+              # fresh clone with an empty venv and no warning. Idempotent and ~1s.
+              uv_sync
             '';
 
           packages = [ uv_sync ]
