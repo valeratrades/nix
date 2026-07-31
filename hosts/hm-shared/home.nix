@@ -388,6 +388,7 @@
         himalaya # email client but in rust
         fswebcam # instant webcam photo
         anyrun # wayland-native rust alternative to rofi
+        sshfs # mount remote dirs, edit with local nvim (only reads/writes cross the network)
         pdfgrep
         xournalpp # draw on PDFs
       ] ++ [
