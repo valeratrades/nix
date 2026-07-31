@@ -494,3 +494,11 @@ function led -a mode -d "rpi5 ACT led: (off) | on"
 			echo "led [off|on]"; return 1
 	end
 end
+
+function active_agents -d "count busy claude panes in the current tmux session"
+	if not set -q TMUX
+		echo "not in a tmux session"
+		return 1
+	end
+	$NIXOS_CONFIG/home/config/tmux/claude_sessions.rs -c | rg -cI "^"(tmux display-message -p '#S')'\s+(active|planning|question|limit)\s*$'; or echo 0
+end

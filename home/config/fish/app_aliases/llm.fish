@@ -39,11 +39,14 @@ function cl
     set -l expect_model 0
 
     set -l model
+    set -l resume_n
 
     for arg in $argv
         if [ $expect_model -eq 1 ]
             set model $arg
             set expect_model 0
+        else if string match -qr '^-[1-9]$' -- $arg
+            set resume_n (string sub -s 2 -- $arg)
         else if [ "$arg" = --no-verify ]
             set no_verify 1
         else if [ "$arg" = -m ]
@@ -90,6 +93,20 @@ function cl
     if [ $expect_model -eq 1 ]
         echo "cl: -m requires a model argument" >&2
         return 1
+    end
+
+    if set -q resume_n[1]
+        if [ $resume_n -eq 1 ]
+            set -a passthrough_args --continue
+        else
+            set -l proj_dir $HOME/.claude/projects/(string replace -ra '[^a-zA-Z0-9]' - -- (pwd -P))
+            set -l sessions (command ls -t $proj_dir/*.jsonl 2>/dev/null)
+            if [ (count $sessions) -lt $resume_n ]
+                echo "cl: only "(count $sessions)" session(s) recorded for this directory" >&2
+                return 1
+            end
+            set -a passthrough_args --resume (basename $sessions[$resume_n] .jsonl)
+        end
     end
 
     if [ $no_verify -eq 0 ] && [ -n "$repo" ] && [ -f "$repo/AGENTS.md" ]
