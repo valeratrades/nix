@@ -110,28 +110,9 @@ fn get_nightly_date() -> String {
     format!("nightly-{}", yesterday.format("%Y-%m-%d"))
 }
 
-fn get_nixpkgs_version() -> String {
-    Command::new("sh")
-        .args([
-            "-c",
-            r#"git ls-remote --heads https://github.com/NixOS/nixpkgs | grep -o 'refs/heads/nixos-[0-9][0-9]\.[0-9][0-9]' | cut -d'/' -f3 | tail -n 1"#,
-        ])
-        .output()
-        .ok()
-        .and_then(|o| String::from_utf8(o.stdout).ok())
-        .map(|s| s.trim().to_string())
-        .unwrap_or_else(|| "nixos-24.05".to_string())
-}
-
-fn get_python_version() -> String {
-    run_fun!(python -V | cut -d " " -f2).unwrap_or_else(|_| "3.11".to_string())
-}
-
 fn replace_placeholders(dir: &PathBuf, project_name: &str) {
     let rustc_version = get_rustc_version();
     let nightly_date = get_nightly_date();
-    let nixpkgs_version = get_nixpkgs_version();
-    let python_version = get_python_version();
     let github_user = get_github_user();
 
     let output = Command::new("fd")
@@ -158,8 +139,6 @@ fn replace_placeholders(dir: &PathBuf, project_name: &str) {
                 .replace("PROJECT_NAME_PLACEHOLDER", project_name)
                 .replace("RUSTC_CURRENT_VERSION", &rustc_version)
                 .replace("CURRENT_NIGHTLY_BY_DATE", &nightly_date)
-                .replace("NIXPKGS_VERSION", &nixpkgs_version)
-                .replace("PYTHON_VERSION", &python_version)
                 .replace("GITHUB_USER", &github_user);
 
             if new_content != content {
@@ -217,13 +196,22 @@ fn shared_before(project_name: &str, lang: &str) -> Result<(), Box<dyn std::erro
         fs::copy(&flake_src, "flake.nix")?;
     }
 
-    // Create .envrc
-    let envrc_content = if lang == "py" {
-        "use flake . --no-pure-eval\n"
-    } else {
-        "use flake\n"
-    };
-    fs::write(".envrc", envrc_content)?;
+    // NIX_CONFIG covers every `nix` invocation from the project dir (not just the
+    // devShell), so `nix run`/`nix build` work on a host whose nix.conf lacks flakes.
+    fs::write(
+        ".envrc",
+        concat!(
+            "# Applies to every `nix` invocation made from this directory — `use flake` below,\n",
+            "# but also a plain `nix run`/`nix build` typed later in the loaded shell. `extra-`\n",
+            "# appends, so a host nix.conf that already enables features keeps them.\n",
+            "# accept-flake-config: take the flake's nixConfig (the cachix substituter) without\n",
+            "# prompting, so a fresh machine substitutes instead of building from source.\n",
+            "export NIX_CONFIG=\"extra-experimental-features = nix-command flakes\n",
+            "accept-flake-config = true\"\n",
+            "\n",
+            "use flake\n",
+        ),
+    )?;
 
     Ok(())
 }
