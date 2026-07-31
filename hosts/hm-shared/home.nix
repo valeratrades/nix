@@ -212,6 +212,29 @@
     instance_timeout = 3600
   '';
 
+  systemd.user.services.nvim-lsp-log-trim = {
+    Unit.Description = "Trim neovim's LSP log back down when it outgrows its cap";
+    Service = let
+      trim = pkgs.writeShellApplication {
+        name = "nvim-lsp-log-trim";
+        runtimeInputs = [ pkgs.coreutils ];
+        text = builtins.readFile "${self}/home/scripts/nvim_lsp_log_trim.sh";
+      };
+    in {
+      Type = "oneshot";
+      ExecStart = "${trim}/bin/nvim-lsp-log-trim";
+    };
+  };
+
+  systemd.user.timers.nvim-lsp-log-trim = {
+    Unit.Description = "Periodically trim neovim's LSP log";
+    Timer = {
+      OnBootSec = "5min";
+      OnUnitActiveSec = "1h";
+    };
+    Install.WantedBy = [ "timers.target" ];
+  };
+
   auto_redshift = {
     enable = true;
     wakeTime = user.wakeTime;
