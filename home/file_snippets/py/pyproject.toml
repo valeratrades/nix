@@ -1,6 +1,6 @@
 [project]
 name = "PROJECT_NAME_PLACEHOLDER"
-dynamic = ["version"]
+version = "0.1.0"
 description = ""
 readme = "README.md"
 requires-python = ">=3.12"
@@ -15,38 +15,18 @@ dependencies = [
     "typeguard>=4.4.4",
 ]
 
+[build-system]
+requires = ["setuptools>=75.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
 [dependency-groups]
 dev = [
     "pytest>=6.0",
     "ruff>=0.1.0",
-    "mypy>=1.0.0",
     "icecream>=2.1.8",
+    "inline-snapshot>=0.17",
 ]
-
-[tool.ruff]
-indent-width = 2
-line-length = 210
-src = ["src", "test"]
-
-[tool.ruff.format]
-docstring-code-format = true
-indent-style = "tab"
-quote-style = "double"
-skip-magic-trailing-comma = false
-
-[tool.ruff.lint]
-dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
-fixable = ["ALL"]
-ignore = ["E262", "E713", "F403", "E401", "E714", "E722", "E703", "E741", "F405", "E501", "D401", "PT011", "SIM102", "SIM108", "RUF005", "D105", "D100", "D104", "TD002", "TD003", "TRY003", "D206", "W191"]
-task-tags = ["TODO", "FIXME", "Q", "BUG", "NB"]
-unfixable = []
-
-[tool.ruff.lint.isort]
-combine-as-imports = true
-required-imports = ["from __future__ import annotations"]
-
-[tool.ruff.lint.per-file-ignores]
-"tests/**/*.py" = ["D100", "D103", "B018", "FBT001"]
-
-[tool.ruff.lint.pydocstyle]
-convention = "numpy"
