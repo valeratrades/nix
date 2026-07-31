@@ -35,7 +35,8 @@
 - minimize amount of questions you ask me. Most of them can be resolved on your own, by listing out pros and cons, then referencing this CLAUDE.md file for guiding principles, from which most often the decision becomes obvious.
   Never ask questions just to ask questions. Your instructions for creation of the plan may tell you to compile questions to ask, - but I want to be very clear here, - you **only** do that if something is actually not clear. Things that you can derive/answer yourself, you do not bring up.
 
-- before starting your work, run `fish -c 'source $NIXOS_CONFIG/home/config/fish/other.fish; active_agents'`  to know if you're in a tmux session and if there are other active agents on this project besides yourself (number that comes out will be >=2 then). If you're not the only one there, you will do your work in a git worktree, and at the very end ask me if it's good to be merged.
+- before starting your work, run `fish -c 'source $NIXOS_CONFIG/home/config/fish/other.fish; active_agents'`  to know if you're in a tmux session and if there are other active agents on this project besides yourself (number that comes out will be >=2 then). If you're not the only one there, you will do your work in a git worktree, and at the very end ask me if it's good to be merged. // when asking to merge, use your `question` interface. I have a script that will highlight those. If you ask me in text, I might miss it, and end up losing your work.
+  > does not apply if you're in `/plan` mode or are just exploring, - run just before you're about to start editing
 
 ## Testing
 - if a change is not trivial, always test.
