@@ -1,4 +1,5 @@
-local rustaceanvim = require("rustaceanvim")
+-- Nothing may `require("rustaceanvim")` before `vim.g.rustaceanvim` is assigned below:
+-- the plugin snapshots that global on first load, and everything set afterwards is dropped.
 
 local capabilities = {
 	general = {
@@ -439,11 +440,12 @@ vim.g.rustaceanvim = {
 		adapter = codelldb_adapter(),
 	},
 	server = {
-		-- shim onto the shared lspmux instance, so having a project open here and pointing
-		-- Claude Code sessions at it costs one rust-analyzer between them, not one each
-		cmd = { vim.env.HOME .. "/nix/home/scripts/ra-shared" },
+		-- No `cmd`: rustaceanvim connects to a running lspmux on its own, and setting one
+		-- would switch that off (its `lspmux.enable` defaults to `server.cmd == nil`).
+		-- The ra-shared shim stays for Claude Code, which has no such support.
 		logfile = "/home/v/.local/state/nvim/rustaceanvim.log", --XXX: not user-agnostic
-		status_notify_level = rustaceanvim.disable,           -- doesn't work
+		status_notify_level = false,                         -- doesn't work
+		--REVIEW: it was the stale `require` above, not this; `rustaceanvim.disable` was nil anyway
 		--XXX: does nothing. Atm can't get it to use anything but default "utf-8"
 		--capabilities = (function()
 		--	local caps = require('rustaceanvim.config.server').create_client_capabilities()
@@ -498,6 +500,11 @@ vim.g.rustaceanvim = {
 		},
 	},
 }
+
+-- rustaceanvim copies `vim.g.rustaceanvim` once, on first require, and never re-reads it.
+-- Anything that pulls it in before this point silently discards everything set above.
+assert(not package.loaded["rustaceanvim.config.internal"],
+	"rustaceanvim was loaded before valera.lsp set vim.g.rustaceanvim; its whole config is being ignored")
 
 -- Export for other modules
 local M = {}
