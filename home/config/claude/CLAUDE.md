@@ -38,6 +38,8 @@
 - before starting your work, run `fish -c 'source $NIXOS_CONFIG/home/config/fish/other.fish; active_agents'`  to know if you're in a tmux session and if there are other active agents on this project besides yourself (number that comes out will be >=2 then). If you're not the only one there, you will do your work in a git worktree, and at the very end ask me if it's good to be merged. // when asking to merge, use your `question` interface. I have a script that will highlight those. If you ask me in text, I might miss it, and end up losing your work. And when merged, remove the worktree after.
   > does not apply if you're in `/plan` mode or are just exploring, - run just before you're about to start editing
 
+- if your worktree breaks some relative path and you need to relocate, - use exclusively `../tmp/` dirs. So if you're in worktree of `~/s/ev_invest/my_project` and because of a worktree you become one level deeper, you can then relocate to `~/s/tmp/my_project`, ok? Just so we don't end up buried in garbage later
+
 ## Testing
 - if a change is not trivial, always test.
     And any time you write actual tests in code, - read https://matklad.github.io/2021/05/31/how-to-test.html
