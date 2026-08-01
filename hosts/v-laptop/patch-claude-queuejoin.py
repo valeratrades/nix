@@ -11,7 +11,7 @@ hard interrupt that starts a fresh turn; rolling back to edit the previous messa
 explicit Esc, not an implicit side effect of typing fast.
 
 Fix: neutralize the `hasInterruptibleToolInProgress` gate so the abort always fires. The
-condition `H.hasInterruptibleToolInProgress` is overwritten with `true` (same-length,
+condition `<ctx>.hasInterruptibleToolInProgress` is overwritten with `true` (same-length,
 space-padded) — the abort + enqueue that follow then run unconditionally, which is the
 exact path that already worked correctly for the tool-in-progress case.
 
@@ -27,9 +27,9 @@ import sys
 
 THIS_FILE = "hosts/v-laptop/patch-claude-queuejoin.py (in your nix config)"
 
-# The mid-turn submit guard, verbatim from claude-code 2.1.154. Must occur exactly once.
-ANCHOR = b'if(H.hasInterruptibleToolInProgress){'
-COND = b'H.hasInterruptibleToolInProgress'
+# The mid-turn submit guard, verbatim from claude-code 2.1.220. Must occur exactly once.
+ANCHOR = b'if(e.hasInterruptibleToolInProgress){w(`[interrupt] Aborting current turn:'
+COND = b'e.hasInterruptibleToolInProgress'
 REPLACEMENT = ANCHOR.replace(COND, b'true' + b' ' * (len(COND) - len(b'true')))
 assert len(REPLACEMENT) == len(ANCHOR), "same-length overwrite required"
 
