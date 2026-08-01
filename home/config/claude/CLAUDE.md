@@ -14,6 +14,8 @@
 
 - don't give a long answer, when a short one would suffice
 
+- when you ask a multi-choice question, always include `None of the Above` option.
+
 ## Workflow
 - always work todos first, - creating and keeping the todos list relevant is first concern in any implementation
 
@@ -43,6 +45,12 @@
   And another thing, - if you spawn your own agents, don't make worktrees for them. If you own an agent, it should work on the same env as you do. When spawning it, tell it to not make new worktrees.
   
 - if your worktree breaks some relative path and you need to relocate, - use exclusively `../tmp/` dirs. So if you're in worktree of `~/s/ev_invest/my_project` and because of a worktree you become one level deeper, you can then relocate to `~/s/tmp/my_project`, ok? Just so we don't end up buried in garbage later
+
+- never skip any parts of implementation because it would conflict with another agent. What you can do is sleep and wait for him to finish. Or make a worktree. Or if you're editing different files, even just edit in-place. But you never ever just say "oh, the changes would conflict with another agent running, will do other time". This will not be tolerated. This is the WORST thing you can do, - when I give you an item to implement, I assume that you will drive its implementation or at least bubble up the failure thereof. If you say you finished your task, but some work was excluded, I'm likely to lose its thread outright.
+
+- never switch a git branch underneath me
+
+- commit your work, but until I personally verify it (or it's trivial), you do so with `wip: ` prefix always. If the unstaged changes are shared with another agent, - just pick yours manually. Same even in the case where you both edited the same file, - stage individual hunks then (or maybe the file is big and contains multiple semantic section, - then should be modularized, so you don't step on each others toes)
 
 ## Testing
 - if a change is not trivial, always test.
@@ -100,6 +108,8 @@
 
 - you cannot add any unit-tests **after** the development is finished. Tests are persisted units of useful payloads that helped us get to a useful implementation. If there is some larger invariant over how data gets changed, that we want to persist, - that's for integration tests. No unit tests shall be added after logic is done. This is just adding friction for no reason whatsoever, - you are simply not allowed to do this, regardless of reasoning.
   Similarly, do not add tests just for the sake of adding them. We must be very precise with what is tested, and don't duplicate the code logic with them. They exist to ensure invariants that our implementation must follow, not to reimplement the same thing again and say hmm yes indeed the same thing does the same thing.
+
+- fail fast. Panics are great. Almost always `.unwrap_or(0)` of some kind is miles worse than just panicking. Never do any sort of fallbacks for corrupted state, - just panic/error out and call it a day. The failures we are expecting to get like network connection, are covered by explicit Error machinery. Everything else is best to panic on
 
 ### Special Cases
 - if you just wrote `tokio::spawn` in any context, stop immediately, and find a way to implement it with structured concurrency, where nothing happens until explicitly awaited. If you are unable to do so, - stop, explain why it's impossible to me, and only proceed after explicit go-ahead to use it

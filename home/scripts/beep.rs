@@ -4,7 +4,7 @@
 [dependencies]
 clap = { version = "4.5.49", features = ["derive"] }
 ctrlc = { version = "3.4", features = ["termination"] }
-v_utils = { version = "2.15.54", default-features = false }
+v_utils = { version = "2.16.1", default-features = false }
 ---
 
 use clap::Parser;
@@ -12,7 +12,7 @@ use std::process::Command;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Mutex;
-use v_utils::other::percent::{Percent, PercentU};
+use v_utils::percent::{Percent, PercentU};
 
 /// Play a sound and show a notification
 #[derive(Parser, Debug)]
