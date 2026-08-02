@@ -715,6 +715,8 @@ partial — the agent did some of the work but skipped, deferred, or declined a 
 
 A report that closes on work still ahead of it — a \"Next step\" / \"TODO\" / \"Remaining\" section, an offer to carry on, or a request for go-ahead before continuing — is partial, however confidently the rest of it reads. Notes about things deliberately left alone that were never asked for are not that.
 
+Judge the implementation, nothing else. Only a piece of the asked-for code left unwritten makes a report partial. A test not written, a check not run, a build or verification left for the user — none of that counts against a report whose implementation is complete; that is finished.
+
 Answer with exactly one word: finished, stuck, or partial.";
 
     /// Long reports are all preamble; the verdict lives in the closing lines.
@@ -822,8 +824,10 @@ Answer with exactly one word: finished, stuck, or partial.";
         parse(&response.text)
     }
 
+    /// First word only — the verdict leads, and the model sometimes tacks on a
+    /// justification the 4-token budget then cuts mid-sentence.
     fn parse(answer: &str) -> Option<Verdict> {
-        match answer.trim().trim_matches(['"', '.', '`', '*']).to_lowercase().as_str() {
+        match answer.trim().split_whitespace().next()?.trim_matches(['"', '.', '`', '*']).to_lowercase().as_str() {
             "finished" => Some(Verdict::Finished),
             "stuck" => Some(Verdict::Stuck),
             "partial" => Some(Verdict::Partial),
