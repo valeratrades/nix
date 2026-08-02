@@ -87,6 +87,22 @@ def claimed_root(params) -> Path:
 	return Path.cwd()
 
 
+def devshell_env(root: Path, req_id) -> dict:
+	"""The env `direnv` would give the project, for an editor launched without one.
+
+	lspmux forwards the client's PATH to the server it spawns, so the toolchain has to be
+	resolved *and* run out of the same env; taking only the binary would hand rust-analyzer
+	a PATH with no cargo on it.
+	"""
+	proc = subprocess.run(["direnv", "exec", str(root), "env", "-0"],
+		capture_output=True, text=True)
+	if proc.returncode != 0:
+		die(req_id,
+			f"no devshell rust on PATH and direnv could not load {root}: "
+			f"{proc.stderr.strip().splitlines()[-1] if proc.stderr.strip() else 'no output'}")
+	return dict(entry.split("=", 1) for entry in proc.stdout.split("\0") if "=" in entry)
+
+
 def main() -> int:
 	first = read_frame(sys.stdin.buffer)
 	if first is None:
@@ -103,18 +119,22 @@ def main() -> int:
 
 	if not shutil.which("lspmux"):
 		die(req_id, "no lspmux on PATH; run `home-manager switch` from ~/nix to install it")
+
+	env = os.environ.copy()
 	server = shutil.which("rust-analyzer")
+	if not server or "rustup" in os.path.realpath(server):
+		env = devshell_env(root, req_id)
+		server = shutil.which("rust-analyzer", path=env.get("PATH"))
 	if not server:
-		die(req_id, "no rust-analyzer on PATH")
+		die(req_id, f"no rust-analyzer in the devshell of {root}")
 	server = os.path.realpath(server)
 	if "rustup" in server:
 		die(req_id,
-			f"rust-analyzer resolved to the rustup shim ({server}) instead of a devshell "
-			"toolchain; launch your editor/agent from a direnv-activated shell so the "
-			"project's `nix develop` rust is on PATH, or versions will mismatch")
+			f"rust-analyzer resolved to the rustup shim ({server}) even inside the devshell "
+			f"of {root}; its flake has to put a real toolchain on PATH")
 
 	child = subprocess.Popen(
-		["lspmux", "client", "--server-path", server],
+		["lspmux", "client", "--server-path", server], env=env,
 		stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 	write_frame(child.stdin, json.dumps(msg).encode())
 	threading.Thread(target=pump, args=(sys.stdin.buffer, child.stdin), daemon=True).start()
