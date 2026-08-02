@@ -1,6 +1,8 @@
 #!/home/v/nix/home/scripts/nix-run-cached
 ---cargo
 [dependencies]
+ask_llm = { version = "2.2.2", default-features = false }
+tokio = { version = "1", features = ["rt", "time", "net"] }
 clap = { version = "4.5.49", features = ["derive"] }
 chrono = { version = "0.4", default-features = false, features = ["alloc"] }
 colored = "2"
@@ -82,6 +84,8 @@ enum ClaudeState {
     Error,    // Claude hit an error (rate limit, panic, etc.)
     Limit,    // Session usage limit hit ("You've hit your session limit · resets ...")
     Interrupted, // User aborted the turn (esc); dropped back to a live prompt
+    Stuck,    // Finished, but its closing report says the work didn't land (see mod report)
+    Partial,  // Finished, but its closing report says part of the work was skipped
 }
 
 impl ClaudeState {
@@ -114,6 +118,8 @@ impl ClaudeState {
             ClaudeState::Error => "error",
             ClaudeState::Limit => "limit",
             ClaudeState::Interrupted => "interrupted",
+            ClaudeState::Stuck => "stuck",
+            ClaudeState::Partial => "partial",
         }
     }
 }
@@ -278,9 +284,12 @@ impl fmt::Display for Sessions {
                 // grabbing my eye. Attention priority, NOT prettiness:
                 //   question -> error red  (#ff6565): a session is BLOCKED on me,
                 //               nothing moves until I act — highest visual urgency.
+                //               stuck rides along: same demand, it just phrased it
+                //               in prose instead of a selector.
                 //   error    -> warn brown (#ba6e3d): real, but errors here mostly
                 //               surface during hands-on interaction, so I'm already
-                //               looking — deliberately ranked below question.
+                //               looking — deliberately ranked below question. partial
+                //               rides along: work left on the table, not blocked.
                 //   active/planning -> blue (#68d4ff): healthy "it's working" signal,
                 //               informational, lowest of the three.
                 //   limit    -> white      (#ffffff): wedged on the usage clock —
@@ -290,13 +299,13 @@ impl fmt::Display for Sessions {
                 //               empty without popping.
                 // Every other state stays uncolored — no span, no noise.
                 let state_cell = match entry.state {
-                    ClaudeState::Question => {
+                    ClaudeState::Question | ClaudeState::Stuck => {
                         format!("<span foreground=\"#ff6565\">{}</span>", pango_escape(&padded_state))
                     }
                     ClaudeState::Limit | ClaudeState::Input => {
                         format!("<span foreground=\"#ffffff\">{}</span>", pango_escape(&padded_state))
                     }
-                    ClaudeState::Error => {
+                    ClaudeState::Error | ClaudeState::Partial => {
                         format!("<span foreground=\"#ba6e3d\">{}</span>", pango_escape(&padded_state))
                     }
                     ClaudeState::Active | ClaudeState::Planning => {
@@ -325,8 +334,8 @@ impl fmt::Display for Sessions {
                     ClaudeState::Done => padded_state.bright_black(),
                     ClaudeState::Empty => padded_state.yellow(),
                     ClaudeState::Draft => padded_state.cyan(),
-                    ClaudeState::Question => padded_state.magenta(),
-                    ClaudeState::Error => padded_state.red(),
+                    ClaudeState::Question | ClaudeState::Stuck => padded_state.magenta(),
+                    ClaudeState::Error | ClaudeState::Partial => padded_state.red(),
                     ClaudeState::Limit | ClaudeState::Input => padded_state.white(),
                     ClaudeState::Interrupted => padded_state.normal(),
                 };
@@ -674,6 +683,199 @@ fn latest_model(session_file: &Path) -> Option<String> {
     None
 }
 
+/// A settled session says how it went in its closing report — the last assistant
+/// turn. "Finished" on the pane only means Claude stopped talking; whether the
+/// work actually landed is a judgement no pattern match can make, so it's read
+/// by an LLM and cached against the transcript's mtime (one call per settle, not
+/// per status-line refresh).
+mod report {
+    use std::{
+        collections::HashMap,
+        fs,
+        io::{Read as _, Seek as _, SeekFrom},
+        path::{Path, PathBuf},
+        time::Duration,
+    };
+
+    use serde::{Deserialize, Serialize};
+
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+    #[serde(rename_all = "lowercase")]
+    pub enum Verdict {
+        Finished,
+        Stuck,
+        Partial,
+    }
+
+    const SYSTEM: &str = "You read the closing report a coding agent left at the end of its session and judge how the session ended.
+
+finished — everything the user asked for is done
+stuck — the agent could not complete the work: blocked, failed, out of ideas, or handing it back for the user to do
+partial — the agent did some of the work but skipped, deferred, or declined a part of it
+
+Answer with exactly one word: finished, stuck, or partial.";
+
+    /// Long reports are all preamble; the verdict lives in the closing lines.
+    const MAX_REPORT: usize = 8000;
+    const TIMEOUT: Duration = Duration::from_secs(20);
+
+    pub fn classify(session_file: &Path) -> Option<Verdict> {
+        // No key means the feature is off, not that anything is wrong.
+        if std::env::var("CLAUDE_TOKEN").is_err() {
+            return None;
+        }
+
+        let mtime = fs::metadata(session_file)
+            .and_then(|m| m.modified())
+            .ok()?
+            .duration_since(std::time::UNIX_EPOCH)
+            .ok()?
+            .as_secs();
+        let key = session_file.file_stem()?.to_str()?.to_string();
+
+        let mut cache = load();
+        if let Some(hit) = cache.get(&key).filter(|e| e.mtime == mtime) {
+            return hit.verdict;
+        }
+
+        // A miss is cached too, or an unreachable model would earn a doomed HTTP
+        // call on every status-line refresh. The retry comes with the next turn
+        // in that session, which is when a verdict starts mattering again.
+        let verdict = last_report(session_file).and_then(|r| ask(&r));
+        cache.insert(key, Entry { mtime, verdict });
+        save(&cache);
+        verdict
+    }
+
+    /// Text of the final assistant turn. Read from the tail for the same reason
+    /// transcript_working does: transcripts reach tens of MB.
+    fn last_report(session_file: &Path) -> Option<String> {
+        const TAIL_BYTES: u64 = 256 * 1024;
+        let mut file = fs::File::open(session_file).ok()?;
+        let len = file.metadata().ok()?.len();
+        let start = len.saturating_sub(TAIL_BYTES);
+        file.seek(SeekFrom::Start(start)).ok()?;
+        let mut bytes = Vec::new();
+        file.read_to_end(&mut bytes).ok()?;
+        let buf = String::from_utf8_lossy(&bytes);
+
+        let mut lines = buf.lines();
+        if start > 0 {
+            lines.next(); // likely-partial first record
+        }
+        extract_last_text(&lines.collect::<Vec<_>>())
+    }
+
+    /// Pure half of last_report, over whole transcript lines. A closing turn can
+    /// be split across records — the thinking block lands in its own entry — so
+    /// only text blocks count.
+    fn extract_last_text(lines: &[&str]) -> Option<String> {
+        for line in lines.iter().rev() {
+            let v: serde_json::Value = match serde_json::from_str(line) {
+                Ok(v) => v,
+                Err(_) => continue,
+            };
+            if v.get("type").and_then(|x| x.as_str()) != Some("assistant") {
+                continue;
+            }
+            let text = v
+                .get("message")?
+                .get("content")?
+                .as_array()?
+                .iter()
+                .filter(|b| b.get("type").and_then(|x| x.as_str()) == Some("text"))
+                .filter_map(|b| b.get("text")?.as_str())
+                .collect::<Vec<_>>()
+                .join("\n");
+            if !text.trim().is_empty() {
+                let tail = text.get(text.len().saturating_sub(MAX_REPORT)..).unwrap_or(&text);
+                return Some(tail.to_string());
+            }
+        }
+        None
+    }
+
+    fn ask(report: &str) -> Option<Verdict> {
+        // Meant to be DeepSeek (ask_llm 2.2.3, unreleased) — the account is out
+        // of balance and 402s every call, so this rides Haiku until it's funded.
+        let client = ask_llm::Client::default()
+            .model(ask_llm::Model::Fast)
+            .temperature(0.0)
+            .max_tokens(4);
+        let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build().ok()?;
+        let response = runtime
+            .block_on(async { tokio::time::timeout(TIMEOUT, client.ask(format!("{SYSTEM}\n\n---\n\n{report}"))).await })
+            .ok()?
+            .ok()?;
+        parse(&response.text)
+    }
+
+    fn parse(answer: &str) -> Option<Verdict> {
+        match answer.trim().trim_matches(['"', '.', '`', '*']).to_lowercase().as_str() {
+            "finished" => Some(Verdict::Finished),
+            "stuck" => Some(Verdict::Stuck),
+            "partial" => Some(Verdict::Partial),
+            _ => None,
+        }
+    }
+
+    #[derive(Serialize, Deserialize)]
+    struct Entry {
+        /// Transcript mtime the verdict was drawn from; a later turn invalidates it.
+        mtime: u64,
+        verdict: Option<Verdict>,
+    }
+
+    fn cache_path() -> Option<PathBuf> {
+        std::env::var("HOME")
+            .ok()
+            .map(|h| PathBuf::from(h).join(".cache/claude-session-reports.json"))
+    }
+
+    fn load() -> HashMap<String, Entry> {
+        let Some(p) = cache_path() else { return HashMap::new() };
+        let Ok(s) = fs::read_to_string(&p) else { return HashMap::new() };
+        serde_json::from_str(&s).unwrap_or_default()
+    }
+
+    fn save(cache: &HashMap<String, Entry>) {
+        let Some(p) = cache_path() else { return };
+        if let Some(parent) = p.parent() {
+            let _ = fs::create_dir_all(parent);
+        }
+        if let Ok(s) = serde_json::to_string(cache) {
+            let _ = fs::write(&p, s);
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[test]
+        fn closing_text_is_read_past_a_thinking_only_turn() {
+            let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+            let raw = fs::read_to_string(dir.join("finished__idle_pane_own_transcript.jsonl")).unwrap();
+            let report = extract_last_text(&raw.lines().collect::<Vec<_>>()).unwrap();
+            assert!(report.starts_with("Done, all green."), "got {report:?}");
+        }
+
+        #[test]
+        fn a_turn_still_holding_a_tool_call_yields_no_report() {
+            let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+            let raw = fs::read_to_string(dir.join("finished__stale_interrupt_marker.jsonl")).unwrap();
+            assert_eq!(extract_last_text(&raw.lines().collect::<Vec<_>>()), None);
+        }
+
+        #[test]
+        fn verdicts_parse_off_a_bare_word() {
+            assert_eq!(parse("stuck"), Some(Verdict::Stuck));
+            assert_eq!(parse(" Partial.\n"), Some(Verdict::Partial));
+            assert_eq!(parse("I think it is finished"), None);
+        }
+    }
+}
+
 /// Deserialize summary entries from session file
 #[derive(Deserialize)]
 struct SummaryEntry {
@@ -1012,6 +1214,8 @@ fn get_process_start_time(pid: u32) -> Option<std::time::SystemTime> {
 
 /// Session metadata extracted from the session file
 struct SessionMetadata {
+    /// The transcript these were read off, kept for the closing-report verdict.
+    file: PathBuf,
     /// Whether any non-completed todos exist (session is actively working)
     has_active_todos: bool,
     /// The todo to display
@@ -1050,6 +1254,7 @@ fn get_session_info_for_pane(shell_pid: u32, tmux_target: &str) -> Option<Sessio
 
     Some(SessionMetadata {
         has_active_todos: todo_result.has_active_todos,
+        file: session_file.clone(),
         display_todo: todo_result.display_todo,
         summary,
         model: latest_model(&session_file),
@@ -1136,7 +1341,17 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
                             (refined, todo, None, None, summary, model)
                         } else {
                             let stale = matches!(&metadata, Some(m) if m.idle_for.is_some_and(|d| d >= DONE_AFTER));
-                            let state = if stale { ClaudeState::Done } else { ClaudeState::Finished };
+                            // Done is a decayed signal — I've had 45 minutes to see
+                            // it — so it isn't worth an LLM call to re-color.
+                            let state = if stale {
+                                ClaudeState::Done
+                            } else {
+                                match metadata.as_ref().and_then(|m| report::classify(&m.file)) {
+                                    Some(report::Verdict::Stuck) => ClaudeState::Stuck,
+                                    Some(report::Verdict::Partial) => ClaudeState::Partial,
+                                    Some(report::Verdict::Finished) | None => ClaudeState::Finished,
+                                }
+                            };
                             (state, None, None, None, summary, model)
                         }
                     }
@@ -1907,7 +2122,12 @@ fn should_recompute(prev: &CacheState, windows: &[ClaudeWindow]) -> bool {
         if old_state != new_state
             && matches!(
                 w.state,
-                ClaudeState::Active | ClaudeState::Planning | ClaudeState::Finished | ClaudeState::Question
+                ClaudeState::Active
+                    | ClaudeState::Planning
+                    | ClaudeState::Finished
+                    | ClaudeState::Question
+                    | ClaudeState::Stuck
+                    | ClaudeState::Partial
             )
         {
             return true;

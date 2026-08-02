@@ -8,6 +8,27 @@
 - `tests/` + `snapshots/` — snapshot tests for the `claude_sessions.rs` terminal
   state classifier (see below).
 
+## Closing-report verdicts
+
+A pane reading `finished` only means Claude stopped talking. `mod report` inside
+`claude_sessions.rs` takes the session's closing report (the last assistant turn
+in the transcript) and has an LLM — via the `ask_llm` crate — judge it as
+`finished` / `stuck` / `partial`, which become states of their own: `stuck` is
+colored like `question`, `partial` like `error`.
+
+The verdict is cached in `~/.cache/claude-session-reports.json` against the
+transcript's mtime, so it costs one call per session settle, not one per
+status-line refresh. Misses are cached too — an unreachable model must not earn
+a doomed HTTP call on every refresh — and retried on the session's next turn. No
+`CLAUDE_TOKEN` in the environment turns the whole thing off and every settled
+session just reads `finished`. `done` panes (untouched for 45 min) are never
+classified — that signal has already decayed.
+
+The model is meant to be DeepSeek (`ask_llm::Model::DeepSeek`, added in the
+unreleased 2.2.3); the account is out of balance and 402s every call, so it runs
+on `Model::Fast` (Haiku) meanwhile. Switching back is one line in `report::ask`
+plus an `ask_llm` version bump once 2.2.3 is published.
+
 ## Running the tests
 
 The tests live inside `claude_sessions.rs` itself (it's a single-file
