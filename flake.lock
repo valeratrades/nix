@@ -4516,11 +4516,11 @@
         "v-utils": "v-utils_7"
       },
       "locked": {
-        "lastModified": 1784235157,
-        "narHash": "sha256-1+w3dIwMrmEeyc2NKWtVU4fI5s6ft4hQ+DdbG0shlas=",
+        "lastModified": 1785587450,
+        "narHash": "sha256-5sXp0LHfaR4zIHbh8DuVm333Y6N3nbtc2YB2wF1S7Ds=",
         "owner": "valeratrades",
         "repo": "tedi",
-        "rev": "f2a4e5d66a32f8d19545b0c0fcb167dba8fb9775",
+        "rev": "aad718f6a9869626cf79ff52ff0ff494b1fb6988",
         "type": "github"
       },
       "original": {

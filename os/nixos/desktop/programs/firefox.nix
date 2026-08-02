@@ -88,6 +88,7 @@ in {
         (extension "istilldontcareaboutcookies" "idcac-pub@guus.ninja")
         (extension "wakatime" "addons@wakatime.com")
         (extension "tab-rearranger" "{5968a446-b126-4279-8827-6889a180e3fa}")
+        (extension "spotify-adblock" "2026@spotify-adblock")
       ]);
       #XXX: none of these work.
       "3rdparty".Extensions = {
