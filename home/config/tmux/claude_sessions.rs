@@ -722,6 +722,8 @@ A report that closes on work still ahead of it — a \"Next step\" / \"TODO\" / 
 
 Judge the implementation, nothing else. Only a piece of the asked-for code left unwritten makes a report partial. A test not written, a check not run, a build or verification left for the user — none of that counts against a report whose implementation is complete; that is finished.
 
+partial is asked-for code the agent could have written and chose not to. A part it reports as impossible, done differently, or dropped because the codebase would not take it — with the reason given — revises the ask instead of falling short of it, however plainly the report says the ask was not met. A known limitation left under a TODO is the same. If the implementation the agent settled on is in the tree, that is finished.
+
 Answer with exactly one word: finished, stuck, partial, or ongoing.";
 
     /// Long reports are all preamble; the verdict lives in the closing lines.
