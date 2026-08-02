@@ -203,6 +203,26 @@
       Restart = "on-failure";
     };
   };
+  systemd.user.services.lspmux-panic-watch = {
+    Unit = {
+      Description = "Surface rust-analyzer panics that leave a shared lspmux instance wedged";
+      PartOf = "default.target";
+    };
+    Install = { WantedBy = [ "default.target" ]; };
+    Service = let
+      watch = pkgs.writeShellApplication {
+        name = "lspmux-panic-watch";
+        runtimeInputs = [ pkgs.systemd pkgs.gnused pkgs.gnugrep pkgs.jq pkgs.lspmux pkgs.libnotify ];
+        text = builtins.readFile "${self}/home/scripts/lspmux_panic_watch.sh";
+      };
+    in {
+      Type = "simple";
+      ExecStart = "${watch}/bin/lspmux-panic-watch";
+      # the journal follow ends whenever journald is restarted, with a clean exit status
+      Restart = "always";
+    };
+  };
+
   xdg.configFile."lspmux/config.toml".text = ''
     # rust-analyzer shells out to cargo/rustc and the project's native build inputs, none of
     # which exist in the daemon's login env, so the client's PATH has to come along. Cost:
