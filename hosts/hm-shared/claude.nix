@@ -234,6 +234,12 @@ in
 		#   diff <(jq -S . ~/.claude/settings.json) <(jq -S . ~/.claude/settings_ref.json)
 		# to catch drift/corruption. When you intentionally change the live file, mirror the
 		# change here so the diff stays clean.
+		#
+		# Since CC now manages its own config (plugin installs via /plugin, model/effort via
+		# /config, etc), this snapshot is EXPECTED to lag behind the live file — a nonempty diff
+		# is the normal state, not an alarm. It's a floor, not a mirror: it records the settings
+		# we deliberately chose, so a clobber is recoverable. Reconcile at intervals: read the
+		# diff, keep the live additions worth keeping, port them here, drop the rest.
 		".claude/settings_ref.json" = {
 			source =
 			(pkgs.formats.json { }).generate "claude_settings_ref.json" {
@@ -243,6 +249,9 @@ in
 				model = "claude-opus-5"; #claude-fable-5
 				#model = "claude-fable-5";
 				effortLevel = "high"; # they switched the default, and now problem gives up more often
+				# CC hardcodes a 200k auto-compact window for opus-5 (and sonnet-4-6/opus-4-6/opus-4-8),
+				# despite the model's 1M context. Value is min()'d against the real max.
+				autoCompactWindow = 500000;
 				showClearContextOnPlanAccept = true;
 				#trustedWorkspaces = [ "/" ]; #NB: doesn't actually exist. Instead, opoen in `/` and accept it as trusted manually once.
 				enabledPlugins = plugins.enabled;

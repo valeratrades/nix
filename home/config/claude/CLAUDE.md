@@ -117,3 +117,7 @@
 - when writing `.expect()`, explain **why** not **what**. Eg: `map.get(&a).expect("element always in map")` - bad, but `map.get(&a).expect("inserted on init")` - good.
 
 - if you've just added `unwrap_or(_else)`, - stop and think hard. Almost always it's much much preferable to just panic and see the error clearly than to continue with faulty state (which this unwrap_or_else oftentimes is a symptom of).
+
+### graphify
+- **graphify** (`~/.claude/skills/graphify/SKILL.md`) - any input to knowledge graph. Trigger: `/graphify`
+When the user types `/graphify`, use the installed graphify skill or instructions before doing anything else.
