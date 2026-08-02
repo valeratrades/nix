@@ -86,6 +86,7 @@ enum ClaudeState {
     Interrupted, // User aborted the turn (esc); dropped back to a live prompt
     Stuck,    // Finished, but its closing report says the work didn't land (see mod report)
     Partial,  // Finished, but its closing report says part of the work was skipped
+    Ongoing,  // Finished, but its closing report hands the ball back to me — a question or a go-ahead
 }
 
 impl ClaudeState {
@@ -120,6 +121,7 @@ impl ClaudeState {
             ClaudeState::Interrupted => "interrupted",
             ClaudeState::Stuck => "stuck",
             ClaudeState::Partial => "partial",
+            ClaudeState::Ongoing => "ongoing",
         }
     }
 }
@@ -289,7 +291,8 @@ impl fmt::Display for Sessions {
                 //   error    -> warn brown (#ba6e3d): real, but errors here mostly
                 //               surface during hands-on interaction, so I'm already
                 //               looking — deliberately ranked below question. partial
-                //               rides along: work left on the table, not blocked.
+                //               and ongoing ride along: work left on the table, not
+                //               blocked mid-flight.
                 //   active/planning -> blue (#68d4ff): healthy "it's working" signal,
                 //               informational, lowest of the three.
                 //   limit    -> white      (#ffffff): wedged on the usage clock —
@@ -305,7 +308,7 @@ impl fmt::Display for Sessions {
                     ClaudeState::Limit | ClaudeState::Input => {
                         format!("<span foreground=\"#ffffff\">{}</span>", pango_escape(&padded_state))
                     }
-                    ClaudeState::Error | ClaudeState::Partial => {
+                    ClaudeState::Error | ClaudeState::Partial | ClaudeState::Ongoing => {
                         format!("<span foreground=\"#ba6e3d\">{}</span>", pango_escape(&padded_state))
                     }
                     ClaudeState::Active | ClaudeState::Planning => {
@@ -335,7 +338,7 @@ impl fmt::Display for Sessions {
                     ClaudeState::Empty => padded_state.yellow(),
                     ClaudeState::Draft => padded_state.cyan(),
                     ClaudeState::Question | ClaudeState::Stuck => padded_state.magenta(),
-                    ClaudeState::Error | ClaudeState::Partial => padded_state.red(),
+                    ClaudeState::Error | ClaudeState::Partial | ClaudeState::Ongoing => padded_state.red(),
                     ClaudeState::Limit | ClaudeState::Input => padded_state.white(),
                     ClaudeState::Interrupted => padded_state.normal(),
                 };
@@ -705,6 +708,7 @@ mod report {
         Finished,
         Stuck,
         Partial,
+        Ongoing,
     }
 
     const SYSTEM: &str = "You read the closing report a coding agent left at the end of its session and judge how the session ended.
@@ -712,12 +716,13 @@ mod report {
 finished — everything the user asked for is done
 stuck — the agent could not complete the work: blocked, failed, out of ideas, or handing it back for the user to do
 partial — the agent did some of the work but skipped, deferred, or declined a part of it
+ongoing — the agent is waiting on the user: it asks a question, or names a next step it wants a go-ahead for before carrying on
 
-A report that closes on work still ahead of it — a \"Next step\" / \"TODO\" / \"Remaining\" section, an offer to carry on, or a request for go-ahead before continuing — is partial, however confidently the rest of it reads. Notes about things deliberately left alone that were never asked for are not that.
+A report that closes on work still ahead of it — a \"Next step\" / \"TODO\" / \"Remaining\" section, an offer to carry on, or a request for go-ahead — is ongoing when the report waits on an answer from the user, and partial when it simply leaves that work undone. Notes about things deliberately left alone that were never asked for are neither.
 
 Judge the implementation, nothing else. Only a piece of the asked-for code left unwritten makes a report partial. A test not written, a check not run, a build or verification left for the user — none of that counts against a report whose implementation is complete; that is finished.
 
-Answer with exactly one word: finished, stuck, or partial.";
+Answer with exactly one word: finished, stuck, partial, or ongoing.";
 
     /// Long reports are all preamble; the verdict lives in the closing lines.
     const MAX_REPORT: usize = 8000;
@@ -831,6 +836,7 @@ Answer with exactly one word: finished, stuck, or partial.";
             "finished" => Some(Verdict::Finished),
             "stuck" => Some(Verdict::Stuck),
             "partial" => Some(Verdict::Partial),
+            "ongoing" => Some(Verdict::Ongoing),
             _ => None,
         }
     }
@@ -904,6 +910,7 @@ Answer with exactly one word: finished, stuck, or partial.";
                     "finished" => Verdict::Finished,
                     "stuck" => Verdict::Stuck,
                     "partial" => Verdict::Partial,
+                    "ongoing" => Verdict::Ongoing,
                     other => panic!("report {stem:?} has unknown verdict prefix {other:?}"),
                 };
                 let report = fs::read_to_string(&file).unwrap();
@@ -1393,6 +1400,7 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
                                 match metadata.as_ref().and_then(|m| report::classify(&m.file)) {
                                     Some(report::Verdict::Stuck) => ClaudeState::Stuck,
                                     Some(report::Verdict::Partial) => ClaudeState::Partial,
+                                    Some(report::Verdict::Ongoing) => ClaudeState::Ongoing,
                                     Some(report::Verdict::Finished) | None => ClaudeState::Finished,
                                 }
                             };
@@ -2172,6 +2180,7 @@ fn should_recompute(prev: &CacheState, windows: &[ClaudeWindow]) -> bool {
                     | ClaudeState::Question
                     | ClaudeState::Stuck
                     | ClaudeState::Partial
+                    | ClaudeState::Ongoing
             )
         {
             return true;

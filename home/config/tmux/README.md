@@ -13,8 +13,10 @@
 A pane reading `finished` only means Claude stopped talking. `mod report` inside
 `claude_sessions.rs` takes the session's closing report (the last assistant turn
 in the transcript) and has an LLM — via the `ask_llm` crate — judge it as
-`finished` / `stuck` / `partial`, which become states of their own: `stuck` is
-colored like `question`, `partial` like `error`.
+`finished` / `stuck` / `partial` / `ongoing`, which become states of their own:
+`stuck` is colored like `question`, `partial` and `ongoing` like `error`.
+`ongoing` is the report that hands the ball back — it asks something or wants a
+go-ahead before continuing; `partial` just leaves work undone.
 
 The verdict is cached in `~/.cache/claude-session-reports.json` against the
 transcript's mtime, so it costs one call per session settle, not one per
