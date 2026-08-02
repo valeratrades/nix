@@ -25,7 +25,7 @@
 
 - you're disallowed from ever adding `#[allow(dead_code)]` (if it's a false-positive from a macro, there are likely more precise flags to skip it like eg `unused_assignment`). Similarly, you can't name things to start with underscore to silence unused warnings.
 
-- if you have implemented over a `TODO` / `DO`, or other comments explaining target future state, which I myself wrote; - then when you think that with your implementation the comments are now redundant, you add `//REVIEW` comment right below, instead of deleting them
+- if you have implemented over a `TODO` / `DO`, or other comments explaining target future state, which I myself wrote; - mention extensively what trade-offs you took when implementing. And most importantly, if the INTENTION of the original comment (especially `DO`, - those are very dense in terms of meaning per word). Especially `DO`s, - require at least a paragraph of reporting. And if while explaining you understand that you're not certain that original intent was fully meant, - keep the `//DO` comment, just update the prefix to `//[x]DO`
 
 - prefer running `cargo b` and `cargo r` instead of `cargo build` and `cargo run`, - under my config they skip warnings if any errors exist, which is always desirable.
 
@@ -105,6 +105,8 @@
 
   you can't go wrong NOT adding comments. You CAN go wrong when you add them. So default is no comment for you. Every single word in comments must be justified, - it's really easy to end up with them fixing temporary assumptions or getting outdated. All this is preventable, if we keep our thoughts to ourselves, and don't make them part of the codebase.
   Do not add any comments if you can avoid it.
+
+  TLDR: less fucking comments. Only add if you must. Prefer linking to ARCHITECTURE.md or per-mod READMEs, rather than writing new random stuff. Never ever document temporary circumstances, - code is not the place for it, github issues are.
 
 - you cannot add any unit-tests **after** the development is finished. Tests are persisted units of useful payloads that helped us get to a useful implementation. If there is some larger invariant over how data gets changed, that we want to persist, - that's for integration tests. No unit tests shall be added after logic is done. This is just adding friction for no reason whatsoever, - you are simply not allowed to do this, regardless of reasoning.
   Similarly, do not add tests just for the sake of adding them. We must be very precise with what is tested, and don't duplicate the code logic with them. They exist to ensure invariants that our implementation must follow, not to reimplement the same thing again and say hmm yes indeed the same thing does the same thing.
