@@ -6,7 +6,7 @@
   via `nix-run-cached`; aliased to `claude_sessions` in `__main__.fish`.
 - `switch_to_last_session.sh` — helper bound in `tmux.conf`.
 - `tests/` + `snapshots/` — snapshot tests for the `claude_sessions.rs` terminal
-  state classifier (see below).
+  state classifier, plus `tests/reports/` for the closing-report judge (see below).
 
 ## Closing-report verdicts
 
@@ -23,6 +23,11 @@ a doomed HTTP call on every refresh — and retried on the session's next turn. 
 `CLAUDE_TOKEN` in the environment turns the whole thing off and every settled
 session just reads `finished`. `done` panes (untouched for 45 min) are never
 classified — that signal has already decayed.
+
+The judging prompt is the whole classifier, so it's pinned by
+`tests/reports/<verdict>__<desc>.md` — real closing reports, one live call each,
+same drop-a-file-in-and-it's-covered deal as the pane fixtures. Editing the
+prompt invalidates every cached verdict (they were drawn by a different judge).
 
 The model is meant to be DeepSeek (`ask_llm::Model::DeepSeek`, added in the
 unreleased 2.2.3); the account is out of balance and 402s every call, so it runs

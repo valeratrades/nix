@@ -713,6 +713,8 @@ finished — everything the user asked for is done
 stuck — the agent could not complete the work: blocked, failed, out of ideas, or handing it back for the user to do
 partial — the agent did some of the work but skipped, deferred, or declined a part of it
 
+A report that closes on work still ahead of it — a \"Next step\" / \"TODO\" / \"Remaining\" section, an offer to carry on, or a request for go-ahead before continuing — is partial, however confidently the rest of it reads. Notes about things deliberately left alone that were never asked for are not that.
+
 Answer with exactly one word: finished, stuck, or partial.";
 
     /// Long reports are all preamble; the verdict lives in the closing lines.
@@ -734,7 +736,7 @@ Answer with exactly one word: finished, stuck, or partial.";
         let key = session_file.file_stem()?.to_str()?.to_string();
 
         let mut cache = load();
-        if let Some(hit) = cache.get(&key).filter(|e| e.mtime == mtime) {
+        if let Some(hit) = cache.get(&key).filter(|e| e.mtime == mtime && e.prompt == prompt_id()) {
             return hit.verdict;
         }
 
@@ -742,9 +744,19 @@ Answer with exactly one word: finished, stuck, or partial.";
         // call on every status-line refresh. The retry comes with the next turn
         // in that session, which is when a verdict starts mattering again.
         let verdict = last_report(session_file).and_then(|r| ask(&r));
-        cache.insert(key, Entry { mtime, verdict });
+        cache.insert(key, Entry { mtime, prompt: prompt_id(), verdict });
         save(&cache);
         verdict
+    }
+
+    /// Editing SYSTEM has to invalidate every stored verdict — they were drawn
+    /// by a different judge. Cross-version hash instability only costs one
+    /// re-classification round.
+    fn prompt_id() -> u64 {
+        use std::hash::{Hash as _, Hasher as _};
+        let mut h = std::collections::hash_map::DefaultHasher::new();
+        SYSTEM.hash(&mut h);
+        h.finish()
     }
 
     /// Text of the final assistant turn. Read from the tail for the same reason
@@ -823,6 +835,7 @@ Answer with exactly one word: finished, stuck, or partial.";
     struct Entry {
         /// Transcript mtime the verdict was drawn from; a later turn invalidates it.
         mtime: u64,
+        prompt: u64,
         verdict: Option<Verdict>,
     }
 
@@ -865,6 +878,33 @@ Answer with exactly one word: finished, stuck, or partial.";
             let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
             let raw = fs::read_to_string(dir.join("finished__stale_interrupt_marker.jsonl")).unwrap();
             assert_eq!(extract_last_text(&raw.lines().collect::<Vec<_>>()), None);
+        }
+
+        /// The prompt IS the classifier, so it gets pinned against real closing
+        /// reports — `tests/reports/<verdict>__<desc>.md`, one live call each.
+        /// Drop a misjudged report in and it's covered with no code edit.
+        #[test]
+        fn reports_classify_to_their_named_verdict() {
+            let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/reports");
+            let mut files: Vec<PathBuf> = fs::read_dir(&dir)
+                .unwrap_or_else(|e| panic!("read {dir:?}: {e}"))
+                .filter_map(|e| e.ok().map(|e| e.path()))
+                .filter(|p| p.extension().is_some_and(|x| x == "md"))
+                .collect();
+            files.sort();
+            assert!(!files.is_empty(), "no *.md reports in {dir:?}");
+
+            for file in files {
+                let stem = file.file_stem().unwrap().to_string_lossy().to_string();
+                let expected = match stem.split("__").next().unwrap() {
+                    "finished" => Verdict::Finished,
+                    "stuck" => Verdict::Stuck,
+                    "partial" => Verdict::Partial,
+                    other => panic!("report {stem:?} has unknown verdict prefix {other:?}"),
+                };
+                let report = fs::read_to_string(&file).unwrap();
+                assert_eq!(ask(&report), Some(expected), "report {stem:?}");
+            }
         }
 
         #[test]
