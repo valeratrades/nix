@@ -246,12 +246,13 @@ in
 				#HACK: hm doesn't set env correctly, - so have some associated ones in ../../os/nixos/desktop/environment.nix
 				alwaysThinkingEnabled = true;
 				skipDangerousModePermissionPrompt =  true;
-				model = "claude-opus-5"; #claude-fable-5
+				# the `[1m]` suffix is what requests the context-1m beta; without it the window is 200k
+				# and any autoCompactWindow above that is silently min()'d away. Bills 2x in/1.5x out
+				# past 200k input. Kill switch: CLAUDE_CODE_DISABLE_1M_CONTEXT=1
+				model = "claude-opus-5[1m]"; #claude-fable-5
 				#model = "claude-fable-5";
 				effortLevel = "high"; # they switched the default, and now problem gives up more often
-				# CC hardcodes a 200k auto-compact window for opus-5 (and sonnet-4-6/opus-4-6/opus-4-8),
-				# despite the model's 1M context. Value is min()'d against the real max.
-				autoCompactWindow = 1000000;
+				autoCompactWindow = 500000;
 				showClearContextOnPlanAccept = true;
 				#trustedWorkspaces = [ "/" ]; #NB: doesn't actually exist. Instead, opoen in `/` and accept it as trusted manually once.
 				enabledPlugins = plugins.enabled;
