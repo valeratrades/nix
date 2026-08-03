@@ -140,6 +140,8 @@ struct ClaudeWindow {
     question_content: Option<String>,
     summary: Option<String>,
     model: Option<String>,
+    /// Context size of the last turn, in tokens (see context_tokens)
+    context: Option<u64>,
 }
 
 #[derive(Debug, Serialize)]
@@ -152,6 +154,8 @@ struct SessionEntry {
     question_content: Option<String>,
     summary: Option<String>,
     model: Option<String>,
+    /// Context size of the last turn, in tokens (see context_tokens)
+    context: Option<u64>,
 }
 
 #[derive(Debug)]
@@ -225,6 +229,16 @@ impl fmt::Display for Sessions {
                 .unwrap_or(0)
         };
 
+        let max_context_len = if self.compact {
+            0
+        } else {
+            self.entries
+                .iter()
+                .filter_map(|e| e.context.map(|c| format_tokens(c).len()))
+                .max()
+                .unwrap_or(0)
+        };
+
         for (i, entry) in self.entries.iter().enumerate() {
             if i > 0 {
                 writeln!(f)?;
@@ -252,6 +266,12 @@ impl fmt::Display for Sessions {
             // reports a model at all.
             let padded_model = (max_model_len > 0).then(|| {
                 format!("{:width$}", entry.model.as_deref().unwrap_or(""), width = max_model_len)
+            });
+
+            // Right-aligned so the magnitudes line up ("12k" under "180k").
+            let padded_context = (max_context_len > 0).then(|| {
+                let cell = entry.context.map(format_tokens).unwrap_or_default();
+                format!("{:>width$}", cell, width = max_context_len)
             });
 
             // The name column is likewise padded to visible width before any
@@ -326,6 +346,9 @@ impl fmt::Display for Sessions {
                 if let Some(m) = &padded_model {
                     write!(f, "  {}", pango_escape(m))?;
                 }
+                if let Some(c) = &padded_context {
+                    write!(f, "  <span foreground=\"{}\">{}</span>", context_color(entry.context), pango_escape(c))?;
+                }
                 if let Some(t) = trailing {
                     write!(f, "  {}", pango_escape(&t))?;
                 }
@@ -346,12 +369,32 @@ impl fmt::Display for Sessions {
                 if let Some(m) = &padded_model {
                     write!(f, "  {}", m.dimmed())?;
                 }
+                if let Some(c) = &padded_context {
+                    write!(f, "  {}", c.dimmed())?;
+                }
                 if let Some(t) = trailing {
                     write!(f, "  {}", t)?;
                 }
             }
         }
         Ok(())
+    }
+}
+
+/// Auto-compact fires at `autoCompactWindow` in claude/settings.json; the column
+/// warms up as a session approaches it, since that's the only actionable moment
+/// in a context number. ponytail: hardcoded, one grep away from the setting.
+const COMPACT_WINDOW: u64 = 500_000;
+
+fn format_tokens(t: u64) -> String {
+    if t >= 1000 { format!("{}k", t / 1000) } else { t.to_string() }
+}
+
+fn context_color(tokens: Option<u64>) -> &'static str {
+    match tokens {
+        Some(t) if t >= COMPACT_WINDOW * 9 / 10 => "#ff6565",
+        Some(t) if t >= COMPACT_WINDOW * 7 / 10 => "#ba6e3d",
+        _ => "#6b6b6b",
     }
 }
 
@@ -682,6 +725,47 @@ fn latest_model(session_file: &Path) -> Option<String> {
             }
             _ => continue,
         }
+    }
+    None
+}
+
+/// Context the next request would carry: the last main-thread assistant turn's
+/// whole token bill (fresh input + both cache buckets + what it wrote). Sidechain
+/// turns are subagents with their own window and would read as the session's.
+/// Tail-only, same rationale as transcript_working.
+fn context_tokens(session_file: &Path) -> Option<u64> {
+    const TAIL_BYTES: u64 = 256 * 1024;
+    let mut file = fs::File::open(session_file).ok()?;
+    let len = file.metadata().ok()?.len();
+    let start = len.saturating_sub(TAIL_BYTES);
+    file.seek(SeekFrom::Start(start)).ok()?;
+    let mut bytes = Vec::new();
+    file.read_to_end(&mut bytes).ok()?;
+    let buf = String::from_utf8_lossy(&bytes);
+
+    let mut lines = buf.lines();
+    if start > 0 {
+        lines.next(); // likely-partial first record
+    }
+    for line in lines.collect::<Vec<_>>().into_iter().rev() {
+        let v: serde_json::Value = match serde_json::from_str(line) {
+            Ok(v) => v,
+            Err(_) => continue,
+        };
+        if v.get("isSidechain").and_then(|x| x.as_bool()) == Some(true) {
+            continue;
+        }
+        let usage = match v.get("message").and_then(|m| m.get("usage")) {
+            Some(u) => u,
+            None => continue,
+        };
+        let field = |k: &str| usage.get(k).and_then(|x| x.as_u64()).unwrap_or(0);
+        return Some(
+            field("input_tokens")
+                + field("cache_creation_input_tokens")
+                + field("cache_read_input_tokens")
+                + field("output_tokens"),
+        );
     }
     None
 }
@@ -1277,6 +1361,8 @@ struct SessionMetadata {
     summary: Option<String>,
     /// Most recent model that produced an assistant turn (see latest_model)
     model: Option<String>,
+    /// Context size of the last turn (see context_tokens)
+    context: Option<u64>,
     /// Transcript verdict on whether work is in flight (see transcript_working)
     transcript_working: Option<bool>,
     /// How long the transcript has sat untouched; the Finished→Done clock.
@@ -1311,6 +1397,7 @@ fn get_session_info_for_pane(shell_pid: u32, tmux_target: &str) -> Option<Sessio
         display_todo: todo_result.display_todo,
         summary,
         model: latest_model(&session_file),
+        context: context_tokens(&session_file),
         transcript_working: transcript_working(&session_file),
         idle_for: fs::metadata(&session_file)
             .and_then(|m| m.modified())
@@ -1363,7 +1450,7 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
         }
 
         let tmux_target = format!("{}:{}", session, window_index);
-        let (state, active_todo, draft_content, question_content, summary, model) = if is_claude_pane {
+        let (state, active_todo, draft_content, question_content, summary, model, context) = if is_claude_pane {
             // Terminal parsing decides the blocking states (Question/Draft/Error)
             // and the working state, but active↔finished flip-flops between tool
             // calls when no spinner is captured. For that one reading we defer to
@@ -1376,11 +1463,12 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
             // message), so a metadata lookup could only mis-attribute a
             // neighbour's transcript to it.
             if activity.state == ClaudeState::Empty {
-                (ClaudeState::Empty, None, None, None, None, None)
+                (ClaudeState::Empty, None, None, None, None, None, None)
             } else {
                 let metadata = get_session_info_for_pane(pane_pid, &tmux_target);
                 let summary = metadata.as_ref().and_then(|m| m.summary.clone());
                 let model = metadata.as_ref().and_then(|m| m.model.clone());
+                let context = metadata.as_ref().and_then(|m| m.context);
 
                 match activity.state {
                     ClaudeState::Finished => {
@@ -1391,7 +1479,7 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
                         );
                         if refined != ClaudeState::Finished {
                             let todo = metadata.as_ref().and_then(|m| m.display_todo.clone());
-                            (refined, todo, None, None, summary, model)
+                            (refined, todo, None, None, summary, model, context)
                         } else {
                             let stale = matches!(&metadata, Some(m) if m.idle_for.is_some_and(|d| d >= DONE_AFTER));
                             // Done is a decayed signal — I've had 45 minutes to see
@@ -1406,7 +1494,7 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
                                     Some(report::Verdict::Finished) | None => ClaudeState::Finished,
                                 }
                             };
-                            (state, None, None, None, summary, model)
+                            (state, None, None, None, summary, model, context)
                         }
                     }
                     _ => (
@@ -1416,6 +1504,7 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
                         activity.question_content,
                         summary,
                         model,
+                        context,
                     ),
                 }
             }
@@ -1455,6 +1544,7 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
                     });
                     let summary = file.as_deref().and_then(get_session_summary);
                     let model = file.as_deref().and_then(latest_model);
+                    let context = file.as_deref().and_then(context_tokens);
                     // Killed mid-turn (esc, then Ctrl-C) exits with the
                     // "⎿ Interrupted" row still at the bottom — that's the last
                     // real state, not a clean Finished.
@@ -1463,9 +1553,9 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
                     } else {
                         ClaudeState::Finished
                     };
-                    (state, None, None, None, summary, model)
+                    (state, None, None, None, summary, model, context)
                 }
-                None => (ClaudeState::Empty, None, None, None, None, None),
+                None => (ClaudeState::Empty, None, None, None, None, None, None),
             }
         };
 
@@ -1479,6 +1569,7 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
             question_content,
             summary,
             model,
+            context,
         });
     }
 
@@ -2262,6 +2353,7 @@ fn main() {
             question_content: window.question_content.clone(),
             summary: window.summary.clone(),
             model: window.model.clone(),
+            context: window.context,
         });
     }
     sessions.sort();
