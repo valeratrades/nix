@@ -43,7 +43,7 @@
     "enabled": false
   },
   "alwaysThinkingEnabled": true,
-  "autoCompactWindow": 500000,
+  "autoCompactWindow": 1000000,
   "effortLevel": "high",
   "showClearContextOnPlanAccept": true,
   "showThinkingSummaries": true,

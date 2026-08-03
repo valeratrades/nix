@@ -38,7 +38,7 @@
   Never ask questions just to ask questions. Your instructions for creation of the plan may tell you to compile questions to ask, - but I want to be very clear here, - you **only** do that if something is actually not clear. Things that you can derive/answer yourself, you do not bring up.
 
 - before starting your work, run `fish -c 'source $NIXOS_CONFIG/home/config/fish/other.fish; active_agents'`  to know if you're in a tmux session and if there are other active agents on this project besides yourself (number that comes out will be >=2 then). If you're not the only one there, you will do your work in a git worktree. For larger changes, you can and should claim a branch, and then open PR at the end. // when asking to merge, use your `question` interface. I have a script that will highlight those. Note that you don't ask for PR, - if the change is too large to apply directly without asking me, PR is a given. You ask once you open it, for whether it's ready to be merged.
-  > does not apply if you're in `/plan` mode or are just exploring, - run just before you're about to start editing.
+  > does not apply if you're in `/plan` mode or are just exploring, - run just before you're about to start making a big edit
   > And also, small edits don't require none of this, - you can just make them directly
 
   also, don't fuck with other agents. Avoid commands that would affect them, - all the way up until merging.

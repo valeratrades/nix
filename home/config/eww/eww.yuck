@@ -39,6 +39,7 @@
 		(microphone)
 		(speaker)
 		(ping)
+		(disk)
 		(ram)
 		(cpu)
 		(temperature)
@@ -145,6 +146,11 @@
 	(box
 		:class {"${round(EWW_CPU.avg, 0)}" > 90 ? "warn" : ""}
 		" ${round(EWW_CPU.avg, 0)}%"))
+; / and /home live on separate disks; the fuller one is what matters
+(defwidget disk []
+	(box
+		:class {EWW_DISK["/"].used_perc > 90 || EWW_DISK["/home"].used_perc > 90 ? "warn" : ""}
+		"${round(EWW_DISK["/"].used_perc > EWW_DISK["/home"].used_perc ? EWW_DISK["/"].used_perc : EWW_DISK["/home"].used_perc, 0)}%"))
 (defwidget ram []
 	(box
 		:visible {EWW_RAM.used_mem_perc != ""}

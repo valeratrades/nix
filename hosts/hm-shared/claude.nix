@@ -251,7 +251,7 @@ in
 				effortLevel = "high"; # they switched the default, and now problem gives up more often
 				# CC hardcodes a 200k auto-compact window for opus-5 (and sonnet-4-6/opus-4-6/opus-4-8),
 				# despite the model's 1M context. Value is min()'d against the real max.
-				autoCompactWindow = 500000;
+				autoCompactWindow = 1000000;
 				showClearContextOnPlanAccept = true;
 				#trustedWorkspaces = [ "/" ]; #NB: doesn't actually exist. Instead, opoen in `/` and accept it as trusted manually once.
 				enabledPlugins = plugins.enabled;

@@ -4,10 +4,8 @@
 }:
 {
   environment.shellAliases.wui = "waydroid show-full-ui"; # main entry point
-	#dbg: disabled due to `webkitgtk` build times
- # virtualisation = {
- #   waydroid.enable = false; #HACK: Temporarily disabled due to Cython Python 3.13 incompatibility
- # };
+  # webkitgtk scare was gnome-boxes, not waydroid — closure is clean.
+  virtualisation.waydroid.enable = true;
 	##NB: must run init manually as follows:
  # #- init with `sudo waydroid init -s GAPSS -f`
  # #- patch google-play certificate: https://docs.waydro.id/faq/google-play-certification

@@ -8,13 +8,24 @@ return {
 	config = function()
 		require('nvim-treesitter').setup {}
 
-		-- Parsers needed for markdown injections (no FileType event fires for injected langs).
+		-- Verse is absent from the upstream registry, so nothing else would ever fetch it.
+		-- Epic ships no Verse compiler or language server for Linux, which makes this parser
+		-- the *only* language support obtainable here — see README.md.
+		require('nvim-treesitter.parsers').verse = {
+			install_info = {
+				url = 'https://github.com/Unoqwy/tree-sitter-verse',
+				revision = 'd112fbec2676c3be5b8e22f8f92b1c4b4c66223c',
+				queries = 'queries',
+			},
+		}
+
 		vim.schedule(function()
 			local install = require('nvim-treesitter.install')
 			local installed = require('nvim-treesitter.config').get_installed('parsers')
+			-- `mermaid`/`xml`: markdown injections (no FileType event fires for injected langs).
 			-- `tsx`: .tsx uses the tsx parser (not `typescript`); without it ts_context_commentstring
 			-- can't detect JSX regions and `gcc` wrongly falls back to `//` instead of `{/* */}`.
-			for _, lang in ipairs({ 'mermaid', 'xml', 'tsx' }) do
+			for _, lang in ipairs({ 'mermaid', 'xml', 'tsx', 'verse' }) do
 				if not vim.list_contains(installed, lang) then
 					install.install({ lang })
 				end
