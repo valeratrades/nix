@@ -229,6 +229,7 @@
               cargo-nextest # better tests
               cargo-limit # brings `lrun` and other `l$command` aliases for cargo, that suppress warnings if any errors are present.
               cargo-unused-features # detect unused feature flags
+              cargo-sweep # gc stale build artifacts from target/
             ]
           ]
 
