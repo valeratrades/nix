@@ -354,11 +354,11 @@ impl fmt::Display for Sessions {
                     _ => pango_escape(&padded_state),
                 };
                 write!(f, "{}  {}", pango_escape(&padded_name), state_cell)?;
-                if let Some(m) = &padded_model {
-                    write!(f, "  {}", pango_escape(m))?;
-                }
                 if let Some(c) = &padded_context {
                     write!(f, "  <span foreground=\"{}\">{}</span>", context_color(entry.context), pango_escape(c))?;
+                }
+                if let Some(m) = &padded_model {
+                    write!(f, "  {}", pango_escape(m))?;
                 }
                 if let Some(t) = trailing {
                     write!(f, "  {}", pango_escape(&t))?;
@@ -377,11 +377,11 @@ impl fmt::Display for Sessions {
                     ClaudeState::Interrupted => padded_state.normal(),
                 };
                 write!(f, "{}  {}", padded_name, colored_state)?;
-                if let Some(m) = &padded_model {
-                    write!(f, "  {}", m.dimmed())?;
-                }
                 if let Some(c) = &padded_context {
                     write!(f, "  {}", c.dimmed())?;
+                }
+                if let Some(m) = &padded_model {
+                    write!(f, "  {}", m.dimmed())?;
                 }
                 if let Some(t) = trailing {
                     write!(f, "  {}", t)?;
