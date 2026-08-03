@@ -188,7 +188,9 @@
 	)
 )
 
-(defpoll temperature_poll :initial "{}" :interval "15s" "./modules/temperature.sh")
+; 5s, matching sensor-sampler: at 15s a thermal excursion could open and close between two reads,
+; so the bar disagreed with the journal about whether anything had happened.
+(defpoll temperature_poll :initial "{}" :interval "5s" "./modules/temperature.sh")
 (defwidget temperature []
 	(box
 		:space-evenly false
@@ -199,6 +201,12 @@
 		(box
 			:class {temperature_poll.gpu >= 70 ? "warn" : ""}
 			",${temperature_poll.gpu}"
+		)
+		; absent while the dGPU is runtime-suspended, which under PRIME offload is most of the time
+		(box
+			:visible {temperature_poll.dgpu >= 0}
+			:class {temperature_poll.dgpu >= 70 ? "warn" : ""}
+			",${temperature_poll.dgpu}"
 		)
 	)
 )

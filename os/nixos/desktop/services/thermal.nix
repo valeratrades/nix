@@ -111,6 +111,78 @@ in
   #   };
   # };
 
+  # The 2026-08-03 reset left nothing to argue from: the journal ends mid-line, pstore was empty,
+  # and kernel.panic=0 means a panic would have hung rather than rebooted — so power was cut below
+  # the kernel, and no component logs a reading on its way down. thermal-guard only speaks on a
+  # threshold crossing, so the two hours before were blank. This is the missing reading.
+  #
+  # To journald, not a file: it is already persistent, already rotated, and on that reset it had
+  # flushed to within 0.3s of the cut. `journalctl -b -1 -u sensor-sampler | tail` is the query.
+  #
+  # legion_hwmon is deliberately absent. Its registers latch: it reported a fixed 87C GPU across
+  # every sample while nvidia-smi read 57C, and fan speeds above its own advertised maximum. That
+  # is the same brokenness eww's temperature.sh already routes around.
+  systemd.services.sensor-sampler = {
+    description = "Sample thermals and power every 5s, so a hard reset has a last known state";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "systemd-modules-load.service" ];
+    serviceConfig = {
+      Type = "simple";
+      Restart = "always";
+      RestartSec = 5;
+    };
+    script = ''
+      hwmon_by_name() {
+        for h in /sys/class/hwmon/hwmon*; do
+          if [ "$(cat "$h/name" 2>/dev/null)" = "$1" ]; then echo "$h"; return; fi
+        done
+        echo /nonexistent
+      }
+      val() { cat "$1" 2>/dev/null || echo 0; }
+
+      k10=$(hwmon_by_name k10temp)
+      amd=$(hwmon_by_name amdgpu)
+      bat=$(hwmon_by_name BAT0)
+
+      while true; do
+        # Both DIMMs, hotter one — they read ~3C apart and either alarms at 55C.
+        dram=0
+        for h in /sys/class/hwmon/hwmon*; do
+          if [ "$(cat "$h/name" 2>/dev/null)" = spd5118 ]; then
+            t=$(( $(val "$h/temp1_input") / 1000 ))
+            if [ "$t" -gt "$dram" ]; then dram=$t; fi
+          fi
+        done
+
+        # Only while the dGPU is already awake. Asking otherwise wakes it out of runtime suspend
+        # and, at a 5s cadence, holds it awake permanently — the sampler would become a heat source.
+        # nvidia-smi is taken from the running system rather than the closure so that flipping
+        # user.disableNvidia needs no change here: absent driver, absent binary, `off`.
+        dgpu=off
+        for d in /sys/bus/pci/drivers/nvidia/0000:*; do
+          if [ "$(val "$d/power/runtime_status")" = active ] && [ -x /run/current-system/sw/bin/nvidia-smi ]; then
+            dgpu=$(/run/current-system/sw/bin/nvidia-smi --query-gpu=temperature.gpu,power.draw \
+              --format=csv,noheader,nounits 2>/dev/null | tr -d ' ' | tr ',' '/')
+          fi
+        done
+
+        # fmax exposes whether thermal-guard was throttling at the time; batt exposes an adapter
+        # brownout, which is the leading explanation for a cut that leaves no software trace at all.
+        echo "cpu=$(( $(val "$k10/temp1_input") / 1000 ))C" \
+             "igpu=$(( $(val "$amd/temp1_input") / 1000 ))C" \
+             "ppt=$(( $(val "$amd/power1_input") / 1000000 ))W" \
+             "dgpu=$dgpu" \
+             "dram=''${dram}C" \
+             "fmax=$(( $(val /sys/devices/system/cpu/cpufreq/policy0/scaling_max_freq) / 1000 ))MHz" \
+             "ac=$(val /sys/class/power_supply/ADP0/online)" \
+             "batt=$(val /sys/class/power_supply/BAT0/status)/$(( $(val "$bat/power1_input") / 1000000 ))W" \
+             "load=$(cut -d' ' -f1 /proc/loadavg)"
+
+        sleep 5
+      done
+    '';
+  };
+
   # Throttle CPU frequency at 90°C to prevent thermal shutdown.
   #
   # Deliberately touches frequency ONLY, and only relative to the declared baseline. This loop used
