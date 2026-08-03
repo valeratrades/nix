@@ -4,13 +4,12 @@
 # nix build sandboxes and bare ssh. Raise if a legitimate corpus ever needs more.
 final: prev:
 {
-  tree-sitter = prev.symlinkJoin {
-    name = "tree-sitter-memcapped-${prev.tree-sitter.version}";
-    paths = [ prev.tree-sitter ];
-    nativeBuildInputs = [ prev.makeWrapper ];
-    postBuild = ''
+  # overrideAttrs rather than a symlinkJoin wrapper: neovim-nightly-overlay reaches into
+  # this derivation's pname, which a join would drop.
+  tree-sitter = prev.tree-sitter.overrideAttrs (old: {
+    nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ prev.makeWrapper ];
+    postInstall = (old.postInstall or "") + ''
       wrapProgram $out/bin/tree-sitter --run 'ulimit -v 8388608'
     '';
-    inherit (prev.tree-sitter) meta passthru;
-  };
+  });
 }
