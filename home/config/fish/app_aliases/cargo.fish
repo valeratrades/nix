@@ -247,3 +247,24 @@ end
 alias scb="sccache_retry cargo build"
 alias scr="sccache_retry cargo run"
 alias scc="sccache_retry cargo check"
+
+# `target/` only grows when cargo runs, so this arms off cargo invocations rather than every prompt.
+# The probe is a `du` over ~125k inodes — 0.4s warm, far too dear to pay per command; the 1-in-20
+# roll amortizes it to ~20ms. Reaching 50GiB takes days, so declining 19 of every 20 chances to
+# notice costs nothing. Backgrounding the probe would buy the last 20ms, but fish runs `begin/end &`
+# and `func &` in the foreground regardless, and shelling out to detach is not worth 20ms.
+# Enqueues only. The sweep is a minute of unlinking, and it runs from the `cargo-sweep` user timer
+# at idle IO priority, where it yields to a foreground build instead of contending with it.
+function __cargo_sweep_arm --on-event fish_postexec
+	string match -qr '^\s*(cargo|c|ct|cb|cbi|cq|cw|cwe|cir|ca|ce|scb|scr|scc|caclip|ctn|nextest_examples)\b' -- $argv[1]; or return
+	set -l target target
+	test -n "$CARGO_TARGET_DIR"; and set target "$CARGO_TARGET_DIR"
+	test -d $target; or return
+	test (random 1 20) -eq 1; or return
+	# A concurrent build unlinks artifacts between du's readdir and its stat, so misses are the
+	# normal case rather than a fault; the running total survives them and only has to be right to
+	# within a 50GiB threshold.
+	test (du -sk $target 2>/dev/null | cut -f1) -gt 52428800; or return # 50GiB
+	mkdir -p "$XDG_CACHE_HOME/cargo-sweepd"
+	pwd >> "$XDG_CACHE_HOME/cargo-sweepd/queue"
+end

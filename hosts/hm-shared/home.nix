@@ -255,6 +255,34 @@
     Install.WantedBy = [ "timers.target" ];
   };
 
+  # Drains what `__cargo_sweep_arm` (home/config/fish/app_aliases/cargo.fish) queues when a repo's
+  # target/ crosses 50GiB. Out of the shell entirely because a sweep is a minute of unlinking 100k+
+  # files: at idle IO priority it yields to a foreground build rather than fighting it for the disk.
+  systemd.user.services.cargo-sweep = {
+    Unit.Description = "Sweep stale build artifacts from queued cargo target dirs";
+    Service = let
+      sweep = pkgs.writeShellApplication {
+        name = "cargo-sweep-queue";
+        runtimeInputs = [ pkgs.cargo-sweep pkgs.coreutils pkgs.procps ];
+        text = builtins.readFile "${self}/home/scripts/cargo_sweep_queue.sh";
+      };
+    in {
+      Type = "oneshot";
+      Nice = 19;
+      IOSchedulingClass = "idle";
+      ExecStart = "${sweep}/bin/cargo-sweep-queue";
+    };
+  };
+
+  systemd.user.timers.cargo-sweep = {
+    Unit.Description = "Periodically drain the cargo-sweep queue";
+    Timer = {
+      OnBootSec = "10min";
+      OnUnitActiveSec = "1h";
+    };
+    Install.WantedBy = [ "timers.target" ];
+  };
+
   auto_redshift = {
     enable = true;
     wakeTime = user.wakeTime;
