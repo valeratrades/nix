@@ -1,5 +1,5 @@
 {
-  "model": "claude-opus-5",
+  "model": "opus",
   "hooks": {
     "Notification": [
       {
@@ -43,8 +43,8 @@
     "enabled": false
   },
   "alwaysThinkingEnabled": true,
-  "autoCompactWindow": 500000,
   "effortLevel": "high",
+  "autoCompactWindow": 500000,
   "showClearContextOnPlanAccept": true,
   "showThinkingSummaries": true,
   "skipDangerousModePermissionPrompt": true,
