@@ -53,7 +53,8 @@
           token = "$GITHUB_KEY";
         };
         credential.helper = "store";
-        core.attributesfile = "/home/${user.username}/.gitattributes";
+        # no global attributesfile: LFS is opt-in per repo, via a committed .gitattributes.
+        # ~/.gitattributes is kept as the list to copy from.
         core.excludesfile = "/home/${user.username}/.gitignore";
         pull = { rebase = true; };
         safe = { directory = "*"; };
@@ -123,8 +124,6 @@
         merge = { conflictStyle = "zdiff3"; };
         "includeIf \"gitdir:/home/${user.username}/.local/\"".path = "/etc/gitconfig-no-lfs";
         "includeIf \"gitdir:/home/${user.username}/.cache/\"".path = "/etc/gitconfig-no-lfs";
-        # Submodules store their gitdir under <parent>/.git/modules/ — clear global attrs without touching LFS
-        "includeIf \"gitdir:**/.git/modules/**/\"".path = "/etc/gitconfig-no-global-attrs";
       };
     };
   };
