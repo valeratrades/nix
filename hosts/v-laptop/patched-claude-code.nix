@@ -12,5 +12,6 @@ claude-code.overrideAttrs (old: {
 		${pkgs.python3}/bin/python3 ${./strip-claude-reminders.py} "$out/bin/.claude-unwrapped"
 		${pkgs.python3}/bin/python3 ${./patch-claude-altexit.py} "$out/bin/.claude-unwrapped"
 		${pkgs.python3}/bin/python3 ${./patch-claude-queuejoin.py} "$out/bin/.claude-unwrapped"
+		${pkgs.python3}/bin/python3 ${./patch-claude-1m.py} "$out/bin/.claude-unwrapped"
 	'';
 })
