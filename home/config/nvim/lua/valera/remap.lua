@@ -370,11 +370,14 @@ K("i", ",", ",<c-g>u", { desc = "Comma with undo break" })
 K("i", ".", ".<c-g>u", { desc = "Period with undo break" })
 K("i", ";", ";<c-g>u", { desc = "Semicolon with undo break" })
 
--- Undo break before any paste (bracketed paste from terminal, <C-r>, etc.)
+K("i", "<C-r>", "<c-g>u<C-r>", { desc = "Register paste with undo break" })
+
+-- Bracketed paste (terminal `Ctrl+Shift+V`, `"+p` via clipboard providers) goes through `vim.paste`, where
+-- `<C-g>u` can't be fed: nvim_feedkeys only lands in typeahead, i.e. *after* the pasted text.
 local orig_paste = vim.paste
-vim.paste = function(lines, phase) --TEST: don't know if it will work with terminal-level pasting like `Ctrl+Shift+V`
-	if phase == 1 and vim.fn.mode() == "i" then
-		vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<C-g>u", true, false, true), "n", false)
+vim.paste = function(lines, phase)
+	if (phase == 1 or phase == -1) and vim.fn.mode() == "i" then
+		vim.cmd("let &undolevels = &undolevels")
 	end
 	return orig_paste(lines, phase)
 end

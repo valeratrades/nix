@@ -17,7 +17,14 @@
 - when you ask a multi-choice question, always include `None of the Above` option.
 
 ## Workflow
-- always work todos first, - creating and keeping the todos list relevant is first concern in any implementation
+- always work todos first, - creating and keeping the todos list relevant is first concern in any implementation. Always keep it up to date.
+
+- before any changes, determine if we are working on a top-level app, helper lib, or a framework.
+  Priorities change drastically, depending on what we are developing:
+    - app needs to have its functionality working first and foremost. It's fine to optimize performance under constraints of available implementation primitives, and 
+    - for helper lib, we care for cross-consistency and ubiquity of primitives exposed
+    - for framework, the proximity to the underlying problem space is most critical. We optimize for providing zero-cost abstractions, and focus on encoding the expression space into type system as directly as possible.
+  > note that it's not rare for an app and the framework for it to be workspace members in the same repo. Same rules hold when working with each.
 
 - don't forget to run `nix develop` to init env in all projects with flake.nix
 
@@ -50,7 +57,8 @@
 
 - never switch a git branch underneath me
 
-- commit your work, but until I personally verify it (or it's trivial), you do so with `wip: ` prefix always. If the unstaged changes are shared with another agent, - just pick yours manually. Same even in the case where you both edited the same file, - stage individual hunks then (or maybe the file is big and contains multiple semantic section, - then should be modularized, so you don't step on each others toes)
+- commit your work, but until I personally verify it (or it's trivial), you do so with `wip: ` prefix always.
+  If the unstaged changes are shared with another agent, - just pick yours manually. Same even in the case where you both edited the same file, - stage individual hunks then (or maybe the file is big and contains multiple semantic section, - then should be modularized, so you don't step on each others toes)
 
 ## Testing
 - if a change is not trivial, always test.
