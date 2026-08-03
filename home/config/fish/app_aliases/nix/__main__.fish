@@ -41,7 +41,7 @@ function nsync
 		echo "uhm?"
 		return 1
 	end
-	git -C $NIXOS_CONFIG reset --hard && git -C $NIXOS_CONFIG pull && sudo nixos-rebuild switch --flake $NIXOS_CONFIG#$(hostname) --impure --no-reexec
+	git -C $NIXOS_CONFIG reset --hard && git -C $NIXOS_CONFIG pull && sudo nixos-rebuild switch --flake "$NIXOS_CONFIG?submodules=1#$(hostname)" --impure --no-reexec
 end
 
 
@@ -50,5 +50,5 @@ function nbg
 	if [ (count $argv) = 1 ]
 		set hostName $argv[1]
 	end
-	sudo nixos-rebuild switch --flake "github:valeratrades/nix#$hostName" --impure --no-reexec
+	sudo nixos-rebuild switch --flake "github:valeratrades/nix?submodules=1#$hostName" --impure --no-reexec
 end
