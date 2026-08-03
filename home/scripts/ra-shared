@@ -111,10 +111,8 @@ def rustup_binary(rustup: str, root: Path, env: dict, req_id) -> str:
 	here also puts the toolchain into the instance key, so two projects on different ones
 	stop sharing a server.
 	"""
-	# without this an uninstalled-but-real channel is downloaded inline, stalling `initialize`
-	# for as long as a toolchain takes to fetch, mute
 	proc = subprocess.run([rustup, "which", "rust-analyzer"],
-		cwd=root, env={**env, "RUSTUP_AUTO_INSTALL": "0"}, capture_output=True, text=True)
+		cwd=root, env=env, capture_output=True, text=True)
 	if proc.returncode != 0:
 		die(req_id, f"no rust-analyzer for the toolchain of {root}: "
 			f"{' '.join(proc.stderr.split()) or 'no output'}")
