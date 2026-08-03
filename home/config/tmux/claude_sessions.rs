@@ -70,6 +70,19 @@ struct MessageContent {
 /// A Finished pane whose transcript hasn't been touched in this long is Done.
 const DONE_AFTER: std::time::Duration = std::time::Duration::from_secs(45 * 60);
 
+// The eww palette, named by how loudly a cell should grab me — not by what the
+// cell means. The `error` state draws in COLOR_WARN and that's correct: errors
+// here surface while I'm already looking at the pane, so they rank below a
+// session that's BLOCKED on me. Importance is the axis, nomenclature isn't.
+const COLOR_ERROR: &str = "#ff6565";
+const COLOR_WARN: &str = "#ba6e3d";
+const COLOR_INFO_ACTIVE: &str = "#68d4ff";
+const COLOR_INFO_NEGATIVE: &str = "#ffffff";
+/// oklch(0.85 0.06 142) — green with chroma pulled near grey, visible without popping.
+const COLOR_INFO_GOOD: &str = "#b8d8b4";
+const COLOR_DEBUG: &str = "#000000";
+const COLOR_TRACE: &str = "#6b6b6b";
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
 enum ClaudeState {
@@ -304,41 +317,39 @@ impl fmt::Display for Sessions {
                 // eww/GTK path: escape every literal segment for Pango, then wrap
                 // the state cell in a <span> only for the states that warrant
                 // grabbing my eye. Attention priority, NOT prettiness:
-                //   question -> error red  (#ff6565): a session is BLOCKED on me,
-                //               nothing moves until I act — highest visual urgency.
-                //               stuck rides along: same demand, it just phrased it
-                //               in prose instead of a selector.
-                //   error    -> warn brown (#ba6e3d): real, but errors here mostly
-                //               surface during hands-on interaction, so I'm already
-                //               looking — deliberately ranked below question. partial
-                //               and ongoing ride along: work left on the table, not
+                //   question -> COLOR_ERROR: a session is BLOCKED on me, nothing
+                //               moves until I act — highest visual urgency. stuck
+                //               rides along: same demand, it just phrased it in
+                //               prose instead of a selector.
+                //   error    -> COLOR_WARN: real, but errors here mostly surface
+                //               during hands-on interaction, so I'm already looking
+                //               — deliberately ranked below question. partial and
+                //               ongoing ride along: work left on the table, not
                 //               blocked mid-flight.
-                //   active/planning -> blue (#68d4ff): healthy "it's working" signal,
+                //   active/planning -> COLOR_INFO_ACTIVE: healthy "it's working" signal,
                 //               informational, lowest of the three.
-                //   limit    -> white      (#ffffff): wedged on the usage clock —
-                //               nothing to act on, but worth seeing at a glance.
-                //   finished -> faint green (#b8d8b4): oklch(0.85 0.06 142), green
-                //               with chroma pulled near grey — distinguishable from
-                //               empty without popping.
+                //   limit    -> COLOR_INFO_NEGATIVE: wedged on the usage clock — nothing
+                //               to act on, but worth seeing at a glance.
+                //   finished -> COLOR_INFO_GOOD.
                 // Every other state stays uncolored — no span, no noise.
                 let state_cell = match entry.state {
                     ClaudeState::Question | ClaudeState::Stuck => {
-                        format!("<span foreground=\"#ff6565\">{}</span>", pango_escape(&padded_state))
+                        format!("<span foreground=\"{COLOR_ERROR}\">{}</span>", pango_escape(&padded_state))
                     }
                     ClaudeState::Limit | ClaudeState::Input => {
-                        format!("<span foreground=\"#ffffff\">{}</span>", pango_escape(&padded_state))
+                        format!("<span foreground=\"{COLOR_INFO_NEGATIVE}\">{}</span>", pango_escape(&padded_state))
                     }
                     ClaudeState::Error | ClaudeState::Partial | ClaudeState::Ongoing => {
-                        format!("<span foreground=\"#ba6e3d\">{}</span>", pango_escape(&padded_state))
+                        format!("<span foreground=\"{COLOR_WARN}\">{}</span>", pango_escape(&padded_state))
                     }
                     ClaudeState::Active | ClaudeState::Planning => {
-                        format!("<span foreground=\"#68d4ff\">{}</span>", pango_escape(&padded_state))
+                        format!("<span foreground=\"{COLOR_INFO_ACTIVE}\">{}</span>", pango_escape(&padded_state))
                     }
                     ClaudeState::Finished => {
-                        format!("<span foreground=\"#b8d8b4\">{}</span>", pango_escape(&padded_state))
+                        format!("<span foreground=\"{COLOR_INFO_GOOD}\">{}</span>", pango_escape(&padded_state))
                     }
                     ClaudeState::Done => {
-                        format!("<span foreground=\"#6b6b6b\">{}</span>", pango_escape(&padded_state))
+                        format!("<span foreground=\"{COLOR_TRACE}\">{}</span>", pango_escape(&padded_state))
                     }
                     _ => pango_escape(&padded_state),
                 };
@@ -381,20 +392,21 @@ impl fmt::Display for Sessions {
     }
 }
 
-/// Auto-compact fires at `autoCompactWindow` in claude/settings.json; the column
-/// warms up as a session approaches it, since that's the only actionable moment
-/// in a context number. ponytail: hardcoded, one grep away from the setting.
+/// Auto-compact fires at `autoCompactWindow` in claude/settings.json.
+/// ponytail: hardcoded, one grep away from the setting.
 const COMPACT_WINDOW: u64 = 500_000;
 
 fn format_tokens(t: u64) -> String {
     if t >= 1000 { format!("{}k", t / 1000) } else { t.to_string() }
 }
 
+/// Warm at 200k — where a session starts feeling its own weight — and red once
+/// compaction is in sight; that's the only actionable moment in a context number.
 fn context_color(tokens: Option<u64>) -> &'static str {
     match tokens {
-        Some(t) if t >= COMPACT_WINDOW * 9 / 10 => "#ff6565",
-        Some(t) if t >= COMPACT_WINDOW * 7 / 10 => "#ba6e3d",
-        _ => "#6b6b6b",
+        Some(t) if t >= COMPACT_WINDOW * 9 / 10 => COLOR_ERROR,
+        Some(t) if t >= 200_000 => COLOR_WARN,
+        _ => COLOR_TRACE,
     }
 }
 
