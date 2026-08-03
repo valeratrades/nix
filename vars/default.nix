@@ -3,6 +3,7 @@ let
   sshAuthorizedKeys = [
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEJA6PHRdXNysN/q8yYid3Vp3miFBB7a1441lOEHeOoZ valeratrades@gmail.com"
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIz2m3ZyGSMog5x8GaboPfZqsuNqUO6E/031wks5eicU root@v-laptop"
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDXayiFOnCRwOk3wKXkTOi3ix6x8t8v4t2fgTqalIlki ev"
   ];
 in
 {
