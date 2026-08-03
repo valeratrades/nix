@@ -103,6 +103,22 @@ def devshell_env(root: Path, req_id) -> dict:
 	return dict(entry.split("=", 1) for entry in proc.stdout.split("\0") if "=" in entry)
 
 
+def rustup_binary(rustup: str, root: Path, env: dict, req_id) -> str:
+	"""The toolchain's own rust-analyzer, never the shim.
+
+	Handing lspmux the shim would be a fork bomb whenever the component is missing: rustup
+	then falls back to the next `rust-analyzer` on PATH, which is the shim again. Resolving
+	here also puts the toolchain into the instance key, so two projects on different ones
+	stop sharing a server.
+	"""
+	proc = subprocess.run([rustup, "which", "rust-analyzer"],
+		cwd=root, env=env, capture_output=True, text=True)
+	if proc.returncode != 0:
+		die(req_id, f"rustup has no rust-analyzer for the toolchain of {root}: "
+			f"{proc.stderr.strip().splitlines()[-1] if proc.stderr.strip() else 'no output'}")
+	return proc.stdout.strip()
+
+
 def main() -> int:
 	first = read_frame(sys.stdin.buffer)
 	if first is None:
@@ -129,9 +145,7 @@ def main() -> int:
 		die(req_id, f"no rust-analyzer in the devshell of {root}")
 	server = os.path.realpath(server)
 	if "rustup" in server:
-		die(req_id,
-			f"rust-analyzer resolved to the rustup shim ({server}) even inside the devshell "
-			f"of {root}; its flake has to put a real toolchain on PATH")
+		server = rustup_binary(server, root, env, req_id)
 
 	child = subprocess.Popen(
 		["lspmux", "client", "--server-path", server], env=env,
