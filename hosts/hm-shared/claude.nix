@@ -246,10 +246,10 @@ in
 				#HACK: hm doesn't set env correctly, - so have some associated ones in ../../os/nixos/desktop/environment.nix
 				alwaysThinkingEnabled = true;
 				skipDangerousModePermissionPrompt =  true;
-				# the `[1m]` suffix is what requests the context-1m beta; without it the window is 200k
-				# and any autoCompactWindow above that is silently min()'d away. Bills 2x in/1.5x out
-				# past 200k input. Kill switch: CLAUDE_CODE_DISABLE_1M_CONTEXT=1
-				model = "claude-opus-5[1m]"; #claude-fable-5
+				# `claude-opus-5[1m]` would request the context-1m beta and lift the window to 1M, but on
+				# a Max sub it's gated behind org Extra Usage, which is `org_level_disabled` here — so
+				# autoCompactWindow below is min()'d back down to 200k. Enable extra usage to use it.
+				model = "claude-opus-5"; #claude-fable-5
 				#model = "claude-fable-5";
 				effortLevel = "high"; # they switched the default, and now problem gives up more often
 				autoCompactWindow = 500000;
