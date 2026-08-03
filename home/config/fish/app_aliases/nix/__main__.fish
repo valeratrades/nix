@@ -50,5 +50,5 @@ function nbg
 	if [ (count $argv) = 1 ]
 		set hostName $argv[1]
 	end
-	sudo nixos-rebuild switch --flake "github:valeratrades/nix?submodules=1#$hostName" --impure --no-reexec
+	sudo nixos-rebuild switch --flake "github:valeratrades/nix#$hostName" --impure --no-reexec
 end
