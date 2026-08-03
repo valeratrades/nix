@@ -249,7 +249,7 @@ in
 				# `claude-opus-5[1m]` would request the context-1m beta and lift the window to 1M, but on
 				# a Max sub it's gated behind org Extra Usage, which is `org_level_disabled` here — so
 				# autoCompactWindow below is min()'d back down to 200k. Enable extra usage to use it.
-				model = "claude-opus-5"; #claude-fable-5
+				model = "claude-opus-5[1m]"; #claude-fable-5
 				#model = "claude-fable-5";
 				effortLevel = "high"; # they switched the default, and now problem gives up more often
 				autoCompactWindow = 500000;

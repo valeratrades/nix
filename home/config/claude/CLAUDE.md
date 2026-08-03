@@ -21,9 +21,9 @@
 
 - before any changes, determine if we are working on a top-level app, helper lib, or a framework.
   Priorities change drastically, depending on what we are developing:
-    - app needs to have its functionality working first and foremost. It's fine to optimize performance under constraints of available implementation primitives, and 
-    - for helper lib, we care for cross-consistency and ubiquity of primitives exposed
-    - for framework, the proximity to the underlying problem space is most critical. We optimize for providing zero-cost abstractions, and focus on encoding the expression space into type system as directly as possible.
+    - app needs to have its functionality working first and foremost. We care for optimizing performance of the code we have, and it's fine to add messy code if it's more performant here. If we're not certain about whether some part of the design is as good as it could theoretically be, oftentimes it's sufficient to split it into a sub-crate / module, with well-defined interface; separating ourselves from its problems.
+    - for helper lib, we care for cross-consistency and ubiquity of primitives exposed. Complexity of implementations is limited by generality of utilization, - adding something advanced to then have it be used by a single consumer is hardly justifiable.
+    - for framework, the proximity to the underlying problem space is most critical. We optimize for providing zero-cost abstractions, and focus on encoding the expression space into type system as directly as possible. When we consider possible or current design, we never look at how performant or usable it is now, but how good it can be given available data. If some design is significantly more difficult than the other, but when implemented correctly would provide greater benefits, - we go for it 10 times out of 10.
   > note that it's not rare for an app and the framework for it to be workspace members in the same repo. Same rules hold when working with each.
 
 - don't forget to run `nix develop` to init env in all projects with flake.nix
