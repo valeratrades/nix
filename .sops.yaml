@@ -1,7 +1,15 @@
 keys:
   - &admin age1q750njxr0gnlftxygvfrd4vschrgmj532zat45ycx6fkek8zvp4s9pgqp7
+  - &ev age1xdrnfq74a05sqep3akxcwxexecrfjv242mhegjnmt2n2p8e5gg6qg0ncq4
+  - &rpi5 age17qjks29semruhcc2wfxh7vevrzfsctt8wk89ypu4ezvl9txsnc9ske4y33
 creation_rules:
   - path_regex: secrets/users/v/.*$
     key_groups:
       - age:
           - *admin
+  - path_regex: hosts/rpi5/secrets\.json$
+    key_groups:
+      - age:
+          - *admin
+          - *ev
+          - *rpi5
