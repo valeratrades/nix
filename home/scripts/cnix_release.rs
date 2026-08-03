@@ -514,13 +514,18 @@ fn main() {
             eprintln!("error: git add failed");
             exit(1);
         }
-        let committed = run("git", &["commit", "-m", msg]);
+        run("git", &["commit", "-m", msg]);
+    }
 
-        // Push commit to default branch only if we actually committed something
-        if committed && !run("git", &["push", "origin", &default_branch]) {
-            eprintln!("error: failed to push to {default_branch}");
-            exit(1);
-        }
+    // Unconditional, not just when we committed: `release`, the tag and the version branches are all
+    // cut from the default branch below, so leaving it unpushed publishes refs pointing at a commit
+    // that does not exist upstream. A dirty tree is the one case to skip — a rust bump writes
+    // Cargo.toml without committing it, and pushing would release a version the commit doesn't state.
+    if has_uncommitted_changes() {
+        eprintln!("warning: uncommitted changes, leaving {default_branch} unpushed");
+    } else if !run("git", &["push", "origin", &default_branch]) {
+        eprintln!("error: failed to push to {default_branch}");
+        exit(1);
     }
 
     // Create/update release branch from default branch
