@@ -1,6 +1,9 @@
 # Claude Code auto-compacted at 200k despite `claude-opus-5[1m]` + `autoCompactWindow = 500000`
 
-Solved 2026-08-04. CC 2.1.220. Fix: commit `e1cacd40`.
+CC 2.1.220. Candidate fix landed 2026-08-04 in `e1cacd40`, **not yet confirmed
+over a real long session** — a fresh `/context` reads 500k, but nothing has
+actually run past 200k yet, so the runtime clamp below is still untested in
+anger. Move to `solved/` once a session has crossed 200k without compacting.
 
 ## Symptom
 Model set to `claude-opus-5[1m]` (1M-context variant) and
@@ -47,14 +50,14 @@ Origin of the env var: it was added in the same block as `DISABLE_TELEMETRY` /
 (gh issue 42796), presumably to avoid 1M premium pricing. That trade is no
 longer wanted.
 
-## Fix
+## Candidate fix
 Delete `CLAUDE_CODE_DISABLE_1M_CONTEXT` from
 `os/nixos/desktop/environment.nix`, `nixos-rebuild switch`, start a new shell.
 `environment.variables` lands in `/etc/set-environment`, so already-running
 shells (and any `claude` launched from them) keep the stale value — the session
 that was open during the rebuild stays at 200k until restarted.
 
-## Verified
+## Verified so far (cold start only)
 ```
 $ env -u CLAUDE_CODE_DISABLE_1M_CONTEXT claude -p "/context"
 **Model:** claude-opus-5[1m]
@@ -68,7 +71,13 @@ Entitlement checked independently — a direct
 `POST /v1/messages` with `anthropic-beta: context-1m-2025-08-07` on both
 `claude-opus-5` and `claude-opus-4-5` returned 200 under this `ANTHROPIC_API_KEY`.
 (An API key is metered pay-as-you-go, so the Max-sub Extra-Usage gate that the
-old `claude.nix` comment described does not apply on this auth path.)
+old `claude.nix` comment described should not apply on this auth path.)
+
+**Not verified:** that a session actually reaches ~500k without compacting.
+Both probes above are cold — an 8-token request and a fresh `/context`. The 429
+clamp only fires on a real request whose context exceeds 200k, which is exactly
+the case neither probe exercises. Until a long session survives past 200k, the
+old `org_level_disabled` story cannot be ruled out.
 
 ## The one remaining clamp (watch for this)
 There is a second, *runtime* path back to 200k that no setting overrides:

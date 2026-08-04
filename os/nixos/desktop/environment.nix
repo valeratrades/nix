@@ -17,7 +17,7 @@
     DISABLE_TELEMETRY = "1";
     # NB: CLAUDE_CODE_DISABLE_1M_CONTEXT would hard-zero the `[1m]` model suffix (cli's is1M() short-circuits
     # on it), collapsing the window to 200k and min()'ing autoCompactWindow down with it.
-    # See ongoing_debug/solved/2026-08-04_claude-1m-context-compacting-at-200k.md
+    # See ongoing_debug/2026-08-04_claude-1m-context-compacting-at-200k.md
 
     # starting from 4.8, adaptive thinking is the native model. Hopefully, it's somewhat working now. If not, - fuck it, downgrade.
     #CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING = "1";
