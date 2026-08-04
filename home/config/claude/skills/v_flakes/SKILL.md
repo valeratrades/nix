@@ -40,6 +40,8 @@ use it only when `src/` changed.
 
 Prefer using `patch` unless some MASSIVE breaking changes happened. In which case you consult with me, and it will be me specifically who runs the command. Because if you push a minor+ version, I'll need to manually update all consumers to it, so just don't.
 
+and another thing, - for `patch` updates no verification whatsoever is needed, you can just push push push, - we are the only consumers mostly, so we won't break nobody who doesn't opt into getting broken. Don't even ask me, just push the release and don't think about it.
+
 ## Pin policy
 
 `default_nixpkgs.nix` and `rs/default_nightly.nix` fork the toolchain derivation for the whole
