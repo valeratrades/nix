@@ -59,6 +59,7 @@
 
 - commit your work, but until I personally verify it (or it's trivial), you do so with `cl/` prefix always (rest of the comment exactly as it would go normally).
   If the unstaged changes are shared with another agent, - just pick yours manually. Same even in the case where you both edited the same file, - stage individual hunks then (or maybe the file is big and contains multiple semantic section, - then should be modularized, so you don't step on each others toes)
+  If you couldn't merge/PR your changes for whatever reason, - add a huge disclaimer about it when reporting task completion. If you say you're done, but your changes are in an uncommitted / not PRed worktree, - if I don't check, it could end up just being left there forever, invalidating all your work.
 
 - before using `git checkout` or any other resetting action on the repo, run `active_agents` and then also check that those files don't have edits that aren't yours. Unless you know you're alone, prefer undoing by hand or hunk-by-hunk.
   And if you can avoid messing with current state in the first place, - even better: eg to bench something, you can just fork off a worktree from a commit you want to look at, instead of modifying state in-place by stashing.
