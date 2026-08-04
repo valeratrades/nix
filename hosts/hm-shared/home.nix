@@ -155,6 +155,19 @@
     };
   };
 
+  systemd.user.services.claude-session-restore = {
+    Unit = {
+      Description =
+        "Rebuild tmux sessions + claude windows recorded at last shutdown";
+      After = [ "network-online.target" ];
+    };
+    Install = { WantedBy = [ "default.target" ]; };
+    Service = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.fish}/bin/fish -c restore_sessions";
+    };
+  };
+
   systemd.user.services.wlr-gamma = {
     Unit = {
       Description = "wlroots Brightness Control";

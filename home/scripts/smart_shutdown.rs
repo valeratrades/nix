@@ -35,6 +35,53 @@ fn run_cmd_silent(cmd: &str, args: &[&str]) -> bool {
         .unwrap_or(false)
 }
 
+/// `path\tcount` of live claudes per project, consumed by fish's `restore_sessions` on boot.
+fn write_claude_inventory() {
+    let state_dir = std::env::var("XDG_STATE_HOME")
+        .or_else(|_| std::env::var("HOME").map(|h| format!("{h}/.local/state")))
+        .expect("neither XDG_STATE_HOME nor HOME set");
+    let path = format!("{state_dir}/claude_restore.tsv");
+
+    let out = match Command::new("tmux")
+        .args([
+            "list-panes",
+            "-a",
+            "-F",
+            "#{session_path}\t#{pane_current_command}",
+        ])
+        .output()
+    {
+        Ok(out) if out.status.success() => out,
+        // No tmux server -> no sessions to restore; a stale file would be worse than none.
+        _ => {
+            let _ = std::fs::remove_file(&path);
+            println!("No tmux panes; cleared {path}");
+            return;
+        }
+    };
+
+    let mut counts: Vec<(String, usize)> = Vec::new();
+    for line in String::from_utf8_lossy(&out.stdout).lines() {
+        let Some((session_path, cmd)) = line.split_once('\t') else {
+            continue;
+        };
+        if !cmd.contains("claude") {
+            continue;
+        }
+        match counts.iter_mut().find(|(p, _)| p == session_path) {
+            Some((_, n)) => *n += 1,
+            None => counts.push((session_path.to_string(), 1)),
+        }
+    }
+
+    let content: String = counts
+        .iter()
+        .map(|(p, n)| format!("{p}\t{n}\n"))
+        .collect();
+    std::fs::write(&path, &content).expect("failed to write claude inventory");
+    println!("Recorded {} project(s) with claudes to {path}", counts.len());
+}
+
 fn main() {
     let args = Args::parse();
 
@@ -125,9 +172,13 @@ fn main() {
         }
     });
 
-    // Wait for both to finish before proceeding with shutdown
+    // Must run while the tmux server is still alive (see the kill-server below).
+    let inventory_handle = std::thread::spawn(write_claude_inventory);
+
+    // Wait for all three to finish before proceeding with shutdown
     tedi_handle.join().expect("tedi thread panicked");
     claude_handle.join().expect("claude_sessions thread panicked");
+    inventory_handle.join().expect("inventory thread panicked");
 
     // 2. Kill tmux sessions
     println!("Terminating tmux sessions...");

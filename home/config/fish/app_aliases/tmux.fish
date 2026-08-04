@@ -32,6 +32,7 @@ function tmux_new_session_base
 		switch $arg
 			case -a --allow
 				set cs_cmd 'cs -a'
+			case -d --detach
 			case '*'
 				set -a args $arg
 		end
@@ -110,10 +111,13 @@ function tn
 	end
 	set -l session_name $session_name_or_err
 
+	set -l detach 0
 	set -l positionals
 	for arg in $argv
 		switch $arg
 			case -a --allow
+			case -d --detach
+				set detach 1
 			case '*'
 				set -a positionals $arg
 		end
@@ -133,10 +137,41 @@ function tn
 	#tmux send-keys -t "$session_name:build.2" "nvim '+AnsiEsc' \"$log_dir/.log\"" Enter
 
 	# `window`: cd
-	tmux send-keys -t "$SESSION_NAME:window.0" "cd $log_dir && nvim window.toml" Enter
-	tmux send-keys -t "$SESSION_NAME:window.1" "cd $log_dir && ~/.cargo/bin/window .log" Enter
+	tmux send-keys -t "$session_name:window.0" "cd $log_dir && nvim window.toml" Enter
+	tmux send-keys -t "$session_name:window.1" "cd $log_dir && ~/.cargo/bin/window .log" Enter
 	#TODO: run it in a loop (gets SIGBUS-terminated on overwrite of .log file)
-	tmux send-keys -t "$SESSION_NAME:window.2" "cd $log_dir && nvim '+AnsiEsc' .log..window" Enter
+	tmux send-keys -t "$session_name:window.2" "cd $log_dir && nvim '+AnsiEsc' .log..window" Enter
+
+	if test $detach = 1
+		echo $session_name
+		return 0
+	end
 
 	tmux attach-session -t "$session_name:source.0"
+end
+
+# Rebuilds the working set recorded by `smart_shutdown` (`claude_restore.tsv`).
+function restore_sessions
+	set -l state_home $XDG_STATE_HOME
+	test -n "$state_home"; or set state_home "$HOME/.local/state"
+	set -l f "$state_home/claude_restore.tsv"
+	test -f $f; or return 0
+
+	while read -l path n
+		test -d $path; or continue
+		set -l session (cs -t -d $path)
+		if test $status != 0
+			echo $session
+			continue
+		end
+		for i in (seq 1 $n)
+			set -l target "$session:claude"
+			if test $i -gt 1
+				set target (tmux new-window -P -t $session -c $path -n claude)
+			end
+			tmux send-keys -t $target "cl -$i" Enter
+		end
+	end <$f
+
+	rm -f $f
 end

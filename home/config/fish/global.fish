@@ -23,6 +23,7 @@ alias mkf="mkfile"
 function cs
     set -l tmux_after 0
     set -l direnv_allow 0
+    set -l tn_extra
     set -l args
 
     for arg in $argv
@@ -31,6 +32,8 @@ function cs
                 set tmux_after 1
             case -a --allow
                 set direnv_allow 1
+            case -d --detach
+                set -a tn_extra -d
             case '*'
                 set -a args $arg
         end
@@ -41,7 +44,7 @@ function cs
             direnv deny "$args[1]"
             cd "$args[1]" || return 1
         end
-        tn -a
+        tn -a $tn_extra
         return
     end
 
