@@ -176,12 +176,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };
-    cargo_sort_derives = {
-      url = "github:valeratrades/cargo-sort-derives"; # TODO: switch to upstream once my PR is merged
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.flake-utils.follows = "flake-utils";
-    };
-
     wallpaper_carousel = {
       url = "github:valeratrades/wallpaper_carousel";
       inputs.nixpkgs.follows = "nixpkgs";

@@ -291,29 +291,6 @@
         "type": "github"
       }
     },
-    "cargo_sort_derives": {
-      "inputs": {
-        "flake-utils": [
-          "flake-utils"
-        ],
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1743885674,
-        "narHash": "sha256-OBPBLvD79zdMWJ6QP+l4BKBcgE4IBU7KSJUBOUtsKmI=",
-        "owner": "valeratrades",
-        "repo": "cargo-sort-derives",
-        "rev": "d3025e6bf0067e08799196d3f6fab22d3c2c2e80",
-        "type": "github"
-      },
-      "original": {
-        "owner": "valeratrades",
-        "repo": "cargo-sort-derives",
-        "type": "github"
-      }
-    },
     "claude_code_nix": {
       "inputs": {
         "flake-utils": "flake-utils_5",
@@ -4186,7 +4163,6 @@
         "booktyping": "booktyping",
         "bourso-api": "bourso-api",
         "btc_line": "btc_line",
-        "cargo_sort_derives": "cargo_sort_derives",
         "claude_code_nix": "claude_code_nix",
         "codex_nix": "codex_nix",
         "decant": "decant",
@@ -5244,11 +5220,11 @@
         "rust-overlay": "rust-overlay_11"
       },
       "locked": {
-        "lastModified": 1785838405,
-        "narHash": "sha256-Fyaj0DGl+Ga42fqbAzcOz2/LjIe7oL/IdoRfV40X03o=",
+        "lastModified": 1785844674,
+        "narHash": "sha256-WpU1qfXBJFcTlHSVsM467yz1I2Xlf/b3pbs96WfL1eo=",
         "owner": "valeratrades",
         "repo": "v_flakes",
-        "rev": "73e1b42b898f5673764baad0053166f85f5f1366",
+        "rev": "dc8d1c0ef3adb8db80c67d29408bcde843f0e774",
         "type": "github"
       },
       "original": {
