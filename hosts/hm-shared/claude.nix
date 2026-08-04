@@ -250,6 +250,7 @@ in
 				# Requires CLAUDE_CODE_DISABLE_1M_CONTEXT to be UNSET (see ../../os/nixos/desktop/environment.nix).
 				# On a 429 whose body says extra usage is required, the cli latches a session-local clamp back
 				# to 200k (`longContext1mCreditsBlocked`); restart after enabling extra usage to clear it.
+				# See ongoing_debug/solved/2026-08-04_claude-1m-context-compacting-at-200k.md
 				model = "claude-opus-5[1m]"; #claude-fable-5
 				#model = "claude-fable-5";
 				effortLevel = "high"; # they switched the default, and now problem gives up more often
