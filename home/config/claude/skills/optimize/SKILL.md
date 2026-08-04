@@ -14,6 +14,7 @@ Survey a codebase for close-to-the-wire performance wins, rank them by expected 
 /optimize <path>                           # survey a specific crate/dir/subtree
 /optimize <path> --crate <name> [<name>…]  # also answer "is <crate> worth adopting here?" honestly, including "no"
 /optimize <path> --hot <entrypoint>        # you already know the hot path; skip discovery, go deep
+/optimize <path> --triage                  # Step 1.5 only — materialize the 40-row registry and verdict each against this repo
 /optimize --pass2                          # re-read an existing report through the taxonomy; kill dead items, sharpen the rest
 /optimize --measure                        # build the harness only (baseline, controls, verify gate) — no changes
 /optimize --implement                      # work the existing report top-down, one item per commit, measured
@@ -38,7 +39,11 @@ If no path was given, use the repo root. Do not ask the user for a path.
 
 If the user named specific crates/libraries (`--crate`, or just asked "would memchr help here?"), **Step 0 is mandatory and its answer goes at the top of the report** — including when the answer is no. Do not bury a "no" in the body, and do not manufacture a use to be agreeable.
 
-Work the steps in order. Steps 1–4 are read-only; nothing is modified before Step 5.
+If `--triage` was given, run Steps 1 and 1.5 only, print the tally, and stop. The volume table is still required — a verdict without a denominator is a guess.
+
+Work the steps in order. Steps 1–4 are read-only apart from the working directory Step 1.5 writes; nothing in the surveyed code is modified before Step 5.
+
+All working artifacts go in `tmp/optimize/` at the repo root (create it). Three files accumulate there across the run: `registry.json` (Step 1.5), `applicability.md` (Step 1.5), and the report itself (Step 4).
 
 ---
 
@@ -70,9 +75,60 @@ This table is what makes ranking honest and non-negotiable later. A `String` all
 
 Cheap ways to get the numbers: read the loop structure; count fields in a representative input record; `wc -l` a real input file; check batch/chunk sizes in config.
 
+### Step 1.5 — Materialize the registry and triage all 40 against this repo
+
+The census in Step 2 is five greps. Those five greps are a *summary* of a 40-entry taxonomy, and summarising is where findings get lost. Before running them, put the full registry on disk as data and force a verdict on every row. This is what makes the search finite and auditable: at the end, there is a written reason why each of the 40 does or does not apply here, and the census greps become the evidence-gathering for the rows that survived rather than the search itself.
+
+**Copy the registry in, verbatim.** The skill ships it pre-extracted:
+
+```bash
+mkdir -p tmp/optimize
+cp ~/.claude/skills/optimize/references/registry.json tmp/optimize/registry.json
+```
+
+This is the LOGOS compiler's `static REGISTRY: &[OptMeta; 40]`, machine-parsed from `crates/logicaffeine_language/src/optimization.rs` with every cross-reference resolved. Each row:
+
+```json
+{
+  "index": 17, "opt": "Scalarize", "keyword": "scalarize",
+  "label": "Array scalarization (SROA)", "group": "Arrays & memory",
+  "default_on": true, "paths": ["AOT", "RUN"], "emits_unsafe": false,
+  "mem_class": "TradesMemForSpeed", "cost": "Heavy",
+  "requires": ["Cse"], "conflicts": [],
+  "preempts": ["HoistBorrows", "Interleave", "Unbox"], "scope": "Both"
+}
+```
+
+Do not hand-transcribe rows into the report and do not paraphrase the metadata — read the JSON. If a row looks wrong, the source of truth is the `REGISTRY` in the LOGOS repo, not your memory of it.
+
+**Then write `tmp/optimize/applicability.md` — one row per opt, all 40, in registry order.** Columns: `#`, `keyword`, `cost`, generic verdict from `references/cannot-see-through.md`, **this-repo verdict**, and evidence. The this-repo verdict is one of exactly four:
+
+- **APPLIES** — the shape this opt exploits exists here. Name at least one `file:line`. These become Step 2's search targets and Step 4's ranked items.
+- **BANKED** — already done in this codebase, deliberately or otherwise. Name the site. Banked rows are findings: they belong in the report's negative-results section, and Step 6 must not undo them. (`Borrow`/`Narrow`/`Unbox` are usually banked in idiomatic Rust — `&[T]` params, `i32` fields, plain `Vec`.)
+- **N/A** — the shape does not occur. One clause saying which shape is absent (*"no map is keyed by a dense integer range"*). A row with no reason is not triaged.
+- **COMPILER'S** — LLVM already does it; per `references/llvm-already.md` it can never become a finding here.
+
+Rules that make this step worth doing rather than a box to tick:
+
+- **All 40 get a verdict.** A blank row is the failure mode this step exists to prevent. If a row is confusing, mark it APPLIES and let Step 3 kill it — false positives are cheap here, silent omissions are not.
+- **Walk `requires` before ranking.** If `ElemType` looks applicable, `Oracle` must be too — it is the analysis that makes `ElemType` possible, and a repo where `Oracle` is N/A cannot bank `ElemType`. Verdicts that violate a `requires` edge are a triage bug; fix the parent first. The same chain gives you free implementation ordering in Step 6: `Cse` → `Scalarize`, `Unbox` → `Affine`, `Oracle` → `OracleHints` → `Unchecked`.
+- **`preempts` is where the non-obvious findings live.** It records that two optimizations *contest the same instance* and one silently wins. `Scalarize` preempts `Unbox` and `Interleave`; `DenseMap` preempts `NarrowMap`; `Borrow` preempts `Tco`. When both sides of a preempts edge look applicable at one site, the question to ask in the report is not "which do I apply" but **"which one is my current code shape already committing me to, and is that the one I want?"** That question has no analogue in `clippy` or `-Rpass-missed`, and it is the highest-value thing this registry gives you over a generic review.
+- **`emits_unsafe: true` rows carry a standing caveat.** Only `Peephole`, `Unchecked`, and `Simd` are marked. If one of those is APPLIES, the entry must state the safe restructuring first (`chunks_mut`, iterators, caller-owned scratch) and treat `unsafe` as the fallback — Evaluation criterion 7 still binds.
+- **`mem_class` is the tiebreak, not the rank.** Two items with comparable `cost × volume`: prefer `SavesMem`. A `TradesMemForSpeed` row (`Memo`, `Unroll`, `Scalarize`, `DenseMap`, `Supercompile`) needs its memory cost stated in the entry, because on a cache-bound loop that trade can go negative and the benchmark will show it as noise.
+
+**Close the step with a count**, in `applicability.md` and repeated at the top of the Step 4 report:
+
+```
+40 registry rows: N APPLIES · N BANKED · N N/A · N COMPILER'S
+```
+
+A triage that returns more than ~12 APPLIES has not been strict enough — go back and check each against `references/llvm-already.md` before proceeding. A triage returning zero APPLIES is a legitimate and valuable result: it means the representation work is done and the remaining cost is allocation and I/O strategy, which is Step 2 classes 1 and 5 only. Say that plainly rather than manufacturing rows.
+
 ### Step 2 — Run the census
 
 Five greps, each targeting a class the compiler cannot fix. Run all five even if one seems obviously empty — **the negative results are load-bearing**, they tell you where not to spend effort, and a clean census on one class is a genuine finding to report.
+
+Run them against the APPLIES rows from Step 1.5: each grep is now gathering evidence for a row that already has a stated reason to exist, and every hit lands under a specific `opt`. A hit that maps to no APPLIES row means the triage missed something — go back and re-verdict that row rather than filing an orphan finding.
 
 The commands, per language, are in `references/census.md`. The classes:
 
@@ -99,22 +155,25 @@ When you kill an item, **keep it in the report under a "withdrawn" heading with 
 
 ### Step 4 — Write the report
 
-Default destination: `tmp/ongoing_dev/performance_optimizations.md` (create the directory). If the repo has an established location for working notes, use it.
+Default destination: `tmp/optimize/performance_optimizations.md`, alongside the Step 1.5 artifacts. If the repo has an established location for working notes, use it and leave `registry.json`/`applicability.md` where they are.
 
 Structure, in this order:
 
 1. **Verdicts on any named crates** (Step 0), up front, "no" included.
-2. **The volume table** (Step 1).
-3. **Ranked items.** One `##` section each, ordered by `cost × volume`. Every entry must have:
+2. **The triage count** (Step 1.5) — the one-line `40 registry rows: …` tally, with a link to `applicability.md`.
+3. **The volume table** (Step 1).
+4. **Ranked items.** One `##` section each, ordered by `cost × volume`. Every entry must have:
+   - the **registry row** it came from as `#N keyword` — an item traceable to no row is either a genuine gap in the taxonomy (say so explicitly) or an untriaged finding
    - the site as `path/file.rs:LINE` — a claim without a line number is not a finding
    - the **mechanism**: what specifically costs, in one or two sentences
    - the **volume**: how often it runs, from the Step 1 table
    - the **fix**: concrete enough to implement from, including which interface has to change
+   - any `preempts` edge in play — which optimization the current shape is silently forfeiting, per Step 1.5
    - if it is not certain, the sentence that would settle it (*"confirm in the disassembly before touching — if a magic-multiply is already emitted, this item is void"*). Then go settle it.
-4. **Withdrawn items** with reasons (Step 3).
-5. **Negative results** — the classes that came back clean. "No `Rc`/`RefCell`/`Box<dyn>` reaches any per-item path" is a *conclusion*: it says the representation work is already done and effort belongs elsewhere.
-6. **Correctness findings.** Performance surveys turn these up constantly, because the same instincts that spot a wasteful conversion spot a lossy one. Promote them above every performance item; a nanosecond timestamp round-tripped through `f64` is a bug that a rewrite fixes for free. Flag them as **correctness, not speed**.
-7. **Measurement plan** (Step 5) and **implementation order**.
+5. **Withdrawn items** with reasons (Step 3).
+6. **Negative results** — the BANKED and N/A rows from Step 1.5, plus the census classes that came back clean. "No `Rc`/`RefCell`/`Box<dyn>` reaches any per-item path" is a *conclusion*: it says the representation work is already done and effort belongs elsewhere. BANKED rows go here explicitly, so the next reader knows not to undo them.
+7. **Correctness findings.** Performance surveys turn these up constantly, because the same instincts that spot a wasteful conversion spot a lossy one. Promote them above every performance item; a nanosecond timestamp round-tripped through `f64` is a bug that a rewrite fixes for free. Flag them as **correctness, not speed**.
+8. **Measurement plan** (Step 5) and **implementation order** — the latter respecting the `requires` edges from Step 1.5.
 
 Two discipline rules for the ranking:
 
@@ -142,22 +201,30 @@ Stop and re-survey if two consecutive items land under 5%. That means the volume
 
 ## Where the taxonomy comes from
 
-`references/cannot-see-through.md` distills the 40 optimizations the LOGOS compiler implements, grouped by what class of thing they exploit, with a verdict on which are *yours* to do by hand in an already-compiled language. It is the checklist to read code against in Step 2, and it is deliberately organized so that the classes with no applicability to your repo are fast to rule out.
+Two files, and the difference between them matters:
 
-The source of truth is `crates/logicaffeine_language/src/optimization.rs` in the LOGOS repo (a `REGISTRY` of 40 `OptMeta` entries with `group`, `cost`, `mem_class`, `requires`/`conflicts`). Note that the rendered benchmarks page does **not** contain the list — it is generated client-side from that registry. When gathering references, go to the source that generates the artifact, not the artifact.
+- **`references/registry.json`** — the registry itself, as data. 40 rows machine-parsed from the LOGOS source with every `requires`/`conflicts`/`preempts` cross-reference resolved and asserted. This is what Step 1.5 copies into `tmp/optimize/` and triages. It carries the structural metadata prose cannot: the dependency graph, the cost classes, and the `preempts` edges.
+- **`references/cannot-see-through.md`** — the same 40 rows distilled and re-verdicted for hand-written systems code, with a verdict on which are *yours* to do by hand in an already-compiled language. This supplies the generic verdict column in Step 1.5 and the reading checklist in Step 2.
+
+The source of truth for both is `crates/logicaffeine_language/src/optimization.rs` in the LOGOS repo — `static REGISTRY: &[OptMeta; 40]`, in `Opt` discriminant order (the order is stable and load-bearing: it defines conflict-resolution precedence, so earlier rows win against later ones). To refresh `registry.json` after a LOGOS release, re-parse that static; do not hand-edit the JSON, and verify the count is still 40 and that every name in a `requires`/`conflicts`/`preempts` list resolves to a real `opt`.
+
+Note that the rendered benchmarks page does **not** contain the list — it is generated client-side from that registry. When gathering references, go to the source that generates the artifact, not the artifact.
+
+**Why a compiler's optimization registry is the right instrument here.** `clippy` knows idioms; `-Rpass-missed` reports one pass at a time with no model of why it declined. Neither has a *taxonomy* — an enumeration of every transformation someone found worth implementing, each with a cost class, a dependency graph, and a record of which transformations contest the same code. The `preempts` edges are the part with no equivalent anywhere in the Rust tooling ecosystem, and they are the reason Step 1.5 reads the JSON rather than the prose.
 
 ## Evaluation criteria
 
 A finished `/optimize` run is judged on these, in order:
 
-1. **Every item cites a line.** No `file:line`, no finding.
-2. **Every item states its volume.** An unranked list is a list of opinions.
-3. **The report contains at least one "no".** A survey that recommends adopting everything asked about, or that finds no killed candidates, did not apply Step 3. A `--crate` question answered "yes" three times out of three is a red flag on the survey, not a green light on the crates.
-4. **Negative results are reported as results.** A clean census class is a conclusion about where effort belongs.
-5. **Correctness findings are promoted above performance findings.**
-6. **No `#[inline]` recommendations** without disassembly.
-7. **No `unsafe` proposed** where a safe restructuring (`chunks_mut`, iterators, a caller-owned scratch buffer) achieves the same elision.
-8. **Nothing is implemented without a control benchmark that did not move.**
+1. **All 40 registry rows are triaged.** `tmp/optimize/applicability.md` exists, has a verdict and a reason on every row, and its `requires` edges are consistent. A survey without it searched by vibes.
+2. **Every item cites a line.** No `file:line`, no finding.
+3. **Every item states its volume.** An unranked list is a list of opinions.
+4. **The report contains at least one "no".** A survey that recommends adopting everything asked about, or that finds no killed candidates, did not apply Step 3. A `--crate` question answered "yes" three times out of three is a red flag on the survey, not a green light on the crates.
+5. **Negative results are reported as results.** A clean census class is a conclusion about where effort belongs, and a BANKED row is a positive finding about work already done.
+6. **Correctness findings are promoted above performance findings.**
+7. **No `#[inline]` recommendations** without disassembly.
+8. **No `unsafe` proposed** where a safe restructuring (`chunks_mut`, iterators, a caller-owned scratch buffer) achieves the same elision.
+9. **Nothing is implemented without a control benchmark that did not move.**
 
 ## Honesty rules
 

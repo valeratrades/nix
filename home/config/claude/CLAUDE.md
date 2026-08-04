@@ -85,7 +85,7 @@
 - avoid implementing and using helper functions at all costs. Minimize communication boundary of the modules ruthlessly. Every single `pub` fn is future pain. Every single `pub` function you manage to refactor out is considered a huge win.
     // implementing std traits like From and using them to shorten evocations is however highly encouraged
 
-- using `git checkout` or `sed` to bulk-change files is absolute last resort. I will always much prefer you doing it by hand. But if you think the scope is ginormous and unmanageable by hand at all, you first `git stash`, as both of these are destructive.
+- using `git checkout` or `sed` to bulk-change files is absolute last resort. I will always much prefer you doing it by hand. But if you think the scope is ginormous and unmanageable by hand at all, you first at least `git stash`, as both of these are destructive.
 
 - do not take shortcuts.
     Remember that you do not have to finish everything in the same session. Quality > quantity.

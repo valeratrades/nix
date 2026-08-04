@@ -1,0 +1,791 @@
+[
+  {
+    "index": 0,
+    "opt": "Memo",
+    "keyword": "memo",
+    "label": "Memoization",
+    "group": "Inlining & calls",
+    "default_on": true,
+    "paths": [
+      "AOT",
+      "CODEGEN"
+    ],
+    "emits_unsafe": false,
+    "mem_class": "TradesMemForSpeed",
+    "cost": "Cheap",
+    "requires": [],
+    "conflicts": [],
+    "preempts": [],
+    "scope": "Both"
+  },
+  {
+    "index": 1,
+    "opt": "Tco",
+    "keyword": "tco",
+    "label": "Tail-call optimization",
+    "group": "Inlining & calls",
+    "default_on": true,
+    "paths": [
+      "AOT",
+      "RUN",
+      "CODEGEN"
+    ],
+    "emits_unsafe": false,
+    "mem_class": "Neutral",
+    "cost": "Cheap",
+    "requires": [],
+    "conflicts": [],
+    "preempts": [
+      "Memo"
+    ],
+    "scope": "Both"
+  },
+  {
+    "index": 2,
+    "opt": "Peephole",
+    "keyword": "peephole",
+    "label": "Peephole rewrites",
+    "group": "Peephole",
+    "default_on": true,
+    "paths": [
+      "AOT",
+      "CODEGEN"
+    ],
+    "emits_unsafe": true,
+    "mem_class": "Neutral",
+    "cost": "Cheap",
+    "requires": [],
+    "conflicts": [],
+    "preempts": [],
+    "scope": "Both"
+  },
+  {
+    "index": 3,
+    "opt": "Borrow",
+    "keyword": "borrow",
+    "label": "Borrow inference",
+    "group": "Arrays & memory",
+    "default_on": true,
+    "paths": [
+      "AOT",
+      "CODEGEN"
+    ],
+    "emits_unsafe": false,
+    "mem_class": "SavesMem",
+    "cost": "Cheap",
+    "requires": [],
+    "conflicts": [],
+    "preempts": [
+      "Tco"
+    ],
+    "scope": "Both"
+  },
+  {
+    "index": 4,
+    "opt": "Specialize",
+    "keyword": "specialize",
+    "label": "Partial evaluation",
+    "group": "Inlining & calls",
+    "default_on": true,
+    "paths": [
+      "AOT",
+      "RUN"
+    ],
+    "emits_unsafe": false,
+    "mem_class": "TradesMemForSpeed",
+    "cost": "Medium",
+    "requires": [],
+    "conflicts": [],
+    "preempts": [],
+    "scope": "Both"
+  },
+  {
+    "index": 5,
+    "opt": "Comptime",
+    "keyword": "comptime",
+    "label": "Compile-time evaluation (CTFE)",
+    "group": "Inlining & calls",
+    "default_on": true,
+    "paths": [
+      "AOT",
+      "RUN"
+    ],
+    "emits_unsafe": false,
+    "mem_class": "Neutral",
+    "cost": "Medium",
+    "requires": [],
+    "conflicts": [],
+    "preempts": [
+      "Supercompile"
+    ],
+    "scope": "Both"
+  },
+  {
+    "index": 6,
+    "opt": "Inline",
+    "keyword": "inline",
+    "label": "Function inlining",
+    "group": "Inlining & calls",
+    "default_on": true,
+    "paths": [
+      "AOT",
+      "RUN"
+    ],
+    "emits_unsafe": false,
+    "mem_class": "TradesMemForSpeed",
+    "cost": "Cheap",
+    "requires": [],
+    "conflicts": [],
+    "preempts": [],
+    "scope": "Both"
+  },
+  {
+    "index": 7,
+    "opt": "Unfold",
+    "keyword": "unfold",
+    "label": "Recursion unrolling",
+    "group": "Inlining & calls",
+    "default_on": true,
+    "paths": [
+      "AOT",
+      "RUN"
+    ],
+    "emits_unsafe": false,
+    "mem_class": "TradesMemForSpeed",
+    "cost": "Heavy",
+    "requires": [],
+    "conflicts": [],
+    "preempts": [],
+    "scope": "Both"
+  },
+  {
+    "index": 8,
+    "opt": "Defunctionalize",
+    "keyword": "defunctionalize",
+    "label": "Defunctionalization",
+    "group": "Inlining & calls",
+    "default_on": true,
+    "paths": [
+      "AOT"
+    ],
+    "emits_unsafe": false,
+    "mem_class": "Neutral",
+    "cost": "Cheap",
+    "requires": [],
+    "conflicts": [],
+    "preempts": [],
+    "scope": "Both"
+  },
+  {
+    "index": 9,
+    "opt": "LoopHoist",
+    "keyword": "loophoist",
+    "label": "Loop-invariant code motion",
+    "group": "Loops",
+    "default_on": true,
+    "paths": [
+      "AOT",
+      "RUN"
+    ],
+    "emits_unsafe": false,
+    "mem_class": "Neutral",
+    "cost": "Medium",
+    "requires": [],
+    "conflicts": [],
+    "preempts": [],
+    "scope": "Both"
+  },
+  {
+    "index": 10,
+    "opt": "Unroll",
+    "keyword": "unroll",
+    "label": "Loop unrolling",
+    "group": "Loops",
+    "default_on": true,
+    "paths": [
+      "AOT",
+      "RUN"
+    ],
+    "emits_unsafe": false,
+    "mem_class": "TradesMemForSpeed",
+    "cost": "Heavy",
+    "requires": [],
+    "conflicts": [],
+    "preempts": [
+      "Interleave"
+    ],
+    "scope": "Both"
+  },
+  {
+    "index": 11,
+    "opt": "LoopSplit",
+    "keyword": "loopsplit",
+    "label": "Loop index-set splitting",
+    "group": "Loops",
+    "default_on": true,
+    "paths": [
+      "AOT"
+    ],
+    "emits_unsafe": false,
+    "mem_class": "Neutral",
+    "cost": "Cheap",
+    "requires": [],
+    "conflicts": [],
+    "preempts": [],
+    "scope": "Both"
+  },
+  {
+    "index": 12,
+    "opt": "ClosedForm",
+    "keyword": "closedform",
+    "label": "Closed-form loop recognition",
+    "group": "Loops",
+    "default_on": true,
+    "paths": [
+      "AOT",
+      "RUN"
+    ],
+    "emits_unsafe": false,
+    "mem_class": "Neutral",
+    "cost": "Medium",
+    "requires": [],
+    "conflicts": [],
+    "preempts": [
+      "Peephole"
+    ],
+    "scope": "Both"
+  },
+  {
+    "index": 13,
+    "opt": "Fuse",
+    "keyword": "fuse",
+    "label": "Deforestation (stream fusion)",
+    "group": "Loops",
+    "default_on": true,
+    "paths": [
+      "AOT",
+      "RUN"
+    ],
+    "emits_unsafe": false,
+    "mem_class": "SavesMem",
+    "cost": "Medium",
+    "requires": [],
+    "conflicts": [],
+    "preempts": [],
+    "scope": "Both"
+  },
+  {
+    "index": 14,
+    "opt": "LoopCse",
+    "keyword": "loopcse",
+    "label": "Loop-carried CSE",
+    "group": "Loops",
+    "default_on": true,
+    "paths": [
+      "AOT",
+      "RUN"
+    ],
+    "emits_unsafe": false,
+    "mem_class": "Neutral",
+    "cost": "Medium",
+    "requires": [],
+    "conflicts": [],
+    "preempts": [],
+    "scope": "Both"
+  },
+  {
+    "index": 15,
+    "opt": "Cse",
+    "keyword": "cse",
+    "label": "Common-subexpression elimination (GVN)",
+    "group": "Redundancy",
+    "default_on": true,
+    "paths": [
+      "AOT",
+      "RUN"
+    ],
+    "emits_unsafe": false,
+    "mem_class": "Neutral",
+    "cost": "Medium",
+    "requires": [],
+    "conflicts": [],
+    "preempts": [],
+    "scope": "Both"
+  },
+  {
+    "index": 16,
+    "opt": "DeadCode",
+    "keyword": "deadcode",
+    "label": "Dead-code elimination",
+    "group": "Redundancy",
+    "default_on": true,
+    "paths": [
+      "AOT",
+      "RUN"
+    ],
+    "emits_unsafe": false,
+    "mem_class": "SavesMem",
+    "cost": "Cheap",
+    "requires": [],
+    "conflicts": [],
+    "preempts": [],
+    "scope": "Both"
+  },
+  {
+    "index": 17,
+    "opt": "Scalarize",
+    "keyword": "scalarize",
+    "label": "Array scalarization (SROA)",
+    "group": "Arrays & memory",
+    "default_on": true,
+    "paths": [
+      "AOT",
+      "RUN"
+    ],
+    "emits_unsafe": false,
+    "mem_class": "TradesMemForSpeed",
+    "cost": "Heavy",
+    "requires": [
+      "Cse"
+    ],
+    "conflicts": [],
+    "preempts": [
+      "HoistBorrows",
+      "Interleave",
+      "Unbox"
+    ],
+    "scope": "Both"
+  },
+  {
+    "index": 18,
+    "opt": "Affine",
+    "keyword": "affine",
+    "label": "Affine array \u2192 closed form",
+    "group": "Arrays & memory",
+    "default_on": true,
+    "paths": [
+      "AOT",
+      "RUN"
+    ],
+    "emits_unsafe": false,
+    "mem_class": "SavesMem",
+    "cost": "Medium",
+    "requires": [
+      "Unbox"
+    ],
+    "conflicts": [],
+    "preempts": [],
+    "scope": "Both"
+  },
+  {
+    "index": 19,
+    "opt": "Interleave",
+    "keyword": "interleave",
+    "label": "Array-of-structs interleaving",
+    "group": "Arrays & memory",
+    "default_on": true,
+    "paths": [
+      "AOT",
+      "CODEGEN"
+    ],
+    "emits_unsafe": false,
+    "mem_class": "Neutral",
+    "cost": "Heavy",
+    "requires": [
+      "Scalarize"
+    ],
+    "conflicts": [],
+    "preempts": [],
+    "scope": "ProgramOnly"
+  },
+  {
+    "index": 20,
+    "opt": "Unbox",
+    "keyword": "unbox",
+    "label": "De-Rc (Vec instead of Rc<RefCell>)",
+    "group": "Arrays & memory",
+    "default_on": true,
+    "paths": [
+      "AOT",
+      "CODEGEN"
+    ],
+    "emits_unsafe": false,
+    "mem_class": "SavesMem",
+    "cost": "Cheap",
+    "requires": [],
+    "conflicts": [],
+    "preempts": [],
+    "scope": "ProgramOnly"
+  },
+  {
+    "index": 21,
+    "opt": "HoistBorrows",
+    "keyword": "hoistborrows",
+    "label": "Borrow hoisting",
+    "group": "Arrays & memory",
+    "default_on": true,
+    "paths": [
+      "AOT",
+      "CODEGEN"
+    ],
+    "emits_unsafe": false,
+    "mem_class": "Neutral",
+    "cost": "Cheap",
+    "requires": [],
+    "conflicts": [],
+    "preempts": [],
+    "scope": "ProgramOnly"
+  },
+  {
+    "index": 22,
+    "opt": "Narrow",
+    "keyword": "narrow",
+    "label": "i32 sequence narrowing (codegen)",
+    "group": "Number representation",
+    "default_on": true,
+    "paths": [
+      "AOT",
+      "CODEGEN"
+    ],
+    "emits_unsafe": false,
+    "mem_class": "SavesMem",
+    "cost": "Cheap",
+    "requires": [
+      "Unbox"
+    ],
+    "conflicts": [],
+    "preempts": [],
+    "scope": "ProgramOnly"
+  },
+  {
+    "index": 23,
+    "opt": "NarrowVm",
+    "keyword": "narrowvm",
+    "label": "i32 sequence narrowing (VM)",
+    "group": "Number representation",
+    "default_on": true,
+    "paths": [
+      "VM",
+      "RUN"
+    ],
+    "emits_unsafe": false,
+    "mem_class": "SavesMem",
+    "cost": "Cheap",
+    "requires": [],
+    "conflicts": [],
+    "preempts": [],
+    "scope": "ProgramOnly"
+  },
+  {
+    "index": 24,
+    "opt": "NarrowMap",
+    "keyword": "narrowmap",
+    "label": "i32 map-key narrowing",
+    "group": "Number representation",
+    "default_on": true,
+    "paths": [
+      "AOT",
+      "CODEGEN"
+    ],
+    "emits_unsafe": false,
+    "mem_class": "SavesMem",
+    "cost": "Cheap",
+    "requires": [],
+    "conflicts": [],
+    "preempts": [],
+    "scope": "ProgramOnly"
+  },
+  {
+    "index": 25,
+    "opt": "DenseMap",
+    "keyword": "densemap",
+    "label": "Dense direct-addressed map",
+    "group": "Number representation",
+    "default_on": true,
+    "paths": [
+      "AOT",
+      "CODEGEN"
+    ],
+    "emits_unsafe": false,
+    "mem_class": "TradesMemForSpeed",
+    "cost": "Cheap",
+    "requires": [],
+    "conflicts": [],
+    "preempts": [
+      "NarrowMap"
+    ],
+    "scope": "ProgramOnly"
+  },
+  {
+    "index": 26,
+    "opt": "ElemType",
+    "keyword": "elemtype",
+    "label": "Element-type narrowing",
+    "group": "Number representation",
+    "default_on": true,
+    "paths": [
+      "AOT",
+      "RUN"
+    ],
+    "emits_unsafe": false,
+    "mem_class": "SavesMem",
+    "cost": "Medium",
+    "requires": [
+      "Oracle"
+    ],
+    "conflicts": [],
+    "preempts": [],
+    "scope": "Both"
+  },
+  {
+    "index": 27,
+    "opt": "FastDiv",
+    "keyword": "fastdiv",
+    "label": "Magic-reciprocal division",
+    "group": "Number representation",
+    "default_on": true,
+    "paths": [
+      "AOT",
+      "VM",
+      "CODEGEN"
+    ],
+    "emits_unsafe": false,
+    "mem_class": "Neutral",
+    "cost": "Cheap",
+    "requires": [],
+    "conflicts": [],
+    "preempts": [],
+    "scope": "Both"
+  },
+  {
+    "index": 28,
+    "opt": "FloatStrength",
+    "keyword": "floatstrength",
+    "label": "Float induction strength reduction",
+    "group": "Number representation",
+    "default_on": true,
+    "paths": [
+      "AOT",
+      "RUN"
+    ],
+    "emits_unsafe": false,
+    "mem_class": "Neutral",
+    "cost": "Medium",
+    "requires": [],
+    "conflicts": [],
+    "preempts": [],
+    "scope": "Both"
+  },
+  {
+    "index": 29,
+    "opt": "Oracle",
+    "keyword": "oracle",
+    "label": "Abstract interpretation (oracle facts)",
+    "group": "Bounds & checks",
+    "default_on": true,
+    "paths": [
+      "AOT",
+      "RUN"
+    ],
+    "emits_unsafe": false,
+    "mem_class": "Neutral",
+    "cost": "Medium",
+    "requires": [],
+    "conflicts": [],
+    "preempts": [],
+    "scope": "Both"
+  },
+  {
+    "index": 30,
+    "opt": "OracleHints",
+    "keyword": "oraclehints",
+    "label": "Oracle bounds-check guards",
+    "group": "Bounds & checks",
+    "default_on": true,
+    "paths": [
+      "AOT",
+      "CODEGEN"
+    ],
+    "emits_unsafe": false,
+    "mem_class": "Neutral",
+    "cost": "Medium",
+    "requires": [
+      "Oracle"
+    ],
+    "conflicts": [],
+    "preempts": [],
+    "scope": "Both"
+  },
+  {
+    "index": 31,
+    "opt": "Unchecked",
+    "keyword": "unchecked",
+    "label": "Oracle-proven unchecked indexing",
+    "group": "Bounds & checks",
+    "default_on": true,
+    "paths": [
+      "AOT",
+      "JIT",
+      "CODEGEN"
+    ],
+    "emits_unsafe": true,
+    "mem_class": "Neutral",
+    "cost": "Medium",
+    "requires": [
+      "Oracle"
+    ],
+    "conflicts": [],
+    "preempts": [],
+    "scope": "Both"
+  },
+  {
+    "index": 32,
+    "opt": "Simd",
+    "keyword": "simd",
+    "label": "SIMD search kernels",
+    "group": "Strings & SIMD",
+    "default_on": true,
+    "paths": [
+      "AOT",
+      "CODEGEN"
+    ],
+    "emits_unsafe": true,
+    "mem_class": "Neutral",
+    "cost": "Cheap",
+    "requires": [],
+    "conflicts": [],
+    "preempts": [],
+    "scope": "ProgramOnly"
+  },
+  {
+    "index": 33,
+    "opt": "Cascade",
+    "keyword": "cascade",
+    "label": "Cascade folding",
+    "group": "Strings & SIMD",
+    "default_on": true,
+    "paths": [
+      "AOT",
+      "CODEGEN"
+    ],
+    "emits_unsafe": false,
+    "mem_class": "Neutral",
+    "cost": "Cheap",
+    "requires": [],
+    "conflicts": [],
+    "preempts": [],
+    "scope": "ProgramOnly"
+  },
+  {
+    "index": 34,
+    "opt": "IndexString",
+    "keyword": "indexstring",
+    "label": "Indexed string search",
+    "group": "Strings & SIMD",
+    "default_on": true,
+    "paths": [
+      "AOT",
+      "CODEGEN"
+    ],
+    "emits_unsafe": false,
+    "mem_class": "Neutral",
+    "cost": "Cheap",
+    "requires": [],
+    "conflicts": [],
+    "preempts": [],
+    "scope": "ProgramOnly"
+  },
+  {
+    "index": 35,
+    "opt": "CapScale",
+    "keyword": "capscale",
+    "label": "Capacity-scaling buffer fill",
+    "group": "Strings & SIMD",
+    "default_on": true,
+    "paths": [
+      "AOT",
+      "CODEGEN"
+    ],
+    "emits_unsafe": false,
+    "mem_class": "Neutral",
+    "cost": "Cheap",
+    "requires": [],
+    "conflicts": [],
+    "preempts": [],
+    "scope": "ProgramOnly"
+  },
+  {
+    "index": 36,
+    "opt": "Symmetry",
+    "keyword": "symmetry",
+    "label": "Symmetry breaking",
+    "group": "Search-space",
+    "default_on": true,
+    "paths": [
+      "AOT"
+    ],
+    "emits_unsafe": false,
+    "mem_class": "Neutral",
+    "cost": "Heavy",
+    "requires": [
+      "Specialize"
+    ],
+    "conflicts": [],
+    "preempts": [],
+    "scope": "Both"
+  },
+  {
+    "index": 37,
+    "opt": "Popcount",
+    "keyword": "popcount",
+    "label": "Popcount leaf collapse",
+    "group": "Search-space",
+    "default_on": true,
+    "paths": [
+      "AOT"
+    ],
+    "emits_unsafe": false,
+    "mem_class": "Neutral",
+    "cost": "Cheap",
+    "requires": [],
+    "conflicts": [],
+    "preempts": [],
+    "scope": "Both"
+  },
+  {
+    "index": 38,
+    "opt": "Saturate",
+    "keyword": "saturate",
+    "label": "Equality saturation (e-graph)",
+    "group": "Search-space",
+    "default_on": true,
+    "paths": [
+      "AOT"
+    ],
+    "emits_unsafe": false,
+    "mem_class": "Neutral",
+    "cost": "Heavy",
+    "requires": [],
+    "conflicts": [],
+    "preempts": [],
+    "scope": "Both"
+  },
+  {
+    "index": 39,
+    "opt": "Supercompile",
+    "keyword": "supercompile",
+    "label": "Supercompilation",
+    "group": "Search-space",
+    "default_on": true,
+    "paths": [
+      "AOT"
+    ],
+    "emits_unsafe": false,
+    "mem_class": "TradesMemForSpeed",
+    "cost": "Heavy",
+    "requires": [],
+    "conflicts": [],
+    "preempts": [],
+    "scope": "Both"
+  }
+]
