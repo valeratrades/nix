@@ -1,6 +1,9 @@
 #!/home/v/nix/home/scripts/nix-run-cached
 ---cargo
 
+[package]
+edition = "2024"
+
 [dependencies]
 clap = { version = "4.5.49", features = ["derive"] }
 gix = { version = "0.78", features = ["merge", "blocking-network-client", "blocking-http-transport-reqwest-rust-tls", "worktree-mutation"] }

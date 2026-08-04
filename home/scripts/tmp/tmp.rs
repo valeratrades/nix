@@ -15,6 +15,9 @@
 #! nix in toolchain
 #! nix ``
 #! nix --command sh -c ``cargo -Zscript -q "$0" "$@"``
+
+[package]
+edition = "2024"
 ---
 
 fn main() {

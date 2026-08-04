@@ -1,6 +1,9 @@
 #!/home/v/nix/home/scripts/nix-run-cached
 ---cargo
 
+[package]
+edition = "2024"
+
 [dependencies]
 reqwest = { version = "0.12", features = ["json"] }
 serde = { version = "1", features = ["derive"] }

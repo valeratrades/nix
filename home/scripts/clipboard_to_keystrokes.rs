@@ -19,6 +19,9 @@
 #! nix ``
 #! nix --command sh -c ``cargo -Zscript -q "$0" "$@"``
 
+[package]
+edition = "2024"
+
 [dependencies]
 arboard = "3.6.1"
 ---

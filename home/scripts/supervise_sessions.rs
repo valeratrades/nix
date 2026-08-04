@@ -1,5 +1,8 @@
 #!/home/v/nix/home/scripts/nix-run-cached
 ---cargo
+[package]
+edition = "2024"
+
 [dependencies]
 clap = { version = "4.5.49", features = ["derive"] }
 serde = { version = "1.0", features = ["derive"] }

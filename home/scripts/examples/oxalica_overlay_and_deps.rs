@@ -16,6 +16,9 @@
 #! nix ``
 #! nix --command sh -c ``cargo -Zscript $0``
 
+[package]
+edition = "2024"
+
 [dependencies]
 time = "0.1.25"
 ---
