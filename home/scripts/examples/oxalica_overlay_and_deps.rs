@@ -7,7 +7,8 @@
 #! nix       system = builtins.currentSystem;
 #! nix       overlays = [rust_flake.overlays.default];
 #! nix     };
-#! nix     toolchain = pkgs.rust-bin.nightly."2025-10-10".default.override {
+#! nix     nightly = let v = builtins.getEnv "DEFAULT_CARGO_NIGHTLY_VERSION"; in if v == "" then throw "DEFAULT_CARGO_NIGHTLY_VERSION unset" else v;
+#! nix     toolchain = pkgs.rust-bin.nightly.${nightly}.default.override {
 #! nix       extensions = ["rust-src"];
 #! nix     };
 #! nix

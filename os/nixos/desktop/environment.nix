@@ -1,4 +1,8 @@
 { pkgs, lib, user, ... }: {
+  # Single source of truth for the nightly the `home/scripts/*.rs` cargo-scripts build against.
+  # sessionVariables (not variables) so eww/systemd-user inherit it via PAM, not just login shells.
+  environment.sessionVariables.DEFAULT_CARGO_NIGHTLY_VERSION = "2026-06-29";
+
   environment.variables = {
     QT_QPA_PLATFORMTHEME = "xdgdesktopportal";
     GTK_USE_PORTAL = "1";
