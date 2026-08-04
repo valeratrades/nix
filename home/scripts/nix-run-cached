@@ -9,9 +9,11 @@ shift
 
 CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-$HOME/.cargo/target}"
 METADATA_FILE="$CARGO_TARGET_DIR/.script-access-times"
-RUST_STORE_PATH_CACHE="$CARGO_TARGET_DIR/.rust-store-path"
+NIX_EXPR='let rust_flake = builtins.getFlake "github:oxalica/rust-overlay/5106a604b3d67cffe8eb51a8bd9f04e607f0d31d"; nixpkgs_flake = builtins.getFlake "github:NixOS/nixpkgs/e73de5be04e0eff4190a1432b946d469c794e7b4"; pkgs = import nixpkgs_flake { system = builtins.currentSystem; overlays = [rust_flake.overlays.default]; }; in pkgs.rust-bin.nightly."2026-06-29".default.override { extensions = ["rust-src"]; }'
 
-NIX_EXPR='let rust_flake = builtins.getFlake "github:oxalica/rust-overlay/7ed7e8c74be95906275805db68201e74e9904f07"; nixpkgs_flake = builtins.getFlake "github:NixOS/nixpkgs/f61125a668a320878494449750330ca58b78c557"; pkgs = import nixpkgs_flake { system = builtins.currentSystem; overlays = [rust_flake.overlays.default]; }; in pkgs.rust-bin.nightly."2025-10-10".default.override { extensions = ["rust-src"]; }'
+# Keyed on the expression, so bumping the pin above invalidates the cache instead of
+# silently keeping the old toolchain alive.
+RUST_STORE_PATH_CACHE="$CARGO_TARGET_DIR/.rust-store-path-$(printf '%s' "$NIX_EXPR" | md5sum | cut -c1-8)"
 
 update_access_time() {
 	local script_hash
