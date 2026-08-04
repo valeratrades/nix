@@ -18,6 +18,10 @@
     # nix.conf into /etc/nix/nix.custom.conf. Enables lazy-trees (v-laptop only).
     determinate.url = "https://flakehub.com/f/DeterminateSystems/determinate/*";
 
+    # Only for `rs.nightly_version` — the canonical nightly every repo of mine builds against,
+    # re-exported here as DEFAULT_CARGO_NIGHTLY_VERSION so the cargo-scripts match the fleet.
+    v_flakes.url = "github:valeratrades/v_flakes?ref=v1.6";
+
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-24.11";
     nixpkgs-2405.url = "github:nixos/nixpkgs/nixos-24.05";
