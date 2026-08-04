@@ -1,5 +1,8 @@
 #!/home/v/nix/home/scripts/nix-run-cached
 ---cargo
+[package]
+edition = "2024"
+
 [dependencies]
 ask_llm = { version = "2.2.2", default-features = false }
 tokio = { version = "1", features = ["rt", "time", "net"] }
