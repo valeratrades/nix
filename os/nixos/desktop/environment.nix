@@ -15,7 +15,8 @@
 
 # claude code (https://github.com/anthropics/claude-code/issues/42796#issuecomment-4194007103) {{{1
     DISABLE_TELEMETRY = "1";
-    CLAUDE_CODE_DISABLE_1M_CONTEXT = "1";
+    # NB: CLAUDE_CODE_DISABLE_1M_CONTEXT would hard-zero the `[1m]` model suffix (cli's is1M() short-circuits
+    # on it), collapsing the window to 200k and min()'ing autoCompactWindow down with it.
 
     # starting from 4.8, adaptive thinking is the native model. Hopefully, it's somewhat working now. If not, - fuck it, downgrade.
     #CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING = "1";

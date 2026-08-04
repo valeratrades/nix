@@ -246,9 +246,10 @@ in
 				#HACK: hm doesn't set env correctly, - so have some associated ones in ../../os/nixos/desktop/environment.nix
 				alwaysThinkingEnabled = true;
 				skipDangerousModePermissionPrompt =  true;
-				# `claude-opus-5[1m]` would request the context-1m beta and lift the window to 1M, but on
-				# a Max sub it's gated behind org Extra Usage, which is `org_level_disabled` here — so
-				# autoCompactWindow below is min()'d back down to 200k. Enable extra usage to use it.
+				# `[1m]` requests the context-1m beta -> 1M window; autoCompactWindow is min()'d against it.
+				# Requires CLAUDE_CODE_DISABLE_1M_CONTEXT to be UNSET (see ../../os/nixos/desktop/environment.nix).
+				# On a 429 whose body says extra usage is required, the cli latches a session-local clamp back
+				# to 200k (`longContext1mCreditsBlocked`); restart after enabling extra usage to clear it.
 				model = "claude-opus-5[1m]"; #claude-fable-5
 				#model = "claude-fable-5";
 				effortLevel = "high"; # they switched the default, and now problem gives up more often
