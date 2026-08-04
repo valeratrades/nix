@@ -264,8 +264,9 @@ fn timer(initial: Option<i32>, quiet: bool) -> Result<(), String> {
     let mut notified = false;
 
     unsafe {
-        libc::signal(libc::SIGINT, handle_signal as libc::sighandler_t);
-        libc::signal(libc::SIGTERM, handle_signal as libc::sighandler_t);
+        let handler = handle_signal as *const () as libc::sighandler_t;
+        libc::signal(libc::SIGINT, handler);
+        libc::signal(libc::SIGTERM, handler);
     }
 
     let tui = is_tty();
