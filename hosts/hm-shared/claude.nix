@@ -254,7 +254,7 @@ in
 				model = "claude-opus-5[1m]"; #claude-fable-5
 				#model = "claude-fable-5";
 				effortLevel = "high"; # they switched the default, and now problem gives up more often
-				autoCompactWindow = 500000;
+				autoCompactWindow = 1000000;
 				showClearContextOnPlanAccept = true;
 				#trustedWorkspaces = [ "/" ]; #NB: doesn't actually exist. Instead, opoen in `/` and accept it as trusted manually once.
 				enabledPlugins = plugins.enabled;
