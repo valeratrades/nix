@@ -22,6 +22,14 @@ alias gn="$__fish_scripts_dir/git_scripts.rs publish"
 alias kbd="$__fish_scripts_dir/kbd.rs"
 alias optimize_for="sudo -E $__fish_scripts_dir/optimize_for.rs"
 alias smart_shutdown="$__fish_scripts_dir/smart_shutdown.rs"
+# plain `shutdown now` skips the claude inventory write, silently breaking restore_sessions
+function shutdown
+	if contains -- -r $argv; or contains -- --reboot $argv
+		command shutdown $argv
+		return
+	end
+	smart_shutdown
+end
 alias supervise_sessions="$__fish_scripts_dir/supervise_sessions.rs"
 alias profile_shell_init="$__fish_scripts_dir/maintenance/profile_shell_init.rs"
 alias ambiance="$__fish_scripts_dir/ambiance.rs"

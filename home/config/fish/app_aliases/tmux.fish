@@ -155,14 +155,21 @@ function restore_sessions
 	set -l state_home $XDG_STATE_HOME
 	test -n "$state_home"; or set state_home "$HOME/.local/state"
 	set -l f "$state_home/claude_restore.tsv"
-	test -f $f; or return 0
+	if not test -f $f
+		echo "nothing to restore: $f absent (only smart_shutdown writes it)"
+		return 0
+	end
 
 	while read -l path n
 		test -d $path; or continue
-		set -l session (cs -t -d $path)
-		if test $status != 0
-			echo $session
-			continue
+		# a session for this path may already be up (hand-made, or we ran late) — reuse it
+		set -l session (tmux list-sessions -F '#{session_path}	#{session_name}' 2>/dev/null | string replace -rf '^'(string escape --style=regex $path)'\t' '')[1]
+		if test -z "$session"
+			set session (cs -t -d $path)
+			if test $status != 0
+				echo $session
+				continue
+			end
 		end
 		for i in (seq 1 $n)
 			set -l target "$session:claude"
