@@ -29,7 +29,13 @@
 
     { text = "it only makes sense to automate\nthat which is already done manually"; author = "Leily Hormozi"; }
 
+    {text = "you can lose a lot of money\nbut you must not lose a shred of reputation"; author = "Warren Buffet";}
+
     {text = "battle of life is half-won\nby the young man who is brought personally\nin contact with high officials"; author = "Andrew Carnegie";}
+
+    {text = "invest in R&D when times are good\nM&A when there is blood"; author = "Andrew Carnegie (adapted)";}
+
+    {text = "you only need to get rich once"; author = "Charlie Munger";}
 
     "systems -> outputs\nImproving systems = winning"
 
