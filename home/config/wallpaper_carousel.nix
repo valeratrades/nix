@@ -29,6 +29,8 @@
 
     { text = "it only makes sense to automate\nthat which is already done manually"; author = "Leily Hormozi"; }
 
+    {text = "battle of life is half-won\nby the young man who is brought personally\nin contact with high officials"; author = "Andrew Carnegie";}
+
     "systems -> outputs\nImproving systems = winning"
 
     "work env is not getting better.\nIf you can't work at 100% now,\nyou will never make it"
