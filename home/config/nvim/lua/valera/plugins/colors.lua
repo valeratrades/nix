@@ -5,16 +5,11 @@ return require "lazier" {
 			vim.cmd.colorscheme("default")
 			vim.cmd.colorscheme("github_dark")
 
-			vim.api.nvim_set_hl(0, "Normal", { bg = "#000000" })
-			local normal = vim.api.nvim_get_hl(0, { name = "Normal" })
-			vim.api.nvim_set_hl(0, "NormalNC", { bg = normal.bg })
-			vim.api.nvim_set_hl(0, "NormalFloat", { bg = normal.bg })
-			vim.api.nvim_set_hl(0, "WinSeparator", { bg = "none" })
-			vim.api.nvim_set_hl(0, "CustomGroup", { bg = normal.bg })
-
-			-- To make transparent:
-			--vim.api.nvim_set_hl(0, "Normal", { bg = "none" })
-			--vim.api.nvim_set_hl(0, "NormalFloat", { bg = "none" })
+			for _, g in ipairs { "Normal", "NormalNC", "NormalFloat", "FloatBorder", "SignColumn", "WinSeparator" } do
+				local hl = vim.api.nvim_get_hl(0, { name = g })
+				hl.bg = nil
+				vim.api.nvim_set_hl(0, g, hl)
+			end
 		end
 
 		function SetThemeLight()
