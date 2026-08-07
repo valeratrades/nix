@@ -164,6 +164,10 @@
     Install = { WantedBy = [ "default.target" ]; };
     Service = {
       Type = "oneshot";
+      # at boot there is no tmux server yet, so `cs -t` spawns one *inside this
+      # unit's cgroup* — the default control-group kill on oneshot exit then
+      # reaps every session we just built.
+      KillMode = "process";
       ExecStart = "${pkgs.fish}/bin/fish -c restore_sessions";
     };
   };

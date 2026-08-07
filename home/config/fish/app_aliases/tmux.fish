@@ -27,18 +27,21 @@ end
 
 function tmux_new_session_base
 	set -l cs_cmd 'cs'
+	set -l detach 0
 	set -l args
 	for arg in $argv
 		switch $arg
 			case -a --allow
 				set cs_cmd 'cs -a'
 			case -d --detach
+				set detach 1
 			case '*'
 				set -a args $arg
 		end
 	end
 
-	if test -n "$TMUX"
+	# only nesting is refused; building a detached session from inside tmux is fine
+	if test -n "$TMUX"; and test $detach = 0
 		echo "Already in a tmux session."
 		return 1
 	end
@@ -156,18 +159,30 @@ function restore_sessions
 	test -n "$state_home"; or set state_home "$HOME/.local/state"
 	set -l f "$state_home/claude_restore.tsv"
 	if not test -f $f
-		echo "nothing to restore: $f absent (only smart_shutdown writes it)"
+		echo "restore_sessions: nothing to restore, $f absent (only smart_shutdown writes it)" >&2
 		return 0
 	end
 
+	set -l failed 0
+	set -l done 0
 	while read -l path n
-		test -d $path; or continue
+		if test -z "$path"; or not string match -qr '^[0-9]+$' -- "$n"
+			echo "restore_sessions: malformed line in $f: path='$path' count='$n' (want tab-separated '<path>	<count>')" >&2
+			set failed 1
+			continue
+		end
+		if not test -d $path
+			echo "restore_sessions: skipping $path — no longer a directory" >&2
+			set failed 1
+			continue
+		end
 		# a session for this path may already be up (hand-made, or we ran late) — reuse it
 		set -l session (tmux list-sessions -F '#{session_path}	#{session_name}' 2>/dev/null | string replace -rf '^'(string escape --style=regex $path)'\t' '')[1]
 		if test -z "$session"
 			set session (cs -t -d $path)
 			if test $status != 0
-				echo $session
+				echo "restore_sessions: cs -t -d $path failed: $session" >&2
+				set failed 1
 				continue
 			end
 		end
@@ -175,10 +190,26 @@ function restore_sessions
 			set -l target "$session:claude"
 			if test $i -gt 1
 				set target (tmux new-window -P -t $session -c $path -n claude)
+				if test $status != 0
+					echo "restore_sessions: $session — could not add claude window #$i: $target" >&2
+					set failed 1
+					break
+				end
 			end
-			tmux send-keys -t $target "cl -$i" Enter
+			if not tmux send-keys -t $target "cl -$i" Enter
+				echo "restore_sessions: $session — send-keys to '$target' failed" >&2
+				set failed 1
+				break
+			end
 		end
+		set done (math $done + 1)
+		echo "restore_sessions: $session ← $path ($n claude(s))"
 	end <$f
 
+	if test $failed = 1
+		echo "restore_sessions: some entries failed; keeping $f so a rerun can retry" >&2
+		return 1
+	end
+	echo "restore_sessions: restored $done project(s)"
 	rm -f $f
 end

@@ -120,6 +120,8 @@
 
   TLDR: less fucking comments. Only add if you must. Prefer linking to ARCHITECTURE.md or per-mod READMEs, rather than writing new random stuff. Never ever document temporary circumstances, - code is not the place for it, github issues are.
 
+- if you are writing a comment, I need you to NEVER ever justify a decision. You can say why a decision was taken, but NEVER are you to say it's correct in code in comments. No assertive statements. If you have to say `why` code looks like this, it's already questionable. God forbid you then start thinking yourself smart.
+
 - you cannot add any unit-tests **after** the development is finished. Tests are persisted units of useful payloads that helped us get to a useful implementation. If there is some larger invariant over how data gets changed, that we want to persist, - that's for integration tests. No unit tests shall be added after logic is done. This is just adding friction for no reason whatsoever, - you are simply not allowed to do this, regardless of reasoning.
   Similarly, do not add tests just for the sake of adding them. We must be very precise with what is tested, and don't duplicate the code logic with them. They exist to ensure invariants that our implementation must follow, not to reimplement the same thing again and say hmm yes indeed the same thing does the same thing.
 
