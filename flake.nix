@@ -175,6 +175,9 @@
       url = "github:valeratrades/translate_infrequent";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
+      # its v-utils publishes nixpkgs as a `path:` into /nix/store, which dies with the next gc and
+      # cannot be refetched. Every other v-utils in our graph resolves to a real ref; pin this one too.
+      inputs.v-utils.inputs.nixpkgs.follows = "nixpkgs";
     };
     wallpaper_carousel = {
       url = "github:valeratrades/wallpaper_carousel";
