@@ -50,6 +50,15 @@ let
 				repo = "DietrichGebert/ponytail";
 				pluginSrc = ".";
 			};
+			# Fork of `plugins/plugin-dev` from the claude-code-plugins marketplace, vendored into
+			# its own repo (upstream is the whole 51M CLI repo, so a GitHub fork isn't worth it).
+			# Only plugin-dev diverges; the other claude-code-plugins entries stay on upstream.
+			# Cost: the 6 skills we don't touch are frozen at the vendored commit — see FORK.md
+			# in the fork for the upstream-diff command.
+			plugin-dev-fork = {
+				repo = "valeratrades/plugin-dev";
+				pluginSrc = ".";
+			};
 		};
 		enabled = {
 			"code-review@claude-code-plugins" = true;
@@ -60,7 +69,7 @@ let
 			"figma@claude-plugins-official" = true;
 			# Marketplace plugin is named `frontend-design`, not `frontend-dev` (no such id exists).
 			"frontend-design@claude-code-plugins" = true;
-			"plugin-dev@claude-code-plugins" = true;
+			"plugin-dev@plugin-dev-fork" = true;
 			"codex@codex-plugin-cc" = true;
 			"mattpocock-skills@mattpocock-skills" = true;
 			"impeccable@impeccable" = true;

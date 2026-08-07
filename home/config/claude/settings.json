@@ -29,7 +29,7 @@
     "figma@claude-plugins-official": true,
     "frontend-design@claude-code-plugins": true,
     "impeccable@impeccable": true,
-    "plugin-dev@claude-code-plugins": true,
+    "plugin-dev@plugin-dev-fork": true,
     "ponytail@ponytail": true,
     "ra-shared@ra-shared": true,
     "code-simplifier@claude-plugins-official": true,
