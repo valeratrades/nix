@@ -1,4 +1,4 @@
-set __fish_config_tmux_dir (dirname (status --current-filename))
+set __fish_config_tmux_dir (status dirname)
 alias claude_sessions="$__fish_config_tmux_dir/claude_sessions.rs"
 
 # Run the claude_sessions.rs classifier snapshot tests. Wraps the nightly

@@ -1,4 +1,4 @@
-set __fish_config_app_aliases_dir (dirname (status --current-filename))
+set __fish_config_app_aliases_dir (status dirname)
 source $__fish_config_app_aliases_dir/cargo.fish
 source $__fish_config_app_aliases_dir/direnv.fish
 source $__fish_config_app_aliases_dir/git.fish

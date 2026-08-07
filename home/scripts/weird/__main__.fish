@@ -1,4 +1,4 @@
-set __fish_scripts_weird_dir (dirname (status --current-filename))
+set __fish_scripts_weird_dir (status dirname)
 alias emacs="printf \"\033[31mno\033[0m\n\""
 alias nano="printf \"\033[31mno\033[0m\n\""
 

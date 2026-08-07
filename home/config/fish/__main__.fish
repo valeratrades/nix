@@ -1,7 +1,7 @@
 #NB: don't make aliases with """,""" - as they are incorrectly interpreted
 #NB: local vars are shared between all things you source. So setting an abbreviation to say `(dirname(status -- curent-filename))` to something simple like `pdir` could overwrite pdir of something else and wreck havoc.
 
-set __fish_config_main_dir (dirname (status --current-filename))
+set __fish_config_main_dir (status dirname)
 
 test -f $HOME/s/g/private/credentials.fish; and source $HOME/s/g/private/credentials.fish # absent on servers
 source $__fish_config_main_dir/global.fish #NB: other things can rely on functions in it

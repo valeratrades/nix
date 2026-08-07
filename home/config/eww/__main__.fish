@@ -1,4 +1,4 @@
-set __fish_config_eww_dir (dirname (status --current-filename))
+set __fish_config_eww_dir (status dirname)
 
 function eww_open
 	#NB: ordering matters, - will determine who overlays who in case of overlap

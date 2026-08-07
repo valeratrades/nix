@@ -1,4 +1,4 @@
-set __fish_scripts_dir (dirname (status --current-filename))
+set __fish_scripts_dir (status dirname)
 source $__fish_scripts_dir/videos.fish
 source $__fish_scripts_dir/server.fish
 source $__fish_scripts_dir/weird/__main__.fish

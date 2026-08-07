@@ -1,5 +1,5 @@
 # all general git shorthands
-set __fish_config_git_dir (dirname (status --current-filename))
+set __fish_config_git_dir (status dirname)
 
 #TODO!!: start assigning difficulty score to all entries. Default to NaN.
 # Could do it through a label with say black-color. Probably a series of labels, simply named {[1-9],NaN}

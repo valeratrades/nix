@@ -151,15 +151,19 @@
           style = "bold cyan";
           shell = ["dash"];
         };
+        # every custom module must pin `shell`: unset falls back to $STARSHIP_SHELL (fish),
+        # so each `when` would pay a full interactive fish startup (~240ms) per prompt
         readonly = {
           command = ''printf "🔒"'';
           when = ''! [ -w . ]'';
           style = "bold red";
+          shell = ["dash"];
         };
         rust = {
           command = ''rustc -V | cut -d ' ' -f 2'';
           when = ''[ -f Cargo.toml ] || [ -n "$(find . -maxdepth 1 -name "*.rs" 2>/dev/null | head -1)" ]'';
           style = "bold red";
+          shell = ["dash"];
         };
       };
 
