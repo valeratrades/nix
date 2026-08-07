@@ -1,8 +1,44 @@
-{ ...
-}:
+{ config, lib, pkgs, ... }:
+let
+  cfg = config.programs.starship;
+
+  # Verbatim from nixos/modules/programs/starship.nix, which keeps `settingsFile` in a `let`.
+  # Needed because we drop the module's fish block below but must keep the path it exported.
+  # Identical expression => identical derivation, so this costs no extra build.
+  userSettingsFile = (pkgs.formats.toml { }).generate "starship.toml" cfg.settings;
+  settingsFile =
+    if cfg.presets == [ ] then
+      userSettingsFile
+    else
+      pkgs.runCommand "starship.toml" { nativeBuildInputs = [ pkgs.yq ]; } ''
+        tomlq -s -t 'reduce .[] as $item ({}; . * $item)' \
+          ${lib.concatStringsSep " " (map (f: "${cfg.package}/share/starship/presets/${f}.toml") cfg.presets)} \
+          ${userSettingsFile} \
+          > $out
+      '';
+in
 {
+  # The module's fish block ends in `eval (starship init fish)`, but home/config/fish/__main__.fish
+  # already inits starship with `--print-full-init` — which is what dodges the psub-under-tmux bug,
+  # and is why we can't just drop ours instead. Keep only the STARSHIP_CONFIG export.
+  #TODO: submit a pr adding an option to skip the shell init, so this override and the copy of
+  # `settingsFile` above both go away.
+  programs.fish.promptInit = lib.mkForce ''
+    if not test -f "$HOME/.config/starship.toml"
+      set -x STARSHIP_CONFIG ${settingsFile}
+    end
+  '';
+
+  # with interactiveOnly = false the module writes shellInit instead, and the duplicate would return
+  assertions = [
+    {
+      assertion = cfg.interactiveOnly;
+      message = "os/nixos/shared/programs/starship.nix overrides programs.fish.promptInit, which the starship module only writes when interactiveOnly is set";
+    }
+  ];
+
   programs.starship = {
-    enable = true; # enabled from mod.fish, using --print-full-init to fix `psub` issue. However the `enable` here is also necessary, to have right-prompt working correctly. TODO: submit a pr to enable such option in the nix starship module.
+    enable = true; # generates the settings toml; the fish-side init lives in home/config/fish/__main__.fish
     interactiveOnly = true; # only use it when shell is interactive
     # defined here, as `hm` doesn't yet recognize the `presets` option on `starship` (2024/10/31)
     presets = [ "no-runtime-versions" ]; # noisy on python, lua, and all the languages I don't care about. Would rather explicitly setup expansions on the important ones.
