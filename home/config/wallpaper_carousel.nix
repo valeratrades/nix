@@ -1,4 +1,6 @@
 {
+  vision_source = "~/s/wallpaper_carousel/src_typ/vision.typ";
+
   # think of these as reminders. There shouldn't be anything new or randomly generated here. Quality control, - me seing any of the quotes here must make me recall some good practice.
   quotes = [
     { text = "EV compounds,\nembarrassment doesn't"; author = "Beny"; }
