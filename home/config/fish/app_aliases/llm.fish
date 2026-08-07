@@ -32,6 +32,14 @@ function claude
 end
 
 function cl
+    if [ "$argv[1]" = review ]
+        set -l skill (rust-script $HOME/s/codestyle/skills/pick.rs (pwd -P))
+        or return 1
+        echo "cl review → "(basename (dirname $skill)) >&2
+        cl "Review this repo following $skill. Read it first, then carry out exactly what it asks for." $argv[2..]
+        return
+    end
+
     set -l base_cmd claude --dangerously-skip-permissions
     set -l repo (command git rev-parse --show-toplevel 2>/dev/null)
     set -l no_verify 0
