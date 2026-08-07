@@ -140,6 +140,7 @@ return require('lazy').setup({
 	{ import = "valera.plugins.nvim-highlight-colors" },
 	{
 		"hiphish/rainbow-delimiters.nvim",
+		pin = true, -- local nil-parser guard in lib.lua; unpin once upstream handles get_parser()==nil
 		config = function()
 			-- Register a typst query without math $ (we color those separately)
 			vim.treesitter.query.set('typst', 'rainbow-delimiters-nomathdollar', [[
