@@ -50,4 +50,8 @@ require("valera.termfilechooser")
 require("valera.commit_view")
 require("valera.legacy")
 
-require("valera.themes.captuccin")
+-- the vendored theme claims colors_name = catppuccin-mocha, and the catppuccin plugin ships a
+-- colorscheme of that name; every `background` change re-sources theirs over ours
+local theme = vim.api.nvim_get_runtime_file("lua/valera/themes/captuccin.lua", false)[1]
+vim.api.nvim_create_autocmd("ColorScheme", { callback = function() dofile(theme) end })
+dofile(theme)
