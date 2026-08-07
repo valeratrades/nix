@@ -33,10 +33,12 @@ end
 
 function cl
     if [ "$argv[1]" = review ]
-        set -l skill (rust-script $HOME/s/codestyle/skills/pick.rs (pwd -P))
-        or return 1
-        echo "cl review → "(basename (dirname $skill)) >&2
-        cl "Review this repo following $skill. Read it first, then carry out exactly what it asks for." $argv[2..]
+        # picker echoes its own choice to stderr
+        set -l prompt (rust-script $HOME/s/codestyle/skills/pick.rs (pwd -P) | string collect)
+        if [ -z "$prompt" ]
+            return 1
+        end
+        cl $prompt $argv[2..]
         return
     end
 
@@ -130,7 +132,8 @@ function cl
     end
 
     # not `command`: routes through the claude function above so `cl -a 2` works
-    $base_cmd --append-system-prompt (cat $HOME/.claude/daneel.md) $passthrough_args
+    # `string collect`: without it fish splits the file on newlines into one argument each
+    $base_cmd --append-system-prompt (cat $HOME/.claude/daneel.md | string collect) $passthrough_args
 end
 complete -c cl -w claude
 
@@ -149,20 +152,6 @@ function clp
     cl --permission-mode plan "Plan file: $argv[1]. Select it and submit for approval (approval, - do not start execution)" $argv[2..]
 end
 
-# clr - random code quality upkeep. Picks one hardcoded prompt at random and starts cl on it.
 function clr
-    set -l prompts \
-        "Find the single worst public function in this codebase that should be private or removed entirely, and refactor to shrink the module boundary. Remove > refactor > add." \
-        "Find a self-contained piece of complex functionality in a large file, and nest it in an inlined module. This reduces entropy, cause piceces of complex machinery there suddenly don't mingle." \
-        "Hunt for one fallback that masks tainted state (unwrap_or, let _ =, silent default) and replace it with a loud panic/error at the earliest point the state goes bad." \
-        "Find a place where an invariant is assumed but not asserted, and add the assert. Pick the assertion that would catch the nastiest latent bug." \
-        "Locate the most duplicated logic in the codebase and collapse it into a single source of truth, preferring std trait impls (From, etc) over a new helper fn." \
-        "Find the worst error-handling site (a swallowed error, a vague message, a stringly-typed error) and improve it with thiserror/miette/proper context." \
-        "Pick the most confusingly-named symbol in the codebase and rename it to something that matches what it actually does. Update all call sites." \
-        "Find dead code, unused pub items, or unreachable branches and delete them. Verify nothing depends on them first." \
-        "Pick a module and go through tests there. For each you justify why it should be kept. The default action is deletion. Goal is to eliminate all that are tautalogical (eg some logic upstream sets a code to a color, and then in the test we go through the codes and check the colors. This literally adds no value, and must be gone, - things like that)" \
-
-    set -l choice $prompts[(random 1 (count $prompts))]
-    echo "clr → $choice" >&2
-    cl $choice $argv
+    cl review $argv
 end
