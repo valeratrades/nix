@@ -33,12 +33,22 @@ end
 
 function cl
     if [ "$argv[1]" = review ]
+        # `-f` here selects by hand rather than picking fable; `cl review -m claude-fable-5` still works
+        set -l pick_args
+        set -l rest
+        for arg in $argv[2..]
+            if [ "$arg" = -f ] || [ "$arg" = --fuzzy ]
+                set -a pick_args --fuzzy
+            else
+                set -a rest $arg
+            end
+        end
         # picker echoes its own choice to stderr
-        set -l prompt ($HOME/s/codestyle/skills/pick.rs (pwd -P) | string collect)
+        set -l prompt ($HOME/s/codestyle/skills/pick.rs (pwd -P) $pick_args | string collect)
         if [ -z "$prompt" ]
             return 1
         end
-        cl $prompt $argv[2..]
+        cl $prompt $rest
         return
     end
 
