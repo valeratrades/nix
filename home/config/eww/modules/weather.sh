@@ -2,7 +2,8 @@
 
 # Current weather via open-meteo, coords from ipinfo.io geo-IP (no API keys).
 # Geo-IP is wrong on mobile (CGNAT egresses at the carrier hub, eg Orange -> Lyon);
-# write "lat,lon" to ~/.config/eww/location to override.
+# write "lat,lon" to ~/.config/eww/location to override. An override outlives the trip
+# it was written for, so it renders with a  and never passes for a geo-IP reading.
 # wttr.in was dropped: when its geo-IP lookup fails it silently serves its
 # default location (central Paris) instead of erroring.
 # Output: {"icon": "<condition glyph>", "content": "<temp>"}
@@ -25,6 +26,8 @@ icon_for() {
 }
 
 loc=$(cat "${XDG_CONFIG_HOME:-$HOME/.config}/eww/location" 2>/dev/null | tr -d '[:space:]')
+pin=""
+[ -n "$loc" ] && pin=""
 [ -z "$loc" ] && loc=$(timeout 5 curl -s 'https://ipinfo.io/loc' 2>/dev/null | tr -d '[:space:]')
 case "$loc" in
 	*[0-9],*[0-9]*)
@@ -35,7 +38,7 @@ case "$loc" in
 		if [ -n "$parsed" ] && [ "$parsed" != "null" ]; then
 			temp=$(printf '%s' "$parsed" | jq -r '.temp')
 			code=$(printf '%s' "$parsed" | jq -r '.code')
-			echo "{\"icon\": \"$(icon_for "$code")\", \"content\": \"${temp}\"}"
+			echo "{\"icon\": \"$(icon_for "$code")$pin\", \"content\": \"${temp}\"}"
 			exit 0
 		fi
 		;;
