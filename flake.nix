@@ -99,8 +99,6 @@
     };
     tedi = {
       url = "github:valeratrades/tedi";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.rust-overlay.follows = "rust-overlay";
       inputs.flake-utils.follows = "flake-utils";
     };
     booktyping = {
@@ -179,12 +177,7 @@
       # cannot be refetched. Every other v-utils in our graph resolves to a real ref; pin this one too.
       inputs.v-utils.inputs.nixpkgs.follows = "nixpkgs";
     };
-    wallpaper_carousel = {
-      url = "github:valeratrades/wallpaper_carousel";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.rust-overlay.follows = "rust-overlay";
-      inputs.flake-utils.follows = "flake-utils";
-    };
+    wallpaper_carousel.url = "github:valeratrades/wallpaper_carousel";
     snapshot_fonts = {
       url = "github:valeratrades/snapshot_fonts?ref=release";
       inputs.nixpkgs.follows = "nixpkgs";
