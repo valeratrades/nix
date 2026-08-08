@@ -34,7 +34,7 @@ end
 function cl
     if [ "$argv[1]" = review ]
         # picker echoes its own choice to stderr
-        set -l prompt (rust-script $HOME/s/codestyle/skills/pick.rs (pwd -P) | string collect)
+        set -l prompt ($HOME/s/codestyle/skills/pick.rs (pwd -P) | string collect)
         if [ -z "$prompt" ]
             return 1
         end
