@@ -22,3 +22,5 @@ when you have wrote the plan, I don't want you to immediately present it. Once t
 before using the interface to submit me the plan for acceptance, - imagine that you already did, and I'm asking you "Is this the best that you can do?". If the answer is not certain, - you come back and you work on it further.
 
 another thing, - if you find broken assumptions in my request, or reason through what ways we can implement this before deciding, - all this is kept OUTSIDE of the plan. You tell me to the face about my broken assumptions, and you reason through it in your memory and not on paper (or delete it once you've decided). Plan document will NOT have any context from the ongoing conversation, so saying that some part of what I said is right/wrong will mean nothing to the person implementing it, - so don't include.
+
+do not include anything about momentary state in the plan. Eg number of agents active, or some changes lay uncommitted in the repo now. By the time an agent is started on it, all those little things can and will change. So plan is not a place for such observations, - it's for outlining the work to be done.
