@@ -121,12 +121,7 @@
       inputs.rust-overlay.follows = "rust-overlay";
       inputs.flake-utils.follows = "flake-utils";
     };
-    tg = {
-      url = "github:valeratrades/tg";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.rust-overlay.follows = "rust-overlay";
-      inputs.flake-utils.follows = "flake-utils";
-    };
+    tg.url = "github:valeratrades/tg";
     bbeats = {
       url = "github:valeratrades/bbeats";
       inputs.nixpkgs.follows = "nixpkgs";

@@ -2018,6 +2018,9 @@ struct UsageInfo {
     weekly_used_pct: Option<f64>,
     /// Unix epoch seconds at which the weekly window resets. None = unknown.
     weekly_resets_at: Option<i64>,
+    /// Percent of the account-wide weekly (`seven_day`) limit used [0, 100].
+    weekly_all_used_pct: Option<f64>,
+    weekly_all_resets_at: Option<i64>,
 }
 
 impl UsageInfo {
@@ -2030,6 +2033,8 @@ impl UsageInfo {
             five_hour_resets_at: self.five_hour_resets_at.or(old.five_hour_resets_at),
             weekly_used_pct: self.weekly_used_pct.or(old.weekly_used_pct),
             weekly_resets_at: self.weekly_resets_at.or(old.weekly_resets_at),
+            weekly_all_used_pct: self.weekly_all_used_pct.or(old.weekly_all_used_pct),
+            weekly_all_resets_at: self.weekly_all_resets_at.or(old.weekly_all_resets_at),
         }
     }
 }
@@ -2083,6 +2088,10 @@ fn save_cache(cache: &CacheState) {
 #[derive(Deserialize)]
 struct OauthUsage {
     five_hour: UsageWindow,
+    /// Account-wide weekly. Optional for the same reason `resets_at` below is:
+    /// its `seven_day_*` siblings all come back null, so a null here must not
+    /// take the whole body's parse down with it.
+    seven_day: Option<UsageWindow>,
     /// One entry per active limit. The fable(Opus) weekly cap is the
     /// `weekly_scoped` entry whose scope.model.display_name is "Fable" — it is
     /// NOT the account-wide `seven_day`/`weekly_all` figure.
@@ -2165,6 +2174,8 @@ fn fetch_usage() -> Option<UsageInfo> {
         five_hour_resets_at: rfc3339_epoch(&usage.five_hour.resets_at),
         weekly_used_pct: fable.map(|l| l.percent),
         weekly_resets_at: fable.and_then(|l| l.resets_at.as_deref()).and_then(rfc3339_epoch),
+        weekly_all_used_pct: usage.seven_day.as_ref().map(|w| w.utilization),
+        weekly_all_resets_at: usage.seven_day.as_ref().and_then(|w| rfc3339_epoch(&w.resets_at)),
     })
 }
 
@@ -2226,10 +2237,13 @@ impl LimitView {
 }
 
 fn format_usage_header(u: &UsageInfo, compact: bool) -> String {
-    let limits = [
-        LimitView { name: "total", used_pct: u.five_hour_used_pct, resets_at: u.five_hour_resets_at },
-        LimitView { name: "fable", used_pct: u.weekly_used_pct, resets_at: u.weekly_resets_at },
-    ];
+    let mut limits = vec![LimitView { name: "total", used_pct: u.five_hour_used_pct, resets_at: u.five_hour_resets_at }];
+    // Compact is a two-cell bar; the account-wide weekly only earns a slot once
+    // the cells are labelled and there's room to read them.
+    if !compact {
+        limits.push(LimitView { name: "weekly", used_pct: u.weekly_all_used_pct, resets_at: u.weekly_all_resets_at });
+    }
+    limits.push(LimitView { name: "fable", used_pct: u.weekly_used_pct, resets_at: u.weekly_resets_at });
     limits
         .iter()
         .map(|l| if compact { l.compact() } else { l.full() })
@@ -2267,7 +2281,7 @@ fn should_recompute(prev: &CacheState, windows: &[ClaudeWindow]) -> bool {
     if prev.window_states.is_empty() {
         return true;
     }
-    if prev.usage.five_hour_used_pct.is_none() {
+    if prev.usage.five_hour_used_pct.is_none() || prev.usage.weekly_all_used_pct.is_none() {
         return true;
     }
     match prev.usage.five_hour_resets_at {
