@@ -14,16 +14,19 @@
 
 - don't give a long answer, when a short one would suffice
 
-- when you ask a multi-choice question, always include `None of the Above` option.
-
 ## Workflow
 - always work todos first, - creating and keeping the todos list relevant is first concern in any implementation. Always keep it up to date.
+
+- always read ARCHITECTURE.md and docs/spec/ before doing anything in the repo. Pay **especial** attention to Invariants, - those give you tools to determine what trade-offs are acceptable: imagine we can speed up backtests on our trading DAG framework twofold, but that would cost 5% slowdown of the live path because of the primitive we'd need for that. Agent who hasn't had read Invariants could think that it's a good trade-off, but if we read them and see it established that Live performance is of foremost importance, - we know to never make it.
 
 - before any changes, determine if we are working on a top-level app, helper lib, or a framework.
   Priorities change drastically, depending on what we are developing:
     - app needs to have its functionality working first and foremost. We care for optimizing performance of the code we have, and it's fine to add messy code if it's more performant here. If we're not certain about whether some part of the design is as good as it could theoretically be, oftentimes it's sufficient to split it into a sub-crate / module, with well-defined interface; separating ourselves from its problems.
     - for helper lib, we care for cross-consistency and ubiquity of primitives exposed. Complexity of implementations is limited by generality of utilization, - adding something advanced to then have it be used by a single consumer is hardly justifiable.
-    - for framework, the proximity to the underlying problem space is most critical. We optimize for providing zero-cost abstractions, and focus on encoding the expression space into type system as directly as possible. When we consider possible or current design, we never look at how performant or usable it is now, but how good it can be given available data. If some design is significantly more difficult than the other, but when implemented correctly would provide greater benefits, - we go for it 10 times out of 10.
+    - for framework, the proximity to the underlying problem space is most critical.
+      We optimize for providing zero-cost abstractions, and focus on encoding the expression space into type system as directly as possible. When we consider possible or current design, we never look at how performant or usable it is now, but how good it can be given available data. If some design is significantly more difficult than the other, but when implemented correctly would provide greater benefits, - we go for it 10 times out of 10.
+      In framework we also must closely control the export boundary. Anything that an implementor can specify is weight on simplicity of utilization, - it's invisible, but we pay for every bit of interface Entropy. So if you see anything currently added manually that can be derived, - flagging it to my attention becomes your first priority.
+      Another thing, - if we have `examples/` on a framework, through which we are testing it, - we never try to optimize them or think the current results/behavior on them is correct. When we change underlying framework, we do look at output changes to see if we regressed, but we never ever assume that the old result was preferable. If framework was already perfect, we wouldn't be touching it now. No getting attached to current values when working with framework, - correctness trumps all.
   > note that it's not rare for an app and the framework for it to be workspace members in the same repo. Same rules hold when working with each.
 
 - don't forget to run `nix develop` to init env in all projects with flake.nix
@@ -50,8 +53,10 @@
 
   also, don't fuck with other agents. Avoid commands that would affect them, - all the way up until merging.
   And another thing, - if you spawn your own agents, don't make worktrees for them. If you own an agent, it should work on the same env as you do. When spawning it, tell it to not make new worktrees.
+
+  this includes not switching the branch outside of worktrees. You always work on main if you're at the top. Otherwise everybody else will start committing on your branch, - assume nobody will check before it's too late. So no branches when you're applying patches directly without a worktree.
   
-- if your worktree breaks some relative path and you need to relocate, - use exclusively `../tmp/` dirs. So if you're in worktree of `~/s/ev_invest/my_project` and because of a worktree you become one level deeper, you can then relocate to `~/s/tmp/my_project`, ok? Just so we don't end up buried in garbage later
+- if your worktree breaks some relative path import on a crate we own, - switch it to abs path
 
 - never skip any parts of implementation because it would conflict with another agent. What you can do is sleep and wait for him to finish. Or make a worktree. Or if you're editing different files, even just edit in-place. But you never ever just say "oh, the changes would conflict with another agent running, will do other time". This will not be tolerated. This is the WORST thing you can do, - when I give you an item to implement, I assume that you will drive its implementation or at least bubble up the failure thereof. If you say you finished your task, but some work was excluded, I'm likely to lose its thread outright.
 
@@ -63,6 +68,8 @@
 
 - before using `git checkout` or any other resetting action on the repo, run `active_agents` and then also check that those files don't have edits that aren't yours. Unless you know you're alone, prefer undoing by hand or hunk-by-hunk.
   And if you can avoid messing with current state in the first place, - even better: eg to bench something, you can just fork off a worktree from a commit you want to look at, instead of modifying state in-place by stashing.
+
+- after finishing implementation, include all the trade-offs that you took at cross-roads, especially those concerning correctness and performance
 
 ## Testing
 - if a change is not trivial, always test.
@@ -121,6 +128,7 @@
   TLDR: less fucking comments. Only add if you must. Prefer linking to ARCHITECTURE.md or per-mod READMEs, rather than writing new random stuff. Never ever document temporary circumstances, - code is not the place for it, github issues are.
 
 - if you are writing a comment, I need you to NEVER ever justify a decision. You can say why a decision was taken, but NEVER are you to say it's correct in code in comments. No assertive statements. If you have to say `why` code looks like this, it's already questionable. God forbid you then start thinking yourself smart.
+  And also prefer line tail comments whenever possible (you're commenting on a specific line/item). It'll force you to keep them concise, which is always good.
 
 - you cannot add any unit-tests **after** the development is finished. Tests are persisted units of useful payloads that helped us get to a useful implementation. If there is some larger invariant over how data gets changed, that we want to persist, - that's for integration tests. No unit tests shall be added after logic is done. This is just adding friction for no reason whatsoever, - you are simply not allowed to do this, regardless of reasoning.
   Similarly, do not add tests just for the sake of adding them. We must be very precise with what is tested, and don't duplicate the code logic with them. They exist to ensure invariants that our implementation must follow, not to reimplement the same thing again and say hmm yes indeed the same thing does the same thing.
@@ -133,6 +141,8 @@
 - when writing `.expect()`, explain **why** not **what**. Eg: `map.get(&a).expect("element always in map")` - bad, but `map.get(&a).expect("inserted on init")` - good.
 
 - if you've just added `unwrap_or(_else)`, - stop and think hard. Almost always it's much much preferable to just panic and see the error clearly than to continue with faulty state (which this unwrap_or_else oftentimes is a symptom of).
+
+- if what I said mismatches comments in the repo or your own findings, the trustworthiness ranking is following: `comments < my inputs < objective facts you found < Invariants`. Notice that comments are least relevant, - they can be outdated, or generally be wrong as written. They don't run so we don't know. And Invariants ([ARCHITECTURE.md] && [docs/spec/]) are never to be broken, - if current code physically mismatches any of them, that's a big problem to be solved, not a fact of life.
 
 ### graphify
 - **graphify** (`~/.claude/skills/graphify/SKILL.md`) - any input to knowledge graph. Trigger: `/graphify`
