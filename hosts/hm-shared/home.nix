@@ -159,9 +159,12 @@
     Unit = {
       Description =
         "Rebuild tmux sessions + claude windows recorded at last shutdown";
-      After = [ "network-online.target" ];
+      # the tmux server spawned below outlives this unit and hands its env to
+      # every pane forever; before sway's `import-environment` that env has no
+      # WAYLAND_DISPLAY, so anything reaching for the clipboard finds no compositor.
+      After = [ "network-online.target" "sway-session.target" ];
     };
-    Install = { WantedBy = [ "default.target" ]; };
+    Install = { WantedBy = [ "sway-session.target" ]; };
     Service = {
       Type = "oneshot";
       # at boot there is no tmux server yet, so `cs -t` spawns one *inside this
