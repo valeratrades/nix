@@ -14,6 +14,9 @@
 
 - don't give a long answer, when a short one would suffice
 
+- drawing > speaking. Diagram > table > written out reasoning.
+  While you're thinking to yourself and considering the problem space, use whatever representation shape suits you. When reporting to me at the end, - draw. Especially good when you've already written me a lot of text reasoning, - summarize it by drawing the problem shape, and what part solutions impact on it.
+
 ## Workflow
 - always work todos first, - creating and keeping the todos list relevant is first concern in any implementation. Always keep it up to date.
 
