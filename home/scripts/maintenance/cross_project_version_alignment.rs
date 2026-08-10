@@ -193,9 +193,6 @@ fn check_rust_versions(files: &[PathBuf]) {
 
 const LEAN_NIX_PIN: &str =
     r#"= "github:lenianiva/lean4-nix/ecaa70749083e6a0e6e0814c6a66b7561754b6db"; # pinned 2026-01-10"#;
-// header kept in sync with `file_snippets/new_project.rs` — this path force-rewrites
-// .envrc, so omitting it would strip NIX_CONFIG from any lean project it touches.
-const ENVRC_CONTENT: &str = "export NIX_CONFIG=\"extra-experimental-features = nix-command flakes\naccept-flake-config = true\"\n\nuse flake . --profile .direnv/flake-profile\n";
 
 fn lean_align(dirs: Vec<PathBuf>) {
     if dirs.is_empty() {
@@ -228,7 +225,8 @@ fn process_lean_project(project_dir: &Path) {
     let envrc_path = project_dir.join(".envrc");
     let flake_path = project_dir.join("flake.nix");
 
-    // Check if .envrc exists
+    // .envrc presence distinguishes my own clones from vendored deps under `.lake/packages/`,
+    // which carry a lake-manifest.json too.
     if !envrc_path.exists() {
         println!("{}: skipping (no .envrc - likely unpatched clone)", project_name);
         return;
@@ -236,14 +234,6 @@ fn process_lean_project(project_dir: &Path) {
 
     let mut updates_made = false;
 
-    // Check and update .envrc
-    let envrc_content = fs::read_to_string(&envrc_path).unwrap_or_default();
-    if envrc_content.trim() != ENVRC_CONTENT.trim() {
-        fs::write(&envrc_path, ENVRC_CONTENT).expect("Failed to write .envrc");
-        updates_made = true;
-    }
-
-    // Check and update flake.nix
     if flake_path.exists() {
         let flake_content = fs::read_to_string(&flake_path).expect("Failed to read flake.nix");
 
