@@ -142,11 +142,14 @@
     Install = { WantedBy = [ "sway-session.target" ]; };
     Service = let
       eww = "${pkgs.eww}/bin/eww";
+      # same source of truth as the `eww_open` fish function; ordering there decides overlay
       script = pkgs.writeShellScript "eww-widgets-start" ''
-        ${eww} open bar
-        ${eww} open btc_line_lower
-        ${eww} open btc_line_upper
-        ${eww} open todo_blocker
+        rc=0
+        while read -r window; do
+          [ -n "$window" ] || continue
+          ${eww} open "$window" || rc=1
+        done < "$HOME/.config/eww/eww_windows.txt"
+        exit $rc
       '';
     in {
       Type = "oneshot";
