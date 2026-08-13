@@ -36,7 +36,7 @@ fn run_cmd_silent(cmd: &str, args: &[&str]) -> bool {
 }
 
 /// `path\tcount` of live claudes per project, consumed by fish's `restore_sessions` on boot.
-fn write_claude_inventory() {
+fn write_claude_inventory(dry_run: bool) {
     let state_dir = std::env::var("XDG_STATE_HOME")
         .or_else(|_| std::env::var("HOME").map(|h| format!("{h}/.local/state")))
         .expect("neither XDG_STATE_HOME nor HOME set");
@@ -53,6 +53,10 @@ fn write_claude_inventory() {
     {
         Ok(out) if out.status.success() => out,
         // No tmux server -> no sessions to restore; a stale file would be worse than none.
+        _ if dry_run => {
+            println!("Dry run - no tmux panes; would clear {path}");
+            return;
+        }
         _ => {
             let _ = std::fs::remove_file(&path);
             println!("No tmux panes; cleared {path}");
@@ -78,12 +82,24 @@ fn write_claude_inventory() {
         .iter()
         .map(|(p, n)| format!("{p}\t{n}\n"))
         .collect();
+    if dry_run {
+        println!("Dry run - would record {} project(s) to {path}:\n{content}", counts.len());
+        return;
+    }
     std::fs::write(&path, &content).expect("failed to write claude inventory");
     println!("Recorded {} project(s) with claudes to {path}", counts.len());
 }
 
 fn main() {
     let args = Args::parse();
+
+    // Spawned from the tg gateway (via supervise_sessions) we inherit a PATH without the
+    // user profile, where tg/tedi/tmux don't resolve and every step below fails silently.
+    // Safe here: no threads spawned yet.
+    unsafe {
+        let path = std::env::var("PATH").unwrap_or_default();
+        std::env::set_var("PATH", format!("/etc/profiles/per-user/v/bin:{path}"));
+    }
 
     // If we're inside tmux and not already detached, re-exec ourselves detached from tmux
     if !args.detached && std::env::var("TMUX").is_ok() {
@@ -120,7 +136,12 @@ fn main() {
     }
 
     // 1. Pre-shutdown async tasks: claude_sessions->tg and tedi tracking halt
-    let tedi_handle = std::thread::spawn(|| {
+    let dry_run = args.dry_run;
+    let tedi_handle = std::thread::spawn(move || {
+        if dry_run {
+            println!("Dry run - would halt tedi tracking");
+            return;
+        }
         println!("Halting tedi tracking...");
         match Command::new("tedi")
             .args(["-y", "sprints", "selected", "halt"])
@@ -173,7 +194,8 @@ fn main() {
     });
 
     // Must run while the tmux server is still alive (see the kill-server below).
-    let inventory_handle = std::thread::spawn(write_claude_inventory);
+    let dry_run = args.dry_run;
+    let inventory_handle = std::thread::spawn(move || write_claude_inventory(dry_run));
 
     // Wait for all three to finish before proceeding with shutdown
     tedi_handle.join().expect("tedi thread panicked");
@@ -181,22 +203,25 @@ fn main() {
     inventory_handle.join().expect("inventory thread panicked");
 
     // 2. Kill tmux sessions
-    println!("Terminating tmux sessions...");
-    run_cmd_silent("tmux", &["kill-server"]);
+    if args.dry_run {
+        println!("Dry run - would kill the tmux server and stop tailscaled/clickhouse/postgresql");
+    } else {
+        println!("Terminating tmux sessions...");
+        run_cmd_silent("tmux", &["kill-server"]);
 
-    // 3. Stop problematic services (these often hang on shutdown)
-    println!("Stopping slow services...");
+        // 3. Stop problematic services (these often hang on shutdown)
+        println!("Stopping slow services...");
 
-    // Stop user services that might hang
-    // tailscaled is a system service, needs sudo
-    run_cmd_silent("sudo", &["systemctl", "stop", "tailscaled"]);
+        // tailscaled is a system service, needs sudo
+        run_cmd_silent("sudo", &["systemctl", "stop", "tailscaled"]);
 
-    // clickhouse has a known slow shutdown bug in 25.x (~39s delay)
-    // Just kill it - data is trivial and not worth waiting for
-    run_cmd_silent("sudo", &["pkill", "-9", "clickhouse"]);
+        // clickhouse has a known slow shutdown bug in 25.x (~39s delay)
+        // Just kill it - data is trivial and not worth waiting for
+        run_cmd_silent("sudo", &["pkill", "-9", "clickhouse"]);
 
-    // postgresql if it's running
-    run_cmd_silent("sudo", &["systemctl", "stop", "postgresql"]);
+        // postgresql if it's running
+        run_cmd_silent("sudo", &["systemctl", "stop", "postgresql"]);
+    }
 
     // 4. Shutdown. `shutdown now` is the ambiguous compat interface (halt vs
     // poweroff) — use systemctl poweroff, and treat a non-zero exit as failure so

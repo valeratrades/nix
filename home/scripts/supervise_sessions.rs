@@ -82,8 +82,10 @@ fn shutdown(dry_run: bool) {
         println!("[dry-run] would shut down now");
         return;
     }
-    if let Err(e) = Command::new(SMART_SHUTDOWN).status() {
-        eprintln!("smart_shutdown failed to spawn: {e}");
+    match Command::new(SMART_SHUTDOWN).status() {
+        Ok(s) if s.success() => {}
+        Ok(s) => tg(&format!("supervise: smart_shutdown exited {s} — forcing poweroff")),
+        Err(e) => tg(&format!("supervise: smart_shutdown failed to spawn: {e} — forcing poweroff")),
     }
     std::thread::sleep(Duration::from_secs(20)); // give smart_shutdown's cleanup a chance to take us down first
     if let Err(e) = Command::new("sudo").args(["systemctl", "poweroff"]).status() {
