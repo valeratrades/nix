@@ -320,8 +320,10 @@
 )
 (defvar claude_sessions_hover_state false)
 (defvar claude_sessions_always_expand "false")
-(defpoll claude_sessions_compact_poll :initial "" :interval "1s" "/home/v/nix/home/config/tmux/claude_sessions.rs -c --markup")
-(defpoll claude_sessions_full_poll :interval "3s" "/home/v/nix/home/config/tmux/claude_sessions.rs --markup")
+; The long view is only ever on screen while the reveal is open, and this script is
+; the most expensive thing the bar polls — so it stops running when nothing shows it.
+(defpoll claude_sessions_compact_poll :initial "" :interval "1s" :run-while {bar_visible == "true"} "/home/v/nix/home/config/tmux/claude_sessions.rs -c --markup")
+(defpoll claude_sessions_full_poll :interval "3s" :run-while {bar_visible == "true" && (claude_sessions_always_expand == "true" || claude_sessions_hover_state)} "/home/v/nix/home/config/tmux/claude_sessions.rs --markup")
 (defwidget claude_sessions_widget[]
 	(box
 		:visible {bar_visible == "true" && claude_sessions_compact_poll != ""}
