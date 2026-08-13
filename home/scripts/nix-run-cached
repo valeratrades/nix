@@ -4,7 +4,9 @@
 # Tracks script usage and cleans up old caches (>30 days unused)
 # Caches the nix store path to avoid re-evaluating the flake expression every time
 
-SCRIPT="$1"
+# Absolute, so the binary cache below is keyed on the file rather than on whatever
+# cwd the caller happened to have.
+SCRIPT=$(realpath -e "$1") || exit 1
 shift
 
 CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-$HOME/.cargo/target}"
@@ -16,6 +18,28 @@ NIX_EXPR='let rust_flake = builtins.getFlake "github:oxalica/rust-overlay/5106a6
 # Keyed on the expression, so bumping the pin above invalidates the cache instead of
 # silently keeping the old toolchain alive.
 RUST_STORE_PATH_CACHE="$CARGO_TARGET_DIR/.rust-store-path-$(printf '%s' "$NIX_EXPR" | md5sum | cut -c1-8)"
+
+# eww polls some of these scripts once a second, and `cargo -Zscript` spends ~0.45s
+# resolving the manifest on every run even when nothing changed — several times the
+# runtime of the scripts themselves. Cargo is consulted only when the source is
+# newer than the binary it last produced.
+BIN_CACHE="$CARGO_TARGET_DIR/.bin-$(printf '%s' "$SCRIPT" | md5sum | cut -c1-16)"
+
+exec_cached_bin() {
+	[ -f "$BIN_CACHE" ] || return
+	local bin
+	bin=$(<"$BIN_CACHE")
+	[ -x "$bin" ] && [ ! "$SCRIPT" -nt "$bin" ] && exec "$bin" "$@"
+}
+
+# Empty on compile error or on an offline miss, leaving the callers below to run
+# cargo normally so the error (or the fetch-then-retry) surfaces as it always did.
+cache_bin() {
+	local exe
+	exe=$(env RUSTC_WRAPPER="" PATH="$1/bin:$PATH" "$1/bin/cargo" build -Zscript --offline -q --manifest-path "$SCRIPT" --message-format=json 2>/dev/null |
+		grep -o '"executable":"[^"]*"' | tail -1 | cut -d'"' -f4)
+	[ -n "$exe" ] && echo "$exe" >"$BIN_CACHE"
+}
 
 update_access_time() {
 	local script_hash
@@ -109,6 +133,8 @@ get_rust_store_path() {
 update_access_time
 cleanup_old_caches
 
+exec_cached_bin "$@"
+
 # Always run offline: cargo resolves from the local registry cache even for
 # scripts it has never built, so the network is only ever needed for deps that
 # were genuinely never downloaded. RUSTC_WRAPPER="" disables sccache from cargo
@@ -138,6 +164,7 @@ recover_101() {
 }
 
 run_script() {
+	cache_bin "$1" && exec_cached_bin "${@:2}"
 	run_cargo "$1" "${@:2}"
 	local rc=$?
 	if [ $rc -ne 0 ] && try_fix_root_owned_dirs; then
