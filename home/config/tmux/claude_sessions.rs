@@ -425,19 +425,14 @@ fn pango_escape(s: &str) -> String {
 
 /// Get the child process PID of a shell (the claude process)
 fn get_child_pid(shell_pid: u32) -> Option<u32> {
-    let output = Command::new("pgrep")
-        .args(["-P", &shell_pid.to_string()])
-        .output()
-        .ok()?;
-
-    if !output.status.success() {
-        return None;
-    }
-
-    String::from_utf8_lossy(&output.stdout)
-        .lines()
-        .next()
-        .and_then(|s| s.parse().ok())
+    // Not `pgrep -P`: this is called once per pane on a 1s poll, and each pgrep
+    // walks all of /proc (cmdline+status+stat+environ+cgroup per process) to
+    // answer a question the kernel already has indexed here.
+    fs::read_to_string(format!("/proc/{shell_pid}/task/{shell_pid}/children"))
+        .ok()?
+        .split_whitespace()
+        .filter_map(|s| s.parse().ok())
+        .min()
 }
 
 /// Get the CWD of a process from /proc
@@ -1197,10 +1192,12 @@ fn extract_session_fingerprint(tmux_target: &str) -> Option<String> {
 /// Both ends of each transcript are searched: the head holds a session's opening
 /// messages (all a short/fresh session has), while for a LONG session the pane
 /// shows recent messages — which live in the tail, far past any head window.
-fn find_session_by_fingerprint(project_dir: &Path, fingerprint: &str) -> Option<PathBuf> {
+///
+/// Only transcripts written since the pane's process started are opened: this runs
+/// on a 1s eww poll, and a busy project dir holds hundreds of dead sessions whose
+/// head+tail windows added up to hundreds of MB of reads per tick.
+fn find_session_by_fingerprint(session_files: &[(PathBuf, Option<std::time::SystemTime>, std::time::SystemTime)], fingerprint: &str, proc_start: std::time::SystemTime) -> Option<PathBuf> {
     use std::io::{BufRead, BufReader};
-
-    let entries = fs::read_dir(project_dir).ok()?;
 
     let mut matches: Vec<(PathBuf, std::time::SystemTime)> = Vec::new();
 
@@ -1214,16 +1211,8 @@ fn find_session_by_fingerprint(project_dir: &Path, fingerprint: &str) -> Option<
             && line.contains(fingerprint)
     };
 
-    for entry in entries.filter_map(|e| e.ok()) {
-        let name = entry.file_name();
-        let name_str = name.to_string_lossy();
-        if !name_str.ends_with(".jsonl") || name_str.starts_with("agent-") {
-            continue;
-        }
-
-        let path = entry.path();
-
-        let file = match fs::File::open(&path) {
+    for (path, created, _) in session_files.iter().filter(|(_, _, modified)| *modified >= proc_start) {
+        let file = match fs::File::open(path) {
             Ok(f) => f,
             Err(_) => continue,
         };
@@ -1236,7 +1225,7 @@ fn find_session_by_fingerprint(project_dir: &Path, fingerprint: &str) -> Option<
         if !found {
             // Tail window, same size rationale as transcript_working.
             found = (|| -> Option<bool> {
-                let mut file = fs::File::open(&path).ok()?;
+                let mut file = fs::File::open(path).ok()?;
                 let len = file.metadata().ok()?.len();
                 file.seek(SeekFrom::Start(len.saturating_sub(256 * 1024))).ok()?;
                 let mut bytes = Vec::new();
@@ -1246,12 +1235,8 @@ fn find_session_by_fingerprint(project_dir: &Path, fingerprint: &str) -> Option<
             .unwrap_or(false);
         }
 
-        if found {
-            if let Ok(metadata) = fs::metadata(&path) {
-                if let Ok(created) = metadata.created() {
-                    matches.push((path, created));
-                }
-            }
+        if let (true, Some(created)) = (found, created) {
+            matches.push((path.clone(), *created));
         }
     }
 
@@ -1319,7 +1304,7 @@ fn find_session_file_for_process(project_dir: &Path, process_start: Option<std::
     // Strategy 2: For resumed sessions, use screen content fingerprinting
     // This finds the original session file by matching visible conversation content
     if let Some(fingerprint) = extract_session_fingerprint(tmux_target) {
-        if let Some(path) = find_session_by_fingerprint(project_dir, &fingerprint) {
+        if let Some(path) = find_session_by_fingerprint(&session_files, &fingerprint, proc_start) {
             return Some(path);
         }
     }
