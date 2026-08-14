@@ -110,6 +110,10 @@ you have a [`/tracey` skill for using it](../skills/tracey/). What is even more 
 3. be mindful of adding new requirements. Each will shape all the code in the section it impacts, so we can only afford to add those that follow from first principles. Each is required to be kept in mind at all times, so we can't waste them on minute details.
 4. each rule must follow from first principles, so their descriptions are naturally concise. If while reading the spec, you notice that a rule has multiple paragraphs on it, - it's very likely invalid: having to explain so much means it carries a lot of internal implementation state. And if you notice that you wrote a verbose rule yourself, - stop and consider whether you can abort its addition.
 
+> for a good rule of thumb, - ask "does the rule require to be kept in the head when editing". If not, drop it.
+
+  Example: say we had a rule that required objects implementing a weaker version of some trait, to say why they can't use the stronger one. If that trait then gets `const WHY: &'static str;` on it, - this will make compiler force the programmer to add it. The text rule then stops adding anything, and is to be removed.
+
 ## Upkeep
 regardless of what you are working on atm, all violations you find in docs (or of code against docs) are to be noted, and either fixed in-place (do yourself if other rules here cover what to do with it), either brought up to me in the end (if you found a fundamental error, and there is no straight fix that wouldn't have deep implications).
 
