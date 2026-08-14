@@ -1,6 +1,6 @@
 ---
 name: typdoc
-description: "Write a `<name>.typ` design document for a subsystem — a Typst file that draws how the thing works, with fletcher diagrams and self-recounting census sections. Use when asked to draw up / document / model a crate, module or subsystem's operation, or to add a .typ next to existing ones. Also covers keeping such a file current."
+description: "Write a `<name>.typ` design document for a subsystem — a Typst file that draws how the thing works, using fletcher diagrams. Use when asked to {draw up / document / model} a module or subsystem's operation, or to add a .typ next to existing ones. Also covers keeping such a file up-to-date."
 ---
 
 # typdoc
@@ -15,8 +15,8 @@ Worked example, and the file to read before writing a new one:
 
 ## The order
 
-1. **Seed.** Read the nearest existing `.typ` in the repo. It carries the format, the register
-   and the preamble, so those need no instruction.
+1. **Seed.** If they already exist, read nearest `.typ` in the repo. It carries the format,
+   the register and the preamble, so those need no instruction.
 2. **Cover.** `/graphify` over the subsystem before reading by hand. Put this in the body of
    the request; trailing "also remember to" gets dropped.
 3. **Text only.** ASCII plates. Every transitional state the data passes through, and the
@@ -25,9 +25,10 @@ Worked example, and the file to read before writing a new one:
 4. **Then draw.** `@preview/fletcher` once the text has settled. One diagram per section,
    placed directly under the section it illustrates. A trailing gallery of all the diagrams
    loses the pairing.
-5. **Count in code.** Sections that report counts / sizes / costs are `#let` Typst that reads
    the sources and computes at render. See "Counted sections" below.
-6. **Render.** To `/tmp`, never into the repo.
+5. **Iterate.** ensure what you wrote and drew makes sense, read the skills and docs instructions again, polish what you have, focus on removal of excess. While compiling the typ document to see if you drew the graphs correctly, always compile under /tmp, - no garbage artifacts to be added to source.
+
+> if you have sections that report counts / sizes / costs, - anything that will change with time, - you must have it compile procedurally. The `model.typ` from `trading_data` linked above has an example of how it's done, if you need it.
 
 ## Register
 
@@ -79,30 +80,3 @@ wait on it. Nothing is checked into the tree.
 per-sub-crate `.typ` for internals. Documentation stays at the precision of the level it sits
 at; the same pattern repeats one level down when a sub-crate grows modules worth their own
 files.
-
-## Prompt template
-
-`references/prompts.md` holds the original prompts these rules were extracted from, verbatim —
-read it when composing a request by hand.
-
-> Read `<nearest existing>.typ` first — same format, same register.
->
-> Run `/graphify` over `<subsystem path>`, then study it and compile `<name>.typ` in that
-> sub-crate.
->
-> Draw up its operation: every transitional data state, and the reasons for the decisions.
-> Draw it up in text first, do a few iterations over to narrow down on the most explicative
-> model, and diagrams come at the very end. Focus on getting the underlying problem space
-> right — all code is fluid around it.
->
-> Diagrams use `fletcher` (API as in <https://typst.app/project/prgiNWvUa5lYrtSnKn28Fp>), and
-> each one goes under the section it illustrates.
->
-> Explain what happens, never sell it. I don't know yet whether this design is good. No
-> sensational language, no judgments, no "it's X, not Y" constructions.
->
-> Any section reporting numbers is Typst code that pulls them from the sources at render —
-> search the module tree rather than hardcoding a file list. It presents what it finds and
-> explains nothing.
->
-> Never leave a `.pdf` in the tree; compile to a named pipe in `/tmp`.

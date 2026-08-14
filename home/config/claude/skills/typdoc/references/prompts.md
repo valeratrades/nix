@@ -1,4 +1,5 @@
 # Source prompts
+<!--added to showcase what kinds of problems appeared in naive approach, - to ensure that our harness covers all of them-->
 
 Verbatim, from the sessions that produced
 <https://github.com/EV-invest/trading_data/blob/main/trading_data_dag/model.typ>,

@@ -1,11 +1,14 @@
 ---
 paths:
   - "docs/**"
-  - "**/**.typ"
+  - "**/*.typ"
   - "**/README.md"
 ---
 
-all documentation, spec and invariants. Comment rules live in CLAUDE.md, - they must be in context whenever code is written, which a path-scoped rule can't guarantee
+all things documentation, Spec and Invariants
+
+everything we write is there for a single purpose: **giving programmer context** **necessary** for making correct **decisions when editing**.
+Absolutely everything else follows suit from this.
 
 ## General Rules
 - brevity is extremely important.
@@ -20,6 +23,16 @@ all documentation, spec and invariants. Comment rules live in CLAUDE.md, - they 
 - documentation must be placed as close as possible to the point of its **utilization**.
   Meaning, if we want to talk about why some trait looks as it does, - it goes onto the trait as doc-string. If we talk about how some objects from different parts of a module interact, - it goes onto the doc of the module. If we're talking about boundary of a sub-crate, it goes on sub-crate level doc. If we reason about what parts of the problem space the sub-crates cover, and thus what thin waists between them are appropriate, - this goes in top-level architecture.
   This achieves two objectives: 1) closer it is to the thing it covers, the more difficult it is to get outdated; 2) the reader only sees it when they get down to the level where knowing and reasoning about the objects it covers is necessary.
+
+- don't restate details.
+  If same piece of information (which isn't an Invariant/Spec), is restated in different places, - this is no better than code duplication. It should be brought up to the level it becomes relevant at, and then just referenced.
+
+- drawing > speaking
+  as always, when something can be shown more concisely through drawing, it should be. Back to brevity, - we use the medium that captures the concept most precisely, thus saving the reader from having to ingest more "information tokens" than necessary. Great example is cross-section relationships, - a single drawing at the top will save a lot of hand-waving in text.
+
+- don't mention things that are already managed automatically.
+  Documents are there for the developer to know how to reason about the problem space, before diving into making edits. So think about it: if some property is already enforced through type system, we don't need to mention the need to provide it. Code is the best documentation.
+  To give an example of when docs are necessary, through the same lense, - consider what if we had a magical rust-flag to say "force zero-cost", - we wouldn't need to add this as an Invariant, would we. And then it's absence is what makes us have it listed. Documentation that stays is **documentation we can't remove**.
 
 ## Top Level Docs
 
@@ -39,7 +52,7 @@ Usage and Installation are automatically checked against ASD-STE100 (Simplified 
 For more info, here is the tool that does it: [ste_checker](https://github.com/valeratrades/ste_checker/blob/main/skill/SKILL.md)
 
 ### ARCHITECTURE.md
-the most important file in the repo. Every recurring contributor reads it in full, so every line is paid for many times over, - it must be as small and as informative as it can be. Ruthlessness here is required.
+the most important file in the repo is [docs/ARCHITECTURE.md]. Every recurring contributor reads it in full, so every line is paid for many times over, - it must be as small and as informative as it can be. Ruthlessness here is required.
 
 it represents the **correct** architecture and data-flow. If something is misimplemented right now, we write how it should be, not how it is. Code follows ARCHITECTURE.md, never the other way around.
 
@@ -56,13 +69,13 @@ what goes in:
 
 what stays out: how a module works inside, anything that changes often, anything that would need re-syncing on refactors.
 
-revisit a couple of times a year rather than continuously. If the grouping you find yourself describing doesn't match the directory layout, the directories are what should move. //NB: I'm referring to optimal architecture here, not the one outlined in the current document version. Keep in mind that everything can get outdated, and it's on you to figure out if it's the code that's behind the target state outlined in documentation, or documentation is behind the new findings/considerations that have already impacted the code shape.
+revisit a couple of times a year rather than continuously. If the optimal grouping you find yourself describing doesn't match the directory layout, the directories are what should move.
 
 > Note that we're not that far from [mod-level docs](#mod-level-docs) here. They too stand to represent the architecture of the considered scope. It's all about the level we're reasoning about the implementation at.
 
 ## Mod Level Docs
 many sub-crates or modules deserve their own docs section, - we do this through a README.md sitting at its root.
-It is then embedded into doc-string of its `mod.rs` using `#![doc = include_str!("README.md")]`, (or into sub-crate's top-level `lib.rs` with `#![doc = include_str!("README.md")]` from `src/` above it)
+It is then embedded into doc-string of its `mod.rs` using `#![doc = include_str!("README.md")]`, (or into sub-crate's top-level `lib.rs` with `#![doc = include_str!("../README.md")]` from `src/` above it)
 
 covers:
 - what the module owns: the few types and fns a consumer touches, and what they promise
@@ -73,8 +86,12 @@ stays out: anything global (→ [ARCHITECTURE.md]), anything fundamental (→ [s
 
 > be always very cognisant of entropy, - every line and word will have to be maintained manually. Every single word here is a cost, - a trade-off between allowing people to reason about code inside the sub-crate/module at a glance vs ending up confusing them with outdated references/explanations down the line.
 
+and again, note how similar this is to top-level ARCHITECTURE.md. The lower we go, the less consistent the shapes will be, so it has more freedom. But underlying idea is all the same, - presenting the core of the relevant considerations at the level where their understanding becomes necessary.
+
 ### In-Depth Logic
 in large projects, we will often have non-trivial systems introduced to solve the underlying problem. They can be very complex and difficult to wrap the head around. For them, we write a specialized Typst document, to give a handle on reasoning about them.
+
+for how to write them, refer to [`/typdoc` skill](../skills/typdoc)
 
 ## Spec
 spec is a concept we add for procedurally keeping track of Invariants.
@@ -87,15 +104,15 @@ Once again, - fundamental, - not those caused by current project arch: this is T
 ### Tracey
 `tracey` cli is attached to help with tracking these invariants, but procedural enforcement it allows for is narrow, - we have to be vigilant ourselves in upkeeping it
 
-you have a [skill for using it](../skills/tracey/). What is even more important though, is why/when to:
+you have a [`/tracey` skill for using it](../skills/tracey/). What is even more important though, is why/when to:
 1. only declare requirements that can't be forced programmatically. No amount of reminders can compare with being fundamentally forced to do something.
 2. each requirement has a level at which it is relevant. Important ones will live in top-level [docs/spec/], as mentioned in [Architecture section](#architecturemd), but in complex workspaces we may need to enforce per sub-crate or even per-module invariants: those trivially then need to reference `spec/` declared at the same level.
 3. be mindful of adding new requirements. Each will shape all the code in the section it impacts, so we can only afford to add those that follow from first principles. Each is required to be kept in mind at all times, so we can't waste them on minute details.
 4. each rule must follow from first principles, so their descriptions are naturally concise. If while reading the spec, you notice that a rule has multiple paragraphs on it, - it's very likely invalid: having to explain so much means it carries a lot of internal implementation state. And if you notice that you wrote a verbose rule yourself, - stop and consider whether you can abort its addition.
 
 ## Upkeep
-regardless of what you are working on atm, all violations you find in docs (or of code against docs) are to be marked.
+regardless of what you are working on atm, all violations you find in docs (or of code against docs) are to be noted, and either fixed in-place (do yourself if other rules here cover what to do with it), either brought up to me in the end (if you found a fundamental error, and there is no straight fix that wouldn't have deep implications).
 
-the core spec surface must be lean, and following [outlined rules](#spec). If possibility of (making spec more concise and focused), or (decoupling it from accidental dependence on current code's shape), etc, are found, - they are worthy of being added to your implementation's todo list immediately. Note however, that we are not to change the meaning of the spec lightly, - Invariants are above code, and if it seems that you found some that are wrong/unworthy of being invariants, - you are to suggest a fix for them to me, at the end of your work.
+the core spec surface must be lean, and following [outlined rules](#spec). If possibility of (making Spec and Invariants more concise and focused), or (decoupling it from accidental dependence on current code's shape), etc, are found, - they are worthy of being added to your implementation's todo list immediately. Note however, that we are not to change the meaning of the spec lightly, - Invariants are above code, and if it seems that you found some that are wrong/unworthy of being invariants, - you are to suggest a fix for them to me, at the end of your work.
 
 > because of how important Invariants are to the shaping of the entire codebase, polishing them is worthwhile
