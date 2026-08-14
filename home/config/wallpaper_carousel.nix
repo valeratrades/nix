@@ -71,17 +71,13 @@
 
     "ruthlessly optimize\nthe social circle"
 
-    "#12: use selective honesty and generosity\nto disarm your victim"
-
-    "#28: enter action with boldness"
+    "all errors due to boldness,\ncan be corrected through more boldness"
 
     "#29: plan all the way to the end"
 
     "#31: control the options:\nget others to play with the cards you deal"
 
     "#33: discover each man's thumbscrew"
-
-    "#35: master the art of timing"
 
     "#36: disdain things you cannot have:\nignoring them is the best revenge"
 
