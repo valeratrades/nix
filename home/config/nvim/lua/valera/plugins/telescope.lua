@@ -31,12 +31,19 @@ return require "lazier" {
 			return paths
 		end
 
-		-- Build file_ignore_patterns with submodules excluded
-		local base_ignore_patterns = { ".git/", "target/", "%.lock" }
+		-- pruned at the walker, not post-filtered: `no_ignore = true` means gitignore won't do it for us
+		local excluded_dirs = {
+			".git", "target", "node_modules", "graphify-out", "graphify_out",
+			".direnv", ".venv", "__pycache__", ".mypy_cache", ".pytest_cache",
+		}
+		local base_ignore_patterns = { "%.lock" }
 		local include_submodules = false -- toggle state
 
 		local function build_ignore_patterns()
 			local patterns = vim.tbl_extend("force", {}, base_ignore_patterns)
+			for _, dir in ipairs(excluded_dirs) do
+				table.insert(patterns, dir .. "/")
+			end
 			if not include_submodules then
 				local submodule_paths = get_submodule_paths()
 				for _, path in ipairs(submodule_paths) do
@@ -49,6 +56,10 @@ return require "lazier" {
 		-- Build exclusion args for fd and rg (different syntax)
 		local function build_fd_exclude_args()
 			local args = {}
+			for _, dir in ipairs(excluded_dirs) do
+				table.insert(args, "--exclude")
+				table.insert(args, dir)
+			end
 			if not include_submodules then
 				local submodule_paths = get_submodule_paths()
 				for _, path in ipairs(submodule_paths) do
@@ -62,6 +73,10 @@ return require "lazier" {
 
 		local function build_rg_exclude_args()
 			local args = {}
+			for _, dir in ipairs(excluded_dirs) do
+				table.insert(args, "--glob")
+				table.insert(args, "!" .. dir)
+			end
 			if not include_submodules then
 				local submodule_paths = get_submodule_paths()
 				for _, path in ipairs(submodule_paths) do
