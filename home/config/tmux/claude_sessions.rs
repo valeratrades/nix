@@ -15,11 +15,6 @@ serde_json = "1.0"
 
 [dev-dependencies]
 insta = "1"
-
-# eww runs this once a second; an unoptimised regex/serde_json build spends more
-# time in userspace than the whole rest of the poll.
-[profile.dev]
-opt-level = 2
 ---
 
 use clap::Parser;

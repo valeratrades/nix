@@ -1,124 +1,152 @@
 #!/usr/bin/env bash
 # Wrapper for cargo -Zscript with nix, caches the resolved store path
 # Usage: nix-run-cached <script.rs> [args...]
-# Tracks script usage and cleans up old caches (>30 days unused)
-# Caches the nix store path to avoid re-evaluating the flake expression every time
+# Caches the nix store path to avoid re-evaluating the flake expression every time,
+# and the built binary so an unchanged script never pays cargo's manifest resolution.
 
-# Absolute, so the binary cache below is keyed on the file rather than on whatever
-# cwd the caller happened to have.
-SCRIPT=$(realpath -e "$1") || exit 1
+# A key, not a canonical name: two spellings of the same script just get two cache
+# entries, and each is independently correct because freshness is an mtime compare.
+[[ $1 == /* ]] && SCRIPT="$1" || SCRIPT="$PWD/$1"
 shift
 
-CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-$HOME/.cargo/target}"
-METADATA_FILE="$CARGO_TARGET_DIR/.script-access-times"
+STATE_DIR="$HOME/.cargo/target"
+[ -d "$STATE_DIR" ] || mkdir -p "$STATE_DIR"
+
+# Where `cargo -Zscript` puts its per-script build. It moved to $CARGO_HOME/build
+# during the 1.92 nightlies, when cargo split build-dir off target-dir; what is left
+# under STATE_DIR is pre-cutover, plus whatever still runs an older pinned toolchain.
+BUILD_ROOTS=("$HOME/.cargo/build" "$STATE_DIR")
 : "${DEFAULT_CARGO_NIGHTLY_VERSION:?unset — set in os/nixos/desktop/environment.nix and re-login}"
 
 NIX_EXPR='let rust_flake = builtins.getFlake "github:oxalica/rust-overlay/5106a604b3d67cffe8eb51a8bd9f04e607f0d31d"; nixpkgs_flake = builtins.getFlake "github:NixOS/nixpkgs/e73de5be04e0eff4190a1432b946d469c794e7b4"; pkgs = import nixpkgs_flake { system = builtins.currentSystem; overlays = [rust_flake.overlays.default]; }; in pkgs.rust-bin.nightly."'"$DEFAULT_CARGO_NIGHTLY_VERSION"'".default.override { extensions = ["rust-src"]; }'
 
-# Keyed on the expression, so bumping the pin above invalidates the cache instead of
-# silently keeping the old toolchain alive.
-RUST_STORE_PATH_CACHE="$CARGO_TARGET_DIR/.rust-store-path-$(printf '%s' "$NIX_EXPR" | md5sum | cut -c1-8)"
+# These scripts are polled by the bar, bound to keys, and run in loops — read far
+# more often than they are edited, so they are built optimised. Passed to cargo
+# rather than written into every frontmatter, and deliberately not exported: a
+# script that shells out to cargo itself should not inherit this.
+OPT_LEVEL=2
 
-# eww polls some of these scripts once a second, and `cargo -Zscript` spends ~0.45s
-# resolving the manifest on every run even when nothing changed — several times the
-# runtime of the scripts themselves. Cargo is consulted only when the source is
-# newer than the binary it last produced.
-BIN_CACHE="$CARGO_TARGET_DIR/.bin-$(printf '%s' "$SCRIPT" | md5sum | cut -c1-16)"
+# Keyed on everything that decides what the binary contains, so bumping the toolchain
+# or the profile above rebuilds instead of silently serving the old artifact.
+BIN_CACHE="$STATE_DIR/.bin-$DEFAULT_CARGO_NIGHTLY_VERSION-o$OPT_LEVEL-${SCRIPT//\//%}"
 
+cargo_env() {
+	env RUSTC_WRAPPER="" CARGO_PROFILE_DEV_OPT_LEVEL="$OPT_LEVEL" PATH="$1/bin:$PATH" "$1/bin/cargo" "${@:2}"
+}
+
+# Rewriting the entry stamps its mtime, which is the only access record the sweep
+# below needs — and unlike `touch` it costs no fork on a path that runs every second.
 exec_cached_bin() {
 	[ -f "$BIN_CACHE" ] || return
 	local bin
 	bin=$(<"$BIN_CACHE")
-	[ -x "$bin" ] && [ ! "$SCRIPT" -nt "$bin" ] && exec "$bin" "$@"
+	[ -x "$bin" ] && [ ! "$SCRIPT" -nt "$bin" ] || return
+	echo "$bin" >"$BIN_CACHE"
+	exec "$bin" "$@"
 }
 
 # Empty on compile error or on an offline miss, leaving the callers below to run
 # cargo normally so the error (or the fetch-then-retry) surfaces as it always did.
 cache_bin() {
 	local exe
-	exe=$(env RUSTC_WRAPPER="" PATH="$1/bin:$PATH" "$1/bin/cargo" build -Zscript --offline -q --manifest-path "$SCRIPT" --message-format=json 2>/dev/null |
+	exe=$(cargo_env "$1" build -Zscript --offline -q --manifest-path "$SCRIPT" --message-format=json 2>/dev/null |
 		grep -o '"executable":"[^"]*"' | tail -1 | cut -d'"' -f4)
 	[ -n "$exe" ] && echo "$exe" >"$BIN_CACHE"
 }
 
-update_access_time() {
-	local script_hash
-	script_hash=$(echo "$SCRIPT" | md5sum | cut -c1-2)
-	local timestamp
-	timestamp=$(date +%s)
+# <root>/<2 hex>/<hash> holding the given binary. No match — an unrecognised layout,
+# or a path outside the build roots — yields nothing rather than a guess, since the
+# only consumer of this deletes what it returns.
+build_dir_of() {
+	local root rest h1 h2
+	for root in "${BUILD_ROOTS[@]}"; do
+		[[ $1 == "$root"/* ]] || continue
+		rest="${1#"$root"/}"
+		h1="${rest%%/*}"
+		rest="${rest#*/}"
+		h2="${rest%%/*}"
+		[[ $h1 =~ ^[0-9a-f]{2}$ && -n $h2 && $h2 != "$rest" ]] || return 1
+		printf '%s/%s/%s\n' "$root" "$h1" "$h2"
+		return 0
+	done
+	return 1
+}
 
-	mkdir -p "$CARGO_TARGET_DIR"
-	touch "$METADATA_FILE"
+# A build dir is worth keeping only while something still runs the script that
+# produced it. Dirs nothing points at get a longer grace period: they belong to
+# scripts this wrapper never saw — `cargo -Zscript` by hand, or another wrapper.
+sweep_stale_builds() {
+	local unused_after grace_after
+	unused_after=$(mktemp) && grace_after=$(mktemp) || return
+	touch -d '30 days ago' "$unused_after"
+	touch -d '90 days ago' "$grace_after"
 
-	# Update or add entry for this script hash
-	if grep -q "^$script_hash " "$METADATA_FILE" 2>/dev/null; then
-		sed -i "s/^$script_hash .*/$script_hash $timestamp/" "$METADATA_FILE"
-	else
-		echo "$script_hash $timestamp" >>"$METADATA_FILE"
-	fi
+	# Two passes: a script has one build dir but can have several cache entries
+	# (one per toolchain/profile it was ever built under), so nothing may be
+	# deleted until every entry has had its say.
+	local live=() dropped=() cache bin dir root
+	for cache in "$STATE_DIR"/.bin-*; do
+		[ -f "$cache" ] || continue
+		bin=$(<"$cache")
+		dir=$(build_dir_of "$bin")
+		if [ "$cache" -ot "$unused_after" ]; then
+			rm -f "$cache"
+			[ -n "$dir" ] && dropped+=("$dir")
+		elif [ -n "$dir" ]; then
+			live+=("$dir")
+		fi
+	done
+
+	for dir in "${dropped[@]}"; do
+		[[ " ${live[*]} " == *" $dir "* ]] || rm -rf "$dir"
+	done
+
+	for root in "${BUILD_ROOTS[@]}"; do
+		for dir in "$root"/*/*/; do
+			dir="${dir%/}"
+			[ -d "$dir" ] || continue
+			[[ " ${live[*]} " == *" $dir "* ]] && continue
+			[ "$dir" -ot "$grace_after" ] && rm -rf "$dir"
+		done
+	done
+
+	rm -f "$unused_after" "$grace_after"
+}
+
+# Once a day, detached: the sweep stats hundreds of directories and nothing waits on
+# its result. The stamp is read inline, before the exec above, because a file read
+# costs no process — a machine whose scripts are all cached must still sweep.
+maybe_sweep() {
+	local stamp="$STATE_DIR/.next-sweep" next=0
+	[ -f "$stamp" ] && next=$(<"$stamp")
+	((EPOCHSECONDS < next)) && return
+	echo $((EPOCHSECONDS + 86400)) >"$stamp"
+	sweep_stale_builds &>/dev/null &
+	disown
 }
 
 try_fix_root_owned_dirs() {
 	[ "$(id -u)" = "0" ] && return 1
 
-	# Fix any root-owned files/dirs in cargo target (from accidental sudo runs)
+	# Fix any root-owned files/dirs in cargo's build tree (from accidental sudo runs)
 	# Cargo's -Zscript hashes script content, not path, so `sudo 2fa` created
-	# /home/v/.cargo/target/2b/... as root, blocking normal user builds.
+	# /home/v/.cargo/build/2b/... as root, blocking normal user builds.
 	local root_owned
-	root_owned=$(find "$CARGO_TARGET_DIR" -maxdepth 2 -user root 2>/dev/null | head -1)
+	root_owned=$(find "${BUILD_ROOTS[@]}" -maxdepth 2 -user root 2>/dev/null | head -1)
 	[ -z "$root_owned" ] && return 1
 
 	echo "WARN: $root_owned was root-owned, fixing" >&2
 	sudo chown -R "$(id -un):$(id -gn)" "$root_owned" 2>/dev/null
 }
 
-cleanup_old_caches() {
-	local now
-	now=$(date +%s)
-	local threshold=$((30 * 24 * 60 * 60)) # 30 days in seconds
-	local needs_cleanup=false
-
-	[ -f "$METADATA_FILE" ] || return
-
-	while read -r hash timestamp; do
-		if ((now - timestamp > threshold)); then
-			needs_cleanup=true
-			break
-		fi
-	done <"$METADATA_FILE"
-
-	if $needs_cleanup; then
-		(
-			# Run cleanup in background
-			while read -r hash timestamp; do
-				if ((now - timestamp > threshold)); then
-					rm -rf "${CARGO_TARGET_DIR:?}/$hash"
-					sed -i "/^$hash /d" "$METADATA_FILE"
-				fi
-			done <"$METADATA_FILE"
-
-			# Mark orphaned directories with timestamp 60 days in future (effective 90d retention)
-			local future_timestamp=$((now + 60 * 24 * 60 * 60))
-			for dir in "$CARGO_TARGET_DIR"/*/; do
-				[ -d "$dir" ] || continue
-				local dirname
-				dirname=$(basename "$dir")
-				[[ "$dirname" =~ ^[0-9a-f]{2}$ ]] || continue
-				if ! grep -q "^$dirname " "$METADATA_FILE" 2>/dev/null; then
-					echo "$dirname $future_timestamp" >>"$METADATA_FILE"
-				fi
-			done
-		) &>/dev/null &
-		disown
-	fi
-}
-
-# Get rust toolchain store path (cached to avoid 2+ second nix eval overhead)
+# Get rust toolchain store path (cached to avoid 2+ second nix eval overhead).
+# Keyed on the expression, so bumping the pin invalidates the cache instead of
+# silently keeping the old toolchain alive.
 get_rust_store_path() {
-	# Check if we have a cached store path that still exists
+	RUST_STORE_PATH_CACHE="$STATE_DIR/.rust-store-path-$(printf '%s' "$NIX_EXPR" | md5sum | cut -c1-8)"
 	if [ -f "$RUST_STORE_PATH_CACHE" ]; then
 		local cached_path
-		cached_path=$(cat "$RUST_STORE_PATH_CACHE")
+		cached_path=$(<"$RUST_STORE_PATH_CACHE")
 		if [ -d "$cached_path" ]; then
 			echo "$cached_path"
 			return 0
@@ -130,9 +158,7 @@ get_rust_store_path() {
 	return 1
 }
 
-update_access_time
-cleanup_old_caches
-
+maybe_sweep
 exec_cached_bin "$@"
 
 # Always run offline: cargo resolves from the local registry cache even for
@@ -141,7 +167,7 @@ exec_cached_bin "$@"
 # config to avoid version mismatches; PATH must include the nix rust bin so
 # cargo finds the correct rustc.
 run_cargo() {
-	env RUSTC_WRAPPER="" PATH="$1/bin:$PATH" "$1/bin/cargo" -Zscript --offline -q "$SCRIPT" "${@:2}"
+	cargo_env "$1" -Zscript --offline -q "$SCRIPT" "${@:2}"
 }
 
 # rc 101 is ambiguous: program panic, compile error, or offline resolution
@@ -151,14 +177,14 @@ run_cargo() {
 # otherwise -> compile error, already printed by the run attempt.
 recover_101() {
 	local err
-	if err=$(env RUSTC_WRAPPER="" PATH="$1/bin:$PATH" "$1/bin/cargo" build -Zscript -q --offline --manifest-path "$SCRIPT" 2>&1); then
+	if err=$(cargo_env "$1" build -Zscript -q --offline --manifest-path "$SCRIPT" 2>&1); then
 		exit 101
 	fi
 	if ! grep -q offline <<<"$err"; then
 		exit 101
 	fi
 	notify-send "fetching crates for $(basename "$SCRIPT")..." -t 3000 2>/dev/null &
-	env RUSTC_WRAPPER="" PATH="$1/bin:$PATH" "$1/bin/cargo" build -Zscript -q --manifest-path "$SCRIPT" || exit $?
+	cargo_env "$1" build -Zscript -q --manifest-path "$SCRIPT" || exit $?
 	run_cargo "$1" "${@:2}"
 	exit $?
 }
@@ -186,8 +212,7 @@ notify-send "nix cache miss, fetching..." -t 3000 2>/dev/null &
 # Build and cache the store path; -o registers a gc root so the toolchain
 # can't be garbage-collected out from under us (which would force this
 # network-requiring nix eval at some random later run).
-mkdir -p "$CARGO_TARGET_DIR"
-if ! RUST_PATH=$(nix build -o "$CARGO_TARGET_DIR/.rust-toolchain" --print-out-paths --impure --expr "$NIX_EXPR" 2>/dev/null); then
+if ! RUST_PATH=$(nix build -o "$STATE_DIR/.rust-toolchain" --print-out-paths --impure --expr "$NIX_EXPR" 2>/dev/null); then
 	echo "nix build failed" >&2
 	exit 1
 fi
