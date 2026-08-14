@@ -3,10 +3,9 @@ paths:
   - "**/ARCHITECTURE.md"
   - "**/README.md"
   - "docs/**"
-  - "**/*.{rs,py,nix,ts,tsx,js,jsx,go,sh,fish,lua,sql,c,h,cpp,hpp}"
 ---
 
-all comments, documentation, spec and invariants
+all documentation, spec and invariants. Comment rules live in CLAUDE.md, - they must be in context whenever code is written, which a path-scoped rule can't guarantee
 
 ## General Rules
 - brevity is extremely important. Never write a word if it doesn't add context.
@@ -14,23 +13,6 @@ all comments, documentation, spec and invariants
 - never defend a decision. Saying why it was taken is fine; arguing that it is correct is not, - it wastes space and makes the decision harder to revisit once we discover we were wrong. No assertive statements, no self-congratulation.
 
 - legacy parts of the implementation are to never be mentioned. The only place where it's acceptable is CHANGELOG.md. When we realize that some part of what we're doing is wrong, - we start treating it as it never existed, we do not document things like "unlike the old design, we do X". Documentation is about what happens at lower level, and why (and under what constraints) it happens at the higher level; - there is no space for anything else.
-
-## Comments
-default is no comment. You can't go wrong by not adding one, you can go wrong by adding one.
-
-- never explain *what* happens, - that pins current behavior into prose, which then goes stale while the code moves on. Comment only *why*: an invariant being relied on, or the reason a specific line exists. If reading the code suffices, say nothing.
-- prefer line-tail comments, - attaching to a specific item forces concision.
-- prefer linking [ARCHITECTURE.md] or the mod's README over writing new prose in place.
-- never document temporary circumstances, - github issues are for that.
-- if you have to explain *why* the code looks the way it does, the code is already questionable, - fix it instead.
-- cutting comments in code you're touching is always a win, take the initiative. A paragraph above a function is nearly always a sentence too long:
-```rust
-/// run id, to prevent collisions of runs across logic and config version
-pub fn run_id(config: &crate::config::AppConfig) -> String {
-  format!("{}_{}", env!("CARGO_PKG_VERSION"), config_hash(config))
-}
-```
-that is the correct amount.
 
 ## Top Level Docs
 
@@ -50,7 +32,7 @@ Usage and Installation are automatically checked against ASD-STE100 (Simplified 
 For more info, here is the tool that does it: [ste_checker](https://github.com/valeratrades/ste_checker/blob/main/skill/SKILL.md)
 
 ### ARCHITECTURE.md
-the most important file in the repo. Every recurring contributor reads it in full, so every line is paid for many times over, - it must be as small and as informative as it can be. Ruthlessness here is the requirement, not a preference.
+the most important file in the repo. Every recurring contributor reads it in full, so every line is paid for many times over, - it must be as small and as informative as it can be. Ruthlessness here is required.
 
 it represents the **correct** architecture and data-flow. If something is misimplemented right now, we write how it should be, not how it is. Code follows ARCHITECTURE.md, never the other way around.
 
@@ -64,7 +46,7 @@ what goes in:
 
 what stays out: how a module works inside, anything that changes often, anything that would need re-syncing on every refactor.
 
-revisit a couple of times a year rather than continuously. If the grouping you find yourself describing doesn't match the directory layout, the directories are what should move.
+revisit a couple of times a year rather than continuously. If the grouping you find yourself describing doesn't match the directory layout, the directories are what should move. //NB: I'm referring to optimal architecture here, not the one outlined in the current document version. Keep in mind that everything can get outdated, and it's on you to figure out if it's the code that's behind the target state outlined in documentation, or documentation is behind the new findings/considerations that have already impacted the code shape.
 
 ## Mod Level Docs
 each sub-crate or module deserves its own docs section, - `//!` header, or a README.md sitting next to it.
