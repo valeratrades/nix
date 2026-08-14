@@ -34,7 +34,7 @@ return require "lazier" {
 		-- pruned at the walker, not post-filtered: `no_ignore = true` means gitignore won't do it for us
 		local excluded_dirs = {
 			".git", "target", "node_modules", "graphify-out", "graphify_out",
-			".direnv", ".venv", "__pycache__", ".mypy_cache", ".pytest_cache",
+			".direnv", ".devenv", ".venv", "__pycache__", ".mypy_cache", ".pytest_cache", ".ruff_cache",
 		}
 		local base_ignore_patterns = { "%.lock" }
 		local include_submodules = false -- toggle state
