@@ -15,10 +15,24 @@ all comments, documentation, spec and invariants
 - legacy parts of the implementation are to never be mentioned. The only place where it's acceptable is CHANGELOG.md. When we realize that some part of what we're doing is wrong, - we start treating it as it never existed, we do not document things like "unlike the old design, we do X". Documentation is about what happens at lower level, and why (and under what constraints) it happens at the higher level; - there is no space for anything else.
 
 ## Top Level Docs
-- top-level readme is defined through [docs/.readme_assets], - make changes there, don't worry about even recompiling the top-level README after. They are the source of truth, - you change them; CI will handle pulling rebuild.
 
 ### Readme Assets
-//TODO: short outline of framework, a `>` quote line mentioning STE in Usage and Installation sections
+top-level README.md is defined through [docs/.readme_assets], - make changes there, and don't ever worry about what is in README.md now, - CI handles recompiling it automatically on pre-commit.
+
+so it's one asset file per README section, composed by `readme_fw`. README.md itself is generated, - once again, never edit it directly.
+
+Sections to know are:
+- [docs/.readme_assets/description.md]
+- [docs/.readme_assets/installation.(md|sh)]
+- [docs/.readme_assets/usage.(md|sh)]
+- [docs/.readme_assets/other.md]
+There are more, - consult [the framework](https://github.com/valeratrades/v_flakes/blob/main/readme_fw/skill/SKILL.md) if needed
+
+Usage and Installation are automatically checked against ASD-STE100 (Simplified Technical English). Write them for it: one meaning per word, active voice, short sentences. Words the project owns go in `docs/glossary.nix`, ordinary English never does.
+For more info, here is the tool that does it: [ste_checker](https://github.com/valeratrades/ste_checker/blob/main/skill/SKILL.md)
+
+### ARCHITECTURE.md
+TODO: compile the disjoint sections from general CLAUDE.md here, including inlining articles linked
 
 ## Mod Level Docs
 each sub-crate or module, is deserving of its own docs section.
