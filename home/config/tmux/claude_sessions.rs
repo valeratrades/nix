@@ -1130,18 +1130,7 @@ fn session_has_conversation(path: &Path) -> bool {
 }
 
 /// Extract a unique identifier from tmux pane content that can be matched to a session
-fn extract_session_fingerprint(tmux_target: &str) -> Option<String> {
-    let output = Command::new("tmux")
-        .args(["capture-pane", "-t", tmux_target, "-p", "-S", "-500"])
-        .output()
-        .ok()?;
-
-    if !output.status.success() {
-        return None;
-    }
-
-    let content = String::from_utf8_lossy(&output.stdout);
-
+fn extract_session_fingerprint(content: &str) -> Option<String> {
     // A visible user message is the fingerprint — its text exists verbatim in
     // exactly the transcripts that contain that conversation. v2 renders past
     // user messages as "❯ message" (regular space; the live input box uses an
@@ -1253,7 +1242,7 @@ fn find_session_by_fingerprint(session_files: &[(PathBuf, Option<std::time::Syst
 /// wrong window poisons everything downstream — its summary, its todos, and the
 /// transcript-based active↔finished verdict. None is strictly better than a
 /// neighbour's file.
-fn find_session_file_for_process(project_dir: &Path, process_start: Option<std::time::SystemTime>, tmux_target: &str) -> Option<PathBuf> {
+fn find_session_file_for_process(project_dir: &Path, process_start: Option<std::time::SystemTime>, deep: &str) -> Option<PathBuf> {
     // Without /proc visibility of the process there is nothing to anchor
     // attribution to — every heuristic below degenerates into "some file in
     // this dir", i.e. a guess.
@@ -1303,7 +1292,7 @@ fn find_session_file_for_process(project_dir: &Path, process_start: Option<std::
 
     // Strategy 2: For resumed sessions, use screen content fingerprinting
     // This finds the original session file by matching visible conversation content
-    if let Some(fingerprint) = extract_session_fingerprint(tmux_target) {
+    if let Some(fingerprint) = extract_session_fingerprint(deep) {
         if let Some(path) = find_session_by_fingerprint(&session_files, &fingerprint, proc_start) {
             return Some(path);
         }
@@ -1370,7 +1359,7 @@ struct SessionMetadata {
 }
 
 /// Get session info (todo and summary) for a tmux pane
-fn get_session_info_for_pane(shell_pid: u32, tmux_target: &str) -> Option<SessionMetadata> {
+fn get_session_info_for_pane(shell_pid: u32, deep: &str) -> Option<SessionMetadata> {
     let claude_pid = get_child_pid(shell_pid)?;
     let cwd = get_process_cwd(claude_pid)?;
     let project_name = path_to_project_name(&cwd);
@@ -1382,7 +1371,7 @@ fn get_session_info_for_pane(shell_pid: u32, tmux_target: &str) -> Option<Sessio
 
     // Get process start time to match with session file
     let proc_start = get_process_start_time(claude_pid);
-    let session_file = find_session_file_for_process(&project_dir, proc_start, tmux_target)?;
+    let session_file = find_session_file_for_process(&project_dir, proc_start, deep)?;
     let session_id = session_file
         .file_stem()
         .and_then(|s| s.to_str())
@@ -1406,6 +1395,195 @@ fn get_session_info_for_pane(shell_pid: u32, tmux_target: &str) -> Option<Sessio
     })
 }
 
+/// Every capture a pane needs, fetched in one batched round trip. A separate
+/// `tmux capture-pane` child per kind per pane was ~20 forks a second — the
+/// dominant cost of this script's poll.
+#[derive(Default)]
+struct PaneCapture {
+    /// `-p -S -50` — the classifier's window, and the dead-shell tail.
+    plain: String,
+    /// `-p -e -S -10` — the only way to tell typed input from ghost suggestions.
+    escaped: String,
+    /// `-p -S -500` — deep enough to hold a user message that still exists in the transcript.
+    deep: String,
+}
+
+const CAPTURE_KINDS: [(&str, &[&str]); 3] = [
+    ("plain", &["-p", "-S", "-50"]),
+    ("escaped", &["-p", "-e", "-S", "-10"]),
+    ("deep", &["-p", "-S", "-500"]),
+];
+
+fn capture_panes(targets: &[String]) -> HashMap<String, PaneCapture> {
+    // Unique per run: these panes routinely display this script's own source, so
+    // a fixed literal could be sitting in a pane at capture time and be read as
+    // a separator. This one doesn't exist until the run that emits it.
+    let sentinel = format!(
+        "@@nrc-{}-{}@@",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.subsec_nanos())
+            .unwrap_or(0)
+    );
+
+    // tmux aborts the whole chain at the first command that fails — a window
+    // closed between list-panes and here — leaving a valid prefix on stdout. So
+    // resume past the unreachable head instead of losing everything behind it.
+    let mut pending: Vec<String> = targets.to_vec();
+    let mut out = HashMap::new();
+    while !pending.is_empty() {
+        let got = run_batch(&sentinel, &pending);
+        if got.is_empty() {
+            pending.remove(0);
+            continue;
+        }
+        pending.retain(|t| !got.contains_key(t));
+        out.extend(got);
+    }
+    out
+}
+
+fn run_batch(sentinel: &str, targets: &[String]) -> HashMap<String, PaneCapture> {
+    let mut args: Vec<String> = Vec::new();
+    for target in targets {
+        for (kind, flags) in CAPTURE_KINDS {
+            if !args.is_empty() {
+                args.push(";".to_string());
+            }
+            args.push("capture-pane".to_string());
+            args.push("-t".to_string());
+            args.push(target.clone());
+            args.extend(flags.iter().map(|f| f.to_string()));
+            args.push(";".to_string());
+            args.push("display-message".to_string());
+            args.push("-t".to_string());
+            args.push(target.clone());
+            args.push("-p".to_string());
+            // tmux resolves the target itself, so the chunk carries its own
+            // identity and can't be attributed by position.
+            args.push(format!("{sentinel} #{{session_name}}:#{{window_index}} {kind}"));
+        }
+    }
+
+    // Not gated on exit status: an aborted chain still wrote every command
+    // before the failing one.
+    let output = Command::new("tmux").args(&args).output().expect("Failed to execute tmux");
+    parse_batch(sentinel, targets, &String::from_utf8_lossy(&output.stdout))
+}
+
+/// Split a batched capture stream back into per-target triples, keyed by the
+/// marker tmux emitted after each capture. An incomplete trailing triple (the
+/// chain aborted partway) is dropped — the caller reruns what it didn't get.
+fn parse_batch(sentinel: &str, requested: &[String], stdout: &str) -> HashMap<String, PaneCapture> {
+    let mut chunks: HashMap<String, HashMap<&str, String>> = HashMap::new();
+    let mut body = String::new();
+
+    for line in stdout.lines() {
+        let Some(marker) = line.strip_prefix(sentinel) else {
+            body.push_str(line);
+            body.push('\n');
+            continue;
+        };
+        let (target, kind) = marker
+            .trim()
+            .rsplit_once(' ')
+            .unwrap_or_else(|| panic!("malformed capture marker {marker:?}"));
+        assert!(
+            requested.iter().any(|t| t == target),
+            "capture marker names {target:?}, which was not requested"
+        );
+        let kind = CAPTURE_KINDS
+            .iter()
+            .find(|(k, _)| *k == kind)
+            .unwrap_or_else(|| panic!("capture marker names unknown kind {kind:?}"))
+            .0;
+        chunks.entry(target.to_string()).or_default().insert(kind, std::mem::take(&mut body));
+    }
+
+    chunks
+        .into_iter()
+        .filter_map(|(target, mut kinds)| {
+            Some((
+                target,
+                PaneCapture {
+                    plain: kinds.remove("plain")?,
+                    escaped: kinds.remove("escaped")?,
+                    deep: kinds.remove("deep")?,
+                },
+            ))
+        })
+        .collect()
+}
+
+#[cfg(test)]
+mod batch_tests {
+    use super::*;
+
+    const S: &str = "@@nrc-42-7@@";
+
+    fn stream(targets: &[&str]) -> String {
+        let mut s = String::new();
+        for t in targets {
+            for (kind, _) in CAPTURE_KINDS {
+                s.push_str(&format!("body of {t} {kind}\n{S} {t} {kind}\n"));
+            }
+        }
+        s
+    }
+
+    fn requested(targets: &[&str]) -> Vec<String> {
+        targets.iter().map(|t| t.to_string()).collect()
+    }
+
+    #[test]
+    fn every_complete_triple_lands_under_its_own_target() {
+        let targets = ["a:1", "b:2", "c:3"];
+        let got = parse_batch(S, &requested(&targets), &stream(&targets));
+        assert_eq!(got.len(), 3);
+        assert_eq!(got["b:2"].plain, "body of b:2 plain\n");
+        assert_eq!(got["b:2"].escaped, "body of b:2 escaped\n");
+        assert_eq!(got["c:3"].deep, "body of c:3 deep\n");
+    }
+
+    /// tmux aborts the chain at the first failing command, so the stream ends
+    /// mid-triple. The half-read target must not be reported as captured.
+    #[test]
+    fn an_aborted_chain_yields_only_the_targets_it_finished() {
+        let targets = ["a:1", "b:2"];
+        let full = stream(&targets);
+        let cut = full.find("body of b:2 deep").unwrap();
+        let got = parse_batch(S, &requested(&targets), &full[..cut]);
+        assert_eq!(got.keys().collect::<Vec<_>>(), vec!["a:1"]);
+    }
+
+    #[test]
+    #[should_panic(expected = "not requested")]
+    fn a_marker_for_an_unasked_target_is_a_bug_not_a_chunk() {
+        parse_batch(S, &requested(&["a:1"]), &stream(&["b:2"]));
+    }
+
+    /// A pane displaying this script's source (or a previous run's output) can
+    /// hold a line shaped exactly like a marker; only ours separates chunks.
+    #[test]
+    fn a_marker_from_another_run_is_ordinary_pane_content() {
+        let targets = ["a:1"];
+        let impostor = "@@nrc-99-1@@ z:9 plain\n";
+        let got = parse_batch(S, &requested(&targets), &(impostor.to_string() + &stream(&targets)));
+        assert_eq!(got.len(), 1);
+        assert_eq!(got["a:1"].plain, format!("{impostor}body of a:1 plain\n"));
+    }
+}
+
+struct Pane {
+    session: String,
+    window_index: u32,
+    /// A claude process is live in this pane (vs. a claude-NAMED window at a shell).
+    is_claude_pane: bool,
+    pane_pid: u32,
+    target: String,
+}
+
 fn get_claude_windows() -> Vec<ClaudeWindow> {
     let output = Command::new("tmux")
         .args([
@@ -1422,41 +1600,59 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
+    let panes: Vec<Pane> = stdout
+        .lines()
+        .filter_map(|line| {
+            let parts: Vec<&str> = line.split('\t').collect();
+            if parts.len() < 5 {
+                return None;
+            }
+
+            let session = parts[0];
+            let window_index: u32 = parts[1].parse().ok()?;
+            let window_name = parts[2];
+            let pane_command = parts[3];
+            let pane_pid: u32 = parts[4].parse().ok()?;
+
+            // Window must have "claude" in its name OR the pane command must be "claude"
+            let is_claude_window = window_name.contains("claude");
+            let is_claude_pane = pane_command.contains("claude");
+            if !is_claude_window && !is_claude_pane {
+                return None;
+            }
+
+            Some(Pane {
+                session: session.to_string(),
+                window_index,
+                is_claude_pane,
+                pane_pid,
+                target: format!("{}:{}", session, window_index),
+            })
+        })
+        .collect();
+
+    let mut targets: Vec<String> = panes.iter().map(|p| p.target.clone()).collect();
+    targets.sort();
+    targets.dedup(); // split windows list one pane each, but capture is per window
+
+    let captures = capture_panes(&targets);
+    // A pane that vanished mid-poll gets no entry; empty captures reach exactly
+    // the readings a failed capture produced before — Finished live, Empty dead.
+    let missing = PaneCapture::default();
     let mut claude_windows = Vec::new();
 
-    for line in stdout.lines() {
-        let parts: Vec<&str> = line.split('\t').collect();
-        if parts.len() < 5 {
-            continue;
-        }
+    for pane in &panes {
+        let Pane { window_index, is_claude_pane, pane_pid, .. } = *pane;
+        let session = pane.session.as_str();
+        let caps = captures.get(&pane.target).unwrap_or(&missing);
 
-        let session = parts[0];
-        let window_index: u32 = match parts[1].parse() {
-            Ok(idx) => idx,
-            Err(_) => continue,
-        };
-        let window_name = parts[2];
-        let pane_command = parts[3];
-        let pane_pid: u32 = match parts[4].parse() {
-            Ok(pid) => pid,
-            Err(_) => continue,
-        };
-
-        // Window must have "claude" in its name OR the pane command must be "claude"
-        let is_claude_window = window_name.eq("claude") || window_name.starts_with("claude") || window_name.contains("claude");
-        let is_claude_pane = pane_command.contains("claude");
-        if !is_claude_window && !is_claude_pane {
-            continue;
-        }
-
-        let tmux_target = format!("{}:{}", session, window_index);
         let (state, active_todo, draft_content, question_content, summary, model, context) = if is_claude_pane {
             // Terminal parsing decides the blocking states (Question/Draft/Error)
             // and the working state, but active↔finished flip-flops between tool
             // calls when no spinner is captured. For that one reading we defer to
             // the transcript, which deterministically says whether a turn is still
             // in flight; active todos remain the fallback when it can't decide.
-            let activity = determine_claude_activity(session, window_index);
+            let activity = determine_claude_activity(caps);
 
             // Empty takes precedence over any transcript deliberation: a fresh
             // pane has no session file at all (v2 creates the .jsonl on first
@@ -1465,7 +1661,7 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
             if activity.state == ClaudeState::Empty {
                 (ClaudeState::Empty, None, None, None, None, None, None)
             } else {
-                let metadata = get_session_info_for_pane(pane_pid, &tmux_target);
+                let metadata = get_session_info_for_pane(pane_pid, &caps.deep);
                 let summary = metadata.as_ref().and_then(|m| m.summary.clone());
                 let model = metadata.as_ref().and_then(|m| m.model.clone());
                 let context = metadata.as_ref().and_then(|m| m.context);
@@ -1515,21 +1711,14 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
             // conversation and names its transcript, so the session keeps its
             // summary after death. No transcript refinement for the dead:
             // nothing can be in flight there.
-            let tail = Command::new("tmux")
-                .args(["capture-pane", "-t", &tmux_target, "-p", "-S", "-50"])
-                .output()
-                .ok()
-                .filter(|o| o.status.success())
-                .map(|o| {
-                    String::from_utf8_lossy(&o.stdout)
-                        .lines()
-                        .rev()
-                        .filter(|l| !l.trim().is_empty())
-                        .take(15)
-                        .collect::<Vec<_>>()
-                        .join("\n")
-                })
-                .unwrap_or_default();
+            let tail = caps
+                .plain
+                .lines()
+                .rev()
+                .filter(|l| !l.trim().is_empty())
+                .take(15)
+                .collect::<Vec<_>>()
+                .join("\n");
 
             match dead_claude_resume_id(&tail) {
                 Some(id) => {
@@ -1634,31 +1823,11 @@ fn input_box_text(content: &str) -> Option<String> {
     (!cleaned.is_empty()).then_some(cleaned)
 }
 
-fn determine_claude_activity(session: &str, window_index: u32) -> ActivityResult {
-    let target = format!("{}:{}", session, window_index);
-
-    let output = Command::new("tmux")
-        .args(["capture-pane", "-t", &target, "-p", "-S", "-50"])
-        .output();
-
-    let content = match output {
-        Ok(out) if out.status.success() => String::from_utf8_lossy(&out.stdout).to_string(),
-        _ => return ActivityResult { state: ClaudeState::Finished, draft_content: None, question_content: None, plan_mode: false },
-    };
-
-    // The draft/dim-suggestion branch needs a SECOND, escape-coded capture to
-    // tell real typed input from greyed-out ghost suggestions. It's only ever
-    // consulted inside the "bypass permissions" branch, so we hand classify the
-    // capture lazily — production pays the extra tmux call only when that branch
-    // is reached, and tests can feed a fixture (or `|| None`) instead.
-    classify_activity(&content, || {
-        Command::new("tmux")
-            .args(["capture-pane", "-t", &target, "-p", "-e", "-S", "-10"])
-            .output()
-            .ok()
-            .filter(|o| o.status.success())
-            .map(|o| String::from_utf8_lossy(&o.stdout).to_string())
-    })
+fn determine_claude_activity(caps: &PaneCapture) -> ActivityResult {
+    // The escaped capture stays behind a closure for the tests' sake — a fixture
+    // without a `.esc` companion feeds `|| None`. It's no longer lazy in
+    // production: batching made it a rendered pipe write, not a fork.
+    classify_activity(&caps.plain, || Some(caps.escaped.clone()))
 }
 
 /// Pure terminal-state classifier: the heart of this script and the source of
