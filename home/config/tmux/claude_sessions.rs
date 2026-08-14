@@ -4,7 +4,7 @@
 edition = "2024"
 
 [dependencies]
-ask_llm = { version = "2.2.2", default-features = false }
+ask_llm = { version = "3.0.1", default-features = false }
 tokio = { version = "1", features = ["rt", "time", "net"] }
 clap = { version = "4.5.49", features = ["derive"] }
 chrono = { version = "0.4", default-features = false, features = ["alloc"] }
@@ -543,14 +543,14 @@ fn read_active_todo(path: &Path) -> TodoResult {
     TodoResult { has_active_todos, display_todo }
 }
 
-// Track if ollama failed (for warning message)
+// Track if the summariser backend failed (for warning message)
 static OLLAMA_UNAVAILABLE: std::sync::atomic::AtomicBool =
     std::sync::atomic::AtomicBool::new(false);
 
 // Only use ollama when --llm-summaries is passed
 static USE_LLM_SUMMARIES: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
-/// Generate a short summary using ollama chat API with conversation format
+/// Generate a short summary via the local ollama tier.
 fn generate_summary_with_llm(first_message: &str) -> Option<String> {
     // Only run if --llm-summaries was passed
     if !USE_LLM_SUMMARIES.load(std::sync::atomic::Ordering::Relaxed) {
@@ -571,50 +571,33 @@ fn generate_summary_with_llm(first_message: &str) -> Option<String> {
         first_line
     };
 
-    // Build conversation with system prompt and few-shot examples
-    let request_body = format!(
-        r#"{{"model":"gemma2:2b","stream":false,"messages":[
-{{"role":"system","content":"Output ONLY a 3-5 word label. No explanations, no markdown, no extra text."}},
-{{"role":"user","content":"add dark mode to settings"}},
-{{"role":"assistant","content":"dark mode settings"}},
-{{"role":"user","content":"fix the memory leak in worker"}},
-{{"role":"assistant","content":"fix worker memory leak"}},
-{{"role":"user","content":"{}"}}
-]}}"#,
-        truncated.replace('\\', "\\\\").replace('"', "\\\"").replace('\n', " ")
+    let mut conv = ask_llm::Conversation::new_with_system(
+        "Output ONLY a 3-5 word label. No explanations, no markdown, no extra text.",
     );
+    conv.add_exchange("add dark mode to settings", "dark mode settings");
+    conv.add_exchange("fix the memory leak in worker", "fix worker memory leak");
+    conv.add(ask_llm::Role::User, truncated.replace('\n', " "));
 
-    let output = match Command::new("curl")
-        .args([
-            "-s",
-            "http://localhost:11434/api/chat",
-            "-d",
-            &request_body,
-        ])
-        .output()
-    {
-        Ok(o) if o.status.success() => o,
-        _ => {
+    let client = ask_llm::Client::default().model(ask_llm::Model::Cheap).max_tokens(32);
+    let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build().ok()?;
+    let response = match runtime.block_on(async { client.conversation(&conv).await }) {
+        Ok(r) => r,
+        Err(_) => {
             OLLAMA_UNAVAILABLE.store(true, std::sync::atomic::Ordering::Relaxed);
             return None;
         }
     };
 
-    // Parse JSON response to get message.content
-    let response = String::from_utf8_lossy(&output.stdout);
-    let summary = serde_json::from_str::<serde_json::Value>(&response)
-        .ok()
-        .and_then(|v| v.get("message")?.get("content")?.as_str().map(|s| {
-            // Clean up: get first line, strip markdown/code blocks
-            s.lines()
-                .next()
-                .unwrap_or(s)
-                .trim()
-                .trim_start_matches(['`', '#', '*', '-'])
-                .trim()
-                .to_string()
-        }))
-        .unwrap_or_default();
+    // Clean up: get first line, strip markdown/code blocks
+    let summary = response
+        .text
+        .lines()
+        .next()
+        .unwrap_or(&response.text)
+        .trim()
+        .trim_start_matches(['`', '#', '*', '-'])
+        .trim()
+        .to_string();
 
     // Reject bad outputs: empty, meta-commentary, conversational, too short, or too long (>5 words)
     let lower = summary.to_lowercase();
@@ -911,12 +894,9 @@ Answer with exactly one word: finished, stuck, partial, or ongoing.";
     }
 
     fn ask(report: &str) -> Option<Verdict> {
-        // Meant to be DeepSeek (ask_llm 2.2.3, unreleased) — the account is out
-        // of balance and 402s every call, so this rides Haiku until it's funded.
-        let client = ask_llm::Client::default()
-            .model(ask_llm::Model::Fast)
-            .temperature(0.0)
-            .max_tokens(4);
+        // Cheapest tier that reliably returns a single-word verdict; the local
+        // ollama models don't hold the format well enough at 4 tokens.
+        let client = ask_llm::Client::default().model(ask_llm::Model::Fast).max_tokens(4);
         let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build().ok()?;
         let response = runtime
             .block_on(async { tokio::time::timeout(TIMEOUT, client.ask(format!("{SYSTEM}\n\n---\n\n{report}"))).await })
