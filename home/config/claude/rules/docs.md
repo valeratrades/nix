@@ -1,18 +1,36 @@
 ---
 paths:
-  - "ARCHITECTURE.md"
-  - "README.md"
-  - "docs/ARCHITECTURE.md"
-  - "docs/.readme_assets/"
-  - "docs/spec"
+  - "**/ARCHITECTURE.md"
+  - "**/README.md"
+  - "docs/**"
+  - "**/*.{rs,py,nix,ts,tsx,js,jsx,go,sh,fish,lua,sql,c,h,cpp,hpp}"
 ---
 
 all comments, documentation, spec and invariants
 
 ## General Rules
-- brevity is extremely important. Never write a word if it doesn't add context. And most importantly, - never defend decisions. We can explain why something happens now, but never argue for it being correct (not only makes it more difficult to update if we discover we were wrong, but also just wastes space).
+- brevity is extremely important. Never write a word if it doesn't add context.
+
+- never defend a decision. Saying why it was taken is fine; arguing that it is correct is not, - it wastes space and makes the decision harder to revisit once we discover we were wrong. No assertive statements, no self-congratulation.
 
 - legacy parts of the implementation are to never be mentioned. The only place where it's acceptable is CHANGELOG.md. When we realize that some part of what we're doing is wrong, - we start treating it as it never existed, we do not document things like "unlike the old design, we do X". Documentation is about what happens at lower level, and why (and under what constraints) it happens at the higher level; - there is no space for anything else.
+
+## Comments
+default is no comment. You can't go wrong by not adding one, you can go wrong by adding one.
+
+- never explain *what* happens, - that pins current behavior into prose, which then goes stale while the code moves on. Comment only *why*: an invariant being relied on, or the reason a specific line exists. If reading the code suffices, say nothing.
+- prefer line-tail comments, - attaching to a specific item forces concision.
+- prefer linking [ARCHITECTURE.md] or the mod's README over writing new prose in place.
+- never document temporary circumstances, - github issues are for that.
+- if you have to explain *why* the code looks the way it does, the code is already questionable, - fix it instead.
+- cutting comments in code you're touching is always a win, take the initiative. A paragraph above a function is nearly always a sentence too long:
+```rust
+/// run id, to prevent collisions of runs across logic and config version
+pub fn run_id(config: &crate::config::AppConfig) -> String {
+  format!("{}_{}", env!("CARGO_PKG_VERSION"), config_hash(config))
+}
+```
+that is the correct amount.
 
 ## Top Level Docs
 
@@ -32,12 +50,31 @@ Usage and Installation are automatically checked against ASD-STE100 (Simplified 
 For more info, here is the tool that does it: [ste_checker](https://github.com/valeratrades/ste_checker/blob/main/skill/SKILL.md)
 
 ### ARCHITECTURE.md
-TODO: compile the disjoint sections from general CLAUDE.md here, including inlining articles linked
+the most important file in the repo. Every recurring contributor reads it in full, so every line is paid for many times over, - it must be as small and as informative as it can be. Ruthlessness here is the requirement, not a preference.
+
+it represents the **correct** architecture and data-flow. If something is misimplemented right now, we write how it should be, not how it is. Code follows ARCHITECTURE.md, never the other way around.
+
+what goes in:
+- bird's eye view: the problem the project solves, before any structure
+- codemap: high-level module map, answering "where is the thing that does X" and "what does the thing I'm looking at do". A map of a country, not an atlas of maps of its states
+- names of the important files, modules and types, - they are the landmarks readers navigate by. No links into code, they decay; a name plus symbol search does not
+- boundaries between layers and systems, - they define what implementations are possible inside each
+- structural invariants, stated as absences wherever possible (eg "nothing in the model layer depends on views"). Fundamental ones live in [spec](#spec) instead
+- cross-cutting concerns, in their own section
+
+what stays out: how a module works inside, anything that changes often, anything that would need re-syncing on every refactor.
+
+revisit a couple of times a year rather than continuously. If the grouping you find yourself describing doesn't match the directory layout, the directories are what should move.
 
 ## Mod Level Docs
-each sub-crate or module, is deserving of its own docs section.
+each sub-crate or module deserves its own docs section, - `//!` header, or a README.md sitting next to it.
 
-in mod-level documentation, we outline concerns covering  TODO
+covers:
+- what the module owns: the few types and fns a consumer touches, and what they promise
+- local conventions the whole module obeys, - a trait everything here implements, naming scheme, error type, doc style
+- constraints it imposes on consumers, and those it accepts from below
+
+stays out: anything global (→ [ARCHITECTURE.md]), anything fundamental (→ [spec](#spec)), anything internal (→ the code).
 
 ## Spec
 spec is a concept we add for procedurally keeping track of Invariants.

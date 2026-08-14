@@ -113,25 +113,7 @@
   there hardly ever is a case where eg `.ok()?` is justified. Instead produce an error or panic.
   Each and every case where you swipe any Error type under the rug, MUST have justification in a comment after it. If while writing the justification, you see that it is possible to panic on it, then go back and switch to error/panic, as it should be.
 
-- never add comments explaining *what* happens. We never wish to hardcode any part of the behavior in the description, only to see it get changed later, while description remains stale. Instead, only add comments when we have something to say about *why*. Why some decision was made. It can be a general invariant in the codebase, or a comment about a specific line, explaining its presence. Remember, - best comment is no comment at all. You only add them when just reading code would be insufficient to reason about it.
-  A lot of the code you will see will have too many comments. Reducing their amount is always good. Take the initiative in doing so.
-  Some things can be left without comments or with a single line comment; as they are self-explicative.
-  Eg
-  ```rust
-  /// run id, to prevent collisions of runs across logic and config version
-  pub fn run_id(config: &crate::config::AppConfig) -> String {
-    format!("{}_{}", env!("CARGO_PKG_VERSION"), config_hash(config))
-  }
-  ```
-  is the correct amount of comments. We had an intern who wrote a damn paragraph above this exact function, which I had to nuke and replace. I expect the same from you. If you are editing something in the codebase and see a bullshit paragraph of comments which can be replaced with one sentence, - do immediately.
-
-  you can't go wrong NOT adding comments. You CAN go wrong when you add them. So default is no comment for you. Every single word in comments must be justified, - it's really easy to end up with them fixing temporary assumptions or getting outdated. All this is preventable, if we keep our thoughts to ourselves, and don't make them part of the codebase.
-  Do not add any comments if you can avoid it.
-
-  TLDR: less fucking comments. Only add if you must. Prefer linking to ARCHITECTURE.md or per-mod READMEs, rather than writing new random stuff. Never ever document temporary circumstances, - code is not the place for it, github issues are.
-
-- if you are writing a comment, I need you to NEVER ever justify a decision. You can say why a decision was taken, but NEVER are you to say it's correct in code in comments. No assertive statements. If you have to say `why` code looks like this, it's already questionable. God forbid you then start thinking yourself smart.
-  And also prefer line tail comments whenever possible (you're commenting on a specific line/item). It'll force you to keep them concise, which is always good.
+- default is no comment. When you do write one, it says *why*, never *what*. Full rules for comments, ARCHITECTURE.md, README assets, mod docs and spec live in `~/.claude/rules/docs.md`, - they load whenever you touch a source or docs file.
 
 - you cannot add any unit-tests **after** the development is finished. Tests are persisted units of useful payloads that helped us get to a useful implementation. If there is some larger invariant over how data gets changed, that we want to persist, - that's for integration tests. No unit tests shall be added after logic is done. This is just adding friction for no reason whatsoever, - you are simply not allowed to do this, regardless of reasoning.
   Similarly, do not add tests just for the sake of adding them. We must be very precise with what is tested, and don't duplicate the code logic with them. They exist to ensure invariants that our implementation must follow, not to reimplement the same thing again and say hmm yes indeed the same thing does the same thing.
