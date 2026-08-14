@@ -143,13 +143,10 @@
     Service = let
       eww = "${pkgs.eww}/bin/eww";
       # same source of truth as the `eww_open` fish function; ordering there decides overlay
+      # one client call, not a loop: `eww open` auto-forks the daemon, and on a cold boot it
+      # needs >1.5s to bind the ipc socket — a second `open` in that window forks a rival daemon.
       script = pkgs.writeShellScript "eww-widgets-start" ''
-        rc=0
-        while read -r window; do
-          [ -n "$window" ] || continue
-          ${eww} open "$window" || rc=1
-        done < "$HOME/.config/eww/eww_windows.txt"
-        exit $rc
+        exec ${eww} open-many $(cat "$HOME/.config/eww/eww_windows.txt")
       '';
     in {
       Type = "oneshot";
