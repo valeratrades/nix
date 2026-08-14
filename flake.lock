@@ -5709,11 +5709,11 @@
         "wrap-it": "wrap-it"
       },
       "locked": {
-        "lastModified": 1786731627,
-        "narHash": "sha256-NvwtWAPRkPXUWk/bGntB06T1FyKpVXMUG+OQt1xWgpQ=",
+        "lastModified": 1786736596,
+        "narHash": "sha256-Ueuci5I2ImGayJveuQpzyhiC/HoL6mR/n7VetZIgJ6o=",
         "owner": "valeratrades",
         "repo": "wallpaper_carousel",
-        "rev": "4d63bb84898e4de3f644b76d8b05d5800dad3f0e",
+        "rev": "b3382a40d6e8b45ece7c6e91ff20579ea854e7b4",
         "type": "github"
       },
       "original": {

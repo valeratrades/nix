@@ -213,7 +213,6 @@ Typical `.config/tracey/config.styx`:
 specs (
     {
         name my-project
-        prefix r
         include (docs/spec/**/*.md)
         impls (
             {
@@ -233,11 +232,67 @@ specs (
 ```
 
 Key fields:
-- `prefix` - Used in annotations (e.g., `r[...]`)
+- `prefix` - Used in annotations (e.g., `e[...]`). Omitted on the top-level spec, which is always `r`
 - `include` (spec) - Glob patterns for spec markdown files, as a sequence `(...)`
 - `impls` - Sequence of implementation blocks
 - `include` (impl) - Glob patterns for source files to scan, as a sequence `(...)`
 - `exclude` (impl) - Glob patterns to exclude, as a sequence `(...)`
+
+## Per-Level Specs
+
+Spec markdown does not have to live in one folder. Nothing is auto-discovered — every spec root is wired in `.config/tracey/config.styx`, and there are two ways to do it.
+
+**One namespace, many folders** — add globs to that spec's `include`:
+
+```styx
+specs (
+    {
+        name my-project
+        include (
+            docs/spec/**/*.md
+            crates/engine/spec/**/*.md
+        )
+        impls ( { name rust include (**/*.rs) exclude (**/target/**) } )
+    }
+)
+```
+
+Requirement IDs share one namespace across every included file. A duplicate ID in two files is an error at manifest merge.
+
+**Many namespaces** — one spec block per level. The top-level block stays unprefixed; each narrower one declares its own:
+
+```styx
+specs (
+    {
+        name workspace
+        include (docs/spec/**/*.md)
+        impls ( { name rust include (**/*.rs) exclude (**/target/**) } )
+    }
+    {
+        name engine
+        prefix e
+        include (crates/engine/spec/**/*.md)
+        impls ( { name rust include (crates/engine/**/*.rs) } )
+    }
+)
+```
+
+IDs only need to be unique within a spec, so `r[outs.absence]` and `e[outs.absence]` are unrelated requirements. Code names which one it means through the prefix:
+
+```rust
+// r[impl outs.absence]
+// e[verify outs.absence]
+```
+
+Coverage is reported per `spec/impl` pair, so separate specs also mean separate coverage numbers.
+
+### Prefixes
+
+A reference resolves by prefix alone, and an unknown prefix is an error rather than a fallback.
+
+The top-level spec never declares a `prefix` — it is `r`, in every repo. A spec root added at a narrower level always declares its own. So `r[…]` reads as the repo-wide spec on sight, and any other prefix as a level below it.
+
+Prefixes are unique per repo, not per spec folder: pick short ones (`e`, `m`, `h2`).
 
 ## Troubleshooting
 

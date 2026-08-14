@@ -351,7 +351,7 @@ r[config.spec.name]
 Each spec configuration MUST have a `name` child node with the spec name as its argument.
 
 r[config.spec.prefix]
-Each spec configuration MUST have a `prefix` child node specifying the single-character or multi-character prefix used to identify this spec in markdown and source code annotations.
+Each spec configuration MAY have a `prefix` child node specifying the single-character or multi-character prefix used to identify this spec in markdown and source code annotations. The top-level spec MUST omit it and take the default `r`. Every other spec MUST state one.
 
 r[config.spec.include]
 Each spec configuration MUST have one or more `include` child nodes specifying glob patterns for markdown files containing requirement definitions.
