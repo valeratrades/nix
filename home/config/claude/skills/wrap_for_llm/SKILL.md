@@ -33,6 +33,8 @@ do not.
 
 Copy [assets/install.sh](assets/install.sh) to `docs/skill/install.sh`, `chmod +x`, and set `name=`.
 It symlinks rather than copies, so an edit in the repo is live in every scope it was installed to.
+It takes the agent as its first argument and lands in exactly one place — installing into an agent
+that is never run there costs a payload nobody reads and a link nobody updates.
 
 ## Paths resolve against a stated base
 
@@ -88,7 +90,7 @@ In order. Drop any that would be empty rather than padding it.
 ## Verify
 
 ```sh
-docs/skill/install.sh ../scratch-consumer   # both project scopes
+docs/skill/install.sh claude ../scratch-consumer
 ```
 
 Then, in a repo that has never seen the source tree: ask for the task the skill exists for. What the
