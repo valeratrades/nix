@@ -106,13 +106,16 @@ Once again, - fundamental, - not those caused by current project arch: this is T
 
 you have a [`/tracey` skill for using it](../skills/tracey/). What is even more important though, is why/when to:
 1. only declare requirements that can't be forced programmatically. No amount of reminders can compare with being fundamentally forced to do something.
-2. each requirement has a level at which it is relevant. Important ones will live in top-level [docs/spec/], as mentioned in [Architecture section](#architecturemd), but in complex workspaces we may need to enforce per sub-crate or even per-module invariants: those trivially then need to reference `spec/` declared at the same level.
+2. each requirement has a level at which it is relevant, and that level is the smallest scope that can violate it. Important ones will live in top-level [docs/spec/], as mentioned in [Architecture section](#architecturemd), but in complex workspaces we may need to enforce per sub-crate or even per-module invariants: those trivially then need to reference `spec/` declared at the same level.
 3. be mindful of adding new requirements. Each will shape all the code in the section it impacts, so we can only afford to add those that follow from first principles. Each is required to be kept in mind at all times, so we can't waste them on minute details.
 4. each rule must follow from first principles, so their descriptions are naturally concise. If while reading the spec, you notice that a rule has multiple paragraphs on it, - it's very likely invalid: having to explain so much means it carries a lot of internal implementation state. And if you notice that you wrote a verbose rule yourself, - stop and consider whether you can abort its addition.
+5. removing a rule is not done until its `r[...]` citations go with it. One that outlives its rule rots coverage silently, and the sentence carrying it nearly always stands once the parenthetical is gone.
 
 > for a good rule of thumb, - ask "does the rule require to be kept in the head when editing". If not, drop it.
 
   Example: say we had a rule that required objects implementing a weaker version of some trait, to say why they can't use the stronger one. If that trait then gets `const WHY: &'static str;` on it, - this will make compiler force the programmer to add it. The text rule then stops adding anything, and is to be removed.
+
+  // Ask it clause by clause, not rule by rule: `MUST state X` can be forced by a const with no default while `X MUST be true when <some abstract Y>` is forced by nothing, and then only the second half survives.
 
 ## Upkeep
 regardless of what you are working on atm, all violations you find in docs (or of code against docs) are to be noted, and either fixed in-place (do yourself if other rules here cover what to do with it), either brought up to me in the end (if you found a fundamental error, and there is no straight fix that wouldn't have deep implications).
