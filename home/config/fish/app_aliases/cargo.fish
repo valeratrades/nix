@@ -68,9 +68,7 @@ function cq
 	}'
 end
 
-function cpublish
-	cargo release --no-confirm --execute "$argv"
-end
+# cpublish now ships from v_flakes' rs module (a fish function would shadow it on PATH)
 
 # Pause resource-hungry apps
 function pause_greedy
