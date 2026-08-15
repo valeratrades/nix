@@ -16,7 +16,7 @@ let
         else "$NIXOS_CONFIG/home/config/${args.target_path_postfix}";
     in
     lib.hm.dag.entryAfter ["writeBoundary"] ''
-      [ -e "${targetPath}" ] || ln -sf "${configPath}" "${targetPath}"
+      [ -e "${targetPath}" ] || { mkdir -p "$(dirname "${targetPath}")"; ln -sf "${configPath}" "${targetPath}"; }
     '';
 in
 {
@@ -65,6 +65,12 @@ in
     };
     git_ignore = mkSymlink {
       target_path = "$HOME/.gitignore";
+      config_path = "$NIXOS_CONFIG/home/config/gitignore";
+    };
+    # fd/rg's `ignore` crate never reads /etc/gitconfig, where core.excludesfile is set;
+    # it falls back to this XDG path, so telescope needs the same list here
+    git_ignore_xdg = mkSymlink {
+      target_path = "$XDG_CONFIG_HOME/git/ignore";
       config_path = "$NIXOS_CONFIG/home/config/gitignore";
     };
     pipewire = mkSymlink { target_path_postfix = "pipewire"; };

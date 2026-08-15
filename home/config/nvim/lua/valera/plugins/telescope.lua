@@ -31,19 +31,13 @@ return require "lazier" {
 			return paths
 		end
 
-		-- pruned at the walker, not post-filtered: `no_ignore = true` means gitignore won't do it for us
-		local excluded_dirs = {
-			".git", "target", "node_modules", "graphify-out", "graphify_out",
-			".direnv", ".devenv", ".venv", "__pycache__", ".mypy_cache", ".pytest_cache", ".ruff_cache",
-		}
-		local base_ignore_patterns = { "%.lock" }
+		-- gitignore does the pruning; `.git` is the one dir `--hidden` still walks.
+		-- to un-hide a gitignored path, drop an `.ignore` with `!path/` in the repo root
+		local base_ignore_patterns = { ".git/", "%.lock" }
 		local include_submodules = false -- toggle state
 
 		local function build_ignore_patterns()
 			local patterns = vim.tbl_extend("force", {}, base_ignore_patterns)
-			for _, dir in ipairs(excluded_dirs) do
-				table.insert(patterns, dir .. "/")
-			end
 			if not include_submodules then
 				local submodule_paths = get_submodule_paths()
 				for _, path in ipairs(submodule_paths) do
@@ -55,11 +49,7 @@ return require "lazier" {
 
 		-- Build exclusion args for fd and rg (different syntax)
 		local function build_fd_exclude_args()
-			local args = {}
-			for _, dir in ipairs(excluded_dirs) do
-				table.insert(args, "--exclude")
-				table.insert(args, dir)
-			end
+			local args = { "--exclude", ".git" }
 			if not include_submodules then
 				local submodule_paths = get_submodule_paths()
 				for _, path in ipairs(submodule_paths) do
@@ -72,11 +62,7 @@ return require "lazier" {
 		end
 
 		local function build_rg_exclude_args()
-			local args = {}
-			for _, dir in ipairs(excluded_dirs) do
-				table.insert(args, "--glob")
-				table.insert(args, "!" .. dir)
-			end
+			local args = { "--glob", "!.git" }
 			if not include_submodules then
 				local submodule_paths = get_submodule_paths()
 				for _, path in ipairs(submodule_paths) do
@@ -91,11 +77,10 @@ return require "lazier" {
 		local function get_gs()
 			return {
 				hidden = true,
-				no_ignore = true,
 				file_ignore_patterns = build_ignore_patterns(),
 				-- For find_files (uses fd)
 				find_command = vim.list_extend(
-					{ "fd", "--type", "f", "--hidden", "--no-ignore", "--color", "never" },
+					{ "fd", "--type", "f", "--hidden", "--color", "never" },
 					build_fd_exclude_args()
 				),
 				-- For live_grep (uses rg)
