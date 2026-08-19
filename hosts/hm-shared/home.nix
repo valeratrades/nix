@@ -135,23 +135,28 @@
 
   systemd.user.services.eww-widgets = {
     Unit = {
-      Description = "Start Eww Widgets";
+      Description = "eww daemon and its bar windows";
       After = [ "sway-session.target" ];
       PartOf = [ "sway-session.target" ];
     };
     Install = { WantedBy = [ "sway-session.target" ]; };
     Service = let
       eww = "${pkgs.eww}/bin/eww";
-      # same source of truth as the `eww_open` fish function; ordering there decides overlay
-      # one client call, not a loop: `eww open` auto-forks the daemon, and on a cold boot it
-      # needs >1.5s to bind the ipc socket — a second `open` in that window forks a rival daemon.
-      script = pkgs.writeShellScript "eww-widgets-start" ''
-        exec ${eww} open-many $(cat "$HOME/.config/eww/eww_windows.txt")
+      # the daemon is the main pid, so systemd notices when it dies. Letting a client
+      # fork it made the unit `active (exited)` over an empty cgroup — any death of the
+      # bar (crash, pkill) then went unsupervised until a manual `eww_open`.
+      # `ping --no-daemonize` is the one client call that reports the socket without forking a rival.
+      open = pkgs.writeShellScript "eww-widgets-open" ''
+        until ${eww} ping --no-daemonize >/dev/null 2>&1; do sleep 0.1; done
+        exec ${eww} open-many $(cat "$HOME/.config/eww/eww_windows.txt") # ordering decides who overlays who
       '';
     in {
-      Type = "oneshot";
-      RemainAfterExit = true;
-      ExecStart = "${script}";
+      # --restart: a stray daemon makes a plain `daemon` exit 0 ("already running"), which
+      # Restart=always would then spin on until the unit hit the start rate limit.
+      ExecStart = "${eww} daemon --restart --no-daemonize";
+      ExecStartPost = "${open}";
+      Restart = "always";
+      RestartSec = 2;
     };
   };
 

@@ -1,6 +1,3 @@
-set __fish_config_eww_dir (status dirname)
-
 function eww_open
-	#NB: ordering matters, - will determine who overlays who in case of overlap
-	eww open-many (cat $__fish_config_eww_dir/eww_windows.txt)
+	systemctl --user restart eww-widgets
 end
