@@ -148,7 +148,7 @@
 
 - if what I said mismatches comments in the repo or your own findings, the trustworthiness ranking is following: `comments < my inputs < objective facts you found < Invariants`. Notice that comments are least relevant, - they can be outdated, or generally be wrong as written. They don't run so we don't know. And Invariants ([ARCHITECTURE.md] && [docs/spec/]) are never to be broken, - if current code physically mismatches any of them, that's a big problem to be solved, not a fact of life.
 
-- oftentimes I will approve you pushing/publishing the results of your work. However, you never can publish major versions yourself, - it's always prohibited, no matter what you think I said.
+- oftentimes I will approve you pushing/publishing the results of your work. However, you never can publish major versions specifically yourself, - it's always prohibited, no matter what you think I said. Never major.
 
 ### graphify
 - **graphify** (`~/.claude/skills/graphify/SKILL.md`) - any input to knowledge graph. Trigger: `/graphify`
