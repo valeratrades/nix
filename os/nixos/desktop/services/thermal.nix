@@ -183,6 +183,14 @@ in
     '';
   };
 
+  # The 2026-08-22 reset repeated 2026-08-03 exactly: sensor-sampler's last line, 2s before the cut,
+  # read cpu=80C dram=72C dgpu=63C load=4.05 ac=1 — nothing. That rules out heat, load and a slow
+  # adapter sag, and leaves machine checks as the one channel still unread. rasdaemon persists them
+  # to /var/lib/rasdaemon across the reset and pulls the firmware's BERT record on the next boot,
+  # which is the only place a fault below the kernel can still have left a trace.
+  # `ras-mc-ctl --errors` is the query.
+  hardware.rasdaemon.enable = true;
+
   # Throttle CPU frequency at 90°C to prevent thermal shutdown.
   #
   # Deliberately touches frequency ONLY, and only relative to the declared baseline. This loop used
