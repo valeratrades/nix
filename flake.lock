@@ -5288,11 +5288,11 @@
         "v_flakes": "v_flakes_6"
       },
       "locked": {
-        "lastModified": 1787172481,
-        "narHash": "sha256-JeLlvDNMChbiv8CThui3UhNAr2A7MJEUobSi9p7HtOY=",
+        "lastModified": 1787872919,
+        "narHash": "sha256-xHVYYpGDH1XeTNI8MNGKT79HbzKlw41P2n+h5L76aUA=",
         "owner": "valeratrades",
         "repo": "tg",
-        "rev": "5c329fedd804e766394f0b591dd4936a6b10da09",
+        "rev": "57d823512e90cf4e3ba9dba7b6b2993bd605c0b4",
         "type": "github"
       },
       "original": {

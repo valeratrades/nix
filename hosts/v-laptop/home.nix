@@ -3,7 +3,7 @@
 let
   #TODO: `ssh-add ~/.ssh/id_ed25519` as part of the setup
   sshConfigPath = "${config.home.homeDirectory}/.ssh";
-  tgPkg = pkgs.coreutils /*STUB: tg broken, revert*/;
+  tgPkg = inputs.tg.packages.${pkgs.stdenv.hostPlatform.system}.default;
 in {
   nix.extraOptions = "!include ${config.home.homeDirectory}/s/g/private/sops/";
   # ref: https://www.youtube.com/watch?v=G5f6GC7SnhU
@@ -32,7 +32,7 @@ in {
 
   tg = {
     enable = true;
-    package = pkgs.coreutils /*STUB: tg broken, revert*/;
+    package = inputs.tg.packages.${pkgs.stdenv.hostPlatform.system}.default;
     token = config.sops.secrets.telegram_token_main.path;
     apiHash = config.sops.secrets.telegram_api_hash.path;
     phone = config.sops.secrets.telegram_phone.path;
