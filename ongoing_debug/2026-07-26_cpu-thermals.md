@@ -136,6 +136,9 @@ The ~32% burn *while the window is open* is a separate, undiagnosed Electron iss
    Completion-Wait timeouts or hard lockups reappear, this is the first suspect.
    `journalctl -kf | grep -iE 'AMD-Vi|amdgpu'`. See
    `2026-03-26_amd-vi-iommu-stall.md`.
+   **Two unlogged hard resets have since landed (08-03, 08-22), both after this
+   removal, neither with an AMD-Vi timeout.** Circumstantial, not acted on. See
+   `2026-08-22_unlogged-hard-reset.md`.
 2. **`amd_pstate=active`** — was `passive` "for stability", but no doc ever recorded
    what that instability was. Watch for stalls or frequency misbehaviour.
 3. **`pcie_aspm.policy=performance`** — still needed; retest once the kernel carries
