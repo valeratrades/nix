@@ -33,7 +33,6 @@ in {
   tg = {
     enable = true;
     package = inputs.tg.packages.${pkgs.stdenv.hostPlatform.system}.default;
-    token = config.sops.secrets.telegram_token_main.path;
     apiHash = config.sops.secrets.telegram_api_hash.path;
     phone = config.sops.secrets.telegram_phone.path;
     alertsChannel = config.sops.secrets.telegram_alerts_channel.path;
@@ -219,11 +218,11 @@ in {
 
     Service = {
       # Wait for the sops-nix secret file to exist before systemd tries to load it
-      ExecStartPre = lib.mkBefore "${pkgs.bash}/bin/bash -c 'while [ ! -f ${config.sops.secrets.telegram_token_main.path} ]; do ${pkgs.coreutils}/bin/sleep 0.1; done'";
+      ExecStartPre = lib.mkBefore "${pkgs.bash}/bin/bash -c 'while [ ! -f ${config.sops.secrets.telegram_api_hash.path} ]; do ${pkgs.coreutils}/bin/sleep 0.1; done'";
       RestartSec = 5;
       # Inject OpenAI key so tg-server can do voice transcription
       LoadCredential = lib.mkAfter [ "openai_key:${config.sops.secrets.openai_api_key.path}" ];
-      ExecStart = lib.mkForce "/bin/sh -c 'TELEGRAM_API_HASH=\"$(cat %d/tg_api_hash)\" PHONE_NUMBER_FR=\"$(cat %d/tg_phone)\" TELEGRAM_ALERTS_CHANNEL_ID=\"$(cat %d/tg_alerts_channel)\" OPENAI_API_KEY=\"$(cat %d/openai_key)\" ${tgPkg}/bin/tg --token \"$(cat %d/tg_token)\" server'";
+      ExecStart = lib.mkForce "/bin/sh -c 'TELEGRAM_API_HASH=\"$(cat %d/tg_api_hash)\" PHONE_NUMBER_FR=\"$(cat %d/tg_phone)\" TELEGRAM_ALERTS_CHANNEL_ID=\"$(cat %d/tg_alerts_channel)\" OPENAI_API_KEY=\"$(cat %d/openai_key)\" ${tgPkg}/bin/tg server'";
     };
   };
 
