@@ -140,11 +140,14 @@ in
       }
       val() { cat "$1" 2>/dev/null || echo 0; }
 
-      k10=$(hwmon_by_name k10temp)
-      amd=$(hwmon_by_name amdgpu)
-      bat=$(hwmon_by_name BAT0)
-
       while true; do
+        # Resolved per-sample, not cached before the loop: amdgpu and BAT0 register their hwmon in
+        # the same second this unit starts, so a cached lookup raced them and logged igpu=0C ppt=0W
+        # batt=0W for an entire boot — blind on exactly the two numbers a heat question needs.
+        k10=$(hwmon_by_name k10temp)
+        amd=$(hwmon_by_name amdgpu)
+        bat=$(hwmon_by_name BAT0)
+
         # Both DIMMs, hotter one — they read ~3C apart and either alarms at 55C.
         dram=0
         for h in /sys/class/hwmon/hwmon*; do
