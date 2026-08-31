@@ -150,6 +150,9 @@
 
 - oftentimes I will approve you pushing/publishing the results of your work. However, you never can publish major versions specifically yourself, - it's always prohibited, no matter what you think I said. Never major.
 
+- do not be afraid to fast-forward your changes into main even if another agent is on it.
+  If they are making direct edits, they subscribed to being on the latest. We just push it under them and don't care, ok.
+
 ### graphify
 - **graphify** (`~/.claude/skills/graphify/SKILL.md`) - any input to knowledge graph. Trigger: `/graphify`
 When the user types `/graphify`, use the installed graphify skill or instructions before doing anything else.

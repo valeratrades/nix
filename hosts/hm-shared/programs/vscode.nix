@@ -110,6 +110,18 @@
 						sha256 = "sha256-NRhTt8j4bNsN+kCTbD8+P9Yh/DEkGqSZ8J5Owjl0uw4=";
 					};
 				})
+				# Video Preview Plus: only on Open VSX, so fetched directly
+				(pkgs.vscode-utils.buildVscodeMarketplaceExtension {
+					mktplcRef = {
+						publisher = "rongchenchu";
+						name = "video-preview-plus";
+						version = "0.1.0";
+					};
+					vsix = pkgs.fetchurl {
+						url = "https://open-vsx.org/api/rongchenchu/video-preview-plus/0.1.0/file/rongchenchu.video-preview-plus-0.1.0.vsix";
+						sha256 = "sha256-EEHSVjTXiWblhUcq8KP3JGZPtpTgjAsdqDDpv8J2nLY=";
+					};
+				})
 				# Neovim Buffer Sync: only on Open VSX (not on MS Marketplace), so fetched directly
 				(pkgs.vscode-utils.buildVscodeMarketplaceExtension {
 					mktplcRef = {
