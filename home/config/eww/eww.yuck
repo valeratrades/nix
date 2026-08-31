@@ -292,7 +292,7 @@
 (defvar tedi_blocker_hover_state false)
 ;; Can't combine these two polls, because eww doesn't work well with newlines
 ;; --offline: status-bar polls must never hit network; `sprints healthcheck` (day_ev.sh) warms the selection cache
-(defpoll tedi_blocker_last_poll :initial "" :interval "0.5s" "tedi --log-to 'eww_blocker_list' --offline sprints selected current")
+(defpoll tedi_blocker_last_poll :initial "" :interval "0.5s" "tedi --log-to 'eww_blocker_list' --offline sprints selected current --markup")
 (defpoll tedi_blocker_list_poll :interval "5s" "tedi --log-to 'eww_blocker_list' --offline sprints selected list | /home/v/nix/home/scripts/wrap_output.rs - -l 120")
 (defwidget what[]
 	(box
@@ -303,7 +303,7 @@
 			:varname "tedi_blocker_hover_state"
 			:transition "none"
 			:orientation "vertical"
-			:label_text "${tedi_blocker_last_poll}"
+			:label_markup "${tedi_blocker_last_poll}"
 			:label_class "text"
 			(label :class "text" :text "${tedi_blocker_list_poll}")
 		)
