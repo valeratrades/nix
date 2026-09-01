@@ -2,6 +2,8 @@
 set -g utmost_importance_projects $HOME/ev_invest/trading_data $HOME/ev_invest/risk_management
 
 # --acc N | -a N selects credentials in ~/.claude-accountN; without it, default ~/.claude (master)
+# `env -u ANTHROPIC_API_KEY`: credentials.fish exports it session-wide, and its presence outranks the
+# OAuth session -- billing the Max sub as API credits and disabling claude.ai connectors.
 function claude
     set -l args
     set -l acc
@@ -25,9 +27,9 @@ function claude
             echo "claude: no credentials at $CLAUDE_CONFIG_DIR" >&2
             return 1
         end
-        command claude $args
+        env -u ANTHROPIC_API_KEY claude $args
     else
-        command claude $args
+        env -u ANTHROPIC_API_KEY claude $args
     end
 end
 
