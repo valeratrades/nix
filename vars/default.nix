@@ -84,6 +84,8 @@ in
   };
   #
 
+  ports = import ./ports.nix;
+
   #TODO: networking. Albeit right now it doesn't have much merrit, as I don't have even one server with nix. Just people's configs.
   #networking = import ./networking.nix {inherit lib;};
 }

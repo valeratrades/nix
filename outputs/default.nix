@@ -88,7 +88,7 @@ in {
     value = nixpkgs.lib.nixosSystem {
       specialArgs = {
         inherit inputs self;
-        inherit mylib user;
+        inherit mylib myvars user;
       };
 
       modules = [
@@ -103,7 +103,7 @@ in {
             "backup"; # delusional home-manager wants this exact file-extension for when I backup system-level files
           home-manager.extraSpecialArgs = {
             inherit inputs self;
-            inherit mylib user;
+            inherit mylib myvars user;
             pkgs-ollama = import inputs.pin-nixpkgs-ollama {
               system = "x86_64-linux";
               config = common_pkgs_config;

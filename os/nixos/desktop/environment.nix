@@ -1,8 +1,13 @@
-{ pkgs, lib, user, inputs, ... }: {
+{ pkgs, lib, user, inputs, myvars, ... }: {
   # Derived, not restated: v_flakes/rs/nightly_version.nix is the fleet-wide pin, so the
   # cargo-scripts here can never drift from what the repos build against.
   # sessionVariables (not variables) so eww/systemd-user inherit it via PAM, not just login shells.
   environment.sessionVariables.DEFAULT_CARGO_NIGHTLY_VERSION = inputs.v_flakes.rs.nightly_version;
+
+  # vars/ports.nix is the only place this number is chosen; fish is symlinked raw from the repo
+  # and cannot read nix, so `clc` picks the port up from here.
+  environment.sessionVariables.LITELLM_PORT = toString myvars.ports.litellm;
+  environment.sessionVariables.LITELLM_MIXED_PORT = toString myvars.ports.litellmMixed;
 
   environment.variables = {
     QT_QPA_PLATFORMTHEME = "xdgdesktopportal";

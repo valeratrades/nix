@@ -164,7 +164,12 @@ function clc
     end
 
     function use_openai
-        set -lx ANTHROPIC_BASE_URL 'http://127.0.0.1:4000'
+        # chosen in vars/ports.nix, exported by os/nixos/desktop/environment.nix
+        if not set -q LITELLM_PORT
+            echo "clc: LITELLM_PORT unset -- stale session, or environment.nix no longer exports it" >&2
+            return 1
+        end
+        set -lx ANTHROPIC_BASE_URL "http://127.0.0.1:$LITELLM_PORT"
         set -lx ANTHROPIC_AUTH_TOKEN 'local'
 
         # Names are litellm *model groups* (openai.yaml), not upstream model ids: the proxy 400s
@@ -186,23 +191,29 @@ function clm
     # for `CLaude Mixed` -- Opus 5 driving the session, Luna as the subagent tier.
     # Claude Code resolves one ANTHROPIC_BASE_URL per process, so both providers have to sit behind
     # one litellm. The cost: Opus authenticates by API key here, off the Max subscription.
-    # Own port and own config, so `clc` and openclaw keep the :4000 proxy to themselves.
-    if not curl -sf -m 2 http://127.0.0.1:4001/health/liveliness >/dev/null 2>&1
-        litellm --config $NIXOS_CONFIG/home/config/litellm/mixed.yaml --port 4001 >/tmp/litellm-mixed.log 2>&1 &
+    # Own port and own config, so `clc` and openclaw keep their proxy to themselves.
+    # Both ports are chosen in vars/ports.nix, exported by os/nixos/desktop/environment.nix.
+    if not set -q LITELLM_MIXED_PORT
+        echo "clm: LITELLM_MIXED_PORT unset -- stale session, or environment.nix no longer exports it" >&2
+        return 1
+    end
+    set -l health "http://127.0.0.1:$LITELLM_MIXED_PORT/health/liveliness"
+    if not curl -sf -m 2 $health >/dev/null 2>&1
+        litellm --config $NIXOS_CONFIG/home/config/litellm/mixed.yaml --port $LITELLM_MIXED_PORT >/tmp/litellm-mixed.log 2>&1 &
         disown
         for i in (seq 40)
-            curl -sf -m 1 http://127.0.0.1:4001/health/liveliness >/dev/null 2>&1; and break
+            curl -sf -m 1 $health >/dev/null 2>&1; and break
             sleep 1
         end
-        if not curl -sf -m 2 http://127.0.0.1:4001/health/liveliness >/dev/null 2>&1
-            echo "clm: mixed litellm never came up on :4001; see /tmp/litellm-mixed.log" >&2
+        if not curl -sf -m 2 $health >/dev/null 2>&1
+            echo "clm: mixed litellm never came up on :$LITELLM_MIXED_PORT; see /tmp/litellm-mixed.log" >&2
             return 1
         end
     end
 
     # These three pick the defaults only; mixed.yaml registers more (sonnet, fable, haiku, sol,
     # pro), each reachable as `clm -m <group>`.
-    set -lx ANTHROPIC_BASE_URL 'http://127.0.0.1:4001'
+    set -lx ANTHROPIC_BASE_URL "http://127.0.0.1:$LITELLM_MIXED_PORT"
     set -lx ANTHROPIC_AUTH_TOKEN 'local'
     set -lx ANTHROPIC_MODEL 'opus'
     set -lx ANTHROPIC_DEFAULT_OPUS_MODEL 'opus'

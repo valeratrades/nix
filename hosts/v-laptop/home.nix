@@ -1,5 +1,5 @@
 # TODO!: move much of this to shared dirs
-{ self, config, lib, pkgs, pkgs-ollama, inputs, mylib, user, ... }:
+{ self, config, lib, pkgs, pkgs-ollama, inputs, mylib, myvars, user, ... }:
 let
   #TODO: `ssh-add ~/.ssh/id_ed25519` as part of the setup
   sshConfigPath = "${config.home.homeDirectory}/.ssh";
@@ -88,9 +88,9 @@ in {
   home.activation.configureOpenclaw = let
     ocCfg = {
       provider = "litellm";
-      baseUrl = "http://127.0.0.1:4000";
+      baseUrl = "http://127.0.0.1:${toString myvars.ports.litellm}";
       model = "luna";
-      port = "18789";
+      port = toString myvars.ports.openclawGateway;
     };
     # Mirrors the openai plugin's own catalog entry for gpt-5.6-luna (extensions/openai/
     # openclaw.plugin.json) -- litellm serves the model but reports no metadata for it, so the
@@ -113,9 +113,9 @@ in {
         }];
       };
       agents.defaults.model.primary = "${ocCfg.provider}/${ocCfg.model}";
-      # DeepSeek was the previous engine; its key is out of credits, so leaving it configured only
-      # buys a failover that answers with a billing error. null deletes the path.
-      models.providers.deepseek = null;
+      # Routed from Telegram, so the agent needs the message tool for reply/thread-reply/attachment
+      # actions. alsoAllow rather than allow: additive on top of the profile, so it stays auditable.
+      tools.alsoAllow = [ "group:messaging" ];
     };
     cfgHash = builtins.hashString "sha256" ocModel;
   in lib.hm.dag.entryAfter [ "writeBoundary" ] ''
@@ -131,16 +131,12 @@ in {
     if [ -r "$stamp" ] && [ "$(cat "$stamp")" = "$want" ]; then
       echo "configureOpenclaw: config unchanged, skipping"
     elif [ -d "$repo" ]; then
-      # Bootstraps gateway/workspace/mode. The provider it writes here is a placeholder; the patch
-      # below replaces it with the full model definition onboard has no flags for.
+      # Gateway/workspace/mode only. `--auth-choice skip`: onboard's custom-provider flags refuse to
+      # overwrite an existing provider id and silently mint `litellm-2`, `litellm-3`, ... on every
+      # re-run, so the model side is left entirely to the patch below.
       oc onboard --non-interactive --accept-risk \
         --mode local \
-        --auth-choice custom-api-key \
-        --custom-provider-id ${ocCfg.provider} \
-        --custom-base-url "${ocCfg.baseUrl}" \
-        --custom-model-id "${ocCfg.model}" \
-        --custom-api-key local \
-        --custom-compatibility openai \
+        --auth-choice skip \
         --gateway-port ${ocCfg.port} \
         --gateway-bind loopback \
         --no-install-daemon \
@@ -150,7 +146,9 @@ in {
         --skip-health \
         || echo "configureOpenclaw: onboard failed (non-fatal); run 'oclaw' / 'openclaw onboard' manually" >&2
 
-      printf '%s' ${lib.escapeShellArg ocModel} | oc config patch --stdin \
+      # --replace-path: providers become exactly what nix declares, so a provider dropped here (or
+      # an accidental `litellm-N`) disappears instead of lingering as a silent failover.
+      printf '%s' ${lib.escapeShellArg ocModel} | oc config patch --stdin --replace-path models.providers \
         || echo "configureOpenclaw: model patch failed; openclaw is left on whatever onboard wrote" >&2
 
       # Telegram channel on the *test* bot (distinct token from tg-server's main bot — see secrets).
@@ -174,7 +172,7 @@ in {
     };
   };
 
-  # Always-on OpenClaw gateway (WebSocket gateway + connected channels + control UI on :18789).
+  # Always-on OpenClaw gateway (WebSocket gateway + connected channels + control UI; port in vars/ports.nix).
   # Runs the checkout at ~/g/openclaw directly via node, from its locally-built dist/ (untracked;
   # produced by `openclaw-rebuild`). Config + state live in the persisted ~/.openclaw, written by
   # the configureOpenclaw activation above. Started on login and kept alive across crashes.
@@ -204,7 +202,7 @@ in {
           exit 1
         fi
       ''}";
-      ExecStart = "${lib.getExe pkgs.nodejs_22} ${config.home.homeDirectory}/g/openclaw/openclaw.mjs gateway --port 18789";
+      ExecStart = "${lib.getExe pkgs.nodejs_22} ${config.home.homeDirectory}/g/openclaw/openclaw.mjs gateway --port ${toString myvars.ports.openclawGateway}";
       Restart = "on-failure";
       RestartSec = 5;
       # openclaw resolves its own paths under ~/.openclaw by default; be explicit for the service.
@@ -244,7 +242,7 @@ in {
     Service = {
       Type = "simple";
       LoadCredential = [ "openai_key:${config.sops.secrets.openai_api_key.path}" ];
-      ExecStart = "/bin/sh -c 'OPENAI_API_KEY=\"$(cat %d/openai_key)\" ${lib.getExe pkgs.litellm} --config ${config.home.homeDirectory}/.config/litellm/openai.yaml --port 4000'";
+      ExecStart = "/bin/sh -c 'OPENAI_API_KEY=\"$(cat %d/openai_key)\" ${lib.getExe pkgs.litellm} --config ${config.home.homeDirectory}/.config/litellm/openai.yaml --port ${toString myvars.ports.litellm}'";
       Restart = "on-failure";
       RestartSec = 5;
     };
