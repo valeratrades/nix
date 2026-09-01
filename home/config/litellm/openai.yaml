@@ -1,15 +1,28 @@
+# litellm 1.83.7's cost map predates gpt-5.6, so both facts below have to be stated by hand:
+#   mode: responses         -- gpt-5.6 refuses function tools on /v1/chat/completions, and the
+#                              automatic bridge only fires when reasoning_effort is also present
+#                              (main.py responses_api_bridge_check).
+#   supports_tool_choice    -- the gpt-5 transformation drops `tool_choice` from the supported set
+#                              for any model it cannot look up. `drop_params: true` would "fix"
+#                              this by silently swallowing `tool_choice: required`.
 model_list:
   - model_name: sol
     litellm_params:
       model: openai/gpt-5.6-sol
-      use_responses_api: true
+    model_info:
+      mode: responses
+      supports_tool_choice: true
 
   - model_name: terra
     litellm_params:
       model: openai/gpt-5.6-terra
-      use_responses_api: true
+    model_info:
+      mode: responses
+      supports_tool_choice: true
 
   - model_name: luna
     litellm_params:
       model: openai/gpt-5.6-luna
-      use_responses_api: true
+    model_info:
+      mode: responses
+      supports_tool_choice: true

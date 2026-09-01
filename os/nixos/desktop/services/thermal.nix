@@ -182,7 +182,7 @@ in
   # `ras-mc-ctl --errors` is the query.
   hardware.rasdaemon.enable = true;
 
-  # Two levers, two thresholds, one temperature. Fans ramp at 65C, frequency is only cut at 85C —
+  # Two levers, one temperature. Fans ramp 65-78C, frequency is only cut at 85C —
   # the gap is the point: airflow is spent first, so a load has 20C of headroom to finish at full
   # clock before anything slows down.
   #
@@ -194,7 +194,7 @@ in
   # Never platform_profile. This loop used to write it, so a single thermal excursion silently
   # rewrote a profile the user had chosen; it now has exactly one owner.
   systemd.services.thermal-guard = {
-    description = "Ramp fans at 65C, throttle CPU frequency at 85C";
+    description = "Ramp fans 65-78C, throttle CPU frequency at 85C";
     wantedBy = [ "multi-user.target" ];
     after = [ "legion-longevity.service" ];  # the baseline must exist before we can restore to it
     requires = [ "legion-longevity.service" ];
@@ -207,20 +207,26 @@ in
       TEMP_HIGH=85000   # Start throttling at 85°C
       TEMP_LOW=75000    # Stop throttling at 75°C (hysteresis)
 
-      # Calibrated against this machine over three attempts, each rejected on measurement:
+      # A ramp, not a switch. Three switch calibrations were tried and all failed on measurement:
       #   65/58 - release sat on the 58-59C idle floor; fans pinned permanently.
       #   72/65 - band inside the working range; flapped max<->auto 6x in 20 min.
       #   78/68 - still inside it; flapped 4x in 11 min.
-      # Under a real session (agents, browser, dGPU awake, load 3-6) the CPU sweeps 67-80C
-      # continuously, so ANY narrow band placed in that range cycles. The asymmetry is deliberate:
-      # engage at the top of the working range, release only at genuine idle, so a session costs one
-      # spin-up rather than twenty. Flapping is worse than either steady state — it spins the
-      # bearings up and down for nothing and buys no cooling.
-      FAN_HIGH=78000    # Fans to max at 78°C — 7°C before the frequency throttle bites
-      FAN_LOW=62000     # Firmware curve again only once genuinely idle (floor is 58-59C)
+      # Under a real session the CPU sweeps 67-80C continuously, so any narrow band placed in that
+      # range cycles, and a wide one just means max-or-nothing. Interpolating removes the boundary
+      # that was doing the flapping: a 1C drift moves the fans ~125 RPM instead of 2900.
+      #
+      # Handing back to the firmware below ENGAGE is not laziness, it is the quiet end done right —
+      # but the firmware curve is too slack above it, measured holding 3100 of 5100 RPM while the
+      # CPU drifted to 77C. RAMP_BASE sits below ENGAGE precisely so the first interpolated value
+      # already exceeds what the firmware was giving there; engaging must never drop RPM.
+      FAN_ENGAGE=65000  # take over from the firmware curve here
+      FAN_RELEASE=60000 # and give it back here (idle floor is 58-59C)
+      RAMP_BASE=50      # C the ramp would put a fan at its fanN_min
+      RAMP_TOP=78       # C it reaches fanN_max — 7C before the frequency throttle bites
 
       throttled=0
-      fans_maxed=0
+      fans_engaged=0
+      last_ramp=""
 
       # Never the hardware ceiling: the baseline is whatever mode is currently declared, so throttling
       # bites relative to the cap rather than lifting the CPU *up* to the ceiling on restore.
@@ -239,16 +245,24 @@ in
       # asynchronously, so it is routinely absent for the first few passes after boot. Re-reading
       # also means a write lost to a suspend/resume cycle is re-asserted within 2s rather than
       # leaving the machine silently on the firmware curve during a hot spell.
-      # "$1" = max | auto
+      # "$1" = auto | a temperature in millidegrees. Each channel is scaled between its own
+      # fanN_min and fanN_max (they differ: 1600-5100 for fan1/fan2, 1600-6500 for fan4), and
+      # rounded down to fanN_div, which the EC quantises to anyway.
       set_fans() {
         fans=$(grep -lx lenovo_wmi_other /sys/class/hwmon/*/name 2>/dev/null) || return 0
         fans=$(dirname "$fans")
         for target in "$fans"/fan*_target; do
-          if [ "$1" = max ]; then
-            cat "''${target%_target}_max" > "$target"
-          else
+          if [ "$1" = auto ]; then
             echo 0 > "$target"
+            continue
           fi
+          lo=$(cat "''${target%_target}_min")
+          hi=$(cat "''${target%_target}_max")
+          div=$(cat "''${target%_target}_div")
+          rpm=$(( lo + (hi - lo) * ( $1 / 1000 - RAMP_BASE) / (RAMP_TOP - RAMP_BASE) ))
+          [ "$rpm" -lt "$lo" ] && rpm=$lo
+          [ "$rpm" -gt "$hi" ] && rpm=$hi
+          echo $(( rpm / div * div )) > "$target"
         done
       }
 
@@ -271,14 +285,21 @@ in
         done
 
         if [ -n "$temp" ]; then
-          if [ "$temp" -ge "$FAN_HIGH" ] && [ "$fans_maxed" -eq 0 ]; then
-            set_fans max
-            fans_maxed=1
-            echo "Fans max: $((temp/1000))C >= $((FAN_HIGH/1000))C"
-          elif [ "$temp" -lt "$FAN_LOW" ] && [ "$fans_maxed" -eq 1 ]; then
+          if [ "$temp" -ge "$FAN_ENGAGE" ] && [ "$fans_engaged" -eq 0 ]; then
+            fans_engaged=1
+            echo "Fans ramping: $((temp/1000))C >= $((FAN_ENGAGE/1000))C"
+          elif [ "$temp" -lt "$FAN_RELEASE" ] && [ "$fans_engaged" -eq 1 ]; then
             set_fans auto
-            fans_maxed=0
-            echo "Fans auto: $((temp/1000))C < $((FAN_LOW/1000))C"
+            fans_engaged=0
+            last_ramp=""
+            echo "Fans auto: $((temp/1000))C < $((FAN_RELEASE/1000))C"
+          fi
+
+          # Only on a whole-degree change: the ramp has ~125 RPM/°C of resolution, so re-issuing
+          # three WMI writes every 2s for an unchanged target would be pure overhead.
+          if [ "$fans_engaged" -eq 1 ] && [ "$((temp/1000))" != "$last_ramp" ]; then
+            set_fans "$temp"
+            last_ramp=$((temp/1000))
           fi
 
           if [ "$temp" -ge "$TEMP_HIGH" ] && [ "$throttled" -eq 0 ]; then
