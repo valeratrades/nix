@@ -43,7 +43,7 @@ all. C1 gates the clock but keeps voltage and caches, so all 32 threads leaked
 power continuously even at idle. This is the likely dominant cause of the *idle*
 temperature. See §"Watch list".
 
-### 4. `platform_profile` couples fans to power limits, and can't be decoupled here
+### 4. BUG!!!!!!! — `platform_profile` couples fans to power limits *(REOPENED 2026-09-01)*
 `longevity` mode was setting `platform_profile=performance` **purely to get the
 fans up** — but on this EC that same knob also raises PPT/STAPM. So "longevity"
 was licensing the CPU to draw *more* power. The name was backwards.
@@ -51,9 +51,13 @@ was licensing the CPU to draw *more* power. The name was backwards.
 `legion_cli maximumfanspeed` is the documented way to pin fans independently.
 **It does not work on this firmware**: `maximumfanspeed-enable` returns success and
 `maximumfanspeed-status` still reads `False`, in every profile. Tested directly.
-So `platform_profile` remains the only working fan lever, and the PPT increase is
-the unavoidable price of airflow. Do not re-try `maximumfanspeed` without checking
-a firmware update first.
+
+**The 2026-07-26 conclusion — "the PPT increase is the unavoidable price of airflow"
+— was wrong, or at least unproven.** It surveyed exactly one alternative lever
+(`maximumfanspeed`) and generalised from its failure to "no lever exists". The
+requirement is not negotiable: `optimize_for longevity` must deliver max fans AND
+zero boost at the same time. Under investigation as of 2026-09-01 — see
+"2026-09-01: reopened" below.
 
 ### 5. Firefox was software-decoding every video
 `user.gpuAcceleration = false` (`vars/default.nix`) gated VA-API decode *and*
@@ -115,9 +119,18 @@ until only one remained.
   of RAM and essentially no CPU. There are 2 servers + 2 `proc-macro-srv` helpers,
   not 4 servers.
 - **Repaste / dust** — battery at 152 cycles, machine is young.
-- **dGPU** — 10.7 W / 60°C at idle is real heat in a shared chassis, but
+- **dGPU** — ~~10.7 W / 60°C at idle is real heat in a shared chassis, but
   `hardware.nvidia.powerManagement.finegrained` is deliberately off (D3cold wedges
-  the 5060 on this SBIOS). Left alone.
+  the 5060 on this SBIOS). Left alone.~~
+  **REOPENED 2026-09-01 — see `2026-09-01_dgpu-lit-by-hdmi.md`.** Two claims here
+  are wrong. (a) finegrained is not why it is awake: the HDMI port is wired to the
+  dGPU, which is therefore the only active display controller whenever the external
+  monitor is plugged in — ~9.7 W, a quarter of system power, unavoidable in software.
+  (b) `finegrained = false` does not disable driver-side RTD3 anyway
+  (`DynamicPowerManagement: 3`, driver reports `Enabled (fine-grained)`); it only
+  omits the udev rule, leaving `power/control=on` → `runtime_enabled: forbidden`,
+  so the dGPU never suspends even *unplugged*. The D3cold-wedge attribution is
+  unverified, not disproved.
 
 ## Discord — 32% of a core, in the background
 
