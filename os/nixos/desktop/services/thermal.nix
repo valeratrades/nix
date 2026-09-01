@@ -194,7 +194,7 @@ in
   # Never platform_profile. This loop used to write it, so a single thermal excursion silently
   # rewrote a profile the user had chosen; it now has exactly one owner.
   systemd.services.thermal-guard = {
-    description = "Ramp fans 65-78C, throttle CPU frequency at 85C";
+    description = "Ramp fans on a per-mode curve, throttle CPU frequency at 85C";
     wantedBy = [ "multi-user.target" ];
     after = [ "legion-longevity.service" ];  # the baseline must exist before we can restore to it
     requires = [ "legion-longevity.service" ];
@@ -219,10 +219,33 @@ in
       # but the firmware curve is too slack above it, measured holding 3100 of 5100 RPM while the
       # CPU drifted to 77C. RAMP_BASE sits below ENGAGE precisely so the first interpolated value
       # already exceeds what the firmware was giving there; engaging must never drop RPM.
-      FAN_ENGAGE=65000  # take over from the firmware curve here
-      FAN_RELEASE=60000 # and give it back here (idle floor is 58-59C)
-      RAMP_BASE=50      # C the ramp would put a fan at its fanN_min
-      RAMP_TOP=78       # C it reaches fanN_max — 7C before the frequency throttle bites
+      # Two curves, chosen by declared mode. platform_profile is already the single source of truth
+      # for which mode is live, so nothing new has to be written down to tell them apart — and it is
+      # re-read every iteration, so `optimize_for quiet` takes effect within 2s.
+      #
+      # It has to be the mode and not the power draw, because on 7.0 low-power does NOT cap this
+      # machine: measured at boost=0, 24 threads, it ran 2254-2320 MHz / 42-49 W / 72-75C, i.e.
+      # indistinguishable from balanced and performance. The profile is nearly inert here, so
+      # "quiet" only means anything if the fan curve makes it mean something.
+      #
+      #   default   linear, engage 65C, fanN_max at 78C — hold TEMPERATURE down
+      #   quiet     quadratic, fanN_max at 83C — hold NOISE down, accept the extra few degrees, and
+      #             let the 85C frequency throttle be the backstop instead of airflow
+      #
+      # Quiet never hands back to the firmware curve. Handing back is what the default curve does
+      # below 65C, and it is right there because the firmware is quiet at the low end — but it is
+      # not quiet ENOUGH to be a quiet mode: measured 3300 RPM at 69C idle, louder than this curve's
+      # own value at 75C under full load. Releasing to it would make quiet mode loudest in the exact
+      # band it is supposed to cover. ENGAGE=0 is always true and RELEASE=0 never is, so the curve
+      # simply owns the whole range and bottoms out at fanN_min, which is quieter than the firmware
+      # ever goes and is safe by construction (it is the driver's own advertised minimum).
+      curve_params() {
+        if [ "$(cat /sys/firmware/acpi/platform_profile)" = low-power ]; then
+          FAN_ENGAGE=0;     FAN_RELEASE=0;     RAMP_BASE=60; RAMP_TOP=83; RAMP_EXP=2
+        else
+          FAN_ENGAGE=65000; FAN_RELEASE=60000; RAMP_BASE=50; RAMP_TOP=78; RAMP_EXP=1
+        fi
+      }
 
       # k10temp jitters: consecutive samples bounce 68<->70 with the load unchanged. Recomputing on
       # every whole-degree step therefore mostly chases sensor noise, so hold until the reading has
@@ -233,6 +256,7 @@ in
       throttled=0
       fans_engaged=0
       last_ramp=""
+      last_profile=""
 
       # Never the hardware ceiling: the baseline is whatever mode is currently declared, so throttling
       # bites relative to the cap rather than lifting the CPU *up* to the ceiling on restore.
@@ -257,17 +281,25 @@ in
       set_fans() {
         fans=$(grep -lx lenovo_wmi_other /sys/class/hwmon/*/name 2>/dev/null) || return 0
         fans=$(dirname "$fans")
+        if [ "$1" = auto ]; then
+          for target in "$fans"/fan*_target; do echo 0 > "$target"; done
+          return 0
+        fi
+
+        # Clamped in the temperature domain, before the exponent — a negative (T - RAMP_BASE) comes
+        # back positive once squared, which would ramp fans UP below the curve's own floor.
+        c=$(( $1 / 1000 ))
+        if [ "$c" -lt "$RAMP_BASE" ]; then c=$RAMP_BASE; fi
+        if [ "$c" -gt "$RAMP_TOP" ]; then c=$RAMP_TOP; fi
+        num=$(( c - RAMP_BASE ))
+        den=$(( RAMP_TOP - RAMP_BASE ))
+        if [ "$RAMP_EXP" -eq 2 ]; then num=$(( num * num )); den=$(( den * den )); fi
+
         for target in "$fans"/fan*_target; do
-          if [ "$1" = auto ]; then
-            echo 0 > "$target"
-            continue
-          fi
           lo=$(cat "''${target%_target}_min")
           hi=$(cat "''${target%_target}_max")
           div=$(cat "''${target%_target}_div")
-          rpm=$(( lo + (hi - lo) * ( $1 / 1000 - RAMP_BASE) / (RAMP_TOP - RAMP_BASE) ))
-          [ "$rpm" -lt "$lo" ] && rpm=$lo
-          [ "$rpm" -gt "$hi" ] && rpm=$hi
+          rpm=$(( lo + (hi - lo) * num / den ))
           echo $(( rpm / div * div )) > "$target"
         done
       }
@@ -277,10 +309,25 @@ in
       # machine pinned at max fans (or throttled) with a fresh loop believing it was neither, and
       # neither release branch would ever fire. Drive the state to match the assumption instead of
       # assuming it.
+      curve_params
       set_fans auto
       set_freq $(base)
 
       while true; do
+        curve_params
+        # A mode switch changes every threshold at once, so the engaged state and last_ramp both
+        # refer to a curve that no longer exists. Drop to auto and let the next pass re-engage
+        # against the new one rather than interpolating across two different curves.
+        profile=$(cat /sys/firmware/acpi/platform_profile)
+        if [ "$profile" != "$last_profile" ]; then
+          if [ -n "$last_profile" ] && [ "$fans_engaged" -eq 1 ]; then
+            set_fans auto
+            fans_engaged=0
+            echo "Fans auto: profile $last_profile -> $profile, re-engaging on the new curve"
+          fi
+          last_profile=$profile
+        fi
+
         # Find k10temp hwmon dynamically
         temp=""
         for hwmon in /sys/class/hwmon/hwmon*; do
@@ -295,7 +342,7 @@ in
             fans_engaged=1
             set_fans "$temp"
             last_ramp=$(( temp / 1000 ))
-            echo "Fans ramping: $((temp/1000))C >= $((FAN_ENGAGE/1000))C"
+            echo "Fans ramping: $((temp/1000))C, $profile curve"
           elif [ "$temp" -lt "$FAN_RELEASE" ] && [ "$fans_engaged" -eq 1 ]; then
             set_fans auto
             fans_engaged=0
