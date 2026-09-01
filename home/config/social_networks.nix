@@ -1,5 +1,7 @@
 {
-  claude_token = { env = "CLAUDE_TOKEN"; };
+  llm = {
+    claude_token = { env = "CLAUDE_TOKEN"; };
+  };
 
   dms = {
     discord = {
