@@ -39,6 +39,7 @@ in {
     gnome.gcr-ssh-agent.enable = false;
   };
   security.pam.services.login.enableGnomeKeyring = true;
+
   virtualisation = {
     docker = {
       enable = true;

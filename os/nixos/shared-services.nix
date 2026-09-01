@@ -1,9 +1,8 @@
 { config, pkgs, lib, user, mylib, inputs, ... }:
 
 let
-  userHome = config.users.users."${user.username}".home;
-  redisPort = 49974;
-  postgresqlPort = 52362;
+redisPort = 49974;
+postgresqlPort = 52362;
 in {
   services = {
     fstrim.enable = true;
@@ -27,11 +26,11 @@ in {
       }];
       ensureDatabases = [ "default" ];
       authentication = ''
-        # TYPE  DATABASE        USER            ADDRESS                 METHOD
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
         local   all             all                                     trust
         host    all             all             127.0.0.1/32            trust
         host    all             all             ::1/128                 trust
-      '';
+        '';
       settings = {
         port = postgresqlPort;
         log_line_prefix = "[%p] ";
@@ -48,51 +47,51 @@ in {
         PermitRootLogin = "yes";
       };
     };
-  };
-
-  services.clickhouse = lib.mkIf user.clickhouse {
-    enable = true;
-    extraServerConfig = ''
+    clickhouse = lib.mkIf user.clickhouse {
+      enable = true;
+      extraServerConfig = ''
         <clickhouse>
-          <!-- Disable verbose system logs that cause unnecessary CPU usage -->
-          <asynchronous_metric_log remove="1"/>
-          <metric_log remove="1"/>
-          <trace_log remove="1"/>
-          <part_log remove="1"/>
-          <query_thread_log remove="1"/>
-          <query_views_log remove="1"/>
-          <session_log remove="1"/>
-          <text_log remove="1"/>
-          <processors_profile_log remove="1"/>
-          <opentelemetry_span_log remove="1"/>
-          <crash_log remove="1"/>
-          <backup_log remove="1"/>
-          <blob_storage_log remove="1"/>
-          <s3_queue_log remove="1"/>
-          <azure_queue_log remove="1"/>
-          <zookeeper_log remove="1"/>
-          <background_schedule_pool_log remove="1"/>
+        <!-- Disable verbose system logs that cause unnecessary CPU usage -->
+        <asynchronous_metric_log remove="1"/>
+        <metric_log remove="1"/>
+        <trace_log remove="1"/>
+        <part_log remove="1"/>
+        <query_thread_log remove="1"/>
+        <query_views_log remove="1"/>
+        <session_log remove="1"/>
+        <text_log remove="1"/>
+        <processors_profile_log remove="1"/>
+        <opentelemetry_span_log remove="1"/>
+        <crash_log remove="1"/>
+        <backup_log remove="1"/>
+        <blob_storage_log remove="1"/>
+        <s3_queue_log remove="1"/>
+        <azure_queue_log remove="1"/>
+        <zookeeper_log remove="1"/>
+        <background_schedule_pool_log remove="1"/>
 
-          <!-- Keep only query_log for debugging, with TTL -->
-          <query_log>
-            <database>system</database>
-            <table>query_log</table>
-            <flush_interval_milliseconds>7500</flush_interval_milliseconds>
-            <ttl>event_date + INTERVAL 7 DAY DELETE</ttl>
-          </query_log>
+        <!-- Keep only query_log for debugging, with TTL -->
+        <query_log>
+        <database>system</database>
+        <table>query_log</table>
+        <flush_interval_milliseconds>7500</flush_interval_milliseconds>
+        <ttl>event_date + INTERVAL 7 DAY DELETE</ttl>
+        </query_log>
         </clickhouse>
-      '';
+        '';
+    };
   };
 
-  # ClickHouse 25.x has a known slow shutdown bug (~39s delay).
-  # Just kill it fast - data is trivial.
+
+# ClickHouse 25.x has a known slow shutdown bug (~39s delay).
+# Just kill it fast - data is trivial.
   systemd.services.clickhouse.serviceConfig = lib.mkIf user.clickhouse {
     TimeoutStopSec = 5;
     KillMode = "mixed";  # SIGTERM main, then SIGKILL all after timeout
   };
 
-  # ENCRYPTION_KEY moved to sops (secrets/users/v/default.json) and is delivered
-  # per-user via environment.d — see writeSecretsEnvd in hosts/v-laptop/home.nix.
+# ENCRYPTION_KEY moved to sops (secrets/users/v/default.json) and is delivered
+# per-user via environment.d — see writeSecretsEnvd in hosts/v-laptop/home.nix.
   environment.variables = {
     POSTGRESQL_PORT = postgresqlPort;
     REDIS_PORT = redisPort;

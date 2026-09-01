@@ -139,6 +139,9 @@
 
 - fail fast. Panics are great. Almost always `.unwrap_or(0)` of some kind is miles worse than just panicking. Never do any sort of fallbacks for corrupted state, - just panic/error out and call it a day. The failures we are expecting to get like network connection, are covered by explicit Error machinery. Everything else is best to panic on
 
+- no defaults > bad defaults.
+  It's ridiculous that I need to repeat this again and again, - but avoid defaults at all cost. Better to panic and exit than to have a random default fallback. Having a default is the exceptional case, not normal. Only add defaults to places that genuinely have them. Never ever do you add a default state in any form because it's easier. We must follow the underlying shape. If no default exists semantically, we must not imagine one.
+
 ### Special Cases
 - if you just wrote `tokio::spawn` in any context, stop immediately, and find a way to implement it with structured concurrency, where nothing happens until explicitly awaited. If you are unable to do so, - stop, explain why it's impossible to me, and only proceed after explicit go-ahead to use it
 

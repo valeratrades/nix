@@ -23,6 +23,7 @@ in
   # fuck mkOutOfStoreSymlink and home-manager. Just link everything except for where apps like to write artifacts to the config dir.
   home.activation = {
     nvim = mkSymlink { target_path_postfix = "nvim"; };
+    litellm = mkSymlink { target_path_postfix = "litellm"; };
     eww = mkSymlink { target_path_postfix = "eww"; };
     site = mkSymlink { target_path_postfix = "site.nix"; };
     sway = mkSymlink { target_path_postfix = "sway"; };

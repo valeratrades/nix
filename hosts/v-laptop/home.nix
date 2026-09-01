@@ -208,6 +208,24 @@ in {
   };
 
 
+  # OpenAI-compatible router in front of Claude Code (`clc` in llm.fish talks to it as if it were
+  # the Anthropic API). Kept a *user* service: the OpenAI key only exists sops-decrypted per-user.
+  systemd.user.services.litellm = {
+    Unit = {
+      Description = "litellm proxy (OpenAI <- Anthropic API shim)";
+      After = [ "network-online.target" "sops-nix.service" ];
+      Wants = [ "network-online.target" ];
+    };
+    Service = {
+      Type = "simple";
+      LoadCredential = [ "openai_key:${config.sops.secrets.openai_api_key.path}" ];
+      ExecStart = "/bin/sh -c 'OPENAI_API_KEY=\"$(cat %d/openai_key)\" ${lib.getExe pkgs.litellm} --config ${config.home.homeDirectory}/.config/litellm/openai.yaml --port 4000'";
+      Restart = "on-failure";
+      RestartSec = 5;
+    };
+    Install.WantedBy = [ "default.target" ];
+  };
+
   # Ensure tg-server waits for sops-nix secrets to be available
   systemd.user.services.tg-server = {
     Unit = {

@@ -1,0 +1,15 @@
+model_list:
+  - model_name: sol
+    litellm_params:
+      model: openai/gpt-5.6-sol
+      use_responses_api: true
+
+  - model_name: terra
+    litellm_params:
+      model: openai/gpt-5.6-terra
+      use_responses_api: true
+
+  - model_name: luna
+    litellm_params:
+      model: openai/gpt-5.6-luna
+      use_responses_api: true

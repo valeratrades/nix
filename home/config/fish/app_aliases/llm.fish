@@ -147,15 +147,36 @@ function cl
 end
 complete -c cl -w claude
 
-function cld
-    set -lx ANTHROPIC_BASE_URL 'https://api.deepseek.com/anthropic'
-    set -lx ANTHROPIC_AUTH_TOKEN "$DEEPSEEK_KEY"
-    set -lx ANTHROPIC_MODEL 'deepseek-v4-pro[1m]'
-    set -lx ANTHROPIC_DEFAULT_SONNET_MODEL 'deepseek-v4-pro[1m]'
-    set -lx ANTHROPIC_DEFAULT_OPUS_MODEL 'deepseek-v4-pro[1m]'
-    set -lx ANTHROPIC_DEFAULT_HAIKU_MODEL 'deepseek-v4-flash[1m]'
+function clc
+    # for `CLaude Cheap`
 
-    cl $argv
+    function use_deepseek
+        set -lx ANTHROPIC_BASE_URL 'https://api.deepseek.com/anthropic'
+        set -lx ANTHROPIC_AUTH_TOKEN "$DEEPSEEK_KEY"
+        set -lx ANTHROPIC_MODEL 'deepseek-v4-pro[1m]'
+        set -lx ANTHROPIC_DEFAULT_SONNET_MODEL 'deepseek-v4-pro[1m]'
+        set -lx ANTHROPIC_DEFAULT_OPUS_MODEL 'deepseek-v4-pro[1m]'
+        set -lx ANTHROPIC_DEFAULT_HAIKU_MODEL 'deepseek-v4-flash[1m]'
+        
+        cl $argv
+    end
+
+    function use_openai
+        set -lx ANTHROPIC_BASE_URL 'http://127.0.0.1:4000'
+        set -lx ANTHROPIC_AUTH_TOKEN 'local'
+
+        # Normal/default Claude Code workload.
+        set -lx ANTHROPIC_MODEL 'gpt-5.6-terra'
+
+        # Map Claude's three tiers onto the 5.6 family.
+        set -lx ANTHROPIC_DEFAULT_OPUS_MODEL 'gpt-5.6-sol'
+        set -lx ANTHROPIC_DEFAULT_SONNET_MODEL 'gpt-5.6-terra'
+        set -lx ANTHROPIC_DEFAULT_HAIKU_MODEL 'gpt-5.6-luna'
+
+        cl $argv
+    end
+
+    use_openai $argv
 end
 
 function clp

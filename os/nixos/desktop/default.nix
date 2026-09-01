@@ -68,6 +68,12 @@
         swappy
       ]
 
+      # AI
+      [
+        python314Packages.lmfit # thingie to choose best model for my system
+        litellm # standardized API routing
+      ]
+
       # emulators
       [
         #waydroid #dbg: might be bringing in `webkitgtk`, which brings for like an hour; until resolved, comment out
