@@ -25,10 +25,9 @@ const CPUFREQ: &str = "/sys/devices/system/cpu/cpufreq";
 const BASE_FREQ: &str = "/run/optimize_for.base-freq";
 
 /// NB: platform_profile is a *power limit* knob on this EC (PPT/STAPM), which happens to carry the
-/// fan curve with it — the two cannot be separated. legion_cli's maximumfanspeed is the documented
-/// way to pin fans independently, but this firmware silently ignores it (enable reads back False),
-/// so "performance" remains the only way to get max airflow, and it necessarily raises the power
-/// limits too.
+/// fan curve with it, so "performance" is currently the only way to get max airflow and it
+/// necessarily raises the power limits too. lenovo_wmi_other's fanN_target is the candidate
+/// independent lever; see ongoing_debug/2026-09-01_kernel-7.1-fan-lever.md.
 ///
 /// No mode caps frequency below the hardware ceiling. schedutil already scales the cores with
 /// demand, down to a 400 MHz floor, so a standing cap does nothing for a browsing machine and bites
@@ -51,7 +50,7 @@ impl Mode {
 	fn settings(self) -> Option<(bool, &'static str)> {
 		match self {
 			Mode::Longevity => Some((false, "performance")),
-			Mode::Quiet => Some((false, "quiet")),
+			Mode::Quiet => Some((false, "low-power")),
 			Mode::Performance => Some((true, "performance")),
 			Mode::Status => None,
 		}
@@ -141,11 +140,11 @@ fn read_max_freq() -> u64 {
 }
 
 fn read_boost() -> bool {
-	fs::read_to_string(CPU_BOOST).expect("udev grants wheel rw on cpufreq/boost").trim() == "1"
+	fs::read_to_string(CPU_BOOST).expect("amd-pstate exposes cpufreq/boost").trim() == "1"
 }
 
 fn read_profile() -> String {
-	fs::read_to_string(PLATFORM_PROFILE).expect("legion_laptop force=1 exposes platform_profile").trim().to_string()
+	fs::read_to_string(PLATFORM_PROFILE).expect("lenovo-wmi-gamezone registers the handler").trim().to_string()
 }
 
 fn set_max_freq(khz: u64) {
@@ -156,11 +155,11 @@ fn set_max_freq(khz: u64) {
 }
 
 fn set_boost(enabled: bool) {
-	fs::write(CPU_BOOST, if enabled { "1" } else { "0" }).expect("udev grants wheel rw on cpufreq/boost");
+	fs::write(CPU_BOOST, if enabled { "1" } else { "0" }).expect("amd-pstate exposes cpufreq/boost");
 }
 
 fn set_profile(profile: &str) {
-	fs::write(PLATFORM_PROFILE, profile).expect("legion_laptop force=1 exposes platform_profile");
+	fs::write(PLATFORM_PROFILE, profile).expect("lenovo-wmi-gamezone registers the handler");
 }
 
 fn show_status() {
@@ -170,5 +169,5 @@ fn show_status() {
 	println!("boost:    {}", if read_boost() { "on" } else { "off" });
 	println!("fans:     {}", read_profile());
 	println!("cpu:      {} MHz of {} MHz ({}%)", max_freq / 1000, ceiling / 1000, max_freq * 100 / ceiling);
-	println!("profiles: {}", fs::read_to_string(PLATFORM_PROFILE_CHOICES).expect("legion_laptop exposes choices").trim());
+	println!("profiles: {}", fs::read_to_string(PLATFORM_PROFILE_CHOICES).expect("lenovo-wmi-gamezone registers the handler").trim());
 }

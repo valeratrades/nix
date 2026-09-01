@@ -59,6 +59,11 @@ requirement is not negotiable: `optimize_for longevity` must deliver max fans AN
 zero boost at the same time. Under investigation as of 2026-09-01 — see
 "2026-09-01: reopened" below.
 
+**Superseded 2026-09-01 by `2026-09-01_kernel-7.1-fan-lever.md`.** The lever exists:
+`lenovo-wmi-other` (kernel ≥7.0) registers a `lenovo_wmi_other` hwmon with RW
+`fanN_target`, issued with thermal mode `NONE`, i.e. independent of `platform_profile`.
+"Moving to a newer kernel is not known to deliver the drivers" is likewise retracted.
+
 ### 5. Firefox was software-decoding every video
 `user.gpuAcceleration = false` (`vars/default.nix`) gated VA-API decode *and*
 forced GPU rendering behind one flag. `LIBVA_DRIVER_NAME` was absent from the

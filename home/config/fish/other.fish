@@ -108,8 +108,6 @@ alias tree="fd . | as-tree"
 alias bak="XDG_CONFIG_HOME=/home/v/.dots/home/v/.config"
 alias as_term="script -qfc"
 alias wget="aria2c -x16"
-alias disable_fan="echo 0 | sudo tee /sys/class/hwmon/hwmon6/pwm1"
-alias enable_fan="echo 2 | sudo tee /sys/class/hwmon/hwmon6/pwm1"
 alias cdd="cd .. && cd -" # effectively just reloads `direnv`
 alias monkey="smassh"
 alias bbeats="sudo -Es nice -n -20 /etc/profiles/per-user/v/bin/bbeats" # otherwise any demanding process will produce bad breaks in sound

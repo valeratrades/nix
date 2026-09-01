@@ -144,7 +144,9 @@ in {
 		};
   };
   boot = {
-    kernelPackages = pkgs.linuxPackages_6_12; # 6.12 LTS - has DMCUB fix (6.12.32+), 6.18 breaks nvidia driver
+    # 7.0 for lenovo-wmi-other's fan hwmon: it decouples fan RPM from platform_profile, which
+    # legion_laptop never could on this EC. See ongoing_debug/2026-09-01_kernel-7.1-fan-lever.md.
+    kernelPackages = pkgs.linuxPackages_7_0;
 
     #TODO: uncomment when kernel compile time is available (~2h min)
     # kernelPatches = [{
@@ -160,16 +162,7 @@ in {
 
     tmp.useTmpfs = true;
     loader = {
-      systemd-boot = {
-        enable = true;
-        # Keep gen 34 visible in boot menu (working network adapter)
-        extraEntries."gen34-safe.conf" = ''
-          title NixOS Gen34 (safe - working network)
-          linux /nix/store/gmidh9crlkzz7fpg1apqg2lw6qznf5dx-nixos-system-v-laptop-26.05.20251127.2fad6ea/kernel
-          initrd /nix/store/gmidh9crlkzz7fpg1apqg2lw6qznf5dx-nixos-system-v-laptop-26.05.20251127.2fad6ea/initrd
-          options init=/nix/store/gmidh9crlkzz7fpg1apqg2lw6qznf5dx-nixos-system-v-laptop-26.05.20251127.2fad6ea/init
-        '';
-      };
+      systemd-boot.enable = true;
       # Windows bootloader at /boot/EFI/Microsoft/Boot/bootmgfw.efi is auto-detected
       # Backup copy also on nvme1n1p4 in case Windows nukes this one
       timeout = 0; # spam `Space` or `Shift` to bring the menu up when needed

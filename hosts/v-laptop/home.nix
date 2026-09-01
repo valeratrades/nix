@@ -443,11 +443,6 @@ in {
 
         powershell # for shit and giggles
 
-        # for my laptop's hardware
-        [
-          lenovo-legion
-        ]
-
         # Windows (via Wine)
         [
           sierra-chart

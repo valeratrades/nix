@@ -1,4 +1,4 @@
-{ pkgs, lib, config, ... }:
+{ pkgs, ... }:
 let
   # Arbitration primitive. Exactly one meaning: the scaling_max_freq this machine should sit at when
   # it is not thermally stressed. Written by whoever declares a mode (this unit at boot,
@@ -13,18 +13,6 @@ in
   # D-Bus API. Ownership of platform_profile now sits solely with optimize_for + the boot default.
   services.power-profiles-daemon.enable = false;
 
-  # Allow users in 'wheel' group to control CPU boost and platform profile
-  services.udev.extraRules = ''
-    KERNEL=="boost", SUBSYSTEM=="cpufreq", MODE="0664", GROUP="wheel"
-    KERNEL=="platform_profile", SUBSYSTEM=="acpi", MODE="0664", GROUP="wheel"
-  '';
-
-  # Lenovo Legion kernel module for fan and power control
-  boot.extraModulePackages = [ config.boot.kernelPackages.lenovo-legion-module ];
-  boot.extraModprobeConfig = ''
-    options legion_laptop force=1
-  '';
-
   # Boot default: longevity. Mirrors `optimize_for longevity` so a fresh boot and an explicit
   # invocation agree.
   #
@@ -33,12 +21,10 @@ in
   # work that is actually wanted — compiles get the full 2501 MHz base. Heat is handled reactively
   # by thermal-guard, on measured temperature.
   #
-  # BUG!!!!!!!: platform_profile stays "performance" purely for the fan curve, and the same knob
-  # raises the power envelope. Measured at boost=0, 24 threads: quiet 600 MHz/33 W vs performance
-  # 1955 MHz/41 W. `longevity` therefore asks for airflow and gets +8 W with it.
-  # No independent fan lever survives because legion_laptop is force-loaded with the GKCN register
-  # map on this RLCN EC, so every EC-mediated knob is inert.
-  # See ongoing_debug/2026-07-26_cpu-thermals.md §"2026-09-01: reopened".
+  # platform_profile stays "performance" purely for the fan curve, and the same knob raises the
+  # power envelope. Measured at boost=0, 24 threads: quiet 600 MHz/33 W vs performance 1955 MHz/41 W.
+  # Unchanged pending Gate 2 of ongoing_debug/2026-09-01_kernel-7.1-fan-lever.md, which decides
+  # whether lenovo_wmi_other's fanN_target is the independent airflow lever this wants.
   systemd.services.legion-longevity = {
     description = "Set Legion laptop to longevity mode (boost off, fans max)";
     wantedBy = [ "multi-user.target" ];
@@ -75,26 +61,21 @@ in
   #
   # NB: I wanted 85%, but the Legion EC exposes only a *fixed* firmware
   # conservation cap (~80%), enforced in hardware, not a free-form percentage.
-  # The legion_cli `custom-conservation-mode-apply LOWER UPPER` band exists but
-  # only emulates a custom limit via a continuous software poll-and-toggle loop,
-  # i.e. a breakable soft cap. We take the firmware-enforced ~80% instead; the
-  # 80-vs-85 longevity difference is within the noise of the table above.
+  #
+  # The knob belongs to ideapad_acpi, not legion_laptop, so dropping the latter leaves it intact.
   systemd.services.legion-battery-conservation = {
     description = "Enable Legion firmware battery conservation mode (~80% charge cap)";
     wantedBy = [ "multi-user.target" ];
     after = [ "systemd-modules-load.service" ];
-    # legion_cli shells out to `bash` internally, so it needs it on PATH;
-    # systemd units run with an empty PATH by default.
     path = [ pkgs.bash pkgs.coreutils ];
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
-      ExecStart = "${pkgs.lenovo-legion}/bin/legion_cli batteryconservation-enable";
     };
+    script = ''
+      echo 1 > /sys/bus/platform/devices/VPC2004:00/conservation_mode
+    '';
   };
-
-  # Userspace utility for Legion fan control
-  environment.systemPackages = [ pkgs.lenovo-legion ];
 
   # Auto CPU frequency scaling (conflicts with power-profiles-daemon)
   #NB: conflicts with power-profiles-daemon, so disabled for now
