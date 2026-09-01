@@ -167,18 +167,47 @@ function clc
         set -lx ANTHROPIC_BASE_URL 'http://127.0.0.1:4000'
         set -lx ANTHROPIC_AUTH_TOKEN 'local'
 
-        # Normal/default Claude Code workload.
-        set -lx ANTHROPIC_MODEL 'gpt-5.6-terra'
+        # Names are litellm *model groups* (openai.yaml), not upstream model ids: the proxy 400s
+        # on `gpt-5.6-terra`.
+        set -lx ANTHROPIC_MODEL 'terra'
 
         # Map Claude's three tiers onto the 5.6 family.
-        set -lx ANTHROPIC_DEFAULT_OPUS_MODEL 'gpt-5.6-sol'
-        set -lx ANTHROPIC_DEFAULT_SONNET_MODEL 'gpt-5.6-terra'
-        set -lx ANTHROPIC_DEFAULT_HAIKU_MODEL 'gpt-5.6-luna'
+        set -lx ANTHROPIC_DEFAULT_OPUS_MODEL 'sol'
+        set -lx ANTHROPIC_DEFAULT_SONNET_MODEL 'terra'
+        set -lx ANTHROPIC_DEFAULT_HAIKU_MODEL 'luna'
 
         cl $argv
     end
 
     use_openai $argv
+end
+
+function clm
+    # for `CLaude Mixed` -- Opus 5 driving the session, Luna as the subagent tier.
+    # Claude Code resolves one ANTHROPIC_BASE_URL per process, so both providers have to sit behind
+    # one litellm. The cost: Opus authenticates by API key here, off the Max subscription.
+    # Own port and own config, so `clc` and openclaw keep the :4000 proxy to themselves.
+    if not curl -sf -m 2 http://127.0.0.1:4001/health/liveliness >/dev/null 2>&1
+        litellm --config $NIXOS_CONFIG/home/config/litellm/mixed.yaml --port 4001 >/tmp/litellm-mixed.log 2>&1 &
+        disown
+        for i in (seq 40)
+            curl -sf -m 1 http://127.0.0.1:4001/health/liveliness >/dev/null 2>&1; and break
+            sleep 1
+        end
+        if not curl -sf -m 2 http://127.0.0.1:4001/health/liveliness >/dev/null 2>&1
+            echo "clm: mixed litellm never came up on :4001; see /tmp/litellm-mixed.log" >&2
+            return 1
+        end
+    end
+
+    set -lx ANTHROPIC_BASE_URL 'http://127.0.0.1:4001'
+    set -lx ANTHROPIC_AUTH_TOKEN 'local'
+    set -lx ANTHROPIC_MODEL 'opus'
+    set -lx ANTHROPIC_DEFAULT_OPUS_MODEL 'opus'
+    set -lx ANTHROPIC_DEFAULT_SONNET_MODEL 'terra'
+    set -lx ANTHROPIC_DEFAULT_HAIKU_MODEL 'luna'
+
+    cl $argv
 end
 
 function clp
