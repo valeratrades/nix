@@ -76,25 +76,50 @@ in {
   '';
 
   # OpenClaw — multi-channel AI gateway, run from the checkout at ~/g/openclaw.
-  # Configured for DeepSeek (OpenAI-compatible endpoint) via a non-interactive onboard pass.
-  # `onboard --non-interactive` / `config set` / `channels add` are all idempotent and merge into
+  # Engine is GPT-5.6 Luna, reached through the local litellm proxy below rather than openclaw's
+  # native `openai` provider: openclaw routes that one through the codex app-server runtime, whose
+  # @openai/codex-linux-x64 binary is not installed in the checkout. litellm is already running for
+  # `clc`, speaks plain OpenAI-compatible HTTP, and keeps both consumers on one funnel.
+  # `onboard --non-interactive` / `config patch` / `channels add` are all idempotent and merge into
   # ~/.openclaw/openclaw.json, so this whole block re-runs safely on every `home-manager switch`
   # and fully reproduces config on a clean ~/.openclaw. We materialize secrets from the
   # sops-decrypted files here (openclaw has no env-var expansion in its config), and gate the
   # whole thing on the openclaw checkout actually being present.
   home.activation.configureOpenclaw = let
     ocCfg = {
-      provider = "deepseek";
-      baseUrl = "https://api.deepseek.com/v1";
-      model = "deepseek-chat";
+      provider = "litellm";
+      baseUrl = "http://127.0.0.1:4000";
+      model = "luna";
       port = "18789";
-      contextWindow = "131072";
-      maxTokens = "8192";
     };
-    cfgHash = builtins.hashString "sha256" (builtins.toJSON ocCfg);
+    # Mirrors the openai plugin's own catalog entry for gpt-5.6-luna (extensions/openai/
+    # openclaw.plugin.json) -- litellm serves the model but reports no metadata for it, so the
+    # window, output cap and price have to be stated here or the agent over-truncates and
+    # mis-accounts. `local`: the proxy binds loopback with no master_key, so any token passes.
+    ocModel = builtins.toJSON {
+      models.providers.litellm = {
+        baseUrl = ocCfg.baseUrl;
+        apiKey = "local";
+        api = "openai-completions";
+        models = [{
+          id = ocCfg.model;
+          name = "GPT-5.6 Luna (litellm)";
+          api = "openai-completions";
+          reasoning = true;
+          input = [ "text" "image" ];
+          contextWindow = 372000;
+          maxTokens = 128000;
+          cost = { input = 1; output = 6; cacheRead = 0.1; cacheWrite = 1.25; };
+        }];
+      };
+      agents.defaults.model.primary = "${ocCfg.provider}/${ocCfg.model}";
+      # DeepSeek was the previous engine; its key is out of credits, so leaving it configured only
+      # buys a failover that answers with a billing error. null deletes the path.
+      models.providers.deepseek = null;
+    };
+    cfgHash = builtins.hashString "sha256" ocModel;
   in lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     repo="${config.home.homeDirectory}/g/openclaw"
-    keyFile="${config.sops.secrets.deepsek_key.path}"
     tgTokenFile="${config.sops.secrets.telegram_token_test.path}"
     node="${lib.getExe pkgs.nodejs_22}"
     oc() { "$node" "$repo/openclaw.mjs" "$@"; }
@@ -102,18 +127,19 @@ in {
     # to actually run when config inputs change. Stamp over the nix config + secret contents and
     # skip the whole dance on unchanged boots/switches.
     stamp="${config.home.homeDirectory}/.openclaw/.hm-config-stamp"
-    want="$( { printf '%s' '${cfgHash}'; cat "$keyFile" "$tgTokenFile" 2>/dev/null; } | sha256sum | cut -d' ' -f1 )"
+    want="$( { printf '%s' '${cfgHash}'; cat "$tgTokenFile" 2>/dev/null; } | sha256sum | cut -d' ' -f1 )"
     if [ -r "$stamp" ] && [ "$(cat "$stamp")" = "$want" ]; then
       echo "configureOpenclaw: config unchanged, skipping"
-    elif [ -d "$repo" ] && [ -r "$keyFile" ]; then
-      # DeepSeek provider + default model (deepseek-chat -> deepseek-v4 family).
+    elif [ -d "$repo" ]; then
+      # Bootstraps gateway/workspace/mode. The provider it writes here is a placeholder; the patch
+      # below replaces it with the full model definition onboard has no flags for.
       oc onboard --non-interactive --accept-risk \
         --mode local \
         --auth-choice custom-api-key \
         --custom-provider-id ${ocCfg.provider} \
         --custom-base-url "${ocCfg.baseUrl}" \
         --custom-model-id "${ocCfg.model}" \
-        --custom-api-key "$(cat "$keyFile")" \
+        --custom-api-key local \
         --custom-compatibility openai \
         --gateway-port ${ocCfg.port} \
         --gateway-bind loopback \
@@ -124,10 +150,8 @@ in {
         --skip-health \
         || echo "configureOpenclaw: onboard failed (non-fatal); run 'oclaw' / 'openclaw onboard' manually" >&2
 
-      # The custom-provider onboard defaults the model to a tiny 4096-token window; DeepSeek v4
-      # actually serves 128k context / 8k output. Correct it so the agent doesn't over-truncate.
-      oc config set 'models.providers.${ocCfg.provider}.models[0].contextWindow' ${ocCfg.contextWindow} || true
-      oc config set 'models.providers.${ocCfg.provider}.models[0].maxTokens' ${ocCfg.maxTokens} || true
+      printf '%s' ${lib.escapeShellArg ocModel} | oc config patch --stdin \
+        || echo "configureOpenclaw: model patch failed; openclaw is left on whatever onboard wrote" >&2
 
       # Telegram channel on the *test* bot (distinct token from tg-server's main bot — see secrets).
       if [ -r "$tgTokenFile" ]; then
@@ -138,7 +162,7 @@ in {
       fi
       mkdir -p "$(dirname "$stamp")" && printf '%s' "$want" > "$stamp"
     else
-      echo "configureOpenclaw: $repo missing or $keyFile not readable yet; skipping" >&2
+      echo "configureOpenclaw: $repo missing; skipping" >&2
     fi
   '';
 
@@ -159,9 +183,10 @@ in {
   # outage), so fail immediately with an actionable message instead.
   systemd.user.services.openclaw-gateway = lib.mkIf user.openclaw {
     Unit = {
-      Description = "OpenClaw multi-channel AI gateway (DeepSeek)";
-      After = [ "network-online.target" "sops-nix.service" ];
-      Wants = [ "network-online.target" ];
+      Description = "OpenClaw multi-channel AI gateway (GPT-5.6 Luna via litellm)";
+      # litellm now carries the engine, not just `clc` -- without it every agent turn 502s.
+      After = [ "network-online.target" "sops-nix.service" "litellm.service" ];
+      Wants = [ "network-online.target" "litellm.service" ];
       # Crash-looping forever helps nobody: after the burst, give up and page via telegram.
       StartLimitIntervalSec = 600;
       StartLimitBurst = 20;
