@@ -191,8 +191,15 @@ All four GUIDs the upstream `lenovo-wmi-*` drivers bind are present in `/sys/bus
 
 Kernel is 6.12.85 LTS; those drivers landed in 6.15. `CONFIG_LENOVO_WMI_CAMERA=m` is the only
 one built. `lenovo-wmi-other` exposes `ppt_pl1_spl` / `ppt_pl2_sppt` / `ppt_pl3_fppt` through
-the firmware-attributes class — which **is** available on 6.12 (`CONFIG_DELL_WMI_SYSMAN=m`
-selects it), so the class infrastructure is not a blocker.
+the firmware-attributes class, which this kernel does **not** build:
+
+```
+$ gunzip -c /proc/config.gz | grep -E 'FIRMWARE_ATTRIBUTES_CLASS|DELL_WMI_SYSMAN'
+CONFIG_DELL_WMI_SYSMAN=m          <- and nothing else; the class symbol is absent
+```
+
+(An earlier draft of this section claimed `DELL_WMI_SYSMAN` selects the class on 6.12. It does
+not. The class is one more thing a backport has to carry.)
 
 That is the decoupling: keep `platform_profile=performance` for the fan curve, then clamp PPT
 back to `quiet`-equivalent through WMI. Both knobs, one path, no EC register archaeology.
@@ -204,9 +211,17 @@ back to `quiet`-equivalent through WMI. Both knobs, one path, no EC register arc
    `lenovo-wmi-gamezone` needs the multi-handler `platform_profile_register()` API added in
    6.14, which 6.12 does not have. Skipping gamezone means keeping ACPI `platform_profile` as
    the fan lever — which is fine, that is the part that already works.
-2. **Move to kernel ≥6.15.** Blocked as stated in `configuration.nix:147` (6.18 breaks the
-   nvidia driver) — but 6.15/6.16/6.17 were never tried, and the pin is written as if only
-   6.12 and 6.18 exist.
+2. **Move to kernel ≥6.15.** ~~6.15/6.16/6.17 were never tried.~~ **They do not exist to try.**
+   All four of 6.15, 6.16, 6.17 and 6.19 are EOL upstream and removed from this nixpkgs — they
+   survive only as `throw` aliases, which is why they still appear in `builtins.attrNames`:
+
+   ```
+   linuxPackages_6_15 = throw "linux 6.15 was removed because it has reached its end of life upstream";
+   ```
+
+   The real menu is **6.12.100 (current), 6.18.41, 7.1.5** — and 6.18 is precisely the one
+   `configuration.nix:147` records as breaking the nvidia driver. So the "just move to a kernel
+   that has the drivers" route means 7.1.5, which nothing here has ever booted.
 3. **`ryzenadj`** — identifies this CPU as Dragon Range and can write SMU limits via `/dev/mem`,
    but `request_table_ver_and_size is not supported on this family`, so limits cannot be read
    back. Setting power limits blind, with no verification, against a `platform_profile` that is
@@ -223,6 +238,14 @@ back to `quiet`-equivalent through WMI. Both knobs, one path, no EC register arc
 - Whether `powermode`/`thermalmode` (WMI, working) expose a fan-speed method independent of the
   profile. The BMOF that names these methods is `DS`-compressed and `bmfdec` is not in nixpkgs;
   the DSDT names them `WMAA`-style, so it carries no friendly names.
+- **Whether nixpkgs enables `CONFIG_LENOVO_WMI_*` on 6.18 or 7.1 at all.** Attempted via
+  `kernel.config.isEnabled`; that returned empty for every symbol including ones known to be
+  `=m` on the running kernel, so the query is broken and produced no data. A first pass read
+  those empties as `false` — they mean nothing. Unanswered. Until it is answered, "move to a
+  newer kernel" is not known to deliver the drivers even on a kernel that upstream ships them in.
+- Whether upstream `lenovo-wmi-gamezone` can coexist with the out-of-tree `legion_laptop`. Both
+  bind `887B54E3-…` (it is currently claimed by `legion_wmi`) and both register a
+  `platform_profile` handler. Untested; a likely conflict on any kernel that has both.
 
 ## Discord — 32% of a core, in the background
 
