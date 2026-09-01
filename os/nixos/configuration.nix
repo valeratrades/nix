@@ -137,10 +137,6 @@ in {
 			# https://github.com/NixOS/nixpkgs/pull/338181
 			environment.TMPDIR = "/var/tmp";
 			};
-			"systemd-backlight@.service" = {
-				enable = false;
-				unitConfig.Mask = true;
-			};
 		};
   };
   boot = {

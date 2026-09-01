@@ -207,11 +207,17 @@ in
       TEMP_HIGH=85000   # Start throttling at 85°C
       TEMP_LOW=75000    # Stop throttling at 75°C (hysteresis)
 
-      # Calibrated against measured idle, not picked round: this machine floors at 58-59C under
-      # ordinary background load (browser + agents, load ~4, 27-31 W). A release point at 58C sat
-      # exactly on that floor and pinned the fans permanently. 65C clears it by ~6C.
-      FAN_HIGH=72000    # Fans to max at 72°C — 13°C of runway before the throttle bites
-      FAN_LOW=65000     # Back to the firmware curve at 65°C (hysteresis)
+      # Calibrated against this machine over three attempts, each rejected on measurement:
+      #   65/58 - release sat on the 58-59C idle floor; fans pinned permanently.
+      #   72/65 - band inside the working range; flapped max<->auto 6x in 20 min.
+      #   78/68 - still inside it; flapped 4x in 11 min.
+      # Under a real session (agents, browser, dGPU awake, load 3-6) the CPU sweeps 67-80C
+      # continuously, so ANY narrow band placed in that range cycles. The asymmetry is deliberate:
+      # engage at the top of the working range, release only at genuine idle, so a session costs one
+      # spin-up rather than twenty. Flapping is worse than either steady state — it spins the
+      # bearings up and down for nothing and buys no cooling.
+      FAN_HIGH=78000    # Fans to max at 78°C — 7°C before the frequency throttle bites
+      FAN_LOW=62000     # Firmware curve again only once genuinely idle (floor is 58-59C)
 
       throttled=0
       fans_maxed=0
