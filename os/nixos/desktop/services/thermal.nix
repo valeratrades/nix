@@ -21,12 +21,15 @@ in
   # work that is actually wanted — compiles get the full 2501 MHz base. Heat is handled reactively
   # by thermal-guard, on measured temperature.
   #
-  # platform_profile stays "performance" purely for the fan curve, and the same knob raises the
-  # power envelope. Measured at boost=0, 24 threads: quiet 600 MHz/33 W vs performance 1955 MHz/41 W.
-  # Unchanged pending Gate 2 of ongoing_debug/2026-09-01_kernel-7.1-fan-lever.md, which decides
-  # whether lenovo_wmi_other's fanN_target is the independent airflow lever this wants.
+  # "balanced", not "performance": the only reason performance was ever set here was to buy fan
+  # speed, and it charged +8 W and a 3x clock ceiling for it (boost=0, 24 threads: quiet
+  # 527 MHz/33 W vs performance 1955 MHz/41 W). Airflow now has its own lever, so the profile is
+  # free to sit where the power envelope should be. Not "low-power" — quiet already owns the low
+  # end, and the note below rejects standing caps.
+  #
+  # Touches no fans. thermal-guard is their sole owner, on measured temperature.
   systemd.services.legion-longevity = {
-    description = "Set Legion laptop to longevity mode (boost off, fans max)";
+    description = "Set Legion laptop to longevity mode (boost off, balanced power envelope)";
     wantedBy = [ "multi-user.target" ];
     after = [ "systemd-modules-load.service" ];
     path = [ pkgs.bash pkgs.coreutils ];
@@ -36,7 +39,7 @@ in
     };
     script = ''
       echo 0 > /sys/devices/system/cpu/cpufreq/boost
-      echo performance > /sys/firmware/acpi/platform_profile
+      echo balanced > /sys/firmware/acpi/platform_profile
 
       # Read the ceiling only after boost is settled: amd-pstate swings cpuinfo_max_freq between the
       # base and boost clocks according to it.
@@ -102,9 +105,9 @@ in
   # To journald, not a file: it is already persistent, already rotated, and on that reset it had
   # flushed to within 0.3s of the cut. `journalctl -b -1 -u sensor-sampler | tail` is the query.
   #
-  # legion_hwmon is deliberately absent. Its registers latch: it reported a fixed 87C GPU across
-  # every sample while nvidia-smi read 57C, and fan speeds above its own advertised maximum. That
-  # is the same brokenness eww's temperature.sh already routes around.
+  # fan= is the standing check on thermal-guard's fan lever. If fanN_target silently stops being
+  # honoured (across a suspend/resume, say), longevity quietly becomes balanced-with-idle-fans,
+  # which is worse than what 6.12 did. Nothing else would notice.
   systemd.services.sensor-sampler = {
     description = "Sample thermals and power every 5s, so a hard reset has a last known state";
     wantedBy = [ "multi-user.target" ];
@@ -130,6 +133,7 @@ in
         k10=$(hwmon_by_name k10temp)
         amd=$(hwmon_by_name amdgpu)
         bat=$(hwmon_by_name BAT0)
+        wmi=$(hwmon_by_name lenovo_wmi_other)
 
         # Both DIMMs, hotter one — they read ~3C apart and either alarms at 55C.
         dram=0
@@ -159,6 +163,7 @@ in
              "ppt=$(( $(val "$amd/power1_input") / 1000000 ))W" \
              "dgpu=$dgpu" \
              "dram=''${dram}C" \
+             "fan=$(val "$wmi/fan1_input")/$(val "$wmi/fan4_input")RPM" \
              "fmax=$(( $(val /sys/devices/system/cpu/cpufreq/policy0/scaling_max_freq) / 1000 ))MHz" \
              "ac=$(val /sys/class/power_supply/ADP0/online)" \
              "batt=$(val /sys/class/power_supply/BAT0/status)/$(( $(val "$bat/power1_input") / 1000000 ))W" \
@@ -177,13 +182,19 @@ in
   # `ras-mc-ctl --errors` is the query.
   hardware.rasdaemon.enable = true;
 
-  # Throttle CPU frequency at 90°C to prevent thermal shutdown.
+  # Two levers, two thresholds, one temperature. Fans ramp at 65C, frequency is only cut at 85C —
+  # the gap is the point: airflow is spent first, so a load has 20C of headroom to finish at full
+  # clock before anything slows down.
   #
-  # Deliberately touches frequency ONLY, and only relative to the declared baseline. This loop used
-  # to be a second writer of platform_profile, so a single thermal excursion silently rewrote a
-  # profile the user had chosen; the profile now has exactly one owner.
+  # Fans are binary (firmware auto below, fanN_max above) rather than a curve, because a curve only
+  # exists to trade cooling against noise and noise is not a constraint here. Idle power and the
+  # fans' own heat are, which is why they are not simply pinned: below the threshold the firmware's
+  # own curve runs, and it is already proportional.
+  #
+  # Never platform_profile. This loop used to write it, so a single thermal excursion silently
+  # rewrote a profile the user had chosen; it now has exactly one owner.
   systemd.services.thermal-guard = {
-    description = "Throttle CPU frequency when temperature exceeds 90C";
+    description = "Ramp fans at 65C, throttle CPU frequency at 85C";
     wantedBy = [ "multi-user.target" ];
     after = [ "legion-longevity.service" ];  # the baseline must exist before we can restore to it
     requires = [ "legion-longevity.service" ];
@@ -196,7 +207,14 @@ in
       TEMP_HIGH=85000   # Start throttling at 85°C
       TEMP_LOW=75000    # Stop throttling at 75°C (hysteresis)
 
+      # Calibrated against measured idle, not picked round: this machine floors at 58-59C under
+      # ordinary background load (browser + agents, load ~4, 27-31 W). A release point at 58C sat
+      # exactly on that floor and pinned the fans permanently. 65C clears it by ~6C.
+      FAN_HIGH=72000    # Fans to max at 72°C — 13°C of runway before the throttle bites
+      FAN_LOW=65000     # Back to the firmware curve at 65°C (hysteresis)
+
       throttled=0
+      fans_maxed=0
 
       # Never the hardware ceiling: the baseline is whatever mode is currently declared, so throttling
       # bites relative to the cap rather than lifting the CPU *up* to the ceiling on restore.
@@ -211,6 +229,31 @@ in
         done
       }
 
+      # Resolved per-iteration, like k10temp below: the WMI hwmon appears on the wmi bus
+      # asynchronously, so it is routinely absent for the first few passes after boot. Re-reading
+      # also means a write lost to a suspend/resume cycle is re-asserted within 2s rather than
+      # leaving the machine silently on the firmware curve during a hot spell.
+      # "$1" = max | auto
+      set_fans() {
+        fans=$(grep -lx lenovo_wmi_other /sys/class/hwmon/*/name 2>/dev/null) || return 0
+        fans=$(dirname "$fans")
+        for target in "$fans"/fan*_target; do
+          if [ "$1" = max ]; then
+            cat "''${target%_target}_max" > "$target"
+          else
+            echo 0 > "$target"
+          fi
+        done
+      }
+
+      # Both flags above describe the *hardware*, but the hardware outlives this process: fan
+      # targets and scaling_max_freq survive a restart, so a crash mid-excursion would leave the
+      # machine pinned at max fans (or throttled) with a fresh loop believing it was neither, and
+      # neither release branch would ever fire. Drive the state to match the assumption instead of
+      # assuming it.
+      set_fans auto
+      set_freq $(base)
+
       while true; do
         # Find k10temp hwmon dynamically
         temp=""
@@ -222,14 +265,24 @@ in
         done
 
         if [ -n "$temp" ]; then
+          if [ "$temp" -ge "$FAN_HIGH" ] && [ "$fans_maxed" -eq 0 ]; then
+            set_fans max
+            fans_maxed=1
+            echo "Fans max: $((temp/1000))C >= $((FAN_HIGH/1000))C"
+          elif [ "$temp" -lt "$FAN_LOW" ] && [ "$fans_maxed" -eq 1 ]; then
+            set_fans auto
+            fans_maxed=0
+            echo "Fans auto: $((temp/1000))C < $((FAN_LOW/1000))C"
+          fi
+
           if [ "$temp" -ge "$TEMP_HIGH" ] && [ "$throttled" -eq 0 ]; then
             set_freq $(( $(base) * 60 / 100 ))
             throttled=1
-            echo "Throttling: $((temp/1000))C >= 90C, freq -> $(( $(base) * 60 / 100 )) kHz"
+            echo "Throttling: $((temp/1000))C >= $((TEMP_HIGH/1000))C, freq -> $(( $(base) * 60 / 100 )) kHz"
           elif [ "$temp" -lt "$TEMP_LOW" ] && [ "$throttled" -eq 1 ]; then
             set_freq $(base)
             throttled=0
-            echo "Restored: $((temp/1000))C < 80C, freq -> $(base) kHz"
+            echo "Restored: $((temp/1000))C < $((TEMP_LOW/1000))C, freq -> $(base) kHz"
           fi
         fi
 

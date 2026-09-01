@@ -24,10 +24,12 @@ const CPUFREQ: &str = "/sys/devices/system/cpu/cpufreq";
 /// Single source of truth for "what this machine should be doing when it is not thermally stressed".
 const BASE_FREQ: &str = "/run/optimize_for.base-freq";
 
-/// NB: platform_profile is a *power limit* knob on this EC (PPT/STAPM), which happens to carry the
-/// fan curve with it, so "performance" is currently the only way to get max airflow and it
-/// necessarily raises the power limits too. lenovo_wmi_other's fanN_target is the candidate
-/// independent lever; see ongoing_debug/2026-09-01_kernel-7.1-fan-lever.md.
+/// NB: a mode sets a *power envelope*, never airflow. platform_profile is a power limit knob
+/// (PPT/STAPM) on this EC, and under legion_laptop it was also the only way to reach the fan curve,
+/// so `longevity` had to ask for "performance" to get air. Since kernel 7.0, lenovo_wmi_other
+/// exposes fanN_target with thermal mode NONE — measured to hold max RPM across low-power, balanced
+/// and performance alike — so fans belong to thermal-guard, reactively, on measured heat.
+/// See ongoing_debug/2026-09-01_kernel-7.0-fan-lever.md.
 ///
 /// No mode caps frequency below the hardware ceiling. schedutil already scales the cores with
 /// demand, down to a 400 MHz floor, so a standing cap does nothing for a browsing machine and bites
@@ -35,11 +37,11 @@ const BASE_FREQ: &str = "/run/optimize_for.base-freq";
 /// applied on measured heat rather than pre-emptively.
 #[derive(Debug, Clone, Copy, ValueEnum)]
 enum Mode {
-	/// Boost off, fans max (cool & preserve hardware)
+	/// Boost off, moderate power envelope (cool & preserve hardware)
 	Longevity,
-	/// Boost off, fans quiet (silent operation)
+	/// Boost off, lowest power envelope (silent operation)
 	Quiet,
-	/// Boost on, fans max (full power)
+	/// Boost on, highest power envelope (full power)
 	Performance,
 	/// Show current status
 	Status,
@@ -49,7 +51,7 @@ impl Mode {
 	/// (boost, platform_profile); None for Status, which changes nothing
 	fn settings(self) -> Option<(bool, &'static str)> {
 		match self {
-			Mode::Longevity => Some((false, "performance")),
+			Mode::Longevity => Some((false, "balanced")),
 			Mode::Quiet => Some((false, "low-power")),
 			Mode::Performance => Some((true, "performance")),
 			Mode::Status => None,
@@ -102,7 +104,7 @@ fn main() {
 	apply(boost, profile, max_freq);
 
 	let scoped = if restore.is_some() { " (scoped)" } else { "" };
-	println!("{name}{scoped}: boost {}, fans {profile}, cpu up to {} MHz", if boost { "on" } else { "off" }, max_freq / 1000);
+	println!("{name}{scoped}: boost {}, profile {profile}, cpu up to {} MHz", if boost { "on" } else { "off" }, max_freq / 1000);
 
 	let Some(cmd) = args.cmd.split_first() else { return };
 
@@ -158,7 +160,12 @@ fn set_boost(enabled: bool) {
 	fs::write(CPU_BOOST, if enabled { "1" } else { "0" }).expect("amd-pstate exposes cpufreq/boost");
 }
 
+/// The single point every profile write routes through, including Drop — so the assert turns a
+/// driver-side rename from a silent no-op into a panic. Writing an unlisted profile is otherwise
+/// accepted and discarded.
 fn set_profile(profile: &str) {
+	let choices = fs::read_to_string(PLATFORM_PROFILE_CHOICES).expect("lenovo-wmi-gamezone registers the handler");
+	assert!(choices.split_whitespace().any(|c| c == profile), "{profile} not among {choices:?}");
 	fs::write(PLATFORM_PROFILE, profile).expect("lenovo-wmi-gamezone registers the handler");
 }
 
@@ -167,7 +174,7 @@ fn show_status() {
 	let max_freq = read_max_freq();
 
 	println!("boost:    {}", if read_boost() { "on" } else { "off" });
-	println!("fans:     {}", read_profile());
+	println!("profile:  {}", read_profile());
 	println!("cpu:      {} MHz of {} MHz ({}%)", max_freq / 1000, ceiling / 1000, max_freq * 100 / ceiling);
 	println!("profiles: {}", fs::read_to_string(PLATFORM_PROFILE_CHOICES).expect("lenovo-wmi-gamezone registers the handler").trim());
 }

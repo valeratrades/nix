@@ -145,7 +145,7 @@ in {
   };
   boot = {
     # 7.0 for lenovo-wmi-other's fan hwmon: it decouples fan RPM from platform_profile, which
-    # legion_laptop never could on this EC. See ongoing_debug/2026-09-01_kernel-7.1-fan-lever.md.
+    # legion_laptop never could on this EC. See ongoing_debug/2026-09-01_kernel-7.0-fan-lever.md.
     kernelPackages = pkgs.linuxPackages_7_0;
 
     #TODO: uncomment when kernel compile time is available (~2h min)
