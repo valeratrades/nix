@@ -33,10 +33,12 @@ in
   # work that is actually wanted — compiles get the full 2501 MHz base. Heat is handled reactively
   # by thermal-guard, on measured temperature.
   #
-  # platform_profile stays "performance" purely for the fan curve. It does raise PPT/STAPM as a side
-  # effect, which is the price of airflow here: legion_cli's maximumfanspeed would be the principled
-  # way to ask for fans without the power limits, but this firmware silently ignores it (enable
-  # reads back False), so the profile is the only working lever.
+  # BUG!!!!!!!: platform_profile stays "performance" purely for the fan curve, and the same knob
+  # raises the power envelope. Measured at boost=0, 24 threads: quiet 600 MHz/33 W vs performance
+  # 1955 MHz/41 W. `longevity` therefore asks for airflow and gets +8 W with it.
+  # No independent fan lever survives because legion_laptop is force-loaded with the GKCN register
+  # map on this RLCN EC, so every EC-mediated knob is inert.
+  # See ongoing_debug/2026-07-26_cpu-thermals.md §"2026-09-01: reopened".
   systemd.services.legion-longevity = {
     description = "Set Legion laptop to longevity mode (boost off, fans max)";
     wantedBy = [ "multi-user.target" ];

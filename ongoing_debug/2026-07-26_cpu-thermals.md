@@ -132,6 +132,98 @@ until only one remained.
   so the dGPU never suspends even *unplugged*. The D3cold-wedge attribution is
   unverified, not disproved.
 
+## 2026-09-01: reopened — §4 was right about the cost, wrong about the cause
+
+### The coupling is real, and it was never measured before
+Measured here for the first time. 24 spinner threads, `boost=0`, `scaling_max_freq=2501000`
+(i.e. exactly what `optimize_for longevity` sets), amdgpu `power1_input` as the package
+power proxy:
+
+| `platform_profile` | `powermode` | avg core clock | package power |
+|---|---|---|---|
+| `quiet` | 1 | **527 / 701 MHz** | 33 W |
+| `performance` | 3 | **1955 / 1956 MHz** | 40–41 W |
+
+Two runs each, interleaved. `longevity` is paying **+8 W and a 3× clock envelope** for its
+fan curve. §4's cost claim stands.
+
+NB: peak-power-over-a-window is a useless metric here — an earlier pass using it showed the
+profiles as indistinguishable. Average core clock under sustained load is the discriminator.
+
+### But "no other fan lever exists" was a wrong inference from a broken driver
+`legion_laptop` has no entry for this machine and is force-loaded:
+
+```
+legion PNP0C09:00: is_denied: 0; is_allowed: 0; do_load_by_list: 0; do_load: 1
+legion PNP0C09:00: legion_laptop is forced to load and would otherwise not be loaded
+legion PNP0C09:00: Using configuration for system: GKCN      <-- wrong model's EC register map
+legion PNP0C09:00: Read embedded controller ID 0x5508
+legion PNP0C09:00: Skipped checking embedded controller id
+```
+
+This is a **Legion R9000P ADR10** (`83LV`, BIOS `RLCN29WW`, 08/2025, Ryzen 9 8945HX).
+`GKCN` is a 2021-era Legion. Every EC-mediated knob is consequently reading and writing
+garbage addresses:
+
+| interface | observed | verdict |
+|---|---|---|
+| `fan1_input` / `fan2_input` | frozen at 23135 / 18020 for 45+ min, vs `fan1_max` 10000 | latched, not live |
+| `pwm1_auto_pointN_pwm` | 150, 0, 145, 5, 163, 0… all temps 0 | non-monotonic, not a curve |
+| `legion_hwmon` GPU temp | fixed 87 °C while `nvidia-smi` read 59 °C | latched |
+| `fan_fullspeed` write | accepted, reads back 0 | no effect |
+| `legion_cli maximumfanspeed` | enable succeeds, status False | no effect |
+| `platform_profile` | `powermode` tracks 1/2/3, behaviour changes (table above) | **works — it is ACPI, not EC** |
+
+So `maximumfanspeed` was never a fair test of "can fans be pinned independently". It failed
+because it wrote a GKCN offset to an RLCN EC. **We cannot presently observe fan RPM at all**,
+which is the more serious problem: "fans max" in `longevity` is an assumption, not a
+measurement.
+
+### The untapped lever: this firmware exposes the full Lenovo WMI interface
+All four GUIDs the upstream `lenovo-wmi-*` drivers bind are present in `/sys/bus/wmi/devices/`:
+
+| GUID | upstream driver | bound here |
+|---|---|---|
+| `887B54E3-DDDC-4B2C-8B88-68A26A8835D0` | `lenovo-wmi-gamezone` | `legion_wmi` (out-of-tree) |
+| `DC2A8805-3A8C-41BA-A6F7-092E0089CD3B` | `lenovo-wmi-other` — **PPT tunables** | none |
+| `7A8F5407-CB67-4D6E-B547-39B3BE018154` | `lenovo-wmi-capdata01`, `instance_count=70` | none |
+| `D320289E-8FEA-41E0-86F9-911D83151B5F` | `lenovo-wmi-events` | none |
+
+Kernel is 6.12.85 LTS; those drivers landed in 6.15. `CONFIG_LENOVO_WMI_CAMERA=m` is the only
+one built. `lenovo-wmi-other` exposes `ppt_pl1_spl` / `ppt_pl2_sppt` / `ppt_pl3_fppt` through
+the firmware-attributes class — which **is** available on 6.12 (`CONFIG_DELL_WMI_SYSMAN=m`
+selects it), so the class infrastructure is not a blocker.
+
+That is the decoupling: keep `platform_profile=performance` for the fan curve, then clamp PPT
+back to `quiet`-equivalent through WMI. Both knobs, one path, no EC register archaeology.
+
+### Route, in preference order
+
+1. **Backport `lenovo-wmi-capdata01` + `lenovo-wmi-other` to 6.12** as an out-of-tree module.
+   These two do not touch `platform_profile`, so they sidestep the one real backport hazard:
+   `lenovo-wmi-gamezone` needs the multi-handler `platform_profile_register()` API added in
+   6.14, which 6.12 does not have. Skipping gamezone means keeping ACPI `platform_profile` as
+   the fan lever — which is fine, that is the part that already works.
+2. **Move to kernel ≥6.15.** Blocked as stated in `configuration.nix:147` (6.18 breaks the
+   nvidia driver) — but 6.15/6.16/6.17 were never tried, and the pin is written as if only
+   6.12 and 6.18 exist.
+3. **`ryzenadj`** — identifies this CPU as Dragon Range and can write SMU limits via `/dev/mem`,
+   but `request_table_ver_and_size is not supported on this family`, so limits cannot be read
+   back. Setting power limits blind, with no verification, against a `platform_profile` that is
+   also writing them. Rejected unless 1 and 2 both fail.
+4. **Add an `RLCN` entry to `legion_laptop`'s model table.** Requires reverse-engineering this
+   EC's register layout from scratch. Highest effort, and it buys the fan curve back — worth
+   doing only if fan *observability* turns out to matter more than PPT control.
+
+### Not proven
+- That the fans are actually at maximum in `performance`. Unmeasurable until an interface that
+  can read RPM exists. The whole justification for `platform_profile=performance` rests on it.
+- That `lenovo-wmi-other`'s methods behave on this firmware. The GUID is present; nothing has
+  called it. Requires the driver to test.
+- Whether `powermode`/`thermalmode` (WMI, working) expose a fan-speed method independent of the
+  profile. The BMOF that names these methods is `DS`-compressed and `bmfdec` is not in nixpkgs;
+  the DSDT names them `WMAA`-style, so it carries no friendly names.
+
 ## Discord — 32% of a core, in the background
 
 PID 14672: **3h11m of CPU over 9.9h elapsed** while "closed" to the tray.
