@@ -224,6 +224,12 @@ in
       RAMP_BASE=50      # C the ramp would put a fan at its fanN_min
       RAMP_TOP=78       # C it reaches fanN_max — 7C before the frequency throttle bites
 
+      # k10temp jitters: consecutive samples bounce 68<->70 with the load unchanged. Recomputing on
+      # every whole-degree step therefore mostly chases sensor noise, so hold until the reading has
+      # actually moved. 2C is one deadband either side of the jitter, and at 125 RPM/°C it still
+      # resolves to 250 RPM steps — well above the 100 RPM the EC quantises to.
+      RAMP_DEADBAND=2
+
       throttled=0
       fans_engaged=0
       last_ramp=""
@@ -287,19 +293,22 @@ in
         if [ -n "$temp" ]; then
           if [ "$temp" -ge "$FAN_ENGAGE" ] && [ "$fans_engaged" -eq 0 ]; then
             fans_engaged=1
+            set_fans "$temp"
+            last_ramp=$(( temp / 1000 ))
             echo "Fans ramping: $((temp/1000))C >= $((FAN_ENGAGE/1000))C"
           elif [ "$temp" -lt "$FAN_RELEASE" ] && [ "$fans_engaged" -eq 1 ]; then
             set_fans auto
             fans_engaged=0
-            last_ramp=""
             echo "Fans auto: $((temp/1000))C < $((FAN_RELEASE/1000))C"
-          fi
-
-          # Only on a whole-degree change: the ramp has ~125 RPM/°C of resolution, so re-issuing
-          # three WMI writes every 2s for an unchanged target would be pure overhead.
-          if [ "$fans_engaged" -eq 1 ] && [ "$((temp/1000))" != "$last_ramp" ]; then
-            set_fans "$temp"
-            last_ramp=$((temp/1000))
+          elif [ "$fans_engaged" -eq 1 ]; then
+            # Against last_ramp, not against the previous sample: comparing neighbours lets a slow
+            # drift walk any distance 1C at a time without ever tripping the deadband.
+            drift=$(( temp / 1000 - last_ramp ))
+            if [ "$drift" -lt 0 ]; then drift=$(( -drift )); fi
+            if [ "$drift" -ge "$RAMP_DEADBAND" ]; then
+              set_fans "$temp"
+              last_ramp=$(( temp / 1000 ))
+            fi
           fi
 
           if [ "$temp" -ge "$TEMP_HIGH" ] && [ "$throttled" -eq 0 ]; then
