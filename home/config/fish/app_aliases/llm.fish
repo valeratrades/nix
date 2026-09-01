@@ -200,6 +200,8 @@ function clm
         end
     end
 
+    # These three pick the defaults only; mixed.yaml registers more (sonnet, fable, haiku, sol,
+    # pro), each reachable as `clm -m <group>`.
     set -lx ANTHROPIC_BASE_URL 'http://127.0.0.1:4001'
     set -lx ANTHROPIC_AUTH_TOKEN 'local'
     set -lx ANTHROPIC_MODEL 'opus'

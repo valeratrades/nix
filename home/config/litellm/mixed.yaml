@@ -1,16 +1,64 @@
 # Anthropic and OpenAI behind one endpoint, for `clm` (llm.fish).
 #
 # Claude Code resolves exactly one ANTHROPIC_BASE_URL per process, so the only way to reach an
-# OpenAI model from a Claude session is to put both providers behind one proxy and map them onto
-# the three tier variables. The consequence is unavoidable and not free: Opus here authenticates
-# with ANTHROPIC_API_KEY, so the main loop bills API credits rather than the Max subscription.
+# OpenAI model from a Claude session is to put both providers behind one proxy. The three
+# ANTHROPIC_DEFAULT_*_MODEL variables pick the *defaults*; every group below is also reachable
+# directly as `clm -m <group>`, which is the point of registering more than three.
+# The consequence is unavoidable and not free: Anthropic models authenticate with
+# ANTHROPIC_API_KEY here, so a session on one bills API credits rather than the Max subscription.
+#
+# Model groups are named for the tier, not the upstream id -- `clc` used to send `gpt-5.6-terra`
+# and got a 400, because the group is `terra`.
+#
+# Enumerated from GET /v1/models on both providers, not from memory. Claude 5 has no Haiku, so
+# `haiku` is 4.5; OpenAI 5.6 has no pro, so `pro` is 5.5. Older Claude generations (4.8, 4.7, 4.6)
+# are live on the key too and are one entry each if ever wanted.
 #
 # See openai.yaml for why the gpt-5.6 entries need mode/supports_tool_choice spelled out.
+#
+# Known defect, litellm 1.83.7, OpenAI groups only: translating Anthropic tool_choice to the
+# Responses API, the string-valued modes get wrapped in an object -- `{"type":"auto"}` and
+# `{"type":"required"}` -- where the API wants a bare string, and 400s. Omitted tool_choice and
+# the named form `{"type":"tool","name":...}` both work, and Claude Code's agent loop omits it,
+# which is why sessions run fine. Forced-tool flows against sol/terra/luna/pro will fail loudly.
+# Anthropic groups are unaffected. Fixed by a litellm bump, not by anything in this file.
 model_list:
+  # -- Anthropic -------------------------------------------------------------------------------
   - model_name: opus
     litellm_params:
       model: anthropic/claude-opus-5
       api_key: os.environ/ANTHROPIC_API_KEY
+
+  - model_name: sonnet
+    litellm_params:
+      model: anthropic/claude-sonnet-5
+      api_key: os.environ/ANTHROPIC_API_KEY
+
+  - model_name: fable
+    litellm_params:
+      model: anthropic/claude-fable-5
+      api_key: os.environ/ANTHROPIC_API_KEY
+
+  # `cl -f` passes `--model claude-fable-5` verbatim, so the raw id has to resolve too or the
+  # utmost_importance_projects guard in llm.fish 400s under `clm`.
+  - model_name: claude-fable-5
+    litellm_params:
+      model: anthropic/claude-fable-5
+      api_key: os.environ/ANTHROPIC_API_KEY
+
+  - model_name: haiku
+    litellm_params:
+      model: anthropic/claude-haiku-4-5-20251001
+      api_key: os.environ/ANTHROPIC_API_KEY
+
+  # -- OpenAI ----------------------------------------------------------------------------------
+  - model_name: sol
+    litellm_params:
+      model: openai/gpt-5.6-sol
+      api_key: os.environ/OPENAI_API_KEY
+    model_info:
+      mode: responses
+      supports_tool_choice: true
 
   - model_name: terra
     litellm_params:
@@ -23,6 +71,14 @@ model_list:
   - model_name: luna
     litellm_params:
       model: openai/gpt-5.6-luna
+      api_key: os.environ/OPENAI_API_KEY
+    model_info:
+      mode: responses
+      supports_tool_choice: true
+
+  - model_name: pro
+    litellm_params:
+      model: openai/gpt-5.5-pro
       api_key: os.environ/OPENAI_API_KEY
     model_info:
       mode: responses
