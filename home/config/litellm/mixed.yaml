@@ -36,14 +36,14 @@ model_list:
 
   - model_name: fable
     litellm_params:
-      model: anthropic/claude-fable-5
+      model: anthropic/claude-fable-5-1
       api_key: os.environ/ANTHROPIC_API_KEY
 
-  # `cl -f` passes `--model claude-fable-5` verbatim, so the raw id has to resolve too or the
+  # `cl -f` passes `--model claude-fable-5-1` verbatim, so the raw id has to resolve too or the
   # utmost_importance_projects guard in llm.fish 400s under `clm`.
-  - model_name: claude-fable-5
+  - model_name: claude-fable-5-1
     litellm_params:
-      model: anthropic/claude-fable-5
+      model: anthropic/claude-fable-5-1
       api_key: os.environ/ANTHROPIC_API_KEY
 
   - model_name: haiku

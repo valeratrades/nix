@@ -260,8 +260,8 @@ in
 				# On a 429 whose body says extra usage is required, the cli latches a session-local clamp back
 				# to 200k (`longContext1mCreditsBlocked`); restart after enabling extra usage to clear it.
 				# See ongoing_debug/2026-08-04_claude-1m-context-compacting-at-200k.md
-				model = "claude-opus-5[1m]"; #claude-fable-5
-				#model = "claude-fable-5";
+				model = "claude-opus-5[1m]"; #claude-fable-5-1
+				#model = "claude-fable-5-1";
 				effortLevel = "high"; # they switched the default, and now problem gives up more often
 				autoCompactWindow = 1000000;
 				showClearContextOnPlanAccept = true;

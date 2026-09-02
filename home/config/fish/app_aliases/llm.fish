@@ -35,7 +35,7 @@ end
 
 function cl
     if [ "$argv[1]" = review ]
-        # `-f` here selects by hand rather than picking fable; `cl review -m claude-fable-5` still works
+        # `-f` here selects by hand rather than picking fable; `cl review -m claude-fable-5-1` still works
         set -l pick_args
         set -l rest
         for arg in $argv[2..]
@@ -80,7 +80,7 @@ function cl
                 set arg (string replace -a o '' -- $arg)
             end
             if string match -q '*f*' -- $arg
-                set model claude-fable-5
+                set model claude-fable-5-1
                 set arg (string replace -a f '' -- $arg)
             end
             if [ "$arg" != - ]
@@ -102,7 +102,7 @@ function cl
                 return 1
             end
             if [ -z "$model" ]
-                set model claude-fable-5
+                set model claude-fable-5-1
             end
             break
         end
