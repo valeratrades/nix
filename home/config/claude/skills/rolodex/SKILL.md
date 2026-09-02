@@ -79,6 +79,10 @@ with a wide predicate over a narrow guess — the roster is a few hundred rows a
 
 Only when the user asks who to contact.
 
+`rolodex cold [pattern]` is the shortlist: everybody whose sources have been read and hold no
+conversation. It prints apart, under `?`, anybody whose discord or telegram nobody has pulled yet —
+those are unanswered, not cold, and a `pull` is what settles them.
+
 Per person, read their `<stem>.nix` and their lines out of the venue transcript
 (`grep '\[<handle>/' <dir>/venues/<platform>/<slug>/*.md`), and draft **one** message. Say what in
 their own words it hangs on.

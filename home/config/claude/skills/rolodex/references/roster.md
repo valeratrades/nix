@@ -8,7 +8,9 @@ is rebuilt on every call from the markdown, which is the store.
 |---|---|---|
 | `handle` | TEXT | the platform handle, and the primary key |
 | `display` | TEXT | the name the platform prints; the handle when it prints nothing else |
-| `joined` | TEXT | RFC3339, or NULL when the platform does not state one |
+| `joined` | TEXT | RFC3339 — when they joined *the venue*, not when they made the account. NULL for most skool members: only the member page states it, and skool serves one page of that |
+| `lat`, `lon` | REAL | where the platform puts them. Skool offsets every pin by 10+ miles, so this answers "which part of the world" and nothing finer |
+| `zone` | TEXT | an IANA name — `Europe/Paris`. A browser setting, so it disagrees with the pin for a few percent of people |
 | `posts` | INTEGER | lines in the transcript attributed to this handle |
 | `first_post` | TEXT | RFC3339, NULL when `posts` is 0 |
 | `last_post` | TEXT | RFC3339, NULL when `posts` is 0 |
@@ -34,6 +36,19 @@ worth an editor.
 
 `GLOB` rather than a regex: sqlite ships no `REGEXP` and this build registers none. `LIKE`, `GLOB`
 and the rest of sqlite's string functions are all available through `--where`.
+
+## Europe, including the UK
+
+A box, because a box is as precise as an offset pin. Measured against one 406-member skool group: 28
+of 325 pins fall inside it, and 22 of those 28 also carry a `Europe/*` zone.
+
+```sql
+lat BETWEEN 34 AND 72 AND lon BETWEEN -25 AND 45
+```
+
+Bounds: Crete/Gibraltar (34N) to North Cape (72N), Iceland (−25E) to the Urals (45E). It also
+reaches northern Morocco and western Turkey; check the selection before writing files. Note the
+roster includes **your own account** — add `AND handle != '<your handle>'`.
 
 ## Examples
 

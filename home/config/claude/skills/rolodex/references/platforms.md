@@ -44,6 +44,29 @@ fetch path, and adding one means adding a `Source` variant.
 Not venues: `discord` (the member list needs a gateway session, which is not implemented) and
 `linkedin` (authwalled after a handful of anonymous views).
 
+### Skool: the roster comes from the map
+
+`recon members skool:<slug>` reads two things and joins them on the user id:
+
+- `/<group>/-/map` → `pageProps.dataUrl`, a signed gzipped blob of `[{"u": <user id>, "p": [lat, lon]}]`
+- `/<group>/-/members` → the first 30 members, with names, timezones and group join dates
+
+Then one `api.skool.com/users/<id>` per pin, to turn an id into a handle. That is the slow part: it
+paces itself at ~0.7s per member, so a 300-member group takes about five minutes. Do it once — every
+`roster`, `discover` and `pull` afterwards reads `members.json`.
+
+Two limits, and both mean the roster is smaller than the group:
+
+- `?p=` on the member page is echoed into `page` and otherwise **ignored** — the payload is always
+  the first 30. There is no working pagination.
+- Only members who gave a location have a map pin.
+
+So `members` covers *(everyone with a pin) ∪ (the first 30 of the member page)*, and warns with the
+count when that is short of the group's own total.
+
+Bursting the user endpoint trips a CloudFront 403 block that lifts on its own in a minute or two.
+The adapter paces and backs off; do not work around it by running several sweeps at once.
+
 ### Skool needs a membership
 
 Logged out, both `/<group>` and `/<group>/-/members` redirect to `/[group]/about`. A group is
