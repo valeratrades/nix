@@ -1,20 +1,8 @@
-#!/usr/bin/env nix
+#!/home/v/nix/home/scripts/nix-run-cached
 ---cargo
-#! nix shell --impure --expr ``
-#! nix let rust_flake = builtins.getFlake ''github:oxalica/rust-overlay'';
-#! nix     nixpkgs_flake = builtins.getFlake ''nixpkgs'';
-#! nix     pkgs = import nixpkgs_flake {
-#! nix       system = builtins.currentSystem;
-#! nix       overlays = [rust_flake.overlays.default];
-#! nix     };
-#! nix     nightly = let v = builtins.getEnv "DEFAULT_CARGO_NIGHTLY_VERSION"; in if v == "" then throw "DEFAULT_CARGO_NIGHTLY_VERSION unset" else v;
-#! nix     toolchain = pkgs.rust-bin.nightly.${nightly}.default.override {
-#! nix       extensions = ["rust-src"];
-#! nix     };
-#! nix
-#! nix in toolchain
-#! nix ``
-#! nix --command sh -c ``cargo -Zscript -q "$0" "$@"``
+
+[package]
+edition = "2024"
 
 [dependencies]
 serde = { version = "^1.0.228", features = ["derive"] }
