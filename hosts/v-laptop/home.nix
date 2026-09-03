@@ -195,6 +195,7 @@ in {
       ExecStartPre = "${pkgs.writeShellScript "openclaw-preflight" ''
         repo="${config.home.homeDirectory}/g/openclaw"
         [ -f "$repo/openclaw.mjs" ] || { echo "openclaw checkout missing at $repo" >&2; exit 1; }
+        [ -f "$repo/dist/build-info.json" ] || { echo "no dist/ at $repo — run openclaw-rebuild" >&2; exit 1; }
         built=$(${pkgs.jq}/bin/jq -r .commit "$repo/dist/build-info.json")
         head=$(${pkgs.git}/bin/git -C "$repo" rev-parse HEAD)
         if [ "$built" != "$head" ]; then
@@ -204,6 +205,9 @@ in {
       ''}";
       ExecStart = "${lib.getExe pkgs.nodejs_22} ${config.home.homeDirectory}/g/openclaw/openclaw.mjs gateway --port ${toString myvars.ports.openclawGateway}";
       Restart = "on-failure";
+      # Without `direct` the unit enters failed between every auto-restart, so OnFailure= pages once
+      # per attempt -- 21 identical telegram messages per boot (2026-09-03). Fire only at the limit.
+      RestartMode = "direct";
       RestartSec = 5;
       # openclaw resolves its own paths under ~/.openclaw by default; be explicit for the service.
       Environment = [ "OPENCLAW_STATE_DIR=${config.home.homeDirectory}/.openclaw" ];
