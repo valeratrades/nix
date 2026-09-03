@@ -22,6 +22,9 @@
 # the named form `{"type":"tool","name":...}` both work, and Claude Code's agent loop omits it,
 # which is why sessions run fine. Forced-tool flows against sol/terra/luna/pro will fail loudly.
 # Anthropic groups are unaffected. Fixed by a litellm bump, not by anything in this file.
+litellm_settings:
+  callbacks: hooks.proxy_handler_instance # clamps max_tokens; see hooks.py
+
 model_list:
   # -- Anthropic -------------------------------------------------------------------------------
   - model_name: opus

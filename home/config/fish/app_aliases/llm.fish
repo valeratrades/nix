@@ -74,14 +74,14 @@ function cl
         else if [ "$arg" = -m ]
             set expect_model 1
         else if string match -qr '^-[a-z]+$' -- $arg
-            # bundled short flags: extract -o (opus) / -f (fable), pass the rest back to claude
-            if string match -q '*o*' -- $arg
-                set model opus
-                set arg (string replace -a o '' -- $arg)
-            end
-            if string match -q '*f*' -- $arg
-                set model claude-fable-5-1
-                set arg (string replace -a f '' -- $arg)
+            # bundled short flags: extract the model letters, pass the rest back to claude.
+            # s/t/l are litellm groups (mixed.yaml, openai.yaml) -- only resolve under clm/clc.
+            for pair in o:opus f:claude-fable-5-1 s:sol t:terra l:luna
+                set -l letter (string split -f1 : -- $pair)
+                if string match -q "*$letter*" -- $arg
+                    set model (string split -f2 : -- $pair)
+                    set arg (string replace -a $letter '' -- $arg)
+                end
             end
             if [ "$arg" != - ]
                 set -a passthrough_args $arg

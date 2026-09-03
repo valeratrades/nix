@@ -5,6 +5,9 @@
 #   supports_tool_choice    -- the gpt-5 transformation drops `tool_choice` from the supported set
 #                              for any model it cannot look up. `drop_params: true` would "fix"
 #                              this by silently swallowing `tool_choice: required`.
+litellm_settings:
+  callbacks: hooks.proxy_handler_instance # clamps max_tokens; see hooks.py
+
 model_list:
   - model_name: sol
     litellm_params:
