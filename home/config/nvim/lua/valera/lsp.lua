@@ -300,10 +300,14 @@ vim.lsp.enable('marksman')
 vim.lsp.config('taplo', {
 	cmd = { 'taplo', 'lsp', 'stdio' },
 	filetypes = { 'toml' },
-	root_markers = { '.taplo.toml', 'taplo.toml', '.git' },
-	-- ~/.config holds no root marker, and single-file mode is exactly right there: schema
-	-- association comes from the file itself, not from anything project-wide.
-	single_file_support = true,
+	-- taplo excludes every document that falls outside its workspace root, so a rootless buffer
+	-- gets "this document has been excluded" instead of diagnostics. Loose files (~/.config/*.toml
+	-- above all) are rooted at their own directory, which is also where a relative `#:schema`
+	-- resolves from.
+	root_dir = function(bufnr, on_dir)
+		local found = vim.fs.root(bufnr, { '.taplo.toml', 'taplo.toml', '.git' })
+		on_dir(found or vim.fs.dirname(vim.api.nvim_buf_get_name(bufnr)))
+	end,
 })
 vim.lsp.enable('taplo')
 
