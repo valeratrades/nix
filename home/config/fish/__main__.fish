@@ -5,8 +5,17 @@ set __fish_config_main_dir (status dirname)
 
 test -f $HOME/s/g/private/credentials.fish; and source $HOME/s/g/private/credentials.fish # absent on servers
 
+# sops secrets are written for systemd (`writeSecretsEnvd` in hosts/v-laptop/home.nix), and
+# environment.d is read by user *units* only - sway is exec'd from this shell, not from a unit.
+if test -f $HOME/.config/environment.d/30-secrets.conf
+    for __secret_line in (cat $HOME/.config/environment.d/30-secrets.conf)
+        string match -q '?*=*' -- $__secret_line; and set -gx (string split -m1 = -- $__secret_line)
+    end
+    set -e __secret_line
+end
+
 # not in conf.d/: fish sources conf.d *before* this file, so sway and everything it spawns would
-# inherit an env without credentials.fish.
+# inherit an env without the credentials above.
 # -d + redirect: sway's startup/DRM/renderer errors go to a persistent file instead of
 # vanishing on tty1, so a failed boot is diagnosable from the rollback (journal never sees it).
 string match -q /dev/tty1 -- (tty); and exec sway -d 2>$HOME/.sway.log
