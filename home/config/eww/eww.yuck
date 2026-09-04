@@ -292,10 +292,11 @@
 (defvar tedi_blocker_hover_state false)
 ;; Can't combine these two polls, because eww doesn't work well with newlines
 ;; --offline: status-bar polls must never hit network; `sprints healthcheck` (day_ev.sh) warms the selection cache
-; 2s, not 0.5s: stubbing `nix` out drops this from 0.134s to 0.012s per run, so one
-; `nix eval --impure` — spawned by v_utils_macros' config derive on every config load — is 91%
-; of the cost. The seven `fd` calls it also makes are ~free. Nothing here is tedi's own work,
-; so the interval is the only lever until that derive caches.
+; 2s, not 0.5s: stubbing `nix` out drops this from 0.142s to 0.106s CPU per run, so the one
+; `nix eval --impure` — spawned by v_utils' config derive on every config load — is 25% of
+; the cost (34ms, matching nix's standalone startup). The seven `fd` calls it also makes are
+; ~free. Nothing here is tedi's own work, so the interval is the only lever until tedi picks
+; up v_utils >=2.17.16, which reads literal-data `.nix` configs without spawning nix.
 ; The list poll below already settles for 5s on the same data.
 (defpoll tedi_blocker_last_poll :initial "" :interval "2s" "tedi --log-to 'eww_blocker_list' --offline sprints selected current --markup")
 (defpoll tedi_blocker_list_poll :interval "5s" "tedi --log-to 'eww_blocker_list' --offline sprints selected list | /home/v/nix/home/scripts/wrap_output.rs - -l 120")
