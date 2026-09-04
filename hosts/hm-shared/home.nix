@@ -519,9 +519,6 @@
         <Multi_key> <g> <s> : "σ" U03C3
         <Multi_key> <g> <S> : "Σ" U03A3
       '';
-      ".config/fish/conf.d/sway.fish".source =
-        "${self}/home/config/fish/conf.d/sway.fish";
-
       ".config/iamb/config.toml".source = (pkgs.formats.toml { }).generate "" {
         default_profile = "master";
         profiles = {

@@ -4,6 +4,13 @@
 set __fish_config_main_dir (status dirname)
 
 test -f $HOME/s/g/private/credentials.fish; and source $HOME/s/g/private/credentials.fish # absent on servers
+
+# not in conf.d/: fish sources conf.d *before* this file, so sway and everything it spawns would
+# inherit an env without credentials.fish.
+# -d + redirect: sway's startup/DRM/renderer errors go to a persistent file instead of
+# vanishing on tty1, so a failed boot is diagnosable from the rollback (journal never sees it).
+string match -q /dev/tty1 -- (tty); and exec sway -d 2>$HOME/.sway.log
+
 source $__fish_config_main_dir/global.fish #NB: other things can rely on functions in it
 source $__fish_config_main_dir/other.fish
 
