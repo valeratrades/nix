@@ -130,6 +130,7 @@
         [
           vscode-langservers-extracted # contains json lsp
           marksman # md lsp
+          taplo # toml lsp; resolves the `#:schema` line our configs carry
           perl
 
           # Ocaml

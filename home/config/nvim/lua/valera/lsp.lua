@@ -293,6 +293,20 @@ vim.lsp.enable('jsonls')
 vim.lsp.config('marksman', {})
 vim.lsp.enable('marksman')
 
+-- taplo
+-- Reads the `#:schema <path>` first line our generated configs carry, so a TOML config gets
+-- completion, hover docs and validation with nothing but the file open. Relative paths resolve
+-- against the config's own directory.
+vim.lsp.config('taplo', {
+	cmd = { 'taplo', 'lsp', 'stdio' },
+	filetypes = { 'toml' },
+	root_markers = { '.taplo.toml', 'taplo.toml', '.git' },
+	-- ~/.config holds no root marker, and single-file mode is exactly right there: schema
+	-- association comes from the file itself, not from anything project-wide.
+	single_file_support = true,
+})
+vim.lsp.enable('taplo')
+
 -- nil_ls
 vim.lsp.config('nil_ls', {
 	settings = {

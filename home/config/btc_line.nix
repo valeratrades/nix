@@ -1,3 +1,4 @@
+#:schema btc_line.module.nix
 {
   comparison_offset_h = 24;
   label = false;
