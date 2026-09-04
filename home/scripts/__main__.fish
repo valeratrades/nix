@@ -20,6 +20,7 @@ alias cnix_release="$__fish_scripts_dir/cnix_release.rs"
 alias nb="$__fish_scripts_dir/nb.rs"
 alias gn="$__fish_scripts_dir/git_scripts.rs publish"
 alias kbd="$__fish_scripts_dir/kbd.rs"
+alias health="$__fish_scripts_dir/health.rs"
 alias optimize_for="sudo -E $__fish_scripts_dir/optimize_for.rs"
 alias smart_shutdown="$__fish_scripts_dir/smart_shutdown.rs"
 # plain `shutdown now` skips the claude inventory write, silently breaking restore_sessions
