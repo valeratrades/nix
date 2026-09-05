@@ -7,6 +7,10 @@ creation_rules:
     key_groups:
       - age:
           - *admin
+          # rpi5 runs the always-on openclaw as `valera` and self-decrypts at
+          # activation with its host key (hosts/rpi5-valera). NOT *ev — the box is
+          # shared with the org, this file is not.
+          - *rpi5
   - path_regex: hosts/rpi5/secrets\.json$
     key_groups:
       - age:
