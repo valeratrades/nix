@@ -23,15 +23,27 @@ when there is no cache (or you'd get an empty env and a warning, no shell).
 
 1. **`hosts/hm-shared/home.nix`** — `programs.direnv.stdlib`:
    ```sh
-   if compgen -G "$(direnv_layout_dir)/*-profile-*.rc" >/dev/null; then
-     _nix_direnv_manual_reload=1
-   fi
+   for _rc in "$(direnv_layout_dir)"/*-profile-*.rc; do
+     [ -e "$_rc" ] && [ -e "${_rc%.rc}" ] && _nix_direnv_manual_reload=1
+   done
+   unset _rc
    ```
    Written to `$XDG_CONFIG_HOME/direnv/direnvrc`, sourced by direnv **after**
    `lib/hm-nix-direnv.sh` (which defaults the var to 0). So: cache present →
    manual reload (reuse, no eval, no net); cache absent → normal auto-build.
    Glob matches both real profile names: `flake-profile-<hash>.rc` and
    `nix-profile-<ver>-<sum>.rc`.
+
+   The `${_rc%.rc}` half was added 2026-09-06 (originally a bare `compgen -G`
+   on the `.rc`). nix-direnv computes `profile_missing` and would rebuild, but
+   manual-reload short-circuits that to a warning and `_nix_import_env` sources
+   the stale rc anyway. With `silent = true` the warning is invisible, so a
+   GC'd closure surfaced only as the shellHook exploding on dead store paths:
+   `cargo -Zscript <hash>-cargo_merge.rs` panicking on a missing lints file,
+   a wall of `cp: cannot stat '/nix/store/…-unknown'`, and `rustfmt` falling
+   through to the rustup shim (`'rustfmt' is not installed for the toolchain`).
+   Requiring the profile symlink to resolve puts those repos back on the
+   auto-rebuild path.
 
 2. **`home/config/fish/app_aliases/nix/__main__.fish`** — `nix` function wrapping
    `nix develop`: probe `print-dev-env --offline --max-jobs 0`; on success run

@@ -51,11 +51,15 @@
       # even if flake.{nix,lock} changed. `nix-direnv-reload` (`dirr`) is the only
       # way to update. A project with no cache at all still evaluates automatically
       # (stock nix_direnv_manual_reload would just warn and leave you with no env).
+      # The profile symlink must still resolve: once nix-collect-garbage takes the
+      # closure, the .rc survives but every store path in it is dangling, and
+      # sourcing it replays a shellHook of dead paths. Fall through to a rebuild.
       # See ongoing_debug/2026-07-11_nix-develop-direnv-offline.md
       stdlib = ''
-        if compgen -G "$(direnv_layout_dir)/*-profile-*.rc" >/dev/null; then
-          _nix_direnv_manual_reload=1
-        fi
+        for _rc in "$(direnv_layout_dir)"/*-profile-*.rc; do
+          [ -e "$_rc" ] && [ -e "''${_rc%.rc}" ] && _nix_direnv_manual_reload=1
+        done
+        unset _rc
       '';
     };
 
