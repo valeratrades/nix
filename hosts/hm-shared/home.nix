@@ -38,28 +38,38 @@
         # Caching still works, but GC root isn't created, so dependencies get deleted on nix-collect-garbage.
         #WAIT: https://github.com/nix-community/nix-direnv/issues/546
         #WAIT: https://github.com/direnv/direnv/issues/1181
+        # Both `-eq 1` guards below gate a branch that ends in `_nix_import_env
+        # "$profile_rc"`, and neither consults `profile_missing` — so a cache whose
+        # closure nix-collect-garbage took is still sourced, replaying a shellHook of
+        # dangling store paths (`cp: cannot stat …-unknown`, `cargo -Zscript` panicking
+        # on a deleted argument, `rustfmt` falling through to the rustup shim). Missing
+        # is not stale: staleness may be ignored, absence must rebuild.
         package = pkgs.nix-direnv.overrideAttrs (old: {
           postFixup = (old.postFixup or "") + ''
             substituteInPlace $out/share/nix-direnv/direnvrc \
               --replace-fail '{nix,flake}-profile*' '{nix-profile-,flake-profile-}*' \
-              --replace-fail '_nix build --out-link "$symlink" "$storepath"' '_nix build --out-link "$symlink" "$(readlink -f "$storepath")"'
+              --replace-fail '_nix build --out-link "$symlink" "$storepath"' '_nix build --out-link "$symlink" "$(readlink -f "$storepath")"' \
+              --replace-fail 'if [[ $_nix_direnv_manual_reload -eq 1 && -z ''${_nix_direnv_force_reload-} ]]; then' 'if [[ $_nix_direnv_manual_reload -eq 1 && $profile_missing -eq 0 && $profile_rc_missing -eq 0 && -z ''${_nix_direnv_force_reload-} ]]; then' \
+              --replace-fail 'if [[ $_nix_direnv_allow_fallback -eq 1 ]]; then' 'if [[ $_nix_direnv_allow_fallback -eq 1 && $profile_missing -eq 0 && $profile_rc_missing -eq 0 ]]; then'
           '';
         });
       };
       silent = true;
       # Any existing nix-direnv cache is used as-is: no re-evaluation, no network,
       # even if flake.{nix,lock} changed. `nix-direnv-reload` (`dirr`) is the only
-      # way to update. A project with no cache at all still evaluates automatically
-      # (stock nix_direnv_manual_reload would just warn and leave you with no env).
-      # The profile symlink must still resolve: once nix-collect-garbage takes the
-      # closure, the .rc survives but every store path in it is dangling, and
-      # sourcing it replays a shellHook of dead paths. Fall through to a rebuild.
+      # way to update. Absence still evaluates automatically — the package override
+      # above narrows both manual-reload and the eval-failure fallback to the stale
+      # case, so a first load and a garbage-collected closure both rebuild.
       # See ongoing_debug/2026-07-11_nix-develop-direnv-offline.md
       stdlib = ''
-        for _rc in "$(direnv_layout_dir)"/*-profile-*.rc; do
-          [ -e "$_rc" ] && [ -e "''${_rc%.rc}" ] && _nix_direnv_manual_reload=1
-        done
-        unset _rc
+        _nix_direnv_manual_reload=1
+        # Upstream only refreshes the gcroot mtimes on a cache *hit*, and a cache held
+        # by manual reload never takes that path — it would age out of nh's roots and
+        # become the collectable closure this whole block exists to not source.
+        _nix_direnv_warn_manual_reload() {
+          _nix_refresh_gcroots 2>/dev/null
+          _nix_direnv_warning 'cache is out of date. use "nix-direnv-reload" to reload'
+        }
       '';
     };
 

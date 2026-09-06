@@ -23,27 +23,63 @@ when there is no cache (or you'd get an empty env and a warning, no shell).
 
 1. **`hosts/hm-shared/home.nix`** — `programs.direnv.stdlib`:
    ```sh
-   for _rc in "$(direnv_layout_dir)"/*-profile-*.rc; do
-     [ -e "$_rc" ] && [ -e "${_rc%.rc}" ] && _nix_direnv_manual_reload=1
-   done
-   unset _rc
+   _nix_direnv_manual_reload=1
+   _nix_direnv_warn_manual_reload() {
+     _nix_refresh_gcroots 2>/dev/null
+     _nix_direnv_warning 'cache is out of date. use "nix-direnv-reload" to reload'
+   }
    ```
    Written to `$XDG_CONFIG_HOME/direnv/direnvrc`, sourced by direnv **after**
-   `lib/hm-nix-direnv.sh` (which defaults the var to 0). So: cache present →
-   manual reload (reuse, no eval, no net); cache absent → normal auto-build.
-   Glob matches both real profile names: `flake-profile-<hash>.rc` and
-   `nix-profile-<ver>-<sum>.rc`.
+   `lib/hm-nix-direnv.sh` (which defaults the var to 0). Paired with the two
+   package overrides in §1b, which is what makes the unconditional `=1` safe.
 
-   The `${_rc%.rc}` half was added 2026-09-06 (originally a bare `compgen -G`
-   on the `.rc`). nix-direnv computes `profile_missing` and would rebuild, but
-   manual-reload short-circuits that to a warning and `_nix_import_env` sources
-   the stale rc anyway. With `silent = true` the warning is invisible, so a
-   GC'd closure surfaced only as the shellHook exploding on dead store paths:
-   `cargo -Zscript <hash>-cargo_merge.rs` panicking on a missing lints file,
+   ### 1b. Absence is not staleness (2026-09-06)
+
+   The original gate was `compgen -G '*-profile-*.rc'` → `manual_reload=1`, i.e.
+   "any cache at all pins the env". `use_nix`/`use_flake` compute three separate
+   invalidation reasons and then collapse them:
+   ```sh
+   if [[ $profile_missing || $profile_rc_missing || $file_nt_profilerc ]]; then
+     if [[ $_nix_direnv_manual_reload -eq 1 && -z ${_nix_direnv_force_reload-} ]]; then
+       _nix_direnv_warn_manual_reload "$profile_rc"    # ← no rebuild
+   ...
+   _nix_import_env "$profile_rc"                        # ← sourced regardless
+   ```
+   Only the third reason should be ignorable. Once `nix-collect-garbage` took a
+   closure the `.rc` outlived it, `profile_missing=1` was computed and then
+   thrown away, and the dead rc was sourced anyway — and `silent = true` hides
+   the one warning that said so. Observed as the shellHook detonating on dangling
+   paths: `cargo -Zscript <hash>-cargo_merge.rs` panicking on a deleted argument,
    a wall of `cp: cannot stat '/nix/store/…-unknown'`, and `rustfmt` falling
    through to the rustup shim (`'rustfmt' is not installed for the toolchain`).
-   Requiring the profile symlink to resolve puts those repos back on the
-   auto-rebuild path.
+
+   Two `substituteInPlace` edits on `pkgs.nix-direnv` (both hit `use_nix` and
+   `use_flake`, 4 sites total) narrow each guard to the stale case:
+   - `manual_reload` also requires `profile_missing -eq 0 && profile_rc_missing -eq 0`
+   - `allow_fallback` likewise — a failed eval must not resurrect a dead cache as
+     "falling back to previous environment"; there is no previous environment.
+
+   With that, the stdlib gate is dead weight: a first load has no rc, so
+   `profile_rc_missing` bypasses manual reload on its own.
+
+   The `_nix_direnv_warn_manual_reload` override closes the other half. Upstream
+   calls `_nix_refresh_gcroots` only on a cache *hit*; a cache pinned by manual
+   reload never takes that path, so its gcroot mtimes freeze from the moment
+   `flake.nix` is first touched, and it ages out of what `nh` considers live —
+   manufacturing the collectable closure the guards above now refuse to source.
+
+   Verified 2026-09-06 with real `direnv` against a scratch flake, stock lib as
+   control (`/tmp/ndtest`, harness discarded):
+   | state | stock | patched |
+   |---|---|---|
+   | no cache | builds | builds |
+   | sources newer | pinned, no eval | pinned, no eval, **rc mtime refreshed** |
+   | profile dangling, closure gone | `cp: cannot stat …`, broken env | rebuilds, env correct |
+   | dead cache + eval fails | broken env, exit 0 | real error, no env |
+   | `dirr` | rebuilds | rebuilds |
+
+   Steady-state cost unchanged: 97ms/load patched vs 98ms stock on a cache hit,
+   98 vs 100 on the pinned-stale path (5-run means, same machine).
 
 2. **`home/config/fish/app_aliases/nix/__main__.fish`** — `nix` function wrapping
    `nix develop`: probe `print-dev-env --offline --max-jobs 0`; on success run

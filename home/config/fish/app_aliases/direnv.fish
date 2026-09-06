@@ -11,8 +11,9 @@ complete -c dirw -w direnv
 # nix-direnv-reload force-rebuilds in place (keeps gcroots); nuking .direnv is the fallback.
 # _nix_direnv_force_reload only suppresses the manual-reload *warning*; it's read inside
 # `if cache_invalid`, so a cache that merely looks fresh by mtime is never rebuilt. And
-# _nix_refresh_gcroots touches flake-profile-* (incl. the .rc) on every cache hit, so
-# "looks fresh" is the steady state. Deleting the rc is what actually forces the rebuild.
+# _nix_refresh_gcroots touches flake-profile-* (incl. the .rc) on every load, so
+# "looks fresh" is the steady state. Deleting the rc is what actually forces the rebuild
+# — profile_rc_missing bypasses manual reload outright (hm-shared/home.nix).
 function dirr
 	git add -A
 	if test -x .direnv/bin/nix-direnv-reload
