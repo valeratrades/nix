@@ -68,5 +68,16 @@ in
     "e /home/valera/.openclaw/delivery-queue 0700 valera users 14d"
   ];
 
+  # openclaw is the one package here with no aarch64 build on cache.nixos.org, and
+  # building a TS monorepo from source on this box is hours it does not have. The
+  # flake's nixConfig already names this cache, but that only applies to a rebuild
+  # invoked with --accept-flake-config; in the system config it holds for every
+  # rebuild, which is the one that happens at 3am.
+  nix.settings = {
+    extra-substituters = [ "https://valeratrades.cachix.org" ];
+    extra-trusted-public-keys =
+      [ "valeratrades.cachix.org-1:gXVwhzO5YB+BaiEJYT48qZgzdaErGQew6xtZcz4Fo1Q=" ];
+  };
+
   home-manager.users.valera = import ./home.nix;
 }

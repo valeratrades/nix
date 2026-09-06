@@ -84,6 +84,17 @@ writes outside it — agent logs, per-cron-run jsonl, the undelivered-message qu
 — is pruned by the `systemd.tmpfiles` rules in `default.nix`, since nothing else
 ever looks at those directories.
 
+## The one recurring cost
+
+`openclaw` has no aarch64 build on cache.nixos.org, and this box cannot build a TS
+monorepo from source in any reasonable time. So each version bump is: build it on
+the laptop under `binfmt` aarch64, `cachix push valeratrades`, then rebuild here.
+`nix.settings.extra-substituters` in `default.nix` is what makes the Pi pick it up
+without `--accept-flake-config`.
+
+That is the whole reason the flake's `valeratrades.cachix.org` exists (see the
+TODO at the top of `flake.nix`) — this is its first real consumer.
+
 ## Manual, once
 
 1. Register `agentKeys`' public half as a **write** deploy key on
