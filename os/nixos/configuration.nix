@@ -310,7 +310,10 @@ in {
     shell = pkgs.fish;
     extraGroups =
       [ "networkmanager" "wheel" "keyd" "audio" "video" "docker" "dialout" "postgres" ];
-    openssh.authorizedKeys.keys = user.sshAuthorizedKeys;
+    # agentKeys is appended here and NOWHERE else: hosts/rpi5's submodule hands
+    # `sshAuthorizedKeys` to root as well, so putting an agent's key in that shared
+    # list would hand the LLM account root on the box it runs on.
+    openssh.authorizedKeys.keys = user.sshAuthorizedKeys ++ user.agentKeys;
   };
 
   systemd = {

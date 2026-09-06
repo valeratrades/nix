@@ -80,9 +80,11 @@ in {
   # );
 
   nixosConfigurations = {
-    rpi5 = import (mylib.relativeToRoot "hosts/rpi5/system.nix") {
+    # hosts/rpi5 is the EV-invest submodule and stays free of personal config;
+    # the `valera` agent account is grafted on from this repo instead.
+    rpi5 = (import (mylib.relativeToRoot "hosts/rpi5/system.nix") {
       inherit inputs self mylib myvars;
-    };
+    }).extendModules { modules = [ (mylib.relativeToRoot "hosts/rpi5-valera") ]; };
   } // lib.listToAttrs (map (user: {
     name = user.desktopHostName;
     value = nixpkgs.lib.nixosSystem {

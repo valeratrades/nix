@@ -27,6 +27,12 @@ in
   #HACK: there are better ways to do this and especially to ensure that the set of args is unifyied for every user, but can't be bothered.
   valera = {
     inherit sshAuthorizedKeys;
+    # Keys an *agent* logs in with, kept out of sshAuthorizedKeys because that list
+    # also seeds root on the rpi5. Private half lives in sops
+    # (secrets/users/v -> rpi5_valera_ssh_key), read by hosts/rpi5-valera.
+    agentKeys = [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILkOLH+R/DDw/JH1dFok3/YzAbmQbqe2Kq7feNPsuVqv valera@rpi5 (openclaw)"
+    ];
     username = "v";
     userFullName = "Valera";
     desktopHostName = "v-laptop";
@@ -41,7 +47,11 @@ in
 		disableNvidia = false;  # set to true to use AMD iGPU only (better battery, fewer driver issues)
 		gpuAcceleration = false;  # forced Firefox GPU rendering (webrender compositor + dmabuf + gpu-process). Off: runs hot on this chassis.
 		clickhouse = false;
-		openclaw = true;
+		# The agent moved to the rpi5 (hosts/rpi5-valera), which is always on. It cannot
+		# run in both places: a Telegram bot token admits exactly one getUpdates
+		# consumer, and openclaw_workspace — the agent's memory, which it commits to —
+		# admits one writer. Flipping this back means turning the rpi5 one off first.
+		openclaw = false;
 		default_s_inactive_to_retire = 1200; # idle LSP servers paged out to swap after this many seconds (20m)
 		# Hearing-safety: max dB SPL per headphone, keyed by PipeWire node.description.
 		# Mapped to a digital limiter via the model's calibration in
@@ -50,6 +60,7 @@ in
   };
   maria = {
     inherit sshAuthorizedKeys;
+    agentKeys = [ ];
     username = "m";
     userFullName = "Maria";
     desktopHostName = "m-laptop";
@@ -67,6 +78,7 @@ in
     };
   timur = {
     inherit sshAuthorizedKeys;
+    agentKeys = [ ];
     username = "t";
     userFullName = "Timur";
     desktopHostName = "t-laptop";
