@@ -808,8 +808,9 @@ Answer with exactly one word: finished, stuck, partial, or ongoing.";
     const TIMEOUT: Duration = Duration::from_secs(20);
 
     pub fn classify(session_file: &Path) -> Option<Verdict> {
-        // No key means the feature is off, not that anything is wrong.
-        if std::env::var("CLAUDE_TOKEN").is_err() {
+        // No key means the feature is off, not that anything is wrong. `ask` runs on Model::Fast, so
+        // OpenAI is the provider whose absence turns this off.
+        if std::env::var("OPENAI_API_KEY").is_err() {
             return None;
         }
 

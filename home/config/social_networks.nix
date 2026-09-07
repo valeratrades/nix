@@ -1,6 +1,6 @@
 {
   llm = {
-    claude_token = { env = "CLAUDE_TOKEN"; };
+    # no claude_token: ask_llm reaches Claude through the `claude` CLI, which resolves its own subscription credentials
     openai_token = { env = "OPENAI_API_KEY"; };
   };
 
