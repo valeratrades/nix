@@ -1,18 +1,17 @@
 { lib, pkgs, user, ... }:
 let
-	# Skills-only repos: flat GitHub repos where each subdirectory is a skill (SKILL.md),
-	# with no plugin wrapper. The sync script clones the repo and synthesizes a plugin around it.
-	# Key is used as both the plugin name and the marketplace name in enabledPlugins.
+	# Skills-only repos: GitHub repos holding bare `<skill>/SKILL.md` dirs with no plugin wrapper.
+	# The sync script clones the repo and synthesizes a plugin around it, looking each skill up by
+	# directory name so a repo is free to shuffle its category dirs. Key is used as both the plugin
+	# name and the marketplace name in enabledPlugins, which also gates the clone.
 	skillsRepos = {
 		"mattpocock-skills" = {
 			repo = "mattpocock/skills";
 			skills = [
-				"ubiquitous-language"
 				"improve-codebase-architecture"
-				"edit-article"
-				"caveman"
-				"write-a-skill"
-				"triage-issue"
+				"triage"
+				"domain-modeling"
+				"codebase-design"
 			];
 		};
 	};
@@ -71,7 +70,7 @@ let
 			"frontend-design@claude-code-plugins" = true;
 			"plugin-dev@plugin-dev-fork" = true;
 			"codex@codex-plugin-cc" = true;
-			"mattpocock-skills@mattpocock-skills" = true;
+			"mattpocock-skills@mattpocock-skills" = false;
 			"impeccable@impeccable" = true;
 			"ponytail@ponytail" = true;
 			"cloudflare@claude-plugins-official" = true;
@@ -110,9 +109,11 @@ let
 		marketplace = builtins.elemAt parts 1;
 	};
 
+	# `false` entries are kept in `enabled` (that's how Claude Code records an off plugin) so they
+	# must not reach the sync — a disabled plugin is neither cloned nor installed.
 	enabledParsed = builtins.filter
 		(p: builtins.hasAttr p.marketplace plugins.marketplaces)
-		(map parsePluginId (builtins.attrNames plugins.enabled));
+		(map parsePluginId (builtins.attrNames (lib.filterAttrs (_: v: v) plugins.enabled)));
 
 	pluginsDir = "$HOME/.claude/plugins";
 
@@ -194,7 +195,7 @@ let
 		'') enabledParsed)}
 
 		# Skills-only repos: clone repo, synthesize a plugin wrapper from the raw SKILL.md files
-		${lib.concatStringsSep "\n" (lib.mapAttrsToList (name: cfg: ''
+		${lib.concatStringsSep "\n" (lib.mapAttrsToList (name: cfg: lib.optionalString (plugins.enabled."${name}@${name}" or false) ''
 			SKILLS_REPO_DIR="$PLUGINS_DIR/marketplaces/${name}"
 			if [ ! -d "$SKILLS_REPO_DIR/.git" ]; then
 				echo "Cloning skills repo ${name}..."
@@ -211,9 +212,9 @@ let
 				echo '{"name":"${name}","version":"latest","description":"Skills from github.com/${cfg.repo}"}' \
 					> "$CACHE_DIR/.claude-plugin/plugin.json"
 				${lib.concatMapStringsSep "\n" (skill: ''
-					if [ -f "$SKILLS_REPO_DIR/${skill}/SKILL.md" ]; then
-						mkdir -p "$CACHE_DIR/skills/${skill}"
-						cp "$SKILLS_REPO_DIR/${skill}/SKILL.md" "$CACHE_DIR/skills/${skill}/SKILL.md"
+					SKILL_DIR=$(${pkgs.findutils}/bin/find "$SKILLS_REPO_DIR" -path '*/.git' -prune -o -type d -name "${skill}" -print -quit)
+					if [ -n "$SKILL_DIR" ] && [ -f "$SKILL_DIR/SKILL.md" ]; then
+						cp -r "$SKILL_DIR" "$CACHE_DIR/skills/"
 					else
 						echo "WARNING: skill ${skill} not found in ${name}"
 					fi
