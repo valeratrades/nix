@@ -74,10 +74,13 @@ let
 			"mattpocock-skills@mattpocock-skills" = true;
 			"impeccable@impeccable" = true;
 			"ponytail@ponytail" = true;
+			"cloudflare@claude-plugins-official" = true;
 		};
-		# Some marketplace.json entries set `source: {source:"url", url, sha}` — the plugin body
-		# lives in a *separate* repo, not under `<marketplace>/<pluginsSubdir>/<plugin>`. Keyed by
-		# the full enabled id so the namespace stays the real marketplace (correct in /plugin UI).
+		# Overrides for `source: {source:"url", url, sha}` marketplace entries, whose plugin body
+		# lives in a *separate* repo rather than under `<marketplace>/<pluginsSubdir>/<plugin>`.
+		# The sync resolves those from marketplace.json on its own — an entry here is only needed
+		# to pin a rev away from the one upstream ships. Keyed by the full enabled id so the
+		# namespace stays the real marketplace (correct in /plugin UI).
 		srcRepos = {
 			"figma@claude-plugins-official" = {
 				repo = "figma/mcp-server-guide";
@@ -152,6 +155,20 @@ let
 				${pkgs.git}/bin/git -C "$PLUGIN_SRC" checkout --detach "${srcRepo.rev}" 2>&1 || true
 			'' else ''
 				PLUGIN_SRC="$PLUGINS_DIR/marketplaces/${p.marketplace}/${pluginRelPath}"
+				MANIFEST="$PLUGINS_DIR/marketplaces/${p.marketplace}/.claude-plugin/marketplace.json"
+				if [ ! -d "$PLUGIN_SRC" ] && [ -f "$MANIFEST" ]; then
+					SRC_URL=$(${pkgs.jq}/bin/jq -r --arg n "${p.plugin}" '[.plugins[] | select(.name == $n and .source.source == "url") | .source.url][0] // ""' "$MANIFEST")
+					SRC_SHA=$(${pkgs.jq}/bin/jq -r --arg n "${p.plugin}" '[.plugins[] | select(.name == $n and .source.source == "url") | .source.sha][0] // ""' "$MANIFEST")
+					if [ -n "$SRC_URL" ] && [ -n "$SRC_SHA" ]; then
+						PLUGIN_SRC="$PLUGINS_DIR/marketplaces/${p.marketplace}__${p.plugin}"
+						if [ ! -d "$PLUGIN_SRC/.git" ]; then
+							echo "Cloning plugin source ${id} ($SRC_URL)..."
+							${pkgs.git}/bin/git clone --depth 1 "$SRC_URL" "$PLUGIN_SRC" 2>&1 || true
+						fi
+						${pkgs.git}/bin/git -C "$PLUGIN_SRC" fetch --depth 1 origin "$SRC_SHA" 2>&1 || true
+						${pkgs.git}/bin/git -C "$PLUGIN_SRC" checkout --detach "$SRC_SHA" 2>&1 || true
+					fi
+				fi
 			'';
 		in ''
 			${resolveSrc}
