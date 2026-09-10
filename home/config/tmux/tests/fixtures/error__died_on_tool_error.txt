@@ -1,0 +1,112 @@
+  examples/cleaning_-_Clermont-Ferrand.nix` to view the map. (disable recaps in
+  /config)
+
+❯ yeah, I totally meant "looking for a cleaner". So full on switch to cleaning,
+  no plumbing here, was a brainfart. Oh, and once done, can you make a folder
+  in [tmp/] here compiling number of outdoors pools per household in all french
+  cities? Think you can just spin up an Opus 5 / fable 5.1 agent to do that
+  with clean context in parallel
+  ⎿  13 skills available
+
+  Thought for 28s (ctrl+o to expand)
+
+● Nothing to change — the study is cleaning-only; no plumbing leaked into it.
+  Spinning up the pools agent now.
+
+● Agent(Pools per household, French communes)
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● Confirmed — the study is cleaning end to end, no plumbing terms in it.
+
+  Pools agent is running in the background (Opus 5, same repo, no worktree,
+  writing only to tmp/pools_per_household/). I pointed it at the Filosofi
+  archive already on disk for the households denominator, and told it to hunt
+  for a cadastre/aerial-detection pool source rather than OSM, since OSM would
+  undercount rural communes badly. I'll report back when it finishes.
+
+✻ Crunched for 55s
+
+● No completion record was found for background agent "Pools per household,
+French communes" from the previous session. It may have been stopped, or it may
+have been running when the previous Claude Code process exited — either way its
+transcript is saved on disk, so its progress is not lost. Resume it by sending
+it a message with SendMessage, or check its worktree/output for partial work
+before assuming the task landed.
+
+  Thought for 3m 9s, read 1 file, listed 1 directory (ctrl+o to expand)
+
+● Bash(cd tmp/pools_per_household/data/tsurf && ls | wc -l && ls *.absent
+      2>/dev/null | wc -l && du -sh . && ls | sed 's/\..*//' | sort | tail -1)
+  ⎿  12050
+     88
+     124M       .
+     75101
+
+  Thought for 24s (ctrl+o to expand)
+
+● The approach it landed on is sound (Etalab cadastre PCI vector, SYM=65 = pool
+  polygon, cross-checked against a published 2022 count). It had downloaded 12
+  050 of ~35 000 communes when it died. The script caches, so I'll just resume
+  it.
+  ⎿  12050
+     88
+     124M       .
+     75101
+
+  Thought for 24s (ctrl+o to expand)
+
+● The approach it landed on is sound (Etalab cadastre PCI vector, SYM=65 = pool polygon, cross-checked against a published 2022 count). It had downloaded 12 050 of ~35 000 communes when it died. The script caches, so I'll just resume it.
+
+● Bash(cd /home/v/s/service_arb/gmaps_optimal_placement && nohup python3 tmp/pools_per_household/build.py > tmp/pools_per_household/build.log 2>&1 &
+      echo started)
+  ⎿  Running in the background (↓ to manage)
+
+  Thought for 12s (ctrl+o to expand)
+
+● Bash(cd /home/v/s/service_arb/gmaps_optimal_placement && python3 - <<'EOF'
+      import gzip,json,csv,io,statistics…)
+  ⎿  ref cols/rows: 37122 [('01001', 16), ('01002', 5), ('01004', 170)]
+     --- 01004  ref2022=170  counts={'65': 235, '34': 31, '33': 26, '32': 16, '51': 1}
+         SYM=65 n=235 median area 32 m2, p10 20, p90 46
+     … +9 lines (ctrl+o to expand)
+
+● Background command "cd /home/v/s/service_arb/gmaps_optimal_placement &amp;&amp; nohup python3 tmp/pools_per_household/build.py &gt; tmp/pools_per_household/build.log 2&gt;&amp;1 &amp;
+echo started" completed (exit code 0)
+
+  Thought for 33s, listed 1 directory (ctrl+o to expand)
+
+● Bash(python3 - <<'EOF'
+      import gzip,json,collections…)
+  ⎿  1500 communes, SYM totals: [('34', 36836), ('65', 33182), ('33', 11249), ('32', 6184), ('51', 1862), ('37', 68), ('53', 2)] both 65&66: 0
+
+
+  Thought for 16s (ctrl+o to expand)
+
+● Bash(python3 - <<'EOF'
+      import gzip,json,collections…)
+  ⎿    dep 08: 65=    81  66=   108  (133%)
+       dep 09: 65=   757  66=   192  (25%)
+       dep 10: 65=   834  66=   222  (27%)
+     … +5 lines (ctrl+o to expand)
+
+  Thought for 20s (ctrl+o to expand)
+
+● Bash(python3 - <<'EOF'
+      import gzip,json,csv,collections…)
+  ⎿  236 communes with >=20 of each
+       08105: 65=   22 66=   38 65+66=   60  ref2022=22
+       09050: 65=   29 66=   21 65+66=   50  ref2022=29
+     … +20 lines (ctrl+o to expand)
+
+  Thought for 13s (ctrl+o to expand)
+
+● SYM=65 verified against the published 2022 count (median ratio 0.994 — same symbol, same method); median polygon 31 m², p10 15 m². Waiting on the download.
+
+● Bash(sleep 540; tail -2 tmp/pools_per_household/build.log; ls tmp/pools_per_household/data/tsurf/*.json.gz | wc -l)
+  ⎿  Error: Exit code 137
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← for agents
+

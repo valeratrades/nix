@@ -10,6 +10,6 @@ expression: "(result, verdict)"
         plan_mode: false,
     },
     Some(
-        false,
+        Idle,
     ),
 )

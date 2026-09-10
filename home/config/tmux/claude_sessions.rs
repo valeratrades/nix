@@ -110,12 +110,14 @@ impl ClaudeState {
     /// verdict is authoritative, active todos are the fallback when it abstains.
     /// Lives here (not inline in get_claude_windows) so the fixture tests replay
     /// the exact production deliberation.
-    fn refine_finished(
-        transcript_working: Option<bool>,
-        has_active_todos: bool,
-        plan_mode: bool,
-    ) -> ClaudeState {
-        if transcript_working.unwrap_or(has_active_todos) {
+    fn refine_finished(tail: Option<Tail>, has_active_todos: bool, plan_mode: bool) -> ClaudeState {
+        let working = match tail {
+            Some(Tail::DiedOnTool) => return ClaudeState::Error,
+            Some(Tail::Working) => true,
+            Some(Tail::Idle) => false,
+            None => has_active_todos,
+        };
+        if working {
             if plan_mode { ClaudeState::Planning } else { ClaudeState::Active }
         } else {
             ClaudeState::Finished
@@ -629,17 +631,25 @@ fn generate_summary_with_llm(first_message: &str) -> Option<String> {
     }
 }
 
-/// Deterministic idle check from the transcript, deciding the flip-floppy
-/// active↔finished case the terminal can't. Returns:
-///   Some(true)  — work in flight (last message is a pending tool_use, or a user
-///                 message whose assistant reply hasn't landed yet)
-///   Some(false) — genuinely idle (last message is a completed assistant turn)
-///   None        — undetermined (no message in the tail); caller falls back
-///
+/// What the transcript's last message says about the turn — the deterministic
+/// half of the flip-floppy active↔finished call the terminal can't make.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Tail {
+    /// A pending tool_use, or a user message whose assistant reply hasn't landed.
+    Working,
+    /// A completed assistant turn, or a turn the user aborted.
+    Idle,
+    /// A failed tool_result is the transcript's last word. A live session always
+    /// answers one — the model reacts to the failure — so a transcript that ends
+    /// there is one whose process died mid-turn (shutdown, OOM kill). Resumed,
+    /// the pane sits at a prompt with the failure as its last act: an error.
+    DiedOnTool,
+}
+
 /// Only the tail is read: transcripts reach tens of MB, but the last message is
 /// near the end. ponytail: 256KB window; a single message can't exceed it in
 /// practice (largest observed line ~35KB), and if it somehow does we return None.
-fn transcript_working(session_file: &Path) -> Option<bool> {
+fn transcript_tail(session_file: &Path) -> Option<Tail> {
     const TAIL_BYTES: u64 = 256 * 1024;
     let mut file = fs::File::open(session_file).ok()?;
     let len = file.metadata().ok()?.len();
@@ -667,30 +677,38 @@ fn transcript_working(session_file: &Path) -> Option<bool> {
             .and_then(|m| m.get("role"))
             .and_then(|x| x.as_str())
             .unwrap_or(entry_type);
-        return Some(if role == "assistant" {
+        if role == "assistant" {
             // A completed turn ends with a non-tool stop_reason; "tool_use" means
             // a tool call is outstanding, i.e. still working.
-            v.get("message").and_then(|m| m.get("stop_reason")).and_then(|x| x.as_str()) == Some("tool_use")
-        } else {
-            // Last message is the user's — assistant reply is still pending,
-            // EXCEPT Claude Code's synthetic "[Request interrupted by user …]"
-            // marker: the user aborted the turn, so no reply is coming. This is
-            // what an abandoned pre-/clear transcript ends on, and reading it as
-            // working flips a Finished pane to Active.
-            let interrupted = v
-                .get("message")
-                .and_then(|m| m.get("content"))
-                .map(|c| c.to_string().contains("[Request interrupted by user"))
-                .unwrap_or(false);
-            !interrupted
-        });
+            let pending = v.get("message").and_then(|m| m.get("stop_reason")).and_then(|x| x.as_str()) == Some("tool_use");
+            return Some(if pending { Tail::Working } else { Tail::Idle });
+        }
+        // Last message is the user's — assistant reply is still pending,
+        // EXCEPT Claude Code's synthetic "[Request interrupted by user …]"
+        // marker: the user aborted the turn, so no reply is coming. This is
+        // what an abandoned pre-/clear transcript ends on, and reading it as
+        // working flips a Finished pane to Active.
+        let content = v.get("message").and_then(|m| m.get("content"));
+        if content.map(|c| c.to_string().contains("[Request interrupted by user")).unwrap_or(false) {
+            return Some(Tail::Idle);
+        }
+        let failed_tool = content
+            .and_then(|c| c.as_array())
+            .map(|blocks| {
+                blocks.iter().any(|b| {
+                    b.get("type").and_then(|x| x.as_str()) == Some("tool_result")
+                        && b.get("is_error").and_then(|x| x.as_bool()) == Some(true)
+                })
+            })
+            .unwrap_or(false);
+        return Some(if failed_tool { Tail::DiedOnTool } else { Tail::Working });
     }
     None
 }
 
 /// Most recent model that produced an assistant turn, "claude-" prefix stripped
 /// ("claude-opus-4-8" -> "opus-4-8"). Reads only the tail, same rationale as
-/// transcript_working. Synthetic messages carry model "<synthetic>" — skipped so
+/// transcript_tail. Synthetic messages carry model "<synthetic>" — skipped so
 /// the reported model is a real one the user actually ran.
 fn latest_model(session_file: &Path) -> Option<String> {
     const TAIL_BYTES: u64 = 256 * 1024;
@@ -725,7 +743,7 @@ fn latest_model(session_file: &Path) -> Option<String> {
 /// Context the next request would carry: the last main-thread assistant turn's
 /// whole token bill (fresh input + both cache buckets + what it wrote). Sidechain
 /// turns are subagents with their own window and would read as the session's.
-/// Tail-only, same rationale as transcript_working.
+/// Tail-only, same rationale as transcript_tail.
 fn context_tokens(session_file: &Path) -> Option<u64> {
     const TAIL_BYTES: u64 = 256 * 1024;
     let mut file = fs::File::open(session_file).ok()?;
@@ -847,7 +865,7 @@ Answer with exactly one word: finished, stuck, partial, or ongoing.";
     }
 
     /// Text of the final assistant turn. Read from the tail for the same reason
-    /// transcript_working does: transcripts reach tens of MB.
+    /// transcript_tail does: transcripts reach tens of MB.
     fn last_report(session_file: &Path) -> Option<String> {
         const TAIL_BYTES: u64 = 256 * 1024;
         let mut file = fs::File::open(session_file).ok()?;
@@ -1193,7 +1211,7 @@ fn find_session_by_fingerprint(session_files: &[(PathBuf, Option<std::time::Syst
             .any(|l| is_user_hit(&l));
 
         if !found {
-            // Tail window, same size rationale as transcript_working.
+            // Tail window, same size rationale as transcript_tail.
             found = (|| -> Option<bool> {
                 let mut file = fs::File::open(path).ok()?;
                 let len = file.metadata().ok()?.len();
@@ -1333,8 +1351,8 @@ struct SessionMetadata {
     model: Option<String>,
     /// Context size of the last turn (see context_tokens)
     context: Option<u64>,
-    /// Transcript verdict on whether work is in flight (see transcript_working)
-    transcript_working: Option<bool>,
+    /// Transcript verdict on how the last turn stands (see transcript_tail)
+    transcript_tail: Option<Tail>,
     /// How long the transcript has sat untouched; the Finished→Done clock.
     idle_for: Option<std::time::Duration>,
 }
@@ -1368,7 +1386,7 @@ fn get_session_info_for_pane(shell_pid: u32, deep: &str) -> Option<SessionMetada
         summary,
         model: latest_model(&session_file),
         context: context_tokens(&session_file),
-        transcript_working: transcript_working(&session_file),
+        transcript_tail: transcript_tail(&session_file),
         idle_for: fs::metadata(&session_file)
             .and_then(|m| m.modified())
             .ok()
@@ -1650,13 +1668,15 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
                 match activity.state {
                     ClaudeState::Finished => {
                         let refined = ClaudeState::refine_finished(
-                            metadata.as_ref().and_then(|m| m.transcript_working),
+                            metadata.as_ref().and_then(|m| m.transcript_tail),
                             matches!(&metadata, Some(m) if m.has_active_todos),
                             activity.plan_mode,
                         );
-                        if refined != ClaudeState::Finished {
+                        if refined == ClaudeState::Active || refined == ClaudeState::Planning {
                             let todo = metadata.as_ref().and_then(|m| m.display_todo.clone());
                             (refined, todo, None, None, summary, model, context)
+                        } else if refined != ClaudeState::Finished {
+                            (refined, None, None, None, summary, model, context)
                         } else {
                             let stale = matches!(&metadata, Some(m) if m.idle_for.is_some_and(|d| d >= DONE_AFTER));
                             // Done is a decayed signal — I've had 45 minutes to see
@@ -2663,7 +2683,7 @@ mod tests {
                      {:?} — the transcript is only consulted for Finished panes",
                     result.state
                 );
-                let verdict = transcript_working(&jsonl);
+                let verdict = transcript_tail(&jsonl);
                 (
                     ClaudeState::refine_finished(verdict, false, result.plan_mode),
                     verdict,
