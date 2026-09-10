@@ -4,6 +4,9 @@ let
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEJA6PHRdXNysN/q8yYid3Vp3miFBB7a1441lOEHeOoZ valeratrades@gmail.com"
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIz2m3ZyGSMog5x8GaboPfZqsuNqUO6E/031wks5eicU root@v-laptop"
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDXayiFOnCRwOk3wKXkTOi3ix6x8t8v4t2fgTqalIlki ev"
+    # rpi5's openclaw gateway reaching the desktop (`pc` / `pc-up`, machines/modules/openclaw.nix).
+    # Private half generated on the box, never in the store.
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPs+eyfU+LPhnyMl1OypUaVdEkO/o5xFSQR6w5E7N32g rpi5-openclaw"
   ];
 in
 {
@@ -41,7 +44,10 @@ in
 		disableNvidia = false;  # set to true to use AMD iGPU only (better battery, fewer driver issues)
 		gpuAcceleration = false;  # forced Firefox GPU rendering (webrender compositor + dmabuf + gpu-process). Off: runs hot on this chassis.
 		clickhouse = false;
-		openclaw = true;
+		# Gateway moved to rpi5 (machines/modules/openclaw.nix, 2026-09-10) — the always-on box the
+		# heartbeat always assumed. Two gateways can't share the bot token: one consumer per getUpdates.
+		# The `openclaw` CLI wrapper and litellm stay; only the service is gone.
+		openclaw = false;
 		default_s_inactive_to_retire = 1200; # idle LSP servers paged out to swap after this many seconds (20m)
 		# Hearing-safety: max dB SPL per headphone, keyed by PipeWire node.description.
 		# Mapped to a digital limiter via the model's calibration in

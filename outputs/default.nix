@@ -82,6 +82,9 @@ in {
   nixosConfigurations = {
     rpi5 = import (mylib.relativeToRoot "hosts/rpi5/system.nix") {
       inherit inputs self mylib myvars;
+      # The gateway moved here from v-laptop (2026-09-10): rpi5 is the always-on box the
+      # heartbeat has always assumed. Kept out of the hosts/rpi5 submodule, which is the org's.
+      extraModules = [ (mylib.relativeToRoot "machines/modules/openclaw.nix") ];
     };
   } // lib.listToAttrs (map (user: {
     name = user.desktopHostName;

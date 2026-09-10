@@ -85,7 +85,7 @@ in {
   # and fully reproduces config on a clean ~/.openclaw. We materialize secrets from the
   # sops-decrypted files here (openclaw has no env-var expansion in its config), and gate the
   # whole thing on the openclaw checkout actually being present.
-  home.activation.configureOpenclaw = let
+  home.activation.configureOpenclaw = lib.mkIf user.openclaw (let
     ocCfg = {
       provider = "litellm";
       baseUrl = "http://127.0.0.1:${toString myvars.ports.litellm}";
@@ -162,7 +162,7 @@ in {
     else
       echo "configureOpenclaw: $repo missing; skipping" >&2
     fi
-  '';
+  '');
 
   # Fix sops-nix.service to remain active after completion
   # Without this, oneshot services exit immediately and can't satisfy Requires= dependencies
@@ -436,7 +436,8 @@ in {
           corepack pnpm install --frozen-lockfile
           corepack pnpm build
           node openclaw.mjs doctor --fix
-          systemctl --user restart openclaw-gateway
+          # The gateway lives on rpi5 now; here the checkout is just the CLI.
+          systemctl --user restart openclaw-gateway 2>/dev/null || true
           sleep 20
           node openclaw.mjs channels status --probe
         '')
