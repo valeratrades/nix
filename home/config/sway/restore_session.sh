@@ -10,6 +10,7 @@ swaymsg "workspace 2, exec QT_QPA_PLATFORMTHEME=flatpak google-chrome-stable" #-
 # the XDG_CURRENT_DESKTOP makes it try to use `kdialog` app. There is no kdialog app, so it's tricked into executing my script in the $PATH, `~/s/help_scripts/kdialog`. The script then redirects it into the file picker solution in `~/.config/nnn/termfilechooser.sh`
 # XDG_CURRENT_DESKTOP=KDE // try if still works
 #swaymsg "exec GTK_USE_PORTAL=1 QT_QPA_PLATFORMTHEME=flatpak discord &" # --enable-features=UseOzonePlatform --ozone-platform=wayland &"
+swaymsg "workspace 0, exec alacritty -e fish -C \"commandline -i 'bluetooth headphones'\""
 swaymsg "workspace 1, exec alacritty"
 
 #sleep 30
