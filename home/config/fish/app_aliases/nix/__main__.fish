@@ -35,6 +35,7 @@ alias ndevelop="nix develop --command fish"
 #alias nupdate="nix flake lock --update-input nixpkgs --update-input"
 alias nup="nix flake update"
 alias up="$NIXOS_CONFIG/home/scripts/maintenance.rs"
+alias tw="$NIXOS_CONFIG/home/scripts/typst_workspace.rs"
 
 function nsync
 	if [ (whoami) == "v" ]
