@@ -182,7 +182,86 @@ function grr
 end
 
 # GitHub aliases
-alias gi="gh issue create -b \"\" -t"
+function gi --wraps "gh issue create"
+	# gh has no --dry-run, so labels/assignees/milestone are checked here first
+	set -l args
+	for a in $argv
+		if string match -qr '^--?[lam](abel|ssignee|ilestone)?=' -- $a
+			set -a args (string split -m1 = -- $a)
+		else
+			set -a args $a
+		end
+	end
+
+	set -l labels
+	set -l assignees
+	set -l milestones
+	set -l i 1
+	while test $i -lt (count $args)
+		set -l next $args[(math $i + 1)]
+		switch $args[$i]
+			case -l --label
+				set -a labels (string split , -- $next)
+			case -a --assignee
+				set -a assignees (string split , -- $next)
+			case -m --milestone
+				set -a milestones $next
+		end
+		set i (math $i + 1)
+	end
+
+	set -l tmp (mktemp -d)
+	if set -q labels[1]
+		begin
+			gh label list --limit 500 --json name -q '.[].name' >$tmp/label
+			echo $status >$tmp/label.rc
+		end &
+	end
+	if set -q assignees[1]
+		begin
+			gh api --paginate 'repos/{owner}/{repo}/assignees' -q '.[].login' >$tmp/assignee
+			echo $status >$tmp/assignee.rc
+		end &
+	end
+	if set -q milestones[1]
+		begin
+			gh api --paginate 'repos/{owner}/{repo}/milestones?state=all' -q '.[].title' >$tmp/milestone
+			echo $status >$tmp/milestone.rc
+		end &
+	end
+	wait
+
+	set -l bad
+	for kind in label assignee milestone
+		set -l requested
+		switch $kind
+			case label
+				set requested $labels
+			case assignee
+				set requested (string match -v -- '@*' $assignees) # @me/@copilot are resolved by gh itself
+			case milestone
+				set requested $milestones
+		end
+		set -q requested[1]; or continue
+		if test (cat $tmp/$kind.rc) -ne 0
+			rm -rf $tmp
+			echo "gi: failed to fetch $kind list" >&2
+			return 1
+		end
+		set -l known (cat $tmp/$kind)
+		for r in $requested
+			contains -- $r $known; or set -a bad "$kind: $r"
+		end
+	end
+	rm -rf $tmp
+
+	if set -q bad[1]
+		printf 'gi: unknown %s\n' $bad >&2
+		return 1
+	end
+
+	gh issue create -b "" -t $argv
+end
 complete -c gi -w gh
 alias gil="gh issue list"
 complete -c gil -w gh
