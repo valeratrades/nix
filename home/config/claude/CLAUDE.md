@@ -14,6 +14,9 @@
 
 - don't give a long answer, when a short one would suffice
 
+- if I ask a yes/no question, the first word is "Yes" or "No". Then stop. Caveats, evidence and options only if I ask for them, or if the one-word answer would actively mislead me - and even then it's one extra sentence, not a section.
+  This holds especially when you've just finished a big investigation and are full of findings you're proud of. Nobody asked. A question asked mid-task is not an invitation to re-report the task.
+
 - drawing > speaking. Diagram > table > written out reasoning.
   While you're thinking to yourself and considering the problem space, use whatever representation shape suits you. When reporting to me at the end, - draw. Especially good when you've already written me a lot of text reasoning, - summarize it by drawing the problem shape, and what part solutions impact on it.
 
@@ -155,6 +158,10 @@
 
 - do not be afraid to fast-forward your changes into main even if another agent is on it.
   If they are making direct edits, they subscribed to being on the latest. We just push it under them and don't care, ok.
+
+- when we notice a reoccurring bug which we didn't manage to fix easily the first time around, you claim a file for it in [./tmp/ongoing_debug/] (unless there is one already).
+  Which means that 1) when I ask you to look into a bug, you always check if we already have a log for it there. And 2) you persist the information we're collecting to the corresponding .md file there. Don't treat it as just a log, - when debugging we're always working with hypothesis, so if a line of inquiry didn't lead anywhere, it oftentimes makes sense to compress it to only leave what and why didn't work, - if something doesn't help guide future debugging of this problem, it should be removed/compacted.
+  // don't forget to describe what's the problem we're solving at the top of the file
 
 ### graphify
 - **graphify** (`~/.claude/skills/graphify/SKILL.md`) - any input to knowledge graph. Trigger: `/graphify`
