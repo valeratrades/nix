@@ -231,21 +231,43 @@ fn ancestor_pids() -> Result<HashSet<i64>> {
 	let mut pids = HashSet::new();
 	add_ancestor_chain(i64::from(std::process::id()), &mut pids)?;
 
-	// tmux detaches the pane shell from the terminal's process tree. Its client
-	// remains a child of the terminal shell, so include that chain when invoked
-	// from a pane.
+	// tmux detaches the pane shell from the terminal's process tree. Follow only
+	// the client displaying this pane; following every client would select another
+	// terminal when the same server has multiple attached sessions.
 	if std::env::var_os("TMUX").is_some() {
+		let pane = std::env::var("TMUX_PANE").map_err(|e| miette!("TMUX_PANE is unavailable: {e}"))?;
+		let pane_location = String::from_utf8(
+			Command::new("tmux")
+				.args(["display-message", "-p", "-t", &pane, "#{session_name} #{window_index}"])
+				.output()
+				.map_err(|e| miette!("failed to find the tmux pane: {e}"))?
+				.stdout,
+		)
+		.map_err(|e| miette!("tmux returned non-UTF-8 pane data: {e}"))?
+		.trim()
+		.to_owned();
 		let output = Command::new("tmux")
-			.args(["list-clients", "-F", "#{client_pid}"])
+			.args(["list-clients", "-F", "#{client_pid} #{client_session} #{client_window_index}"])
 			.output()
 			.map_err(|e| miette!("failed to find the tmux client: {e}"))?;
 		if !output.status.success() {
 			return Err(miette!("tmux could not list its clients"));
 		}
-		for line in String::from_utf8_lossy(&output.stdout).lines() {
-			let pid = line.parse().map_err(|e| miette!("tmux returned invalid client pid `{line}`: {e}"))?;
-			add_ancestor_chain(pid, &mut pids)?;
-		}
+		let clients = String::from_utf8_lossy(&output.stdout);
+		let client = clients
+			.lines()
+			.find_map(|line| {
+				let mut fields = line.split_whitespace();
+				let pid = fields.next()?;
+				let session = fields.next()?;
+				let window = fields.next()?;
+				(session == pane_location.split_once(' ')?.0
+					&& window == pane_location.split_once(' ')?.1)
+					.then_some(pid)
+			})
+			.ok_or_else(|| miette!("no tmux client displays pane {pane} in {pane_location}"))?;
+		let pid = client.parse().map_err(|e| miette!("tmux returned invalid client pid `{client}`: {e}"))?;
+		add_ancestor_chain(pid, &mut pids)?;
 	}
 	Ok(pids)
 }
