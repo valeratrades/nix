@@ -21,77 +21,44 @@ end
 alias mkf="mkfile"
 
 function cs
-    set -l tmux_after 0
-    set -l math_workspace 0
-    set -l direnv_allow 0
-    set -l tn_extra
-    set -l args
+    argparse 't/tmux' 'm/math' 'a/allow' 'd/detach' -- $argv
+    or return 1
 
-    for arg in $argv
-        switch $arg
-            case --tmux
-                set tmux_after 1
-            case --math
-                set math_workspace 1
-            case --allow
-                set direnv_allow 1
-            case --detach
-                set -a tn_extra -d
-            case '-*'
-                for flag in (string split '' (string sub -s 2 -- $arg))
-                    switch $flag
-                        case t
-                            set tmux_after 1
-                        case m
-                            set math_workspace 1
-                        case a
-                            set direnv_allow 1
-                        case d
-                            set -a tn_extra -d
-                        case '*'
-                            echo "cs: unknown flag -$flag" >&2
-                            return 1
-                    end
-                end
-            case '*'
-                set -a args $arg
+    if set -q _flag_t
+        if test (count $argv) -gt 0
+            direnv deny "$argv[1]"
+            cd "$argv[1]" || return 1
         end
-    end
-
-    if test $tmux_after = 1
-        if test (count $args) -gt 0
-            direnv deny "$args[1]"
-            cd "$args[1]" || return 1
+        if set -q _flag_m
+            tn -a -m (set -q _flag_d; and echo -n -d)
+        else if set -q _flag_d
+            tn -a -d
+        else
+            tn -a
         end
-        if test $math_workspace = 1
-            set -a tn_extra -m
-        end
-        tn -a $tn_extra
         return
     end
 
-    if test $math_workspace = 1
-        if test (count $args) -gt 0
-            cd "$args[1]" || return 1
+    if set -q _flag_m
+        if test (count $argv) -gt 0
+            cd "$argv[1]" || return 1
         end
         typst_workspace
         return
     end
 
-    if test (count $args) -gt 0; and test -f "$args[1]"
-        e "$args[1]"
+    if test (count $argv) -gt 0; and test -f "$argv[1]"
+        e "$argv[1]"
     else
-        if test (count $args) -gt 0
-            cd "$args" || return 1
+        if test (count $argv) -gt 0
+            cd "$argv" || return 1
         end
 
-        if test $direnv_allow = 1
+        if set -q _flag_a
             direnv allow
         end
-
         source "./.local.fish" > /dev/null 2>&1 || true
         source "./tmp/.local.fish" > /dev/null 2>&1 || true
-
         if test -n "$VIRTUAL_ENV"
             deactivate
             set -e VIRTUAL_ENV

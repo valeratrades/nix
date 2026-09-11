@@ -26,39 +26,19 @@ function tk --description "Kill tmux session + direnv deny its root"
 end
 
 function tmux_new_session_base
+	argparse 'a/allow' 'm/math' 'd/detach' -- $argv
+	or return 1
+
 	set -l cs_cmd 'cs'
-	set -l detach 0
-	set -l math_workspace 0
-	set -l args
-	for arg in $argv
-		switch $arg
-			case --allow
-				set cs_cmd 'cs -a'
-			case --math
-				set math_workspace 1
-			case --detach
-				set detach 1
-			case '-*'
-				for flag in (string split '' (string sub -s 2 -- $arg))
-				switch $flag
-					case a
-						set cs_cmd 'cs -a'
-					case m
-						set math_workspace 1
-					case d
-						set detach 1
-					case '*'
-						echo "tn: unknown flag -$flag" >&2
-						return 1
-				end
-			end
-			case '*'
-				set -a args $arg
-		end
+	if set -q _flag_a
+		set cs_cmd 'cs -a'
 	end
-	if test $detach = 1
+	if set -q _flag_d
 		set cs_cmd "$cs_cmd -d"
 	end
+	set -l detach (set -q _flag_d; and echo 1; or echo 0)
+	set -l math_workspace (set -q _flag_m; and echo 1; or echo 0)
+	set -l args $argv
 
 	# only nesting is refused; building a detached session from inside tmux is fine
 	if test -n "$TMUX"; and test $detach = 0
@@ -138,33 +118,12 @@ function tn
 	end
 	set -l session_name $session_name_or_err
 
-	set -l detach 0
-	set -l math_workspace 0
-	set -l positionals
-	for arg in $argv
-		switch $arg
-			case -a --allow
-			case --math
-				set math_workspace 1
-			case --detach
-				set detach 1
-			case '-*'
-				for flag in (string split '' (string sub -s 2 -- $arg))
-				switch $flag
-					case a
-					case m
-						set math_workspace 1
-					case d
-						set detach 1
-					case '*'
-						echo "tn: unknown flag -$flag" >&2
-						return 1
-				end
-			end
-			case '*'
-				set -a positionals $arg
-		end
-	end
+	argparse 'a/allow' 'm/math' 'd/detach' -- $argv
+	or return 1
+
+	set -l detach (set -q _flag_d; and echo 1; or echo 0)
+	set -l math_workspace (set -q _flag_m; and echo 1; or echo 0)
+	set -l positionals $argv
 
 	set -l assume_project_name (basename (pwd))
 	if test -n "$positionals[1]"
