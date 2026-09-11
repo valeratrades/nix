@@ -3,3 +3,6 @@
 result
 __pycache__/
 home/config/eww/location
+
+# Claude Code isolated worktrees are disposable, never repository content
+.claude/worktrees/
