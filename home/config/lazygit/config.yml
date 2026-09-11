@@ -1,0 +1,12 @@
+keybinding:
+  universal:
+    quit: 'o'
+    quitAlt1: '<c-c>'
+    quitAlt2: '<a-;>'
+
+customCommands:
+  - key: 'e'
+    context: 'commitFiles'
+    description: 'Open file in nvim scoped to this commit'
+    command: 'printf "%s %s\n" "{{.SelectedCommit.Hash}}" "{{.SelectedCommitFile.Name}}" > /tmp/nvim-commit-view && nvim --server "$NVIM" --remote-expr "v:lua.require(\"valera.commit_view\").wakeup()" || true'
+    output: none
