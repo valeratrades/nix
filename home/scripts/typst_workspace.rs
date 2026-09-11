@@ -28,6 +28,7 @@ serde_json = "1.0"
 //! while it runs cannot misplace anything.
 
 use std::{
+	collections::HashSet,
 	io::{BufRead, BufReader},
 	os::unix::process::CommandExt,
 	path::{Path, PathBuf},
@@ -210,14 +211,41 @@ fn sh_quote(p: &Path) -> String { format!("'{}'", p.to_string_lossy().replace('\
 
 // --- locating the terminal we were launched from -----------------------------
 
-/// Captures the leaf that owns the invoking terminal. tmux and anything inside
-/// it are intentionally invisible here; sway already identifies the terminal.
-fn locate_focused<'a>(node: &'a Value, ws: Option<&'a Value>) -> Option<(i64, &'a Value)> {
+fn add_ancestor_pids(mut pid: i64, pids: &mut HashSet<i64>) -> Result<()> {
+	while pid > 1 {
+		pids.insert(pid);
+		let stat = std::fs::read_to_string(format!("/proc/{pid}/stat")).map_err(|e| miette!("/proc/{pid}/stat: {e}"))?;
+		let tail = stat.rsplit_once(')').ok_or_else(|| miette!("/proc/{pid}/stat: no comm field"))?.1;
+		pid = tail.split_whitespace().nth(1).and_then(|s| s.parse().ok())
+			.ok_or_else(|| miette!("/proc/{pid}/stat: no ppid field"))?;
+	}
+	Ok(())
+}
+
+fn ancestor_pids() -> Result<HashSet<i64>> {
+	let mut pids = HashSet::new();
+	add_ancestor_pids(i64::from(std::process::id()), &mut pids)?;
+	if let Some(pane) = std::env::var_os("TMUX_PANE") {
+		let pane = pane.to_string_lossy();
+		let output = Command::new("tmux")
+			.args(["display-message", "-p", "-t", &pane, "#{client_pid}"])
+			.output()
+			.map_err(|e| miette!("failed to identify the invoking terminal: {e}"))?;
+		if output.status.success() {
+			let pid = String::from_utf8_lossy(&output.stdout).trim().parse()
+			.map_err(|e| miette!("tmux returned an invalid terminal pid: {e}"))?;
+			add_ancestor_pids(pid, &mut pids)?;
+		}
+	}
+	Ok(pids)
+}
+
+fn locate<'a>(node: &'a Value, ws: Option<&'a Value>, pids: &HashSet<i64>) -> Option<(i64, &'a Value)> {
 	let ws = if node["type"] == "workspace" { Some(node) } else { ws };
-	if node["focused"] == true && node["type"] == "con" && children(node).is_empty() {
+	if node["pid"].as_i64().is_some_and(|pid| pids.contains(&pid)) {
 		return Some((node["id"].as_i64()?, ws?));
 	}
-	children(node).into_iter().find_map(|c| locate_focused(c, ws))
+	children(node).into_iter().find_map(|c| locate(c, ws, pids))
 }
 
 fn leaf_titles(node: &Value, out: &mut Vec<String>) {
@@ -298,8 +326,9 @@ fn build() -> Result<()> {
 	let (src, docs) = read_config(&cwd)?;
 
 	let root = tree()?;
-	let (term, ws) = locate_focused(&root, None)
-		.ok_or_else(|| miette!("sway has no focused terminal leaf"))?;
+	let pids = ancestor_pids()?;
+	let (term, ws) = locate(&root, None, &pids)
+		.ok_or_else(|| miette!("none of our parent processes owns a sway window"))?;
 	let ws_name = ws["name"].as_str().unwrap_or("?").to_owned();
 
 	let mut titles = Vec::new();
