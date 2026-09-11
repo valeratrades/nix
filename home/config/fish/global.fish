@@ -22,18 +22,37 @@ alias mkf="mkfile"
 
 function cs
     set -l tmux_after 0
+    set -l math_workspace 0
     set -l direnv_allow 0
     set -l tn_extra
     set -l args
 
     for arg in $argv
         switch $arg
-            case -t --tmux
+            case --tmux
                 set tmux_after 1
-            case -a --allow
+            case --math
+                set math_workspace 1
+            case --allow
                 set direnv_allow 1
-            case -d --detach
+            case --detach
                 set -a tn_extra -d
+            case '-*'
+                for flag in (string split '' (string sub -s 2 -- $arg))
+                    switch $flag
+                        case t
+                            set tmux_after 1
+                        case m
+                            set math_workspace 1
+                        case a
+                            set direnv_allow 1
+                        case d
+                            set -a tn_extra -d
+                        case '*'
+                            echo "cs: unknown flag -$flag" >&2
+                            return 1
+                    end
+                end
             case '*'
                 set -a args $arg
         end
@@ -44,7 +63,18 @@ function cs
             direnv deny "$args[1]"
             cd "$args[1]" || return 1
         end
+        if test $math_workspace = 1
+            set -a tn_extra -m
+        end
         tn -a $tn_extra
+        return
+    end
+
+    if test $math_workspace = 1
+        if test (count $args) -gt 0
+            cd "$args[1]" || return 1
+        end
+        typst_workspace
         return
     end
 

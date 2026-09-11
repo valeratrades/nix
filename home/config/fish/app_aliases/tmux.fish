@@ -28,16 +28,36 @@ end
 function tmux_new_session_base
 	set -l cs_cmd 'cs'
 	set -l detach 0
+	set -l math_workspace 0
 	set -l args
 	for arg in $argv
 		switch $arg
-			case -a --allow
+			case --allow
 				set cs_cmd 'cs -a'
-			case -d --detach
+			case --math
+				set math_workspace 1
+			case --detach
 				set detach 1
+			case '-*'
+				for flag in (string split '' (string sub -s 2 -- $arg))
+				switch $flag
+					case a
+						set cs_cmd 'cs -a'
+					case m
+						set math_workspace 1
+					case d
+						set detach 1
+					case '*'
+						echo "tn: unknown flag -$flag" >&2
+						return 1
+				end
+			end
 			case '*'
 				set -a args $arg
 		end
+	end
+	if test $detach = 1
+		set cs_cmd "$cs_cmd -d"
 	end
 
 	# only nesting is refused; building a detached session from inside tmux is fine
@@ -71,7 +91,11 @@ function tmux_new_session_base
 
 	# Source window
 	tmux new-session -d -s "$SESSION_NAME" -n "source"
-	tmux send-keys -t "$SESSION_NAME:source.0" 'nvim .' Enter
+	if test $math_workspace = 1
+		tmux send-keys -t "$SESSION_NAME:source.0" 'typst_workspace' Enter
+	else
+		tmux send-keys -t "$SESSION_NAME:source.0" 'nvim .' Enter
+	end
 
 	# Build window
 	tmux new-window -t "$SESSION_NAME" -n "build"
@@ -115,12 +139,28 @@ function tn
 	set -l session_name $session_name_or_err
 
 	set -l detach 0
+	set -l math_workspace 0
 	set -l positionals
 	for arg in $argv
 		switch $arg
 			case -a --allow
-			case -d --detach
+			case --math
+				set math_workspace 1
+			case --detach
 				set detach 1
+			case '-*'
+				for flag in (string split '' (string sub -s 2 -- $arg))
+				switch $flag
+					case a
+					case m
+						set math_workspace 1
+					case d
+						set detach 1
+					case '*'
+						echo "tn: unknown flag -$flag" >&2
+						return 1
+				end
+			end
 			case '*'
 				set -a positionals $arg
 		end
@@ -140,7 +180,11 @@ function tn
 	#tmux send-keys -t "$session_name:build.2" "nvim '+AnsiEsc' \"$log_dir/.log\"" Enter
 
 	# `window`: cd
-	tmux send-keys -t "$session_name:window.0" "cd $log_dir && nvim window.toml" Enter
+	if test $math_workspace = 1
+		tmux send-keys -t "$session_name:window.0" "cd $log_dir" Enter
+	else
+		tmux send-keys -t "$session_name:window.0" "cd $log_dir && nvim window.toml" Enter
+	end
 	tmux send-keys -t "$session_name:window.1" "cd $log_dir && ~/.cargo/bin/window .log" Enter
 	#TODO: run it in a loop (gets SIGBUS-terminated on overwrite of .log file)
 	tmux send-keys -t "$session_name:window.2" "cd $log_dir && nvim '+AnsiEsc' .log..window" Enter
