@@ -211,9 +211,7 @@ fn sh_quote(p: &Path) -> String { format!("'{}'", p.to_string_lossy().replace('\
 
 // --- locating the terminal we were launched from -----------------------------
 
-fn ancestor_pids() -> Result<HashSet<i64>> {
-	let mut pids = HashSet::new();
-	let mut pid = i64::from(std::process::id());
+fn add_ancestor_chain(mut pid: i64, pids: &mut HashSet<i64>) -> Result<()> {
 	while pid > 1 {
 		pids.insert(pid);
 		let stat = std::fs::read_to_string(format!("/proc/{pid}/stat")).map_err(|e| miette!("/proc/{pid}/stat: {e}"))?;
@@ -225,6 +223,29 @@ fn ancestor_pids() -> Result<HashSet<i64>> {
 			.nth(1)
 			.and_then(|s| s.parse().ok())
 			.ok_or_else(|| miette!("/proc/{pid}/stat: no ppid field"))?;
+	}
+	Ok(())
+}
+
+fn ancestor_pids() -> Result<HashSet<i64>> {
+	let mut pids = HashSet::new();
+	add_ancestor_chain(i64::from(std::process::id()), &mut pids)?;
+
+	// tmux detaches the pane shell from the terminal's process tree. Its client
+	// remains a child of the terminal shell, so include that chain when invoked
+	// from a pane.
+	if std::env::var_os("TMUX").is_some() {
+		let output = Command::new("tmux")
+			.args(["list-clients", "-F", "#{client_pid}"])
+			.output()
+			.map_err(|e| miette!("failed to find the tmux client: {e}"))?;
+		if !output.status.success() {
+			return Err(miette!("tmux could not list its clients"));
+		}
+		for line in String::from_utf8_lossy(&output.stdout).lines() {
+			let pid = line.parse().map_err(|e| miette!("tmux returned invalid client pid `{line}`: {e}"))?;
+			add_ancestor_chain(pid, &mut pids)?;
+		}
 	}
 	Ok(pids)
 }
