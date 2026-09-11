@@ -28,7 +28,6 @@ serde_json = "1.0"
 //! while it runs cannot misplace anything.
 
 use std::{
-	collections::HashSet,
 	io::{BufRead, BufReader},
 	os::unix::process::CommandExt,
 	path::{Path, PathBuf},
@@ -211,77 +210,14 @@ fn sh_quote(p: &Path) -> String { format!("'{}'", p.to_string_lossy().replace('\
 
 // --- locating the terminal we were launched from -----------------------------
 
-fn add_ancestor_chain(mut pid: i64, pids: &mut HashSet<i64>) -> Result<()> {
-	while pid > 1 {
-		pids.insert(pid);
-		let stat = std::fs::read_to_string(format!("/proc/{pid}/stat")).map_err(|e| miette!("/proc/{pid}/stat: {e}"))?;
-		// comm is parenthesised and may contain spaces and parens itself; ppid is the
-		// second field after the last ')'
-		let tail = stat.rsplit_once(')').ok_or_else(|| miette!("/proc/{pid}/stat: no comm field"))?.1;
-		pid = tail
-			.split_whitespace()
-			.nth(1)
-			.and_then(|s| s.parse().ok())
-			.ok_or_else(|| miette!("/proc/{pid}/stat: no ppid field"))?;
-	}
-	Ok(())
-}
-
-fn ancestor_pids() -> Result<HashSet<i64>> {
-	let mut pids = HashSet::new();
-	add_ancestor_chain(i64::from(std::process::id()), &mut pids)?;
-
-	// tmux detaches the pane shell from the terminal's process tree. Follow only
-	// the client displaying this pane; following every client would select another
-	// terminal when the same server has multiple attached sessions.
-	if std::env::var_os("TMUX").is_some() {
-		let pane = std::env::var("TMUX_PANE").map_err(|e| miette!("TMUX_PANE is unavailable: {e}"))?;
-		let pane_location = String::from_utf8(
-			Command::new("tmux")
-				.args(["display-message", "-p", "-t", &pane, "#{session_name} #{window_index}"])
-				.output()
-				.map_err(|e| miette!("failed to find the tmux pane: {e}"))?
-				.stdout,
-		)
-		.map_err(|e| miette!("tmux returned non-UTF-8 pane data: {e}"))?
-		.trim()
-		.to_owned();
-		let output = Command::new("tmux")
-			.args(["list-clients", "-F", "#{client_pid} #{client_session} #{client_window_index}"])
-			.output()
-			.map_err(|e| miette!("failed to find the tmux client: {e}"))?;
-		if !output.status.success() {
-			return Err(miette!("tmux could not list its clients"));
-		}
-		let clients = String::from_utf8_lossy(&output.stdout);
-		let client = clients
-			.lines()
-			.find_map(|line| {
-				let mut fields = line.split_whitespace();
-				let pid = fields.next()?;
-				let session = fields.next()?;
-				let window = fields.next()?;
-				(session == pane_location.split_once(' ')?.0
-					&& window == pane_location.split_once(' ')?.1)
-					.then_some(pid)
-			})
-			.ok_or_else(|| miette!("no tmux client displays pane {pane} in {pane_location}"))?;
-		let pid = client.parse().map_err(|e| miette!("tmux returned invalid client pid `{client}`: {e}"))?;
-		add_ancestor_chain(pid, &mut pids)?;
-	}
-	Ok(pids)
-}
-
-/// The sway view whose pid is in our own ppid chain, plus the workspace holding it.
-/// Beats "focused workspace", which is wrong the moment this is launched from elsewhere.
-fn locate<'a>(node: &'a Value, ws: Option<&'a Value>, pids: &HashSet<i64>) -> Option<(i64, &'a Value)> {
+/// Captures the leaf that owns the invoking terminal. tmux and anything inside
+/// it are intentionally invisible here; sway already identifies the terminal.
+fn locate_focused<'a>(node: &'a Value, ws: Option<&'a Value>) -> Option<(i64, &'a Value)> {
 	let ws = if node["type"] == "workspace" { Some(node) } else { ws };
-	if let Some(pid) = node["pid"].as_i64()
-		&& pids.contains(&pid)
-	{
+	if node["focused"] == true && node["type"] == "con" && children(node).is_empty() {
 		return Some((node["id"].as_i64()?, ws?));
 	}
-	children(node).into_iter().find_map(|c| locate(c, ws, pids))
+	children(node).into_iter().find_map(|c| locate_focused(c, ws))
 }
 
 fn leaf_titles(node: &Value, out: &mut Vec<String>) {
@@ -361,10 +297,9 @@ fn build() -> Result<()> {
 	let cwd = std::env::current_dir().map_err(|e| miette!("cannot read cwd: {e}"))?;
 	let (src, docs) = read_config(&cwd)?;
 
-	let pids = ancestor_pids()?;
 	let root = tree()?;
-	let (term, ws) =
-		locate(&root, None, &pids).ok_or_else(|| miette!("none of our parent processes owns a sway window"))?;
+	let (term, ws) = locate_focused(&root, None)
+		.ok_or_else(|| miette!("sway has no focused terminal leaf"))?;
 	let ws_name = ws["name"].as_str().unwrap_or("?").to_owned();
 
 	let mut titles = Vec::new();
