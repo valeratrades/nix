@@ -4,6 +4,9 @@ let
   #TODO!!: integrate ryan's myLib and myVars into my setup
   mylib = import ../lib { inherit lib; };
   myvars = import ../vars { inherit lib; };
+  evInvestHosts = import (mylib.relativeToRoot "hosts/rpi5/system.nix") {
+    inherit inputs self mylib myvars;
+  };
   common_pkgs_config = {
     allowUnfree = true;
     allowBroken = true;
@@ -81,9 +84,13 @@ in {
 
   # `rpi5` (the Raspberry Pi primary) and `evinvest-fallback` (the manual AWS
   # fallback) — one platform, two hardware halves; the submodule defines both.
-  nixosConfigurations = (import (mylib.relativeToRoot "hosts/rpi5/system.nix") {
-    inherit inputs self mylib myvars;
-  }) // lib.listToAttrs (map (user: {
+  # Named one by one, not `//`-merged in: the submodule's files are outside this
+  # flake's source (lazy-trees, no `?submodules=1`), so a merge — which forces the
+  # import to know the key set — breaks *every* host here, not just these two.
+  nixosConfigurations = {
+    rpi5 = evInvestHosts.rpi5;
+    evinvest-fallback = evInvestHosts.evinvest-fallback;
+  } // lib.listToAttrs (map (user: {
     name = user.desktopHostName;
     value = nixpkgs.lib.nixosSystem {
       specialArgs = {
