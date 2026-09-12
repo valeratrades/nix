@@ -5999,11 +5999,11 @@
         "wrap-it": "wrap-it"
       },
       "locked": {
-        "lastModified": 1789081496,
-        "narHash": "sha256-MvyZFIwSXB3IQjQlG2Kswzxwp0cicgX94APHtfRD+r8=",
+        "lastModified": 1789035601,
+        "narHash": "sha256-GHn0b14ZLiYTZeuaB5xI18/1nYmv3a1myz3+NZLcMS4=",
         "owner": "valeratrades",
         "repo": "wallpaper_carousel",
-        "rev": "3504ad34240a528ec0c9015db0e99298d52ff327",
+        "rev": "49ef7a162aace94387447c10acbe0b5325a29099",
         "type": "github"
       },
       "original": {

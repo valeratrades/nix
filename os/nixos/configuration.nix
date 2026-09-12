@@ -512,7 +512,8 @@ in {
         # dbs
         [
           redis
-          #awscli2 #dbg: builds long
+          awscli2
+          uv # `uvx` for the aws-core plugin's MCP proxy
           postgresql
         ]
         (lib.optional user.clickhouse clickhouse)
