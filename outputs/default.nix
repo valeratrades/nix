@@ -79,11 +79,11 @@ in {
   #   system: allSystems.${system}.packages or {}
   # );
 
-  nixosConfigurations = {
-    rpi5 = import (mylib.relativeToRoot "hosts/rpi5/system.nix") {
-      inherit inputs self mylib myvars;
-    };
-  } // lib.listToAttrs (map (user: {
+  # `rpi5` (the Raspberry Pi primary) and `evinvest-fallback` (the manual AWS
+  # fallback) — one platform, two hardware halves; the submodule defines both.
+  nixosConfigurations = (import (mylib.relativeToRoot "hosts/rpi5/system.nix") {
+    inherit inputs self mylib myvars;
+  }) // lib.listToAttrs (map (user: {
     name = user.desktopHostName;
     value = nixpkgs.lib.nixosSystem {
       specialArgs = {
