@@ -72,6 +72,10 @@ let
 			"ponytail@ponytail" = true;
 			"cloudflare@claude-plugins-official" = true;
 			"aws-core@claude-plugins-official" = true;
+			"code-simplifier@claude-plugins-official" = true;
+			"typescript-lsp@claude-plugins-official" = true;
+			"hookify@claude-plugins-official" = true;
+			"firecrawl@claude-plugins-official" = true;
 		};
 		# Overrides for `source: {source:"url", url, sha}` marketplace entries, whose plugin body
 		# lives in a *separate* repo rather than under `<marketplace>/<pluginsSubdir>/<plugin>`.
