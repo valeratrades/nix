@@ -61,9 +61,6 @@ let
 		};
 		enabled = {
 			"code-review@claude-code-plugins" = true;
-			# Supersedes rust-analyzer-lsp@claude-plugins-official, which spawns a private
-			# rust-analyzer per session. Only one server may claim `.rs`, so that one stays off.
-			"ra-shared@ra-shared" = true;
 			"feature-dev@claude-code-plugins" = true;
 			"figma@claude-plugins-official" = true;
 			# Marketplace plugin is named `frontend-design`, not `frontend-dev` (no such id exists).
@@ -74,6 +71,7 @@ let
 			"impeccable@impeccable" = true;
 			"ponytail@ponytail" = true;
 			"cloudflare@claude-plugins-official" = true;
+			"aws-core@claude-plugins-official" = true;
 		};
 		# Overrides for `source: {source:"url", url, sha}` marketplace entries, whose plugin body
 		# lives in a *separate* repo rather than under `<marketplace>/<pluginsSubdir>/<plugin>`.
@@ -93,6 +91,8 @@ let
 	# private rust-analyzer per session) requires shipping our own plugin. The whole plugin is
 	# this one server entry pointed at the ra-shared shim.
 	localPlugins = {
+		# Supersedes rust-analyzer-lsp@claude-plugins-official, which spawns a private
+		# rust-analyzer per session. Only one server may claim `.rs`, so that one stays off.
 		ra-shared = {
 			description = "rust-analyzer via the shared lspmux instance";
 			lspServers."rust-analyzer" = {
@@ -158,16 +158,21 @@ let
 				PLUGIN_SRC="$PLUGINS_DIR/marketplaces/${p.marketplace}/${pluginRelPath}"
 				MANIFEST="$PLUGINS_DIR/marketplaces/${p.marketplace}/.claude-plugin/marketplace.json"
 				if [ ! -d "$PLUGIN_SRC" ] && [ -f "$MANIFEST" ]; then
-					SRC_URL=$(${pkgs.jq}/bin/jq -r --arg n "${p.plugin}" '[.plugins[] | select(.name == $n and .source.source == "url") | .source.url][0] // ""' "$MANIFEST")
-					SRC_SHA=$(${pkgs.jq}/bin/jq -r --arg n "${p.plugin}" '[.plugins[] | select(.name == $n and .source.source == "url") | .source.sha][0] // ""' "$MANIFEST")
+					# `git-subdir` differs from `url` only in taking the body from a subdir of the clone
+					# rather than its root (the aws-* plugins live that way in one AWS monorepo).
+					ENTRY=$(${pkgs.jq}/bin/jq -c --arg n "${p.plugin}" '[.plugins[] | select(.name == $n and (.source.source == "url" or .source.source == "git-subdir")) | .source][0] // {}' "$MANIFEST")
+					SRC_URL=$(echo "$ENTRY" | ${pkgs.jq}/bin/jq -r '.url // ""')
+					SRC_SHA=$(echo "$ENTRY" | ${pkgs.jq}/bin/jq -r '.sha // ""')
+					SRC_SUBDIR=$(echo "$ENTRY" | ${pkgs.jq}/bin/jq -r '.path // ""')
 					if [ -n "$SRC_URL" ] && [ -n "$SRC_SHA" ]; then
-						PLUGIN_SRC="$PLUGINS_DIR/marketplaces/${p.marketplace}__${p.plugin}"
-						if [ ! -d "$PLUGIN_SRC/.git" ]; then
+						CLONE_DIR="$PLUGINS_DIR/marketplaces/${p.marketplace}__${p.plugin}"
+						if [ ! -d "$CLONE_DIR/.git" ]; then
 							echo "Cloning plugin source ${id} ($SRC_URL)..."
-							${pkgs.git}/bin/git clone --depth 1 "$SRC_URL" "$PLUGIN_SRC" 2>&1 || true
+							${pkgs.git}/bin/git clone --depth 1 "$SRC_URL" "$CLONE_DIR" 2>&1 || true
 						fi
-						${pkgs.git}/bin/git -C "$PLUGIN_SRC" fetch --depth 1 origin "$SRC_SHA" 2>&1 || true
-						${pkgs.git}/bin/git -C "$PLUGIN_SRC" checkout --detach "$SRC_SHA" 2>&1 || true
+						${pkgs.git}/bin/git -C "$CLONE_DIR" fetch --depth 1 origin "$SRC_SHA" 2>&1 || true
+						${pkgs.git}/bin/git -C "$CLONE_DIR" checkout --detach "$SRC_SHA" 2>&1 || true
+						PLUGIN_SRC="$CLONE_DIR''${SRC_SUBDIR:+/$SRC_SUBDIR}"
 					fi
 				fi
 			'';
@@ -226,19 +231,21 @@ let
 			fi
 		'') skillsRepos)}
 
-		# Locally-defined plugins: no repo to clone, the manifest is generated from nix.
+		# Locally-defined plugins: no repo to clone, the manifest is generated from nix. They go to
+		# the skills dir rather than the plugin cache because a `<name>@<name>` id in
+		# installed_plugins.json names a marketplace that known_marketplaces.json never declares:
+		# Claude Code rewrites both files whenever it touches plugins, and an unresolvable id gets
+		# garbage-collected from the registry AND from settings.json enabledPlugins (which is how
+		# ra-shared silently lost the `.rs` LSP). `~/.claude/skills/<name>` auto-loads as
+		# `<name>@skills-dir` with no registry state to reconcile, so nothing can drop it.
 		${lib.concatStringsSep "\n" (lib.mapAttrsToList (name: cfg: ''
-			CACHE_DIR="$PLUGINS_DIR/cache/${name}/${name}/local"
-			rm -rf "$CACHE_DIR"
-			mkdir -p "$CACHE_DIR/.claude-plugin"
+			PLUGIN_DIR="$HOME/.claude/skills/${name}"
+			rm -rf "$PLUGIN_DIR"
+			mkdir -p "$PLUGIN_DIR/.claude-plugin"
 			cp ${(pkgs.formats.json { }).generate "claude-plugin-${name}.json" ({
 				inherit name;
 				version = "local";
-			} // cfg)} "$CACHE_DIR/.claude-plugin/plugin.json"
-			INSTALLED=$(echo "$INSTALLED" | ${pkgs.jq}/bin/jq \
-				--arg key "${name}@${name}" \
-				--arg path "$CACHE_DIR" \
-				'.plugins[$key] = [{"scope":"user","installPath":$path,"version":"local","installedAt":"2026-01-01T00:00:00.000Z","lastUpdated":"2026-01-01T00:00:00.000Z"}]')
+			} // cfg)} "$PLUGIN_DIR/.claude-plugin/plugin.json"
 		'') localPlugins)}
 
 		echo "$INSTALLED" > "$PLUGINS_DIR/installed_plugins.json"
