@@ -20,7 +20,7 @@ let
   mkModule = desc: limitSpl:
     let
       maxSpl = calibration.${desc} or (throw
-        "no headphone calibration for '${desc}' — add its max-SPL-at-0dBFS to os/nixos/desktop/services/headphone-calibration.nix");
+        "no headphone calibration for '${desc}' — add its max-SPL-at-0dBFS to the `calibration` set in os/nixos/desktop/services/audio.nix");
       slug = builtins.replaceStrings [ " " ] [ "_" ] desc;
     in
     assert lib.assertMsg (limitSpl <= maxSpl)

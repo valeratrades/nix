@@ -9,6 +9,7 @@ clap = { version = "4.5.49", features = ["derive"] }
 ---
 
 use clap::{Parser, Subcommand};
+use std::io::Write;
 use std::process::{Command, Stdio};
 use std::thread::sleep;
 use std::time::Duration;
@@ -39,6 +40,8 @@ enum Commands {
     Off,
     /// Check if any known device is connected and print battery percentage
     IsConnected,
+    /// Pick a known device via fzf and toggle its connection
+    Manage,
 }
 
 fn mac_to_dbus_path(mac: &str) -> String {
@@ -153,6 +156,11 @@ fn connect_device(mac: &str) -> bool {
     dbus_call_method(&path, "org.bluez.Device1", "Connect")
 }
 
+fn disconnect_device(mac: &str) -> bool {
+    let path = mac_to_dbus_path(mac);
+    dbus_call_method(&path, "org.bluez.Device1", "Disconnect")
+}
+
 fn cmd_is_connected() -> Result<(), String> {
     for (_, mac) in KNOWN_DEVICES {
         if is_device_connected(mac) {
@@ -183,6 +191,58 @@ fn cmd_headphones() -> Result<(), String> {
 
     eprintln!("Could not connect to any known device");
     Err("No device connected".to_string())
+}
+
+fn cmd_manage() -> Result<(), String> {
+    if !bluetooth_powered() && !power_on_bluetooth() {
+        return Err("Failed to power on Bluetooth adapter".to_string());
+    }
+
+    let menu: String = KNOWN_DEVICES
+        .iter()
+        .map(|(name, mac)| {
+            let state = if is_device_connected(mac) { "connected" } else { "disconnected" };
+            format!("{name:<20} {mac:<17} {state}\n")
+        })
+        .collect();
+
+    let mut fzf = Command::new("fzf")
+        .args(["--reverse", "--height=20%", "--info=inline"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()
+        .map_err(|e| format!("failed to spawn fzf: {e}"))?;
+
+    fzf.stdin
+        .take()
+        .expect("stdin piped above")
+        .write_all(menu.as_bytes())
+        .map_err(|e| format!("failed to write to fzf: {e}"))?;
+
+    let output = fzf.wait_with_output().map_err(|e| format!("fzf failed: {e}"))?;
+    let selected = String::from_utf8_lossy(&output.stdout);
+    let selected = selected.trim();
+    if selected.is_empty() {
+        return Ok(()); // fzf exits non-zero on Esc/no-match, which is a plain cancel
+    }
+
+    let (name, mac) = KNOWN_DEVICES
+        .iter()
+        .find(|(_, mac)| selected.contains(mac))
+        .ok_or_else(|| format!("fzf returned a line matching no known device: {selected}"))?;
+
+    if is_device_connected(mac) {
+        if !disconnect_device(mac) {
+            return Err(format!("Failed to disconnect {name}"));
+        }
+        println!("Disconnected {name}");
+    } else {
+        if !connect_device(mac) {
+            return Err(format!("Failed to connect {name}"));
+        }
+        println!("Connected {name}");
+    }
+    Ok(())
 }
 
 fn cmd_off() -> Result<(), String> {
@@ -224,6 +284,7 @@ fn main() {
         Commands::Headphones => cmd_headphones(),
         Commands::Off => cmd_off(),
         Commands::IsConnected => cmd_is_connected(),
+        Commands::Manage => cmd_manage(),
     };
 
     if let Err(e) = result {
