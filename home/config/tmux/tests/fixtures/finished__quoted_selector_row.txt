@@ -1,0 +1,112 @@
+     v_flakes:1 %45 fish
+     v_flakes:1 %46 fish
+     … +8 lines (ctrl+o to expand)
+
+● Bash(grep -n "Limit\|limit" /home/v/nix/home/config/tmux/claude_sessions.rs | sed -n '1,120p')
+  ⎿  100:    Error,    // Claude hit an error (rate limit, panic, etc.)
+     101:    Limit,    // Session usage limit hit ("You've hit your session limit · resets ...")
+     138:            ClaudeState::Limit => "limit",
+     … +47 lines (ctrl+o to expand)
+
+● Bash(tmux capture-pane -p -t %54 | cat -A | tail -60)
+  ⎿       codestyle: all checks passed, nothing to format$
+          M-bM-^@M-& +18 lines (ctrl+o to expand)$
+     $
+     … +57 lines (ctrl+o to expand)
+
+  Thought for 5s, read 1 file (ctrl+o to expand)
+
+● Bash(cd /home/v/nix/home/config/tmux; grep -n "last_portion = \|last_portion" claude_sessions.rs | head -5; echo ---; grep -n "hit your" tests/fixtures/*.txt; echo -…)
+  ⎿  1848:    let last_portion: String = content
+     1859:    let plan_mode = last_portion.contains("plan mode on");
+     1893:    if spinner_pattern.is_match(&last_portion) {
+     … +161 lines (ctrl+o to expand)
+
+  Thought for 8s, read 1 file (ctrl+o to expand)
+
+● Bash(cd /home/v/nix/home/config/tmux; tmux capture-pane -t %54 -p -S -30 > tests/fixtures/limit__weekly_limit_selector.txt; tail -14 tests/fixtures/limit__weekly_lim…)
+  ⎿    ⎿  You've hit your weekly limit · resets Sep 15, 2pm (UTC)
+
+     ✻ Baked for 0s
+     … +11 lines (ctrl+o to expand)
+
+● Now the fix — the qualifier word is open-ended (session/weekly/none):
+
+● Update(claude_sessions.rs)
+  ⎿  Added 1 line, removed 1 line
+      1903      // before everything else. Anchored the same way as the API-error chrome:
+      1904      // trimmed line STARTS with "⎿" with the limit text as its immediate body,
+      1905      // so narration that merely QUOTES the chrome doesn't fire.
+      1906 -    let limit_pattern = Regex::new(r"(?m)^\s*⎿\s+You['’]ve hit your (session )?limit").unwrap();
+      1906 +    let limit_pattern = Regex::new(r"(?m)^\s*⎿\s+You['’]ve hit your (\p{L}+ )?limit").unwrap();
+      1907      if limit_pattern.is_match(&last_portion) {
+      1908          return ActivityResult { state: ClaudeState::Limit, draft_content: None, question_content: None, plan_mode };
+      1909      }
+
+  Thought for 2s (ctrl+o to expand)
+
+● Update(claude_sessions.rs)
+  ⎿  Added 2 lines, removed 1 line
+      1895      }
+      1896
+      1897      // Hitting the session/usage limit renders as a result row
+      1898 -    // "⎿  You've hit your session limit · resets ..." usually followed by the
+      1898 +    // "⎿  You've hit your <window> limit · resets ..." (session, weekly, or no
+      1899 +    // qualifier at all) usually followed by the
+      1900      // /rate-limit-options selector ("❯ 1. Stop and wait for limit to reset").
+      1901      // That selector would be claimed by the Question branch below — but this
+      1902      // isn't a question in any meaningful sense: no answer I pick unblocks the
+
+● Bash(cd /home/v/nix/home/config/tmux; ls; head -3 __main__.fish; cat README.md | head -40)
+  ⎿  claude_sessions.rs
+     __main__.fish
+     README.md
+     … +46 lines (ctrl+o to expand)
+
+● Now run the fixture test.
+
+● Bash(cd /home/v/nix/home/config/tmux; sed -n '40,70p' README.md)
+  ⎿  The tests live inside `claude_sessions.rs` itself (it's a single-file
+     cargo-script). The simplest way — a fish helper from `__main__.fish` wraps the
+     nightly-toolchain resolution:
+     … +27 lines (ctrl+o to expand)
+
+● Bash(cd /home/v/nix/home/config/tmux; fish -c 'source __main__.fish; INSTA_UPDATE=always claude_sessions_test fixtures_classify' 2>&1 | tail -30)
+  ⎿    |                                                   ^^^^^^^^^^^^^^^
+       |
+       = note: `cargo::non_kebab_case_bins` is set to `warn` by default
+     … +26 lines (ctrl+o to expand)
+
+● Bash(cd /home/v/nix/home/config/tmux; cat snapshots/claude_sessions__tests__limit__weekly_limit_selector.snap; git status --short)
+  ⎿  ---
+     source: claude_sessions.rs
+     expression: result
+     … +11 lines (ctrl+o to expand)
+
+  Thought for 4s (ctrl+o to expand)
+
+● Bash(cd /home/v/nix/home/config/tmux; git add claude_sessions.rs snapshots/claude_sessions__tests__limit__weekly_limit_selector.snap tests/fixtures/limit__weekly_lim…)
+  ⎿  ripsecrets...............................................................Passed
+     statix...............................................(no files to check)Skipped
+     b90b201a fix(claude_sessions): the limit row names any window, not just session
+
+● (session )? → (\p{L}+ )? in limit_pattern (claude_sessions.rs:1907). The weekly wording never matched, so v_flakes fell through to the /rate-limit-options selector and read as question.
+
+  pane: ⎿ You've hit your weekly limit · resets Sep 15
+          ↓ old regex: no match
+        ❯ 1. Stop and wait for limit to reset  →  question   ✗
+          ↓ new regex: match
+                                                →  limit     ✓
+
+  Fixture tests/fixtures/limit__weekly_limit_selector.txt (live capture of that pane) + snapshot; suite green. Committed.
+
+✻ Cooked for 57s
+
+※ recap: Goal was making v_flakes report as limit, not question: the regex now accepts any limit wording, with a fixture and snapshot added, tests green and committed. Nothing pending unless you want it verified live. (disable recaps in
+  /config)
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← for agents
+

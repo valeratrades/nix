@@ -1924,26 +1924,27 @@ fn classify_activity(
     // match) rejects scrollback that merely quotes the footer mid-line — e.g. a
     // session debugging this very script, or one that captured another's pane,
     // where the text is always preceded by line numbers, prose, or code.
-    // Typed text in the live input box, if any. The box always renders its mode
-    // footer ("⏵⏵ … (shift+tab to cycle)"); real selectors (permission /
-    // AskUserQuestion / limit) carry their own footer instead, never this one. So
-    // a "❯ 1. …" line under this footer is the user typing a numbered list — NOT
-    // a selector — and must suppress the question branch below.
-    // Search `content` (top-down order), NOT `last_portion`: last_portion is
-    // built bottom-up, so input_box_text's own rev() would cancel out and pick
-    // the TOPMOST ">"-looking line — e.g. quoted npm output ("> playwright …")
-    // in a tool result — instead of the live input box at the bottom.
-    let typed_input = last_portion
-        .contains("shift+tab to cycle")
-        .then(|| input_box_text(content))
-        .flatten();
+    // The live input box renders its mode footer ("⏵⏵ … (shift+tab to cycle)");
+    // real selectors (permission / AskUserQuestion / limit) take over the pane
+    // and carry their own footer instead, never this one. So while the footer is
+    // up, nothing selector-shaped in the pane is a selector: it's either me
+    // typing a numbered list, or Claude's narration QUOTING a selector row
+    // (recaps of this very script do exactly that) — both Finished/Input, not a
+    // blocking question.
+    let input_box_live = last_portion.contains("shift+tab to cycle");
+    // Typed text in the live input box, if any. Search `content` (top-down
+    // order), NOT `last_portion`: last_portion is built bottom-up, so
+    // input_box_text's own rev() would cancel out and pick the TOPMOST
+    // ">"-looking line — e.g. quoted npm output ("> playwright …") in a tool
+    // result — instead of the live input box at the bottom.
+    let typed_input = input_box_live.then(|| input_box_text(content)).flatten();
 
     let question_selector_pattern = Regex::new(r"(?m)^\s*❯\s*\d+\.\s+.+$").unwrap();
     let is_selector = question_selector_pattern.is_match(&last_portion);
     let is_askquestion = last_portion
         .lines()
         .any(|l| l.trim_start().starts_with("Enter to select") && l.contains("↑/↓ to navigate"));
-    if (is_selector || is_askquestion) && typed_input.is_none() {
+    if (is_selector || is_askquestion) && !input_box_live {
         // Extract the question text - the nearest line ending with "?" searching
         // upward from the bottom (skip prompt lines and option rows).
         let question_text = content
