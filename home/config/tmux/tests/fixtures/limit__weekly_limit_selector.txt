@@ -1,0 +1,92 @@
+           ();
+      866    unmanaged.sort();
+
+● Bash(./github/git-ops.rs sync-labels --labels-json "$(nix eval --impure --json
+      --expr 'map (l: { inherit (l) name color; description = l.description or
+      null; }) (imp…)
+  ⎿  ---
+      CHANGELOG.md      |   4 ++
+      github/git-ops.rs | 112 +++++++++++++++++++++++++++++++++++++--------
+     … +3 lines (ctrl+o to expand)
+
+  Thought for 4s (ctrl+o to expand)
+
+● Bash(git add github/labels.nix && git commit -q -m 'feat(github)/ add
+      `t:feature`, and narrow `t:enhancement` to improving what already works'
+      -m 'Co-Authored-By: Cl…)
+  ⎿  Running: codestyle  rust  format ./
+     2026-09-12T15:28:29.149008Z  WARN v_utils::utils::tracing: No log dire
+     ctives file found (checked `.cargo/log_directives` and `/home/v/.local
+     … +22 lines (ctrl+o to expand)
+      --expr 'map (l: { inherit (l) name color; description = l.description or
+      null; }) (imp…)
+  ⎿  ---
+      CHANGELOG.md      |   4 ++
+      github/git-ops.rs | 112 +++++++++++++++++++++++++++++++++++++-----------------
+     … +2 lines (ctrl+o to expand)
+
+  Thought for 4s (ctrl+o to expand)
+
+● Bash(git add github/labels.nix && git commit -q -m 'feat(github)/ add `t:feature`, and narrow `t:enhancement` to improving what already works' -m 'Co-Authored-By: Cl…)
+  ⎿  Running: codestyle  rust  format ./
+     2026-09-12T15:28:29.149008Z  WARN v_utils::utils::tracing: No log directives file found (checked `.cargo/log_directives` and `/home/v/.local/state/codestyle/_log_directives`), using defaults
+     codestyle: all checks passed, nothing to format
+     … +18 lines (ctrl+o to expand)
+
+  Thought for 5s (ctrl+o to expand)
+
+● Bash(git push 2>&1 | tail -3)
+  ⎿  To https://github.com/valeratrades/v_flakes
+        05141f2..7217ad0  main -> main
+  ⎿  Loaded ../../nix/home/config/claude/rules/changelog.md
+
+  Thought for 2s (ctrl+o to expand)
+
+● Both done, live-verified against the real remote, pushed to main (546e8d3, 7217ad0).
+
+  labels.nix ──(definition)──► remote label set
+                                    │
+         remote label not in config │
+                                    ▼
+                          used by an OPEN issue?
+                           ┌────────┴────────┐
+                         yes                 no
+                          │                  │
+                    keep + collect     delete (pool of 8)
+                          │                  │
+                          └──────► errors ◄──┘ (delete failures)
+                                    │
+          create/update ▸ lint issues ▸ sync todos ▸ print errors ▸ exit 1
+                                    │
+                      fingerprint left unsaved ⇒ retried next shell
+
+  - t:feature = #2bd4a0 (checked it adds no new near-color collision; t:enhancement's description narrowed to "Improve something that already works" so the two aren't synonyms).
+  - The old delete path was a is_terminal() prompt — i.e. dead code from a shell hook. Replaced by thread::scope + a Mutex work queue (8 workers, no tokio in a -Zscript file); the "? on remote but not in config" drift line is gone since
+  deletion now reports itself.
+  - Issue list is fetched once and shared with the linter (one fewer API call).
+  - Live run on this repo deleted the 14 legacy unprefixed labels (bug, enhancement, wontfix, …) and created t:feature; I then injected a label on open #2 to confirm the blocked path — it kept that one, deleted the free one, printed the
+  error, exit 1.
+
+  Trade-offs: a label still on an open issue blocks; closed issues silently lose labels that aren't in the config (that's the requested rule, but it is irreversible history loss — noted in CHANGELOG). If the open-issue list can't be
+  fetched, nothing is deleted and it only warns, rather than erroring forever on an issues-disabled repo. PRs aren't scanned for label usage. A legacy bug on an open issue takes two runs to converge (lint migrates it to t:bug after the
+  delete pass).
+
+  Side effect: I cleared ~/.local/state/git_ops/labels/* while testing, so every other repo re-runs its label sync once on next shell entry — idempotent, and they're pinned to v1.6 so they still use the old code path.
+
+✻ Sautéed for 4m 50s
+
+❯ let's nuke enhancement altogether, - I think feature & chore pair covers the space better
+  ⎿  You've hit your weekly limit · resets Sep 15, 2pm (UTC)
+
+✻ Baked for 0s
+
+❯ /rate-limit-options
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  What do you want to do?
+
+  ❯ 1. Stop and wait for limit to reset
+    2. Upgrade your plan
+
+  Enter to confirm · Esc to cancel
+

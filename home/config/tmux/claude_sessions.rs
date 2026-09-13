@@ -1895,7 +1895,8 @@ fn classify_activity(
     }
 
     // Hitting the session/usage limit renders as a result row
-    // "⎿  You've hit your session limit · resets ..." usually followed by the
+    // "⎿  You've hit your <window> limit · resets ..." (session, weekly, or no
+    // qualifier at all) usually followed by the
     // /rate-limit-options selector ("❯ 1. Stop and wait for limit to reset").
     // That selector would be claimed by the Question branch below — but this
     // isn't a question in any meaningful sense: no answer I pick unblocks the
@@ -1903,7 +1904,7 @@ fn classify_activity(
     // before everything else. Anchored the same way as the API-error chrome:
     // trimmed line STARTS with "⎿" with the limit text as its immediate body,
     // so narration that merely QUOTES the chrome doesn't fire.
-    let limit_pattern = Regex::new(r"(?m)^\s*⎿\s+You['’]ve hit your (session )?limit").unwrap();
+    let limit_pattern = Regex::new(r"(?m)^\s*⎿\s+You['’]ve hit your (\p{L}+ )?limit").unwrap();
     if limit_pattern.is_match(&last_portion) {
         return ActivityResult { state: ClaudeState::Limit, draft_content: None, question_content: None, plan_mode };
     }

@@ -1,0 +1,10 @@
+---
+source: claude_sessions.rs
+expression: result
+---
+ActivityResult {
+    state: Limit,
+    draft_content: None,
+    question_content: None,
+    plan_mode: false,
+}
