@@ -27,6 +27,18 @@ return {
 			callback = function(args)
 				local ft = vim.bo[args.buf].filetype
 				local lang = vim.treesitter.language.get_lang(ft) or ft
+				local config = require('nvim-treesitter.config')
+				if not vim.list_contains(config.get_installed('parsers'), lang)
+					and vim.list_contains(config.get_available(), lang) then
+					require('nvim-treesitter.install').install({ lang }):await(function()
+						vim.schedule(function()
+							if vim.api.nvim_buf_is_valid(args.buf) then
+								pcall(vim.treesitter.start, args.buf)
+							end
+						end)
+					end)
+					return
+				end
 				if not pcall(vim.treesitter.start, args.buf) then
 					return
 				end
