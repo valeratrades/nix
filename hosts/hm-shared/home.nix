@@ -656,6 +656,11 @@
 				source = "${self}/home/config/keyd";
 				recursive = true;
 			};
+			# only `plugins/`, since xournalpp rewrites settings.xml next to it
+			".config/xournalpp/plugins" = {
+				source = "${self}/home/config/xournalpp/plugins";
+				recursive = true;
+			};
 			".config/mako" = {
 				source = "${self}/home/config/mako";
 				recursive = true;
