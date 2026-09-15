@@ -41,7 +41,13 @@ function gg
 	# end
 
 	# repeat the commit to go around the pre-commit formatting hooks that are currently failing if requiring formatting (wtf)
-	git add -A; git commit -m "$message" || git commit -am "$message"; git push --follow-tags; git push --tags # --follow-tags is inconsistent
+	git add -A; git commit -m "$message" || git commit -am "$message"; git push --follow-tags
+
+	# --follow-tags misses tags not reachable from the pushed commits, but a blanket `--tags` chokes forever on moving markers (`pre`, `release`) that diverged from remote. So: only tags remote doesn't have yet.
+	set -l new_tags (comm -23 (git tag | sort | psub) (git ls-remote --tags origin | string replace -rf ".*refs/tags/" "" | string replace -a "^{}" "" | sort -u | psub))
+	if test -n "$new_tags"
+		git push origin $new_tags
+	end
 end
 
 alias ggf="gg -p feat"
