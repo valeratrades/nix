@@ -4,7 +4,7 @@
 edition = "2024"
 
 [dependencies]
-ask_llm = { version = "3.0.1", default-features = false }
+ask_llm = { version = "3.3.0", default-features = false }
 tokio = { version = "1", features = ["rt", "time", "net"] }
 clap = { version = "4.5.49", features = ["derive"] }
 chrono = { version = "0.4", default-features = false, features = ["alloc"] }
@@ -808,16 +808,12 @@ mod report {
 
     const SYSTEM: &str = "You read the closing report a coding agent left at the end of its session and judge how the session ended.
 
-finished — everything the user asked for is done
-stuck — the agent could not complete the work: blocked, failed, out of ideas, or handing it back for the user to do
-partial — the agent did some of the work but skipped, deferred, or declined a part of it
-ongoing — the agent is waiting on the user: it asks a question, or names a next step it wants a go-ahead for before carrying on
+finished — the implementation the agent settled on is in the tree
+stuck — the agent could not do the work: blocked, failed, out of ideas, or handing it back for the user to do
+partial — the agent left asked-for code unwritten, giving no reason it could not be written
+ongoing — the agent is waiting on the user: it asks a question, or names a next step it wants a go-ahead for
 
-A report that closes on work still ahead of it — a \"Next step\" / \"TODO\" / \"Remaining\" section, an offer to carry on, or a request for go-ahead — is ongoing when the report waits on an answer from the user, and partial when it simply leaves that work undone. Notes about things deliberately left alone that were never asked for are neither.
-
-Judge the implementation, nothing else. Only a piece of the asked-for code left unwritten makes a report partial. A test not written, a check not run, a build or verification left for the user — none of that counts against a report whose implementation is complete; that is finished.
-
-partial is asked-for code the agent could have written and chose not to. A part it reports as impossible, done differently, or dropped because the codebase would not take it — with the reason given — revises the ask instead of falling short of it, however plainly the report says the ask was not met. A known limitation left under a TODO is the same. If the implementation the agent settled on is in the tree, that is finished.
+Judge the implementation, nothing else. A test not written, a check not run, a verification left for the user, work the report never claims was asked for — none of that is partial. Neither is a part the agent reports as impossible, done differently, or dropped because the codebase would not take it: a reason given revises the ask rather than falling short of it, however plainly the report says the ask was not met.
 
 Answer with exactly one word: finished, stuck, partial, or ongoing.";
 
@@ -914,8 +910,10 @@ Answer with exactly one word: finished, stuck, partial, or ongoing.";
 
     fn ask(report: &str) -> Option<Verdict> {
         // Cheapest tier that reliably returns a single-word verdict; the local
-        // ollama models don't hold the format well enough at 4 tokens.
-        let client = ask_llm::Client::default().model(ask_llm::Model::Fast).max_tokens(4);
+        // ollama models don't hold the format well enough. The budget is per
+        // TOKENIZER, not per word — "ongoing" costs 5 on gpt-5.6-luna — and a
+        // truncated verdict parses as None, i.e. silently no verdict at all.
+        let client = ask_llm::Client::default().model(ask_llm::Model::Fast).max_tokens(8);
         let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build().ok()?;
         let response = runtime
             .block_on(async { tokio::time::timeout(TIMEOUT, client.ask(format!("{SYSTEM}\n\n---\n\n{report}"))).await })
