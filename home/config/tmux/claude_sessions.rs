@@ -2143,6 +2143,26 @@ fn classify_activity(
         return ActivityResult { state: working, draft_content: None, question_content: None, plan_mode };
     }
 
+    // A failed tool result the turn never answered: the chrome row
+    // "⎿  Error: <…>" with no assistant row ("●") anywhere below it, sitting
+    // above a live prompt. A turn always reacts to a tool failure, so a pane
+    // that ends on one is a turn whose process died there — the pane-text twin
+    // of Tail::DiedOnTool. The transcript can't supply that reading when several
+    // claudes share a cwd: none of their transcripts is then attributable, and
+    // every one of those panes falls through to the Finished gate below.
+    // Anchored like the API-error row, and against the same quoted-narration
+    // risk. last_portion is bottom-up (see typed_input), so the FIRST of the two
+    // rows this finds is the LOWEST one in the pane.
+    let tool_error_row = Regex::new(r"^\s*⎿\s+Error:").unwrap();
+    let assistant_row = Regex::new(r"^\s*●").unwrap();
+    if last_portion
+        .lines()
+        .find(|l| tool_error_row.is_match(l) || assistant_row.is_match(l))
+        .is_some_and(|l| tool_error_row.is_match(l))
+    {
+        return ActivityResult { state: ClaudeState::Error, draft_content: None, question_content: None, plan_mode };
+    }
+
     // Check if there's an input prompt line - indicates Claude is waiting for
     // input (task done). Modern Claude Code renders the prompt as "❯ "; older
     // builds used "> ". Either one means Finished.
@@ -2687,18 +2707,18 @@ mod tests {
             // pinned to false — fixtures carry no todo files).
             let jsonl = txt.with_extension("jsonl");
             let (final_state, verdict) = if jsonl.exists() {
-                assert_eq!(
-                    result.state,
-                    ClaudeState::Finished,
-                    "fixture {stem:?} has a .jsonl companion but the pane classified as \
-                     {:?} — the transcript is only consulted for Finished panes",
-                    result.state
-                );
                 let verdict = transcript_tail(&jsonl);
-                (
-                    ClaudeState::refine_finished(verdict, false, result.plan_mode),
-                    verdict,
-                )
+                // Production consults the transcript only for a Finished pane;
+                // a pane that decides for itself keeps its own reading, and the
+                // companion goes on pinning what the transcript says in case it
+                // is the only reader (an unattributable transcript is the norm
+                // once several claudes share a cwd).
+                let state = if result.state == ClaudeState::Finished {
+                    ClaudeState::refine_finished(verdict, false, result.plan_mode)
+                } else {
+                    result.state
+                };
+                (state, verdict)
             } else {
                 (result.state, None)
             };
