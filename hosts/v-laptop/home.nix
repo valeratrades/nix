@@ -448,6 +448,7 @@ in {
         libinput
         virt-viewer
         gnome-boxes
+        gnome-sound-recorder
 
         ringboard-wayland
 
