@@ -1894,6 +1894,16 @@ fn classify_activity(
         return ActivityResult { state: working, draft_content: None, question_content: None, plan_mode };
     }
 
+    // Blocked on a background agent: the TUI parks on
+    // "✻ Waiting for N background agents to finish" — a spinner-glyph row that
+    // carries neither the "…" nor the "(elapsed)" the pattern above needs, so it
+    // fell through to the prompt gate and read as Finished. Same glyph anchoring
+    // as the spinner, for the same reason: sessions quote this line in prose.
+    let bg_agent_pattern = Regex::new(r"(?m)^\s*[·✢✳✶✻✽∗*]\s+Waiting for \d+ background agents? to finish").unwrap();
+    if bg_agent_pattern.is_match(&last_portion) {
+        return ActivityResult { state: working, draft_content: None, question_content: None, plan_mode };
+    }
+
     // Hitting the session/usage limit renders as a result row
     // "⎿  You've hit your <window> limit · resets ..." (session, weekly, or no
     // qualifier at all) usually followed by the
