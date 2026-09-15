@@ -2073,23 +2073,24 @@ fn classify_activity(
         return ActivityResult { state: ClaudeState::Interrupted, draft_content: None, question_content: None, plan_mode };
     }
 
-    // API errors render as Claude Code's own tool-result chrome: a result row
-    // led by the "⎿" glyph whose body is "API Error: <code> <reason>" (e.g.
-    // "⎿  API Error: 529 Overloaded.", "⎿  API Error: Connection error.").
-    // Unlike usage-limit wedges, these abort the turn and DROP BACK to a live
-    // prompt — so this MUST be checked before the prompt-line gate below, which
-    // would otherwise mis-read the idle "❯ " as Finished and bury the failure.
+    // API errors render as Claude Code's own chrome, under either of two glyphs:
+    // "⎿" when a tool result carried the failure ("⎿  API Error: 529
+    // Overloaded."), "●" when the turn itself died on it ("● API Error: Unable
+    // to connect to API (ESERVFAIL)"). Unlike usage-limit wedges, these abort the
+    // turn and DROP BACK to a live prompt — so this MUST be checked before the
+    // prompt-line gate below, which would otherwise mis-read the idle "❯ " as
+    // Finished and bury the failure.
     //
     // Two guards keep this from firing on Claude's own narration that QUOTES the
     // chrome (e.g. a session — like this one — discussing an API error it saw):
     //   1. A live spinner already returned Active above, so a working session
     //      that mentions the error never reaches here.
     //   2. The row must be GENUINE chrome, not quoted: the line, once trimmed,
-    //      STARTS with "⎿" and "API Error:" is its IMMEDIATE body — only
+    //      STARTS with the glyph and "API Error:" is its IMMEDIATE body — only
     //      whitespace between them. Quoted narration nests a second glyph
     //      ("⎿  ⎿  API Error:") or wraps it in prose, so "API Error:" is not the
     //      row's own first token and the anchored match rejects it.
-    let api_error_pattern = Regex::new(r"(?m)^\s*⎿\s+API Error:").unwrap();
+    let api_error_pattern = Regex::new(r"(?m)^\s*[⎿●]\s+API Error:").unwrap();
     if api_error_pattern.is_match(&last_portion) {
         return ActivityResult { state: ClaudeState::Error, draft_content: None, question_content: None, plan_mode };
     }

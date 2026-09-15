@@ -1,0 +1,143 @@
+● Background command "sed -i "202s/\[role=button\]')\[140\]/[role=button]')[130]/" examples/smoke.js &amp;&amp; sed -n '202p' examples/smoke.js &amp;&amp; timeout 3000 nix run .#study 2&gt;&amp;1 | grep -E "step:|FAIL|OK —" | tail -20" completed (exit code 0)
+
+  Thought for 3m 14s, searched for 1 pattern (ctrl+o to expand)
+
+● Quota's gone for today (ledger: 100/100), so the cleaning pairing can't build. Let me move my new step into the quota-free prefix so it actually gets exercised:
+
+  Read 1 file (ctrl+o to expand)
+
+● Update(examples/smoke.js)
+  ⎿  Added 20 lines
+      218    assert.deepEqual(await tabs(), ["car_detailing_-_Clermont-Ferrand"], "the pairing picked at load is the one open tab");
+      219    assert.equal(await layers(), 10, "four live layers plus the study's six");
+      220
+      221 +  // the city on its own: the archive and nothing billed, which is what the last row of the trade
+      222 +  // field buys. Everything a slider moves is a trade's, so the panel has to say so
+      223 +  log("step: a location with no trade");
+      224    await press("t");
+      225 +  await pick(0, "(no trade · grid only)");
+      226 +  await pick(1, "Clermont-Ferrand");
+      227 +  await take();
+      228 +  for (let i = 0; i < 240; i++) {
+      229 +    if ((await tabs()).length === 2) break;
+      230 +    await sleep(1000);
+      231 +  }
+      232 +  assert.deepEqual(await tabs(), ["car_detailing_-_Clermont-Ferrand", "Clermont-Ferrand"], "a location on its own is named after the city");
+      233 +  assert.equal(await layers(), 6, "the location's six layers, and not one that needs a demand model");
+      234 +  // the city's own candidate is still a pin — a premises is the location's, not the trade's
+      237 +  assert(await evaluate("document.querySelector('#ctl input[type=range]').disabled"), "and λ has no catchment to set");
+      238 +  await press("w");
+      239 +  assert.deepEqual(await tabs(), ["car_detailing_-_Clermont-Ferrand"], "`w` leaves the trade study behind it");
+      240 +
+      241 +  await press("t");
+      242    assert.deepEqual(
+      243      await rows(0),
+      244      ["car_detailing", "cleaning", "plumbing", "(no trade · grid only)"],
+
+● Bash(python3 - <<'EOF'
+      import pathlib…)
+  ⎿  removed the duplicate tail block
+     223:  log("step: a location with no trade");
+     225:  await pick(0, "(no trade · grid only)");
+     244:    ["car_detailing", "cleaning", "plumbing", "(no trade · grid only)"],
+  ⎿  Found 1 new diagnostic issue in 1 file (ctrl+o to expand)
+
+● Bash(timeout 3000 nix run .#study 2>&1 | grep -E "step:|FAIL|OK —|^state:" | tail -20)
+  ⎿  Running in the background (↓ to manage)
+
+● Bash(sleep 450; tail -15 /tmp/claude-1000/-home-v-s-ev-invest--service-arb-gmaps-optimal-placement/cd29a0d7-4bf1-4065-b0e9-e306f8eaef28/tasks/bno873cvu.output)
+  ⎿  state: {"layers":10,"tierRows":3,"ticks":"0.01 2.21 6.87 16 165","note":"Underserved demand Demand in the cell, divided down by how much competition already reaches it. This is the layer to shop for locations on. 10446 cells · colour = percentile","banner":null,"canvas":[1400,727],"painted":2631}
+     step: click the map
+     step: promote
+     … +7 lines (ctrl+o to expand)
+  ⎿  (timeout 8m 20s)
+
+● Background command "timeout 3000 nix run .#study 2&gt;&amp;1 | grep -E "step:|FAIL|OK —|^state:" | tail -20" completed (exit code 0)
+
+  Thought for 6m 25s (ctrl+o to expand)
+
+● The tab opened and built with no billed call — my expected layer count was just wrong (5 base layers, not 6; the Rust snapshot already says so):
+
+● Update(examples/smoke.js)
+  ⎿  Added 1 line, removed 1 line
+      230      await sleep(1000);
+      231    }
+      232    assert.deepEqual(await tabs(), ["car_detailing_-_Clermont-Ferrand", "Clermont-Ferrand"], "a location on its own is named after the city");
+      233 -  assert.equal(await layers(), 6, "the location's six layers, and not one that needs a demand model");
+      233 +  assert.equal(await layers(), 5, "the location's five INSEE layers, and not one that needs a demand model");
+      234    // the city's own candidate is still a pin — a premises is the location's, not the trade's
+      235    await expectMarkers(1, "nothing was bought, so no competitor is on the map");
+      236    assert(await evaluate(`${ctl("Rank top 10 sites")}.disabled`), "the sweep has no demand to sweep");
+
+● Bash(timeout 3000 nix run .#study 2>&1 | grep -E "step:|FAIL|OK —" | tail -20)
+  ⎿  Running in the background (↓ to manage)
+  ⎿  Found 1 new diagnostic issue in 1 file (ctrl+o to expand)
+
+● Bash(sleep 460; tail -15 /tmp/claude-1000/-home-v-s-ev-invest--service-arb-gmaps-optimal-placement/cd29a0d7-4bf1-4065-b0e9-e306f8eaef28/tasks/ba2eag7ex.output)
+  ⎿  step: click the map
+     step: promote
+     step: rank
+     … +6 lines (ctrl+o to expand)
+  ⎿  (timeout 8m 20s)
+
+● Background command "timeout 3000 nix run .#study 2&gt;&amp;1 | grep -E "step:|FAIL|OK —" | tail -20" completed (exit code 0)
+
+  Thought for 2m 40s (ctrl+o to expand)
+
+● My whole location-only step passed — the run now dies at the next step, the cleaning pairing blocked by the exhausted quota. Restoring the marker counts I retuned for debugging:
+
+● Bash(sed -i "s/expectMarkers(131,/expectMarkers(141,/g; s/expectMarkers(132,/expectMarkers(142,/g; s/expectMarkers(142, \"ranking/expectMarkers(152, \"ranking/; s/ex…)
+  ⎿  149:  await expectMarkers(141, "140 competitor markers and the study's one candidate");
+     162:  await expectMarkers(142, "the clicked pin is on the map");
+     176:  await expectMarkers(152, "ranking adds ten yellow pins and keeps the two green ones");
+     … +7 lines (ctrl+o to expand)
+
+● Bash(diff /tmp/smoke.js.orig examples/smoke.js)
+  ⎿  220a221,240
+     >   // the city on its own: the archive and nothing billed, which is what the last row of the trade
+     >   // field buys. Everything a slider moves is a trade's, so the panel has to say so
+     … +37 lines (ctrl+o to expand)
+
+  Thought for 4s (ctrl+o to expand)
+
+● Bash(git diff examples/smoke.js | grep -E "^[-+]" | grep -v "^[-+][-+]" | head -40)
+  ⎿  (No output)
+
+● Bash(git --no-pager diff --no-ext-diff examples/smoke.js)
+  ⎿  diff --git a/examples/smoke.js b/examples/smoke.js
+     index 55b6b30..8234ae1 100644
+     --- a/examples/smoke.js
+     … +35 lines (ctrl+o to expand)
+
+  Thought for 5s (ctrl+o to expand)
+
+● Bash(ls .git/hooks/pre-commit 2>/dev/null && echo "hook present" || echo "no pre-commit hook"; cargo t 2>&1 | tail -4)
+  ⎿  .git/hooks/pre-commit
+     hook present
+             PASS [  17.655s] (30/31) gmaps_optimal_placement::fixture_bbox a_location_alone_builds_off_the_archive
+     … +3 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+● Bash(git add -A && git commit -q -F - <<'EOF' 2>&1 | tail -30
+      service_arb: a city is a study on its own, and it costs nothing to ask…)
+  ⎿  treefmt..................................................................Failed
+     - hook id: treefmt
+     - exit code: 127
+     … +26 lines (ctrl+o to expand)
+
+● API Error: Unable to connect to API (ESERVFAIL)
+
+✻ Worked for 36m 7s
+
+  5 tasks (4 done, 1 in progress, 0 open)
+  ✔ Group the trade half of Payload under an Option
+  ✔ Make Model tolerate a payload with no trade
+  ✔ Let a Study be a location with no trade
+  ✔ Serve and pick a location on its own
+  ◼ Migrate the Clermont fixture and the docs
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ctrl+t to hide tasks · ← for agents
+
