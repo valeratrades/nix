@@ -4,21 +4,24 @@ alias cc="cd && clear"
 # path suffix (first non-flag arg) and forwards any flags (-t, -a, …) to `cs`.
 set -l _cs_navs \
     csc "$NIXOS_CONFIG/home/config/" \
+    csd "$HOME/Downloads/" \
     css "$HOME/s/" \
     cse "$HOME/s/ev_invest/" \
-    csh "$NIXOS_CONFIG/home/scripts/" \
-    csd "$HOME/Downloads/" \
-    csl "$HOME/s/l/" \
+    csq "$HOME/s/ev_invest/_quant/" \
+    csa "$HOME/s/ev_invest/_service_arb/" \
+    csre "$HOME/s/ev_invest/_estate/" \
     csr "$HOME/trading/" \
+    csh "$NIXOS_CONFIG/home/scripts/" \
+    csm "$HOME/math/" \
     cso "$HOME/s/other/" \
-    csst "$HOME/s/tmp/" \
-    cst "$HOME/tmp/" \
     csg "$HOME/g/" \
+    cst "$HOME/tmp/" \
     csb "$HOME/Documents/Books/" \
     csp "$HOME/Documents/Papers/" \
+    csl "$HOME/s/l/" \
+    csst "$HOME/s/tmp/" \
     csn "$HOME/nix/" \
     csu "$HOME/uni/" \
-    csm "$HOME/math/"
 
 for i in (seq 1 2 (count $_cs_navs))
     set -l name $_cs_navs[$i]
