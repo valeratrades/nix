@@ -209,6 +209,25 @@ impl Drop for Watch {
 
 fn sh_quote(p: &Path) -> String { format!("'{}'", p.to_string_lossy().replace('\'', r"'\''")) }
 
+fn xdg_dir(var: &str, fallback: &str) -> Result<PathBuf> {
+	if let Some(v) = std::env::var_os(var) {
+		return Ok(PathBuf::from(v));
+	}
+	let home = std::env::var_os("HOME").ok_or_else(|| miette!("neither {var} nor HOME is set"))?;
+	Ok(PathBuf::from(home).join(fallback))
+}
+
+/// zathura takes no per-invocation `set`, so the only way to read the refs on white
+/// while keeping the real keymap is a config dir that includes it and flips recolor back.
+fn zathura_light_dir() -> Result<PathBuf> {
+	let rc = xdg_dir("XDG_CONFIG_HOME", ".config")?.join("zathura/zathurarc");
+	let dir = xdg_dir("XDG_CACHE_HOME", ".cache")?.join("typst_workspace/zathura-light");
+	std::fs::create_dir_all(&dir).map_err(|e| miette!("cannot create {}: {e}", dir.display()))?;
+	let contents = format!("include {}\nset recolor false\n", rc.display());
+	std::fs::write(dir.join("zathurarc"), contents).map_err(|e| miette!("cannot write {}/zathurarc: {e}", dir.display()))?;
+	Ok(dir)
+}
+
 // --- locating the terminal we were launched from -----------------------------
 
 fn add_ancestor_pids(mut pid: i64, pids: &mut HashSet<i64>) -> Result<()> {
@@ -348,7 +367,10 @@ fn build() -> Result<()> {
 	// normalises a workspace left in splitv by whatever was there before
 	cmd(&format!("[con_id={term}] layout splith"))?;
 
-	let z1 = watch.open(term, &format!("xdg-open {}", sh_quote(&docs[0])))?;
+	let light = zathura_light_dir()?;
+	let doc_cmd = |d: &Path| format!("zathura -c {} {}", sh_quote(&light), sh_quote(d));
+
+	let z1 = watch.open(term, &doc_cmd(&docs[0]))?;
 	cmd(&format!("[con_id={z1}] resize set width {DOCS_WIDTH_PPT} ppt"))?;
 	cmd(&format!("[con_id={z1}] splitv"))?;
 
@@ -362,7 +384,7 @@ fn build() -> Result<()> {
 		cmd(&format!("[con_id={z1}] splith"))?;
 		let mut prev = z1;
 		for d in &docs[1..] {
-			prev = watch.open(prev, &format!("xdg-open {}", sh_quote(d)))?;
+			prev = watch.open(prev, &doc_cmd(d))?;
 		}
 		cmd(&format!("[con_id={z1}] layout tabbed"))?;
 	}
