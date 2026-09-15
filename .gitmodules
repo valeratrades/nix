@@ -1,3 +1,6 @@
 [submodule "hosts/rpi5"]
 	path = hosts/rpi5
 	url = https://github.com/EV-invest/rpi5.nix.git
+[submodule "devops"]
+	path = hosts/devops
+	url = https://github.com/EV-invest/devops.git
