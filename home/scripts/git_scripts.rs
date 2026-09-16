@@ -81,6 +81,9 @@ enum Commands {
         /// Create a public repository
         #[arg(long, conflicts_with = "private")]
         public: bool,
+        /// GitHub organization to own the repo (defaults to $GITHUB_NAME)
+        #[arg(short, long)]
+        org: Option<String>,
         /// Commit all changes first with this message
         #[arg(short, long)]
         commit: Option<String>,
@@ -943,7 +946,7 @@ const MILESTONES: &[Milestone] = &[
     },
 ];
 
-fn create_milestone(github_name: &str, github_key: &str, repo_name: &str, milestone: &Milestone) {
+fn create_milestone(owner: &str, github_key: &str, repo_name: &str, milestone: &Milestone) {
     let title = milestone.title;
     let body = serde_json::json!({
         "title": title,
@@ -962,7 +965,7 @@ fn create_milestone(github_name: &str, github_key: &str, repo_name: &str, milest
             &format!("Authorization: token {github_key}"),
             "-H",
             "X-GitHub-Api-Version: 2022-11-28",
-            &format!("https://api.github.com/repos/{github_name}/{repo_name}/milestones"),
+            &format!("https://api.github.com/repos/{owner}/{repo_name}/milestones"),
             "-d",
             &body.to_string(),
         ])
@@ -976,15 +979,13 @@ fn create_milestone(github_name: &str, github_key: &str, repo_name: &str, milest
     }
 }
 
-fn publish(repo_name: Option<String>, private: bool, public: bool, commit: Option<String>) {
-    // Get environment variables
-    let github_name = match env::var("GITHUB_NAME") {
-        Ok(v) => v,
-        Err(_) => {
+fn publish(repo_name: Option<String>, private: bool, public: bool, org: Option<String>, commit: Option<String>) {
+    let owner = org.unwrap_or_else(|| {
+        env::var("GITHUB_NAME").unwrap_or_else(|_| {
             eprintln!("ERROR: GITHUB_NAME is not set");
             std::process::exit(1);
-        }
-    };
+        })
+    });
 
     let github_key = match env::var("GITHUB_KEY") {
         Ok(v) => v,
@@ -1019,12 +1020,15 @@ fn publish(repo_name: Option<String>, private: bool, public: bool, commit: Optio
         "--private" // default to private
     };
 
-    println!("Creating repository: {repo_name}");
+    let full_repo = format!("{owner}/{repo_name}");
+    println!("Creating repository: {full_repo}");
 
     // git init
-    if let Err(e) = gix_init(std::path::Path::new(".")) {
-        eprintln!("ERROR: {e}");
-        std::process::exit(1);
+    if gix::open(".").is_err() {
+        if let Err(e) = gix_init(std::path::Path::new(".")) {
+            eprintln!("ERROR: {e}");
+            std::process::exit(1);
+        }
     }
 
     // git add . and commit
@@ -1057,13 +1061,13 @@ fn publish(repo_name: Option<String>, private: bool, public: bool, commit: Optio
     }
 
     // gh repo create
-    if !run_cmd("gh", &["repo", "create", &repo_name, visibility, "--source=."]) {
+    if !run_cmd("gh", &["repo", "create", &full_repo, visibility, "--source=."]) {
         eprintln!("ERROR: gh repo create failed");
         std::process::exit(1);
     }
 
     // git remote add origin
-    let remote_url = format!("https://github.com/{github_name}/{repo_name}.git");
+    let remote_url = format!("https://github.com/{full_repo}.git");
     // Remove existing origin if any, then add
     run_cmd_status("git", &["remote", "remove", "origin"]);
     if !run_cmd("git", &["remote", "add", "origin", &remote_url]) {
@@ -1084,13 +1088,12 @@ fn publish(repo_name: Option<String>, private: bool, public: bool, commit: Optio
     // Create milestones
     println!("\nCreating milestones...");
     for milestone in MILESTONES {
-        create_milestone(&github_name, &github_key, &repo_name, milestone);
+        create_milestone(&owner, &github_key, &repo_name, milestone);
     }
 
     // Set loc_gist_token secret if available
     if let Some(loc_gist) = github_loc_gist {
         println!("\nSetting loc_gist_token secret...");
-        let full_repo = format!("{github_name}/{repo_name}");
         if !run_cmd(
             "gh",
             &[
@@ -1107,7 +1110,7 @@ fn publish(repo_name: Option<String>, private: bool, public: bool, commit: Optio
         }
     }
 
-    println!("\nRepository {repo_name} created successfully!");
+    println!("\nRepository {full_repo} created successfully!");
 }
 
 fn reword(commit_str: String, new_message: String) {
@@ -1298,7 +1301,8 @@ fn main() {
             repo_name,
             private,
             public,
+            org,
             commit,
-        } => publish(repo_name, private, public, commit),
+        } => publish(repo_name, private, public, org, commit),
     }
 }
