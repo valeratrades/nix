@@ -17,8 +17,8 @@ use std::time::Duration;
 /// Known devices: (name, mac_address)
 /// Uses dbus-send instead of bluetoothctl to avoid Adv Monitor spam
 const KNOWN_DEVICES: &[(&str, &str)] = &[
-    ("A90 Pro", "42:FC:1A:5C:B7:F7"),
     ("WH-1000XM4", "80:99:E7:D2:1F:51"),
+    ("A90 Pro", "42:FC:1A:5C:B7:F7"),
     ("Philips SHB3075", "A4:77:58:82:26:43"),
     ("Soundcore Life Tune", "E8:EE:CC:36:53:49"),
     ("WH-CH520", "30:53:C1:EC:9F:65"),
