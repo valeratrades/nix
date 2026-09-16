@@ -112,7 +112,7 @@ impl ClaudeState {
     /// the exact production deliberation.
     fn refine_finished(tail: Option<Tail>, has_active_todos: bool, plan_mode: bool) -> ClaudeState {
         let working = match tail {
-            Some(Tail::DiedOnTool) => return ClaudeState::Error,
+            Some(Tail::Died) => return ClaudeState::Error,
             Some(Tail::Working) => true,
             Some(Tail::Idle) => false,
             None => has_active_todos,
@@ -639,17 +639,27 @@ enum Tail {
     Working,
     /// A completed assistant turn, or a turn the user aborted.
     Idle,
-    /// A failed tool_result is the transcript's last word. A live session always
-    /// answers one — the model reacts to the failure — so a transcript that ends
-    /// there is one whose process died mid-turn (shutdown, OOM kill). Resumed,
-    /// the pane sits at a prompt with the failure as its last act: an error.
-    DiedOnTool,
+    /// The turn never finished and never will: the process carrying it is gone.
+    /// Two witnesses, either one enough —
+    ///   * a FAILED tool_result is the transcript's last word. A live session
+    ///     always answers one, the model reacts to the failure.
+    ///   * the last word, failed or not, PREDATES the claude now in the pane
+    ///     (see `transcript_tail`'s proc_start). A process cannot be mid-turn on
+    ///     a message written before it started.
+    /// Either way the pane sits at a prompt with a half-turn as its last act.
+    Died,
 }
 
 /// Only the tail is read: transcripts reach tens of MB, but the last message is
 /// near the end. ponytail: 256KB window; a single message can't exceed it in
 /// practice (largest observed line ~35KB), and if it somehow does we return None.
-fn transcript_tail(session_file: &Path) -> Option<Tail> {
+///
+/// `proc_start` is when the claude holding this pane began. A half-turn stamped
+/// before that is one the previous process took to the grave — a reboot mid-turn
+/// (`--continue` re-attaches to the same transcript and adds nothing), an OOM
+/// kill, a crash. Without it there is no way to tell a turn cut at shutdown from
+/// one in flight this instant: both end on a tool_result with no reply.
+fn transcript_tail(session_file: &Path, proc_start: Option<std::time::SystemTime>) -> Option<Tail> {
     const TAIL_BYTES: u64 = 256 * 1024;
     let mut file = fs::File::open(session_file).ok()?;
     let len = file.metadata().ok()?.len();
@@ -658,6 +668,18 @@ fn transcript_tail(session_file: &Path) -> Option<Tail> {
     let mut bytes = Vec::new();
     file.read_to_end(&mut bytes).ok()?;
     let buf = String::from_utf8_lossy(&bytes); // tail seek may split a char/line
+
+    // Second granularity both sides (/proc starttime is ticks-truncated), and a
+    // strict `<`, so the ambiguous same-second case reads as alive — a wrong
+    // Active self-corrects on the next poll, a wrong Died never does.
+    let outlived_by_process = |v: &serde_json::Value| -> bool {
+        let Some(start) = proc_start else { return false };
+        let Some(ts) = v.get("timestamp").and_then(|x| x.as_str()).and_then(rfc3339_epoch) else {
+            return false; // pre-timestamp transcripts: no evidence either way
+        };
+        let start = start.duration_since(std::time::UNIX_EPOCH).expect("process started after 1970").as_secs();
+        ts < start as i64
+    };
 
     let mut lines = buf.lines();
     if start > 0 {
@@ -681,7 +703,10 @@ fn transcript_tail(session_file: &Path) -> Option<Tail> {
             // A completed turn ends with a non-tool stop_reason; "tool_use" means
             // a tool call is outstanding, i.e. still working.
             let pending = v.get("message").and_then(|m| m.get("stop_reason")).and_then(|x| x.as_str()) == Some("tool_use");
-            return Some(if pending { Tail::Working } else { Tail::Idle });
+            if !pending {
+                return Some(Tail::Idle);
+            }
+            return Some(if outlived_by_process(&v) { Tail::Died } else { Tail::Working });
         }
         // Last message is the user's — assistant reply is still pending,
         // EXCEPT Claude Code's synthetic "[Request interrupted by user …]"
@@ -701,7 +726,7 @@ fn transcript_tail(session_file: &Path) -> Option<Tail> {
                 })
             })
             .unwrap_or(false);
-        return Some(if failed_tool { Tail::DiedOnTool } else { Tail::Working });
+        return Some(if failed_tool || outlived_by_process(&v) { Tail::Died } else { Tail::Working });
     }
     None
 }
@@ -1384,7 +1409,7 @@ fn get_session_info_for_pane(shell_pid: u32, deep: &str) -> Option<SessionMetada
         summary,
         model: latest_model(&session_file),
         context: context_tokens(&session_file),
-        transcript_tail: transcript_tail(&session_file),
+        transcript_tail: transcript_tail(&session_file, proc_start),
         idle_for: fs::metadata(&session_file)
             .and_then(|m| m.modified())
             .ok()
@@ -2147,7 +2172,7 @@ fn classify_activity(
     // "⎿  Error: <…>" with no assistant row ("●") anywhere below it, sitting
     // above a live prompt. A turn always reacts to a tool failure, so a pane
     // that ends on one is a turn whose process died there — the pane-text twin
-    // of Tail::DiedOnTool. The transcript can't supply that reading when several
+    // of Tail::Died. The transcript can't supply that reading when several
     // claudes share a cwd: none of their transcripts is then attributable, and
     // every one of those panes falls through to the Finished gate below.
     // Anchored like the API-error row, and against the same quoted-narration
@@ -2633,6 +2658,9 @@ mod tests {
     //!   active↔finished deliberation), so fixtures for that path persist both.
     //!   The prefix names the FINAL state after `refine_finished`, letting one
     //!   pane dump pin both verdicts (same .txt, different .jsonl).
+    //! - `<state>__<name>.start` — OPTIONAL companion: one RFC3339 line, when the
+    //!   pane's claude started. Absent means "unknown", the same None production
+    //!   passes when /proc won't say.
     //!
     //! ## Adding a case (the whole point — trivial, no code edit)
     //! Capture a live pane in the state you want to lock in:
@@ -2650,6 +2678,15 @@ mod tests {
 
     fn fixtures_dir() -> PathBuf {
         Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures")
+    }
+
+    /// `.start` companion: when the claude in the pane began, RFC3339. Stands in
+    /// for the /proc read production does, so a fixture can pin whether a
+    /// half-turn belongs to the process still sitting there or to a dead one.
+    fn proc_start_companion(txt: &Path) -> Option<std::time::SystemTime> {
+        let raw = fs::read_to_string(txt.with_extension("start")).ok()?;
+        let secs = rfc3339_epoch(raw.trim()).expect("`.start` companion holds one RFC3339 stamp");
+        Some(std::time::UNIX_EPOCH + std::time::Duration::from_secs(secs as u64))
     }
 
     /// Parse the expected state out of a fixture filename's `<state>__` prefix.
@@ -2707,7 +2744,7 @@ mod tests {
             // pinned to false — fixtures carry no todo files).
             let jsonl = txt.with_extension("jsonl");
             let (final_state, verdict) = if jsonl.exists() {
-                let verdict = transcript_tail(&jsonl);
+                let verdict = transcript_tail(&jsonl, proc_start_companion(&txt));
                 // Production consults the transcript only for a Finished pane;
                 // a pane that decides for itself keeps its own reading, and the
                 // companion goes on pinning what the transcript says in case it

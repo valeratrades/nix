@@ -1,0 +1,112 @@
+      names the hand…)
+  ⎿  Error: Exit code 1
+     The following paths are ignored by one of your .gitignore files:
+     .claude
+
+● Bash(git add -f .claude/skills/prepare-verif/SKILL.md && git add
+      docs/ARCHITECTURE.md typ/documents/ && git commit -q -m "The scan under a
+      signature already names th…)
+  ⎿  Error: Exit code 1
+     treefmt..................................................................Fa
+     iled
+     - hook id: treefmt
+     - exit code: 127
+
+     --: line 1: treefmt: command not found
+
+● Bash(nix develop --command git commit -q -m "The scan under a signature
+      already names the hand…)
+  ⎿  treefmt...............................................................
+     ...Passed
+     20bf044 The scan under a signature already names the hand
+     5945bc8 _
+
+● Done. The invoice is a rent-and-charges bill from the landlord to the business
+  at the door.
+
+  place file                 typ/documents/
+    proprietaire ─────┐
+                      ├──► bailleur.typ ──► letterhead(lang)
+    (fixed identity)  │    (SCI, SIREN,     coordonnees(lang)   ┐
+                      ┘     signataire,     signature(label)    ├─►
+  attestation_…
+                            assets/signature.png)               ┘
+    brand.name ───┐
+    address ──────┴──────────────────────────────────────────────► facture.typ
+
+  - typ/documents/facture.typ — A4 facture, fr/en: letterhead, invoice
+  no./date/échéance/client no., Facturé à = brand.name + address, period = the
+  month it falls in, three lines (loyer, provision sur charges, TEOM), HT/TVA 20
+  %/TTC, IBAN + the legally required late-payment and €40 recovery mentions,
+  signed.
+  - typ/documents/bailleur.typ — new: the landlord's identity and the
+  letterhead/contact-panel/signature blocks, which the attestation had
+  hardcoded. Attestation shrank by ~70 lines and now reads the same identity, so
+  both sheets in one envelope agree.
+  - assets/signature.png — moved out of typ/documents/, referenced
+  root-absolute.
+  - Both sheets now sit in to_print.pdf (13 pages) and in
+  typ/documents/__main__.pdf.
+
+
+  place file                 typ/documents/
+    proprietaire ─────┐
+                      ├──► bailleur.typ ──► letterhead(lang)
+    (fixed identity)  │    (SCI, SIREN,     coordonnees(lang)   ┐
+                      ┘     signataire,     signature(label)    ├─► attestation_…
+                            assets/signature.png)               ┘
+    brand.name ───┐
+    address ──────┴──────────────────────────────────────────────► facture.typ
+
+  - typ/documents/facture.typ — A4 facture, fr/en: letterhead, invoice no./date/échéance/client no., Facturé à = brand.name + address, period = the month it falls in, three lines (loyer, provision sur charges, TEOM), HT/TVA 20 %/TTC, IBAN +
+  the legally required late-payment and €40 recovery mentions, signed.
+  - typ/documents/bailleur.typ — new: the landlord's identity and the letterhead/contact-panel/signature blocks, which the attestation had hardcoded. Attestation shrank by ~70 lines and now reads the same identity, so both sheets in one
+  envelope agree.
+  - assets/signature.png — moved out of typ/documents/, referenced root-absolute.
+  - Both sheets now sit in to_print.pdf (13 pages) and in typ/documents/__main__.pdf.
+
+  Skipped: nothing about the invoice varies per place beyond name/address — amounts, supplier and line items are fixed like the attestation's are. Add inputs to the place file when a door needs different ones.
+
+  Two things worth your call:
+  - The signature scan has "Jean Dupont / Gérant" baked in, and both documents were re-typesetting that under the image. I dropped the repeat rather than the image — check the rendering agrees with what you wanted there.
+  - TVA at 20 % assumes the SCI opted to tax the lease; a non-opted SCI would bill rent exempt. Say the word and it becomes an exempt invoice with the TVA non applicable mention instead.
+
+✻ Crunched for 8m 53s
+
+❯ /plan
+  ⎿  Enabled plan mode
+
+❯ oh, about to_print.pdf - let's globally introduce a property for all output units (components? blocks?) we have, which says if they are full_page: bool. Then my address in nearby and neighbor addres ar not, same as business card sides.
+  But then businesses in the area or my own branded materials are oftentimes full_page. That's a very useful distinction, as then it will allow us to stack up first the full_page stuff into to_print and then and only then start stacking up
+  the others, so that we get more compact final product
+  ⎿  1 skill available
+
+  Thought for 17s (ctrl+o to expand)
+
+● Bash(git log --oneline -8 && echo "=== tree ===" && ls -R typ assets examples tmp tests 2>/dev/null && echo "=== to_print ===" && cat typ/to_print.typ && echo "=== _…)
+  ⎿  eee65f7 Build the stock a door draws from before it is a door
+     20bf044 The scan under a signature already names the hand
+     5945bc8 _
+     … +94 lines (ctrl+o to expand)
+
+  Thought for 58s, read 2 files (ctrl+o to expand)
+
+● Bash(echo "=== brand/lib (tail) ===" && sed -n '85,130p' typ/brand/lib.typ && echo "=== brand/__main__ ===" && cat typ/brand/__main__.typ && echo "=== documents/__ma…)
+  ⎿  === brand/lib (tail) ===
+     #let cards(n, c: contact) = {
+       set page(paper: "a4", margin: margin, fill: white)
+     … +104 lines (ctrl+o to expand)
+
+  Thought for 1m 30s (ctrl+o to expand)
+
+● Bash(cat typ/signs/alphabet.typ && echo "=== grep margin/lane ===" && grep -rn "margin = \|lane = \|margin\b" typ/*.typ typ/*/*.typ | grep -v "^typ/documents" && ech…)
+  ⎿  #import "cutout.typ": sheet
+     #sheet("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+     === grep margin/lane ===
+     … +21 lines (ctrl+o to expand)
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← for agents
+

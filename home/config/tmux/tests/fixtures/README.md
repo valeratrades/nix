@@ -15,6 +15,7 @@ No tmux / `/proc` / network / mocks are involved — just text in, state out.
 <state>__<description>.txt        # plain capture-pane -p
 <state>__<description>.esc        # OPTIONAL: capture-pane -p -e (only the draft path reads it)
 <state>__<description>.jsonl      # OPTIONAL: session transcript tail (only the active↔finished deliberation reads it)
+<state>__<description>.start      # OPTIONAL: one RFC3339 line, when the pane's claude started
 ```
 
 `<state>` ∈ `empty active planning finished draft question input error limit interrupted`.
@@ -22,6 +23,11 @@ No tmux / `/proc` / network / mocks are involved — just text in, state out.
 A `.jsonl` companion means the pane text alone reads Finished and the transcript
 arbitrates; `<state>` then names the FINAL verdict. The same pane dump can back
 both an `active__*` and a `finished__*` fixture with different transcript tails.
+
+A `.start` companion dates the process against the transcript's last word. A
+half-turn stamped before its own process started is one a reboot or a kill cut —
+so the same idle pane + pending-tool transcript is `active__*` with a start
+before it and `error__*` with a start after.
 
 **Fixtures are raw transcript/pane dumps — they contain whatever the session saw,
 including env dumps and tool outputs. `grep -iE 'sk-ant|token|secret'` every new
@@ -42,6 +48,10 @@ tmux capture-pane -t <session>:<window> -p -e -S -10 > draft__typed.esc
 
 # ONLY for active/finished deliberation cases (idle-looking pane, transcript decides):
 tail -n 15 ~/.claude/projects/<proj-dir>/<session-id>.jsonl > finished__idle.jsonl
+
+# ONLY when the turn's age against its process is the point:
+ps -o lstart= -p (pgrep -P (tmux display -pt <session>:<window> '#{pane_pid}')) \
+  | read -l s; date -ud "$s" +%Y-%m-%dT%H:%M:%SZ > error__cut_at_shutdown.start
 ```
 
 Then record its snapshot and confirm it's green:
