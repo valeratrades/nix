@@ -20,9 +20,11 @@
         pre-commit-check = pre-commit-hooks.lib.${system}.run (v_flakes.files.preCommit { inherit pkgs; });
 
         typ = v_flakes.typ { inherit pkgs; lsp = true; };
-        # Only the label sync — the rest of the module writes rust CI workflows
-        # and wants a toolchain this repo has no use for.
-        github = v_flakes.github { inherit pkgs pname; enable = true; };
+        github = v_flakes.github {
+          inherit pkgs pname;
+          enable = true;
+          gitignore.extra = "*.pdf";
+        };
         readme = v_flakes.readme-fw {
           inherit pkgs pname;
           defaults = true;
@@ -30,10 +32,9 @@
           rootDir = ./.;
           badges = [ "loc" ];
         };
-        readmeHook = v_flakes.utils.unwrapShellHook readme.shellHook;
-        typstyleFmt = pkgs.writeShellScriptBin "typstyle-fmt" ''
-          exec ${pkgs.typstyle}/bin/typstyle --line-width 190 --indent-width 2 "$@"
-        '';
+        hooks = builtins.concatStringsSep "" (
+          map v_flakes.utils.unwrapShellHook [ readme.shellHook typ.shellHook github.shellHook ]
+        );
       in
       {
         apps.help = {
@@ -85,17 +86,15 @@
         devShells.default = pkgs.mkShell {
           shellHook =
             pre-commit-check.shellHook
-            + readmeHook
+            + hooks
             + ''
               cp -f ${(v_flakes.files.treefmt) { inherit pkgs; }} ./.treefmt.toml
-              cp -f ${(v_flakes.files.gitignore { inherit pkgs; langs = [ ]; extra = "*.pdf"; })} ./.gitignore
-            ''
-            + github.labelSyncHook;
+            '';
 
-          packages = [ pkgs.treefmt typstyleFmt ]
-            ++ pre-commit-check.enabledPackages
+          packages = pre-commit-check.enabledPackages
             ++ typ.enabledPackages
-            ++ readme.enabledPackages;
+            ++ readme.enabledPackages
+            ++ github.enabledPackages;
         };
       }
     );
