@@ -253,6 +253,33 @@ in {
     Install.WantedBy = [ "default.target" ];
   };
 
+  # OneDrive as a plain directory. Contents are fetched on open and uploaded on close
+  # (vfs-cache-mode full), so writes land in the cloud without an explicit sync step.
+  # Auth is NOT declared here: OneDrive rotates the OAuth refresh token and rclone writes
+  # it back to ~/.config/rclone/rclone.conf, so nix owning that file would restore a dead
+  # token on every switch. One-time setup: `rclone config` -> new remote named `onedrive`.
+  systemd.user.services.onedrive-mount = {
+    Unit = {
+      Description = "OneDrive at ~/Documents/Cloud/onedrive (rclone FUSE)";
+      After = [ "network-online.target" ];
+      Wants = [ "network-online.target" ];
+    };
+    Service = {
+      Type = "notify";
+      Environment = [ "PATH=/run/wrappers/bin" ]; # fusermount3
+      ExecStartPre = "${pkgs.coreutils}/bin/mkdir -p %h/Documents/Cloud/onedrive";
+      ExecStart = lib.concatStringsSep " " [
+        "${lib.getExe pkgs.rclone} mount onedrive: %h/Documents/Cloud/onedrive"
+        "--vfs-cache-mode full --cache-dir %C/rclone"
+        "--dir-cache-time 5000h --poll-interval 15s" # server-side change polling keeps the long dir cache honest
+        "--umask 077"
+      ];
+      Restart = "on-failure";
+      RestartSec = 10;
+    };
+    Install.WantedBy = [ "default.target" ];
+  };
+
   # Ensure tg-server waits for sops-nix secrets to be available
   systemd.user.services.tg-server = {
     Unit = {
@@ -442,6 +469,7 @@ in {
         '')
 
         chromium
+        rclone # cloud remotes; drives the onedrive mount below
         #en-croissant # chess analysis GUI #dbg: may be bringing in `webkitgtk`
         ncspot
 				fastfetch # main system info
