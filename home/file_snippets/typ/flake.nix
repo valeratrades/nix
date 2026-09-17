@@ -20,6 +20,9 @@
         pre-commit-check = pre-commit-hooks.lib.${system}.run (v_flakes.files.preCommit { inherit pkgs; });
 
         typ = v_flakes.typ { inherit pkgs; lsp = true; };
+        # Only the label sync — the rest of the module writes rust CI workflows
+        # and wants a toolchain this repo has no use for.
+        github = v_flakes.github { inherit pkgs pname; enable = true; };
         readme = v_flakes.readme-fw {
           inherit pkgs pname;
           defaults = true;
@@ -86,7 +89,8 @@
             + ''
               cp -f ${(v_flakes.files.treefmt) { inherit pkgs; }} ./.treefmt.toml
               cp -f ${(v_flakes.files.gitignore { inherit pkgs; langs = [ ]; extra = "*.pdf"; })} ./.gitignore
-            '';
+            ''
+            + github.labelSyncHook;
 
           packages = [ pkgs.treefmt typstyleFmt ]
             ++ pre-commit-check.enabledPackages
