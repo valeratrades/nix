@@ -163,6 +163,11 @@
   Which means that 1) when I ask you to look into a bug, you always check if we already have a log for it there. And 2) you persist the information we're collecting to the corresponding .md file there. Don't treat it as just a log, - when debugging we're always working with hypothesis, so if a line of inquiry didn't lead anywhere, it oftentimes makes sense to compress it to only leave what and why didn't work, - if something doesn't help guide future debugging of this problem, it should be removed/compacted.
   // don't forget to describe what's the problem we're solving at the top of the file
 
+- if you were called upon to fix a bug, - reproduce the failing situation with integration tests first.
+  It allows us to avoid repeating past mistakes, because the database of those accumulates forever.
+  
+  If the repo you're in doesn't have integration testing framework yet, - see if it's complex enough to warrant it. If yes, remember it, and then fix the bug directly, but at the end of the session say we're not finished without properly implementing Integration Tests, and suggest switching to /plan mode to design it. 
+
 ### graphify
 - **graphify** (`~/.claude/skills/graphify/SKILL.md`) - any input to knowledge graph. Trigger: `/graphify`
 When the user types `/graphify`, use the installed graphify skill or instructions before doing anything else.

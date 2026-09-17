@@ -5553,11 +5553,11 @@
         "v_flakes": "v_flakes_6"
       },
       "locked": {
-        "lastModified": 1789224098,
-        "narHash": "sha256-tHc+zXLSTEWmiQ+pfyDzE9b/gYFzVqRBaQKVV6mc+CY=",
+        "lastModified": 1789688666,
+        "narHash": "sha256-dRrO7r2dQR7Xk+3ipHpnCI2jJSgbrNOBevls7UNf7m0=",
         "owner": "valeratrades",
         "repo": "tedi",
-        "rev": "8040fa869e3ec119c29b206980e7dd257871d40e",
+        "rev": "c4cc200a6d8b9ffb48b4b807ad0ec5120ac5cead",
         "type": "github"
       },
       "original": {
@@ -5999,11 +5999,11 @@
         "wrap-it": "wrap-it"
       },
       "locked": {
-        "lastModified": 1789081496,
-        "narHash": "sha256-MvyZFIwSXB3IQjQlG2Kswzxwp0cicgX94APHtfRD+r8=",
+        "lastModified": 1789412561,
+        "narHash": "sha256-6jC618EAds1dW0hTMKPqlHR0cR8eJ/v9AkOQnz9PUcM=",
         "owner": "valeratrades",
         "repo": "wallpaper_carousel",
-        "rev": "3504ad34240a528ec0c9015db0e99298d52ff327",
+        "rev": "15a20e2803787532a7ac0becd80eb5d23e57dd68",
         "type": "github"
       },
       "original": {
