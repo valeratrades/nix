@@ -159,17 +159,22 @@
       # the daemon is the main pid, so systemd notices when it dies. Letting a client
       # fork it made the unit `active (exited)` over an empty cgroup — any death of the
       # bar (crash, pkill) then went unsupervised until a manual `eww_open`.
-      # `ping --no-daemonize` is the one client call that reports the socket without forking a rival.
+      # --no-daemonize is what keeps this a *client* call: without it, an open-many that
+      # finds no socket forks its own daemon, and that rival then owns the windows while
+      # the supervised daemon owns the socket — so `eww update` reaches a bar nobody sees
+      # and the visibility toggle silently does nothing. Retrying the real call is also the
+      # readiness check; a separate `ping` first was a TOCTOU that let exactly that through.
       open = pkgs.writeShellScript "eww-widgets-open" ''
-        until ${eww} ping --no-daemonize >/dev/null 2>&1; do sleep 0.1; done
-        exec ${eww} open-many $(cat "$HOME/.config/eww/eww_windows.txt") # ordering decides who overlays who
+        until ${eww} --no-daemonize open-many $(cat "$HOME/.config/eww/eww_windows.txt"); do sleep 0.1; done # ordering decides who overlays who
       '';
     in {
       # --restart: a stray daemon makes a plain `daemon` exit 0 ("already running"), which
-      # Restart=always would then spin on until the unit hit the start rate limit.
+      # Restart would then spin on until the unit hit the start rate limit.
       ExecStart = "${eww} daemon --restart --no-daemonize";
       ExecStartPost = "${open}";
-      Restart = "always";
+      # on-failure, not always: eww exits 0 on SIGTERM, so `pkill eww` stays dead (systemd
+      # counts SIGTERM as a clean exit) while a real crash — status=1 — still comes back.
+      Restart = "on-failure";
       RestartSec = 2;
     };
   };

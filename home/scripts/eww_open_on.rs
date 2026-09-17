@@ -130,7 +130,7 @@ fn open_eww_windows(monitor_index: usize) -> Result<(), String> {
 
     for window in &windows {
         Command::new("eww")
-            .args(["open", window, "--screen", &monitor_index.to_string()])
+            .args(["--no-daemonize", "open", window, "--screen", &monitor_index.to_string()])
             .status()
             .map_err(|e| format!("Failed to open {window}: {e}"))?;
     }
