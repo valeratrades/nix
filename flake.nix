@@ -155,12 +155,8 @@
       url = "github:lomirus/bad-apple-rs"; # merged my nix-integration pull
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    ask_llm = {
-      url = "github:valeratrades/ask_llm?ref=release";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.rust-overlay.follows = "rust-overlay";
-      inputs.flake-utils.follows = "flake-utils";
-    };
+    # takes nixpkgs through its own v_flakes, so there is nothing here to override
+    ask_llm.url = "github:valeratrades/ask_llm";
     translate_infrequent = {
       url = "github:valeratrades/translate_infrequent";
       inputs.nixpkgs.follows = "nixpkgs";
