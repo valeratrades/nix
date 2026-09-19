@@ -168,6 +168,9 @@
   
   If the repo you're in doesn't have integration testing framework yet, - see if it's complex enough to warrant it. If yes, remember it, and then fix the bug directly, but at the end of the session say we're not finished without properly implementing Integration Tests, and suggest switching to /plan mode to design it. 
 
+- if you absolutely must have some input from me, and require to interrupt me and get my attention to resolve it, (with no way of figuring it out yourself), - use the built-in interface for asking questions. I have a thing that parses for them on my claude sessions, - when you ask a question I will see it immediately. 
+  So use it for things that must get my input, and also don't use it for things you can solve yourself, or for things with reversible decisions which you can go forward with now, and then ask me about whether you were correct to do so at the end of your work.
+
 ### graphify
 - **graphify** (`~/.claude/skills/graphify/SKILL.md`) - any input to knowledge graph. Trigger: `/graphify`
 When the user types `/graphify`, use the installed graphify skill or instructions before doing anything else.
