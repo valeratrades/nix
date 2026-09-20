@@ -24,6 +24,7 @@ set $up n
 set $right t
 
 font pango:Sans 6
+
 titlebar_padding 1 1
 titlebar_border_thickness 1
 focus_on_window_activation none
@@ -293,11 +294,6 @@ exec_always sleep 3 && todo do continue_ongoing
 bindcode $mod+34 output $output_laptop dpms on
 bindcode $mod+Shift+34 output $output_laptop dpms off
 #bindcode $mod+Control+34 exec ~/.config/sway/toggle_screen.sh DP-1
-
-# # Modes
-# the `|| true` is load-bearing: $switch_out is chained with && into the actual action,
-# and --no-daemonize makes the update fail (rather than fork a bar) while eww is down.
-set $switch_out swaymsg mode \"default\" && { eww --no-daemonize update sway_mode=default || true; }
 
 # # Outputs
 
