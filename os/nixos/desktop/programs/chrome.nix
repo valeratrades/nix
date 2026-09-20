@@ -2,6 +2,9 @@
 {
   # Google Chrome managed policy: force Memory Saver on and keep only the tabs we actually care about live; everything else is free to be discarded so it stops burning CPU/RAM in the background (47 renderers / ~12GB otherwise).
   environment.etc."opt/chrome/policies/managed/memory-saver.json".text = builtins.toJSON {
+    ExtensionInstallForcelist = [
+      "hijfnlgdhfpmnckieikhinolopcolofe;https://clients2.google.com/service/update2/crx"
+    ];
     HighEfficiencyModeEnabled = true;
     MemorySaverModeSavings = 2; # 0=Moderate, 1=Balanced, 2=Maximum (Chrome 126+)
     # Bare host = that domain + all subdomains (futures.*, app.*, accounts.*).
