@@ -2,9 +2,6 @@
 {
   # Google Chrome managed policy: force Memory Saver on and keep only the tabs we actually care about live; everything else is free to be discarded so it stops burning CPU/RAM in the background (47 renderers / ~12GB otherwise).
   environment.etc."opt/chrome/policies/managed/memory-saver.json".text = builtins.toJSON {
-    ExtensionInstallForcelist = [
-      "hijfnlgdhfpmnckieikhinolopcolofe;https://clients2.google.com/service/update2/crx"
-    ];
     HighEfficiencyModeEnabled = true;
     MemorySaverModeSavings = 2; # 0=Moderate, 1=Balanced, 2=Maximum (Chrome 126+)
     # Bare host = that domain + all subdomains (futures.*, app.*, accounts.*).
@@ -58,6 +55,42 @@
       "jup.ag"         # Jupiter (Solana)
       "app.uniswap.org"
       "uniswap.org"
+    ];
+  };
+
+  # Machine-wide, so every profile gets the same set regardless of account.
+  environment.etc."opt/chrome/policies/managed/extensions.json".text = builtins.toJSON {
+    ExtensionInstallForcelist = map (id: "${id};https://clients2.google.com/service/update2/crx") [
+      "abocjojdmemdpiffeadpdnicnlhcndcg" # SocialFocus
+      "ajlhmclpjddfebgfpahnlodliljdnbie" # Moss
+      "bolmmhkapeekgcjopdmnbmnhgaapbpdb" # FocusTube
+      "ccnnhhnmpoffieppjjkhdakcoejcpbga" # Rearrange Tabs
+      "ckagfhpboagdopichicnebandlofghbc" # Shorts Blocker
+      "dbepggeogbaibhgnhhndojpepiihcmeb" # Vimium
+      "ddkjiahejlhfcafbddmgiahcphecmpfh" # uBlock Origin Lite
+      "dhdgffkkebhmkfjojejmpbldmpobfkfo" # Tampermonkey
+      "dodmmooeoklaejobgleioelladacbeki" # Ona
+      "egjidjbpglichdcondbcbdnbeeppgdph" # Trust Wallet
+      "eimadpbcbfnmbkopoojfekhnkhdbieeh" # Dark Reader
+      "enboaomnljigfhfjfoalacienlhjlfil" # UnTrap for YouTube
+      "ghbdjeckopemkoomopmpgjifafpcjhga" # TabPilot
+      "gppongmhjkpfnbhagpmjfkannfbllamg" # Wappalyzer
+      "hijfnlgdhfpmnckieikhinolopcolofe" # GMBspy
+      "hmbdemoadbcdfmdjiokhcnoaoepgbhbn" # Block Notifications
+      "jgibaoklabopileepldnlkbbcibhbgmd" # Youtube Transcript
+      "jnbbnacmeggbgdjgaoojpmhdlkkpblgi" # WakaTime
+      "jplgfhpmjnbigmhklmmbgecoobifkmpa" # Proton VPN
+      "kfhkeghcignojkdcnemgcggojlmneema" # LockedIn AI
+      "kogfodpcilmconphbpldnipakepicaia" # Better Muted Words
+      "linlakoepnjkdiphemdpbphnjlppjedm" # X Mute
+      "mnjggcdmjocbbbhaepdhchncahnbgone" # SponsorBlock
+      "nhocmlminaplaendbabmoemehbpgdemn" # Fathom AI Note Taker
+      "nkbihfbeogaeaoehlefnkodbefgpgknn" # MetaMask
+      "ofpnikijgfhlmmjlpkfaifhhdonchhoi" # Accept all cookies
+      "ogcgkffhplmphkaahpmffcafajaocjbd" # ZenHub
+      "omghfjlpggmjjaagoclmmobgdodcjboh" # Browsec VPN
+      "pbanhockgagggenencehbnadejlgchfc" # Simplify Copilot
+      "pmjeegjhjdlccodhacdgbgfagbpmccpe" # Clockify
     ];
   };
 }
