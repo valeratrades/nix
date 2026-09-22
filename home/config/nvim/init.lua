@@ -1,3 +1,5 @@
+require('vim._core.ui2').enable({}) -- no hit-enter prompts: overflowing messages collapse to `[+x]`, full text via `g<`
+
 -- Create/update symlink to rust_plugins.so
 -- This must happen BEFORE trying to require the plugin
 local lua_so_path = vim.fn.stdpath('config') .. '/lua/rust_plugins.so'
