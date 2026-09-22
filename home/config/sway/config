@@ -25,6 +25,10 @@ set $right t
 
 font pango:Sans 6
 
+# Mode cancellation must not depend on eww being reachable.
+set $switch_out swaymsg mode "default" && eww --no-daemonize update sway_mode=default || true
+# Keep the eww label cleanup separate from mode cancellation; action bindings append &&.
+
 titlebar_padding 1 1
 titlebar_border_thickness 1
 focus_on_window_activation none
