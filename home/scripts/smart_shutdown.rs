@@ -52,14 +52,14 @@ fn write_claude_inventory(dry_run: bool) {
         .output()
     {
         Ok(out) if out.status.success() => out,
-        // No tmux server -> no sessions to restore; a stale file would be worse than none.
+        // No tmux server still records an empty layout, so the previous shutdown cannot linger.
         _ if dry_run => {
-            println!("Dry run - no tmux panes; would clear {path}");
+            println!("Dry run - no tmux panes; would save an empty inventory to {path}");
             return;
         }
         _ => {
-            let _ = std::fs::remove_file(&path);
-            println!("No tmux panes; cleared {path}");
+            std::fs::write(&path, "").expect("failed to write empty claude inventory");
+            println!("No tmux panes; saved empty inventory to {path}");
             return;
         }
     };

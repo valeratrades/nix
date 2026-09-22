@@ -213,6 +213,5 @@ function restore_sessions
 		echo "restore_sessions: some entries failed; keeping $f so a rerun can retry" >&2
 		return 1
 	end
-	echo "restore_sessions: restored $done project(s)"
-	rm -f $f
+	echo "restore_sessions: restored $done project(s); keeping $f for future restores"
 end
