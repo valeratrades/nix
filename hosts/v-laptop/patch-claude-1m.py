@@ -36,10 +36,12 @@ import sys
 
 THIS_FILE = "hosts/v-laptop/patch-claude-1m.py (in your nix config)"
 
-# Body of the opus-1m availability predicate, verbatim from claude-code 2.1.220.
-# Full function: function J2s(e){let t=e.toLowerCase();<ANCHOR>}
+# The opus-1m unavailability predicate, verbatim from claude-code 2.1.280 (`dYn`; the
+# sibling `pYn` is the Sonnet one, deliberately left alone). True means "refuse".
+# Anchored on the body only — the minified function name churns every release.
 # Must occur exactly once.
-ANCHOR = b'return!aY()&&!KO()&&t.includes("opus")&&t.includes("[1m]")'
+ANCHOR = (b'let e=o.toLowerCase();if(!(e.includes("opus")&&e.includes("[1m]")))return!1;'
+          b'if(O(o).every((r)=>Bh(r)))return!1;return!qO()&&!jk()')
 REPLACEMENT = b'return!1;'.ljust(len(ANCHOR))
 assert len(REPLACEMENT) == len(ANCHOR), "same-length overwrite required"
 
