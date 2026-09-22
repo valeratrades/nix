@@ -48,6 +48,7 @@
   "showClearContextOnPlanAccept": true,
   "showThinkingSummaries": true,
   "skipDangerousModePermissionPrompt": true,
+  "crossSessionInbound": "accept",
   "thinking": {
     "display": "summarized"
   }

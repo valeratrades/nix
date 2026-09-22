@@ -284,6 +284,7 @@ in
 				#HACK: hm doesn't set env correctly, - so have some associated ones in ../../os/nixos/desktop/environment.nix
 				alwaysThinkingEnabled = true;
 				skipDangerousModePermissionPrompt =  true;
+				crossSessionInbound = "accept"; # unset: peer messages into a bypass session are held for approval
 				# `[1m]` requests the context-1m beta -> 1M window; autoCompactWindow is min()'d against it.
 				# Requires CLAUDE_CODE_DISABLE_1M_CONTEXT to be UNSET (see ../../os/nixos/desktop/environment.nix).
 				# On a 429 whose body says extra usage is required, the cli latches a session-local clamp back
