@@ -1,2 +1,9 @@
 padding=0
 default-timeout=4500
+
+# Extensions' chrome.notifications can't be revoked without disabling the extension; sites' bodies are prefixed with their origin (Chromium notification_platform_bridge_linux.cc CreateContextDisplayText).
+[app-name="Google Chrome"]
+invisible=1
+
+[app-name="Google Chrome" body~="^(<a [^>]*>)?[^[:space:]]+(</a>)?[[:cntrl:]]"]
+invisible=0
