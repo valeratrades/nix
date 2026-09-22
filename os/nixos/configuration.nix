@@ -423,6 +423,7 @@ in {
     (import (mylib.relativeToRoot "overlays/sierra-chart.nix"))
     (import (mylib.relativeToRoot "overlays/tiger-trade.nix"))
     (import (mylib.relativeToRoot "overlays/metascalp.nix"))
+    (import (mylib.relativeToRoot "overlays/gologin.nix"))
     (import (mylib.relativeToRoot "overlays/graphify.nix"))
     (import (mylib.relativeToRoot "overlays/tree-sitter-memcap.nix"))
     (import (mylib.relativeToRoot "overlays/nixd-schema-directive.nix"))

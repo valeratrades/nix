@@ -514,6 +514,8 @@ in {
           graphify
         ]
 
+        gologin # antidetect browser
+
         # Windows (via WinApps/Docker VM)
         [
           inputs.winapps.packages.${pkgs.stdenv.hostPlatform.system}.winapps
