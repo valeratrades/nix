@@ -4,4 +4,5 @@
   litellm = 61175; # OpenAI-compatible router: `clc` and the openclaw gateway both dial this
   litellmMixed = 61176; # second router, own config -- `clm` needs Opus and Luna behind one base url
   openclawGateway = 18789; # WebSocket gateway + control UI
+  chromeDebug = 49300; # CDP of my daily Chrome; off 9222 so tools defaulting there don't hijack the live session
 }

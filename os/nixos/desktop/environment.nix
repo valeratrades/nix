@@ -8,6 +8,7 @@
   # and cannot read nix, so `clc` picks the port up from here.
   environment.sessionVariables.LITELLM_PORT = toString myvars.ports.litellm;
   environment.sessionVariables.LITELLM_MIXED_PORT = toString myvars.ports.litellmMixed;
+  environment.sessionVariables.CHROME_DEBUG_PORT = toString myvars.ports.chromeDebug;
 
   environment.variables = {
     QT_QPA_PLATFORMTHEME = "xdgdesktopportal";

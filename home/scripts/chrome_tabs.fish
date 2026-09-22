@@ -1,11 +1,11 @@
 #!/usr/bin/env fish
 # List Chrome tabs with their renderer CPU%, hottest first.
 #
-# Relies on the running GUI Chrome exposing CDP on :9222 — which it does because
+# Relies on the running GUI Chrome exposing CDP on $CHROME_DEBUG_PORT — which it does because
 # its --user-data-dir is the google-chrome-cdp bind mount (a non-default path
 # Chrome won't refuse the debug port for). See os/nixos/desktop/services/chrome-cdp.nix.
 
-set -l port 9222
+set -l port $CHROME_DEBUG_PORT
 
 if not curl -s --max-time 2 http://127.0.0.1:$port/json/version >/dev/null 2>&1
     echo "No CDP on :$port — is Chrome running? (it must be launched with the configured flags)" >&2
