@@ -30,6 +30,7 @@ in {
     extraInstallCommands = ''
       install -Dm444 ${contents}/gologin.desktop $out/share/applications/gologin.desktop
       substituteInPlace $out/share/applications/gologin.desktop --replace-fail 'Exec=AppRun' 'Exec=gologin'
+      echo 'MimeType=x-scheme-handler/gologin;' >> $out/share/applications/gologin.desktop # login redirects back via gologin://
       install -Dm444 ${contents}/gologin.png $out/share/icons/hicolor/512x512/apps/gologin.png
     '';
   };
