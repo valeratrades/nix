@@ -58,6 +58,12 @@
     ];
   };
 
+  environment.etc."opt/chrome/policies/managed/protocols.json".text = builtins.toJSON {
+    AutoLaunchProtocolsFromOrigins = [
+      { protocol = "gologin"; allowed_origins = [ "https://app.gologin.com" ]; } # desktop login handoff
+    ];
+  };
+
   # Machine-wide, so every profile gets the same set regardless of account.
   environment.etc."opt/chrome/policies/managed/extensions.json".text = builtins.toJSON {
     ExtensionInstallForcelist = map (id: "${id};https://clients2.google.com/service/update2/crx") [
