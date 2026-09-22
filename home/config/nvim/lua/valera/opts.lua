@@ -146,6 +146,7 @@ vim.g.vimtex_complete_ignore_case = 1
 vim.g.vimtex_complete_smart_case = 1
 --
 
--- Make :wa not ask for confirmation (force past "file changed on disk" prompts)
-vim.api.nvim_create_user_command('Wa', 'silent! wa!', {})
-vim.cmd.cnoreabbrev('wa', 'Wa')
+-- 3-way merge on FileChangedShell never reloads, so nvim's read-mtime stays stale and plain :w would prompt (W10)
+for _, c in ipairs({ 'w', 'wa', 'wq', 'wqa', 'x', 'xa' }) do
+	vim.cmd(("cnoreabbrev <expr> %s getcmdtype() ==# ':' && getcmdline() ==# '%s' ? '%s!' : '%s'"):format(c, c, c, c))
+end
