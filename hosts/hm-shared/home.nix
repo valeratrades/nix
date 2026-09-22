@@ -393,7 +393,7 @@
           # Desktop/GUI packages moved from configuration.nix
           libinput-gestures
           #qt5.full #dbg: brings in qtwebengine, which builds for too long
-          (google-chrome.override {
+          ((google-chrome.override {
             commandLineArgs = [
               # Re-enabled GPU video accel: CPU decode pegged renderers at ~190% and
               # baked the package to 80°C. Encode stays off (more crash-prone than decode).
@@ -427,7 +427,15 @@
               "--log-file=${config.home.homeDirectory}/.config/google-chrome-cdp/chrome_debug.log"
               "--v=1"
             ];
-          })
+          }).overrideAttrs (old: {
+            postFixup = (old.postFixup or "") + ''
+              wrapProgram $out/bin/google-chrome-stable --run ${lib.getExe (pkgs.writeShellApplication {
+                name = "chrome-sync-ext-settings";
+                runtimeInputs = with pkgs; [ jq rsync ];
+                text = builtins.readFile "${self}/home/scripts/chrome_sync_ext_settings.sh";
+              })}
+            '';
+          }))
           alacritty
         ]
         [
