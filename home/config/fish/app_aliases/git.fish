@@ -271,6 +271,7 @@ end
 complete -c gi -w gh
 alias gil="gh issue list"
 complete -c gil -w gh
+alias gill="gh label list --sort name --limit 1000"
 
 alias gia="gh issue edit --add-assignee"
 complete -c gia -w gh
