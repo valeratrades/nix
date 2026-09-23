@@ -49,6 +49,10 @@
   "showThinkingSummaries": true,
   "skipDangerousModePermissionPrompt": true,
   "crossSessionInbound": "accept",
+  "statusLine": {
+    "type": "command",
+    "command": "~/.claude/hooks/limits.sh"
+  },
   "thinking": {
     "display": "summarized"
   }
