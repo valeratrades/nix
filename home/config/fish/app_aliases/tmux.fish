@@ -157,30 +157,61 @@ function tn
 end
 
 # Rebuilds the working set recorded by `smart_shutdown` (`claude_restore.tsv`).
+# Idempotent: claudes already live are skipped, so reruns (e.g. home-manager restarting the unit) are safe.
 function restore_sessions
+	argparse 'n/dry-run' 'f/file=' -- $argv
+	or return 1
 	set -l state_home $XDG_STATE_HOME
 	test -n "$state_home"; or set state_home "$HOME/.local/state"
 	set -l f "$state_home/claude_restore.tsv"
+	set -q _flag_file; and set f $_flag_file
 	if not test -f $f
 		echo "restore_sessions: nothing to restore, $f absent (only smart_shutdown writes it)" >&2
 		return 0
 	end
 
+	set -l live
+	for s in $HOME/.claude*/sessions/*.json
+		test -d /proc/(jq -r .pid $s); and set -a live (jq -r .sessionId $s)
+	end
+
+	set -l fresh # sessions built by this run, whose empty `claude` window takes the first claude
 	set -l failed 0
 	set -l done 0
-	while read -l path n
-		if test -z "$path"; or not string match -qr '^[0-9]+$' -- "$n"
-			echo "restore_sessions: malformed line in $f: path='$path' count='$n' (want tab-separated '<path>	<count>')" >&2
+	while read -l --delimiter \t path cwd id config_dir
+		if test -z "$config_dir"; or not string match -qr '^[0-9a-f-]{36}$' -- "$id"
+			echo "restore_sessions: malformed line in $f: '$path	$cwd	$id	$config_dir' (want '<session_path>	<cwd>	<session_id>	<config_dir>')" >&2
 			set failed 1
 			continue
 		end
-		if not test -d $path
-			echo "restore_sessions: skipping $path — no longer a directory" >&2
+		if contains -- $id $live
+			echo "restore_sessions: $id already live, skipping"
+			continue
+		end
+		if not test -d $path; or not test -d $cwd
+			echo "restore_sessions: skipping $id — $path or $cwd no longer a directory" >&2
 			set failed 1
 			continue
 		end
-		# a session for this path may already be up (hand-made, or we ran late) — reuse it
+		set -l acc
+		if test "$config_dir" != "$HOME/.claude"
+			set acc (string replace -r "^$HOME/\.claude-account" '' -- $config_dir)
+			if not string match -qr '^[0-9]+$' -- $acc
+				echo "restore_sessions: $id — unknown config dir $config_dir" >&2
+				set failed 1
+				continue
+			end
+			set acc --acc $acc
+		end
+		set -l cmd "cd "(string escape -- $cwd)"; and cl --resume $id $acc"
+
+		# a session for this path may already be up (hand-made, or an earlier entry built it) — reuse it
 		set -l session (tmux list-sessions -F '#{session_path}	#{session_name}' 2>/dev/null | string replace -rf '^'(string escape --style=regex $path)'\t' '')[1]
+		if set -q _flag_dry_run
+			test -n "$session"; or set session "<new session for $path>"
+			echo "restore_sessions: would run in $session: $cmd"
+			continue
+		end
 		if test -z "$session"
 			set session (cs -t -d $path)
 			if test $status != 0
@@ -188,30 +219,31 @@ function restore_sessions
 				set failed 1
 				continue
 			end
+			set -a fresh $session
 		end
-		for i in (seq 1 $n)
-			set -l target "$session:claude"
-			if test $i -gt 1
-				set target (tmux new-window -P -t $session -c $path -n claude)
-				if test $status != 0
-					echo "restore_sessions: $session — could not add claude window #$i: $target" >&2
-					set failed 1
-					break
-				end
-			end
-			if not tmux send-keys -t $target "cl -$i" Enter
-				echo "restore_sessions: $session — send-keys to '$target' failed" >&2
+		set -l target "$session:claude"
+		if set -l i (contains -i -- $session $fresh)
+			set -e fresh[$i]
+		else
+			set target (tmux new-window -P -t $session -c $cwd -n claude)
+			if test $status != 0
+				echo "restore_sessions: $session — could not add claude window: $target" >&2
 				set failed 1
-				break
+				continue
 			end
+		end
+		if not tmux send-keys -t $target $cmd Enter
+			echo "restore_sessions: $session — send-keys to '$target' failed" >&2
+			set failed 1
+			continue
 		end
 		set done (math $done + 1)
-		echo "restore_sessions: $session ← $path ($n claude(s))"
+		echo "restore_sessions: $session ← $id ($cwd)"
 	end <$f
 
 	if test $failed = 1
 		echo "restore_sessions: some entries failed; keeping $f so a rerun can retry" >&2
 		return 1
 	end
-	echo "restore_sessions: restored $done project(s); keeping $f for future restores"
+	echo "restore_sessions: restored $done claude(s); keeping $f for future restores"
 end

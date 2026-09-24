@@ -187,6 +187,7 @@
       # every pane forever; before sway's `import-environment` that env has no
       # WAYLAND_DISPLAY, so anything reaching for the clipboard finds no compositor.
       After = [ "network-online.target" "sway-session.target" ];
+      X-SwitchMethod = "keep-old"; # boot-only; a switch rerunning it would resurrect claudes closed since
     };
     Install = { WantedBy = [ "sway-session.target" ]; };
     Service = {

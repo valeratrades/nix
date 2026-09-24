@@ -6,6 +6,7 @@ edition = "2024"
 
 [dependencies]
 clap = { version = "4.5.49", features = ["derive"] }
+serde_json = "1"
 ---
 
 use clap::Parser;
@@ -35,20 +36,14 @@ fn run_cmd_silent(cmd: &str, args: &[&str]) -> bool {
         .unwrap_or(false)
 }
 
-/// `path\tcount` of live claudes per project, consumed by fish's `restore_sessions` on boot.
+/// `session_path\tcwd\tsession_id\tconfig_dir` per live tmux-hosted claude, consumed by fish's `restore_sessions` on boot.
 fn write_claude_inventory(dry_run: bool) {
-    let state_dir = std::env::var("XDG_STATE_HOME")
-        .or_else(|_| std::env::var("HOME").map(|h| format!("{h}/.local/state")))
-        .expect("neither XDG_STATE_HOME nor HOME set");
+    let home = std::env::var("HOME").expect("HOME not set");
+    let state_dir = std::env::var("XDG_STATE_HOME").unwrap_or_else(|_| format!("{home}/.local/state"));
     let path = format!("{state_dir}/claude_restore.tsv");
 
     let out = match Command::new("tmux")
-        .args([
-            "list-panes",
-            "-a",
-            "-F",
-            "#{session_path}\t#{pane_current_command}",
-        ])
+        .args(["list-panes", "-a", "-F", "#{pane_id}\t#{session_path}"])
         .output()
     {
         Ok(out) if out.status.success() => out,
@@ -63,31 +58,56 @@ fn write_claude_inventory(dry_run: bool) {
             return;
         }
     };
+    let panes: Vec<(String, String)> = String::from_utf8_lossy(&out.stdout)
+        .lines()
+        .map(|l| {
+            let (id, p) = l.split_once('\t').expect("format string has a tab");
+            (id.to_string(), p.to_string())
+        })
+        .collect();
 
-    let mut counts: Vec<(String, usize)> = Vec::new();
-    for line in String::from_utf8_lossy(&out.stdout).lines() {
-        let Some((session_path, cmd)) = line.split_once('\t') else {
-            continue;
-        };
-        if !cmd.contains("claude") {
+    // claude keeps `<config_dir>/sessions/<pid>.json` for each live process; `--acc N` sessions live under ~/.claude-accountN
+    let mut content = String::new();
+    for entry in std::fs::read_dir(&home).expect("HOME unreadable") {
+        let config_dir = entry.expect("HOME entry unreadable").path();
+        let name = config_dir.file_name().unwrap().to_string_lossy().into_owned();
+        if name != ".claude" && !name.starts_with(".claude-account") {
             continue;
         }
-        match counts.iter_mut().find(|(p, _)| p == session_path) {
-            Some((_, n)) => *n += 1,
-            None => counts.push((session_path.to_string(), 1)),
+        let Ok(sessions) = std::fs::read_dir(config_dir.join("sessions")) else {
+            continue; // account never ran an interactive session
+        };
+        for f in sessions {
+            let f = f.expect("sessions entry unreadable").path();
+            if f.extension().is_none_or(|e| e != "json") {
+                continue;
+            }
+            let raw = std::fs::read_to_string(&f).expect("session file unreadable");
+            let j: serde_json::Value = serde_json::from_str(&raw).unwrap_or_else(|e| panic!("{}: {e}", f.display()));
+            let pid = j["pid"].as_u64().unwrap_or_else(|| panic!("{}: no pid", f.display()));
+            if !std::path::Path::new(&format!("/proc/{pid}")).exists() {
+                continue; // left behind by a crashed claude
+            }
+            let Some(tmux) = j["tmux"].as_str() else {
+                continue; // not launched inside tmux, nothing to rebuild it into
+            };
+            let pane_id = tmux.rsplit_once('.').unwrap_or_else(|| panic!("{}: unexpected tmux field '{tmux}'", f.display())).1;
+            let Some((_, session_path)) = panes.iter().find(|(id, _)| id == pane_id) else {
+                continue; // claude on another tmux server
+            };
+            let cwd = j["cwd"].as_str().unwrap_or_else(|| panic!("{}: no cwd", f.display()));
+            let id = j["sessionId"].as_str().unwrap_or_else(|| panic!("{}: no sessionId", f.display()));
+            content.push_str(&format!("{session_path}\t{cwd}\t{id}\t{}\n", config_dir.display()));
         }
     }
 
-    let content: String = counts
-        .iter()
-        .map(|(p, n)| format!("{p}\t{n}\n"))
-        .collect();
+    let n = content.lines().count();
     if dry_run {
-        println!("Dry run - would record {} project(s) to {path}:\n{content}", counts.len());
+        println!("Dry run - would record {n} claude(s) to {path}:\n{content}");
         return;
     }
     std::fs::write(&path, &content).expect("failed to write claude inventory");
-    println!("Recorded {} project(s) with claudes to {path}", counts.len());
+    println!("Recorded {n} claude(s) to {path}");
 }
 
 fn main() {
@@ -153,7 +173,11 @@ fn main() {
         }
     });
 
-    let claude_handle = std::thread::spawn(|| {
+    let claude_handle = std::thread::spawn(move || {
+        if dry_run {
+            println!("Dry run - would send claude sessions to telegram");
+            return;
+        }
         println!("Saving claude sessions to telegram...");
         let claude_sessions_path = std::env::var("HOME")
             .map(|h| format!("{h}/nix/home/config/tmux/claude_sessions.rs"))
