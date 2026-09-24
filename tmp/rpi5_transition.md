@@ -146,7 +146,7 @@ Changing which daemons run later = edit the list, materialize, merge.
   restarts postgres into a skipped condition.
 - `rea_admin_token` in `secrets/platform.json` is still the literal `CHANGEME`.
 
-## 5. Cloudflare: EV zones → the Ev Invest account (2026-09-24)
+## 5. Cloudflare: EV zones → the Ev Invest account (2026-09-24) — all three ACTIVE since 08:20 UTC
 
 A tunnel only routes zones of its own account, so there are now two:
 
@@ -177,16 +177,19 @@ printf 'TUNNEL_TOKEN=%s\n' "$TOKEN" | ssh root@<instance-ip> 'umask 077; cat > /
 The fence and `failback` match `cloudflared-*`, so they see and stop it.
 
 Cutover, per domain, any order, no maintenance window:
-- [ ] Registrar NS → `chelsea.ns.cloudflare.com`, `logan.ns.cloudflare.com` (remove the
+- [x] Registrar NS → `chelsea.ns.cloudflare.com`, `logan.ns.cloudflare.com` (remove the
       `shane`/`sharon` pair). evinvest.ltd: Squarespace. aquafix.top: GoDaddy.
       vifnet.site: Namecheap.
-- [ ] Dashboard (Ev Invest) → the domain → **Re-check now**. While the new zone is still
+- [x] Dashboard (Ev Invest) → the domain → **Re-check now**. While the new zone is still
       pending, resolvers that already see the new NS get an unproxied tunnel CNAME, i.e.
       nothing — keep this window short. Resolvers on the old NS keep hitting the old
       zone and the old tunnel (a "Moved" zone still answers) until their cache expires (≤ 48 h).
-- [ ] Once aquafix.top is **active**: Email → Email Routing → Enable (the API refuses
+- [x] Once aquafix.top is **active**: Email → Email Routing → Enable (the API refuses
       on a pending zone). MX/SPF/DKIM and the catch-all rule are already in place.
-- [ ] Once active: Web Analytics site shows up for the zone (it auto-installs on activation).
-- [ ] ≥ 48 h after the last NS change: remove the EV hostnames from the **personal**
+- [x] Web Analytics: it did NOT auto-install in the new account; added by hand (lite, like the old sites).
+- [ ] **Not before 2026-09-25 08:30 UTC** (the old zones served NS with a 24 h TTL; all three flipped by 08:20 on 09-24): remove the EV hostnames from the **personal**
       tunnel's config, leaving only valeratrades.com / www. The old zones delete themselves
       (Moved → Deleted after 7 d → purged after 7 more).
+- Registrar transfers to Cloudflare: evinvest.ltd can go now (Squarespace auth code → Ev Invest
+  → Domain Registration → Transfer). vifnet.site: after 2026-11-14 (Service-Arb/vifnet#11).
+  aquafix.top: never — Cloudflare Registrar does not sell `.top`.
