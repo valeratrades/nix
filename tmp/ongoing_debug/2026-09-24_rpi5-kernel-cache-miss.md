@@ -22,8 +22,7 @@ nix path-info --store https://nixos-raspberrypi.cachix.org "$K" && echo cached |
 ## Cost when it misses
 
 24-thread v-laptop, qemu-user emulation, load ~50: build started 01:57, kernel still in
-modules at 06:45 (~18k of the kernel's build steps). Final time: TBD (fill in when the
-build finishes).
+modules at 07:24 (~15.8k objects, ~55/min) when it was aborted: 5.5h and ≥2h to go.
 
 ## Fix / open items
 
@@ -33,3 +32,16 @@ build finishes).
   the invariant; Postgres is pinned to 17.
 - [ ] Push the compiled 6.12.87 kernel to valeratrades.cachix.org so this card's
   on-box rebuilds and any reflash at this pin never compile it again.
+
+## Resolution (2026-09-24)
+
+A stale pin was only half of it: `raspberry-pi-5.page-size-16k` overlays jemalloc, which
+sits under rustc, redis, ruby and tmux, so most of the closure left cache.nixos.org too.
+Fixed by pinning `nixos-raspberrypi` to release `v1.20260801.0` and dropping 16k pages
+(the fallback already ran 4k). The remaining cost was the image itself: aarch64
+`mkfs.ext4` + fakeroot under qemu over a 9.5 GiB closure (15m+). Now
+`sdImage.rootFilesystemCreator = ./x86-ext4-fs.nix` (native) and `compressImage = false`.
+
+Measured, full image from a warm eval: **11m05s** (09:00:23 → 09:11:28), the last ~4 min
+being sd-image's own assembly (still aarch64 bash/dd/mtools under qemu). dd to the USB
+microSD reader: 10m28s.
