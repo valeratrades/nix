@@ -28,6 +28,10 @@ answer 530 (no origin) first.
 ## 0. Before the window (no outage)
 
 - [x] PRs merged (rpi5.nix#43, devops#22, gitops#60, devops#23); nix submodules on `main`.
+- [ ] **Cloudflare split (§5) — required before `serve pi`:** merge rpi5.nix#44 + devops#24,
+      bump both submodules in `~/nix`. The card must run a system with
+      `cloudflared-ev-invest` + `cloudflared-personal`; one still on `cloudflared-tunnel`
+      only connects the personal tunnel, and evinvest.ltd / aquafix.top are dark behind it.
 - [ ] Tailscale admin console: **delete the old `rpi5` machine** (offline since ~09-12),
       or the card joins as `rpi5-1` and `rpi5.taila74a7d.ts.net` points at nothing.
 - [ ] `tailscale_auth_key` was minted ~2026-06-28 → **expires ~2026-09-26**. If the card
@@ -36,13 +40,13 @@ answer 530 (no origin) first.
       still reachable on the LAN as `rpi5.local`.
 - [ ] Insert card, power on (wifi; no ethernet needed — it's pre-enrolled). Then:
       ```sh
-      ssh admin@rpi5.local 'systemctl is-active k3s tailscaled cloudflared-tunnel postgresql redis-ev tigerbeetle-0'
-      # expect: active active inactive inactive inactive inactive   ← gated, correct
+      ssh admin@rpi5.local 'systemctl is-active k3s tailscaled cloudflared-ev-invest cloudflared-personal postgresql redis-ev tigerbeetle-0'
+      # expect: active active inactive inactive inactive inactive inactive   ← gated, correct
       ssh admin@rpi5.local 'sudo tailscale status | head -3; ls /run/secrets | wc -l'
       ssh -A admin@rpi5.local 'bash -s' < hosts/rpi5/bootstrap.sh   # /etc/nixos clone only
       ```
       Host key is already pinned in `~/.ssh/known_hosts` (backup: `known_hosts.bak-rpi5`).
-- [ ] If the card's system is older than `main` after the merges: on the box,
+- [ ] Rebuild the card to `main` (always, since #44 changes its units): on the box,
       `sudo nixos-rebuild switch --flake '/etc/nixos?submodules=1#rpi5'`. The gates hold
       through a switch.
 - [ ] `cd ~/nix/hosts/devops/fallback && ./fallback.sh status` — note the newest R2
@@ -79,8 +83,9 @@ off-LAN, edit it to the tailnet name).
 
 If step 3–5 fails: the Pi is not an origin yet and the fallback's data is safe in R2.
 Either fix and re-run the failed verb, or bring the fallback back: on the instance
-`systemctl start k3s && systemctl start cloudflared-tunnel` (its `serving` gate still
-exists). Never both.
+`systemctl start k3s && systemctl start cloudflared-tunnel`, then re-create the interim
+Ev Invest connector exactly as in §5 (`failback` stopped it, and a stopped transient unit
+is gone). Never both.
 
 If TigerBeetle won't view-change: banking's `nix run .#new-replica` (`tigerbeetle
 recover`) against the lagging replica. **Never `format`.**
@@ -140,3 +145,48 @@ Changing which daemons run later = edit the list, materialize, merge.
   `mv /var/lib/fallback /var/lib/restore-gate` **before** the switch, or the switch
   restarts postgres into a skipped condition.
 - `rea_admin_token` in `secrets/platform.json` is still the literal `CHANGEME`.
+
+## 5. Cloudflare: EV zones → the Ev Invest account (2026-09-24)
+
+A tunnel only routes zones of its own account, so there are now two:
+
+```
+Ev Invest  (d78e0914…)  tunnel rpi5 a65565d2…  evinvest.ltd www. api. rea. devops.(:30030)
+                                               aquafix.top www. *.aquafix.top
+personal   (1dbedc39…)  tunnel rpi5 232391a4…  valeratrades.com www.
+                                               + the EV hostnames, kept until NS propagation is over
+```
+
+Done: zones evinvest.ltd / aquafix.top / vifnet.site exist **pending** in Ev Invest (NS
+`chelsea` + `logan`), DNS identical to the old zones (tunnel CNAMEs → the new tunnel), zone
+settings / SSL mode / bot settings / leaked-credential rule copied, aquafix catch-all
+forward → gmail. Bot Fight Mode turned OFF on evinvest.ltd in both accounts (it was on,
+against the rpi5 README's zone invariant — it drops the Didit webhook).
+
+**The fallback instance** runs the new tunnel as a *transient* unit — the declarative one
+(rpi5.nix#44) was not switched there, because the instance runs an older `feat/aws-fallback`
+build and a switch to `main` would also ship the aws-reaper, the manage_packages rename and
+social_networks. **It does not survive a reboot.** To recreate it (token from
+`sops -d --extract '["cloudflare_tunnel_token_ev_invest"]' hosts/rpi5/secrets/host.json`):
+```sh
+printf 'TUNNEL_TOKEN=%s\n' "$TOKEN" | ssh root@<instance-ip> 'umask 077; cat > /run/cloudflared-ev-invest-interim.env
+  bin=$(systemctl show -p ExecStart --value cloudflared-tunnel | grep -o "/nix/store/[^ ;]*/bin/cloudflared" | head -1)
+  systemd-run --unit=cloudflared-ev-invest-interim -p EnvironmentFile=/run/cloudflared-ev-invest-interim.env \
+    -p DynamicUser=yes -p Restart=on-failure -p RestartSec=5s "$bin" tunnel --no-autoupdate --loglevel info run'
+```
+The fence and `failback` match `cloudflared-*`, so they see and stop it.
+
+Cutover, per domain, any order, no maintenance window:
+- [ ] Registrar NS → `chelsea.ns.cloudflare.com`, `logan.ns.cloudflare.com` (remove the
+      `shane`/`sharon` pair). evinvest.ltd: Squarespace. aquafix.top: GoDaddy.
+      vifnet.site: Namecheap.
+- [ ] Dashboard (Ev Invest) → the domain → **Re-check now**. While the new zone is still
+      pending, resolvers that already see the new NS get an unproxied tunnel CNAME, i.e.
+      nothing — keep this window short. Resolvers on the old NS keep hitting the old
+      zone and the old tunnel (a "Moved" zone still answers) until their cache expires (≤ 48 h).
+- [ ] Once aquafix.top is **active**: Email → Email Routing → Enable (the API refuses
+      on a pending zone). MX/SPF/DKIM and the catch-all rule are already in place.
+- [ ] Once active: Web Analytics site shows up for the zone (it auto-installs on activation).
+- [ ] ≥ 48 h after the last NS change: remove the EV hostnames from the **personal**
+      tunnel's config, leaving only valeratrades.com / www. The old zones delete themselves
+      (Moved → Deleted after 7 d → purged after 7 more).
