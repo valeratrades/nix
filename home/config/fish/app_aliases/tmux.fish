@@ -64,7 +64,7 @@ function tmux_new_session_base
 			set current_path (dirname "$current_path")
 		end
 	end
-	if tmux has-session -t "$SESSION_NAME" 2>/dev/null
+	if tmux has-session -t "=$SESSION_NAME" 2>/dev/null; or tmux has-session -t "=*$SESSION_NAME" 2>/dev/null
 		echo "Session $SESSION_NAME already exists."
 		return 1
 	end
