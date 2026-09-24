@@ -1,6 +1,32 @@
 {
   "model": "opus",
+  "permissions": {
+    "defaultMode": "bypassPermissions",
+    "allow": [
+      "Bash",
+      "Read",
+      "Edit",
+      "Write",
+      "NotebookEdit",
+      "WebFetch",
+      "WebSearch",
+      "Glob",
+      "Grep",
+      "Agent",
+      "Skill"
+    ]
+  },
   "hooks": {
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/auto_allow.sh"
+          }
+        ]
+      }
+    ],
     "Notification": [
       {
         "hooks": [
