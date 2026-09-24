@@ -27,6 +27,7 @@ build finishes).
 
 ## Fix / open items
 
+- [x] Guard: `hosts/rpi5/build-image.sh` refuses when the kernel would be compiled (tested both ways).
 - [ ] Pin to a release tag instead of `main`, and bump it before building an image.
   Moves the nixpkgs both hosts share (system.nix) — the fallback moves with it, which is
   the invariant; Postgres is pinned to 17.
