@@ -14,7 +14,7 @@ A pane reading `finished` only means Claude stopped talking. `mod report` inside
 `claude_sessions.rs` takes the session's closing report (the last assistant turn
 in the transcript) and has an LLM — via the `ask_llm` crate — judge it as
 `finished` / `stuck` / `partial` / `ongoing`, which become states of their own:
-`stuck` is colored like `question`, `partial` and `ongoing` like `error`.
+`stuck` (no progress for any reason — blocked, lost, or refused) is colored like `question`, `partial` and `ongoing` like `error`.
 `ongoing` is the report that hands the ball back — it asks something or wants a
 go-ahead before continuing; `partial` just leaves work undone.
 

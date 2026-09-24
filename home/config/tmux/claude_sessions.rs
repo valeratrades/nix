@@ -834,7 +834,7 @@ mod report {
     const SYSTEM: &str = "You read the closing report a coding agent left at the end of its session and judge how the session ended.
 
 finished — the implementation the agent settled on is in the tree
-stuck — the agent could not do the work: blocked, failed, out of ideas, or handing it back for the user to do
+stuck — the work is not moving, whatever the cause: the agent is blocked on something it cannot resolve, failed, lost the thread, is out of ideas, declined or refused the task on safety or policy grounds, or handed it back for the user to do. An offer to do some other, narrower task instead does not make it ongoing
 partial — the agent left asked-for code unwritten, giving no reason it could not be written
 ongoing — the agent is waiting on the user: it asks a question, or names a next step it wants a go-ahead for
 
