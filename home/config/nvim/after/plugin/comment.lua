@@ -76,11 +76,6 @@ vim.api.nvim_create_autocmd("BufReadPost", {
 		end, 10)
 	end,
 })
--- tedi sprint buffers open as their outline: every issue behind its `{{{1`
-vim.api.nvim_create_autocmd("BufWinEnter", {
-	pattern = "milestone_*.md",
-	callback = function() vim.opt_local.foldlevel = 0 end,
-})
 --,}}}1
 
 -- gbf as alias for gb1f

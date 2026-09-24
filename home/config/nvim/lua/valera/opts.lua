@@ -4,10 +4,10 @@ local o = vim.opt
 o.guicursor =
 "n:blinkwait3000-blinkoff50-blinkon400-Cursor/lCursor,i:ver40-blinkwait3000-blinkoff300-blinkon150-Cursor/lCursor,c:ver40-blinkwait3000-blinkoff300-blinkon150-Cursor/lCursor"
 
--- -- recognise `{{{,}}}` fold markers, but don't fold automatically
+-- -- recognise `{{{,}}}` fold markers; levels 1-2 open, deeper closed on open
 o.foldmethod = "marker"
-o.foldenable = false
-o.foldlevel = 99
+o.foldenable = true --TEST: https://github.com/valeratrades/tedi sprint fold levels; revert to false/99 if inconvenient
+o.foldlevel = 2 --TEST: ^
 --
 
 o.nu = true
