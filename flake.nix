@@ -148,6 +148,8 @@
     # store paths match what each repo's CI pushes to valeratrades.cachix.org (overriding
     # nixpkgs would change the hash and miss the cache).
     server_upkeep.url = "github:valeratrades/server_upkeep";
+    # devops fallback/agent.nix, on both origins: the ledger's cluster id and ledger-gap.
+    banking.url = "github:EV-invest/banking";
     v_notify.url = "github:valeratrades/v_notify";
     btc_line.url = "github:valeratrades/btc_line";
     bourso-api.url = "github:valeratrades/bourso-api";
