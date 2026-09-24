@@ -271,7 +271,16 @@ end
 complete -c gi -w gh
 alias gil="gh issue list"
 complete -c gil -w gh
-alias gill="gh label list --sort name --limit 1000"
+function gill
+	set -l labels (gh label list --sort name --limit 1000 $argv)
+	or return
+	set -l rest (string match -rv '^[^\t]*:' -- $labels)
+	begin
+		string match -r '^[^\t]*:.*' -- $labels
+		test (count $rest) -gt 0; and printf '%s\n' --- $rest
+	end | column -t -s \t
+end
+complete -c gill -w 'gh label list'
 
 alias gia="gh issue edit --add-assignee"
 complete -c gia -w gh
