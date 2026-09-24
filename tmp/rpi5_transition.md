@@ -28,7 +28,7 @@ answer 530 (no origin) first.
 ## 0. Before the window (no outage)
 
 - [x] PRs merged (rpi5.nix#43, devops#22, gitops#60, devops#23); nix submodules on `main`.
-- [ ] **Cloudflare split (§5) — required before `serve pi`:** merge rpi5.nix#44 + devops#24,
+- [x] **Cloudflare split (§5) — required before `serve pi`:** merge rpi5.nix#44 + devops#24,
       bump both submodules in `~/nix`. The card must run a system with
       `cloudflared-ev-invest` + `cloudflared-personal`; one still on `cloudflared-tunnel`
       only connects the personal tunnel, and evinvest.ltd / aquafix.top are dark behind it.
