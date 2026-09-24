@@ -545,6 +545,7 @@ in {
         inputs.codex_nix.packages.${pkgs.stdenv.hostPlatform.system}.default
 
         libreoffice-still
+        whatsie # C++ whatsapp client
     
         gnuplot # plot functions for visual exploration (good for ones outside of 2d)
 
