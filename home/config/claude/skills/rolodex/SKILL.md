@@ -18,7 +18,7 @@ nix develop -c cargo r -p social_networks -- rolodex <subcommand>
 nix develop -c cargo r -p social_networks_reach --bin recon -- <subcommand>
 ```
 
-The rolodex directory is `[rolodex] path` in `~/.config/social_networks.nix`. Read it once; every
+The rolodex directory is `[rolodex] path` in `~/.config/social_networks/config.nix`. Read it once; every
 path below is relative to it.
 
 ## Routing
