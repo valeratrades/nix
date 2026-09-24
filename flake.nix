@@ -79,7 +79,7 @@
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
 
     # NB: brings its own nixpkgs (vendor kernel/firmware); deliberately not `follows`.
-    nixos-raspberrypi.url = "github:nvmd/nixos-raspberrypi/main";
+    nixos-raspberrypi.url = "github:nvmd/nixos-raspberrypi/v1.20260801.0";
 
     claude_code_nix.url = "github:sadjow/claude-code-nix";
 
