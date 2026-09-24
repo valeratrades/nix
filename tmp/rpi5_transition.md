@@ -1,7 +1,7 @@
 # rpi5 transition: AWS fallback → the new card
 
 The platform has been served from `evinvest-fallback` (EC2 t4g.large, eu-west-3) since
-the Pi's card burned (~2026-09-12). The new card was built from `hosts/rpi5` @ `146ce5e`
+the Pi's card burned (~2026-09-12). The new card was built from `hosts/rpi5` `main` (#43)
 and is **born gated**: it boots, joins wifi + tailscale, runs k3s with no Flux, and keeps
 Postgres / Redis / TigerBeetle / cloudflared / the R2 shippers skipped until the restore
 routine writes `/var/lib/fallback/{restored,serving,verified}`.
@@ -27,9 +27,7 @@ answer 530 (no origin) first.
 
 ## 0. Before the window (no outage)
 
-- [ ] Merge together: EV-invest/rpi5.nix#43 + EV-invest/devops#22 (fallback). Then
-      EV-invest/gitops#60 → EV-invest/devops#23 (social_networks). After merging, repoint
-      the nix repo's submodules at `main` of each and commit.
+- [x] PRs merged (rpi5.nix#43, devops#22, gitops#60, devops#23); nix submodules on `main`.
 - [ ] Tailscale admin console: **delete the old `rpi5` machine** (offline since ~09-12),
       or the card joins as `rpi5-1` and `rpi5.taila74a7d.ts.net` points at nothing.
 - [ ] `tailscale_auth_key` was minted ~2026-06-28 → **expires ~2026-09-26**. If the card
