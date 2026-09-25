@@ -1,5 +1,9 @@
 # rpi5 transition: AWS fallback → the new card
 
+> **2026-09-25: the hosts moved into devops** (`nix/` there; rpi5.nix is archived).
+> Read `hosts/rpi5/…` below as devops `nix/…` (`platform/`, `hosts/rpi5/`, `secrets/`),
+> run `fallback.sh` from any devops checkout, and `/etc/nixos` on the box is a devops clone.
+
 The platform has been served from `evinvest-fallback` (EC2 t4g.large, eu-west-3) since
 the Pi's card burned (~2026-09-12). The new card was built from `hosts/rpi5` `main` (#43)
 and is **born gated**: it boots, joins wifi + tailscale, runs k3s with no Flux, and keeps
@@ -43,18 +47,18 @@ answer 530 (no origin) first.
       ssh admin@rpi5.local 'systemctl is-active k3s tailscaled cloudflared-ev-invest cloudflared-personal postgresql redis-ev tigerbeetle-0'
       # expect: active active inactive inactive inactive inactive inactive   ← gated, correct
       ssh admin@rpi5.local 'sudo tailscale status | head -3; ls /run/secrets | wc -l'
-      ssh -A admin@rpi5.local 'bash -s' < hosts/rpi5/bootstrap.sh   # /etc/nixos clone only
+      ssh -A admin@rpi5.local 'bash -s' < nix/hosts/rpi5/bootstrap.sh   # /etc/nixos clone only
       ```
       Host key is already pinned in `~/.ssh/known_hosts` (backup: `known_hosts.bak-rpi5`).
 - [ ] Rebuild the card to `main` (always, since #44 changes its units): on the box,
       `sudo nixos-rebuild switch --flake '/etc/nixos?submodules=1#rpi5'`. The gates hold
       through a switch.
-- [ ] `cd ~/nix/hosts/devops/fallback && ./fallback.sh status` — note the newest R2
+- [ ] `cd <devops>/fallback && ./fallback.sh status` — note the newest R2
       objects and that the instance is `running`.
 
 ## 1. The window
 
-Run from `~/nix/hosts/devops/fallback` (fallback.sh wants the nix checkout as FLAKE_ROOT),
+Run from `<devops>/fallback`,
 laptop on the home LAN (`PI=root@rpi5` resolves via the `rpi5` ssh alias → `rpi5.local`;
 off-LAN, edit it to the tailnet name).
 

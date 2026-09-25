@@ -2,8 +2,8 @@
   description = "OS master";
 
   nixConfig = {
-    extra-substituters = [ "https://nixos-raspberrypi.cachix.org" "https://valeratrades.cachix.org" "https://ev-invest.cachix.org" ];
-    extra-trusted-public-keys = [ "nixos-raspberrypi.cachix.org-1:4iMO9LXa8BqhU+Rpg6LQKiGa2lsNh/j2oiYLNOQ5sPI=" "valeratrades.cachix.org-1:gXVwhzO5YB+BaiEJYT48qZgzdaErGQew6xtZcz4Fo1Q=" "ev-invest.cachix.org-1:n6YuUJLTQ+zP0ZO3kc6jodfOCufO7bZuUgTl0H25dLk=" ];
+    extra-substituters = [ "https://valeratrades.cachix.org" ];
+    extra-trusted-public-keys = [ "valeratrades.cachix.org-1:gXVwhzO5YB+BaiEJYT48qZgzdaErGQew6xtZcz4Fo1Q=" ];
   };
 
   #TODO!: setup my [own cache server](<https://nixos-and-flakes.thiscute.world/nix-store/host-your-own-binary-cache-server>). Needed to avoid rebuilding on lower-performance machines, like Rapsberri Pi or old laptops.
@@ -78,9 +78,6 @@
 
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
 
-    # NB: brings its own nixpkgs (vendor kernel/firmware); deliberately not `follows`.
-    nixos-raspberrypi.url = "github:nvmd/nixos-raspberrypi/v1.20260801.0";
-
     claude_code_nix.url = "github:sadjow/claude-code-nix";
 
     codex_nix.url = "github:sadjow/codex-cli-nix";
@@ -147,10 +144,6 @@
     # No `follows` here on purpose: these build against their OWN locked nixpkgs so the
     # store paths match what each repo's CI pushes to valeratrades.cachix.org (overriding
     # nixpkgs would change the hash and miss the cache).
-    server_upkeep.url = "github:valeratrades/server_upkeep";
-    # devops fallback/agent.nix, on both origins: the ledger's cluster id and ledger-gap.
-    banking.url = "github:EV-invest/banking";
-    v_notify.url = "github:valeratrades/v_notify";
     btc_line.url = "github:valeratrades/btc_line";
     bourso-api.url = "github:valeratrades/bourso-api";
     bad_apple_rs = {

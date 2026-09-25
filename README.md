@@ -78,7 +78,5 @@ Same thing applies to notes (don't make folders for a book, - sort ideas out int
 - disable default F key functions
 - turn off Secure Boot
 
-# Raspberry Pi 5 (`nixosConfigurations.rpi5`)
-Host config lives in its own repo (`EV-invest/rpi5.nix`), vendored here as a git submodule at `hosts/rpi5` — run `git submodule update --init` after cloning, and build with `?submodules=1` so Nix sees its files.
-Built via `nixos-raspberrypi`; flash `.?submodules=1#nixosConfigurations.rpi5.config.system.build.sdImage` (needs aarch64 emulation — `boot.binfmt.emulatedSystems` is on in v-laptop).
-- Secrets (wifi, telegram, cloudflare token) are sops-encrypted in `hosts/rpi5/secrets/{host,platform,money}.json` — one file per recipient tier, see `hosts/rpi5/scopes.nix` — and decrypted on the box by sops-nix using its own SSH host key — see `hosts/rpi5/README.md`. SSH login is declarative (`user.sshAuthorizedKeys`), never sops-gated, so ethernet access always works.
+# Raspberry Pi 5 / the AWS fallback
+Both EV-invest platform hosts live in [EV-invest/devops](https://github.com/EV-invest/devops) under `nix/` — see its `nix/README.md`. What stays here is laptop-side: the aarch64 binfmt that builds the Pi's image, the SSH aliases, the `led` function.
