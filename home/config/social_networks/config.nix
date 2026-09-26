@@ -86,25 +86,37 @@ Sentiment check: $BTC, how are we feeling?
     password = { env = "DEFAULT_PASSWORD"; };
   };
 
-  email = {
-    email = "valeratrades@gmail.com";
-    # regex; checked in order important > read_later > discard, unmatched -> LLM
-    rules = {
-      important = {
-        address = [ "@equilibretechnologies\\.com" ];
-        subject = [ "Appointment booked" ];
+  email =
+    let
+      # regex; checked in order important > read_later > discard, unmatched -> LLM
+      rules = {
+        important = {
+          address = [ "@equilibretechnologies\\.com" ];
+          subject = [ "Appointment booked" ];
+        };
+        read_later = {
+          address = [ "Alex Hormozi" ];
+        };
+        discard = {
+          address = [ "imperiumlabs" ];
+        };
       };
-      read_later = {
-        address = [ "Alex Hormozi" ];
-      };
-      discard = {
-        address = [ "imperiumlabs" ];
-      };
-    };
-    auth = {
-      imap = {
-        pass = { env = "GOOGLE_MAIN_MAIL_PASS"; };
-      };
-    };
-  };
+    in
+    [
+      {
+        email = "valeratrades@gmail.com";
+        inherit rules;
+        auth.imap.pass = { env = "GOOGLE_MAIN_MAIL_PASS"; };
+      }
+      {
+        email = "v79166789533@gmail.com";
+        inherit rules;
+        auth.imap.pass = { env = "GOOGLE_SPAM_MAIL_PASS"; };
+      }
+    # {
+    #   email = "1cryptoicos@gmail.com";
+    #   inherit rules;
+    #   auth.imap.pass = { env = "GOOGLE_CRYPTOICOS_MAIL_PASS"; };
+    # }
+    ];
 }
