@@ -113,10 +113,10 @@ Sentiment check: $BTC, how are we feeling?
         inherit rules;
         auth.imap.pass = { env = "GOOGLE_SPAM_MAIL_PASS"; };
       }
-    # {
-    #   email = "1cryptoicos@gmail.com";
-    #   inherit rules;
-    #   auth.imap.pass = { env = "GOOGLE_CRYPTOICOS_MAIL_PASS"; };
-    # }
+      {
+        email = "1cryptoicos@gmail.com";
+        inherit rules;
+        auth.imap.pass = { env = "GOOGLE_ICOS1_MAIL_PASS"; };
+      }
     ];
 }
