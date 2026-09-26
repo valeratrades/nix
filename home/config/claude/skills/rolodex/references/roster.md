@@ -1,6 +1,6 @@
 # The roster table
 
-`rolodex discover` and `recon roster --where` evaluate a SQL `WHERE` clause against an in-memory
+`rolodex procure` and `recon roster --where` evaluate a SQL `WHERE` clause against an in-memory
 table built from `members.json` joined against the venue transcript. Nothing is persisted; the table
 is rebuilt on every call from the markdown, which is the store.
 

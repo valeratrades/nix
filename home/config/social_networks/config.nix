@@ -75,9 +75,10 @@ Sentiment check: $BTC, how are we feeling?
     };
   };
 
-  rolodex = {
-    path = "/home/v/s/g/rolodex/";
-    tags = [ "ServiceArb" ];
+  venues = "/home/v/s/g/rolodex/venues";
+  purposes = {
+    rolodex = import ./rolodex.nix; # `social_networks rolodex <cmd>`
+    reviews = import ./reviews.nix;
   };
 
   skool = {

@@ -53,7 +53,7 @@ Not venues: `discord` (the member list needs a gateway session, which is not imp
 
 Then one `api.skool.com/users/<id>` per pin, to turn an id into a handle. That is the slow part: it
 paces itself at ~0.7s per member, so a 300-member group takes about five minutes. Do it once — every
-`roster`, `discover` and `pull` afterwards reads `members.json`.
+`roster`, `procure` and `pull` afterwards reads `members.json`.
 
 Two limits, and both mean the roster is smaller than the group:
 
