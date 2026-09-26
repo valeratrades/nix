@@ -21,6 +21,10 @@ struct Args {
     #[arg(short = 'n', long)]
     dry_run: bool,
 
+    /// Reboot instead of powering off
+    #[arg(short = 'r', long)]
+    reboot: bool,
+
     /// Internal flag: run as detached process (used when inside tmux)
     #[arg(long, hide = true)]
     detached: bool,
@@ -36,28 +40,37 @@ fn run_cmd_silent(cmd: &str, args: &[&str]) -> bool {
         .unwrap_or(false)
 }
 
-/// `session_path\tcwd\tsession_id\tconfig_dir` per live tmux-hosted claude, consumed by fish's `restore_sessions` on boot.
-fn write_claude_inventory(dry_run: bool) {
+/// `tmux_sessions.tsv`: `session_name\tsession_path` per tmux session; `claude_restore.tsv`: `session_name\tcwd\tsession_id\tconfig_dir` per live tmux-hosted claude.
+/// Both consumed by fish's `restore_sessions` on boot.
+fn write_inventory(dry_run: bool) {
     let home = std::env::var("HOME").expect("HOME not set");
     let state_dir = std::env::var("XDG_STATE_HOME").unwrap_or_else(|_| format!("{home}/.local/state"));
+    let sessions_path = format!("{state_dir}/tmux_sessions.tsv");
     let path = format!("{state_dir}/claude_restore.tsv");
 
-    let out = match Command::new("tmux")
-        .args(["list-panes", "-a", "-F", "#{pane_id}\t#{session_path}"])
-        .output()
-    {
-        Ok(out) if out.status.success() => out,
+    let (out, sessions) = match (
+        Command::new("tmux").args(["list-panes", "-a", "-F", "#{pane_id}\t#{session_name}"]).output(),
+        Command::new("tmux").args(["list-sessions", "-F", "#{session_name}\t#{session_path}"]).output(),
+    ) {
+        (Ok(out), Ok(sessions)) if out.status.success() && sessions.status.success() => (out, String::from_utf8_lossy(&sessions.stdout).into_owned()),
         // No tmux server still records an empty layout, so the previous shutdown cannot linger.
         _ if dry_run => {
-            println!("Dry run - no tmux panes; would save an empty inventory to {path}");
+            println!("Dry run - no tmux panes; would save an empty inventory to {path} and {sessions_path}");
             return;
         }
         _ => {
+            std::fs::write(&sessions_path, "").expect("failed to write empty session inventory");
             std::fs::write(&path, "").expect("failed to write empty claude inventory");
-            println!("No tmux panes; saved empty inventory to {path}");
+            println!("No tmux panes; saved empty inventory to {path} and {sessions_path}");
             return;
         }
     };
+    if dry_run {
+        println!("Dry run - would record sessions to {sessions_path}:\n{sessions}");
+    } else {
+        std::fs::write(&sessions_path, &sessions).expect("failed to write session inventory");
+        println!("Recorded {} session(s) to {sessions_path}", sessions.lines().count());
+    }
     let panes: Vec<(String, String)> = String::from_utf8_lossy(&out.stdout)
         .lines()
         .map(|l| {
@@ -92,12 +105,12 @@ fn write_claude_inventory(dry_run: bool) {
                 continue; // not launched inside tmux, nothing to rebuild it into
             };
             let pane_id = tmux.rsplit_once('.').unwrap_or_else(|| panic!("{}: unexpected tmux field '{tmux}'", f.display())).1;
-            let Some((_, session_path)) = panes.iter().find(|(id, _)| id == pane_id) else {
+            let Some((_, session_name)) = panes.iter().find(|(id, _)| id == pane_id) else {
                 continue; // claude on another tmux server
             };
             let cwd = j["cwd"].as_str().unwrap_or_else(|| panic!("{}: no cwd", f.display()));
             let id = j["sessionId"].as_str().unwrap_or_else(|| panic!("{}: no sessionId", f.display()));
-            content.push_str(&format!("{session_path}\t{cwd}\t{id}\t{}\n", config_dir.display()));
+            content.push_str(&format!("{session_name}\t{cwd}\t{id}\t{}\n", config_dir.display()));
         }
     }
 
@@ -127,6 +140,9 @@ fn main() {
         let mut cmd_args = vec!["--detached".to_string()];
         if args.dry_run {
             cmd_args.push("--dry-run".to_string());
+        }
+        if args.reboot {
+            cmd_args.push("--reboot".to_string());
         }
 
         // Use setsid to create a new session, detaching from the terminal
@@ -219,7 +235,7 @@ fn main() {
 
     // Must run while the tmux server is still alive (see the kill-server below).
     let dry_run = args.dry_run;
-    let inventory_handle = std::thread::spawn(move || write_claude_inventory(dry_run));
+    let inventory_handle = std::thread::spawn(move || write_inventory(dry_run));
 
     // Wait for all three to finish before proceeding with shutdown
     tedi_handle.join().expect("tedi thread panicked");
@@ -248,20 +264,21 @@ fn main() {
     }
 
     // 4. Shutdown. `shutdown now` is the ambiguous compat interface (halt vs
-    // poweroff) — use systemctl poweroff, and treat a non-zero exit as failure so
+    // poweroff) — use systemctl, and treat a non-zero exit as failure so
     // callers can't mistake "poweroff refused" for success.
+    let verb = if args.reboot { "reboot" } else { "poweroff" };
     if args.dry_run {
-        println!("Dry run - would run: sudo systemctl poweroff");
+        println!("Dry run - would run: sudo systemctl {verb}");
     } else {
-        println!("Shutting down...");
-        match Command::new("sudo").args(["systemctl", "poweroff"]).status() {
+        println!("Shutting down ({verb})...");
+        match Command::new("sudo").args(["systemctl", verb]).status() {
             Ok(s) if s.success() => {}
             Ok(s) => {
-                eprintln!("poweroff exited with {:?}", s.code());
+                eprintln!("{verb} exited with {:?}", s.code());
                 std::process::exit(1);
             }
             Err(e) => {
-                eprintln!("Failed to power off: {e}");
+                eprintln!("Failed to {verb}: {e}");
                 std::process::exit(1);
             }
         }
