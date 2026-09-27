@@ -22,7 +22,7 @@ alias gn="$__fish_scripts_dir/git_scripts.rs publish"
 alias kbd="$__fish_scripts_dir/kbd.rs"
 alias health="$__fish_scripts_dir/health.rs"
 alias optimize_for="sudo -E $__fish_scripts_dir/optimize_for.rs"
-alias smart_shutdown="$__fish_scripts_dir/smart_shutdown.rs"
+alias smart_shutdown="$NIXOS_CONFIG/home/scripts/smart_shutdown.rs" # not the store copy: a shell older than the last switch would record in a format `restore_sessions` no longer reads
 # plain `shutdown now` skips the claude inventory write, silently breaking restore_sessions
 function shutdown
 	if contains -- -r $argv; or contains -- --reboot $argv
