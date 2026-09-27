@@ -91,6 +91,7 @@ with a wide predicate over a narrow guess — the roster is a few hundred rows a
 ## Tags
 
 Typed per purpose: `rolodex tag` prints the vocabulary with each tag's type and how many carry it.
+A tag name may be written in any case (`ServiceArb` = `service-arb` = `service_arb`); it is shown snake_case.
 `tag <name> <pattern>` sets a bool to true; any other type takes `tag <name>=<value> <pattern>` —
 `0.7`, `25..35` (range), `Lyon@45.76,4.84` (place), `2026-09-01` (timestamp). A group takes
 `tag <group>:<value> <pattern>`, and `<group>:<value>` as a pattern selects exactly who holds it.
