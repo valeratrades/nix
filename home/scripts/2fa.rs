@@ -6,6 +6,7 @@ edition = "2024"
 
 [dependencies]
 clap = { version = "4.5.49", features = ["derive"] }
+v_utils = { version = "2.20", default-features = false, features = ["io"] }
 ---
 
 use clap::Parser;
@@ -42,33 +43,21 @@ fn main() {
     let digits = args.digits;
 
     let var = format!("{}_TOTP", app.to_uppercase());
-    let mut secret = match env::var(&var) {
+    let secret = match env::var(&var) {
         Ok(v) if !v.trim().is_empty() => v,
         _ => {
             eprintln!("Environment variable {var} is not set.");
             std::process::exit(1);
         }
     };
-    secret.retain(|c| !c.is_whitespace());
 
-    let out = Command::new("oathtool")
-        .args(["--base32", "--totp", &secret, "-d", &digits.to_string()])
-        .output();
-
-    let out = match out {
-        Ok(o) if o.status.success() => o,
-        Ok(o) => {
-            let err = String::from_utf8_lossy(&o.stderr);
-            eprintln!("oathtool failed: {err}");
-            std::process::exit(1);
-        }
+    let code = match v_utils::io::totp(&secret, digits) {
+        Ok(c) => c,
         Err(e) => {
-            eprintln!("Failed to run oathtool: {e}");
+            eprintln!("{var} is not a base32 secret: {e}");
             std::process::exit(1);
         }
     };
-
-    let code = String::from_utf8_lossy(&out.stdout).trim().to_string();
 
     if args.copy {
         let mut child = match Command::new("wl-copy").stdin(Stdio::piped()).spawn() {
