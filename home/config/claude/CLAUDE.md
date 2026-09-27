@@ -38,6 +38,8 @@
 
 - don't forget to run `nix develop` to init env in all projects with flake.nix
 
+- any non-instant command (full rebuilds, long test runs, nix builds, waiting on CI or a rollout) goes to the background, so a message from me doesn't interrupt it mid-run
+
 - don't compile with `--release` when testing, unless the application is bottlenecked by its operations speed
 
 - you're disallowed from ever adding `#[allow(dead_code)]` (if it's a false-positive from a macro, there are likely more precise flags to skip it like eg `unused_assignment`). Similarly, you can't name things to start with underscore to silence unused warnings.
@@ -54,7 +56,7 @@
 - minimize amount of questions you ask me. Most of them can be resolved on your own, by listing out pros and cons, then referencing this CLAUDE.md file for guiding principles, from which most often the decision becomes obvious.
   Never ask questions just to ask questions. Your instructions for creation of the plan may tell you to compile questions to ask, - but I want to be very clear here, - you **only** do that if something is actually not clear. Things that you can derive/answer yourself, you do not bring up.
 
-- before starting your work, run `fish -c 'source $NIXOS_CONFIG/home/config/fish/other.fish; active_agents'`  to know if you're in a tmux session and if there are other active agents on this project besides yourself (number that comes out will be >=2 then). If you're not the only one there, you will do your work in a git worktree. For larger changes, you can and should claim a branch, and then open PR at the end. // when asking to merge, use your `question` interface. I have a script that will highlight those. Note that you don't ask for PR, - if the change is too large to apply directly without asking me, PR is a given. You ask once you open it, for whether it's ready to be merged.
+- before starting your work, run `fish -c 'source $NIXOS_CONFIG/home/config/fish/other.fish; active_agents'`  to know if you're in a tmux session and if there are other active agents on this project besides yourself (number that comes out will be >=2 then). If you're not the only one there, you work in a git worktree at `./tmp/wt/<branch>` inside the repo, never anywhere else (not system `/tmp`, not next to the repo). For larger changes, you can and should claim a branch, and then open PR at the end. // when asking to merge, use your `question` interface. I have a script that will highlight those. Note that you don't ask for PR, - if the change is too large to apply directly without asking me, PR is a given. You ask once you open it, for whether it's ready to be merged.
   > does not apply if you're in `/plan` mode or are just exploring, - run just before you're about to start making a big edit
   > And also, small edits don't require none of this, - you can just make them directly
 
