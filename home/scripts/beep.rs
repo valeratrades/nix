@@ -7,7 +7,7 @@ edition = "2024"
 [dependencies]
 clap = { version = "4.5.49", features = ["derive"] }
 ctrlc = { version = "3.4", features = ["termination"] }
-v_utils = { version = "2.17.3", default-features = false }
+v_utils = { version = "=2.19.2", default-features = false }
 ---
 
 use clap::Parser;
