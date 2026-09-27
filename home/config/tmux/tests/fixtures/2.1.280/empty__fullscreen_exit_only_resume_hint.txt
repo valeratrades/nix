@@ -1,0 +1,62 @@
+cd /home/v/s/ev_invest/_service_arb/remote_reviews_automations; and cl --resume ae3ae7f9-d7e8-48b3-9513-0b66ff21434a
+cp: cannot create regular file './remote_reviews_automations/build.rs': No such file or directory
+chmod: cannot access './remote_reviews_automations/build.rs': No such file or directory
+Error: file `./remote_reviews_automations/build.rs` does not exist
+
+⚠️  v_flakes: this repo defines no `nix run .#help`.
+    Every v_flakes consumer owes one — the entrypoint listing what the repo can do.
+    Add to the per-system outputs of flake.nix:
+      apps.help = { type = "app"; program = "${pkgs.writeShellScriptBin "help" ''cat <<EOF ... EOF''}/bin/help"; };
+
+issue-lint: #1 'knockk: Knockk refuses to run — pairip needs Play and a Play installer' is a bug with no severity:* label
+issue-lint: #3 'facebook: speed and invasiveness improvements vs flagging risk' has 0 i:* labels, expected exactly one
+issue-lint: #1 'knockk: Knockk refuses to run — pairip needs Play and a Play installer' has 0 i:* labels, expected exactly one
+0 ❯ cd /home/v/s/ev_invest/_service_arb/remote_reviews_automations; and cl --resume ae3ae7f9-d7e8-48b3-9513-0b66ff21434a                                                            ~/s/e/_/remote_reviews_automations main [!?⇡]   + 10:13:53
+
+Resume this session with:
+claude --resume 55380dab-29fd-45b5-ae3d-df5fcb950bbf
+^C⏎
+
+⚠️  v_flakes: this repo defines no `nix run .#help`.
+    Every v_flakes consumer owes one — the entrypoint listing what the repo can do.
+    Add to the per-system outputs of flake.nix:
+      apps.help = { type = "app"; program = "${pkgs.writeShellScriptBin "help" ''cat <<EOF ... EOF''}/bin/help"; };
+
+0 ❯ cl                                                                                                                                                                           ~/s/e/_/remote_reviews_automations main   + 3h10m42s 13:24:36
+
+Resume this session with:
+claude --resume dc510499-1abe-4ef6-8741-3c7103222dcb
+nix-direnv: /home/v/s/ev_invest/_service_arb/remote_reviews_automations/flake.nix
+0 ❯                                                                                                                                                                             ~/s/e/_/remote_reviews_automations main [⇡]   + 3m12s 13:27:56
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

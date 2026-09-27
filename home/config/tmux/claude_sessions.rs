@@ -1760,8 +1760,8 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
                 .collect::<Vec<_>>()
                 .join("\n");
 
-            match dead_claude_resume_id(&tail) {
-                Some(id) => {
+            match dead_claude_resume_id(&tail).map(|id| (id, determine_claude_activity(caps).state)) {
+                Some((id, state)) if state != ClaudeState::Empty => {
                     let file = get_process_cwd(pane_pid).and_then(|cwd| {
                         let home = std::env::var("HOME").ok()?;
                         Some(
@@ -1774,17 +1774,9 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
                     let summary = file.as_deref().and_then(get_session_summary);
                     let model = file.as_deref().and_then(latest_model);
                     let context = file.as_deref().and_then(context_tokens);
-                    // Killed mid-turn (esc, then Ctrl-C) exits with the
-                    // "⎿ Interrupted" row still at the bottom — that's the last
-                    // real state, not a clean Finished.
-                    let state = if shows_interruption(&tail) {
-                        ClaudeState::Interrupted
-                    } else {
-                        ClaudeState::Finished
-                    };
                     (state, None, None, None, summary, model, context)
                 }
-                None => (ClaudeState::Empty, None, None, None, None, None, None),
+                _ => (ClaudeState::Empty, None, None, None, None, None, None),
             }
         };
 
@@ -2164,11 +2156,19 @@ fn classify_activity(
 
     // A dead claude: on exit the TUI prints "Resume this session with:" and the
     // bare `claude --resume <uuid>` command, then hands the pane back to the
-    // shell. The conversation is over — Finished. Restricted to the recent tail:
-    // an exit hint deep in scrollback under a RELAUNCHED claude must not shadow
-    // the live session's state.
+    // shell. Finished while its conversation is still drawn above the hint; a
+    // fullscreen (alt-screen) claude takes it along on exit, leaving an empty
+    // slot. Restricted to the recent tail: an exit hint deep in scrollback under
+    // a RELAUNCHED claude must not shadow the live session's state.
     if dead_claude_resume_id(&last_portion).is_some() {
-        return ActivityResult { state: ClaudeState::Finished, draft_content: None, question_content: None, plan_mode };
+        let ui_above_hint = last_portion // bottom-up
+            .lines()
+            .skip_while(|l| !l.starts_with("Resume this session with:"))
+            .skip(1)
+            .take(3)
+            .any(|l| l.trim_start().starts_with('─'));
+        let state = if ui_above_hint { ClaudeState::Finished } else { ClaudeState::Empty };
+        return ActivityResult { state, draft_content: None, question_content: None, plan_mode };
     }
 
     // A background shell Claude is actively tailing (e.g. `gh run watch` on a CI
