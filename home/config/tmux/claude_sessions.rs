@@ -1020,7 +1020,7 @@ Answer with exactly one word: finished, stuck, partial, or ongoing.";
 
         #[test]
         fn closing_text_is_read_past_a_thinking_only_turn() {
-            let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+            let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/2.1.154");
             let raw = fs::read_to_string(dir.join("finished__idle_pane_own_transcript.jsonl")).unwrap();
             let report = extract_last_text(&raw.lines().collect::<Vec<_>>()).unwrap();
             assert!(report.starts_with("Done, all green."), "got {report:?}");
@@ -1028,26 +1028,17 @@ Answer with exactly one word: finished, stuck, partial, or ongoing.";
 
         #[test]
         fn a_turn_still_holding_a_tool_call_yields_no_report() {
-            let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+            let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/2.1.154");
             let raw = fs::read_to_string(dir.join("finished__stale_interrupt_marker.jsonl")).unwrap();
             assert_eq!(extract_last_text(&raw.lines().collect::<Vec<_>>()), None);
         }
 
         /// The prompt IS the classifier, so it gets pinned against real closing
-        /// reports — `tests/reports/<verdict>__<desc>.md`, one live call each.
+        /// reports — `tests/reports/<claude version>/<verdict>__<desc>.md`, one live call each.
         /// Drop a misjudged report in and it's covered with no code edit.
         #[test]
         fn reports_classify_to_their_named_verdict() {
-            let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/reports");
-            let mut files: Vec<PathBuf> = fs::read_dir(&dir)
-                .unwrap_or_else(|e| panic!("read {dir:?}: {e}"))
-                .filter_map(|e| e.ok().map(|e| e.path()))
-                .filter(|p| p.extension().is_some_and(|x| x == "md"))
-                .collect();
-            files.sort();
-            assert!(!files.is_empty(), "no *.md reports in {dir:?}");
-
-            for file in files {
+            for file in crate::tests::versioned_cases("reports", "md") {
                 let stem = file.file_stem().unwrap().to_string_lossy().to_string();
                 let expected = match stem.split("__").next().unwrap() {
                     "finished" => Verdict::Finished,
@@ -2672,7 +2663,9 @@ mod tests {
     //! a real pane that got read as the wrong `ClaudeState`. These tests pin that
     //! function against REAL captured pane dumps — no tmux, no /proc, no mocks.
     //!
-    //! ## Fixture layout (`tests/fixtures/`)
+    //! ## Fixture layout (`tests/fixtures/<claude version>/`)
+    //! The version directory is the claude code that drew the pane (its banner, or
+    //! `"version"` in its transcript); ones below `OLDEST_CLAUDE_VERSION` are skipped.
     //! - `<state>__<name>.txt`  — plain `tmux capture-pane -p` output. The
     //!   `<state>` prefix (before `__`) is the EXPECTED state and is asserted.
     //! - `<state>__<name>.esc`  — OPTIONAL companion: escape-coded
@@ -2689,11 +2682,11 @@ mod tests {
     //!
     //! ## Adding a case (the whole point — trivial, no code edit)
     //! Capture a live pane in the state you want to lock in:
-    //!     tmux capture-pane -t <sess>:<win> -p -S -50   > tests/fixtures/question__askwidget.txt
+    //!     tmux capture-pane -t <sess>:<win> -p -S -50   > tests/fixtures/<version>/question__askwidget.txt
     //!     # only for draft cases, also grab the escaped capture:
-    //!     tmux capture-pane -t <sess>:<win> -p -e -S -10 > tests/fixtures/draft__typed.esc
+    //!     tmux capture-pane -t <sess>:<win> -p -e -S -10 > tests/fixtures/<version>/draft__typed.esc
     //!     # for active/finished deliberation cases, persist the transcript tail:
-    //!     tail -n 15 ~/.claude/projects/<proj>/<session>.jsonl > tests/fixtures/finished__idle.jsonl
+    //!     tail -n 15 ~/.claude/projects/<proj>/<session>.jsonl > tests/fixtures/<version>/finished__idle.jsonl
     //! Then `cargo insta accept` to record its full ActivityResult snapshot.
     //! The filename-prefix assertion runs automatically.
 
@@ -2701,8 +2694,46 @@ mod tests {
     use std::fs;
     use std::path::{Path, PathBuf};
 
-    fn fixtures_dir() -> PathBuf {
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures")
+    /// Cases captured under an older claude code are skipped: its UI is no longer what panes show.
+    const OLDEST_CLAUDE_VERSION: [u32; 3] = [2, 1, 154];
+
+    fn parse_version(s: &str) -> Option<[u32; 3]> {
+        let mut parts = s.split('.').map(|p| p.parse().ok());
+        let v = [parts.next()??, parts.next()??, parts.next()??];
+        parts.next().is_none().then_some(v)
+    }
+
+    /// Every `tests/<kind>/<claude version>/*.<ext>` case at or above `OLDEST_CLAUDE_VERSION`.
+    pub(crate) fn versioned_cases(kind: &str, ext: &str) -> Vec<PathBuf> {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests").join(kind);
+        let mut cases = Vec::new();
+        for entry in fs::read_dir(&root).unwrap_or_else(|e| panic!("read {root:?}: {e}")) {
+            let path = entry.unwrap().path();
+            if !path.is_dir() {
+                assert!(
+                    path.extension().is_none_or(|x| x != ext),
+                    "{path:?} carries no claude code version; move it under {root:?}/<version>/"
+                );
+                continue;
+            }
+            let name = path.file_name().unwrap().to_string_lossy();
+            let version = parse_version(&name)
+                .unwrap_or_else(|| panic!("{path:?}: directory name must be a claude code version like 2.1.154"));
+            if version < OLDEST_CLAUDE_VERSION {
+                eprintln!("skipping {path:?}: older than cutoff {OLDEST_CLAUDE_VERSION:?}");
+                continue;
+            }
+            cases.extend(
+                fs::read_dir(&path)
+                    .unwrap_or_else(|e| panic!("read {path:?}: {e}"))
+                    .map(|e| e.unwrap().path())
+                    .filter(|p| p.extension().is_some_and(|x| x == ext)),
+            );
+        }
+        // Deterministic order so the snapshot review list is stable run-to-run.
+        cases.sort_by(|a, b| a.file_name().cmp(&b.file_name()));
+        assert!(!cases.is_empty(), "no *.{ext} cases in {root:?} at or above {OLDEST_CLAUDE_VERSION:?}");
+        cases
     }
 
     /// `.start` companion: when the claude in the pane began, RFC3339. Stands in
@@ -2741,21 +2772,7 @@ mod tests {
     /// Drop a new correctly-named `.txt` in and it's covered with zero code edits.
     #[test]
     fn fixtures_classify_to_their_named_state() {
-        let dir = fixtures_dir();
-        let mut txts: Vec<PathBuf> = fs::read_dir(&dir)
-            .unwrap_or_else(|e| panic!("read {dir:?}: {e}"))
-            .filter_map(|e| e.ok().map(|e| e.path()))
-            .filter(|p| p.extension().is_some_and(|x| x == "txt"))
-            .collect();
-        // Deterministic order so the snapshot review list is stable run-to-run.
-        txts.sort();
-
-        assert!(
-            !txts.is_empty(),
-            "no *.txt fixtures in {dir:?} — capture one with `tmux capture-pane -p`"
-        );
-
-        for txt in txts {
+        for txt in versioned_cases("fixtures", "txt") {
             let stem = txt.file_stem().unwrap().to_string_lossy().to_string();
             let plain = fs::read_to_string(&txt).unwrap_or_else(|e| panic!("read {txt:?}: {e}"));
 

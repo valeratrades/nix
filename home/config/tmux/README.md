@@ -28,7 +28,7 @@ session just reads `finished`. `done` panes (untouched for 45 min) are never
 classified — that signal has already decayed.
 
 The judging prompt is the whole classifier, so it's pinned by
-`tests/reports/<verdict>__<desc>.md` — real closing reports, one live call each,
+`tests/reports/<claude version>/<verdict>__<desc>.md` — real closing reports, one live call each,
 same drop-a-file-in-and-it's-covered deal as the pane fixtures. Editing the
 prompt invalidates every cached verdict (they were drawn by a different judge).
 
@@ -91,12 +91,16 @@ When a pane gets classified wrong, capture it and drop it in — no code change
 needed. See `tests/fixtures/README.md` for the full workflow; the short version:
 
 ```fish
-tmux capture-pane -t <session>:<window> -p -S -50 > tests/fixtures/<state>__<desc>.txt
+tmux capture-pane -t <session>:<window> -p -S -50 > tests/fixtures/<version>/<state>__<desc>.txt
 INSTA_UPDATE=always claude_sessions_test   # record its snapshot
 claude_sessions_test                        # confirm green
 ```
 
+`<version>` is the claude code that drew the pane — every case must live under
+one, and cases older than `OLDEST_CLAUDE_VERSION` (in `mod tests`) are skipped,
+so bumping it retires fixtures of UIs no longer seen. Same for `tests/reports/`.
+
 `<state>` is one of `empty active planning finished draft question error`. For draft cases
-also capture the escape-coded pane to `tests/fixtures/<state>__<desc>.esc`
+also capture the escape-coded pane to `tests/fixtures/<version>/<state>__<desc>.esc`
 (`tmux capture-pane -p -e -S -10`) — it's how typed input is told apart from grey
 ghost suggestions.
