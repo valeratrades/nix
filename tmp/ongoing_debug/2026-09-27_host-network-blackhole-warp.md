@@ -10,7 +10,7 @@ An agent in `~/s/ev_invest/_service_arb/emulate_phone_cam` (session `e2fb3ac5`) 
 cd ~/.local/state/warp && sudo wg-quick up ./warp.conf   # wgcf profile, AllowedIPs = 0.0.0.0/0, ::/0
 ```
 
-wg-quick with a /0 peer installs `table 51820` + `not fwmark 51820` + `suppress_prefixlength 0` rules, so every packet on the host goes through `warp`. The tunnel did not pass traffic, so the host was blackholed. Nothing ran `wg-quick down`, and the interface stayed up until the reboot.
+wg-quick with a /0 peer installs `table 51820` + `not fwmark 51820` + `suppress_prefixlength 0` rules at priority 5208/5209, ahead of tailscale's `lookup 52` at 5270, so every packet on the host goes through `warp` — MagicDNS's 100.100.100.100 included, which then hung every lookup. WARP itself passes traffic: the same profile, moved into a netns, exits at 104.28.x (loc=FR). Nothing ran `wg-quick down`, and the interface stayed up until the reboot.
 
 | incident | `wg-quick up` | reboot |
 |---|---|---|
@@ -32,7 +32,7 @@ The Claude Code symptoms ("Remote managed settings failed to load", `API error �
 
 ## How to confirm the next time
 
-- `ip link show warp` / `ip rule` shows `lookup 51820` → it is this bug again. Fix it live with `sudo wg-quick down ~/.local/state/warp/warp.conf`, no reboot needed.
+- `ip link show warp` / `ip rule` shows `lookup 51820` → it is this bug again. Fix it live with `sudo ip link del warp` (that drops wg-quick's rules' target; then `sudo ip rule del table 51820` until `ip rule` is stock), no reboot needed. `~/.local/state/warp/` no longer exists: the profile is `~/.local/state/emulate_android/egress/warp.conf`, and emulate_android now only ever brings it up inside netns `emulate_android` (`egress down` removes it).
 - `journalctl -b -1 | grep -E 'sudo\[.*COMMAND=|nsncd.*worker'`. A sudo line with no `TTY=` came from an agent.
 - To find the session: `grep -rl '<command fragment>' ~/.claude/projects`.
 
