@@ -4,7 +4,7 @@
 edition = "2024"
 
 [dependencies]
-ask_llm = { version = "3.3.0", default-features = false }
+ask_llm = { version = "3.5.0", default-features = false }
 tokio = { version = "1", features = ["rt", "time", "net"] }
 clap = { version = "4.5.49", features = ["derive"] }
 chrono = { version = "0.4", default-features = false, features = ["alloc"] }
@@ -835,8 +835,8 @@ mod report {
 
 finished — the implementation the agent settled on is in the tree
 stuck — the work is not moving, whatever the cause: the agent is blocked on something it cannot resolve, failed, lost the thread, is out of ideas, declined or refused the task on safety or policy grounds, or handed it back for the user to do. An offer to do some other, narrower task instead does not make it ongoing
-partial — the agent left asked-for code unwritten, giving no reason it could not be written
-ongoing — the agent is waiting on the user: it asks a question, or names a next step it wants a go-ahead for
+partial — the agent left asked-for code unwritten, giving no reason it could not be written; or a task it was carrying out stopped short of its goal and now waits on steps the user has to take, even if it also asks the user something
+ongoing — the asked-for work is done and the agent is waiting on the user: it asks a question, or names a further step it wants a go-ahead for
 
 Judge the implementation, nothing else. A test not written, a check not run, a verification left for the user, work the report never claims was asked for — none of that is partial. Neither is a part the agent reports as impossible, done differently, or dropped because the codebase would not take it: a reason given revises the ask rather than falling short of it, however plainly the report says the ask was not met.
 
@@ -906,31 +906,56 @@ Answer with exactly one word: finished, stuck, partial, or ongoing.";
 
     /// Pure half of last_report, over whole transcript lines. A closing turn can
     /// be split across records — the thinking block lands in its own entry — so
-    /// only text blocks count.
+    /// only text blocks count. Turns a task notification woke up amend the report
+    /// the human prompt's turn closed with, so each of their closings is kept.
     fn extract_last_text(lines: &[&str]) -> Option<String> {
+        let mut closings = Vec::new();
+        let mut want_closing = true;
         for line in lines.iter().rev() {
             let v: serde_json::Value = match serde_json::from_str(line) {
                 Ok(v) => v,
                 Err(_) => continue,
             };
-            if v.get("type").and_then(|x| x.as_str()) != Some("assistant") {
-                continue;
+            match v.get("type").and_then(|x| x.as_str()) {
+                Some("user") => {
+                    let is_tool_result = v["message"]["content"]
+                        .as_array()
+                        .is_some_and(|c| c.iter().any(|b| b["type"] == "tool_result"));
+                    if is_tool_result {
+                        continue;
+                    }
+                    match v["origin"]["kind"].as_str() {
+                        None | Some("human") => break, // pre-`origin` transcripts only mark human prompts by absence
+                        Some(_) => want_closing = true,
+                    }
+                    continue;
+                }
+                Some("assistant") if want_closing => {}
+                _ => continue,
             }
-            let text = v
-                .get("message")?
-                .get("content")?
-                .as_array()?
+            let text = v["message"]["content"]
+                .as_array()
+                .expect("assistant content is always a block array")
                 .iter()
-                .filter(|b| b.get("type").and_then(|x| x.as_str()) == Some("text"))
-                .filter_map(|b| b.get("text")?.as_str())
+                .filter(|b| b["type"] == "text")
+                .filter_map(|b| b["text"].as_str())
                 .collect::<Vec<_>>()
                 .join("\n");
             if !text.trim().is_empty() {
-                let tail = text.get(text.len().saturating_sub(MAX_REPORT)..).unwrap_or(&text);
-                return Some(tail.to_string());
+                closings.push(text);
+                want_closing = false;
             }
         }
-        None
+        if closings.is_empty() {
+            return None;
+        }
+        closings.reverse();
+        let report = closings.join("\n\n");
+        let mut cut = report.len().saturating_sub(MAX_REPORT);
+        while !report.is_char_boundary(cut) {
+            cut += 1;
+        }
+        Some(report[cut..].to_string())
     }
 
     fn ask(report: &str) -> Option<Verdict> {

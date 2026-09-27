@@ -11,8 +11,9 @@
 ## Closing-report verdicts
 
 A pane reading `finished` only means Claude stopped talking. `mod report` inside
-`claude_sessions.rs` takes the session's closing report (the last assistant turn
-in the transcript) and has an LLM — via the `ask_llm` crate — judge it as
+`claude_sessions.rs` takes the session's closing report (the closing text of the
+last human-prompted turn, plus the closings of any turns task notifications woke
+up after it) and has an LLM — via the `ask_llm` crate — judge it as
 `finished` / `stuck` / `partial` / `ongoing`, which become states of their own:
 `stuck` (no progress for any reason — blocked, lost, or refused) is colored like `question`, `partial` and `ongoing` like `error`.
 `ongoing` is the report that hands the ball back — it asks something or wants a
@@ -22,7 +23,7 @@ The verdict is cached in `~/.cache/claude-session-reports.json` against the
 transcript's mtime, so it costs one call per session settle, not one per
 status-line refresh. Misses are cached too — an unreachable model must not earn
 a doomed HTTP call on every refresh — and retried on the session's next turn. No
-`CLAUDE_TOKEN` in the environment turns the whole thing off and every settled
+`OPENAI_API_KEY` in the environment turns the whole thing off and every settled
 session just reads `finished`. `done` panes (untouched for 45 min) are never
 classified — that signal has already decayed.
 
@@ -31,10 +32,8 @@ The judging prompt is the whole classifier, so it's pinned by
 same drop-a-file-in-and-it's-covered deal as the pane fixtures. Editing the
 prompt invalidates every cached verdict (they were drawn by a different judge).
 
-The model is meant to be DeepSeek (`ask_llm::Model::DeepSeek`, added in the
-unreleased 2.2.3); the account is out of balance and 402s every call, so it runs
-on `Model::Fast` (Haiku) meanwhile. Switching back is one line in `report::ask`
-plus an `ask_llm` version bump once 2.2.3 is published.
+It runs on `ask_llm::Model::Fast`; when that provider is out of quota, `ask_llm`'s
+fallback graph moves the call to the next model.
 
 ## Running the tests
 
