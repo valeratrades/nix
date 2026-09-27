@@ -11,12 +11,18 @@ is rebuilt on every call from the markdown, which is the store.
 | `joined` | TEXT | RFC3339 — when they joined *the venue*, not when they made the account. NULL for most skool members: only the member page states it, and skool serves one page of that |
 | `lat`, `lon` | REAL | where the platform puts them. Skool offsets every pin by 10+ miles, so this answers "which part of the world" and nothing finer |
 | `zone` | TEXT | an IANA name — `Europe/Paris`. A browser setting, so it disagrees with the pin for a few percent of people |
+| `place` | TEXT | the platform's own name for `lat`/`lon` — `Lyon, France` for a facebook City-filter hit, whose `lat`/`lon` is that name geocoded |
+| `bio` | TEXT | the line(s) the listing prints under the name: a skool bio, a facebook search snippet (`Works at … · Lives in …`), a facebook group bio plus its `Joined …` |
 | `posts` | INTEGER | lines in the transcript attributed to this handle |
 | `first_post` | TEXT | RFC3339, NULL when `posts` is 0 |
 | `last_post` | TEXT | RFC3339, NULL when `posts` is 0 |
 
 Dates are RFC3339 text, which sqlite compares lexicographically in the same order it compares them
 chronologically — `last_post >= '2026-01-01'` works.
+
+`bio` is free text, so it is `LIKE` rather than `=`: `bio LIKE '%Lives in Lyon%'`.
+
+A roster is upserted by handle, never replaced: somebody who left a venue stays on its roster.
 
 `posts` counts only what `recon posts` has actually fetched. A member with `posts = 0` may simply be
 outside the `--since` window used, not silent.

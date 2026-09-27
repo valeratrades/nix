@@ -9,6 +9,8 @@
 | `https://www.linkedin.com/in/somebody` | `linkedin:somebody` |
 | `https://github.com/valeratrades` | `github:valeratrades` |
 | a discord username (no URL exists) | `discord:dev_ardi` |
+| `https://www.facebook.com/profile.php?id=100000026150596` | `facebook:100000026150596` |
+| `https://www.facebook.com/jeanluc.torrequadra` | `facebook:jeanluc.torrequadra` (the id is what a roster row carries) |
 
 Strip the query and fragment, take the last path segment, drop a leading `@`. A bare domain is not a
 handle.
@@ -24,6 +26,7 @@ handle.
 | `github` | none | bio, name, the public event feed (300 events / 90 days) |
 | `linkedin` | none | headline and about, once per 30 days — the anonymous view budget is a handful |
 | `skool` | none | bio, location, name, profile links, groups, and posts of shared groups |
+| `facebook` | the burner, logged in by `recon facebook-login` | `lives_in` (geocoded, into the `lives_in` tag), hometown, birthday, work, education, contact links as handles; once per `revisit_days`. Opens a headless chrome for the pull |
 
 Each of them records the name the platform prints under `sources.<platform>:name`, when it prints
 one — that is where to read a display name back after a pull.
@@ -40,6 +43,16 @@ fetch path, and adding one means adding a `Source` variant.
 | `skool` | a group | the URL slug, `20kmodropservicingblueprint` | group members | posts (+ their bodies) |
 | `telegram` | a group or channel | its public `@username`, without the `@` | participants | messages |
 | `github` | an org or a repo | `owner`, or `owner/name` | public members / contributors | events: releases, PRs, issues |
+| `facebook` | a City-filter people search, or a group | `city/<page id>` (Lyon is `city/108560402508141`), `group/<group id>` | everyone the search lists, walking first names; a group's member listing | not read |
+
+### Facebook: two sessions, both human-started
+
+`city/<id>` runs in the user's own chrome (attached over CDP, the one tab logged in as
+`facebook.attached.user_id`), and its walk takes days: it checks every page in and resumes after the
+last first name it exhausted, so Ctrl-C loses one query at most. Every row is placed where the filter
+says, so `procure` seeds `lives_in` off it. `group/<id>` and every profile visit run in our own
+headless chrome on the burner, which `recon facebook-login` logs in once by hand. Neither ever runs
+unprompted: each spends an account's standing.
 
 Not venues: `discord` (the member list needs a gateway session, which is not implemented) and
 `linkedin` (authwalled after a handful of anonymous views).

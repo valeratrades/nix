@@ -77,6 +77,13 @@ Confirm reach first: a venue you cannot read fails four commands in a row otherw
    lists the groups and their values.
 5. Rerun without `--dry-run` once they agree, then `rolodex pull` over what it created.
 
+Facebook has no `recon venues` and no `recon posts`: a venue is addressed outright, and step 2 is the
+whole of the read — `recon members facebook:city/<page id>` (days; resumable) or
+`facebook:group/<group id>`. A `pull` over what `procure` created then visits each profile from the
+burner (`recon facebook-login` first, once). For the reviews leads that is
+`purpose reviews procure facebook:city/108560402508141`, then `purpose reviews pull`, then
+`purpose reviews rank`: a City-filter hit counts as living there until a visit says otherwise.
+
 Predicates: `--active-since <tf>`, `--min-posts <N>`, `--handle-matches <glob>`, `--limit <N>`, and
 `--where '<sql>'` for anything else. The columns are in `references/roster.md`. Prefer a `--dry-run`
 with a wide predicate over a narrow guess — the roster is a few hundred rows and reading it is free.
