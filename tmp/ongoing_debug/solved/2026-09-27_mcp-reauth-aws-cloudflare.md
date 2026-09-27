@@ -9,6 +9,7 @@ User-scope servers `cloudflare-{api,bindings,builds,observability}` in `~/.claud
 
 ## AWS: done
 - `-32602` was a `NoRegionError`. Fixed by setting `region = us-east-1` in `~/.aws/config`.
-- Created IAM user `claude-agent` with `AdministratorAccess` and a non-expiring access key, stored in `~/.aws/credentials` `[default]`. `aws-mcp` connects.
+- Created IAM user `manager`: `AdministratorAccess`, plus an inline deny `deny-billing-and-close` (billing/payments/account closure, and it can't edit its own policies). Has a non-expiring access key in `~/.aws/credentials` `[default]`. `aws-mcp` connects.
+- Console sign-in: https://valeratrades.signin.aws.amazon.com/console as `manager`, password = `$aws_pass`.
 - The root `aws login` session is still available as `--profile root`.
 - Open: narrow the policy down from AdministratorAccess if you want to limit what the agent can do.
