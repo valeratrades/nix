@@ -197,6 +197,10 @@
       # reaps every session we just built.
       KillMode = "process";
       ExecStart = "${pkgs.fish}/bin/fish -c restore_sessions";
+      # a stray SIGTERM mid-boot (seen once, sender unknown) left the boot with no sessions;
+      # restore is idempotent, so killed runs retry. Exit 1 (stale entries) would only fail again.
+      Restart = "on-abnormal";
+      RestartSec = 2;
     };
   };
 

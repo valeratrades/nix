@@ -48,6 +48,20 @@ fn write_inventory(dry_run: bool) {
     let sessions_path = format!("{state_dir}/tmux_sessions.tsv");
     let path = format!("{state_dir}/claude_restore.tsv");
 
+    // A boot whose restore never ran through never saw the inventory's sessions, so recording now would erase them.
+    let unit = Command::new("systemctl")
+        .args(["--user", "show", "-p", "Result", "-p", "ExecMainStartTimestampMonotonic", "claude-session-restore"])
+        .output()
+        .expect("systemctl unreachable");
+    assert!(unit.status.success(), "systemctl --user show failed: {}", String::from_utf8_lossy(&unit.stderr));
+    let unit = String::from_utf8_lossy(&unit.stdout);
+    let ran = !unit.lines().any(|l| l == "ExecMainStartTimestampMonotonic=0");
+    let completed = unit.lines().any(|l| l == "Result=success" || l == "Result=exit-code"); // exit-code: ran to the end, only some entries were stale
+    if !(ran && completed) {
+        println!("claude-session-restore did not complete this boot ({}); keeping {path} and {sessions_path} untouched", unit.trim().replace('\n', ", "));
+        return;
+    }
+
     let (out, sessions) = match (
         Command::new("tmux").args(["list-panes", "-a", "-F", "#{pane_id}\t#{session_name}"]).output(),
         Command::new("tmux").args(["list-sessions", "-F", "#{session_name}\t#{session_path}"]).output(),
