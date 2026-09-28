@@ -419,7 +419,7 @@ in {
       excalidraw_export = super.excalidraw_export.override { buildNpmPackage = super.buildNpmPackage.override { nodejs = super.nodejs_22; }; };
     })
     inputs.neovim-nightly-overlay.overlays.default
-    (import (mylib.relativeToRoot "overlays/rnote-main.nix"))
+    (import (mylib.relativeToRoot "overlays/rnote.nix"))
     (import (mylib.relativeToRoot "overlays/sierra-chart.nix"))
     (import (mylib.relativeToRoot "overlays/tiger-trade.nix"))
     (import (mylib.relativeToRoot "overlays/metascalp.nix"))
