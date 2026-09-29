@@ -28,7 +28,6 @@ daemons // {
         scroll = { per_hour = 600; per_day = 4000; dwell_secs = 1.5; spread = 0.5; read_secs_per_item = 0.1; };
       };
     };
-    revisit_days = 90;
   };
   # `recon` sweeps a group paced by this; the daemon only polls chat, and has none
   skool = daemons.skool // {
