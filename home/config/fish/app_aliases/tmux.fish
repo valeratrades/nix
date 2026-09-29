@@ -1,5 +1,8 @@
 #alias tmux="TERM='alacritty-direct' tmux"
-alias ta="tmux attach -t"
+function ta
+	tmux has-session -t $argv[1] 2>/dev/null; or set argv[1] "*$argv[1]" # starred favorites
+	tmux attach -t $argv
+end
 complete -c ta -w tmux
 alias tl="tmux ls"
 complete -c tl -w tmux

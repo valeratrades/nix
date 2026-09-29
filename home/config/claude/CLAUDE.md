@@ -20,6 +20,10 @@
 - drawing > speaking. Diagram > table > written out reasoning.
   While you're thinking to yourself and considering the problem space, use whatever representation shape suits you. When reporting to me at the end, - draw. Especially good when you've already written me a lot of text reasoning, - summarize it by drawing the problem shape, and what part solutions impact on it.
 
+- if you're stuck unless I do something, - you request that at the very end of your message, add `---` split so it's easy to notice, and use grug brain instructions.
+  But so we're fucking clear, - you do not use this unless absolutely necessary. This is for cases where it is IMPOSSIBLE to make progress without actions from me. You do not waste my time like that on trivial matters.
+  And so we're even more clear, - you explain NOTHING here. Rest of the message is there, I can just read it. If a word does not signify action I need to take, it must not be added. Eg "Plug Pi power in. Nothing else. I'll say when it's serving, or what stopped it" as output there is absolutely not right. You fucking did this the other day, hence me writing this. What would be acceptable is exactly "Plug Pi power in" and absolutely nothing else after. Do you understand?
+
 ## Workflow
 - always work todos first, - creating and keeping the todos list relevant is first concern in any implementation. Always keep it up to date.
 
