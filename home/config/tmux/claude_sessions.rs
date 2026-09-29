@@ -831,7 +831,7 @@ mod report {
         Ongoing,
     }
 
-    const SYSTEM: &str = "You read the closing report a coding agent left at the end of its session and judge how the session ended.
+    const SYSTEM: &str = "You read the closing report a coding agent left at the end of its session and judge how the session ended. When known, the user's prompt that opened the turn comes first, in <prompt> tags; a question there that the report answers is finished.
 
 finished — the implementation the agent settled on is in the tree
 stuck — the work is not moving, whatever the cause: the agent is blocked on something it cannot resolve, failed, lost the thread, is out of ideas, declined or refused the task on safety or policy grounds, or handed it back for the user to do. An offer to do some other, narrower task instead does not make it ongoing
@@ -844,6 +844,8 @@ Answer with exactly one word: finished, stuck, partial, or ongoing.";
 
     /// Long reports are all preamble; the verdict lives in the closing lines.
     const MAX_REPORT: usize = 8000;
+    /// The ask leads a prompt; long ones trail off into pasted context.
+    const MAX_PROMPT: usize = 2000;
     const TIMEOUT: Duration = Duration::from_secs(20);
 
     pub fn classify(session_file: &Path) -> Option<Verdict> {
@@ -910,6 +912,7 @@ Answer with exactly one word: finished, stuck, partial, or ongoing.";
     /// the human prompt's turn closed with, so each of their closings is kept.
     fn extract_last_text(lines: &[&str]) -> Option<String> {
         let mut closings = Vec::new();
+        let mut prompt = None;
         let mut want_closing = true;
         for line in lines.iter().rev() {
             let v: serde_json::Value = match serde_json::from_str(line) {
@@ -925,7 +928,23 @@ Answer with exactly one word: finished, stuck, partial, or ongoing.";
                         continue;
                     }
                     match v["origin"]["kind"].as_str() {
-                        None | Some("human") => break, // pre-`origin` transcripts only mark human prompts by absence
+                        None | Some("human") => {
+                            // pre-`origin` transcripts only mark human prompts by absence
+                            let content = &v["message"]["content"];
+                            prompt = match content.as_str() {
+                                Some(s) => Some(s.to_string()),
+                                None => Some(
+                                    content
+                                        .as_array()
+                                        .expect("user content is a string or a block array")
+                                        .iter()
+                                        .filter_map(|b| b["text"].as_str())
+                                        .collect::<Vec<_>>()
+                                        .join("\n"),
+                                ),
+                            };
+                            break;
+                        }
                         Some(_) => want_closing = true,
                     }
                     continue;
@@ -955,7 +974,17 @@ Answer with exactly one word: finished, stuck, partial, or ongoing.";
         while !report.is_char_boundary(cut) {
             cut += 1;
         }
-        Some(report[cut..].to_string())
+        let report = &report[cut..];
+        Some(match prompt {
+            Some(p) => {
+                let mut end = p.len().min(MAX_PROMPT);
+                while !p.is_char_boundary(end) {
+                    end -= 1;
+                }
+                format!("<prompt>\n{}\n</prompt>\n\n{report}", p[..end].trim())
+            }
+            None => report.to_string(),
+        })
     }
 
     fn ask(report: &str) -> Option<Verdict> {

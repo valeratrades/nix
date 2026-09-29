@@ -13,7 +13,8 @@
 A pane reading `finished` only means Claude stopped talking. `mod report` inside
 `claude_sessions.rs` takes the session's closing report (the closing text of the
 last human-prompted turn, plus the closings of any turns task notifications woke
-up after it) and has an LLM — via the `ask_llm` crate — judge it as
+up after it, led by the human prompt that opened it — a closing that answers a
+question reads as a dead end without it) and has an LLM — via the `ask_llm` crate — judge it as
 `finished` / `stuck` / `partial` / `ongoing`, which become states of their own:
 `stuck` (no progress for any reason — blocked, lost, or refused) is colored like `question`, `partial` and `ongoing` like `error`.
 `ongoing` is the report that hands the ball back — it asks something or wants a
