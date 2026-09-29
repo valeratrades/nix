@@ -669,7 +669,7 @@ fn transcript_tail(session_file: &Path, proc_start: Option<std::time::SystemTime
     file.read_to_end(&mut bytes).ok()?;
     let buf = String::from_utf8_lossy(&bytes); // tail seek may split a char/line
 
-    // Second granularity both sides (/proc starttime is ticks-truncated), and a
+    // Second granularity both sides, and a
     // strict `<`, so the ambiguous same-second case reads as alive — a wrong
     // Active self-corrects on the next poll, a wrong Died never does.
     let outlived_by_process = |v: &serde_json::Value| -> bool {
@@ -1143,239 +1143,6 @@ fn get_session_summary(session_file: &Path) -> Option<String> {
 }
 
 /// Check if a session file has actual conversation content (not just file-history-snapshot)
-fn session_has_conversation(path: &Path) -> bool {
-    use std::io::{BufRead, BufReader};
-
-    let file = match fs::File::open(path) {
-        Ok(f) => f,
-        Err(_) => return false,
-    };
-    let reader = BufReader::new(file);
-
-    for line in reader.lines().take(50) {
-        if let Ok(line) = line {
-            // Quick check for user message type
-            if line.contains("\"type\":\"user\"") {
-                return true;
-            }
-            // Also check for summary type (indicates real conversation)
-            if line.contains("\"type\":\"summary\"") {
-                return true;
-            }
-        }
-    }
-    false
-}
-
-/// Extract a unique identifier from tmux pane content that can be matched to a session
-fn extract_session_fingerprint(content: &str) -> Option<String> {
-    // A visible user message is the fingerprint — its text exists verbatim in
-    // exactly the transcripts that contain that conversation. v2 renders past
-    // user messages as "❯ message" (regular space; the live input box uses an
-    // NBSP and is deliberately NOT matched — unsent text exists in no file);
-    // older builds used "> ". Nothing else is a safe fingerprint: file paths /
-    // tool banners repeat across every session working in the same cwd, and
-    // matching on those attributed windows to their neighbours' transcripts.
-    // The LAST visible message wins: the matcher scans each transcript's head
-    // and 256KB tail, and in a long session only the most RECENT messages are
-    // still within the tail window — the earliest visible one can sit megabytes
-    // before EOF.
-    let mut fingerprint = None;
-    let selector_row = Regex::new(r"^\d+\.\s").unwrap();
-    for line in content.lines() {
-        let trimmed = line.trim();
-        if trimmed.len() <= 15 {
-            continue;
-        }
-
-        let Some(msg) = trimmed
-            .strip_prefix("> ")
-            .or_else(|| trimmed.strip_prefix("❯ "))
-        else {
-            continue;
-        };
-
-        // Skip suggestions, meta-text, and selector rows ("❯ 1. Option") — the
-        // ❯ glyph doubles as the selection cursor.
-        if msg.starts_with("Try ")
-            || msg.contains("bypass")
-            || msg.starts_with("──")
-            || selector_row.is_match(msg)
-        {
-            continue;
-        }
-
-        // User messages are usually unique to their session; 40 chars is
-        // plenty of entropy while staying inside one rendered line.
-        fingerprint = Some(msg.chars().take(40).collect::<String>());
-    }
-
-    fingerprint
-}
-
-/// Find session file by matching screen content fingerprint in USER messages
-/// Returns the OLDEST matching file (by creation time) since that's likely the original source
-///
-/// Both ends of each transcript are searched: the head holds a session's opening
-/// messages (all a short/fresh session has), while for a LONG session the pane
-/// shows recent messages — which live in the tail, far past any head window.
-///
-/// Only transcripts written since the pane's process started are opened: this runs
-/// on a 1s eww poll, and a busy project dir holds hundreds of dead sessions whose
-/// head+tail windows added up to hundreds of MB of reads per tick.
-fn find_session_by_fingerprint(session_files: &[(PathBuf, Option<std::time::SystemTime>, std::time::SystemTime)], fingerprint: &str, proc_start: std::time::SystemTime) -> Option<PathBuf> {
-    use std::io::{BufRead, BufReader};
-
-    let mut matches: Vec<(PathBuf, std::time::SystemTime)> = Vec::new();
-
-    // Genuine typed messages only: tool_result entries are ALSO type "user", and
-    // they embed captured pane text — without this filter a session that ran
-    // this very script (or read another's pane) would claim its neighbours'
-    // fingerprints.
-    let is_user_hit = |line: &str| {
-        line.contains("\"type\":\"user\"")
-            && !line.contains("tool_use_id")
-            && line.contains(fingerprint)
-    };
-
-    for (path, created, _) in session_files.iter().filter(|(_, _, modified)| *modified >= proc_start) {
-        let file = match fs::File::open(path) {
-            Ok(f) => f,
-            Err(_) => continue,
-        };
-        let mut found = BufReader::new(file)
-            .lines()
-            .take(100)
-            .map_while(Result::ok)
-            .any(|l| is_user_hit(&l));
-
-        if !found {
-            // Tail window, same size rationale as transcript_tail.
-            found = (|| -> Option<bool> {
-                let mut file = fs::File::open(path).ok()?;
-                let len = file.metadata().ok()?.len();
-                file.seek(SeekFrom::Start(len.saturating_sub(256 * 1024))).ok()?;
-                let mut bytes = Vec::new();
-                file.read_to_end(&mut bytes).ok()?;
-                Some(String::from_utf8_lossy(&bytes).lines().any(|l| is_user_hit(l)))
-            })()
-            .unwrap_or(false);
-        }
-
-        if let (true, Some(created)) = (found, created) {
-            matches.push((path.clone(), *created));
-        }
-    }
-
-    // Sort by creation time (oldest first) - the original session
-    matches.sort_by_key(|(_, created)| *created);
-    matches.first().map(|(path, _)| path.clone())
-}
-
-/// Find session file for a project by matching to process start time
-/// For resumed sessions, uses screen content matching as fallback
-///
-/// Attribution here must be conservative: several live claude processes can
-/// share one cwd (and thus one project dir), and a transcript attributed to the
-/// wrong window poisons everything downstream — its summary, its todos, and the
-/// transcript-based active↔finished verdict. None is strictly better than a
-/// neighbour's file.
-fn find_session_file_for_process(project_dir: &Path, process_start: Option<std::time::SystemTime>, deep: &str) -> Option<PathBuf> {
-    // Without /proc visibility of the process there is nothing to anchor
-    // attribution to — every heuristic below degenerates into "some file in
-    // this dir", i.e. a guess.
-    let proc_start = process_start?;
-    let entries = fs::read_dir(project_dir).ok()?;
-
-    let session_files: Vec<_> = entries
-        .filter_map(|e| e.ok())
-        .filter(|e| {
-            let name = e.file_name();
-            let name_str = name.to_string_lossy();
-            name_str.ends_with(".jsonl") && !name_str.starts_with("agent-")
-        })
-        .filter_map(|e| {
-            let path = e.path();
-            let metadata = e.metadata().ok()?;
-            let modified = metadata.modified().ok()?;
-            let created = metadata.created().ok();
-            Some((path, created, modified))
-        })
-        .collect();
-
-    // Strategy 1: Find sessions CREATED shortly after process start — a new
-    // session file was created for this process. The 60s window is what keeps
-    // this from stealing files that a LATER-started neighbour created in the
-    // same dir. (v2 creates the .jsonl lazily on first message, so a fresh
-    // untouched session has NO file at all and correctly matches nothing.)
-    let mut new_sessions: Vec<_> = session_files
-        .iter()
-        .filter_map(|(path, created, _)| {
-            let created = (*created)?;
-            if created >= proc_start {
-                let diff = created.duration_since(proc_start).ok()?;
-                if diff.as_secs() <= 60 {
-                    return Some((path.clone(), diff));
-                }
-            }
-            None
-        })
-        .collect();
-
-    new_sessions.sort_by_key(|(_, diff)| *diff);
-
-    if let Some((path, _)) = new_sessions.first() {
-        return Some(path.clone());
-    }
-
-    // Strategy 2: For resumed sessions, use screen content fingerprinting
-    // This finds the original session file by matching visible conversation content
-    if let Some(fingerprint) = extract_session_fingerprint(deep) {
-        if let Some(path) = find_session_by_fingerprint(&session_files, &fingerprint, proc_start) {
-            return Some(path);
-        }
-    }
-
-    // Strategy 3: sessions MODIFIED after process start. mtime records only the
-    // LAST write, so with several live sessions in one cwd all of their files
-    // pass this filter — and picking "most recent" handed every window the
-    // busiest neighbour's transcript (wrong summary, wrong active↔finished
-    // verdict). Only an unambiguous single candidate is trustworthy.
-    let candidates: Vec<_> = session_files
-        .iter()
-        .filter(|(_, _, modified)| *modified >= proc_start)
-        .filter(|(path, _, _)| session_has_conversation(path))
-        .collect();
-
-    if let [(path, _, _)] = candidates.as_slice() {
-        return Some(path.clone());
-    }
-
-    None
-}
-
-/// Get process start time from /proc/PID/stat
-fn get_process_start_time(pid: u32) -> Option<std::time::SystemTime> {
-    // Read starttime (field 22) from /proc/PID/stat - it's in clock ticks since boot
-    let stat_content = fs::read_to_string(format!("/proc/{}/stat", pid)).ok()?;
-    let fields: Vec<&str> = stat_content.split_whitespace().collect();
-    if fields.len() < 22 {
-        return None;
-    }
-    let starttime_ticks: u64 = fields[21].parse().ok()?;
-
-    // Get system boot time from /proc/stat
-    let proc_stat = fs::read_to_string("/proc/stat").ok()?;
-    let btime_line = proc_stat.lines().find(|l| l.starts_with("btime "))?;
-    let boot_time: u64 = btime_line.split_whitespace().nth(1)?.parse().ok()?;
-
-    // Clock ticks per second (usually 100 on Linux)
-    let ticks_per_sec: u64 = 100; // Could use sysconf(_SC_CLK_TCK) but 100 is standard
-
-    let start_secs = boot_time + (starttime_ticks / ticks_per_sec);
-    Some(std::time::UNIX_EPOCH + std::time::Duration::from_secs(start_secs))
-}
-
 /// Session metadata extracted from the session file
 struct SessionMetadata {
     /// The transcript these were read off, kept for the closing-report verdict.
@@ -1396,26 +1163,31 @@ struct SessionMetadata {
     idle_for: Option<std::time::Duration>,
 }
 
-/// Get session info (todo and summary) for a tmux pane
-fn get_session_info_for_pane(shell_pid: u32, deep: &str) -> Option<SessionMetadata> {
+/// Claude Code's own pid -> session registry, kept current across /clear and /resume.
+#[derive(Deserialize)]
+struct RegisteredSession {
+    #[serde(rename = "sessionId")]
+    session_id: String,
+    #[serde(rename = "startedAt")]
+    started_at_ms: u64,
+}
+
+fn get_session_info_for_pane(shell_pid: u32) -> Option<SessionMetadata> {
     let claude_pid = get_child_pid(shell_pid)?;
-    let cwd = get_process_cwd(claude_pid)?;
-    let project_name = path_to_project_name(&cwd);
+    let claude_dir = PathBuf::from(std::env::var("HOME").expect("HOME is set")).join(".claude");
+    // Absent until the process registers itself, a moment after launch.
+    let raw = fs::read_to_string(claude_dir.join(format!("sessions/{claude_pid}.json"))).ok()?;
+    let reg: RegisteredSession = serde_json::from_str(&raw).unwrap_or_else(|e| panic!("claude session registry schema changed: {e}"));
+    let proc_start = std::time::UNIX_EPOCH + std::time::Duration::from_millis(reg.started_at_ms);
 
-    let home = std::env::var("HOME").ok()?;
-    let project_dir = PathBuf::from(&home)
-        .join(".claude/projects")
-        .join(&project_name);
+    // Registry `cwd` follows the process around; the transcript stays under the dir it was started in.
+    // Absent before the first message: v2 creates the .jsonl lazily.
+    let session_file = fs::read_dir(claude_dir.join("projects"))
+        .expect("~/.claude/projects exists once any session ran")
+        .map(|e| e.expect("readdir entry").path().join(format!("{}.jsonl", reg.session_id)))
+        .find(|p| p.exists())?;
 
-    // Get process start time to match with session file
-    let proc_start = get_process_start_time(claude_pid);
-    let session_file = find_session_file_for_process(&project_dir, proc_start, deep)?;
-    let session_id = session_file
-        .file_stem()
-        .and_then(|s| s.to_str())
-        .map(|s| s.to_string())?;
-
-    let todo_result = get_active_todo_from_session(&session_id);
+    let todo_result = get_active_todo_from_session(&reg.session_id);
     let summary = get_session_summary(&session_file);
 
     Some(SessionMetadata {
@@ -1425,7 +1197,7 @@ fn get_session_info_for_pane(shell_pid: u32, deep: &str) -> Option<SessionMetada
         summary,
         model: latest_model(&session_file),
         context: context_tokens(&session_file),
-        transcript_tail: transcript_tail(&session_file, proc_start),
+        transcript_tail: transcript_tail(&session_file, Some(proc_start)),
         idle_for: fs::metadata(&session_file)
             .and_then(|m| m.modified())
             .ok()
@@ -1442,14 +1214,11 @@ struct PaneCapture {
     plain: String,
     /// `-p -e -S -10` — the only way to tell typed input from ghost suggestions.
     escaped: String,
-    /// `-p -S -500` — deep enough to hold a user message that still exists in the transcript.
-    deep: String,
 }
 
-const CAPTURE_KINDS: [(&str, &[&str]); 3] = [
+const CAPTURE_KINDS: [(&str, &[&str]); 2] = [
     ("plain", &["-p", "-S", "-50"]),
     ("escaped", &["-p", "-e", "-S", "-10"]),
-    ("deep", &["-p", "-S", "-500"]),
 ];
 
 fn capture_panes(targets: &[String]) -> HashMap<String, PaneCapture> {
@@ -1510,8 +1279,8 @@ fn run_batch(sentinel: &str, targets: &[String]) -> HashMap<String, PaneCapture>
     parse_batch(sentinel, targets, &String::from_utf8_lossy(&output.stdout))
 }
 
-/// Split a batched capture stream back into per-target triples, keyed by the
-/// marker tmux emitted after each capture. An incomplete trailing triple (the
+/// Split a batched capture stream back into per-target pairs, keyed by the
+/// marker tmux emitted after each capture. An incomplete trailing pair (the
 /// chain aborted partway) is dropped — the caller reruns what it didn't get.
 fn parse_batch(sentinel: &str, requested: &[String], stdout: &str) -> HashMap<String, PaneCapture> {
     let mut chunks: HashMap<String, HashMap<&str, String>> = HashMap::new();
@@ -1547,7 +1316,6 @@ fn parse_batch(sentinel: &str, requested: &[String], stdout: &str) -> HashMap<St
                 PaneCapture {
                     plain: kinds.remove("plain")?,
                     escaped: kinds.remove("escaped")?,
-                    deep: kinds.remove("deep")?,
                 },
             ))
         })
@@ -1575,22 +1343,22 @@ mod batch_tests {
     }
 
     #[test]
-    fn every_complete_triple_lands_under_its_own_target() {
+    fn every_complete_pair_lands_under_its_own_target() {
         let targets = ["a:1", "b:2", "c:3"];
         let got = parse_batch(S, &requested(&targets), &stream(&targets));
         assert_eq!(got.len(), 3);
         assert_eq!(got["b:2"].plain, "body of b:2 plain\n");
         assert_eq!(got["b:2"].escaped, "body of b:2 escaped\n");
-        assert_eq!(got["c:3"].deep, "body of c:3 deep\n");
+        assert_eq!(got["c:3"].escaped, "body of c:3 escaped\n");
     }
 
     /// tmux aborts the chain at the first failing command, so the stream ends
-    /// mid-triple. The half-read target must not be reported as captured.
+    /// mid-pair. The half-read target must not be reported as captured.
     #[test]
     fn an_aborted_chain_yields_only_the_targets_it_finished() {
         let targets = ["a:1", "b:2"];
         let full = stream(&targets);
-        let cut = full.find("body of b:2 deep").unwrap();
+        let cut = full.find("body of b:2 escaped").unwrap();
         let got = parse_batch(S, &requested(&targets), &full[..cut]);
         assert_eq!(got.keys().collect::<Vec<_>>(), vec!["a:1"]);
     }
@@ -1692,14 +1460,11 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
             // in flight; active todos remain the fallback when it can't decide.
             let activity = determine_claude_activity(caps);
 
-            // Empty takes precedence over any transcript deliberation: a fresh
-            // pane has no session file at all (v2 creates the .jsonl on first
-            // message), so a metadata lookup could only mis-attribute a
-            // neighbour's transcript to it.
+            // A fresh pane has no transcript to deliberate over.
             if activity.state == ClaudeState::Empty {
                 (ClaudeState::Empty, None, None, None, None, None, None)
             } else {
-                let metadata = get_session_info_for_pane(pane_pid, &caps.deep);
+                let metadata = get_session_info_for_pane(pane_pid);
                 let summary = metadata.as_ref().and_then(|m| m.summary.clone());
                 let model = metadata.as_ref().and_then(|m| m.model.clone());
                 let context = metadata.as_ref().and_then(|m| m.context);
@@ -2231,46 +1996,45 @@ fn classify_activity(
     ActivityResult { state: ClaudeState::Finished, draft_content: None, question_content: None, plan_mode }
 }
 
-// ----- 5-hour usage % from Claude Code's OAuth-authenticated /api/oauth/usage -----
+// ----- usage limits -----
+// 5h + account weekly: Claude Code's statusline stdin, sunk to disk by claude/hooks/limits.sh on
+// every render — header-fed, so as fresh as the last API call of any session.
+// fable weekly: only /api/oauth/usage carries per-model caps, and it sticky-429s, hence the cache.
 
-#[derive(Default, Clone, Copy, Serialize, Deserialize)]
-struct UsageInfo {
-    /// Percent of 5h limit used [0, 100]. None = unknown.
-    five_hour_used_pct: Option<f64>,
-    /// Unix epoch seconds at which the 5h window resets. None = unknown.
-    five_hour_resets_at: Option<i64>,
-    /// Percent of the fable(Opus) weekly limit used [0, 100]. None = unknown.
-    /// Only overwritten when a fetch reports it, so a response missing the fable
-    /// limit keeps the last known value.
-    weekly_used_pct: Option<f64>,
-    /// Unix epoch seconds at which the weekly window resets. None = unknown.
-    weekly_resets_at: Option<i64>,
-    /// Percent of the account-wide weekly (`seven_day`) limit used [0, 100].
-    weekly_all_used_pct: Option<f64>,
-    weekly_all_resets_at: Option<i64>,
+#[derive(Deserialize)]
+struct StatuslineLimits {
+    five_hour: Option<StatuslineWindow>,
+    seven_day: Option<StatuslineWindow>,
 }
 
-impl UsageInfo {
-    /// Field-wise overlay: keep a prior value wherever the fresh fetch is silent.
-    /// This is what makes the fable column stick when a response omits its
-    /// limit — no new info about it seen means no update.
-    fn overlay(self, old: UsageInfo) -> UsageInfo {
-        UsageInfo {
-            five_hour_used_pct: self.five_hour_used_pct.or(old.five_hour_used_pct),
-            five_hour_resets_at: self.five_hour_resets_at.or(old.five_hour_resets_at),
-            weekly_used_pct: self.weekly_used_pct.or(old.weekly_used_pct),
-            weekly_resets_at: self.weekly_resets_at.or(old.weekly_resets_at),
-            weekly_all_used_pct: self.weekly_all_used_pct.or(old.weekly_all_used_pct),
-            weekly_all_resets_at: self.weekly_all_resets_at.or(old.weekly_all_resets_at),
-        }
-    }
+#[derive(Deserialize)]
+struct StatuslineWindow {
+    used_percentage: f64,
+    resets_at: i64,
+}
+
+fn read_statusline_limits() -> Option<StatuslineLimits> {
+    let state = std::env::var("XDG_STATE_HOME")
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| PathBuf::from(std::env::var("HOME").expect("HOME is set")).join(".local/state")); // XDG spec default, same as limits.sh
+    // Absent until some subscription session renders its statusline.
+    let raw = fs::read_to_string(state.join("claude/rate_limits.json")).ok()?;
+    Some(serde_json::from_str(&raw).unwrap_or_else(|e| panic!("rate_limits.json written by limits.sh must parse: {e}")))
+}
+
+#[derive(Default, Clone, Copy, Serialize, Deserialize)]
+struct FableUsage {
+    used_pct: f64,
+    /// None while the cap sits at 0% with no activity in the window.
+    resets_at: Option<i64>,
+    fetched_at: i64,
 }
 
 #[derive(Default, Serialize, Deserialize)]
 struct CacheState {
     /// "session:window_index" -> state name (as_str)
     window_states: HashMap<String, String>,
-    usage: UsageInfo,
+    fable: Option<FableUsage>,
     /// Unix epoch of last fetch attempt (success or fail). Throttles retries
     /// so we don't hammer the endpoint when it's per-minute rate-limited.
     last_fetch_attempt_at: Option<i64>,
@@ -2310,25 +2074,11 @@ fn save_cache(cache: &CacheState) {
     }
 }
 
-/// Utilization windows from Claude Code's OAuth usage endpoint. `utilization`
-/// and `percent` are already 0..100; `resets_at` is RFC3339 (always UTC).
+/// `percent` is already 0..100; `resets_at` is RFC3339 (always UTC).
 #[derive(Deserialize)]
 struct OauthUsage {
-    five_hour: UsageWindow,
-    /// Account-wide weekly. Optional for the same reason `resets_at` below is:
-    /// its `seven_day_*` siblings all come back null, so a null here must not
-    /// take the whole body's parse down with it.
-    seven_day: Option<UsageWindow>,
-    /// One entry per active limit. The fable(Opus) weekly cap is the
-    /// `weekly_scoped` entry whose scope.model.display_name is "Fable" — it is
-    /// NOT the account-wide `seven_day`/`weekly_all` figure.
+    /// One entry per active limit; the fable cap is the one scoped to model "Fable".
     limits: Vec<UsageLimit>,
-}
-
-#[derive(Deserialize)]
-struct UsageWindow {
-    utilization: f64,
-    resets_at: String,
 }
 
 #[derive(Deserialize)]
@@ -2355,15 +2105,8 @@ fn rfc3339_epoch(s: &str) -> Option<i64> {
     chrono::DateTime::parse_from_rfc3339(s).ok().map(|d| d.timestamp())
 }
 
-/// Fetch usage from Claude Code's OAuth usage endpoint.
-///
-/// GET /api/oauth/usage returns every limit window in one JSON body: the 5h
-/// session cap, the account-wide weekly, and the per-model weekly caps. The
-/// fable(Opus) weekly limit lives ONLY here (in `limits[]`, scoped to model
-/// "Fable") — the `anthropic-ratelimit-unified-7d-*` response headers only
-/// carry the account-wide weekly, which is a different, larger pool.
-/// Returns None on any failure so the caller falls back to cached usage.
-fn fetch_usage() -> Option<UsageInfo> {
+/// None on any failure, so the caller keeps the cached figure.
+fn fetch_fable_usage() -> Option<FableUsage> {
     let home = std::env::var("HOME").ok()?;
     let creds_raw = fs::read_to_string(PathBuf::from(home).join(".claude/.credentials.json")).ok()?;
     let creds: ClaudeCreds = serde_json::from_str(&creds_raw).ok()?;
@@ -2396,13 +2139,11 @@ fn fetch_usage() -> Option<UsageInfo> {
             == Some("Fable")
     });
 
-    Some(UsageInfo {
-        five_hour_used_pct: Some(usage.five_hour.utilization),
-        five_hour_resets_at: rfc3339_epoch(&usage.five_hour.resets_at),
-        weekly_used_pct: fable.map(|l| l.percent),
-        weekly_resets_at: fable.and_then(|l| l.resets_at.as_deref()).and_then(rfc3339_epoch),
-        weekly_all_used_pct: usage.seven_day.as_ref().map(|w| w.utilization),
-        weekly_all_resets_at: usage.seven_day.as_ref().and_then(|w| rfc3339_epoch(&w.resets_at)),
+    let fable = fable?;
+    Some(FableUsage {
+        used_pct: fable.percent,
+        resets_at: fable.resets_at.as_deref().map(|r| rfc3339_epoch(r).expect("server sends RFC3339")),
+        fetched_at: now_epoch(),
     })
 }
 
@@ -2439,16 +2180,33 @@ struct LimitView {
 }
 
 impl LimitView {
-    /// "<time_left> · <pct_left>". A reset moment already in the past means the
-    /// window rolled over without a refetch — treat it as fresh (100% left).
+    fn statusline(name: &'static str, w: Option<&StatuslineWindow>) -> Self {
+        LimitView { name, used_pct: w.map(|w| w.used_percentage), resets_at: w.map(|w| w.resets_at) }
+    }
+
+    /// Too old to show: the endpoint has been refusing us, and a days-old percentage reads as current.
+    fn fable(f: Option<FableUsage>) -> Self {
+        let f = f.filter(|f| now_epoch() - f.fetched_at < FABLE_STALE_AFTER_SECS);
+        LimitView { name: "fable", used_pct: f.map(|f| f.used_pct), resets_at: f.and_then(|f| f.resets_at) }
+    }
+
+    fn left_pct(&self) -> Option<f64> {
+        match self.resets_at {
+            Some(reset) if now_epoch() >= reset => Some(100.0),
+            _ => self.used_pct.map(|u| (100.0 - u).max(0.0)),
+        }
+    }
+
+    /// A reset moment already in the past means the window rolled over with no API call since — any
+    /// call would have written a fresh window — so it is genuinely untouched.
     fn compact(&self) -> String {
         if let Some(reset) = self.resets_at {
             if now_epoch() >= reset {
                 return "100%".to_string();
             }
         }
-        let pct_left = match self.used_pct {
-            Some(used) => format!("{:.0}%", (100.0 - used).max(0.0)),
+        let pct_left = match self.left_pct() {
+            Some(left) => format!("{left:.0}%"),
             None => "?".to_string(),
         };
         let time_left = match self.resets_at {
@@ -2463,14 +2221,17 @@ impl LimitView {
     }
 }
 
-fn format_usage_header(u: &UsageInfo, compact: bool) -> String {
-    let mut limits = vec![LimitView { name: "total", used_pct: u.five_hour_used_pct, resets_at: u.five_hour_resets_at }];
-    // Compact is a two-cell bar; the account-wide weekly only earns a slot once
-    // the cells are labelled and there's room to read them.
-    if !compact {
-        limits.push(LimitView { name: "weekly", used_pct: u.weekly_all_used_pct, resets_at: u.weekly_all_resets_at });
-    }
-    limits.push(LimitView { name: "fable", used_pct: u.weekly_used_pct, resets_at: u.weekly_resets_at });
+fn format_usage_header(live: Option<&StatuslineLimits>, fable: Option<FableUsage>, compact: bool) -> String {
+    let total = LimitView::statusline("total", live.and_then(|l| l.five_hour.as_ref()));
+    let weekly = LimitView::statusline("weekly", live.and_then(|l| l.seven_day.as_ref()));
+    let fable = LimitView::fable(fable);
+    let limits = if compact {
+        // Two cells: the second is whichever weekly binds first; unknown sorts last.
+        let tighter = if weekly.left_pct().unwrap_or(f64::MAX) <= fable.left_pct().unwrap_or(f64::MAX) { weekly } else { fable };
+        vec![total, tighter]
+    } else {
+        vec![total, weekly, fable]
+    };
     limits
         .iter()
         .map(|l| if compact { l.compact() } else { l.full() })
@@ -2490,11 +2251,11 @@ fn current_state_map(windows: &[ClaudeWindow]) -> HashMap<String, String> {
 /// standing 429 and the header showed "?" for days. Windows are 5h/7d, so
 /// nothing is lost by asking rarely.
 const FETCH_THROTTLE_SECS: i64 = 600;
+const FABLE_STALE_AFTER_SECS: i64 = 3600;
 
 /// Refetch when:
 /// - no prior state to compare against, or
-/// - cached usage is unknown (never fetched successfully), or
-/// - cached resets_at is unknown or has elapsed, or
+/// - no fable figure cached yet, or its window elapsed, or
 /// - a window just transitioned INTO active/finished/question.
 /// Always gated by FETCH_THROTTLE_SECS since last attempt.
 fn should_recompute(prev: &CacheState, windows: &[ClaudeWindow]) -> bool {
@@ -2508,13 +2269,9 @@ fn should_recompute(prev: &CacheState, windows: &[ClaudeWindow]) -> bool {
     if prev.window_states.is_empty() {
         return true;
     }
-    if prev.usage.five_hour_used_pct.is_none() || prev.usage.weekly_all_used_pct.is_none() {
+    let Some(fable) = prev.fable else { return true };
+    if fable.resets_at.is_some_and(|reset| now_epoch() >= reset) {
         return true;
-    }
-    match prev.usage.five_hour_resets_at {
-        None => return true, // never got a successful fetch
-        Some(reset) if now_epoch() >= reset => return true, // window elapsed
-        _ => {}
     }
     for w in windows {
         let key = format!("{}:{}", w.session, w.window_index);
@@ -2623,18 +2380,14 @@ fn main() {
         );
     }
 
-    // Refetch 5h utilization on state flip, on cache time-staleness,
-    // or when prior usage is unknown. Throttled. Otherwise reuse cache.
     let cache = load_cache();
     let did_attempt = should_recompute(&cache, &windows);
-    let usage = if did_attempt {
-        fetch_usage().map(|u| u.overlay(cache.usage)).unwrap_or(cache.usage)
-    } else {
-        cache.usage
-    };
+    let fable = if did_attempt { fetch_fable_usage().or(cache.fable) } else { cache.fable };
+    let live = read_statusline_limits();
+    let header = format_usage_header(live.as_ref(), fable, args.compact);
     save_cache(&CacheState {
         window_states: current_state_map(&windows),
-        usage,
+        fable,
         last_fetch_attempt_at: if did_attempt {
             Some(now_epoch())
         } else {
@@ -2647,10 +2400,10 @@ fn main() {
     } else if args.markup {
         // Header is purely informational; left uncolored so it inherits the
         // widget's default text color (the eww label's own styling).
-        println!("{}", pango_escape(&format_usage_header(&usage, args.compact)));
+        println!("{}", pango_escape(&header));
         println!("{}", sessions);
     } else {
-        println!("{}", format_usage_header(&usage, args.compact).dimmed());
+        println!("{}", header.dimmed());
         println!("{}", sessions);
     }
 }
