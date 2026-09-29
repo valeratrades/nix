@@ -51,4 +51,27 @@ in
     };
     Install.WantedBy = [ "timers.target" ];
   };
+
+  # headless chromium moves itself into its own app scope, so it survives its launcher's cgroup dying
+  systemd.user.services.headless-chromium-reaper = {
+    Unit.Description = "Kill headless Chromium whose launcher died";
+    Service = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.writeShellScript "headless-chromium-reaper" ''
+        for p in $(${pkgs.procps}/bin/pgrep -P "$PPID" -f 'chromium.*--headless'); do # $PPID is the user manager, i.e. the orphan reaper
+          ${pkgs.gnugrep}/bin/grep -q 'app-org.chromium.Chromium-' /proc/$p/cgroup && echo "reaping $p" && kill "$p"
+        done
+        true
+      ''}";
+    };
+  };
+
+  systemd.user.timers.headless-chromium-reaper = {
+    Unit.Description = "Periodically reap orphaned headless Chromium";
+    Timer = {
+      OnBootSec = "5min";
+      OnUnitActiveSec = "5min";
+    };
+    Install.WantedBy = [ "timers.target" ];
+  };
 }
