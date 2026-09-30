@@ -18,7 +18,7 @@ daemons // {
       };
     };
     launched = {
-      chrome_executable = "/etc/profiles/per-user/v/bin/google-chrome-stable";
+      chrome_executable = "/etc/profiles/per-user/v/bin/google-chrome-bare"; # `google-chrome-stable` carries the daily profile's CDP port and user-data-dir
       behaviour = {
         active_hours = [ 7 24 ];
         burst_min = 40;
