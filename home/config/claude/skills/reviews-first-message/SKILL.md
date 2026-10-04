@@ -12,19 +12,18 @@ Input: `n`, how many top-ranked leads to draft for. A percentage counts too ("10
 3. Read `/home/v/s/g/rolodex/reviews/<person>/__main__.nix` for `tags.business`, `summary` and `sources`.
 4. Write one message to `/home/v/s/g/rolodex/reviews/<person>/outbox/facebook/<at>.md`. `<at>` is the current UTC time rounded up to the minute, as `%Y-%m-%dT%H:%MZ`. The file holds only the message text.
 
-With more than ~20 leads, hand steps 3–4 to a background Sonnet agent and give it these rules word for word.
+With more than ~20 leads, hand steps 3–4 to a background Opus agent and point it at the notes below.
 
-## Message rules (as the user gave them)
+## Message rules
 
-> if they have a business of any kind, suggest them to exchange reviews. Be very concise, don't use formal grammar; speak in french. If they don't have have a business, offer a dollar in exchange for review. Use even more informal speach; adding 1-2 grammatical errors (or starting from lowercase capitalization) is actually good here
+The source of truth is `/home/v/s/ev_invest/_service_arb/remote_reviews_automations/tmp/campaign_message_generation/`:
+- `user_inputs.md`: the user's instructions and critiques, word for word. These win over everything else.
+- `understanding.md`: the current distilled rules, and what failed before.
+- `refs/`: the reference DMs and their analysis.
 
-Specifics that produced the results the user liked:
-- "A business of any kind" means `tags.business` is any non-null string, `self-employed` included.
-- Business leads get a Google-review swap: one for their business, one for ours. Keep it to 1–2 short sentences, use `tu`, and drop the `ne` in negations. Name their trade when it's known (e.g. "ton truc d'événementiel").
-- Non-business leads get offered **1€**, not a dollar (they are French). Start in lowercase. Include 1–2 texting slips such as `sa` for `ça`, `jai`, or missing accents. A personal hook from the summary helps ("direct de la guyane a lyon, sa fait un sacre trajet !").
-- 1€ is a silly offer and everyone knows it, so end with a cute plea in brackets, in French. The user's example: "(pretty please, I'm dying over here)" → e.g. "(stp stp, je suis au bout de ma vie là)".
-- Vary the wording and the plea from person to person, so the messages don't look mass-sent.
-- No links, no signature, at most one emoji.
+Read all three every time; the rules change as critiques come in. Right now (v3) the shape is give, then ask, then joke. That means a personal hook, a genuine offer of value (coding help, or owing them one), the review asked for plainly and shrunk to nothing, and the 1€ only as a joke afterwards. Never plead. Put the bubbles on separate lines with a blank line between them, for `send --multi-message`.
+
+New critiques from the user go into `user_inputs.md` word for word, and then `understanding.md` is rewritten to match.
 
 ## Then
 
