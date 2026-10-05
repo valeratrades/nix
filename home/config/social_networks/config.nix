@@ -4,10 +4,6 @@ let
 in
 daemons // {
   venues = "/home/v/s/g/rolodex/venues";
-  # `purpose <name> send` refuses a messenger without a budget here
-  circuit_breakers.per_surface = {
-    facebook = { max = 6; window = "1d"; }; # message requests to strangers from a burner; see social_networks' docs/facebook/sending.md
-  };
   facebook = {
     attached = {
       cdp_port = 49300;
