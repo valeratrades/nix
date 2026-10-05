@@ -1,6 +1,6 @@
 ---
 name: reviews-first-message
-description: Draft first outreach messages for the top n ranked `reviews` leads into their outboxes. Trigger on "write first messages for top n reviews leads", "draft outreach for reviews", "/reviews-first-message <n>".
+description: Draft first outreach messages for the top n ranked `reviews` leads into staging, for `release` to move into their outboxes. Trigger on "write first messages for top n reviews leads", "draft outreach for reviews", "/reviews-first-message <n>".
 ---
 
 # First messages for `reviews` leads
@@ -8,10 +8,10 @@ description: Draft first outreach messages for the top n ranked `reviews` leads 
 Input: `n`, how many top-ranked leads to draft for. A percentage counts too ("10%" of the people in the purpose).
 
 1. Get the order with `/home/v/s/social_networks/target/debug/social_networks purpose reviews rank`. The first column is the score, the third is the person. Take the first `n`.
-2. Pipe those names into `/home/v/s/ev_invest/_service_arb/remote_reviews_automations/target/debug/remote_reviews_automations to-draft /home/v/s/g/rolodex/reviews -s facebook`. It prints only the people who need a draft: no draft yet, or the draft was made from another prompt version or other lead data. It removes their outdated draft, and reports on stderr how many it skipped. Draft only the printed people. Build it first with `cargo b` in `nix develop` there if it is missing.
+2. Pipe those names into `/home/v/s/ev_invest/_service_arb/remote_reviews_automations/target/debug/remote_reviews_automations to-draft /home/v/s/g/rolodex/reviews -s facebook`. It prints only the people who need a draft: no draft yet, or the draft was made from another prompt version or other lead data. It removes their outdated draft, staged or released, and reports on stderr how many it skipped. Draft only the printed people. Build it first with `cargo b` in `nix develop` there if it is missing.
 3. Read `/home/v/s/g/rolodex/reviews/<person>/__main__.nix` for `tags.business`, `summary` and `sources`.
-4. Write one message to `/home/v/s/g/rolodex/reviews/<person>/outbox/facebook/<at>.md`. `<at>` is the current UTC time rounded up to the minute, as `%Y-%m-%dT%H:%MZ`. The file holds only the message text.
-5. After each message is written, run `/home/v/s/ev_invest/_service_arb/remote_reviews_automations/target/debug/remote_reviews_automations drafted /home/v/s/g/rolodex/reviews/<person> -s facebook`. This records the stamp in `<person>/drafted/facebook`. Without the stamp, the next run stops with an error at this person.
+4. Write one message to `/home/v/s/g/rolodex/reviews/<person>/drafts/facebook/<at>.md` (staging; never into `outbox/`). `<at>` is the current UTC time rounded up to the minute, as `%Y-%m-%dT%H:%MZ`. The file holds only the message text.
+5. After each message is written, run `/home/v/s/ev_invest/_service_arb/remote_reviews_automations/target/debug/remote_reviews_automations drafted /home/v/s/g/rolodex/reviews/<person> -s facebook`. This records the stamp in `<person>/drafts/facebook/stamp`. Without the stamp, the next run stops with an error at this person.
 
 With more than ~20 leads, hand steps 3–5 to a background Opus agent and point it at the notes below.
 
@@ -28,5 +28,7 @@ New critiques from the user go into `user_inputs.md` word for word, and then `un
 
 ## Then
 
-- Commit only the outbox and stamp files in `/home/v/s/g/rolodex` with `git add reviews/*/outbox reviews/*/drafted && git commit --no-verify`. The pre-commit hook there stages the whole repo.
-- `purpose reviews send` cannot send over facebook yet (`Messenger` has no `Facebook`), so the drafts stay in the outboxes until that exists.
+- The user reads the staged drafts with `/home/v/s/ev_invest/_service_arb/remote_reviews_automations/target/debug/remote_reviews_automations outbox /home/v/s/g/rolodex/reviews -s facebook`.
+- Only once the user approves, release them: `/home/v/s/social_networks/target/debug/social_networks purpose reviews rank | sed -n 2,<n+1>p | awk '{print $3}' | /home/v/s/ev_invest/_service_arb/remote_reviews_automations/target/debug/remote_reviews_automations release /home/v/s/g/rolodex/reviews -s facebook`. It moves current-version drafts into `outbox/facebook/`, warns about outdated ones, and first retracts released drafts of another version. `outbox/` is what `purpose reviews send` sends.
+- Commit only the staging and outbox files in `/home/v/s/g/rolodex` with `git add -A -- 'reviews/*/drafts'`, plus `git add -A -- 'reviews/*/outbox'` if anything was released, then `git commit --no-verify`. The pre-commit hook there stages the whole repo.
+- `purpose reviews send` cannot send over facebook yet (`Messenger` has no `Facebook`), so released drafts stay in the outboxes until that exists.
