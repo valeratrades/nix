@@ -8,11 +8,12 @@ description: Draft first outreach messages for the top n ranked `reviews` leads 
 Input: `n`, how many top-ranked leads to draft for. A percentage counts too ("10%" of the people in the purpose).
 
 1. Get the order with `/home/v/s/social_networks/target/debug/social_networks purpose reviews rank`. The first column is the score, the third is the person. Take the first `n`.
-2. Skip anyone who already has a file in `/home/v/s/g/rolodex/reviews/<person>/outbox/facebook/`.
+2. Pipe those names into `/home/v/s/ev_invest/_service_arb/remote_reviews_automations/target/debug/remote_reviews_automations to-draft /home/v/s/g/rolodex/reviews -s facebook`. It prints only the people who need a draft: no draft yet, or the draft was made from another prompt version or other lead data. It removes their outdated draft, and reports on stderr how many it skipped. Draft only the printed people. Build it first with `cargo b` in `nix develop` there if it is missing.
 3. Read `/home/v/s/g/rolodex/reviews/<person>/__main__.nix` for `tags.business`, `summary` and `sources`.
 4. Write one message to `/home/v/s/g/rolodex/reviews/<person>/outbox/facebook/<at>.md`. `<at>` is the current UTC time rounded up to the minute, as `%Y-%m-%dT%H:%MZ`. The file holds only the message text.
+5. After each message is written, run `/home/v/s/ev_invest/_service_arb/remote_reviews_automations/target/debug/remote_reviews_automations drafted /home/v/s/g/rolodex/reviews/<person> -s facebook`. This records the stamp in `<person>/drafted/facebook`. Without the stamp, the next run stops with an error at this person.
 
-With more than ~20 leads, hand steps 3–4 to a background Opus agent and point it at the notes below.
+With more than ~20 leads, hand steps 3–5 to a background Opus agent and point it at the notes below.
 
 ## Message rules
 
@@ -23,9 +24,9 @@ The source of truth is `/home/v/s/ev_invest/_service_arb/remote_reviews_automati
 
 Read all three every time; the rules change as critiques come in. Right now (v3) the shape is give, then ask, then joke. That means a personal hook, a genuine offer of value (coding help, or owing them one), the review asked for plainly and shrunk to nothing, and the 1€ only as a joke afterwards. Never plead. Put the bubbles on separate lines with a blank line between them, for `send --multi-message`.
 
-New critiques from the user go into `user_inputs.md` word for word, and then `understanding.md` is rewritten to match.
+New critiques from the user go into `user_inputs.md` word for word, and then `understanding.md` is rewritten to match. Each rewrite increments the `version: <n>` on its first line. That makes every draft from the old rules due again.
 
 ## Then
 
-- Commit only the outbox files in `/home/v/s/g/rolodex` with `git add reviews/*/outbox && git commit --no-verify`. The pre-commit hook there stages the whole repo.
+- Commit only the outbox and stamp files in `/home/v/s/g/rolodex` with `git add reviews/*/outbox reviews/*/drafted && git commit --no-verify`. The pre-commit hook there stages the whole repo.
 - `purpose reviews send` cannot send over facebook yet (`Messenger` has no `Facebook`), so the drafts stay in the outboxes until that exists.
