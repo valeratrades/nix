@@ -1,6 +1,7 @@
 {
   path = "/home/v/s/g/rolodex/people";
-  half_life = "30d";
+  stale_half_life = "30d";
+  unanswered_half_life = "1w";
   tags = {
     location = [ "new_york" "toronto" "london" "berlin" ]; # a group: matched against the roster's IANA `zone`
     service_arb = { type = "bool"; };
