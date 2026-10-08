@@ -22,6 +22,7 @@ in {
     secrets.mail_main_pass = { mode = "0400"; };
     secrets.mail_spam_addr = { mode = "0400"; };
     secrets.mail_spam_pass = { mode = "0400"; };
+    secrets.mail_test_pass = { mode = "0400"; };
     secrets.alpaca_api_pubkey = { mode = "0400"; };
     secrets.alpaca_api_secret = { mode = "0400"; };
     secrets.openai_api_key = { mode = "0400"; };
@@ -606,37 +607,38 @@ in {
         #inputs.aggr_orderbook.packages.${pkgs.stdenv.hostPlatform.system}.default
         #inputs.orderbook_3d.packages.${pkgs.stdenv.hostPlatform.system}.default
       ];
-    #TODO: himalaya. Problems: (gmail requires oauth2, proton requires redirecting to it (also struggling with it))
     file = {
       #".local/share/fonts/FillLevels.ttf".source = config.lib.file.mkOutOfStoreSymlink "/home/v/nix/home/fs/fonts/FillLevels.ttf"; 
-      ".config/himalaya/config.toml".source =
-        (pkgs.formats.toml { }).generate "" {
-          accounts.master = {
-            default = true;
-            email = "valeratrades@gmail.com";
-            display-name = "valeratrades";
-            downloads-dir = "/home/v/Downloads";
-            backend.type = "imap";
-            backend.host = "imap.gmail.com";
-            backend.port = 993;
-            backend.login = "valeratrades@gmail.com";
-            backend.encryption.type = "tls";
-            backend.auth.type = "password";
-            backend.auth.command =
-              "cat ${config.sops.secrets.mail_main_pass.path}";
-            message.send.backend.type = "smtp";
-            message.send.backend.host = "smtp.gmail.com";
-            message.send.backend.port = 465;
-            message.send.backend.login = "valeratrades@gmail.com";
-            message.send.backend.encryption.type = "tls";
-            message.send.backend.auth.type = "password";
-            message.send.backend.auth.command =
-              "cat ${config.sops.secrets.mail_main_pass.path}";
-            folder.aliases.sent = "[Gmail]/Sent Mail";
-            folder.aliases.drafts = "[Gmail]/Drafts";
-            folder.aliases.trash = "[Gmail]/Trash";
-          };
-        };
     };
   };
+
+  accounts.email.accounts = let
+    gmail = { address, passSecret }: {
+      inherit address;
+      flavor = "gmail.com";
+      realName = "Valera";
+      passwordCommand = "cat ${config.sops.secrets.${passSecret}.path}"; # app password, - gmail rejects account passwords over IMAP/SMTP
+      folders = {
+        inbox = "INBOX";
+        sent = "[Gmail]/Sent Mail";
+        drafts = "[Gmail]/Drafts";
+        trash = "[Gmail]/Trash";
+      };
+      neomutt = {
+        enable = true;
+        mailboxType = "imap";
+        extraConfig = "unset record"; # gmail files SMTP-sent mail into Sent itself
+      };
+      himalaya.enable = true;
+    };
+  in {
+    valeratrades = gmail { address = "valeratrades@gmail.com"; passSecret = "mail_main_pass"; } // { primary = true; };
+    v79166789533 = gmail { address = "v79166789533@gmail.com"; passSecret = "mail_spam_pass"; };
+    "1cryptoicos" = gmail { address = "1cryptoicos@gmail.com"; passSecret = "mail_test_pass"; };
+  };
+  programs.neomutt = {
+    enable = true;
+    sidebar.enable = true;
+  };
+  programs.himalaya.enable = true;
 }
