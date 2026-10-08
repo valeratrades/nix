@@ -106,6 +106,27 @@ let
 		};
 	};
 
+	# user-scope servers live in ~/.claude.json, which CC owns and rewrites, so they're merged in on activation
+	mcpServers = let
+		cloudflare = url: {
+			type = "http";
+			inherit url;
+			headers.Authorization = "Bearer \${CLOUDFLARE_MASTER_TOKEN}";
+		};
+	in {
+		higgsfield = { type = "http"; url = "https://mcp.higgsfield.ai/mcp"; };
+		cloudflare-api = cloudflare "https://mcp.cloudflare.com/mcp";
+		cloudflare-bindings = cloudflare "https://bindings.mcp.cloudflare.com/mcp";
+		cloudflare-builds = cloudflare "https://builds.mcp.cloudflare.com/mcp";
+		cloudflare-observability = cloudflare "https://observability.mcp.cloudflare.com/mcp";
+		fathom = {
+			type = "stdio";
+			command = "npx";
+			args = [ "mcp-remote@latest" "https://api.fathom.ai/mcp" ];
+			env = { };
+		};
+	};
+
 	parsePluginId = id: let
 		parts = lib.splitString "@" id;
 	in {
@@ -253,6 +274,12 @@ let
 		'') localPlugins)}
 
 		echo "$INSTALLED" > "$PLUGINS_DIR/installed_plugins.json"
+
+		CLAUDE_JSON="$HOME/.claude.json"
+		[ -f "$CLAUDE_JSON" ] || echo '{}' > "$CLAUDE_JSON"
+		${pkgs.jq}/bin/jq --slurpfile m ${(pkgs.formats.json { }).generate "claude-mcp-servers.json" mcpServers} \
+			'.mcpServers = ((.mcpServers // {}) + $m[0])' "$CLAUDE_JSON" > "$CLAUDE_JSON.tmp"
+		mv "$CLAUDE_JSON.tmp" "$CLAUDE_JSON"
 		echo "Claude plugins synced."
 	'';
 in
