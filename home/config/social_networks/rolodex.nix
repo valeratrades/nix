@@ -16,6 +16,14 @@
       where = "posts >= 2 AND zone LIKE '%$location%'";
       tags = { location = "$location"; service_arb = true; };
     };
+    gmbpp = {
+      venue = "skool:gmp-passive-profits-5347";
+      tags = { service_arb = true; };
+    };
+    cheap = {
+      venue = "skool:20kmodropservicingblueprint";
+      tags = { service_arb = true; };
+    };
   };
   rank = [
     { of = "networth"; weight = 2; }

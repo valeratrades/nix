@@ -115,6 +115,7 @@ alias workspaces="swaymsg -t get_tree" # shortcut for ease of remembrance by Ani
 alias q "ask_llm -f"
 alias ytd "yt-dlp -x --audio-format mp3 --cookies-from-browser firefox " # downloads audio from yt; you provide <URL>
 alias dr="deno run -A ./tmp/cmd.ts" # `dr` for `deno run`; follows https://matklad.github.io/2026/01/27/make-ts.html
+alias accounting="nix run ~/s/ev_invest/_service_arb/accounting"
 
 alias oclaw="cd ~/.openclaw/workspace && tn openclaw" # openclaw agent workspace in a named tmux session
 alias oc="node ~/g/openclaw/openclaw.mjs" # openclaw CLI, same invocation as configureOpenclaw's local helper

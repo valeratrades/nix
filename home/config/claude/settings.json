@@ -93,5 +93,11 @@
   },
   "thinking": {
     "display": "summarized"
+  },
+  "env": {
+    "SSH_ASKPASS_REQUIRE": "never",
+    "SUDO_ASKPASS": "/run/current-system/sw/bin/false",
+    "GIT_TERMINAL_PROMPT": "0",
+    "GIT_ASKPASS": "/run/current-system/sw/bin/false"
   }
 }

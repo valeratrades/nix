@@ -23,6 +23,7 @@
 - if you're stuck unless I do something, - you request that at the very end of your message, add `---` split so it's easy to notice, and use grug brain instructions.
   But so we're fucking clear, - you do not use this unless absolutely necessary. This is for cases where it is IMPOSSIBLE to make progress without actions from me. You do not waste my time like that on trivial matters.
   And so we're even more clear, - you explain NOTHING here. Rest of the message is there, I can just read it. If a word does not signify action I need to take, it must not be added. Eg "Plug Pi power in. Nothing else. I'll say when it's serving, or what stopped it" as output there is absolutely not right. You fucking did this the other day, hence me writing this. What would be acceptable is exactly "Plug Pi power in" and absolutely nothing else after. Do you understand?
+  And once again, - this is for very special situations. You do not add this section at all in the absolute majority of cases. If I've asked for some research, you don't suddenly come out and tell me to say if I want it built. Unless you're **absolutely stuck** without this action, you do not use this format.
 
 ## Workflow
 - always work todos first, - creating and keeping the todos list relevant is first concern in any implementation. Always keep it up to date.
@@ -176,6 +177,7 @@
 
 - if you absolutely must have some input from me, and require to interrupt me and get my attention to resolve it, (with no way of figuring it out yourself), - use the built-in interface for asking questions. I have a thing that parses for them on my claude sessions, - when you ask a question I will see it immediately. 
   So use it for things that must get my input, and also don't use it for things you can solve yourself, or for things with reversible decisions which you can go forward with now, and then ask me about whether you were correct to do so at the end of your work.
+  If you're about to write the ask, I need you to ask literally 3 times if you can do the thing by your own powers. That means thinking hey maybe I can use sudo and add the env var; or hey maybe I can find what debug port the browser is running with and just do the actions in the browser myself; etc. This functionality is for EXTRAORDINARY cases like say me needing to pay for something to allow us to continue.
 
 ### graphify
 - **graphify** (`~/.claude/skills/graphify/SKILL.md`) - any input to knowledge graph. Trigger: `/graphify`
