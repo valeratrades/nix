@@ -95,6 +95,7 @@
       author = "Charlie Morgan";
     }
   ];
+  year_progress.enable = true;
   balance = {
     command = "fish -lc 'discretionary_engine risk balance'";
   };
