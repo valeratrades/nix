@@ -63,9 +63,9 @@
 
     "I'm not fast enough"
 
-    "#4: say less than necessary"
+    "I'm happy when I'm unhappy"
 
-    "#7: get others to do the work for you,\nbut always take the credit"
+    "#4: say less than necessary"
 
     "#9: win through your actions,\nnever through argument"
 
@@ -79,9 +79,7 @@
 
     "#33: discover each man's thumbscrew"
 
-    "#36: disdain things you cannot have:\nignoring them is the best revenge"
-
-    "#39: stir up waters to catch fish"
+    "go at the limit to find and fix weaknesses" # weak points are evident under pressure. Have periods of overloading the system and plugging the wholes while you see where it leaks.
 
     "#40: despise the free lunch"
 
