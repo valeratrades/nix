@@ -113,9 +113,9 @@ bindsym $mod+F4 exec pamixer --default-source -t
 bindsym $mod+Shift+F4 exec pamixer --default-source --unmute && pamixer --default-source --set-volume 30
 bindsym $mod+Shift+F2 exec pamixer --default-source --decrease 5
 bindsym $mod+Shift+F3 exec pamixer --default-source --increase 5
-bindsym XF86AudioPlay exec playerctl play-pause
-bindsym F5 exec playerctl play-pause
-bindsym $mod+F12 exec playerctl play-pause
+bindsym XF86AudioPlay exec $sway_root/play_pause.sh
+bindsym F5 exec $sway_root/play_pause.sh
+bindsym $mod+F12 exec $sway_root/play_pause.sh
 bindsym $mod+F10 exec playerctl position 10-
 bindsym $mod+F11 exec playerctl position 10+
 bindsym $mod+Shift+F10 exec playerctl previous
