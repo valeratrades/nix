@@ -234,9 +234,9 @@ fn cleanup() {
         .status();
 }
 
-/// non-blocking: returns true if Enter was pressed within `dur`.
+/// non-blocking: returns true if Space was pressed within `dur`.
 /// In raw mode Ctrl-C arrives as a key event rather than SIGINT, so honor it here.
-fn enter_pressed_within(dur: Duration) -> Result<bool, String> {
+fn space_pressed_within(dur: Duration) -> Result<bool, String> {
     use crossterm::event::{poll, read, Event, KeyCode, KeyModifiers};
     if poll(dur).map_err(|e| e.to_string())? {
         if let Event::Key(k) = read().map_err(|e| e.to_string())? {
@@ -244,7 +244,7 @@ fn enter_pressed_within(dur: Duration) -> Result<bool, String> {
                 INTERRUPTED.store(true, Ordering::Relaxed);
                 return Ok(false);
             }
-            return Ok(k.code == KeyCode::Enter);
+            return Ok(k.code == KeyCode::Char(' '));
         }
     }
     Ok(false)
@@ -273,7 +273,7 @@ fn timer(initial: Option<i32>, quiet: bool) -> Result<(), String> {
     if tui {
         crossterm::terminal::enable_raw_mode().map_err(|e| e.to_string())?;
         RAW_MODE.store(true, Ordering::Relaxed);
-        println!("Enter: pause/resume, Ctrl-C: quit\r");
+        println!("Space: pause/resume, Ctrl-C: quit\r");
     }
 
     // Mark as running
@@ -287,7 +287,7 @@ fn timer(initial: Option<i32>, quiet: bool) -> Result<(), String> {
         while read_control().as_deref() == Some("paused") {
             if tui {
                 draw_line(left, true);
-                if enter_pressed_within(Duration::from_millis(100))? {
+                if space_pressed_within(Duration::from_millis(100))? {
                     toggle_pause()?;
                 }
             } else {
@@ -309,14 +309,14 @@ fn timer(initial: Option<i32>, quiet: bool) -> Result<(), String> {
             .map_err(|e| e.to_string())?;
         if tui {
             draw_line(left, false);
-            // consume the 1s tick while staying responsive to Enter
+            // consume the 1s tick while staying responsive to Space
             let end = std::time::Instant::now() + Duration::from_secs(1);
             loop {
                 let now = std::time::Instant::now();
                 if now >= end || INTERRUPTED.load(Ordering::Relaxed) {
                     break;
                 }
-                if enter_pressed_within(end - now)? {
+                if space_pressed_within(end - now)? {
                     toggle_pause()?;
                     break;
                 }
