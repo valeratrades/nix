@@ -16,9 +16,10 @@ last human-prompted turn, plus the closings of any turns task notifications woke
 up after it, led by the human prompt that opened it — a closing that answers a
 question reads as a dead end without it) and has an LLM — via the `ask_llm` crate — judge it as
 `finished` / `stuck` / `partial` / `ongoing`, which become states of their own:
-`stuck` (no progress for any reason — blocked, lost, or refused) is colored like `question`, `partial` and `ongoing` like `error`.
-`ongoing` is the report that hands the ball back — it asks something or wants a
-go-ahead before continuing; `partial` just leaves work undone.
+`stuck` (no progress for any reason — blocked, lost, or refused) is colored like `question`, `partial` like `error`.
+`ongoing` is a turn that ended waiting on the agent's own background processes or
+subagents — still working, so it's colored a darker `active`, and `supervise_sessions`
+watches it like `active`; `partial` just leaves work undone.
 
 The verdict is cached in `~/.cache/claude-session-reports.json` against the
 transcript's mtime, so it costs one call per session settle, not one per

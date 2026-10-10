@@ -80,6 +80,8 @@ const DONE_AFTER: std::time::Duration = std::time::Duration::from_secs(45 * 60);
 const COLOR_ERROR: &str = "#ff6565";
 const COLOR_WARN: &str = "#ba6e3d";
 const COLOR_INFO_ACTIVE: &str = "#68d4ff";
+/// COLOR_INFO_ACTIVE darkened: still working, just not in the foreground.
+const COLOR_INFO_ONGOING: &str = "#3f8aa8";
 const COLOR_INFO_NEGATIVE: &str = "#ffffff";
 /// oklch(0.85 0.06 142) — green with chroma pulled near grey, visible without popping.
 const COLOR_INFO_GOOD: &str = "#b8d8b4";
@@ -102,7 +104,7 @@ enum ClaudeState {
     Interrupted, // User aborted the turn (esc); dropped back to a live prompt
     Stuck,    // Finished, but its closing report says the work didn't land (see mod report)
     Partial,  // Finished, but its closing report says part of the work was skipped
-    Ongoing,  // Finished, but its closing report hands the ball back to me — a question or a go-ahead
+    Ongoing,  // Finished, but its closing report says it's waiting on its own background processes or subagents
 }
 
 impl ClaudeState {
@@ -328,11 +330,11 @@ impl fmt::Display for Sessions {
                 //               prose instead of a selector.
                 //   error    -> COLOR_WARN: real, but errors here mostly surface
                 //               during hands-on interaction, so I'm already looking
-                //               — deliberately ranked below question. partial and
-                //               ongoing ride along: work left on the table, not
-                //               blocked mid-flight.
+                //               — deliberately ranked below question. partial rides
+                //               along: work left on the table, not blocked mid-flight.
                 //   active/planning -> COLOR_INFO_ACTIVE: healthy "it's working" signal,
-                //               informational, lowest of the three.
+                //               informational, lowest of the three. ongoing -> its
+                //               darker COLOR_INFO_ONGOING: working, but in the background.
                 //   limit    -> COLOR_INFO_NEGATIVE: wedged on the usage clock — nothing
                 //               to act on, but worth seeing at a glance.
                 //   finished -> COLOR_INFO_GOOD.
@@ -344,11 +346,14 @@ impl fmt::Display for Sessions {
                     ClaudeState::Limit | ClaudeState::Input => {
                         format!("<span foreground=\"{COLOR_INFO_NEGATIVE}\">{}</span>", pango_escape(&padded_state))
                     }
-                    ClaudeState::Error | ClaudeState::Partial | ClaudeState::Ongoing => {
+                    ClaudeState::Error | ClaudeState::Partial => {
                         format!("<span foreground=\"{COLOR_WARN}\">{}</span>", pango_escape(&padded_state))
                     }
                     ClaudeState::Active | ClaudeState::Planning => {
                         format!("<span foreground=\"{COLOR_INFO_ACTIVE}\">{}</span>", pango_escape(&padded_state))
+                    }
+                    ClaudeState::Ongoing => {
+                        format!("<span foreground=\"{COLOR_INFO_ONGOING}\">{}</span>", pango_escape(&padded_state))
                     }
                     ClaudeState::Finished => {
                         format!("<span foreground=\"{COLOR_INFO_GOOD}\">{}</span>", pango_escape(&padded_state))
@@ -377,7 +382,8 @@ impl fmt::Display for Sessions {
                     ClaudeState::Empty => padded_state.yellow(),
                     ClaudeState::Draft => padded_state.cyan(),
                     ClaudeState::Question | ClaudeState::Stuck => padded_state.magenta(),
-                    ClaudeState::Error | ClaudeState::Partial | ClaudeState::Ongoing => padded_state.red(),
+                    ClaudeState::Ongoing => padded_state.truecolor(0x3f, 0x8a, 0xa8),
+                    ClaudeState::Error | ClaudeState::Partial => padded_state.red(),
                     ClaudeState::Limit | ClaudeState::Input => padded_state.white(),
                     ClaudeState::Interrupted => padded_state.normal(),
                 };
@@ -834,9 +840,9 @@ mod report {
     const SYSTEM: &str = "You read the closing report a coding agent left at the end of its session and judge how the session ended. When known, the user's prompt that opened the turn comes first, in <prompt> tags; a question there that the report answers is finished.
 
 finished — the implementation the agent settled on is in the tree
-stuck — the work is not moving, whatever the cause: the agent is blocked on something it cannot resolve, failed, lost the thread, is out of ideas, declined or refused the task on safety or policy grounds, or handed it back for the user to do. An offer to do some other, narrower task instead does not make it ongoing
+stuck — the work is not moving, whatever the cause: the agent is blocked on something it cannot resolve, failed, lost the thread, is out of ideas, declined or refused the task on safety or policy grounds, or handed it back for the user to do. An offer to do some other, narrower task instead does not change that
 partial — the agent left asked-for code unwritten, giving no reason it could not be written; or a task it was carrying out stopped short of its goal and now waits on steps the user has to take, even if it also asks the user something
-ongoing — the asked-for work is done and the agent is waiting on the user: it asks a question, or names a further step it wants a go-ahead for
+ongoing — the agent ended its turn waiting on work of its own still running: background processes, builds, or subagents it launched, which will wake it when they finish. Asked-for work done, followed by a question or an offer of a further step, is finished
 
 Judge the implementation, nothing else. A test not written, a check not run, a verification left for the user, work the report never claims was asked for — none of that is partial. Neither is a part the agent reports as impossible, done differently, or dropped because the codebase would not take it: a reason given revises the ask rather than falling short of it, however plainly the report says the ask was not met.
 
