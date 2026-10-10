@@ -104,7 +104,7 @@ function brb
 
     # halt time tracker, remember if we should resume
     set should_resume false
-    set halt_output (tedi blocker halt 2>&1)
+    set halt_output (tedi sprints selected halt 2>&1)
     if test $status -eq 0; and not string match -q '*already stopped*' "$halt_output"
         set should_resume true
     end
@@ -130,7 +130,7 @@ function brb
 
     # resume time tracker if we halted it
     if test "$should_resume" = true
-        tedi blocker resume
+        tedi sprints selected resume
     end
 end
 

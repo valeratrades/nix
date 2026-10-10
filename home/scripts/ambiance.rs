@@ -114,7 +114,7 @@ impl Drop for Ambiance {
             }
         }
         let _ = std::process::Command::new("tedi")
-            .args(["blocker", "halt"])
+            .args(["sprints", "selected", "halt"])
             .status();
         println!("Restoring wallpaper: {}", self.wallpaper.image);
     }
@@ -228,36 +228,30 @@ async fn balance_volumes() {
 }
 
 async fn setup_math() {
-    // Verify tedi blocker is set to a math project
-    let project = std::process::Command::new("tedi")
-        .args(["blocker", "current-project"])
+    // tedi exposes the selected issue only through `open`; echo as $EDITOR prints its path
+    let selected = std::process::Command::new("tedi")
+        .args(["sprints", "selected", "open", "--offline"])
+        .env("EDITOR", "echo")
         .output()
-        .expect("failed to run tedi blocker current-project");
-    let current = std::process::Command::new("tedi")
-        .args(["blocker", "current"])
-        .output()
-        .expect("failed to run tedi blocker current");
-    let project_out = String::from_utf8_lossy(&project.stdout);
-    let current_out = String::from_utf8_lossy(&current.stdout);
-    if !project_out.to_lowercase().contains("math") && !current_out.to_lowercase().contains("math")
-    {
-        eprintln!("tedi blocker is not set to a math project.");
-        eprintln!("  current-project: {}", project_out.trim());
-        eprintln!("  current: {}", current_out.trim());
-        eprintln!("Please set the correct blocker before running ambiance math.");
+        .expect("failed to run tedi sprints selected open");
+    assert!(selected.status.success(), "tedi sprints selected open failed: {}", String::from_utf8_lossy(&selected.stderr));
+    let selected_out = String::from_utf8_lossy(&selected.stdout);
+    let selected_path = selected_out.lines().next().expect("open prints the issue path first");
+    if !selected_path.to_lowercase().contains("math") {
+        eprintln!("tedi selected issue is not a math one: {selected_path}");
+        eprintln!("Select it with `tedi sprints select` before running ambiance math.");
         std::process::exit(1);
     }
 
     let wallpaper = WallpaperGuard::capture();
     let mut ambiance = Ambiance::new(wallpaper);
 
-    // Resume tedi blocker (networking roundtrip, run concurrently with rest of setup)
-    // Pipe `yes` because clockify may prompt to create a new project
-    let mut tedi_resume = Command::new("sh")
-        .args(["-c", "yes | tedi blocker resume"])
+    // networking roundtrip, run concurrently with rest of setup
+    let mut tedi_resume = Command::new("tedi")
+        .args(["-y", "sprints", "selected", "resume"])
         .stdin(Stdio::null())
         .spawn()
-        .expect("failed to spawn tedi blocker resume");
+        .expect("failed to spawn tedi sprints selected resume");
 
     // Set wallpaper
     Command::new("swaymsg")
@@ -303,12 +297,12 @@ async fn setup_math() {
         println!("bbeats already running, skipping");
     }
 
-    // Wait for tedi blocker resume to finish
+    // Wait for tedi resume to finish
     let status = tedi_resume
         .wait()
         .await
-        .expect("failed to wait on tedi blocker resume");
-    assert!(status.success(), "tedi blocker resume failed");
+        .expect("failed to wait on tedi sprints selected resume");
+    assert!(status.success(), "tedi sprints selected resume failed");
 
     // Balance volumes: set exam ambiance (mpv) to 87% of bbeats volume
     balance_volumes().await;
