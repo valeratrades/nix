@@ -1,6 +1,6 @@
 ---
 name: v_flakes
-description: "Rules for working in ~/s/v_flakes (the shared Nix parts collection consumed by every other repo via `v_flakes.url = github:valeratrades/v_flakes?ref=v1.6`). Read BEFORE editing anything under ~/s/v_flakes, and before changing how any repo consumes v_flakes — covers how to release, what the pin policy is, and what re-exports exist."
+description: "Rules for working in ~/s/v_flakes (the shared Nix parts collection consumed by every other repo via `v_flakes.url = github:valeratrades/v_flakes?ref=v1.6`). Read BEFORE editing anything under ~/s/v_flakes, and before changing how any repo consumes v_flakes — covers how to release, what the pin policy is, and what re-exports exist. Also read before creating or labelling a GitHub issue in any v_flakes consumer: the label set and its lint come from here."
 ---
 
 # v_flakes
@@ -64,3 +64,11 @@ It must be 1.
 `.cargo/config.toml`, `.github/workflows/*`, `README.md`, `.gitignore`, `.treefmt.toml` are
 written by v_flakes' own shellHook. They drift dirty on shell entry; that is normal, and the
 release commits them.
+
+## Issues
+
+Labels are `github/labels.nix`, synced to every consumer; `github/git-ops.rs` lints open issues on commit.
+
+- Exactly one `t:*` and one `i:*` per issue.
+- `i:0`–`i:9` is importance, running up: `i:9` is critical, `i:3` is the default.
+- A `t:bug` carries one `severity:*`, which bounds its `i:*`: `low` 3–5, `medium` 6–8, `high` 9. A bug with a severity and no `i:*` gets the band's floor on the next lint, so a `severity:medium` bug becomes `i:6`.
