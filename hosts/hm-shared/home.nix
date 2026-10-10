@@ -187,7 +187,10 @@
       # every pane forever; before sway's `import-environment` that env has no
       # WAYLAND_DISPLAY, so anything reaching for the clipboard finds no compositor.
       After = [ "network-online.target" "sway-session.target" ];
-      X-SwitchMethod = "keep-old"; # boot-only; a switch rerunning it would resurrect claudes closed since
+      # boot-only; a switch rerunning it would resurrect claudes closed since. keep-old alone
+      # doesn't cover it: a switch restarting sway-session.target re-pulls this via WantedBy.
+      X-SwitchMethod = "keep-old";
+      ConditionPathExists = "!%t/claude-session-restored";
     };
     Install = { WantedBy = [ "sway-session.target" ]; };
     Service = {
@@ -197,6 +200,7 @@
       # reaps every session we just built.
       KillMode = "process";
       ExecStart = "${pkgs.fish}/bin/fish -c restore_sessions";
+      ExecStopPost = ''${pkgs.bash}/bin/sh -c '[ "$EXIT_CODE" = exited ] && ${pkgs.coreutils}/bin/touch %t/claude-session-restored || true' ''; # signal-killed runs stay retryable
       # a stray SIGTERM mid-boot (seen once, sender unknown) left the boot with no sessions;
       # restore is idempotent, so killed runs retry. Exit 1 (stale entries) would only fail again.
       Restart = "on-abnormal";
