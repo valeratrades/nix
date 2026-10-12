@@ -14,7 +14,7 @@ serde_json = "1.0"
 //!
 //! ```text
 //! workspace (splith)
-//! ├── T  nvim <srcs> -c 'argdo TypstWatch'          60%
+//! ├── T  nvim -p <srcs> -c 'tabdo TypstWatch'       60%
 //! └── C0 splitv                                      40%
 //!     ├── C1 tabbed  ← docs[0..n]                    50%
 //!     └── P  tabbed  ← typst-out viewer per src      50%
@@ -423,7 +423,7 @@ fn build() -> Result<()> {
 		.map_err(|e| miette!("failed to spawn the placeholder swap: {e}"))?;
 
 	let srcs = srcs.iter().map(|s| sh_quote(s)).collect::<Vec<_>>().join(" ");
-	let e = Command::new("fish").arg("-c").arg(format!(r#"e {srcs} -c "'argdo TypstWatch'" -c first"#)).exec(); // `e` evals its args, eating one layer of quotes
+	let e = Command::new("fish").arg("-c").arg(format!(r#"e -p {srcs} -c "'tabdo TypstWatch'" -c tabfirst"#)).exec(); // `e` evals its args, eating one layer of quotes
 	Err(miette!("exec fish: {e}"))
 }
 
