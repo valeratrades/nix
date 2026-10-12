@@ -70,6 +70,7 @@ release commits them.
 Labels are `github/labels.nix`, synced to every consumer; `github/git-ops.rs` lints open issues on commit.
 
 - Exactly one `t:*` and one `i:*` per issue.
+- `t:refactor` is for issues where behavior stays the same and the code's shape is the deliverable; don't tag them `t:chore`/`t:feature`.
 - `i:0`–`i:9` is importance, running up: `i:9` is critical, `i:3` is the default.
 - A `t:bug` carries one `severity:*`, which bounds its `i:*`: `low` 3–5, `medium` 6–8, `high` 9. A bug with a severity and no `i:*` gets the band's floor on the next lint, so a `severity:medium` bug becomes `i:6`.
 - When assigning `i:*` yourself, always keep on the safe side. `i:5` is already a very big issue (`i:6` is the default production bug, for comparison). `i:5`+ is reserved for implementations that drive business forward.
