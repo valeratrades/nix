@@ -221,18 +221,6 @@
         }/bin/wlr-gamma-service";
     };
   };
-  systemd.user.services.mpris-proxy = {
-    Unit = {
-      Description = "Forward bluetooth AVRCP media buttons to MPRIS";
-      After = [ "network.target" "sound.target" ];
-      PartOf = "graphical-session.target";
-    };
-    Install = { WantedBy = [ "graphical-session.target" ]; };
-    Service = {
-      Type = "simple";
-      ExecStart = "${pkgs.bluez}/bin/mpris-proxy";
-    };
-  };
   systemd.user.services.ssh-add-ed25119 = {
     Unit = { PartOf = "multi-user.target"; };
     Install = { WantedBy = [ "default.target" ]; };

@@ -315,9 +315,6 @@ in {
 
   systemd = {
     user.services = {
-      # mpris-proxy lives in hosts/hm-shared/home.nix (home-manager). A duplicate here
-      # wrote a system-level drop-in with a second ExecStart= onto the same unit, which
-      # systemd refuses ("more than one ExecStart for Type=simple"), failing HM activation.
       #start-ssh-port = {
       #  description = "Start SSH port forwarding on boot";
       #  wantedBy = [ "multi-user.target" ];

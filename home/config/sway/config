@@ -114,6 +114,7 @@ bindsym $mod+Shift+F4 exec pamixer --default-source --unmute && pamixer --defaul
 bindsym $mod+Shift+F2 exec pamixer --default-source --decrease 5
 bindsym $mod+Shift+F3 exec pamixer --default-source --increase 5
 bindsym XF86AudioPlay exec $sway_root/play_pause.sh
+bindsym XF86AudioPause exec $sway_root/play_pause.sh # bt headsets send AVRCP play/pause as separate keys
 bindsym F5 exec $sway_root/play_pause.sh
 bindsym $mod+F12 exec $sway_root/play_pause.sh
 bindsym $mod+F10 exec playerctl position 10-
