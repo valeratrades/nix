@@ -14,10 +14,10 @@ serde_json = "1.0"
 //!
 //! ```text
 //! workspace (splith)
-//! ├── T  nvim <src> -c TypstWatch                    60%
+//! ├── T  nvim <srcs> -c 'argdo TypstWatch'          60%
 //! └── C0 splitv                                      40%
 //!     ├── C1 tabbed  ← docs[0..n]                    50%
-//!     └── P  typst-out viewer                        50%
+//!     └── P  tabbed  ← typst-out viewer per src      50%
 //! ```
 //!
 //! Every step anchors on a leaf con_id, never on a container: `move to mark` inserts
@@ -51,18 +51,15 @@ const SPAWN_TIMEOUT: Duration = Duration::from_secs(15);
 const PLACE_TIMEOUT: Duration = Duration::from_secs(120);
 
 const EXAMPLE: &str = r#"{
-  src = "main.typ";
-  docs = [ "../refs/stoch_1.pdf" "/abs/path/other.pdf" ];
-}
-
-Strings, not path literals — a path literal risks being copied to the nix store.
-Relative entries resolve against this directory."#;
+  srcs = [ ./main.typ ./appendix.typ ];
+  docs = [ ../refs/stoch_1.pdf /abs/path/other.pdf ];
+}"#;
 
 fn main() -> Result<()> {
 	let args: Vec<String> = std::env::args().skip(1).collect();
 	match args.as_slice() {
 		[] => build(),
-		[flag, p, t, ws] if flag == "--_place" => place(id_arg(p)?, id_arg(t)?, ws),
+		[flag, t, ws, slots @ ..] if flag == "--_place" => place(id_arg(t)?, ws, slots),
 		_ => Err(miette!("typst_workspace takes no arguments")),
 	}
 }
@@ -104,12 +101,17 @@ fn children(n: &Value) -> Vec<&Value> {
 
 // --- window watch ------------------------------------------------------------
 
+enum Event {
+	Subscribed,
+	Window { id: i64, name: String, new: bool },
+}
+
 /// A live `window` + `tick` subscription. `tick` is subscribed only for its
 /// `"first": true` event, which sway emits on subscribe and which is the only
 /// signal that the subscription is up — every spawn below races it.
 struct Watch {
 	proc: Child,
-	rx: mpsc::Receiver<Option<i64>>,
+	rx: mpsc::Receiver<Event>,
 }
 
 impl Watch {
@@ -125,13 +127,12 @@ impl Watch {
 		std::thread::spawn(move || {
 			for line in BufReader::new(out).lines().map_while(std::io::Result::ok) {
 				let Ok(v) = serde_json::from_str::<Value>(&line) else { continue };
-				let ev = if v["change"] == "new" {
-					match v["container"]["id"].as_i64() {
-						Some(id) => Some(id),
-						None => continue,
-					}
+				let ev = if v["change"] == "new" || v["change"] == "title" {
+					let Some(id) = v["container"]["id"].as_i64() else { continue };
+					let name = v["container"]["name"].as_str().unwrap_or_default().to_owned(); // untitled yet; a `title` event follows
+					Event::Window { id, name, new: v["change"] == "new" }
 				} else if v.get("first").is_some() {
-					None
+					Event::Subscribed
 				} else {
 					continue;
 				};
@@ -143,8 +144,8 @@ impl Watch {
 		let watch = Self { proc, rx };
 		loop {
 			match watch.rx.recv_timeout(Duration::from_secs(5)) {
-				Ok(None) => return Ok(watch),
-				Ok(Some(_)) => continue,
+				Ok(Event::Subscribed) => return Ok(watch),
+				Ok(Event::Window { .. }) => continue,
 				Err(_) => return Err(miette!("`swaymsg -t subscribe` never acknowledged")),
 			}
 		}
@@ -158,8 +159,8 @@ impl Watch {
 		let deadline = Instant::now() + timeout;
 		loop {
 			match self.rx.recv_timeout(deadline.saturating_duration_since(Instant::now())) {
-				Ok(Some(id)) => return Some(id),
-				Ok(None) => continue,
+				Ok(Event::Window { id, new: true, .. }) => return Some(id),
+				Ok(_) => continue,
 				Err(_) => return None,
 			}
 		}
@@ -282,7 +283,7 @@ fn leaf_titles(node: &Value, out: &mut Vec<String>) {
 
 // --- config ------------------------------------------------------------------
 
-fn read_config(cwd: &Path) -> Result<(PathBuf, Vec<PathBuf>)> {
+fn read_config(cwd: &Path) -> Result<(Vec<PathBuf>, Vec<PathBuf>)> {
 	let path = cwd.join(CONFIG);
 	if !path.is_file() {
 		return Err(miette!(help = EXAMPLE, "no {CONFIG} in {}", cwd.display()));
@@ -291,6 +292,7 @@ fn read_config(cwd: &Path) -> Result<(PathBuf, Vec<PathBuf>)> {
 	let out = Command::new("nix")
 		.args(["eval", "--json", "--file"])
 		.arg(&path)
+		.args(["--apply", "builtins.mapAttrs (_: map toString)"]) // `toString` of a path literal is its absolute path, no store copy
 		.output()
 		.map_err(|e| miette!("failed to run nix: {e}"))?;
 	if !out.status.success() {
@@ -299,31 +301,36 @@ fn read_config(cwd: &Path) -> Result<(PathBuf, Vec<PathBuf>)> {
 
 	let v: Value = serde_json::from_slice(&out.stdout).map_err(|e| miette!("`nix eval` output is not JSON: {e}"))?;
 	let obj = v.as_object().ok_or_else(|| miette!(help = EXAMPLE, "{CONFIG} must evaluate to an attrset, got {v}"))?;
-	if let Some(k) = obj.keys().find(|k| *k != "src" && *k != "docs") {
+	if let Some(k) = obj.keys().find(|k| *k != "srcs" && *k != "docs") {
 		return Err(miette!(help = EXAMPLE, "unknown key `{k}` in {CONFIG}"));
 	}
 
-	let src = obj
-		.get("src")
-		.and_then(Value::as_str)
-		.ok_or_else(|| miette!(help = EXAMPLE, "{CONFIG}: `src` is missing or not a string"))?;
-	let docs = obj
-		.get("docs")
-		.and_then(Value::as_array)
-		.ok_or_else(|| miette!(help = EXAMPLE, "{CONFIG}: `docs` is missing or not a list"))?
-		.iter()
-		.map(|d| {
-			d.as_str()
-				.map(|s| cwd.join(s))
-				.ok_or_else(|| miette!("{CONFIG}: docs entry {d} is not a string"))
-		})
-		.collect::<Result<Vec<_>>>()?;
-	if docs.is_empty() {
-		return Err(miette!(help = EXAMPLE, "{CONFIG}: `docs` is empty — nothing to lay out beside the source"));
+	let paths = |key: &str| -> Result<Vec<PathBuf>> {
+		let list = obj
+			.get(key)
+			.and_then(Value::as_array)
+			.ok_or_else(|| miette!(help = EXAMPLE, "{CONFIG}: `{key}` is missing or not a list"))?
+			.iter()
+			.map(|d| d.as_str().map(|s| cwd.join(s)).ok_or_else(|| miette!("{CONFIG}: {key} entry {d} is not a string")))
+			.collect::<Result<Vec<_>>>()?;
+		if list.is_empty() {
+			return Err(miette!(help = EXAMPLE, "{CONFIG}: `{key}` is empty"));
+		}
+		Ok(list)
+	};
+	let srcs = paths("srcs")?;
+	let docs = paths("docs")?;
+
+	let mut stems = HashSet::new();
+	for s in &srcs {
+		let stem = s.file_stem().ok_or_else(|| miette!("{CONFIG}: src `{}` has no file name", s.display()))?.to_string_lossy().into_owned();
+		if !stems.insert(stem.clone()) {
+			return Err(miette!("{CONFIG}: two srcs share the stem `{stem}` — their viewers would be indistinguishable"));
+		}
 	}
 
-	let src = cwd.join(src);
-	let missing: Vec<String> = std::iter::once(&src)
+	let missing: Vec<String> = srcs
+		.iter()
 		.chain(&docs)
 		.filter(|p| !p.exists())
 		.map(|p| p.display().to_string())
@@ -332,7 +339,7 @@ fn read_config(cwd: &Path) -> Result<(PathBuf, Vec<PathBuf>)> {
 		return Err(miette!("{CONFIG} points at files that do not exist:\n{}", missing.join("\n")));
 	}
 
-	Ok((src, docs))
+	Ok((srcs, docs))
 }
 
 // --- build -------------------------------------------------------------------
@@ -342,7 +349,7 @@ fn build() -> Result<()> {
 		return Err(miette!("SWAYSOCK is unset — typst_workspace drives sway over its IPC socket"));
 	}
 	let cwd = std::env::current_dir().map_err(|e| miette!("cannot read cwd: {e}"))?;
-	let (src, docs) = read_config(&cwd)?;
+	let (srcs, docs) = read_config(&cwd)?;
 
 	let root = tree()?;
 	let pids = ancestor_pids()?;
@@ -374,20 +381,26 @@ fn build() -> Result<()> {
 	cmd(&format!("[con_id={z1}] resize set width {DOCS_WIDTH_PPT} ppt"))?;
 	cmd(&format!("[con_id={z1}] splitv"))?;
 
-	// The typst viewer is spawned by `typst watch --open` from inside nvim, seconds
-	// after we are gone, and lands next to whatever has focus then. A throwaway window
-	// holds its slot; `--_place` swaps it out. sway 1.11 has no `append_layout`, so a
+	// Typst viewers are spawned by `typst watch --open` from inside nvim, seconds
+	// after we are gone, and land next to whatever has focus then. A throwaway window
+	// holds each slot; `--_place` swaps them out. sway 1.11 has no `append_layout`, so a
 	// declarative layout with swallow criteria is not on the table.
-	let placeholder = watch.open(z1, "zathura")?;
+	let p0 = watch.open(z1, "zathura")?;
 
-	if docs.len() > 1 {
-		cmd(&format!("[con_id={z1}] splith"))?;
-		let mut prev = z1;
-		for d in &docs[1..] {
-			prev = watch.open(prev, &doc_cmd(d))?;
+	let tab = |first: i64, rest: Vec<String>| -> Result<Vec<i64>> {
+		let mut ids = vec![first];
+		if rest.is_empty() {
+			return Ok(ids);
 		}
-		cmd(&format!("[con_id={z1}] layout tabbed"))?;
-	}
+		cmd(&format!("[con_id={first}] splith"))?;
+		for target in rest {
+			ids.push(watch.open(*ids.last().expect("seeded with first"), &target)?);
+		}
+		cmd(&format!("[con_id={first}] layout tabbed"))?;
+		Ok(ids)
+	};
+	tab(z1, docs[1..].iter().map(|d| doc_cmd(d)).collect())?;
+	let placeholders = tab(p0, vec!["zathura".to_owned(); srcs.len() - 1])?;
 
 	cmd(&format!("unmark {MARK}"))?;
 	if focused_workspace()? == ws_name {
@@ -395,9 +408,13 @@ fn build() -> Result<()> {
 	}
 	drop(watch);
 
+	let slots = srcs.iter().zip(&placeholders).map(|(s, p)| {
+		format!("{}={p}", s.file_stem().expect("checked in read_config").to_string_lossy())
+	});
 	let exe = std::env::current_exe().map_err(|e| miette!("cannot find own path: {e}"))?;
 	Command::new(exe)
-		.args(["--_place", &placeholder.to_string(), &term.to_string(), &ws_name])
+		.args(["--_place".to_owned(), term.to_string(), ws_name.clone()])
+		.args(slots)
 		.stdin(Stdio::null())
 		.stdout(Stdio::null())
 		.stderr(Stdio::null())
@@ -405,23 +422,36 @@ fn build() -> Result<()> {
 		.spawn()
 		.map_err(|e| miette!("failed to spawn the placeholder swap: {e}"))?;
 
-	let e = Command::new("fish").arg("-c").arg(format!("e {} -c TypstWatch", sh_quote(&src))).exec();
+	let srcs = srcs.iter().map(|s| sh_quote(s)).collect::<Vec<_>>().join(" ");
+	let e = Command::new("fish").arg("-c").arg(format!(r#"e {srcs} -c "'argdo TypstWatch'" -c first"#)).exec(); // `e` evals its args, eating one layer of quotes
 	Err(miette!("exec fish: {e}"))
 }
 
-/// ponytail: takes the *first* new window on the machine, not one matched by title —
-/// anything opened in that 1-3s gap steals the slot. Upgrade path is matching
-/// `app_id`/`name` against the expected output pdf.
-fn place(placeholder: i64, term: i64, ws_name: &str) -> Result<()> {
+/// Viewers are told apart by title: zathura titles a window with its file's path, and
+/// typst names the output `<stem>.pdf`.
+fn place(term: i64, ws_name: &str, slots: &[String]) -> Result<()> {
+	let mut pending = slots
+		.iter()
+		.map(|s| {
+			let (stem, p) = s.rsplit_once('=').ok_or_else(|| miette!("`{s}` is not a <stem>=<con_id> slot"))?;
+			Ok((format!("{stem}.pdf"), id_arg(p)?))
+		})
+		.collect::<Result<Vec<_>>>()?;
 	let watch = Watch::start()?;
-	if let Some(viewer) = watch.next_window(PLACE_TIMEOUT) {
+	let deadline = Instant::now() + PLACE_TIMEOUT;
+	while !pending.is_empty() {
+		let Ok(ev) = watch.rx.recv_timeout(deadline.saturating_duration_since(Instant::now())) else { break };
+		let Event::Window { id: viewer, name, .. } = ev else { continue };
+		let Some(i) = pending.iter().position(|(pdf, _)| name == *pdf || name.ends_with(&format!("/{pdf}"))) else { continue };
+		let (_, placeholder) = pending.swap_remove(i);
 		cmd(&format!("[con_id={viewer}] swap container with con_id {placeholder}"))?;
 		cmd(&format!("[con_id={placeholder}] kill"))?;
 		// minutes may have passed; only take the caret if that workspace is still the one in view
 		if focused_workspace()? == ws_name {
 			cmd(&format!("[con_id={term}] focus"))?;
 		}
-	} else {
+	}
+	for (_, placeholder) in pending {
 		cmd(&format!("[con_id={placeholder}] kill"))?;
 	}
 	Ok(())
