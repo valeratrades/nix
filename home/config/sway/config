@@ -290,7 +290,7 @@ mode "eww" {
 bindsym $mod+e exec "swaymsg mode eww && eww --no-daemonize update sway_mode='eww (h,f,a,c)'"
 
 # paste clipboard contents through keystrokes
-bindsym $mod+Shift+p exec ${NIXOS_CONFIG}/home/scripts/clipboard_to_keystrokes.rs
+bindsym $mod+Ctrl+Shift+p exec ${NIXOS_CONFIG}/home/scripts/clipboard_to_keystrokes.rs
 
 # check if any task was cut short during the last session
 exec_always sleep 3 && todo do continue_ongoing

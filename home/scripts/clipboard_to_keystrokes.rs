@@ -57,6 +57,12 @@ fn get_clipboard_text() -> Option<String> {
 }
 
 fn main() {
+    let types = Command::new("wl-paste").arg("--list-types").output().expect("wl-paste is in PATH");
+    if String::from_utf8_lossy(&types.stdout).lines().any(|t| t.starts_with("image/")) {
+        eprintln!("Clipboard holds an image, refusing to type it");
+        exit(1)
+    }
+
     // Try to read clipboard, first with wl-paste, then fall back to arboard
     let text = get_clipboard_text().unwrap_or_else(|| {
         eprintln!("Could not get clipboard contents or clipboard is empty");
