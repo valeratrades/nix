@@ -1,0 +1,144 @@
+--- a/main.c
++++ b/main.c
+@@ -67,17 +67,16 @@
+ 	struct zwp_virtual_keyboard_manager_v1 *manager;
+ 	struct zwp_virtual_keyboard_v1 *keyboard;
+ 
+-	// Stores a keycode -> (xkb_keysym_t, wchar_t) mapping
+-	// Beware that this is one-indexed (as zero-keycodes are sometimes
+-	// not handled well by clients).
+-	// That is, keymap[0] is a (xkb_keysym_t, wchar_t) pair which we can type by sending
+-	// the keycode 1.
++	// Every (xkb_keysym_t, wchar_t) ever requested, addressed by one-indexed entry ids.
+ 	// Beware that the wchar_t does not have to be valid (and is 0 in such cases)
+ 	// This is since some keysyms need not have a unicode representation
+ 	// (such as the arrow keys and similar)
+ 	size_t keymap_len;
+ 	struct keymap_entry *keymap;
+ 
++	// Entry id bound to each of `slot_keycodes` in the uploaded keymap, 0 = unbound.
++	unsigned int slot_entry[48];
++
+ 	uint32_t mod_status;
+ 	size_t command_count;
+ 	struct wtype_command *commands;
+@@ -96,6 +95,42 @@
+ 
+ static void upload_keymap(struct wtype *wtype);
+ 
++// Clients like Chromium derive the physical key (DomCode) from the raw evdev keycode, so
++// keycodes must only ever be ones of plain printable keys: sequential ones hit Ctrl, F5, Power...
++static const unsigned int slot_keycodes[] = {
++	2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,
++	16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27,
++	30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41,
++	43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53,
++	86,
++};
++_Static_assert(ARRAY_SIZE(slot_keycodes) == ARRAY_SIZE(((struct wtype *)0)->slot_entry), "one entry per slot");
++
++// Keycode for ids[0]; on a miss rebinds all slots to the next unique ids, so a keymap
++// upload only happens every ARRAY_SIZE(slot_keycodes) unique keys.
++static unsigned int slot_keycode(struct wtype *wtype, const unsigned int *ids, size_t len)
++{
++	for (size_t s = 0; s < ARRAY_SIZE(slot_keycodes); s++) {
++		if (wtype->slot_entry[s] == ids[0]) {
++			return slot_keycodes[s];
++		}
++	}
++
++	memset(wtype->slot_entry, 0, sizeof(wtype->slot_entry));
++	size_t filled = 0;
++	for (size_t i = 0; i < len && filled < ARRAY_SIZE(slot_keycodes); i++) {
++		bool bound = false;
++		for (size_t s = 0; s < filled; s++) {
++			bound |= wtype->slot_entry[s] == ids[i];
++		}
++		if (!bound) {
++			wtype->slot_entry[filled++] = ids[i];
++		}
++	}
++	upload_keymap(wtype);
++	return slot_keycodes[0];
++}
++
+ 
+ static void handle_wl_event(void *data, struct wl_registry *registry,
+ 							uint32_t name, const char *interface,
+@@ -335,7 +370,7 @@
+ static void run_key(struct wtype *wtype, struct wtype_command *cmd)
+ {
+ 	zwp_virtual_keyboard_v1_key(
+-		wtype->keyboard, 0, cmd->single_key_code,
++		wtype->keyboard, 0, slot_keycode(wtype, &cmd->single_key_code, 1),
+ 		cmd->type == WTYPE_COMMAND_KEY_PRESS ?
+ 			WL_KEYBOARD_KEY_STATE_PRESSED : WL_KEYBOARD_KEY_STATE_RELEASED
+ 	);
+@@ -359,7 +394,7 @@
+ static void run_text(struct wtype *wtype, struct wtype_command *cmd)
+ {
+ 	for (size_t i = 0; i < cmd->key_codes_len; i++) {
+-		type_keycode(wtype, cmd->key_codes[i]);
++		type_keycode(wtype, slot_keycode(wtype, &cmd->key_codes[i], cmd->key_codes_len - i));
+ 		usleep(cmd->delay_ms * 1000);
+ 	}
+ }
+@@ -398,22 +433,12 @@
+ 		cmd->key_codes[cmd->key_codes_len++] = key_code;
+ 
+ 		if (cmd->key_codes_len == buf_size) {
+-			upload_keymap(wtype);
+-			for (size_t i = 0; i < cmd->key_codes_len; i++) {
+-				type_keycode(wtype, cmd->key_codes[i]);
+-				usleep(cmd->delay_ms * 1000);
+-			}
++			run_text(wtype, cmd);
+ 			cmd->key_codes_len = 0;
+ 		}
+ 	}
+ 
+-	if (cmd->key_codes_len != 0) {
+-		upload_keymap(wtype);
+-		for (size_t i = 0; i < cmd->key_codes_len; i++) {
+-			type_keycode(wtype, cmd->key_codes[i]);
+-			usleep(cmd->delay_ms * 1000);
+-		}
+-	}
++	run_text(wtype, cmd);
+ 
+ 	free(cmd->key_codes);
+ }
+@@ -465,11 +490,12 @@
+ 		f,
+ 		"xkb_keycodes \"(unnamed)\" {\n"
+ 		"minimum = 8;\n"
+-		"maximum = %ld;\n",
+-		wtype->keymap_len + 8 + 1
++		"maximum = 255;\n"
+ 	);
+-	for (size_t i = 0; i < wtype->keymap_len; i++) {
+-		fprintf(f, "<K%ld> = %ld;\n", i + 1, i + 8 + 1);
++	for (size_t s = 0; s < ARRAY_SIZE(slot_keycodes); s++) {
++		if (wtype->slot_entry[s]) {
++			fprintf(f, "<K%zu> = %u;\n", s, slot_keycodes[s] + 8);
++		}
+ 	}
+ 	fprintf(f, "};\n");
+ 
+@@ -478,10 +504,12 @@
+ 	fprintf(f, "xkb_compatibility \"(unnamed)\" { include \"complete\" };\n");
+ 
+ 	fprintf(f, "xkb_symbols \"(unnamed)\" {\n");
+-	for (size_t i = 0; i < wtype->keymap_len; i++) {
+-		fprintf(f, "key <K%ld> {[", i + 1);
+-		print_keysym_name(wtype->keymap[i].xkb, f);
+-		fprintf(f, "]};\n");
++	for (size_t s = 0; s < ARRAY_SIZE(slot_keycodes); s++) {
++		if (wtype->slot_entry[s]) {
++			fprintf(f, "key <K%zu> {[", s);
++			print_keysym_name(wtype->keymap[wtype->slot_entry[s] - 1].xkb, f);
++			fprintf(f, "]};\n");
++		}
+ 	}
+ 	fprintf(f, "};\n");
+ 

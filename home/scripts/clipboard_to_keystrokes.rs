@@ -14,7 +14,7 @@
 #! nix
 #! nix in pkgs.symlinkJoin {
 #! nix   name = "env";
-#! nix   paths = [ toolchain pkgs.wtype ];
+#! nix   paths = [ toolchain ];
 #! nix }
 #! nix ``
 #! nix --command sh -c ``cargo -Zscript -q "$0" "$@"``
