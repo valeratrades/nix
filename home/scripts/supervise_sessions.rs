@@ -101,7 +101,7 @@ fn poll_until_settled(idle_reads: u8, dry_run: bool) {
         tg("supervise: can't read sessions — deferring to horizon");
         return;
     };
-    // "planning" (plan mode) and "ongoing" (waiting on its own background work) both
+    // "planning" (plan mode) and "ongoing" (a background shell still running) both
     // still have work in flight, so every watch decision here treats them as "active".
     let watched: BTreeSet<String> =
         initial.into_iter().filter(|(_, s)| matches!(s.as_str(), "active" | "planning" | "ongoing")).map(|(n, _)| n).collect();
