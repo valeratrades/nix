@@ -51,6 +51,8 @@ seat * hide_cursor 16000
 
 bindgesture pinch:outward exec xdotool key ctrl+plus
 bindgesture pinch:inward exec xdotool key ctrl+minus
+# swallow touchpad holds: Chrome 147 null-derefs on hold-begin while the pen holds pointer focus (WaylandEventSource::OnHoldEvent)
+bindgesture hold nop
 
 # Disable all keyboards (e.g. to rest paper on the laptop). Touchpad stays live.
 # Recovery: 3-finger swipe up on touchpad re-enables (kb itself can't be used while disabled).
