@@ -416,13 +416,6 @@
               # identity that readlink -f does NOT resolve back to the default, so CDP
               # opens while we keep using the one real profile underneath.
               "--user-data-dir=${config.home.homeDirectory}/.config/google-chrome-cdp"
-              # Diagnostics for a recurring browser-main-thread SIGSEGV (NULL deref at
-              # a fixed instruction, identical stack across crashes) on the CDP instance.
-              # GUI launch has no usable stderr, so log to a file that survives the crash;
-              # pair with the Crashpad minidump to find the DevTools command that triggers it.
-              "--enable-logging"
-              "--log-file=${config.home.homeDirectory}/.config/google-chrome-cdp/chrome_debug.log"
-              "--v=1"
             ];
           }).overrideAttrs (old: {
             postFixup = (old.postFixup or "") + ''
