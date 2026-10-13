@@ -104,7 +104,7 @@ enum ClaudeState {
     Interrupted, // User aborted the turn (esc); dropped back to a live prompt
     Stuck,    // Finished, but its closing report says the work didn't land (see mod report)
     Partial,  // Finished, but its closing report says part of the work was skipped
-    Ongoing,  // Finished, but its closing report says it's waiting on its own background processes or subagents
+    Ongoing,  // Turn ended, but a background shell it spawned is still running
 }
 
 impl ClaudeState {
@@ -334,7 +334,7 @@ impl fmt::Display for Sessions {
                 //               along: work left on the table, not blocked mid-flight.
                 //   active/planning -> COLOR_INFO_ACTIVE: healthy "it's working" signal,
                 //               informational, lowest of the three. ongoing -> its
-                //               darker COLOR_INFO_ONGOING: working, but in the background.
+                //               darker COLOR_INFO_ONGOING: turn over, a background shell still running.
                 //   limit    -> COLOR_INFO_NEGATIVE: wedged on the usage clock — nothing
                 //               to act on, but worth seeing at a glance.
                 //   finished -> COLOR_INFO_GOOD.
@@ -834,7 +834,6 @@ mod report {
         Finished,
         Stuck,
         Partial,
-        Ongoing,
     }
 
     const SYSTEM: &str = "You read the closing report a coding agent left at the end of its session and judge how the session ended. When known, the user's prompt that opened the turn comes first, in <prompt> tags; a question there that the report answers is finished.
@@ -842,11 +841,10 @@ mod report {
 finished — the implementation the agent settled on is in the tree
 stuck — the work is not moving, whatever the cause: the agent is blocked on something it cannot resolve, failed, lost the thread, is out of ideas, declined or refused the task on safety or policy grounds, or handed it back for the user to do. An offer to do some other, narrower task instead does not change that
 partial — the agent left asked-for code unwritten, giving no reason it could not be written; or a task it was carrying out stopped short of its goal and now waits on steps the user has to take, even if it also asks the user something
-ongoing — the agent ended its turn waiting on work of its own still running: background processes, builds, or subagents it launched, which will wake it when they finish. Asked-for work done, followed by a question or an offer of a further step, is finished
 
 Judge the implementation, nothing else. A test not written, a check not run, a verification left for the user, work the report never claims was asked for — none of that is partial. Neither is a part the agent reports as impossible, done differently, or dropped because the codebase would not take it: a reason given revises the ask rather than falling short of it, however plainly the report says the ask was not met.
 
-Answer with exactly one word: finished, stuck, partial, or ongoing.";
+Answer with exactly one word: finished, stuck, or partial.";
 
     /// Long reports are all preamble; the verdict lives in the closing lines.
     const MAX_REPORT: usize = 8000;
@@ -996,7 +994,7 @@ Answer with exactly one word: finished, stuck, partial, or ongoing.";
     fn ask(report: &str) -> Option<Verdict> {
         // Cheapest tier that reliably returns a single-word verdict; the local
         // ollama models don't hold the format well enough. The budget is per
-        // TOKENIZER, not per word — "ongoing" costs 5 on gpt-5.6-luna — and a
+        // TOKENIZER, not per word, and a
         // truncated verdict parses as None, i.e. silently no verdict at all.
         let client = ask_llm::Client::default().model(ask_llm::Model::Fast).max_tokens(8);
         let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build().ok()?;
@@ -1014,7 +1012,6 @@ Answer with exactly one word: finished, stuck, partial, or ongoing.";
             "finished" => Some(Verdict::Finished),
             "stuck" => Some(Verdict::Stuck),
             "partial" => Some(Verdict::Partial),
-            "ongoing" => Some(Verdict::Ongoing),
             _ => None,
         }
     }
@@ -1079,7 +1076,6 @@ Answer with exactly one word: finished, stuck, partial, or ongoing.";
                     "finished" => Verdict::Finished,
                     "stuck" => Verdict::Stuck,
                     "partial" => Verdict::Partial,
-                    "ongoing" => Verdict::Ongoing,
                     other => panic!("report {stem:?} has unknown verdict prefix {other:?}"),
                 };
                 let report = fs::read_to_string(&file).unwrap();
@@ -1526,7 +1522,6 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
                                 match metadata.as_ref().and_then(|m| report::classify(&m.file)) {
                                     Some(report::Verdict::Stuck) => ClaudeState::Stuck,
                                     Some(report::Verdict::Partial) => ClaudeState::Partial,
-                                    Some(report::Verdict::Ongoing) => ClaudeState::Ongoing,
                                     Some(report::Verdict::Finished) | None => ClaudeState::Finished,
                                 }
                             };
@@ -1971,17 +1966,11 @@ fn classify_activity(
         return ActivityResult { state, draft_content: None, question_content: None, plan_mode };
     }
 
-    // A background shell Claude is actively tailing (e.g. `gh run watch` on a CI
-    // build) leaves the pane on a live "❯ " prompt with no spinner, so the gate
-    // below would read it as Finished — but Claude isn't done, it's blocked on
-    // the shell's result. The footer's "N shell" (and the "N shell still
-    // running" recap line) marks a live background shell. Not every lingering
-    // shell counts — a dev server outlives the turn — so we only upgrade to
-    // Active for known wait-y commands. Expand the list as more turn up.
-    const WATCH_SHELL_PATTERNS: &[&str] = &["gh run watch"];
-    let has_bg_shell = Regex::new(r"\d+ shells?\b").unwrap().is_match(&last_portion);
-    if has_bg_shell && WATCH_SHELL_PATTERNS.iter().any(|p| content.contains(p)) {
-        return ActivityResult { state: working, draft_content: None, question_content: None, plan_mode };
+    // The footer under the input box counts live background shells ("· 1 shell ·");
+    // the recap line above the box keeps its count after the shell is gone.
+    let below_input_box: String = content.lines().rev().take_while(|l| !is_prompt_line(l)).collect::<Vec<_>>().join("\n");
+    if Regex::new(r"\b\d+ shells?\b").unwrap().is_match(&below_input_box) {
+        return ActivityResult { state: ClaudeState::Ongoing, draft_content: None, question_content: None, plan_mode };
     }
 
     // A failed tool result the turn never answered: the chrome row
@@ -2547,6 +2536,7 @@ mod tests {
             "error" => ClaudeState::Error,
             "limit" => ClaudeState::Limit,
             "interrupted" => ClaudeState::Interrupted,
+            "ongoing" => ClaudeState::Ongoing,
             other => panic!(
                 "fixture {stem:?} has unknown state prefix {other:?}; \
                  name it <state>__<desc>.txt"
