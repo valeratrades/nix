@@ -215,6 +215,7 @@ in {
       RestartMaxDelaySec = 300;
       # openclaw resolves its own paths under ~/.openclaw by default; be explicit for the service.
       Environment = [ "OPENCLAW_STATE_DIR=${config.home.homeDirectory}/.openclaw" ];
+      ExecStartPost = "${pkgs.coreutils}/bin/rm -f %t/openclaw-gateway-alerted"; # re-arm the page once preflight passes
     };
     Install = {
       WantedBy = [ "default.target" ];
@@ -228,12 +229,15 @@ in {
       # Test-bot token, not main: telegram_token_main is currently revoked (401 on getMe,
       # 2026-07-11), and Bot API sends don't conflict with the gateway's getUpdates poll anyway —
       # least of all when this fires, i.e. when the gateway is down.
+      # Reboots and hm switches re-arm the start limit; page once per login session (%t is tmpfs).
       ExecStart = "${pkgs.writeShellScript "openclaw-alert" ''
+        [ -e "$XDG_RUNTIME_DIR/openclaw-gateway-alerted" ] && exit 0
         token=$(cat ${config.sops.secrets.telegram_token_test.path})
         chat=$(cat ${config.sops.secrets.telegram_alerts_channel.path})
         ${pkgs.curl}/bin/curl -fsS -m 10 "https://api.telegram.org/bot$token/sendMessage" \
           -d chat_id="$chat" \
           --data-urlencode text="openclaw-gateway is DOWN on ${user.desktopHostName} (start limit hit). If ~/g/openclaw HEAD moved without a rebuild, run: openclaw-rebuild. Logs: journalctl --user -u openclaw-gateway"
+        touch "$XDG_RUNTIME_DIR/openclaw-gateway-alerted"
       ''}";
     };
   };
