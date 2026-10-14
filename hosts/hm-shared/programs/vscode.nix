@@ -121,6 +121,9 @@
 						url = "https://open-vsx.org/api/rongchenchu/video-preview-plus/0.1.0/file/rongchenchu.video-preview-plus-0.1.0.vsix";
 						sha256 = "sha256-EEHSVjTXiWblhUcq8KP3JGZPtpTgjAsdqDDpv8J2nLY=";
 					};
+					postPatch = ''
+						substituteInPlace extension.js --replace-fail '<video id="v" tabindex="0">' '<video id="v" tabindex="0" controls>' # seek bar
+					'';
 				})
 				# Neovim Buffer Sync: only on Open VSX (not on MS Marketplace), so fetched directly
 				(pkgs.vscode-utils.buildVscodeMarketplaceExtension {
