@@ -1,8 +1,37 @@
 --NB: to init, the first time must auth with `Copilot auth`
 --NB: use :CopilotToggle, not :Copilot disable/enable -- the latter causes a benign ServerNotInitialized RPC error on re-enable (race between enable and async server init)
+local filetypes = {
+	markdown = false,
+	latex = false,
+	typst = false,
+	text = false,
+
+	help = false,
+	gitcommit = false,
+	gitrebase = false,
+	hgcommit = false,
+
+	svn = false,
+	cvs = false,
+	yaml = false,
+	json = false,
+	yuck = false,
+	toml = false,
+}
+
+-- each instance's server costs ~0.8GB, so only spawn it once this nvim actually edits code
+vim.api.nvim_create_autocmd("InsertEnter", {
+	callback = function(args)
+		if vim.bo[args.buf].buftype ~= "" or filetypes[vim.bo[args.buf].filetype] == false then return end
+		require("lazy").load({ plugins = { "copilot.lua" } })
+		return true
+	end,
+})
+
 return require "lazier" {
 	"zbirenbaum/copilot.lua",
-	event = "VeryLazy",
+	lazy = true,
+	cmd = { "Copilot" },
 	dependencies = {
 		"copilotlsp-nvim/copilot-lsp", -- (optional) for NES functionality
 	},
@@ -45,24 +74,7 @@ return require "lazier" {
 					dismiss = "<C-]>",
 				},
 			},
-			filetypes = {
-				markdown = false,
-				latex = false,
-				typst = false,
-				text = false,
-
-				help = false,
-				gitcommit = false,
-				gitrebase = false,
-				hgcommit = false,
-
-				svn = false,
-				cvs = false,
-				yaml = false,
-				json = false,
-				yuck = false,
-				toml = false,
-			},
+			filetypes = filetypes,
 			should_attach = function(bufnr)
 				return not vim.g.copilot_kill
 			end,

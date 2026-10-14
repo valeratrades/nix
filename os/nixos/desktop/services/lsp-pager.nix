@@ -115,7 +115,12 @@ in
       live=" "
       for pid in $(ps -eo pid= ); do
         comm=$(cat /proc/$pid/comm 2>/dev/null) || continue
-        echo "$comm" | grep -qE "$PATTERN" || continue
+        if [ "$comm" = node ]; then # copilot.lua's server is a node script
+          tr '\0' ' ' < /proc/$pid/cmdline 2>/dev/null | grep -q 'copilot/js/language-server\.js' || continue
+          comm=copilot
+        else
+          echo "$comm" | grep -qE "$PATTERN" || continue
+        fi
         live="$live$pid "
 
         rchar=$(awk '/^rchar:/{print $2}' /proc/$pid/io 2>/dev/null) || continue
