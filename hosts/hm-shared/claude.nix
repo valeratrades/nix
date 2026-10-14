@@ -115,6 +115,7 @@ let
 		};
 	in {
 		higgsfield = { type = "http"; url = "https://mcp.higgsfield.ai/mcp"; };
+		service-arb = { type = "http"; url = "https://sa.evinvest.ltd/playbook_mcp"; };
 		cloudflare-api = cloudflare "https://mcp.cloudflare.com/mcp";
 		cloudflare-bindings = cloudflare "https://bindings.mcp.cloudflare.com/mcp";
 		cloudflare-builds = cloudflare "https://builds.mcp.cloudflare.com/mcp";
