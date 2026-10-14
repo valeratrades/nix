@@ -606,7 +606,7 @@
       ".cargo/config.toml".source = (pkgs.formats.toml { }).generate "cargo-config.toml" ({
         profile = {
           release = { debug = 0; opt-level = 2; };
-          dev = { debug = true; };
+          dev = { debug = "line-tables-only"; };
           dev.package = {
             v_utils = { opt-level = 1; };
             bevy = { opt-level = 3; };

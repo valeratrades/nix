@@ -15,6 +15,9 @@ get_first = "allow"
 get_last_with_len = "allow"
 manual_is_multiple_of = "allow"
 
+[profile.dev.package.PROJECT_NAME_PLACEHOLDER]
+debug = true # global default is line-tables-only
+
 [workspace.dependencies]
 derive-new = "^0"
 color-eyre = "^0.6.5"
