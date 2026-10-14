@@ -158,6 +158,7 @@ fn shared_before(project_name: &str, lang: &str) -> Result<(), Box<dyn std::erro
 
     // Create docs directory with ARCHITECTURE.md
     fs::create_dir_all("docs/.assets")?;
+    fs::create_dir_all("docs/spec")?;
     let arch_src = file_snippets.join("docs/ARCHITECTURE.md");
     if arch_src.exists() {
         fs::copy(&arch_src, "docs/ARCHITECTURE.md")?;
