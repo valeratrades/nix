@@ -37,6 +37,7 @@ for_window [class="vesktop"] focus=off
 for_window [class="Zulip"] focus=off
 for_window [app_id="dorion"] focus=off
 for_window [app_id="org.telegram.desktop"] focus=off
+for_window [app_id="com.ktechpit.whatsie"] focus=off
 focus_follows_mouse yes
 mouse_warping container
 default_border pixel 1
@@ -214,6 +215,7 @@ assign [app_id="google-chrome"] 2
 assign [app_id="dorion"] 4
 assign [app_id="spotube"] 4
 assign [app_id="org.telegram.desktop"] 4
+assign [app_id="com.ktechpit.whatsie"] 4
 assign [app_id="com.github.flxzt.rnote"] 9
 assign [app_id="com.obsproject.Studio"] 8
 # Push declarative filter settings when OBS window first appears (not on sway startup)
