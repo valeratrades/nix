@@ -720,6 +720,15 @@ fn transcript_tail(session_file: &Path, proc_start: Option<std::time::SystemTime
         // what an abandoned pre-/clear transcript ends on, and reading it as
         // working flips a Finished pane to Active.
         let content = v.get("message").and_then(|m| m.get("content"));
+        // Transcript-only notices never wake the model, so no reply is coming.
+        // The resume-time "didn't finish before the previous session ended" one
+        // is the only trace a power-off leaves on an otherwise settled turn.
+        if v.get("queueTranscriptOnly").and_then(|x| x.as_bool()) == Some(true) {
+            if content.is_some_and(|c| c.to_string().contains("before the previous session ended")) {
+                return Some(Tail::Died);
+            }
+            continue;
+        }
         if content.map(|c| c.to_string().contains("[Request interrupted by user")).unwrap_or(false) {
             return Some(Tail::Idle);
         }
