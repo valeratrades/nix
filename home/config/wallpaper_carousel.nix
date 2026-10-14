@@ -55,6 +55,8 @@
 
     "what is measured\ngets improved"
 
+    "rich people think in \"boths\""
+
     "slack don't skip"
 
     "arrogance, to believe that resigning\nis worst threat you can make"
