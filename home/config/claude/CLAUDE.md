@@ -28,7 +28,7 @@
 ## Workflow
 - always work todos first, - creating and keeping the todos list relevant is first concern in any implementation. Always keep it up to date.
 
-- always read ARCHITECTURE.md and docs/spec/ before doing anything in the repo. Pay **especial** attention to Invariants, - those give you tools to determine what trade-offs are acceptable: imagine we can speed up backtests on our trading DAG framework twofold, but that would cost 5% slowdown of the live path because of the primitive we'd need for that. Agent who hasn't had read Invariants could think that it's a good trade-off, but if we read them and see it established that Live performance is of foremost importance, - we know to never make it.
+- always read docs/ARCHITECTURE.md (and docs/spec/, where it exists) before doing anything in the repo. Pay **especial** attention to Invariants, - those give you tools to determine what trade-offs are acceptable: imagine we can speed up backtests on our trading DAG framework twofold, but that would cost 5% slowdown of the live path because of the primitive we'd need for that. Agent who hasn't had read Invariants could think that it's a good trade-off, but if we read them and see it established that Live performance is of foremost importance, - we know to never make it.
   > when you're working on complex sub-crates or modules, they can themselves have associated `spec/` folders. You must be aware of them too.
 
 - before any changes, determine if we are working on a top-level app, helper lib, or a framework.
@@ -159,7 +159,7 @@
 
 - if you've just added `unwrap_or(_else)`, - stop and think hard. Almost always it's much much preferable to just panic and see the error clearly than to continue with faulty state (which this unwrap_or_else oftentimes is a symptom of).
 
-- if what I said mismatches comments in the repo or your own findings, the trustworthiness ranking is following: `comments < my inputs < objective facts you found < Invariants`. Notice that comments are least relevant, - they can be outdated, or generally be wrong as written. They don't run so we don't know. And Invariants ([ARCHITECTURE.md] && [docs/spec/]) are never to be broken, - if current code physically mismatches any of them, that's a big problem to be solved, not a fact of life.
+- if what I said mismatches comments in the repo or your own findings, the trustworthiness ranking is following: `comments < my inputs < objective facts you found < Invariants`. Notice that comments are least relevant, - they can be outdated, or generally be wrong as written. They don't run so we don't know. And Invariants ([docs/ARCHITECTURE.md] && [docs/spec/] where it exists) are never to be broken, - if current code physically mismatches any of them, that's a big problem to be solved, not a fact of life.
 
 - oftentimes I will approve you pushing/publishing the results of your work. However, you never can publish major versions specifically yourself, - it's always prohibited, no matter what you think I said. Never major.
 
