@@ -350,6 +350,26 @@ in
 							];
 						}
 					];
+					WorktreeCreate = [
+						{
+							hooks = [
+								{
+									type = "command";
+									command = "$HOME/.claude/hooks/worktree_create.sh";
+								}
+							];
+						}
+					];
+					WorktreeRemove = [
+						{
+							hooks = [
+								{
+									type = "command";
+									command = "$HOME/.claude/hooks/worktree_remove.sh";
+								}
+							];
+						}
+					];
 				};
 			};
 			force = true; # reference copy is read-only on purpose; nothing should write here.
