@@ -187,8 +187,9 @@ in {
       After = [ "network-online.target" "sops-nix.service" "litellm.service" ];
       Wants = [ "network-online.target" "litellm.service" ];
       # Crash-looping forever helps nobody: after the burst, give up and page via telegram.
-      StartLimitIntervalSec = 600;
-      StartLimitBurst = 20;
+      # Window sized for the backoff below: 10 restarts' delays sum to ~10min, leaving slack for run time.
+      StartLimitIntervalSec = 1800;
+      StartLimitBurst = 10;
       OnFailure = [ "openclaw-gateway-alert.service" ];
     };
     Service = {
@@ -210,6 +211,8 @@ in {
       # per attempt -- 21 identical telegram messages per boot (2026-09-03). Fire only at the limit.
       RestartMode = "direct";
       RestartSec = 5;
+      RestartSteps = 10;
+      RestartMaxDelaySec = 300;
       # openclaw resolves its own paths under ~/.openclaw by default; be explicit for the service.
       Environment = [ "OPENCLAW_STATE_DIR=${config.home.homeDirectory}/.openclaw" ];
     };
