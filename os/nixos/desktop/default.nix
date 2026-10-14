@@ -123,7 +123,6 @@
         # editors
         [
           neovim
-          vscode
         ]
 
         # language-specific

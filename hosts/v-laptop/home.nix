@@ -547,6 +547,9 @@ in {
 
         libreoffice-still
         whatsie # C++ whatsapp client
+
+        #vscode # bugged for me; `code` -> codium instead
+        (pkgs.writeShellScriptBin "code" ''exec ${lib.getExe pkgs.vscodium} "$@"'')
     
         gnuplot # plot functions for visual exploration (good for ones outside of 2d)
 
