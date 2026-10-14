@@ -416,6 +416,8 @@
               # identity that readlink -f does NOT resolve back to the default, so CDP
               # opens while we keep using the one real profile underneath.
               "--user-data-dir=${config.home.homeDirectory}/.config/google-chrome-cdp"
+              "--enable-logging" # GUI launch has no usable stderr
+              "--log-file=${config.home.homeDirectory}/.config/google-chrome-cdp/chrome_debug.log"
             ];
           }).overrideAttrs (old: {
             postFixup = (old.postFixup or "") + ''
