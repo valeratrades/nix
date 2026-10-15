@@ -149,7 +149,8 @@ bindsym $mod+Shift+Ctrl+F6 exec gdbus call -e -d net.zoidplex.wlr_gamma_service 
 #
 
 # Workspaces {{{
-set $output_laptop "BOE NE160QDM-NZB 0x00000068"
+# eDP number depends on GPU driver probe order
+set $output_laptop "eDP-1" "eDP-2"
 set $output_monitor "HDMI-A-1"
 set $all_possible_output_monitors "HDMI-A-1" "DP-1"
 # sway circles through this space-delimited list when the first element is not found.
@@ -162,7 +163,7 @@ mode "monitors" {
 	bindsym t exec "$switch_out && swaymsg 'output $output_monitor toggle'"
 
 	# university/projector mode: 1080p, all workspaces to external
-	bindsym u exec "$switch_out && swaymsg 'output HDMI-A-1 mode 1920x1080@60Hz pos 0 0; output \"BOE NE160QDM-NZB 0x00000068\" pos 0 1080'"
+	bindsym u exec "$switch_out && swaymsg 'output HDMI-A-1 mode 1920x1080@60Hz pos 0 0; output eDP-1 pos 0 1080; output eDP-2 pos 0 1080'"
 
 	bindsym $mod+k exec $switch_out
 	bindsym $mod+c exec $switch_out
@@ -300,8 +301,8 @@ bindsym $mod+Ctrl+Shift+p exec ${NIXOS_CONFIG}/home/scripts/clipboard_to_keystro
 exec_always sleep 3 && todo do continue_ongoing
 
 #bindcode $mod+34 exec ~/.configlsway/toggle_screen.sh
-bindcode $mod+34 output $output_laptop dpms on
-bindcode $mod+Shift+34 output $output_laptop dpms off
+bindcode $mod+34 output eDP-1 dpms on, output eDP-2 dpms on
+bindcode $mod+Shift+34 output eDP-1 dpms off, output eDP-2 dpms off
 #bindcode $mod+Control+34 exec ~/.config/sway/toggle_screen.sh DP-1
 
 # # Outputs
@@ -322,7 +323,8 @@ bindcode $mod+Shift+34 output $output_laptop dpms off
 # with 1.0 scale: {{{
 ## atm the only reason I'm using this is - chrome-based browsers are having trouble resizing with my current setup
 output $output_monitor pos 320 0 scale 1
-output $output_laptop pos 0 1080
+output eDP-1 pos 0 1080
+output eDP-2 pos 0 1080
 #,}}}
 
 exec_always "sh -c -- pkill -f 'todo monitor'; todo monitor"
