@@ -20,6 +20,8 @@ serde_json = "1.0"
 //!     └── P  tabbed  ← typst-out viewer per src      50%
 //! ```
 //!
+//! `srcs.select` / `docs.select` (0-based, as nix's `elemAt`) pick the tab each lands on.
+//!
 //! Every step anchors on a leaf con_id, never on a container: `move to mark` inserts
 //! as a sibling of the marked container, and on a container the insert-as-child vs
 //! insert-as-sibling choice would not be ours to make.
@@ -51,15 +53,23 @@ const SPAWN_TIMEOUT: Duration = Duration::from_secs(15);
 const PLACE_TIMEOUT: Duration = Duration::from_secs(120);
 
 const EXAMPLE: &str = r#"{
-  srcs = [ ./main.typ ./appendix.typ ];
-  docs = [ ../refs/stoch_1.pdf /abs/path/other.pdf ];
+  srcs = [ ./main.typ ./appendix.typ ]; # shorthand for `srcs.files`
+  docs = {
+    files = [ ../refs/stoch_1.pdf /abs/path/other.pdf ];
+    select = 1; # 0-based; omitted means the first
+  };
 }"#;
+
+struct Scope {
+	files: Vec<PathBuf>,
+	select: usize,
+}
 
 fn main() -> Result<()> {
 	let args: Vec<String> = std::env::args().skip(1).collect();
 	match args.as_slice() {
 		[] => build(),
-		[flag, t, ws, slots @ ..] if flag == "--_place" => place(id_arg(t)?, ws, slots),
+		[flag, t, ws, sel, slots @ ..] if flag == "--_place" => place(id_arg(t)?, ws, id_arg(sel)?, slots),
 		_ => Err(miette!("typst_workspace takes no arguments")),
 	}
 }
@@ -283,7 +293,7 @@ fn leaf_titles(node: &Value, out: &mut Vec<String>) {
 
 // --- config ------------------------------------------------------------------
 
-fn read_config(cwd: &Path) -> Result<(Vec<PathBuf>, Vec<PathBuf>)> {
+fn read_config(cwd: &Path) -> Result<(Scope, Scope)> {
 	let path = cwd.join(CONFIG);
 	if !path.is_file() {
 		return Err(miette!(help = EXAMPLE, "no {CONFIG} in {}", cwd.display()));
@@ -292,7 +302,8 @@ fn read_config(cwd: &Path) -> Result<(Vec<PathBuf>, Vec<PathBuf>)> {
 	let out = Command::new("nix")
 		.args(["eval", "--json", "--file"])
 		.arg(&path)
-		.args(["--apply", "builtins.mapAttrs (_: map toString)"]) // `toString` of a path literal is its absolute path, no store copy
+		// `toString` of a path literal is its absolute path, no store copy
+		.args(["--apply", "builtins.mapAttrs (_: s: if builtins.isList s then { files = map toString s; } else s // { files = map toString s.files; })"])
 		.output()
 		.map_err(|e| miette!("failed to run nix: {e}"))?;
 	if !out.status.success() {
@@ -305,24 +316,35 @@ fn read_config(cwd: &Path) -> Result<(Vec<PathBuf>, Vec<PathBuf>)> {
 		return Err(miette!(help = EXAMPLE, "unknown key `{k}` in {CONFIG}"));
 	}
 
-	let paths = |key: &str| -> Result<Vec<PathBuf>> {
-		let list = obj
-			.get(key)
-			.and_then(Value::as_array)
-			.ok_or_else(|| miette!(help = EXAMPLE, "{CONFIG}: `{key}` is missing or not a list"))?
+	let scope = |key: &str| -> Result<Scope> {
+		let scope = obj.get(key).and_then(Value::as_object).ok_or_else(|| miette!(help = EXAMPLE, "{CONFIG}: `{key}` is missing"))?;
+		if let Some(k) = scope.keys().find(|k| *k != "files" && *k != "select") {
+			return Err(miette!(help = EXAMPLE, "unknown key `{key}.{k}` in {CONFIG}"));
+		}
+		let files = scope["files"]
+			.as_array()
+			.ok_or_else(|| miette!(help = EXAMPLE, "{CONFIG}: `{key}.files` is not a list"))?
 			.iter()
 			.map(|d| d.as_str().map(|s| cwd.join(s)).ok_or_else(|| miette!("{CONFIG}: {key} entry {d} is not a string")))
 			.collect::<Result<Vec<_>>>()?;
-		if list.is_empty() {
+		if files.is_empty() {
 			return Err(miette!(help = EXAMPLE, "{CONFIG}: `{key}` is empty"));
 		}
-		Ok(list)
+		let select = match scope.get("select") {
+			None => 0,
+			Some(v) => v
+				.as_u64()
+				.and_then(|i| usize::try_from(i).ok())
+				.filter(|i| *i < files.len())
+				.ok_or_else(|| miette!("{CONFIG}: `{key}.select` = {v} is not an index into its {} files", files.len()))?,
+		};
+		Ok(Scope { files, select })
 	};
-	let srcs = paths("srcs")?;
-	let docs = paths("docs")?;
+	let srcs = scope("srcs")?;
+	let docs = scope("docs")?;
 
 	let mut stems = HashSet::new();
-	for s in &srcs {
+	for s in &srcs.files {
 		let stem = s.file_stem().ok_or_else(|| miette!("{CONFIG}: src `{}` has no file name", s.display()))?.to_string_lossy().into_owned();
 		if !stems.insert(stem.clone()) {
 			return Err(miette!("{CONFIG}: two srcs share the stem `{stem}` — their viewers would be indistinguishable"));
@@ -330,8 +352,9 @@ fn read_config(cwd: &Path) -> Result<(Vec<PathBuf>, Vec<PathBuf>)> {
 	}
 
 	let missing: Vec<String> = srcs
+		.files
 		.iter()
-		.chain(&docs)
+		.chain(&docs.files)
 		.filter(|p| !p.exists())
 		.map(|p| p.display().to_string())
 		.collect();
@@ -377,7 +400,7 @@ fn build() -> Result<()> {
 	let light = zathura_light_dir()?;
 	let doc_cmd = |d: &Path| format!("zathura -c {} {}", sh_quote(&light), sh_quote(d));
 
-	let z1 = watch.open(term, &doc_cmd(&docs[0]))?;
+	let z1 = watch.open(term, &doc_cmd(&docs.files[0]))?;
 	cmd(&format!("[con_id={z1}] resize set width {DOCS_WIDTH_PPT} ppt"))?;
 	cmd(&format!("[con_id={z1}] splitv"))?;
 
@@ -399,21 +422,25 @@ fn build() -> Result<()> {
 		cmd(&format!("[con_id={first}] layout tabbed"))?;
 		Ok(ids)
 	};
-	tab(z1, docs[1..].iter().map(|d| doc_cmd(d)).collect())?;
-	let placeholders = tab(p0, vec!["zathura".to_owned(); srcs.len() - 1])?;
+	let doc_ids = tab(z1, docs.files[1..].iter().map(|d| doc_cmd(d)).collect())?;
+	let placeholders = tab(p0, vec!["zathura".to_owned(); srcs.files.len() - 1])?;
+	let viewer = placeholders[srcs.select];
 
 	cmd(&format!("unmark {MARK}"))?;
+	// focusing is the only way to pick a tab, and it would drag us onto a workspace the user left
 	if focused_workspace()? == ws_name {
+		cmd(&format!("[con_id={}] focus", doc_ids[docs.select]))?;
+		cmd(&format!("[con_id={viewer}] focus"))?;
 		cmd(&format!("[con_id={term}] focus"))?;
 	}
 	drop(watch);
 
-	let slots = srcs.iter().zip(&placeholders).map(|(s, p)| {
+	let slots = srcs.files.iter().zip(&placeholders).map(|(s, p)| {
 		format!("{}={p}", s.file_stem().expect("checked in read_config").to_string_lossy())
 	});
 	let exe = std::env::current_exe().map_err(|e| miette!("cannot find own path: {e}"))?;
 	Command::new(exe)
-		.args(["--_place".to_owned(), term.to_string(), ws_name.clone()])
+		.args(["--_place".to_owned(), term.to_string(), ws_name.clone(), viewer.to_string()])
 		.args(slots)
 		.stdin(Stdio::null())
 		.stdout(Stdio::null())
@@ -422,14 +449,16 @@ fn build() -> Result<()> {
 		.spawn()
 		.map_err(|e| miette!("failed to spawn the placeholder swap: {e}"))?;
 
-	let srcs = srcs.iter().map(|s| sh_quote(s)).collect::<Vec<_>>().join(" ");
-	let e = Command::new("fish").arg("-c").arg(format!(r#"e -p {srcs} -c "'tabdo TypstWatch'" -c tabfirst"#)).exec(); // `e` evals its args, eating one layer of quotes
+	let tab = srcs.select + 1; // vim tabs count from 1
+	let srcs = srcs.files.iter().map(|s| sh_quote(s)).collect::<Vec<_>>().join(" ");
+	let e = Command::new("fish").arg("-c").arg(format!(r#"e -p {srcs} -c "'tabdo TypstWatch'" -c "'tabnext {tab}'""#)).exec(); // `e` evals its args, eating one layer of quotes
 	Err(miette!("exec fish: {e}"))
 }
 
 /// Viewers are told apart by title: zathura titles a window with its file's path, and
 /// typst names the output `<stem>.pdf`.
-fn place(term: i64, ws_name: &str, slots: &[String]) -> Result<()> {
+/// `selected` is the placeholder holding the slot whose tab should stay up; swaps reshuffle tab focus.
+fn place(term: i64, ws_name: &str, mut selected: i64, slots: &[String]) -> Result<()> {
 	let mut pending = slots
 		.iter()
 		.map(|s| {
@@ -446,8 +475,12 @@ fn place(term: i64, ws_name: &str, slots: &[String]) -> Result<()> {
 		let (_, placeholder) = pending.swap_remove(i);
 		cmd(&format!("[con_id={viewer}] swap container with con_id {placeholder}"))?;
 		cmd(&format!("[con_id={placeholder}] kill"))?;
+		if placeholder == selected {
+			selected = viewer;
+		}
 		// minutes may have passed; only take the caret if that workspace is still the one in view
 		if focused_workspace()? == ws_name {
+			cmd(&format!("[con_id={selected}] focus"))?;
 			cmd(&format!("[con_id={term}] focus"))?;
 		}
 	}
