@@ -4,7 +4,7 @@
 edition = "2024"
 
 [dependencies]
-ask_llm = { version = "3.5.0", default-features = false }
+ask_llm = { version = "3.9", default-features = false }
 tokio = { version = "1", features = ["rt", "time", "net"] }
 futures = "0.3"
 clap = { version = "4.5.49", features = ["derive"] }
