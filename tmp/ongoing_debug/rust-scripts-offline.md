@@ -16,11 +16,12 @@ even though deps were fully cached and the script had been compiled many times.
   No per-script state needed to go offline.
 - Scripts are invoked via fish aliases pointing at `/nix/store/<hash>-source/home/scripts/*.rs`
   — **the store path changes on every home-manager switch**. Anything keyed by
-  script *path* dies on every rebuild. (Cargo itself keys its target dir by
-  script *content*, see the `sudo 2fa` comment in nix-run-cached.)
+  script *path* dies on every rebuild. Cargo itself keys its build dir by script
+  *path* too (verified 2026-10-15: beep.rs had ~30 build dirs, one per store hash),
+  hence the content-addressed `.content/` cache in nix-run-cached.c.
 - The `.rs` shebang points at the **working-tree** wrapper
-  (`/home/v/nix/home/scripts/nix-run-cached`), so wrapper edits are live without
-  a home-manager switch.
+  (`/home/v/nix/home/scripts/nix-run-cached`, compiled from nix-run-cached.c by
+  activation), so edits to the bash slow path are live without a switch; C edits need one.
 - cargo exit 101 is ambiguous: compile error, program panic, AND offline
   resolution failure all exit 101.
 - Offline resolution failures reliably contain the word `offline` in stderr

@@ -1,13 +1,7 @@
 #!/usr/bin/env bash
-# Wrapper for cargo -Zscript with nix, caches the resolved store path
-# Usage: nix-run-cached <script.rs> [args...]
-# Caches the nix store path to avoid re-evaluating the flake expression every time,
-# and the built binary so an unchanged script never pays cargo's manifest resolution.
-
-# A key, not a canonical name: two spellings of the same script just get two cache
-# entries, and each is independently correct because freshness is an mtime compare.
-[[ $1 == /* ]] && SCRIPT="$1" || SCRIPT="$PWD/$1"
-shift
+# Slow path of ./nix-run-cached.c, which execs this on a cache miss as
+#   nix-run-cached.sh <opt-level> <path-cache-entry> <content-cache-bin> <script.rs> [args...]
+# or detached as `nix-run-cached.sh --sweep` once a day.
 
 STATE_DIR="$HOME/.cargo/target"
 [ -d "$STATE_DIR" ] || mkdir -p "$STATE_DIR"
@@ -20,38 +14,22 @@ BUILD_ROOTS=("$HOME/.cargo/build" "$STATE_DIR")
 
 NIX_EXPR='let rust_flake = builtins.getFlake "github:oxalica/rust-overlay/5106a604b3d67cffe8eb51a8bd9f04e607f0d31d"; nixpkgs_flake = builtins.getFlake "github:NixOS/nixpkgs/e73de5be04e0eff4190a1432b946d469c794e7b4"; pkgs = import nixpkgs_flake { system = builtins.currentSystem; overlays = [rust_flake.overlays.default]; }; in pkgs.rust-bin.nightly."'"$DEFAULT_CARGO_NIGHTLY_VERSION"'".default.override { extensions = ["rust-src"]; }'
 
-# These scripts are polled by the bar, bound to keys, and run in loops — read far
-# more often than they are edited, so they are built optimised. Passed to cargo
-# rather than written into every frontmatter, and deliberately not exported: a
-# script that shells out to cargo itself should not inherit this.
-OPT_LEVEL=2
-
-# Keyed on everything that decides what the binary contains, so bumping the toolchain
-# or the profile above rebuilds instead of silently serving the old artifact.
-BIN_CACHE="$STATE_DIR/.bin-$DEFAULT_CARGO_NIGHTLY_VERSION-o$OPT_LEVEL-${SCRIPT//\//%}"
-
 cargo_env() {
 	env RUSTC_WRAPPER="" CARGO_PROFILE_DEV_OPT_LEVEL="$OPT_LEVEL" PATH="$1/bin:$PATH" "$1/bin/cargo" "${@:2}"
 }
 
-# Rewriting the entry stamps its mtime, which is the only access record the sweep
-# below needs — and unlike `touch` it costs no fork on a path that runs every second.
-exec_cached_bin() {
-	[ -f "$BIN_CACHE" ] || return
-	local bin
-	bin=$(<"$BIN_CACHE")
-	[ -x "$bin" ] && [ ! "$SCRIPT" -nt "$bin" ] || return
-	echo "$bin" >"$BIN_CACHE"
-	exec "$bin" "$@"
-}
-
-# Empty on compile error or on an offline miss, leaving the callers below to run
+# Returns on compile error or on an offline miss, leaving the callers below to run
 # cargo normally so the error (or the fetch-then-retry) surfaces as it always did.
-cache_bin() {
+# The content entry is a hard link, so a later rebuild of the same path (which
+# replaces cargo's inode) cannot change what an old content hash resolves to.
+build_and_exec() {
 	local exe
 	exe=$(cargo_env "$1" build -Zscript --offline -q --manifest-path "$SCRIPT" --message-format=json 2>/dev/null |
 		grep -o '"executable":"[^"]*"' | tail -1 | cut -d'"' -f4)
-	[ -n "$exe" ] && echo "$exe" >"$BIN_CACHE"
+	[ -n "$exe" ] || return
+	mkdir -p "${CONTENT_BIN%/*}" && ln -f "$exe" "$CONTENT_BIN" || exit
+	echo "$exe" >"$BIN_CACHE"
+	exec "$exe" "${@:2}"
 }
 
 # <root>/<2 hex>/<hash> holding the given binary. No match — an unrecognised layout,
@@ -110,26 +88,17 @@ sweep_stale_builds() {
 		done
 	done
 
-	rm -f "$unused_after" "$grace_after"
-}
+	# Links nothing else shares any more: cargo dropped or replaced the build they snapshot.
+	[ -d "$STATE_DIR/.content" ] && find "$STATE_DIR/.content" -type f -links 1 ! -newer "$unused_after" -delete
 
-# Once a day, detached: the sweep stats hundreds of directories and nothing waits on
-# its result. The stamp is read inline, before the exec above, because a file read
-# costs no process — a machine whose scripts are all cached must still sweep.
-maybe_sweep() {
-	local stamp="$STATE_DIR/.next-sweep" next=0
-	[ -f "$stamp" ] && next=$(<"$stamp")
-	((EPOCHSECONDS < next)) && return
-	echo $((EPOCHSECONDS + 86400)) >"$stamp"
-	sweep_stale_builds &>/dev/null &
-	disown
+	rm -f "$unused_after" "$grace_after"
 }
 
 try_fix_root_owned_dirs() {
 	[ "$(id -u)" = "0" ] && return 1
 
 	# Fix any root-owned files/dirs in cargo's build tree (from accidental sudo runs)
-	# Cargo's -Zscript hashes script content, not path, so `sudo 2fa` created
+	# Cargo's -Zscript hashes the script path, so `sudo 2fa` created
 	# /home/v/.cargo/build/2b/... as root, blocking normal user builds.
 	local root_owned
 	root_owned=$(find "${BUILD_ROOTS[@]}" -maxdepth 2 -user root 2>/dev/null | head -1)
@@ -158,8 +127,12 @@ get_rust_store_path() {
 	return 1
 }
 
-maybe_sweep
-exec_cached_bin "$@"
+if [[ $1 == --sweep ]]; then
+	sweep_stale_builds
+	exit
+fi
+OPT_LEVEL=$1 BIN_CACHE=$2 CONTENT_BIN=$3 SCRIPT=$4
+shift 4
 
 # Always run offline: cargo resolves from the local registry cache even for
 # scripts it has never built, so the network is only ever needed for deps that
@@ -190,7 +163,7 @@ recover_101() {
 }
 
 run_script() {
-	cache_bin "$1" && exec_cached_bin "${@:2}"
+	build_and_exec "$@"
 	run_cargo "$1" "${@:2}"
 	local rc=$?
 	if [ $rc -ne 0 ] && try_fix_root_owned_dirs; then

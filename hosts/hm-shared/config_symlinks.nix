@@ -1,4 +1,4 @@
-{ lib, ... }:
+{ lib, pkgs, ... }:
 let
   # Helper function to create symlink activation scripts
   mkSymlink = args:
@@ -78,5 +78,12 @@ in
     wallpaper_carousel = mkSymlink { target_path_postfix = "wallpaper_carousel.nix"; };
     discretionary_engine = mkSymlink { target_path_postfix = "discretionary_engine.nix"; };
     shared = mkSymlink { target_path_postfix = "shared"; };
+    # Into the working tree, where every `.rs` shebang points; renamed into place since running scripts may be exec'ing it.
+    nix_run_cached = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      d="$NIXOS_CONFIG/home/scripts"
+      [ "$d/nix-run-cached" -nt "$d/nix-run-cached.c" ] || {
+        ${pkgs.stdenv.cc}/bin/cc -O2 -Wall -Werror -o "$d/.nix-run-cached.tmp" "$d/nix-run-cached.c" && mv -f "$d/.nix-run-cached.tmp" "$d/nix-run-cached"
+      }
+    '';
   };
 }
