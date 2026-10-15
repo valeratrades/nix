@@ -4,6 +4,7 @@ let
 in
 daemons // {
   venues = "/home/v/s/g/rolodex/venues";
+  youtube = daemons.youtube // { source.api.key = { env = "GOOGLE_MAPS_KEY"; }; }; # the laptop's name for the key prod reads as YOUTUBE_API_KEY
   facebook = {
     attached = {
       cdp_port = 49300;
