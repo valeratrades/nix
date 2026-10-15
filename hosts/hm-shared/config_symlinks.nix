@@ -78,11 +78,11 @@ in
     wallpaper_carousel = mkSymlink { target_path_postfix = "wallpaper_carousel.nix"; };
     discretionary_engine = mkSymlink { target_path_postfix = "discretionary_engine.nix"; };
     shared = mkSymlink { target_path_postfix = "shared"; };
-    # Into the working tree, where every `.rs` shebang points; renamed into place since running scripts may be exec'ing it.
+    # Into the working tree, where every `.rs` shebang points; renamed into place since running scripts may be exec'ing it. Static: the dynamic loader was most of its cost.
     nix_run_cached = lib.hm.dag.entryAfter ["writeBoundary"] ''
       d="$NIXOS_CONFIG/home/scripts"
       [ "$d/nix-run-cached" -nt "$d/nix-run-cached.c" ] || {
-        ${pkgs.stdenv.cc}/bin/cc -O2 -Wall -Werror -o "$d/.nix-run-cached.tmp" "$d/nix-run-cached.c" && mv -f "$d/.nix-run-cached.tmp" "$d/nix-run-cached"
+        ${pkgs.pkgsStatic.stdenv.cc}/bin/${pkgs.pkgsStatic.stdenv.cc.targetPrefix}cc -O2 -Wall -Werror -static -o "$d/.nix-run-cached.tmp" "$d/nix-run-cached.c" && mv -f "$d/.nix-run-cached.tmp" "$d/nix-run-cached"
       }
     '';
   };

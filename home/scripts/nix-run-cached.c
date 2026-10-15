@@ -46,6 +46,12 @@ static char *slurp(const char *path, size_t *len) {
 	return buf;
 }
 
+#define FMT(buf, ...) \
+	do { \
+		if (snprintf(buf, sizeof buf, __VA_ARGS__) >= (int)sizeof buf) \
+			die("path too long"); \
+	} while (0)
+
 static int newer(struct timespec a, struct timespec b) {
 	return a.tv_sec > b.tv_sec || (a.tv_sec == b.tv_sec && a.tv_nsec > b.tv_nsec);
 }
@@ -69,24 +75,24 @@ int main(int argc, char **argv) {
 
 	char script[4096], state[4096], key[8192], content[8192], stamp[4096];
 	if (argv[1][0] == '/')
-		snprintf(script, sizeof script, "%s", argv[1]);
+		FMT(script, "%s", argv[1]);
 	else {
 		char cwd[4096];
 		if (!getcwd(cwd, sizeof cwd))
 			die("getcwd");
-		snprintf(script, sizeof script, "%s/%s", cwd, argv[1]);
+		FMT(script, "%s/%s", cwd, argv[1]);
 	}
-	snprintf(state, sizeof state, "%s/.cargo/target", home);
+	FMT(state, "%s/.cargo/target", home);
 
 	// A key, not a canonical name: two spellings of one script get two entries, each correct
 	// on its own because freshness is an mtime compare.
-	int n = snprintf(key, sizeof key, "%s/.bin-%s-o" OPT_LEVEL "-", state, ver);
-	for (const char *c = script; *c && n < (int)sizeof key - 1; c++)
-		key[n++] = *c == '/' ? '%' : *c;
-	key[n] = 0;
+	FMT(key, "%s/.bin-%s-o" OPT_LEVEL "-%s", state, ver, script);
+	for (char *c = key + strlen(state) + 1; *c; c++)
+		if (*c == '/')
+			*c = '%';
 
 	// Once a day, detached and double-forked so the exec'd script never inherits a zombie.
-	snprintf(stamp, sizeof stamp, "%s/.next-sweep", state);
+	FMT(stamp, "%s/.next-sweep", state);
 	char *next = slurp(stamp, NULL);
 	time_t now = time(NULL);
 	if (!next || now >= atoll(next)) {
@@ -102,7 +108,7 @@ int main(int argc, char **argv) {
 				int null = open("/dev/null", O_RDWR);
 				dup2(null, 0), dup2(null, 1), dup2(null, 2);
 				char sh[4096];
-				snprintf(sh, sizeof sh, "%s.sh", argv[0]);
+				FMT(sh, "%s.sh", argv[0]);
 				execl(sh, sh, "--sweep", (char *)NULL);
 			}
 			_exit(0);
@@ -134,7 +140,7 @@ int main(int argc, char **argv) {
 	uint64_t h = 0xcbf29ce484222325ull;
 	for (size_t i = 0; i < len; i++)
 		h = (h ^ (unsigned char)src[i]) * 0x100000001b3ull;
-	snprintf(content, sizeof content, "%s/.content/%s-o" OPT_LEVEL "-%016llx", state, ver, (unsigned long long)h);
+	FMT(content, "%s/.content/%s-o" OPT_LEVEL "-%016llx", state, ver, (unsigned long long)h);
 	if (!access(content, X_OK)) {
 		utimensat(AT_FDCWD, content, NULL, 0); // makes it newer than the script, so the key below holds
 		FILE *f = fopen(key, "w");
@@ -146,7 +152,7 @@ int main(int argc, char **argv) {
 	}
 
 	char sh[4096];
-	snprintf(sh, sizeof sh, "%s.sh", argv[0]);
+	FMT(sh, "%s.sh", argv[0]);
 	char **args = malloc((argc + 5) * sizeof *args);
 	args[0] = sh, args[1] = OPT_LEVEL, args[2] = key, args[3] = content, args[4] = script;
 	memcpy(args + 5, argv + 2, (argc - 2) * sizeof *args);
