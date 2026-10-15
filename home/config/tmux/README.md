@@ -21,13 +21,14 @@ question reads as a dead end without it) and has an LLM — via the `ask_llm` cr
 subagents — still working, so it's colored a darker `active`, and `supervise_sessions`
 watches it like `active`; `partial` just leaves work undone.
 
-**Invariant — ties break to `partial`.** `finished` tells me nothing needs a look;
-`partial` tells me a human should check. So when the evidence is genuinely even, the
-verdict is `partial`. Only true ties, though: a wasted check costs real time, so the
-judge must not lean on `partial` to hedge reports that do read one way.
+**Invariant — doubt escalates.** Severity runs `finished` < `partial` < `stuck`.
+`finished` tells me nothing needs a look; the others tell me a human should check.
+So when the judge can't settle a report, the more severe reading wins. A wasted
+check still costs real time, though: the judging prompt must not lean on `partial`
+to hedge reports that do read one way.
 
-The judge takes no temperature, so each verdict is a majority of 3 concurrent
-samples (a 3-way split is a tie, so `partial`); `--no-vote` drops to one sample.
+The judge takes no temperature, so each verdict is drawn from 3 concurrent samples
+and the most severe one wins; `--no-vote` drops to one sample.
 
 The verdict is cached in `~/.cache/claude-session-reports.json` against the
 transcript's mtime, so it costs one call per session settle, not one per

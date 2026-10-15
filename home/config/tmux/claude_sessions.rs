@@ -841,12 +841,13 @@ mod report {
 
     use serde::{Deserialize, Serialize};
 
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+    /// Ordered by severity, so votes combine by `max`.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
     #[serde(rename_all = "lowercase")]
     pub enum Verdict {
         Finished,
-        Stuck,
         Partial,
+        Stuck,
     }
 
     const SYSTEM: &str = "You read the closing report a coding agent left at the end of its session and judge how the session ended. When known, the user's prompt that opened the turn comes first, in <prompt> tags; a question there that the report answers is finished.
@@ -1016,16 +1017,11 @@ Answer with exactly one word: finished, stuck, or partial.";
             let response = tokio::time::timeout(TIMEOUT, client.ask(message.clone())).await.ok()?.ok()?;
             parse(&response.text)
         };
-        // The judge takes no temperature and a single sample flips on borderline reports; the verdict is cached for the whole idle period, so it's drawn by majority.
         if !vote {
             return runtime.block_on(sample());
         }
         let (a, b, c) = runtime.block_on(async { tokio::join!(sample(), sample(), sample()) });
-        match (a, b, c) {
-            (Some(a), Some(b), _) | (Some(a), _, Some(b)) | (_, Some(a), Some(b)) if a == b => Some(a),
-            (Some(_), Some(_), Some(_)) => Some(Verdict::Partial), // ties break to partial, see README
-            _ => None,
-        }
+        [a, b, c].into_iter().flatten().max() // the most severe vote wins, see README
     }
 
     /// First word only — the verdict leads, and the model sometimes tacks on a
