@@ -149,7 +149,7 @@ bindsym $mod+Shift+Ctrl+F6 exec gdbus call -e -d net.zoidplex.wlr_gamma_service 
 #
 
 # Workspaces {{{
-set $output_laptop "eDP-1"
+set $output_laptop "BOE NE160QDM-NZB 0x00000068"
 set $output_monitor "HDMI-A-1"
 set $all_possible_output_monitors "HDMI-A-1" "DP-1"
 # sway circles through this space-delimited list when the first element is not found.
@@ -162,7 +162,7 @@ mode "monitors" {
 	bindsym t exec "$switch_out && swaymsg 'output $output_monitor toggle'"
 
 	# university/projector mode: 1080p, all workspaces to external
-	bindsym u exec "$switch_out && swaymsg 'output HDMI-A-1 mode 1920x1080@60Hz pos 0 0; output eDP-1 pos 0 1080'"
+	bindsym u exec "$switch_out && swaymsg 'output HDMI-A-1 mode 1920x1080@60Hz pos 0 0; output \"BOE NE160QDM-NZB 0x00000068\" pos 0 1080'"
 
 	bindsym $mod+k exec $switch_out
 	bindsym $mod+c exec $switch_out
