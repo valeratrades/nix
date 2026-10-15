@@ -20,7 +20,7 @@ serde_json = "1.0"
 //!     └── P  tabbed  ← typst-out viewer per src      50%
 //! ```
 //!
-//! `srcs.select` / `docs.select` (0-based, as nix's `elemAt`) pick the tab each lands on.
+//! `srcs.focus` / `docs.focus` (0-based, as nix's `elemAt`) pick the tab each lands on.
 //!
 //! Every step anchors on a leaf con_id, never on a container: `move to mark` inserts
 //! as a sibling of the marked container, and on a container the insert-as-child vs
@@ -56,13 +56,13 @@ const EXAMPLE: &str = r#"{
   srcs = [ ./main.typ ./appendix.typ ]; # shorthand for `srcs.files`
   docs = {
     files = [ ../refs/stoch_1.pdf /abs/path/other.pdf ];
-    select = 1; # 0-based; omitted means the first
+    focus = 1;  # 0-based; omitted means the first
   };
 }"#;
 
 struct Scope {
 	files: Vec<PathBuf>,
-	select: usize,
+	focus: usize,
 }
 
 fn main() -> Result<()> {
@@ -318,7 +318,7 @@ fn read_config(cwd: &Path) -> Result<(Scope, Scope)> {
 
 	let scope = |key: &str| -> Result<Scope> {
 		let scope = obj.get(key).and_then(Value::as_object).ok_or_else(|| miette!(help = EXAMPLE, "{CONFIG}: `{key}` is missing"))?;
-		if let Some(k) = scope.keys().find(|k| *k != "files" && *k != "select") {
+		if let Some(k) = scope.keys().find(|k| *k != "files" && *k != "focus") {
 			return Err(miette!(help = EXAMPLE, "unknown key `{key}.{k}` in {CONFIG}"));
 		}
 		let files = scope["files"]
@@ -330,15 +330,15 @@ fn read_config(cwd: &Path) -> Result<(Scope, Scope)> {
 		if files.is_empty() {
 			return Err(miette!(help = EXAMPLE, "{CONFIG}: `{key}` is empty"));
 		}
-		let select = match scope.get("select") {
+		let focus = match scope.get("focus") {
 			None => 0,
 			Some(v) => v
 				.as_u64()
 				.and_then(|i| usize::try_from(i).ok())
 				.filter(|i| *i < files.len())
-				.ok_or_else(|| miette!("{CONFIG}: `{key}.select` = {v} is not an index into its {} files", files.len()))?,
+				.ok_or_else(|| miette!("{CONFIG}: `{key}.focus` = {v} is not an index into its {} files", files.len()))?,
 		};
-		Ok(Scope { files, select })
+		Ok(Scope { files, focus })
 	};
 	let srcs = scope("srcs")?;
 	let docs = scope("docs")?;
@@ -424,12 +424,12 @@ fn build() -> Result<()> {
 	};
 	let doc_ids = tab(z1, docs.files[1..].iter().map(|d| doc_cmd(d)).collect())?;
 	let placeholders = tab(p0, vec!["zathura".to_owned(); srcs.files.len() - 1])?;
-	let viewer = placeholders[srcs.select];
+	let viewer = placeholders[srcs.focus];
 
 	cmd(&format!("unmark {MARK}"))?;
 	// focusing is the only way to pick a tab, and it would drag us onto a workspace the user left
 	if focused_workspace()? == ws_name {
-		cmd(&format!("[con_id={}] focus", doc_ids[docs.select]))?;
+		cmd(&format!("[con_id={}] focus", doc_ids[docs.focus]))?;
 		cmd(&format!("[con_id={viewer}] focus"))?;
 		cmd(&format!("[con_id={term}] focus"))?;
 	}
@@ -449,7 +449,7 @@ fn build() -> Result<()> {
 		.spawn()
 		.map_err(|e| miette!("failed to spawn the placeholder swap: {e}"))?;
 
-	let tab = srcs.select + 1; // vim tabs count from 1
+	let tab = srcs.focus + 1; // vim tabs count from 1
 	let srcs = srcs.files.iter().map(|s| sh_quote(s)).collect::<Vec<_>>().join(" ");
 	let e = Command::new("fish").arg("-c").arg(format!(r#"e -p {srcs} -c "'tabdo TypstWatch'" -c "'tabnext {tab}'""#)).exec(); // `e` evals its args, eating one layer of quotes
 	Err(miette!("exec fish: {e}"))
