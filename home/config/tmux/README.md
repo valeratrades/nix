@@ -28,7 +28,8 @@ check still costs real time, though: the judging prompt must not lean on `partia
 to hedge reports that do read one way.
 
 The judge takes no temperature, so each verdict is drawn from 3 concurrent samples
-and the most severe one wins; `--no-vote` drops to one sample.
+and the most severe one wins; `--no-vote` drops to one sample. The full view prefixes
+the state with the votes it drew (`2/3 partial`); a lone severe vote can show `1/3`.
 
 The verdict is cached in `~/.cache/claude-session-reports.json` against the
 transcript's mtime, so it costs one call per session settle, not one per

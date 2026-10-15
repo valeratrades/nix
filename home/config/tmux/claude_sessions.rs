@@ -167,6 +167,8 @@ struct ClaudeWindow {
     model: Option<String>,
     /// Context size of the last turn, in tokens (see context_tokens)
     context: Option<u64>,
+    /// Closing-report votes cast for the shown state, out of the samples drawn
+    votes: Option<(usize, usize)>,
 }
 
 #[derive(Debug, Serialize)]
@@ -181,6 +183,8 @@ struct SessionEntry {
     model: Option<String>,
     /// Context size of the last turn, in tokens (see context_tokens)
     context: Option<u64>,
+    /// Closing-report votes cast for the shown state, out of the samples drawn
+    votes: Option<(usize, usize)>,
 }
 
 #[derive(Debug)]
@@ -264,6 +268,16 @@ impl fmt::Display for Sessions {
                 .unwrap_or(0)
         };
 
+        let max_votes_len = if self.compact {
+            0
+        } else {
+            self.entries
+                .iter()
+                .filter_map(|e| e.votes.map(|(k, n)| format!("{k}/{n}").len()))
+                .max()
+                .unwrap_or(0)
+        };
+
         for (i, entry) in self.entries.iter().enumerate() {
             if i > 0 {
                 writeln!(f)?;
@@ -285,6 +299,12 @@ impl fmt::Display for Sessions {
             // after, so it never participates in width math.
             let state_str = entry.state.as_str();
             let padded_state = format!("{:width$}", state_str, width = max_state_len);
+            let votes_prefix = if max_votes_len > 0 {
+                let cell = entry.votes.map(|(k, n)| format!("{k}/{n}")).unwrap_or_default();
+                format!("{:>width$} ", cell, width = max_votes_len)
+            } else {
+                String::new()
+            };
 
             // Model column (full view only). Padded to the widest model so the
             // trailing todo/draft/question stays aligned; empty when no session
@@ -368,7 +388,7 @@ impl fmt::Display for Sessions {
                     }
                     _ => pango_escape(&padded_state),
                 };
-                write!(f, "{}  {}", pango_escape(&padded_name), state_cell)?;
+                write!(f, "{}  {}{}", pango_escape(&padded_name), votes_prefix, state_cell)?;
                 if let Some(c) = &padded_context {
                     write!(f, "  <span foreground=\"{}\">{}</span>", context_color(entry.context), pango_escape(c))?;
                 }
@@ -392,7 +412,7 @@ impl fmt::Display for Sessions {
                     ClaudeState::Limit | ClaudeState::Input => padded_state.white(),
                     ClaudeState::Interrupted => padded_state.normal(),
                 };
-                write!(f, "{}  {}", padded_name, colored_state)?;
+                write!(f, "{}  {}{}", padded_name, votes_prefix, colored_state)?;
                 if let Some(c) = &padded_context {
                     write!(f, "  {}", c.dimmed())?;
                 }
@@ -851,6 +871,14 @@ mod report {
         Stuck,
     }
 
+    /// `votes` of the `of` samples drew `verdict`.
+    #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+    pub struct Tally {
+        pub verdict: Verdict,
+        pub votes: usize,
+        pub of: usize,
+    }
+
     const SYSTEM: &str = "You read the closing report a coding agent left at the end of its session and judge how the session ended. When known, the user's prompt that opened the turn comes first, in <prompt> tags; a question there that the report answers is finished.
 
 finished — the implementation the agent settled on is in the tree
@@ -867,7 +895,7 @@ Answer with exactly one word: finished, stuck, or partial.";
     const MAX_PROMPT: usize = 2000;
     const TIMEOUT: Duration = Duration::from_secs(20);
 
-    pub fn classify(session_file: &Path, vote: bool) -> Option<Verdict> {
+    pub fn classify(session_file: &Path, vote: bool) -> Option<Tally> {
         // No key means the feature is off, not that anything is wrong. `ask` runs on Model::Fast, so
         // OpenAI is the provider whose absence turns this off.
         if std::env::var("OPENAI_API_KEY").is_err() {
@@ -882,18 +910,23 @@ Answer with exactly one word: finished, stuck, or partial.";
             .as_secs();
         let key = session_file.file_stem()?.to_str()?.to_string();
 
+        let of = if vote { 3 } else { 1 };
         let mut cache = load();
-        if let Some(hit) = cache.get(&key).filter(|e| e.mtime == mtime && e.prompt == prompt_id()) {
-            return hit.verdict;
+        if let Some(hit) = cache.get(&key).filter(|e| e.mtime == mtime && e.prompt == prompt_id() && e.of == of) {
+            return hit.tally;
         }
 
         // A miss is cached too, or an unreachable model would earn a doomed HTTP
         // call on every status-line refresh. The retry comes with the next turn
         // in that session, which is when a verdict starts mattering again.
-        let verdict = last_report(session_file).and_then(|r| samples(&r, if vote { 3 } else { 1 }).into_iter().max()); // the most severe vote wins, see README
-        cache.insert(key, Entry { mtime, prompt: prompt_id(), verdict });
+        let tally = last_report(session_file).and_then(|r| {
+            let votes = samples(&r, of);
+            let verdict = votes.iter().copied().max()?; // the most severe vote wins, see README
+            Some(Tally { verdict, votes: votes.iter().filter(|&&v| v == verdict).count(), of })
+        });
+        cache.insert(key, Entry { mtime, prompt: prompt_id(), of, tally });
         save(&cache);
-        verdict
+        tally
     }
 
     /// Editing SYSTEM has to invalidate every stored verdict — they were drawn
@@ -1038,7 +1071,8 @@ Answer with exactly one word: finished, stuck, or partial.";
         /// Transcript mtime the verdict was drawn from; a later turn invalidates it.
         mtime: u64,
         prompt: u64,
-        verdict: Option<Verdict>,
+        of: usize,
+        tally: Option<Tally>,
     }
 
     fn cache_path() -> Option<PathBuf> {
@@ -1505,6 +1539,7 @@ fn get_claude_windows(vote: bool) -> Vec<ClaudeWindow> {
         let Pane { window_index, is_claude_pane, pane_pid, .. } = *pane;
         let session = pane.session.as_str();
         let caps = captures.get(&pane.target).unwrap_or(&missing);
+        let mut votes = None;
 
         let (state, active_todo, draft_content, question_content, summary, model, context) = if is_claude_pane {
             // Terminal parsing decides the blocking states (Question/Draft/Error)
@@ -1542,7 +1577,9 @@ fn get_claude_windows(vote: bool) -> Vec<ClaudeWindow> {
                             let state = if stale {
                                 ClaudeState::Done
                             } else {
-                                match metadata.as_ref().and_then(|m| report::classify(&m.file, vote)) {
+                                let tally = metadata.as_ref().and_then(|m| report::classify(&m.file, vote));
+                                votes = tally.filter(|t| t.of > 1).map(|t| (t.votes, t.of));
+                                match tally.map(|t| t.verdict) {
                                     Some(report::Verdict::Stuck) => ClaudeState::Stuck,
                                     Some(report::Verdict::Partial) => ClaudeState::Partial,
                                     Some(report::Verdict::Finished) | None => ClaudeState::Finished,
@@ -1609,6 +1646,7 @@ fn get_claude_windows(vote: bool) -> Vec<ClaudeWindow> {
             summary,
             model,
             context,
+            votes,
         });
     }
 
@@ -2414,6 +2452,7 @@ fn main() {
             summary: window.summary.clone(),
             model: window.model.clone(),
             context: window.context,
+            votes: window.votes,
         });
     }
     sessions.sort();
