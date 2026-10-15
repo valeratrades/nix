@@ -39,8 +39,10 @@ session just reads `finished`. `done` panes (untouched for 45 min) are never
 classified — that signal has already decayed.
 
 The judging prompt is the whole classifier, so it's pinned by
-`tests/reports/<claude version>/<verdict>__<desc>.md` — real closing reports, one live call each,
-same drop-a-file-in-and-it's-covered deal as the pane fixtures. Editing the
+`tests/reports/<claude version>/<verdict>__<desc>.md` — real closing reports, same
+drop-a-file-in-and-it's-covered deal as the pane fixtures. They pin the judge's
+consensus, not the severity max: one live call each, and a miss is retried as a
+majority of 3, which only then fails the test. Editing the
 prompt invalidates every cached verdict (they were drawn by a different judge).
 
 It runs on `ask_llm::Model::Fast`; when that provider is out of quota, `ask_llm`'s

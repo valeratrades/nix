@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 ask_llm = { version = "3.5.0", default-features = false }
 tokio = { version = "1", features = ["rt", "time", "net"] }
+futures = "0.3"
 clap = { version = "4.5.49", features = ["derive"] }
 chrono = { version = "0.4", default-features = false, features = ["alloc"] }
 colored = "2"
@@ -889,7 +890,7 @@ Answer with exactly one word: finished, stuck, or partial.";
         // A miss is cached too, or an unreachable model would earn a doomed HTTP
         // call on every status-line refresh. The retry comes with the next turn
         // in that session, which is when a verdict starts mattering again.
-        let verdict = last_report(session_file).and_then(|r| ask(&r, vote));
+        let verdict = last_report(session_file).and_then(|r| samples(&r, if vote { 3 } else { 1 }).into_iter().max()); // the most severe vote wins, see README
         cache.insert(key, Entry { mtime, prompt: prompt_id(), verdict });
         save(&cache);
         verdict
@@ -1005,23 +1006,20 @@ Answer with exactly one word: finished, stuck, or partial.";
         })
     }
 
-    fn ask(report: &str, vote: bool) -> Option<Verdict> {
+    /// `n` concurrent judgements; a call that fails or answers off-format is a missing vote.
+    fn samples(report: &str, n: usize) -> Vec<Verdict> {
         // Cheapest tier that reliably returns a single-word verdict; the local
         // ollama models don't hold the format well enough. The budget is per
         // TOKENIZER, not per word, and a
         // truncated verdict parses as None, i.e. silently no verdict at all.
         let client = ask_llm::Client::default().model(ask_llm::Model::Fast).max_tokens(8);
-        let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build().ok()?;
+        let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build().expect("current-thread runtime builds with no OS resources to fail on");
         let message = format!("{SYSTEM}\n\n---\n\n{report}");
         let sample = async || {
             let response = tokio::time::timeout(TIMEOUT, client.ask(message.clone())).await.ok()?.ok()?;
             parse(&response.text)
         };
-        if !vote {
-            return runtime.block_on(sample());
-        }
-        let (a, b, c) = runtime.block_on(async { tokio::join!(sample(), sample(), sample()) });
-        [a, b, c].into_iter().flatten().max() // the most severe vote wins, see README
+        runtime.block_on(futures::future::join_all((0..n).map(|_| sample()))).into_iter().flatten().collect()
     }
 
     /// First word only — the verdict leads, and the model sometimes tacks on a
@@ -1085,8 +1083,9 @@ Answer with exactly one word: finished, stuck, or partial.";
         }
 
         /// The prompt IS the classifier, so it gets pinned against real closing
-        /// reports — `tests/reports/<claude version>/<verdict>__<desc>.md`, one live call each.
-        /// Drop a misjudged report in and it's covered with no code edit.
+        /// reports — `tests/reports/<claude version>/<verdict>__<desc>.md`. Drop a misjudged
+        /// report in and it's covered with no code edit. What's pinned is the judge's consensus,
+        /// not production's severity max: one call, and only a miss is retried as a majority of 3.
         #[test]
         fn reports_classify_to_their_named_verdict() {
             for file in crate::tests::versioned_cases("reports", "md") {
@@ -1098,7 +1097,12 @@ Answer with exactly one word: finished, stuck, or partial.";
                     other => panic!("report {stem:?} has unknown verdict prefix {other:?}"),
                 };
                 let report = fs::read_to_string(&file).unwrap();
-                assert_eq!(ask(&report, true), Some(expected), "report {stem:?}");
+                if samples(&report, 1) == [expected] {
+                    continue;
+                }
+                let votes = samples(&report, 3);
+                let consensus = votes.iter().find(|v| votes.iter().filter(|w| w == v).count() >= 2);
+                assert_eq!(consensus, Some(&expected), "report {stem:?}, votes {votes:?}");
             }
         }
 
