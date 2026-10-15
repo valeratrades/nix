@@ -394,10 +394,9 @@ vim.lsp.enable('ruff')
 --vim.lsp.enable('lean')
 
 -- lean
-require('lean').setup {
+vim.g.lean_config = {
 	--TODO: write all keys explicitly
 	mappings = true, --HACK: sets a bunch of stuff over maplocalleader
-	lsp = false,    -- disable deprecated lsp setup
 }
 
 vim.lsp.config('leanls', {
