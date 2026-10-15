@@ -48,6 +48,10 @@ struct Args {
     /// Generate LLM summaries (slow, uses ollama)
     #[arg(long)]
     llm_summaries: bool,
+
+    /// Judge closing reports with one LLM sample instead of a 3-way majority vote
+    #[arg(long = "no-vote", action = clap::ArgAction::SetFalse)]
+    vote: bool,
 }
 
 #[derive(Deserialize)]
@@ -861,7 +865,7 @@ Answer with exactly one word: finished, stuck, or partial.";
     const MAX_PROMPT: usize = 2000;
     const TIMEOUT: Duration = Duration::from_secs(20);
 
-    pub fn classify(session_file: &Path) -> Option<Verdict> {
+    pub fn classify(session_file: &Path, vote: bool) -> Option<Verdict> {
         // No key means the feature is off, not that anything is wrong. `ask` runs on Model::Fast, so
         // OpenAI is the provider whose absence turns this off.
         if std::env::var("OPENAI_API_KEY").is_err() {
@@ -884,7 +888,7 @@ Answer with exactly one word: finished, stuck, or partial.";
         // A miss is cached too, or an unreachable model would earn a doomed HTTP
         // call on every status-line refresh. The retry comes with the next turn
         // in that session, which is when a verdict starts mattering again.
-        let verdict = last_report(session_file).and_then(|r| ask(&r));
+        let verdict = last_report(session_file).and_then(|r| ask(&r, vote));
         cache.insert(key, Entry { mtime, prompt: prompt_id(), verdict });
         save(&cache);
         verdict
@@ -1000,18 +1004,28 @@ Answer with exactly one word: finished, stuck, or partial.";
         })
     }
 
-    fn ask(report: &str) -> Option<Verdict> {
+    fn ask(report: &str, vote: bool) -> Option<Verdict> {
         // Cheapest tier that reliably returns a single-word verdict; the local
         // ollama models don't hold the format well enough. The budget is per
         // TOKENIZER, not per word, and a
         // truncated verdict parses as None, i.e. silently no verdict at all.
         let client = ask_llm::Client::default().model(ask_llm::Model::Fast).max_tokens(8);
         let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build().ok()?;
-        let response = runtime
-            .block_on(async { tokio::time::timeout(TIMEOUT, client.ask(format!("{SYSTEM}\n\n---\n\n{report}"))).await })
-            .ok()?
-            .ok()?;
-        parse(&response.text)
+        let message = format!("{SYSTEM}\n\n---\n\n{report}");
+        let sample = async || {
+            let response = tokio::time::timeout(TIMEOUT, client.ask(message.clone())).await.ok()?.ok()?;
+            parse(&response.text)
+        };
+        // The judge takes no temperature and a single sample flips on borderline reports; the verdict is cached for the whole idle period, so it's drawn by majority.
+        if !vote {
+            return runtime.block_on(sample());
+        }
+        let (a, b, c) = runtime.block_on(async { tokio::join!(sample(), sample(), sample()) });
+        match (a, b, c) {
+            (Some(a), Some(b), _) | (Some(a), _, Some(b)) | (_, Some(a), Some(b)) if a == b => Some(a),
+            (Some(_), Some(_), Some(_)) => Some(Verdict::Partial), // ties break to partial, see README
+            _ => None,
+        }
     }
 
     /// First word only — the verdict leads, and the model sometimes tacks on a
@@ -1088,7 +1102,7 @@ Answer with exactly one word: finished, stuck, or partial.";
                     other => panic!("report {stem:?} has unknown verdict prefix {other:?}"),
                 };
                 let report = fs::read_to_string(&file).unwrap();
-                assert_eq!(ask(&report), Some(expected), "report {stem:?}");
+                assert_eq!(ask(&report, true), Some(expected), "report {stem:?}");
             }
         }
 
@@ -1430,7 +1444,7 @@ struct Pane {
     target: String,
 }
 
-fn get_claude_windows() -> Vec<ClaudeWindow> {
+fn get_claude_windows(vote: bool) -> Vec<ClaudeWindow> {
     let output = Command::new("tmux")
         .args([
             "list-panes",
@@ -1528,7 +1542,7 @@ fn get_claude_windows() -> Vec<ClaudeWindow> {
                             let state = if stale {
                                 ClaudeState::Done
                             } else {
-                                match metadata.as_ref().and_then(|m| report::classify(&m.file)) {
+                                match metadata.as_ref().and_then(|m| report::classify(&m.file, vote)) {
                                     Some(report::Verdict::Stuck) => ClaudeState::Stuck,
                                     Some(report::Verdict::Partial) => ClaudeState::Partial,
                                     Some(report::Verdict::Finished) | None => ClaudeState::Finished,
@@ -2336,7 +2350,7 @@ fn main() {
         USE_LLM_SUMMARIES.store(true, std::sync::atomic::Ordering::Relaxed);
     }
 
-    let windows = get_claude_windows();
+    let windows = get_claude_windows(args.vote);
 
     // Group windows by session to find sessions with non-empty windows
     let mut session_windows: HashMap<String, Vec<&ClaudeWindow>> = HashMap::new();
