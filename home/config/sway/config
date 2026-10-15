@@ -364,15 +364,14 @@ set $throwaway_screenshot slurp | grim -g - $scrn_path && $swappy_last
 bindsym Insert exec $throwaway_screenshot
 mode "screenshot" {
 	set $fullscreen_screenshot grim $scrn_path && $swappy_last
-	set $delayed_screenshot slurp | { sleep 5; grim -g - $scrn_path } && $swappy_last
 
 	bindsym i exec "$switch_out && $important_screenshot"
 	bindsym t exec "$switch_out && $trading_screenshot"
-	# doesn't work for some reason
-	bindsym f exec "$switch_out && $fullscrseen_screenshot"
-	bindsym d exec "$switch_out && $delayed_screenshot"
+	bindsym f exec "$switch_out && $fullscreen_screenshot"
+	bindsym d exec "$switch_out && ~/.config/sway/delayed_screenshot.sh full 3"
+	bindsym s exec "$switch_out && ~/.config/sway/delayed_screenshot.sh region 5"
 	bindsym o exec "$switch_out && $swappy_last"
-	bindsym Insert exec "$switch_out && throwaway_screenshot"
+	bindsym Insert exec "$switch_out && $throwaway_screenshot"
 
 	bindsym $mod+Insert exec $switch_out
 	bindsym $mod+c exec $switch_out
@@ -381,7 +380,7 @@ mode "screenshot" {
 	bindsym Escape exec $switch_out
 	bindsym q exec $switch_out
 }
-bindsym $mod+Insert exec "swaymsg mode screenshot && eww --no-daemonize update sway_mode='screenshot (i,t,f,d,o)'"
+bindsym $mod+Insert exec "swaymsg mode screenshot && eww --no-daemonize update sway_mode='screenshot (i,t,f,d=3s,s=select+5s,o)'"
 #
 
 mode "size_presets" {
