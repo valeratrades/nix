@@ -1,4 +1,4 @@
-{ self, config, lib, pkgs, user, inputs, ... }:
+{ self, config, lib, pkgs, user, inputs, myvars, ... }:
 let
   # Close hidden tabs matching a kill-list (bitunix.com/markets — a live-data
   # listing page that pegs several cores in the background and reopens trivially).
@@ -73,5 +73,20 @@ in
       OnUnitActiveSec = "5min";
     };
     Install.WantedBy = [ "timers.target" ];
+  };
+
+  # `journalctl --user -t boot-timeline`: where each boot's power→Chrome-page time went.
+  systemd.user.services.boot-timeline = {
+    Unit = {
+      Description = "Journal boot milestones up to the visible Chrome tab loading";
+      After = [ "sway-session.target" ];
+    };
+    Service = {
+      Type = "exec"; # oneshot would hold sway-session.target's start job for up to 5min
+      ExecStart = "${pkgs.nodejs}/bin/node ${self}/home/scripts/boot_timeline.mjs ${toString myvars.ports.chromeDebug}";
+      Environment = "PATH=${lib.makeBinPath (with pkgs; [ systemd procps getconf ])}";
+      SyslogIdentifier = "boot-timeline";
+    };
+    Install.WantedBy = [ "sway-session.target" ];
   };
 }

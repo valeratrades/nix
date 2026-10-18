@@ -286,8 +286,11 @@ let
 in
 {
 	#DEPRECATE: malware reminder has been stripped in later versions; keeping it here for posterity (or situations of them adding sth similar)
+	# Skipped during boot: activation then blocks login, and the network isn't up for the fetches anyway.
 	home.activation.claudePluginSync = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-		${syncScript}
+		if [ "$(${pkgs.systemd}/bin/systemctl is-system-running || true)" != starting ]; then # nonzero exit just means "not running"; state is read from stdout
+			${syncScript}
+		fi
 	'';
 
 	home.file = {

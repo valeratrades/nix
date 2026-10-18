@@ -111,16 +111,7 @@ in {
 	};
 
   systemd = {
-		# `shutdown now` hangs for minutes (often requiring a hard power-off). The
-		# persistent journal stops at the read-only remount, so the stall lives in
-		# the late `systemd-shutdown` phase (leftover-process SIGKILL + final
-		# unmount/detach), which the journal can't capture. Two-part remedy:
-		#
-		#   1. Cap any unit's stop to 15s so a single hung service can never eat the
-		#      90s default again (precedent: clickhouse cap in shared-services.nix).
-		#   2. Capture the late phase: shutdownRamfs gives a clean final-unmount env,
-		#      and `systemd.log_level=debug` (kernelParam below) makes the stuck
-		#      step print to the console so the next slow shutdown names the culprit.
+		# Cap any unit's stop so a single hung service can't eat the 90s default. See ongoing_debug/2026-06-05_slow-shutdown.md.
 		settings.Manager.DefaultTimeoutStopSec = "15s";
 		# The system cap above only covers PID-1 units. The 2026-06-06 slow shutdown
 		# was the USER manager (user@1000.service) waiting 90s on a tmux pane running
@@ -129,13 +120,18 @@ in {
 		user.extraConfig = ''
 			DefaultTimeoutStopSec=15s
 		'';
-		shutdownRamfs.enable = true;
 
 		services = {
 			dlm.wantedBy = [ "multi-user.target" ];
 			nix-daemon = {
 			# https://github.com/NixOS/nixpkgs/pull/338181
 			environment.TMPDIR = "/var/tmp";
+			serviceConfig.TimeoutStopSec = "2s"; # determinate-nixd idles ~5.6s on every shutdown before exiting 0
+			};
+			# Type=idle holds autologin until the boot job queue drains (up to 5s), on the critical path to sway.
+			"getty@tty1" = {
+				overrideStrategy = "asDropin"; # a full unit here would shadow the getty@ template and drop its ExecStart
+				serviceConfig.Type = lib.mkForce "simple";
 			};
 		};
   };
@@ -205,10 +201,6 @@ in {
 			# power-gate their links — a standing idle-power cost across the whole bus.
 			# Retest by dropping it once the kernel carries the mt7925 BT-disconnect fix.
 			"pcie_aspm.policy=performance"
-			#dbg: slow-shutdown hunt - make the late systemd-shutdown phase (post-journal
-			# unmount/detach/leftover-kill) log to the console so the stuck step is named.
-			# Remove once the culprit is found and fixed.
-			"systemd.log_level=debug"
 			#TODO: uncomment with kernelPatches above
 			# "hibernate.compressor=lz4" # LZ4 is ~3x faster than LZO for hibernate image compression
 		];

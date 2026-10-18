@@ -183,10 +183,10 @@ New servers are clean from now on.
 4. **Restart the running tmux server (or reboot)** to drop the 22 stale
    systemd-linked scopes from the old binary. After that, do one normal
    `shutdown now` to confirm it's instant.
-5. **Remove the `systemd.log_level=debug` `#dbg` kernel param** in
-   `os/nixos/configuration.nix` — diagnostic only, noisy. (Keep until #4 confirms.)
-6. Optional cleanup once confirmed fixed:
-   - `systemd.shutdownRamfs.enable` (v1 #2) — late phase was never the problem; removable.
+5. ~~Remove the `systemd.log_level=debug` kernel param~~ DONE 2026-10-18 — shutdowns were a
+   steady 10-16s for weeks, and it was writing 80k-1M journal lines per boot.
+6. Cleanup:
+   - ~~`systemd.shutdownRamfs.enable`~~ removed 2026-10-18 (late phase was never the problem).
    - the 15s `DefaultTimeoutStopSec` caps (v1 #1, v2) — worth KEEPING as a cheap
      defensive backstop against any future hung unit. Recommend leaving them.
 
@@ -250,7 +250,7 @@ the services it protects. Remove once the kernel carries the mt7925 BT-disconnec
   cluster no longer times out.
 - The user-session cluster (`xdg-desktop-portal`, `openclaw-gateway`, Chrome scope)
   also rode out 15s each — secondary, bounded by the user 15s cap. Separate follow-up.
-- Drop the `systemd.log_level=debug` kernelParam (v1 #3 / TODO #5) once v4 is confirmed.
+- ~~Drop the `systemd.log_level=debug` kernelParam~~ done 2026-10-18.
 
 ## NB — cross-reference
 The hard power-offs caused by THIS bug are the source of the accumulating

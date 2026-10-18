@@ -12,26 +12,25 @@ blacklist=" egjidjbpglichdcondbcbdnbeeppgdph nkbihfbeogaeaoehlefnkodbefgpgknn " 
 src="$data/Default"
 mapfile -t profiles < <(jq -r '.profile.info_cache | keys[] | select(. != "Default")' "$data/Local State")
 
-for dir in "Local Extension Settings" "Sync Extension Settings"; do
-  [ -d "$src/$dir" ] || continue
-  for ext in "$src/$dir"/*/; do
-    id=$(basename "$ext")
+# One rsync per (dir, profile): this runs between the launcher and Chrome's exec, and one process
+# per extension cost ~10s at boot. Only listed entries are included, so --delete never reaches
+# blacklisted or profile-only extension storage on the receiver.
+mirror() { # <dir> <glob> <entry→ext-id sed>
+  local dir=$1 glob=$2 to_id=$3 filters=() entry id p
+  [ -d "$src/$dir" ] || return 0
+  for entry in "$src/$dir"/$glob; do
+    [ -e "$entry" ] || continue
+    entry=$(basename "$entry")
+    id=$(sed "$to_id" <<<"$entry")
     [[ $blacklist == *" $id "* ]] && continue
-    for p in "${profiles[@]}"; do
-      mkdir -p "$data/$p/$dir"
-      rsync -a --delete "$ext" "$data/$p/$dir/$id/"
-    done
+    filters+=("--include=/$entry/***")
   done
-done
-
-for db in "$src"/IndexedDB/chrome-extension_*; do
-  [ -e "$db" ] || continue
-  name=$(basename "$db")
-  id=${name#chrome-extension_}
-  id=${id%%_*}
-  [[ $blacklist == *" $id "* ]] && continue
+  [ ${#filters[@]} -gt 0 ] || return 0
   for p in "${profiles[@]}"; do
-    mkdir -p "$data/$p/IndexedDB"
-    rsync -a --delete "$db/" "$data/$p/IndexedDB/$name/"
+    mkdir -p "$data/$p/$dir"
+    rsync -a --delete "${filters[@]}" --exclude='*' "$src/$dir/" "$data/$p/$dir/"
   done
-done
+}
+mirror "Local Extension Settings" '*' ''
+mirror "Sync Extension Settings" '*' ''
+mirror "IndexedDB" 'chrome-extension_*' 's/^chrome-extension_//; s/_.*//'
