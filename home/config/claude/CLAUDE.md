@@ -41,6 +41,13 @@
       Another thing, - if we have `examples/` on a framework, through which we are testing it, - we never try to optimize them or think the current results/behavior on them is correct. When we change underlying framework, we do look at output changes to see if we regressed, but we never ever assume that the old result was preferable. If framework was already perfect, we wouldn't be touching it now. No getting attached to current values when working with framework, - correctness trumps all.
   > note that it's not rare for an app and the framework for it to be workspace members in the same repo. Same rules hold when working with each.
 
+- every paid generation (image, video, LLM batch, Higgsfield credits, ...) appends an hledger entry to `cost.journal` at the repo root, so each project's spend totals with `hledger -f cost.journal bal`. If the repo's code journals it already, don't double it. Shape:
+  ```
+  2026-10-18 OpenAI | <what was made>
+      expenses:generation:<model>  0.0123 USD
+      vendor:openai
+  ```
+
 - don't forget to run `nix develop` to init env in all projects with flake.nix
 
 - any non-instant command (full rebuilds, long test runs, nix builds, waiting on CI or a rollout) goes to the background, so a message from me doesn't interrupt it mid-run
