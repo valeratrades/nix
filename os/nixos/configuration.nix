@@ -113,6 +113,7 @@ in {
   systemd = {
 		# Cap any unit's stop so a single hung service can't eat the 90s default. See ongoing_debug/2026-06-05_slow-shutdown.md.
 		settings.Manager.DefaultTimeoutStopSec = "15s";
+		shutdownRamfs.enable = user.debug; # clean env for the post-journal late shutdown phase, visible on console with debug logging
 		# The system cap above only covers PID-1 units. The 2026-06-06 slow shutdown
 		# was the USER manager (user@1000.service) waiting 90s on a tmux pane running
 		# nvim (nvim ignores SIGTERM → scope rides out the full default). user.conf is
@@ -129,6 +130,7 @@ in {
 			serviceConfig.TimeoutStopSec = "2s"; # determinate-nixd idles ~5.6s on every shutdown before exiting 0
 			};
 			# Type=idle holds autologin until the boot job queue drains (up to 5s), on the critical path to sway.
+			"home-manager-${user.username}".before = lib.mkIf user.speed_over_safety (lib.mkForce [ ]); # HM runs alongside login instead of gating it (~5.7s)
 			"getty@tty1" = {
 				overrideStrategy = "asDropin"; # a full unit here would shadow the getty@ template and drop its ExecStart
 				serviceConfig.Type = lib.mkForce "simple";
@@ -203,7 +205,7 @@ in {
 			"pcie_aspm.policy=performance"
 			#TODO: uncomment with kernelPatches above
 			# "hibernate.compressor=lz4" # LZ4 is ~3x faster than LZO for hibernate image compression
-		];
+		] ++ lib.optional user.debug "systemd.log_level=debug";
 
 		kernel.sysctl = {
 			# disable memory allocation profiling - its bookkeeping can fail under memory pressure,

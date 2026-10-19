@@ -44,7 +44,7 @@ in
     Unit.Description = "Close hidden Chrome tabs matching the CPU-hog kill-list";
     Service = {
       Type = "oneshot";
-      ExecStart = "${chromeTabReaper}/bin/chrome-tab-reaper";
+      ExecStart = "${chromeTabReaper}/bin/chrome-tab-reaper ${toString myvars.ports.chromeDebug}";
     };
   };
 

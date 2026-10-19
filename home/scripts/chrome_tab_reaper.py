@@ -18,7 +18,7 @@ import struct
 import sys
 import urllib.request
 
-PORT = 9222
+PORT = int(sys.argv[1])
 
 # A hidden tab whose URL contains any of these substrings gets closed.
 KILL_PATTERNS = [

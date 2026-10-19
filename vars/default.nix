@@ -42,6 +42,8 @@ in
 		gpuAcceleration = false;  # forced Firefox GPU rendering (webrender compositor + dmabuf + gpu-process). Off: runs hot on this chassis.
 		clickhouse = false;
 		openclaw = true;
+		debug = false; # verbose systemd logging (boot + shutdown); flip on when something starts misbehaving
+		speed_over_safety = true; # e.g. login doesn't wait for home-manager activation, so a fresh generation's session can start on the previous one's files
 		default_s_inactive_to_retire = 1200; # idle LSP servers paged out to swap after this many seconds (20m)
 		# Hearing-safety: max dB SPL per headphone, keyed by PipeWire node.description.
 		# Mapped to a digital limiter via the model's calibration in
@@ -63,6 +65,8 @@ in
 		gpuAcceleration = true;
 		clickhouse = true;
 		openclaw = false;
+		debug = false;
+		speed_over_safety = false;
 		default_s_inactive_to_retire = 1200;
     };
   timur = {
@@ -80,6 +84,8 @@ in
 		gpuAcceleration = true;
 		clickhouse = true;
 		openclaw = false;
+		debug = false;
+		speed_over_safety = false;
 		default_s_inactive_to_retire = 1200;
   };
   #
