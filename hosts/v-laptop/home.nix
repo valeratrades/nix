@@ -29,6 +29,7 @@ in {
     # NB: sops key is misspelled upstream as `deepsek_key` (single `e`); keep matching the stored name.
     secrets.deepsek_key = { mode = "0400"; };
     secrets.encryption_key = { mode = "0400"; };
+    secrets.chrome_lazy_restore_pem = { mode = "0400"; }; # signs the lazy-restore extension, os/nixos/desktop/programs/chrome.nix
   };
 
   tg = {

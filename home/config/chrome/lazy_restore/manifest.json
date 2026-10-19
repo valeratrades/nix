@@ -1,0 +1,8 @@
+{
+  "manifest_version": 3,
+  "name": "Lazy restore",
+  "description": "Restored background tabs load only when visited.",
+  "version": "1.0",
+  "permissions": ["tabs"],
+  "background": { "service_worker": "background.js" }
+}

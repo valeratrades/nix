@@ -41,6 +41,8 @@ top-level README.md is defined through [docs/.readme_assets], - make changes the
 
 so it's one asset file per README section, composed by `readme_fw`. README.md itself is generated, - once again, never edit it directly.
 
+> README is further from the code than ARCHITECTURE.md: it holds only what the **user** needs. Code details in ARCHITECTURE.md are bad, in README worse.
+
 Sections to know are:
 - [docs/.readme_assets/description.md]
 - [docs/.readme_assets/installation.(md|sh)]
