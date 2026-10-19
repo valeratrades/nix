@@ -1,0 +1,1 @@
+alias obs_capture="python3 $NIXOS_CONFIG/home/config/obs-studio/sync.py capture $NIXOS_CONFIG/home/config/obs-studio $HOME/.config/obs-studio && git -C $NIXOS_CONFIG diff --stat -- home/config/obs-studio"

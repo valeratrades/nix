@@ -688,8 +688,8 @@
 	'';
 
 	# Tracks: 1 = full mix, 2 = desktop only, 3 = mic only, so the mic can be dropped in post (`ffmpeg -map 0:v -map 0:a:1`).
-	# Copied, not symlinked: OBS rewrites its config on shutdown.
+	# Copied, not symlinked: OBS saves by replacing the file. GUI changes go back to the repo via `obs_capture`.
 	home.activation.obsConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-		${pkgs.python3}/bin/python3 ${self}/home/config/obs-studio/apply.py ${self}/home/config/obs-studio ${config.home.homeDirectory}/.config/obs-studio
+		${pkgs.python3}/bin/python3 ${self}/home/config/obs-studio/sync.py apply ${self}/home/config/obs-studio ${config.home.homeDirectory}/.config/obs-studio
 	'';
 }

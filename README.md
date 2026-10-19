@@ -36,7 +36,7 @@ Introduced `MANUAL` keyword in config next to things that require manual adjustm
 
 Currently:
 - git config in ./os/configuration.nix must be adjusted for the correct username and email
-- OBS: stream key, screen-capture grant, chat browser-source url, websocket password (see `home/config/obs-studio/apply.py`)
+- OBS: stream key, screen-capture grant, chat browser-source url, websocket password (see `home/config/obs-studio/sync.py`)
 
 ## Usage
 ```sh

@@ -15,3 +15,4 @@ source $__fish_config_app_aliases_dir/zathura.fish
 source $__fish_config_app_aliases_dir/uv.fish
 source $__fish_config_app_aliases_dir/llm.fish
 source $__fish_config_app_aliases_dir/windows.fish
+source $__fish_config_app_aliases_dir/obs.fish
