@@ -41,8 +41,18 @@ for (let i = 0; i < 300 && !tab; i++) {
 const firmware = sysProp('FirmwareTimestampMonotonic') - sysProp('LoaderTimestampMonotonic');
 const loader = sysProp('LoaderTimestampMonotonic');
 const chromePid = run('pgrep', '-o', '-f', 'share/google/chrome/chrome');
-const chromeLog = readFileSync(`${process.env.HOME}/.config/google-chrome-cdp/chrome_debug.log`, 'utf8').match(/^\[\d+:\d+:(\d\d)(\d\d)\/(\d\d)(\d\d)(\d\d)\.(\d+)/);
-const chromeExec = epochToMono(new Date(new Date().getFullYear(), chromeLog[1] - 1, chromeLog[2], chromeLog[3], chromeLog[4], chromeLog[5]).getTime() / 1000 + Number(`0.${chromeLog[6]}`));
+const chromeExec = await (async () => { // the wrapper's pre-exec work (ext-settings sync) shows up as this histogram
+  const { webSocketDebuggerUrl } = await (await fetch(`http://localhost:${port}/json/version`)).json();
+  const ws = new WebSocket(webSocketDebuggerUrl);
+  const msg = await new Promise((res, rej) => {
+    ws.onopen = () => ws.send(JSON.stringify({ id: 1, method: 'Browser.getHistogram', params: { name: 'Startup.LoadTime.ProcessCreateToApplicationStart' } }));
+    ws.onmessage = m => { ws.close(); res(JSON.parse(m.data)); };
+    ws.onerror = rej;
+  });
+  const h = msg.result.histogram;
+  assert.equal(h.count, 1, 'recorded once per browser process');
+  return procStart(chromePid) + h.sum / 1000;
+})();
 
 const points = {
   initrd: sysProp('InitRDTimestampMonotonic'),
