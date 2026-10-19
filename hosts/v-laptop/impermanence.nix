@@ -65,7 +65,6 @@
         "whiteboard"
 
         "Downloads"
-        "Videos"
         "Documents"
         "Music"
         "Images"

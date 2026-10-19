@@ -31,6 +31,8 @@ struct Args {
 }
 
 const FOUR_WEEKS_SECS: u64 = 4 * 7 * 24 * 3600;
+const TMP_TTL_SECS: u64 = 30 * 24 * 3600; // same as the `up` nag in home/scripts/__main__.fish
+const TMP_BUCKETS: [&str; 3] = ["Screenshots", "Videos", "msg_drafts"]; // swept per entry; every other ~/tmp entry lives or dies whole, so projects don't lose single files
 const HOME_CACHE_THRESHOLD_KB: u64 = 20_000_000; // 20GB
 
 fn main() {
@@ -46,6 +48,7 @@ fn main() {
 
     if tasks.contains(&"clean") {
         handles.push(std::thread::spawn(|| {
+            sweep_tmp(); // before artefact cleaning, which also walks ~/tmp
             if clean_old_build_artefacts() {
                 println!("\x1b[32mChecked for old build artefacts\x1b[0m");
             } else {
@@ -215,6 +218,39 @@ fn clean_old_build_artefacts() -> bool {
     }
 
     true
+}
+
+fn sweep_tmp() {
+    println!("\x1b[34mSweeping ~/tmp entries untouched for {} days\x1b[0m", TMP_TTL_SECS / 86400);
+    let children = |dir: &Path| fs::read_dir(dir).unwrap_or_else(|e| panic!("{}: {e}", dir.display())).map(|e| e.unwrap().path()).collect::<Vec<_>>();
+    for path in children(Path::new("/home/v/tmp")) {
+        let is_bucket = path.file_name().and_then(|n| n.to_str()).is_some_and(|n| TMP_BUCKETS.contains(&n));
+        let units = if is_bucket && path.is_dir() { children(&path) } else { vec![path] };
+        for unit in units {
+            remove_if_untouched(&unit);
+        }
+    }
+}
+
+fn remove_if_untouched(path: &Path) {
+    let mut newest = UNIX_EPOCH;
+    for entry in WalkDir::new(path) {
+        match entry.map_err(std::io::Error::from).and_then(|e| e.metadata()?.modified()) {
+            Ok(mtime) => newest = newest.max(mtime),
+            Err(e) => {
+                eprintln!("\x1b[31mKeeping {}: can't read {e}\x1b[0m", path.display());
+                return;
+            }
+        }
+    }
+    if !newest.elapsed().is_ok_and(|e| e > Duration::from_secs(TMP_TTL_SECS)) {
+        return;
+    }
+    let removed = if path.symlink_metadata().unwrap().is_dir() { fs::remove_dir_all(path) } else { fs::remove_file(path) };
+    match removed {
+        Ok(()) => println!("\x1b[32mRemoved stale {}\x1b[0m", path.display()),
+        Err(e) => eprintln!("\x1b[31mFailed to remove {}: {e}\x1b[0m", path.display()),
+    }
 }
 
 fn is_stale(dir: &Path) -> bool {

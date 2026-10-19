@@ -499,7 +499,7 @@
       mkdir = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
         mkdir -p $HOME/tmp/
         mkdir -p $HOME/tmp/msg_drafts/
-        mkdir -p $HOME/Videos/obs/
+        mkdir -p $HOME/tmp/Videos/
         mkdir -p $HOME/tmp/Screenshots/
       '';
       #
@@ -698,7 +698,7 @@
 		obs="${config.home.homeDirectory}/.config/obs-studio/basic"
 		for ini in "$obs"/profiles/*/basic.ini; do
 			[ -f "$ini" ] || continue
-			${pkgs.python3}/bin/python3 - "$ini" "${config.home.homeDirectory}/Videos/obs" <<-'PY'
+			${pkgs.python3}/bin/python3 - "$ini" "${config.home.homeDirectory}/tmp/Videos" <<-'PY'
 				import configparser, sys
 				ini, recdir = sys.argv[1], sys.argv[2]
 				p = configparser.ConfigParser(interpolation=None)
@@ -711,6 +711,7 @@
 				s("Output", "FilenameFormatting", "%CCYY-%MM-%DD_%hh-%mm-%ss")
 				s("AdvOut", "RecType", "Standard")
 				s("AdvOut", "RecFilePath", recdir)
+				s("SimpleOutput", "FilePath", recdir)
 				s("AdvOut", "RecFormat2", "mkv")
 				s("AdvOut", "RecEncoder", "none")  # "use stream encoder"
 				s("AdvOut", "RecTracks", "7")  # bitmask over tracks 1-3
