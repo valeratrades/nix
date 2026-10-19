@@ -536,6 +536,57 @@
         
         <Multi_key> <g> <s> : "σ" U03C3
         <Multi_key> <g> <S> : "Σ" U03A3
+
+        # Greek, vim-digraph letters
+        <Multi_key> <asterisk> <a> : "α" U03B1
+        <Multi_key> <asterisk> <A> : "Α" U0391
+        <Multi_key> <asterisk> <b> : "β" U03B2
+        <Multi_key> <asterisk> <B> : "Β" U0392
+        <Multi_key> <asterisk> <g> : "γ" U03B3
+        <Multi_key> <asterisk> <G> : "Γ" U0393
+        <Multi_key> <asterisk> <d> : "δ" U03B4
+        <Multi_key> <asterisk> <D> : "Δ" U0394
+        <Multi_key> <asterisk> <e> : "ε" U03B5
+        <Multi_key> <asterisk> <E> : "Ε" U0395
+        <Multi_key> <asterisk> <z> : "ζ" U03B6
+        <Multi_key> <asterisk> <Z> : "Ζ" U0396
+        <Multi_key> <asterisk> <y> : "η" U03B7
+        <Multi_key> <asterisk> <Y> : "Η" U0397
+        <Multi_key> <asterisk> <h> : "θ" U03B8
+        <Multi_key> <asterisk> <H> : "Θ" U0398
+        <Multi_key> <asterisk> <i> : "ι" U03B9
+        <Multi_key> <asterisk> <I> : "Ι" U0399
+        <Multi_key> <asterisk> <k> : "κ" U03BA
+        <Multi_key> <asterisk> <K> : "Κ" U039A
+        <Multi_key> <asterisk> <l> : "λ" U03BB
+        <Multi_key> <asterisk> <L> : "Λ" U039B
+        <Multi_key> <asterisk> <m> : "μ" U03BC
+        <Multi_key> <asterisk> <M> : "Μ" U039C
+        <Multi_key> <asterisk> <n> : "ν" U03BD
+        <Multi_key> <asterisk> <N> : "Ν" U039D
+        <Multi_key> <asterisk> <c> : "ξ" U03BE
+        <Multi_key> <asterisk> <C> : "Ξ" U039E
+        <Multi_key> <asterisk> <o> : "ο" U03BF
+        <Multi_key> <asterisk> <O> : "Ο" U039F
+        <Multi_key> <asterisk> <p> : "π" U03C0
+        <Multi_key> <asterisk> <P> : "Π" U03A0
+        <Multi_key> <asterisk> <r> : "ρ" U03C1
+        <Multi_key> <asterisk> <R> : "Ρ" U03A1
+        <Multi_key> <asterisk> <s> : "σ" U03C3
+        <Multi_key> <asterisk> <S> : "Σ" U03A3
+        <Multi_key> <asterisk> <t> : "τ" U03C4
+        <Multi_key> <asterisk> <T> : "Τ" U03A4
+        <Multi_key> <asterisk> <u> : "υ" U03C5
+        <Multi_key> <asterisk> <U> : "Υ" U03A5
+        <Multi_key> <asterisk> <f> : "φ" U03C6
+        <Multi_key> <asterisk> <F> : "Φ" U03A6
+        <Multi_key> <asterisk> <x> : "χ" U03C7
+        <Multi_key> <asterisk> <X> : "Χ" U03A7
+        <Multi_key> <asterisk> <q> : "ψ" U03C8
+        <Multi_key> <asterisk> <Q> : "Ψ" U03A8
+        <Multi_key> <asterisk> <w> : "ω" U03C9
+        <Multi_key> <asterisk> <W> : "Ω" U03A9
+        <Multi_key> <asterisk> <j> : "ς" U03C2
       '';
       ".config/iamb/config.toml".source = (pkgs.formats.toml { }).generate "" {
         default_profile = "master";
