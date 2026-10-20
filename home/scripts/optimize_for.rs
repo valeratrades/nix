@@ -23,7 +23,6 @@ const CPUFREQ: &str = "/sys/devices/system/cpu/cpufreq";
 /// excursion rather than to the hardware ceiling, so a hot spell cannot silently undo a chosen mode.
 /// Single source of truth for "what this machine should be doing when it is not thermally stressed".
 const BASE_FREQ: &str = "/run/optimize_for.base-freq";
-const DGPU: &str = "/sys/bus/pci/devices/0000:01:00.0"; // nvidiaBusId in graphics.nix
 const BACKLIGHT: &str = "/sys/class/backlight";
 const BATTERY_BRIGHTNESS_PCT: u64 = 15;
 
@@ -46,7 +45,7 @@ enum Mode {
 	Quiet,
 	/// Boost on, highest power envelope (full power)
 	Performance,
-	/// Longevity and a dimmed backlight; fails unless the dGPU is in D3cold (power cut, VRAM off)
+	/// Longevity and a dimmed backlight
 	Battery,
 	/// Show current status
 	Status,
@@ -118,20 +117,6 @@ fn main() {
 		let (path, max) = backlight();
 		fs::write(path.join("brightness"), (max * BATTERY_BRIGHTNESS_PCT / 100).to_string()).expect("backlight is root-writable");
 		println!("backlight {BATTERY_BRIGHTNESS_PCT}%");
-		// RTD3 powers the dGPU off by itself once nothing holds it, so all that's left is to wait for it, or name who's holding it.
-		let suspended = || fs::read_to_string(Path::new(DGPU).join("power/runtime_status")).expect("dGPU is on the bus").trim() == "suspended";
-		if !(0..20).any(|_| suspended() || { std::thread::sleep(std::time::Duration::from_millis(500)); false }) {
-			eprintln!("dGPU still powered after 10s; holding /dev/nvidia*:");
-			for proc in fs::read_dir("/proc").expect("procfs mounted").map(|e| e.expect("procfs entries are readable").path()) {
-				let Ok(fds) = fs::read_dir(proc.join("fd")) else { continue }; // non-pid entries, and processes that exited mid-scan
-				if fds.flatten().any(|fd| fs::read_link(fd.path()).is_ok_and(|t| t.to_string_lossy().starts_with("/dev/nvidia"))) {
-					let comm = fs::read_to_string(proc.join("comm")).unwrap_or_default(); // exited between the two reads
-					eprintln!("  {} {}", proc.file_name().expect("read_dir yields named entries").to_string_lossy(), comm.trim());
-				}
-			}
-			std::process::exit(1);
-		}
-		println!("dGPU suspended (D3cold)");
 	}
 
 	let Some(cmd) = args.cmd.split_first() else { return };
@@ -207,7 +192,6 @@ fn show_status() {
 	let (path, max) = backlight();
 	let brightness: u64 = fs::read_to_string(path.join("brightness")).expect("backlight exposes brightness").trim().parse().expect("brightness is an integer");
 	println!("light:    {}%", brightness * 100 / max);
-	println!("dgpu:     {}", fs::read_to_string(Path::new(DGPU).join("power/runtime_status")).expect("dGPU is on the bus").trim());
 	println!("profiles: {}", fs::read_to_string(PLATFORM_PROFILE_CHOICES).expect("lenovo-wmi-gamezone registers the handler").trim());
 }
 
