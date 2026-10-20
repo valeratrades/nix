@@ -50,8 +50,8 @@ struct Args {
     #[arg(long)]
     llm_summaries: bool,
 
-    /// Judge closing reports with one LLM sample instead of a 3-way majority vote
-    #[arg(long = "no-vote", action = clap::ArgAction::SetFalse)]
+    /// Judge closing reports with a 3-way majority vote instead of one LLM sample
+    #[arg(long)]
     vote: bool,
 }
 

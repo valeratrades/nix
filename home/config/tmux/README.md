@@ -27,8 +27,8 @@ So when the judge can't settle a report, the more severe reading wins. A wasted
 check still costs real time, though: the judging prompt must not lean on `partial`
 to hedge reports that do read one way.
 
-The judge takes no temperature, so each verdict is drawn from 3 concurrent samples
-and the most severe one wins; `--no-vote` drops to one sample. The full view prefixes
+The judge takes no temperature, so with `--vote` each verdict is drawn from 3 concurrent samples
+and the most severe one wins; without it, one sample. The full view prefixes
 the state with the votes it drew (`2/3 partial`); a lone severe vote can show `1/3`.
 
 The verdict is cached in `~/.cache/claude-session-reports.json` against the
