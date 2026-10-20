@@ -1,6 +1,9 @@
 {
   "$schema": "https://www.schemastore.org/claude-code-keybindings.json",
+  "$docs": "https://code.claude.com/docs/en/keybindings",
   "bindings": [
-    { "context": "Chat", "bindings": { "alt+a": "chat:stash", "ctrl+s": null } }
+    { "context": "Chat", "bindings": { "alt+a": "chat:stash", "ctrl+s": null } },
+    { "context": "Global", "bindings": { "ctrl+down": null } },
+    { "context": "Scroll", "bindings": { "ctrl+down": "scroll:bottom" } }
   ]
 }
