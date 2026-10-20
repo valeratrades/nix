@@ -94,7 +94,7 @@
     script = ''
       systemctl restart tailscaled || true
       ${lib.optionalString user.clickhouse "systemctl restart clickhouse || true"}
-      systemctl --user -M v@ restart wlr-gamma || true
+      systemctl --user -M v@ restart wl-gammarelay || true
       systemctl --user -M v@ restart auto_redshift || true
     '';
   };

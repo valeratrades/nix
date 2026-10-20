@@ -208,17 +208,16 @@
     };
   };
 
-  systemd.user.services.wlr-gamma = {
+  systemd.user.services.wl-gammarelay = {
     Unit = {
-      Description = "wlroots Brightness Control";
+      Description = "Gamma control over DBus (redshift, software brightness)";
       PartOf = "graphical-session.target";
     };
     Install = { WantedBy = [ "graphical-session.target" ]; };
     Service = {
       Type = "simple";
-      ExecStart = "${
-          self.packages.${pkgs.stdenv.hostPlatform.system}.wlr-gamma-service
-        }/bin/wlr-gamma-service";
+      ExecStart = "${pkgs.wl-gammarelay-rs}/bin/wl-gammarelay-rs";
+      Restart = "on-failure";
     };
   };
   systemd.user.services.ssh-add-ed25119 = {

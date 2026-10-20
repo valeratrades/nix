@@ -66,15 +66,6 @@ in {
     allowInsecurePredicate = pkg: true;
   };
 
-  packages.x86_64-linux.wlr-gamma-service =
-    inputs.nixpkgs-2405.legacyPackages.x86_64-linux.callPackage
-    (builtins.fetchGit {
-      url = "https://github.com/nobbz/wlr-brightness";
-      rev = "1985062bf08086e6145db4ef1a292b535fd9f1a1";
-      #sha256 = "sha256-QZhtI10qKu6qUePZ1rKaH3SBoUZ30+w8xcc5bBRYbGw=";
-      #fetchSubmodules = true;
-      submodules = true;
-    }) { };
   #packages = forAllSystems (
   #   system: allSystems.${system}.packages or {}
   # );
