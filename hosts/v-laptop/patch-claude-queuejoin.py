@@ -38,13 +38,13 @@ import sys
 
 THIS_FILE = "hosts/v-laptop/patch-claude-queuejoin.py (in your nix config)"
 
-# Head of the mid-turn submit branch inside the submit helper (`q0`), verbatim from
-# claude-code 2.1.280: `jt` is the turn guard, `qt` is isExternalLoading, `E` is the turn.
+# Head of the mid-turn submit branch inside the submit helper (`yq`), verbatim from
+# claude-code 2.1.303: `Dt` is the turn guard, `Qt` is isExternalLoading, `L` is the turn.
 # Must occur exactly once.
-ANCHOR = (b'if(jt.isActive||qt){if(ro!=="prompt"&&ro!=="bash"){'
-          b'm("prompt_queued","mode_not_queueable");return}if(Yo())return;')
-REPLACEMENT = (b'if(jt.isActive||qt){if(ro!=="prompt"&&ro!=="bash"){'
-               b'return}if(Yo())return;E.interruptForSubmit();').ljust(len(ANCHOR))
+ANCHOR = (b'if(Dt.isActive||Qt||qt){if(eo!=="prompt"&&eo!=="bash"){'
+          b'm("prompt_queued","mode_not_queueable");return}if(Wn())return;')
+REPLACEMENT = (b'if(Dt.isActive||Qt||qt){if(eo!=="prompt"&&eo!=="bash"){'
+               b'return}if(Wn())return;L.interruptForSubmit();').ljust(len(ANCHOR))
 assert len(REPLACEMENT) == len(ANCHOR), "same-length overwrite required"
 
 

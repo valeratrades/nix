@@ -13,7 +13,7 @@
 
 Same-length overwrite (padded with spaces) so Bun's compiled-ELF trailer offsets stay valid;
 takes effect only through detach-claude-bytecode.py. Anchors are verbatim from claude-code
-2.1.280; minified names churn every release.
+2.1.303; minified names churn every release.
 
 Invoked from: hosts/v-laptop/patched-claude-code.nix (overrideAttrs.postFixup).
 """
@@ -24,19 +24,19 @@ THIS_FILE = "hosts/v-laptop/patch-claude-noconfirm.py (in your nix config)"
 PATCHES = [
 	(
 		"bypass-immune predicate",
-		"grep -ao 'function [A-Za-z0-9_$]*(e){return [A-Za-z0-9_$]*(e).some((n)=>[A-Za-z0-9_$]*\\[n\\]?.bypassImmune===!0)}'",
-		b'return Co(e).some((n)=>un[n]?.bypassImmune===!0)',
+		"grep -ao 'function [A-Za-z0-9_$]*(e){return [A-Za-z0-9_$]*(e).some(([a-z])=>[A-Za-z0-9_$]*\\[[a-z]\\]?.bypassImmune===!0)}'",
+		b'return d(e).some((o)=>Fpn[o]?.bypassImmune===!0)',
 		b'return!1',
 	),
 	(
 		"invisible-unicode submit review",
 		"grep -ao 'if([A-Za-z0-9_$]*.removed.removedTotal>0){[^}]*}[^}]*prompt-invisible-removed[^}]*}[^}]*}'",
-		b'if(Tm.removed.removedTotal>0){Gd(),IKe(Tm.removed,"prompt");let TR=Tm.input.trim()==="";'
-		b'if(bqn(Vo,Cp,Tm.input),Zt(Tm.input),ro(Tm.input.length),Tm.pastedContents!==Z.pastedContents)'
-		b'uo(Tm.pastedContents);Ja({key:"prompt-invisible-removed",kind:"feedback",'
-		b'text:hbe(Tm.removed.removedTotal,TR?"empty":"review"),priority:"immediate",timeoutMs:Iy}),'
-		b'_E(XBt);return}',
-		b'if(Tm.removed.removedTotal>0)Cp=Tm.input,HS=Tm.pastedContents;',
+		b'if(Wf.removed.removedTotal>0){xd(),cxt(Wf.removed,"prompt");let AL=Wf.input.trim()==="";'
+		b'if(R6r(To,fc,Wf.input),no(Wf.input),eo(Wf.input.length),Wf.pastedContents!==ee.pastedContents)'
+		b'co(Wf.pastedContents);cl({key:"prompt-invisible-removed",kind:"feedback",'
+		b'text:NBe(Wf.removed.removedTotal,AL?"empty":"review"),priority:"immediate",timeoutMs:Rb}),'
+		b'jx(xto);return}',
+		b'if(Wf.removed.removedTotal>0)fc=Wf.input,Fw=Wf.pastedContents;',
 	),
 ]
 
