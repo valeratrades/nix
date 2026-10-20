@@ -521,7 +521,11 @@
         "${self}/home/config/obs-studio/scripts/filter_hotkeys_audio.lua";
 
       ".config/tg_admin.toml".source = "${self}/home/config/tg_admin.toml";
-      ".config/auto_redshift.toml".source = "${self}/home/config/auto_redshift.toml";
+      ".config/auto_redshift.toml".source = (pkgs.formats.toml { }).generate "auto_redshift.toml" {
+        brightness_range = [ 0.35 1 ];
+        temperature_range = [ 2300 6500 ];
+        update_interval_m = 10;
+      };
       ".config/tedi.nix".source = "${self}/home/config/tedi.nix";
 
       ".lesskey".source = "${self}/home/config/lesskey";

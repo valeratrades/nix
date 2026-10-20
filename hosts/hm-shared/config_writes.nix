@@ -21,8 +21,6 @@
     };
 
     # ind files
-    ".config/auto_redshift.toml".source =
-      "${self}/home/config/auto_redshift.toml";
     ".config/btc_line.nix".source = "${self}/home/config/btc_line.nix";
     ".gitattributes".source = "${self}/home/config/gitattributes";
     ".gitignore".source = "${self}/home/config/gitignore";
