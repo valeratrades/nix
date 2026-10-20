@@ -23,11 +23,11 @@
         "v_flakes": "v_flakes_2"
       },
       "locked": {
-        "lastModified": 1792533994,
-        "narHash": "sha256-UHu5N+yaSUDkeEjuu8UJT8I4NY/OP7hGjtFONhrQ/pM=",
+        "lastModified": 1792534799,
+        "narHash": "sha256-qOlafE/vVRLg0q9IHJD1PfP/+ABoEphNMxD0WQwHGyI=",
         "owner": "valeratrades",
         "repo": "auto_redshift",
-        "rev": "ccd27b1820d3b4fa6fd4d60e60baa846dbb498ba",
+        "rev": "1a57f311918905e247f579dd85b57f28874974ba",
         "type": "github"
       },
       "original": {
