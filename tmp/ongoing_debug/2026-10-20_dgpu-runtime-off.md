@@ -13,6 +13,8 @@ Status: not achievable on driver 595.71.05 / kernel 7.0.3. Boot-time alternative
   rm_power_source_change_event waits on that lock → deadlock, 50+ kworkers + every nvidia user in D state. Reboot only.
 - Unload/PCI-remove at runtime: blocked by the same sway handle; graphics.nix notes finegrained wedging the card on this chassis.
 
-## Untried
-- nvidia-persistenced (avoids last-close teardown) + no sway handle: does the GPU then reach D3cold? Teardown never runs,
-  so the deadlock path is avoided, but persistence may itself keep the GPU active.
+- Stake: held by sway, the dGPU idles at P8, 3.74 W, 1 MiB VRAM.
+
+## In flight
+- nvidia-persistenced (no last-close teardown → no deadlock) + mesa-only EGL session. Open question: does the GPU now
+  reach `runtime_status=suspended`, or does persistence itself keep it active?
