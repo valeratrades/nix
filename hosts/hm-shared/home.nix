@@ -525,6 +525,8 @@
         brightness_range = [ 0.35 1 ];
         temperature_range = [ 2300 6500 ];
         update_interval_m = 10;
+        redshift_duration = "4h";
+        steps = 20;
       };
       ".config/tedi.nix".source = "${self}/home/config/tedi.nix";
 
