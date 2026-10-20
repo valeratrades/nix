@@ -69,10 +69,11 @@
   contained tasks or tests can be done by a spawned agent without contaminating your session, allowing you to spend more time on understanding the fundamental architecture of the perfect solution.
   
   when spawning agents on implementation tasks, I strongly recommend setting them to `/plan` mode. And when they are finished writing the plan, you review 1) the `Why` at the top of the plan, - it must match the reasoning we had in mind, it's really important; and 2) the trade-offs considered in the plan. // Our plan mode instructions cover both of these points, so agents can be expected to add both on their own.
-  And then if the plan is good, you ensure they've **presented** the plan for acceptance; and then just select the option at the top, which is to "implement plan in a new session".
+  And then if the plan is good, you ensure they've **presented the plan for acceptance**; and then just select the option at the top, which is to "implement plan in a new session". You should be able to click the prompt and have them start (if it forgot to present, - just tell it to).
   This will come in especially clutch on complex repos, where agents having had written a plan perform an order of magnitude better.
 
   > You are likely running as Opus or higher; default level for your agents is Sonnet. On more complex tasks requiring reasoning about architecture implications, spawn them as Opus; while something dumb can be done even with Haikus.
+  > Oftentimes we want to spawn an Opus-level agent to write the plan, and then have it be executed by Sonnet if scope is not large.
 
 - minimize amount of questions you ask me. Most of them can be resolved on your own, by listing out pros and cons, then referencing this CLAUDE.md file for guiding principles, from which most often the decision becomes obvious.
   Never ask questions just to ask questions. Your instructions for creation of the plan may tell you to compile questions to ask, - but I want to be very clear here, - you **only** do that if something is actually not clear. Things that you can derive/answer yourself, you do not bring up.

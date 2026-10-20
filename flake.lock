@@ -5421,11 +5421,11 @@
         "v_flakes": "v_flakes_7"
       },
       "locked": {
-        "lastModified": 1792519248,
-        "narHash": "sha256-rNmKyY4zQMNjtSMDROnBciuCfZgxTANaOxeP5oixfuY=",
+        "lastModified": 1792531370,
+        "narHash": "sha256-b12RM1d5lCDgLywJLChWofgBMcSS03yzKPZoz3wDRMo=",
         "owner": "valeratrades",
         "repo": "tedi",
-        "rev": "acffc5f1acfd96d3ff5399eed222b9849f45d4c3",
+        "rev": "a9febd665887684b279634a49eaa78eea9deabac",
         "type": "github"
       },
       "original": {
