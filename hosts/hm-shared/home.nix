@@ -522,8 +522,8 @@
 
       ".config/tg_admin.toml".source = "${self}/home/config/tg_admin.toml";
       ".config/auto_redshift.toml".source = (pkgs.formats.toml { }).generate "auto_redshift.toml" {
-        brightness_range = [ 0.35 1 ];
-        temperature_range = [ 2300 6500 ];
+        brightness_range = [ 0.35 1 ]; # (0.35, 1)
+        temperature_range = [ 2300 6500 ]; # (2300, 6500)
         update_interval_m = 10;
         redshift_duration = "4h";
         steps = 20;

@@ -119,5 +119,10 @@
   "crossSessionInbound": "accept",
   "thinking": {
     "display": "summarized"
+  },
+  "modelSettings": {
+    "claude-opus-5-5": {
+      "effortLevel": "high"
+    }
   }
 }
