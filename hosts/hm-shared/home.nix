@@ -218,7 +218,7 @@
       Type = "simple";
       ExecStart = "${
           self.packages.${pkgs.stdenv.hostPlatform.system}.wlr-gamma-service
-        }/bin/wlr-gamma-service";
+        }/bin/wlr-gamma-service --min-interval-ms 50";
     };
   };
   systemd.user.services.ssh-add-ed25119 = {
