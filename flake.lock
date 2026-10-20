@@ -23,11 +23,11 @@
         "v_flakes": "v_flakes_2"
       },
       "locked": {
-        "lastModified": 1792530982,
-        "narHash": "sha256-SjWJIU+CUayT3TRzMBZyzqupr8Y0NHtn/Az71il/OxY=",
+        "lastModified": 1792519898,
+        "narHash": "sha256-dG4e1FFNndMQyajfObrgonEd/bp1ZgGjeehRhEOEn5g=",
         "owner": "valeratrades",
         "repo": "auto_redshift",
-        "rev": "99e60321d136eeee7a3b9e391626974a1485c980",
+        "rev": "168a30fc81705b6bfdcb3fcd22350ca2e0371a14",
         "type": "github"
       },
       "original": {
@@ -3469,6 +3469,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-2405": {
+      "locked": {
+        "lastModified": 1735563628,
+        "narHash": "sha256-OnSAY7XDSx7CtDoqNh8jwVwh4xNL/2HaJxGjryLWzX8=",
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "b134951a4c9f3c995fd7be05f3243f8ecd65d798",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nixos",
+        "ref": "nixos-24.05",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "nixpkgs-lib": {
       "locked": {
         "lastModified": 1777168982,
@@ -4813,6 +4829,7 @@
         "nixcord": "nixcord",
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs_30",
+        "nixpkgs-2405": "nixpkgs-2405",
         "nixpkgs-stable": "nixpkgs-stable_2",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "pin-nixpkgs-ollama": "pin-nixpkgs-ollama",
@@ -5635,11 +5652,11 @@
         "rust-overlay": "rust-overlay_2"
       },
       "locked": {
-        "lastModified": 1792528097,
-        "narHash": "sha256-894ZaGsZI9h/YBWcaLFcNHttSpgtNu18qlsVFDzqqM0=",
+        "lastModified": 1792381302,
+        "narHash": "sha256-xmkg3pCKSc7WM8ZyS2lq8zPOXGQitWmkyd2fsQYpCO0=",
         "owner": "valeratrades",
         "repo": "v_flakes",
-        "rev": "618c39339e2d9ab529eb00f32d0acaf529477323",
+        "rev": "6e90ca461b298cacc785d65222a6494385bb4d26",
         "type": "github"
       },
       "original": {

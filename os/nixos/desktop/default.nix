@@ -12,7 +12,7 @@
     with pkgs;
     lib.lists.flatten [
       flatpak
-      wl-gammarelay-rs
+      self.packages.${pkgs.stdenv.hostPlatform.system}.wlr-gamma-service
       keyd
       granted # access cloud
       nerdfix # fixes illegal font codepoints https://discourse.nixos.org/t/nerd-fonts-only-see-half-the-icon-set/27513

@@ -24,6 +24,7 @@
 
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-24.11";
+    nixpkgs-2405.url = "github:nixos/nixpkgs/nixos-24.05";
 
     # pin to avoid rebuilds {
     pin-nixpkgs-ollama.url = "github:nixos/nixpkgs/e4bae1bd10c9c57b2cf517953ab70060a828ee6f";
