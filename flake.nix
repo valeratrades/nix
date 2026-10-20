@@ -90,10 +90,6 @@
     # -----------------------------------------------------------------
     # My packages
     # ----------------------------------------------------------------
-    auto_redshift = {
-      url = "github:valeratrades/auto_redshift";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     tedi.url = "github:valeratrades/tedi";
     booktyping = {
       url = "github:valeratrades/booktyping";
@@ -144,6 +140,7 @@
     # No `follows` here on purpose: these build against their OWN locked nixpkgs so the
     # store paths match what each repo's CI pushes to valeratrades.cachix.org (overriding
     # nixpkgs would change the hash and miss the cache).
+    auto_redshift.url = "github:valeratrades/auto_redshift";
     btc_line.url = "github:valeratrades/btc_line";
     bourso-api.url = "github:valeratrades/bourso-api";
     bad_apple_rs = {
