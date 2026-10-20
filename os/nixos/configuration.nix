@@ -60,9 +60,18 @@ in {
     duplicated = lib.unique (lib.filter
       (k: !(lib.elem k repeatable) && lib.count (x: x == k) keys > 1)
       keys);
+    # Both drop-ins are named overrides.conf, and systemd uses the instance one in place of the template's, not
+    # beside it. 2026-10-19: a `getty@tty1` override silently dropped NixOS's autologin ExecStart from `getty@`,
+    # and boot ended at a `login:` prompt with no login program. See ongoing_debug/2026-10-18_slow-boot.md.
+    shadowing = lib.filter
+      (n: builtins.match "(.+@)[^@]+" n != null && config.systemd.services ? ${builtins.head (builtins.match "(.+@)[^@]+" n)})
+      (builtins.attrNames config.systemd.services);
   in [{
     assertion = duplicated == [ ];
     message = "boot.kernelParams defines these keys more than once (last wins, silently): ${lib.concatStringsSep ", " duplicated}";
+  } {
+    assertion = shadowing == [ ];
+    message = "systemd.services ${lib.concatStringsSep ", " shadowing}: an instance override replaces its template's NixOS drop-in wholesale; set it on the template instead";
   }];
 
   imports = [
@@ -131,10 +140,8 @@ in {
 			};
 			# Type=idle holds autologin until the boot job queue drains (up to 5s), on the critical path to sway.
 			"home-manager-${user.username}".before = lib.mkIf user.speed_over_safety (lib.mkForce [ ]); # HM runs alongside login instead of gating it (~5.7s)
-			"getty@tty1" = {
-				overrideStrategy = "asDropin"; # a full unit here would shadow the getty@ template and drop its ExecStart
-				serviceConfig.Type = lib.mkForce "simple";
-			};
+			# On the template, so it merges into NixOS's own getty@ drop-in. See the assertion on `foo@bar` units below.
+			"getty@".serviceConfig.Type = lib.mkForce "simple";
 		};
   };
   boot = {
