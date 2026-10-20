@@ -1,24 +1,13 @@
---- a/types/scene/wlr_scene.c	2026-10-20 21:27:08.992676895 +0000
-+++ b/types/scene/wlr_scene.c	2026-10-20 21:27:15.146449118 +0000
-@@ -1602,6 +1602,11 @@
- 		wlr_output_schedule_frame(scene_output->output);
+--- a/backend/drm/atomic.c
++++ b/backend/drm/atomic.c
+@@ -70,6 +70,10 @@
  	}
  
-+	// cleared here rather than at build time: a commit can still fail (e.g. EBUSY on NVIDIA), and the LUT must be retried then
-+	if (state->committed & WLR_OUTPUT_STATE_GAMMA_LUT) {
-+		scene_output->gamma_lut_changed = false;
+ 	int ret = drmModeAtomicCommit(drm->fd, atom->req, flags, page_flip);
++	// nvidia-drm refuses a nonblocking commit while the previous LUT upload is in flight; a blocking one waits for it
++	if (ret == -EBUSY && (flags & DRM_MODE_ATOMIC_NONBLOCK) && !(flags & DRM_MODE_ATOMIC_TEST_ONLY)) {
++		ret = drmModeAtomicCommit(drm->fd, atom->req, flags & ~DRM_MODE_ATOMIC_NONBLOCK, page_flip);
 +	}
-+
- 	// Next time the output is enabled, try to re-apply the gamma LUT
- 	if (scene_output->scene->gamma_control_manager_v1 &&
- 			(state->committed & WLR_OUTPUT_STATE_ENABLED) &&
-@@ -2031,8 +2036,8 @@
- 		return;
- 	}
- 
--	scene_output->gamma_lut_changed = false;
- 	if (!wlr_output_test_state(scene_output->output, &gamma_pending)) {
-+		scene_output->gamma_lut_changed = false;
- 		wlr_gamma_control_v1_send_failed_and_destroy(scene_output->gamma_lut);
- 
- 		scene_output->gamma_lut = NULL;
+ 	if (ret != 0) {
+ 		enum wlr_log_importance log_level = WLR_ERROR;
+ 		if (flags & DRM_MODE_ATOMIC_TEST_ONLY) {
