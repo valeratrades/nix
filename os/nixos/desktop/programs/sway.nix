@@ -10,7 +10,7 @@
       # amdgpu (card2). When the stub wins, sway gets a render-less device and the session
       # dies on boot. wlroots' own auto-selection picks the connected-display card correctly
       # and skips the nvidia node while it's in D3 offload, so we leave the device unset.
-      # NVIDIA's EGL vendor out of the whole session: glvnd device enumeration otherwise opens
+      # NVIDIA's EGL vendor out of the whole session: glvnd device enumeration otherwise opens #TEST: dGPU D3cold while idle, HDMI on the dGPU still works, `nvidia-offload` apps get NVIDIA EGL
       # /dev/nvidia0 for the process lifetime, pinning the dGPU out of RTD3 (D3cold). HDMI on the
       # dGPU still works: wlroots without an mgpu blit renderer scans out from the primary GPU.
       # `nvidia-offload` (graphics.nix) unsets it.

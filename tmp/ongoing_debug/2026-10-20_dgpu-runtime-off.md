@@ -15,6 +15,11 @@ Status: not achievable on driver 595.71.05 / kernel 7.0.3. Boot-time alternative
 
 - Stake: held by sway, the dGPU idles at P8, 3.74 W, 1 MiB VRAM.
 
-## In flight
-- nvidia-persistenced (no last-close teardown → no deadlock) + mesa-only EGL session. Open question: does the GPU now
-  reach `runtime_status=suspended`, or does persistence itself keep it active?
+## In flight (`#TEST:` in graphics.nix, sway.nix)
+nvidia-persistenced (no last-close teardown → no deadlock) + mesa-only EGL session, so the driver's own RTD3 drops the
+dGPU whenever idle, in-session, no reboots. Done when, after a fresh boot:
+- `/sys/bus/pci/devices/0000:01:00.0/power/runtime_status` = suspended while idle (or does persistence keep it active?)
+- `/proc/[0-9]*/fd` holders of /dev/nvidia*: only nvidia-persistenced
+- `nvidia-offload <egl app>` reports NVIDIA, and the GPU suspends again after it exits
+- HDMI on the dGPU still lights up (wlroots scanning out from AMD, no mgpu blit renderer)
+- no D-state kworkers across AC plug/unplug

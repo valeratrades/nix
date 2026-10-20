@@ -57,7 +57,7 @@ in
 			dynamicBoost.enable = false;
 			# A client that never closes: the driver's last-close adapter teardown deadlocks against ACPI
 			# power-source events, and sway no longer holds the dGPU (sway.nix). See ongoing_debug/2026-10-20_dgpu-runtime-off.md.
-			nvidiaPersistenced = true;
+			nvidiaPersistenced = true; #TEST: idle dGPU reaches runtime_status=suspended (D3cold) with no deadlock. See ongoing_debug/2026-10-20_dgpu-runtime-off.md
 
 			# PRIME configuration for hybrid graphics (AMD iGPU + NVIDIA dGPU)
 			prime = {
