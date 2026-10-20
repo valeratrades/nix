@@ -138,7 +138,7 @@ struct Args {
     #[arg(short = 'c', long = "continue")]
     cont: bool,
 
-    /// Stop the running timer, freezing what's left for `--continue` (otherwise it keeps running out while stopped)
+    /// Stop the running timer, freezing what's left for `--continue` (as does quitting while paused; otherwise it keeps running out while stopped)
     #[arg(short, long)]
     pause: bool,
 
@@ -367,7 +367,7 @@ pub fn run(countdown: Option<Countdown>, quiet: bool, mut on_pause: impl FnMut(b
         }
     }
 
-    let frozen = read_control().as_deref() == Some("frozen");
+    let frozen = matches!(read_control().as_deref(), Some("frozen" | "paused"));
     drop(keys);
     cleanup();
     if notify && left > 0 {
