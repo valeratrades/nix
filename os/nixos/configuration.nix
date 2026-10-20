@@ -427,6 +427,7 @@ in {
     (import (mylib.relativeToRoot "overlays/tree-sitter-memcap.nix"))
     (import (mylib.relativeToRoot "overlays/nixd-schema-directive.nix"))
     (import (mylib.relativeToRoot "overlays/wtype.nix"))
+    (import (mylib.relativeToRoot "overlays/wlroots-gamma.nix"))
   ];
 
   nix.settings.download-buffer-size = "50G";
