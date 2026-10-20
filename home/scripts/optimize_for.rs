@@ -25,7 +25,6 @@ const CPUFREQ: &str = "/sys/devices/system/cpu/cpufreq";
 const BASE_FREQ: &str = "/run/optimize_for.base-freq";
 const DGPU: &str = "/sys/bus/pci/devices/0000:01:00.0"; // nvidiaBusId in graphics.nix
 const BACKLIGHT: &str = "/sys/class/backlight";
-const SYSTEM_PROFILE: &str = "/nix/var/nix/profiles/system";
 const BATTERY_BRIGHTNESS_PCT: u64 = 15;
 
 /// NB: a mode sets a *power envelope*, never airflow. platform_profile is a power limit knob
@@ -47,7 +46,7 @@ enum Mode {
 	Quiet,
 	/// Boost on, highest power envelope (full power)
 	Performance,
-	/// Longevity, dimmed backlight, and next boot without the dGPU (the `battery` specialisation)
+	/// Longevity and a dimmed backlight; fails unless the dGPU is in D3cold (power cut, VRAM off)
 	Battery,
 	/// Show current status
 	Status,
@@ -100,7 +99,7 @@ fn main() {
 		return;
 	};
 	if matches!(args.mode, Mode::Battery) && !args.cmd.is_empty() {
-		Args::command().error(clap::error::ErrorKind::ArgumentConflict, "battery can't be scoped: dropping the dGPU takes a reboot").exit();
+		Args::command().error(clap::error::ErrorKind::ArgumentConflict, "battery can't be scoped: the backlight isn't restored").exit();
 	}
 	let name = args.mode.to_possible_value().expect("Status is the only skipped variant").get_name().to_string();
 
@@ -119,14 +118,20 @@ fn main() {
 		let (path, max) = backlight();
 		fs::write(path.join("brightness"), (max * BATTERY_BRIGHTNESS_PCT / 100).to_string()).expect("backlight is root-writable");
 		println!("backlight {BATTERY_BRIGHTNESS_PCT}%");
-		if Path::new(DGPU).exists() {
-			let link = fs::read_link(SYSTEM_PROFILE).expect("system profile is a generation symlink");
-			let generation = link.to_str().and_then(|l| l.strip_prefix("system-")?.strip_suffix("-link")).unwrap_or_else(|| panic!("unexpected profile link {link:?}"));
-			let entry = format!("nixos-generation-{generation}-specialisation-battery.conf");
-			let status = Command::new("bootctl").args(["set-oneshot", &entry]).status().expect("bootctl ships with systemd-boot");
-			assert!(status.success(), "bootctl set-oneshot {entry} failed");
-			println!("dGPU still up; next boot is {entry}, reboot to drop it");
+		// RTD3 powers the dGPU off by itself once nothing holds it, so all that's left is to wait for it, or name who's holding it.
+		let suspended = || fs::read_to_string(Path::new(DGPU).join("power/runtime_status")).expect("dGPU is on the bus").trim() == "suspended";
+		if !(0..20).any(|_| suspended() || { std::thread::sleep(std::time::Duration::from_millis(500)); false }) {
+			eprintln!("dGPU still powered after 10s; holding /dev/nvidia*:");
+			for proc in fs::read_dir("/proc").expect("procfs mounted").map(|e| e.expect("procfs entries are readable").path()) {
+				let Ok(fds) = fs::read_dir(proc.join("fd")) else { continue }; // non-pid entries, and processes that exited mid-scan
+				if fds.flatten().any(|fd| fs::read_link(fd.path()).is_ok_and(|t| t.to_string_lossy().starts_with("/dev/nvidia"))) {
+					let comm = fs::read_to_string(proc.join("comm")).unwrap_or_default(); // exited between the two reads
+					eprintln!("  {} {}", proc.file_name().expect("read_dir yields named entries").to_string_lossy(), comm.trim());
+				}
+			}
+			std::process::exit(1);
 		}
+		println!("dGPU suspended (D3cold)");
 	}
 
 	let Some(cmd) = args.cmd.split_first() else { return };
@@ -202,7 +207,7 @@ fn show_status() {
 	let (path, max) = backlight();
 	let brightness: u64 = fs::read_to_string(path.join("brightness")).expect("backlight exposes brightness").trim().parse().expect("brightness is an integer");
 	println!("light:    {}%", brightness * 100 / max);
-	println!("dgpu:     {}", if Path::new(DGPU).exists() { "present" } else { "removed" });
+	println!("dgpu:     {}", fs::read_to_string(Path::new(DGPU).join("power/runtime_status")).expect("dGPU is on the bus").trim());
 	println!("profiles: {}", fs::read_to_string(PLATFORM_PROFILE_CHOICES).expect("lenovo-wmi-gamezone registers the handler").trim());
 }
 

@@ -65,7 +65,6 @@ in
 				# (amdgpu.sg_display=0 et al — see ongoing_debug/firefox-gpu-acceleration.md), so
 				# routing output through the iGPU is safe again.
 				offload.enable = true;
-				offload.enableOffloadCmd = true;  # provides the `nvidia-offload` wrapper
 				# Bus IDs from lspci (convert hex to decimal: 01:00.0 -> 1:0:0, 06:00.0 -> 6:0:0)
 				nvidiaBusId = "PCI:1:0:0";
 				amdgpuBusId = "PCI:6:0:0";
@@ -97,17 +96,15 @@ in
 		};
 	};
 
-	# Boot entry for `optimize_for battery`. The dGPU can't be dropped at runtime: sway's EGL holds
-	# /dev/nvidia0, so the driver never unloads. Here no nvidia module exists, and the device is
-	# removed on add so its bridge can reach D3cold.
-	specialisation.battery.configuration = lib.mkIf (!disableNvidia) {
-		system.nixos.tags = [ "battery" ];
-		services.xserver.videoDrivers = lib.mkForce [ "modesetting" "amdgpu" ]; # drops the whole hardware.nvidia stack, incl. its explicit nvidia_uvm load
-		systemd.paths.nvidia-drm-late.enable = false;
-		services.udev.extraRules = ''
-			ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", ATTR{remove}="1"
-		'';
-	};
+	# Upstream's `nvidia-offload`, plus giving back the NVIDIA EGL vendor that sway.nix hides from the session.
+	environment.systemPackages = lib.optional (!disableNvidia) (pkgs.writeShellScriptBin "nvidia-offload" ''
+		unset __EGL_VENDOR_LIBRARY_FILENAMES
+		export __NV_PRIME_RENDER_OFFLOAD=1
+		export __NV_PRIME_RENDER_OFFLOAD_PROVIDER=NVIDIA-G0
+		export __GLX_VENDOR_LIBRARY_NAME=nvidia
+		export __VK_LAYER_NV_optimus=NVIDIA_only
+		exec "$@"
+	'');
 
 	# Only set nvidia kernel params when nvidia is enabled
 	boot.kernelParams = lib.mkIf (!disableNvidia) [
