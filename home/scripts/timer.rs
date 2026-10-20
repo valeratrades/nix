@@ -10,7 +10,11 @@ libc = "0.2"
 crossterm = "0.28"
 ---
 
+#[path = "shared/keys.rs"]
+mod keys;
+
 use clap::Parser;
+use keys::{Key, Keys};
 use std::{
     fs,
     io::{ErrorKind, Write},
@@ -22,21 +26,6 @@ use std::{
 };
 
 static INTERRUPTED: AtomicBool = AtomicBool::new(false);
-// so the signal handler and cleanup can undo raw mode without threading the flag through
-static RAW_MODE: AtomicBool = AtomicBool::new(false);
-
-fn is_tty() -> bool {
-    unsafe { libc::isatty(libc::STDIN_FILENO) == 1 && libc::isatty(libc::STDOUT_FILENO) == 1 }
-}
-
-fn disable_raw() {
-    if RAW_MODE.swap(false, Ordering::Relaxed) {
-        let _ = crossterm::terminal::disable_raw_mode();
-        // leave the countdown line and move to a fresh one
-        print!("\r\n");
-        let _ = std::io::stdout().flush();
-    }
-}
 
 fn control_file() -> PathBuf {
     PathBuf::from("/tmp/timer_control")
@@ -267,27 +256,22 @@ extern "C" fn handle_signal(_: libc::c_int) {
 }
 
 fn cleanup() {
-    disable_raw();
     clear_control();
     let _ = Command::new("eww")
         .args(["update", "timer="])
         .status();
 }
 
-/// non-blocking: returns true if Space was pressed within `dur`.
-/// In raw mode Ctrl-C arrives as a key event rather than SIGINT, so honor it here.
-fn space_pressed_within(dur: Duration) -> Result<bool, String> {
-    use crossterm::event::{poll, read, Event, KeyCode, KeyModifiers};
-    if poll(dur).map_err(|e| e.to_string())? {
-        if let Event::Key(k) = read().map_err(|e| e.to_string())? {
-            if k.code == KeyCode::Char('c') && k.modifiers.contains(KeyModifiers::CONTROL) {
-                INTERRUPTED.store(true, Ordering::Relaxed);
-                return Ok(false);
-            }
-            return Ok(k.code == KeyCode::Char(' '));
+/// `true` on Space; Ctrl-C is routed to INTERRUPTED like the signals.
+fn space_pressed_within(keys: &Keys, dur: Duration) -> Result<bool, String> {
+    match keys.next_within(dur).map_err(|e| e.to_string())? {
+        Some(Key::TogglePause) => Ok(true),
+        Some(Key::Quit) => {
+            INTERRUPTED.store(true, Ordering::Relaxed);
+            Ok(false)
         }
+        None => Ok(false),
     }
-    Ok(false)
 }
 
 fn toggle_pause() -> Result<(), String> {
@@ -299,7 +283,8 @@ fn toggle_pause() -> Result<(), String> {
 }
 
 /// Blocks until Ctrl-C, SIGINT/SIGTERM, or external cancellation; owns the terminal (raw mode) and the process' SIGINT/SIGTERM handlers meanwhile.
-pub fn run(countdown: Option<Countdown>, quiet: bool) -> Result<(), String> {
+/// `on_pause` sees every pause and resume, from Space or `--halt`/`--resume`, and a final resume on exit if paused.
+pub fn run(countdown: Option<Countdown>, quiet: bool, mut on_pause: impl FnMut(bool)) -> Result<(), String> {
     let notify = countdown.is_some();
     let mut left = countdown.map_or(0, |c| c.0); // count-up starts at 0:00
     let mut notified = false;
@@ -310,12 +295,7 @@ pub fn run(countdown: Option<Countdown>, quiet: bool) -> Result<(), String> {
         libc::signal(libc::SIGTERM, handler);
     }
 
-    let tui = is_tty();
-    if tui {
-        crossterm::terminal::enable_raw_mode().map_err(|e| e.to_string())?;
-        RAW_MODE.store(true, Ordering::Relaxed);
-        println!("Space: pause/resume, Ctrl-C: quit\r");
-    }
+    let keys = Keys::grab().map_err(|e| e.to_string())?;
 
     // Mark as running
     write_control("running")?;
@@ -324,19 +304,23 @@ pub fn run(countdown: Option<Countdown>, quiet: bool) -> Result<(), String> {
         if INTERRUPTED.load(Ordering::Relaxed) {
             break;
         }
-        // Check control file for pause state
-        while read_control().as_deref() == Some("paused") {
-            if tui {
-                draw_line(left, true);
-                if space_pressed_within(Duration::from_millis(100))? {
-                    toggle_pause()?;
+        if read_control().as_deref() == Some("paused") {
+            on_pause(true);
+            while read_control().as_deref() == Some("paused") {
+                match &keys {
+                    Some(keys) => {
+                        draw_line(left, true);
+                        if space_pressed_within(keys, Duration::from_millis(100))? {
+                            toggle_pause()?;
+                        }
+                    }
+                    None => sleep(Duration::from_millis(100)),
                 }
-            } else {
-                sleep(Duration::from_millis(100));
+                if INTERRUPTED.load(Ordering::Relaxed) {
+                    break;
+                }
             }
-            if INTERRUPTED.load(Ordering::Relaxed) {
-                break;
-            }
+            on_pause(false);
         }
         // Timer was cancelled or `--pause`d externally
         if matches!(read_control().as_deref(), None | Some("frozen")) || INTERRUPTED.load(Ordering::Relaxed) {
@@ -348,7 +332,7 @@ pub fn run(countdown: Option<Countdown>, quiet: bool) -> Result<(), String> {
             .args(["update", &format!("timer={display}")])
             .status()
             .map_err(|e| e.to_string())?;
-        if tui {
+        if let Some(keys) = &keys {
             draw_line(left, false);
             // consume the 1s tick while staying responsive to Space
             let end = std::time::Instant::now() + Duration::from_secs(1);
@@ -357,7 +341,7 @@ pub fn run(countdown: Option<Countdown>, quiet: bool) -> Result<(), String> {
                 if now >= end || INTERRUPTED.load(Ordering::Relaxed) {
                     break;
                 }
-                if space_pressed_within(end - now)? {
+                if space_pressed_within(keys, end - now)? {
                     toggle_pause()?;
                     break;
                 }
@@ -384,6 +368,7 @@ pub fn run(countdown: Option<Countdown>, quiet: bool) -> Result<(), String> {
     }
 
     let frozen = read_control().as_deref() == Some("frozen");
+    drop(keys);
     cleanup();
     if notify && left > 0 {
         let record = match frozen {
@@ -454,7 +439,7 @@ pub fn main() {
         },
         false => args.time,
     };
-    if let Err(e) = run(countdown, args.quiet) {
+    if let Err(e) = run(countdown, args.quiet, |_| {}) {
         eprintln!("{e}");
         std::process::exit(1);
     }

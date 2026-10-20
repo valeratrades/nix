@@ -19,6 +19,8 @@ use tokio::signal;
 
 #[path = "timer.rs"]
 pub mod timer; // pub so its `main` isn't dead code here
+#[path = "shared/keys.rs"]
+mod keys;
 
 #[derive(Parser, Debug)]
 #[command(name = "ambiance")]
@@ -175,7 +177,26 @@ fn parse_sink_input_id(line: &str, name: &str) -> Option<String> {
     Some(line[id_start..id_end].to_string())
 }
 
-async fn balance_volumes() {
+/// The two streams that make up the ambiance soundscape.
+struct Sinks {
+    mpv: String,
+    bbeats: String,
+}
+
+impl Sinks {
+    /// muting stands in for pausing: bbeats runs as root, out of reach of SIGSTOP
+    fn set_paused(&self, paused: bool) {
+        for id in [&self.mpv, &self.bbeats] {
+            let status = std::process::Command::new("pulsemixer")
+                .args(["--id", id, if paused { "--mute" } else { "--unmute" }])
+                .status()
+                .expect("failed to run pulsemixer");
+            assert!(status.success(), "pulsemixer mute toggle failed for sink input {id}");
+        }
+    }
+}
+
+async fn balance_volumes() -> Sinks {
     const RATIO: f64 = 0.87;
     const MAX_WAIT: std::time::Duration = std::time::Duration::from_secs(10);
     const POLL_INTERVAL: std::time::Duration = std::time::Duration::from_millis(300);
@@ -228,7 +249,7 @@ async fn balance_volumes() {
             .status()
             .expect("failed to set mpv volume");
         assert!(status.success(), "pulsemixer --set-volume failed");
-        return;
+        return Sinks { mpv: mpv_id, bbeats: bbeats_id };
     }
 }
 
@@ -310,12 +331,32 @@ async fn setup_math(timer: Option<Option<timer::Countdown>>) {
     assert!(status.success(), "tedi sprints selected resume failed");
 
     // Balance volumes: set exam ambiance (mpv) to 87% of bbeats volume
-    balance_volumes().await;
+    let sinks = balance_volumes().await;
 
-    println!("Ambiance running. Ctrl+C to stop and restore.");
+    println!("Ambiance running.");
     match timer {
-        Some(countdown) => timer::run(countdown, false).expect("timer failed"), // returns on Ctrl-C
-        None => signal::ctrl_c().await.expect("failed to listen for ctrl+c"),
+        Some(countdown) => timer::run(countdown, false, |paused| sinks.set_paused(paused)).expect("timer failed"), // returns on Ctrl-C
+        None => match keys::Keys::grab().expect("failed to grab terminal") {
+            Some(keys) => {
+                let mut paused = false;
+                loop {
+                    match keys.next_within(std::time::Duration::from_secs(60)).expect("failed to read terminal") {
+                        Some(keys::Key::TogglePause) => {
+                            paused = !paused;
+                            sinks.set_paused(paused);
+                            print!("\r\x1b[K{}", if paused { "[paused]" } else { "" });
+                            std::io::Write::flush(&mut std::io::stdout()).expect("stdout is the terminal");
+                        }
+                        Some(keys::Key::Quit) => break,
+                        None => {}
+                    }
+                }
+                if paused {
+                    sinks.set_paused(false); // bbeats may outlive us
+                }
+            }
+            None => signal::ctrl_c().await.expect("failed to listen for ctrl+c"),
+        },
     }
     println!("\nTearing down...");
     drop(ambiance);
