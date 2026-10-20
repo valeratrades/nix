@@ -307,6 +307,7 @@ in {
 
   users.users."${user.username}" = {
     isNormalUser = true;
+    uid = 1000;
     description = "${user.userFullName}";
     shell = pkgs.fish;
     extraGroups =

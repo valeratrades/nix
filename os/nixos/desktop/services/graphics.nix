@@ -1,4 +1,4 @@
-{ pkgs, lib, user, mylib, ... }:
+{ config, pkgs, lib, user, mylib, ... }:
 let
 	disableNvidia = user.disableNvidia or false;
 in
@@ -87,7 +87,7 @@ in
 	# it registers. See ongoing_debug/2026-10-18_slow-boot.md.
 	systemd.paths.nvidia-drm-late = lib.mkIf (!disableNvidia) {
 		wantedBy = [ "multi-user.target" ];
-		pathConfig.PathExistsGlob = "/run/user/*/wayland-*"; # sway binds its socket after wlr_backend_autocreate
+		pathConfig.PathExistsGlob = "/run/user/${toString config.users.users.${user.username}.uid}/wayland-*"; # sway binds its socket after wlr_backend_autocreate; a glob in a dir component is never inotify-watched
 	};
 	systemd.services.nvidia-drm-late = lib.mkIf (!disableNvidia) {
 		serviceConfig = {
