@@ -1,9 +1,9 @@
-{ ... }: {
+{ pkgs, lib, user, ... }: {
   programs = {
     sway = {
       enable = true;
       wrapperFeatures.gtk = true;
-			extraOptions = [ "--unsupported-gpu" ]; # silences wlroots' warning about the nvidia node being present (we render on AMD in PRIME offload mode)
+			extraOptions = [ "--unsupported-gpu" ] ++ lib.optional user.debug "-d"; # silences wlroots' warning about the nvidia node being present (we render on AMD in PRIME offload mode)
       # NB: do NOT pin WLR_DRM_DEVICES to /dev/dri/by-path/pci-0000:06:00.0-card — the
       # early-boot simpledrm stub and the real amdgpu node both advertise PCI 06:00.0, so
       # that by-path symlink races between the dumb framebuffer (card0, no renderer) and
@@ -14,5 +14,19 @@
         "	export XDG_CURRENT_DESKTOP=\"sway\";\n	export GDK_BACKEND=\"wayland\";\n	export XDG_BACKEND=\"wayland\";\n	export QT_WAYLAND_FORCE_DPI=\"physical\";\n	export QT_QPA_PLATFORM=\"wayland-egl\";\n	export CLUTTER_BACKEND=\"wayland\";\n	export SDL_VIDEODRIVER=\"wayland\";\n	export BEMENU_BACKEND=\"wayland\";\n	export MOZ_ENABLE_WAYLAND=\"1\";\n	# QT (needs qt5.qtwayland in systemPackages)\n	export QT_QPA_PLATFORM=wayland-egl\n	export SDL_VIDEODRIVER=wayland\n";
     };
     sway.xwayland.enable = true;
+  };
+
+  # pulls fontconfig's caches (sway's `font` line) and both GPUs' EGL stacks into page cache while
+  # boot is still busy elsewhere, instead of cold on the login path. See ongoing_debug/2026-10-18_slow-boot.md.
+  systemd.services.sway-prewarm = {
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      User = user.username; # user's HM fontconfig dirs + ~/.cache/fontconfig
+      StandardOutput = "null";
+    };
+    script = ''
+      ${pkgs.fontconfig.bin}/bin/fc-match -s Sans
+      ${pkgs.mesa-demos}/bin/eglinfo -B -p surfaceless
+    '';
   };
 }

@@ -76,12 +76,26 @@ in
 	# Always blacklist nouveau - broken support for Blackwell (RTX 50xx) causes kernel panics
 	# Also blacklist ucsi_acpi - buggy USB-C driver that spams errors on Lenovo laptops
 	# When nvidia disabled, also blacklist proprietary drivers
-	boot.blacklistedKernelModules = [ "nouveau" "ucsi_acpi" ] ++ lib.optionals disableNvidia [
+	boot.blacklistedKernelModules = [ "nouveau" "ucsi_acpi" "nvidia_drm" ] ++ lib.optionals disableNvidia [
 		"nvidia"
 		"nvidia_modeset"
 		"nvidia_uvm"
-		"nvidia_drm"
 	];
+
+	# nvidia_drm (blacklisted above against udev's PCI autoload) comes up only once sway has picked
+	# its GPUs, so sway starts on AMD alone and wlroots' DRM hotplug monitor adds card1 (HDMI) when
+	# it registers. See ongoing_debug/2026-10-18_slow-boot.md.
+	systemd.paths.nvidia-drm-late = lib.mkIf (!disableNvidia) {
+		wantedBy = [ "multi-user.target" ];
+		pathConfig.PathExistsGlob = "/run/user/*/wayland-*"; # sway binds its socket after wlr_backend_autocreate
+	};
+	systemd.services.nvidia-drm-late = lib.mkIf (!disableNvidia) {
+		serviceConfig = {
+			Type = "oneshot";
+			RemainAfterExit = true; # else the still-existing socket re-triggers it
+			ExecStart = "${pkgs.kmod}/bin/modprobe nvidia_drm"; # explicit name, so the blacklist doesn't apply
+		};
+	};
 
 	# Only set nvidia kernel params when nvidia is enabled
 	boot.kernelParams = lib.mkIf (!disableNvidia) [
