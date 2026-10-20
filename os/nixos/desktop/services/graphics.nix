@@ -55,6 +55,9 @@ in
 			# already drops the dGPU to P8 idle; the big heat win is AMD driving the desktop, not D3cold.
 			powerManagement.finegrained = false;
 			dynamicBoost.enable = false;
+			# A client that never closes: the driver's last-close adapter teardown deadlocks against ACPI
+			# power-source events, and sway no longer holds the dGPU (sway.nix). See ongoing_debug/2026-10-20_dgpu-runtime-off.md.
+			nvidiaPersistenced = true;
 
 			# PRIME configuration for hybrid graphics (AMD iGPU + NVIDIA dGPU)
 			prime = {
@@ -65,7 +68,6 @@ in
 				# (amdgpu.sg_display=0 et al — see ongoing_debug/firefox-gpu-acceleration.md), so
 				# routing output through the iGPU is safe again.
 				offload.enable = true;
-				offload.enableOffloadCmd = true;  # provides the `nvidia-offload` wrapper
 				# Bus IDs from lspci (convert hex to decimal: 01:00.0 -> 1:0:0, 06:00.0 -> 6:0:0)
 				nvidiaBusId = "PCI:1:0:0";
 				amdgpuBusId = "PCI:6:0:0";
@@ -96,6 +98,16 @@ in
 			ExecStart = "${pkgs.kmod}/bin/modprobe nvidia_drm"; # explicit name, so the blacklist doesn't apply
 		};
 	};
+
+	# Upstream's `nvidia-offload`, plus giving back the NVIDIA EGL vendor that sway.nix hides from the session.
+	environment.systemPackages = lib.optional (!disableNvidia) (pkgs.writeShellScriptBin "nvidia-offload" ''
+		unset __EGL_VENDOR_LIBRARY_FILENAMES
+		export __NV_PRIME_RENDER_OFFLOAD=1
+		export __NV_PRIME_RENDER_OFFLOAD_PROVIDER=NVIDIA-G0
+		export __GLX_VENDOR_LIBRARY_NAME=nvidia
+		export __VK_LAYER_NV_optimus=NVIDIA_only
+		exec "$@"
+	'');
 
 	# Only set nvidia kernel params when nvidia is enabled
 	boot.kernelParams = lib.mkIf (!disableNvidia) [
