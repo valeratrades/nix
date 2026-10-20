@@ -188,7 +188,7 @@ function clc
 end
 
 function clm
-    # for `CLaude Mixed` -- Opus 5 driving the session, Luna as the subagent tier.
+    # for `CLaude Mixed` -- Opus driving the session, Luna as the subagent tier.
     # Claude Code resolves one ANTHROPIC_BASE_URL per process, so both providers have to sit behind
     # one litellm. The cost: Opus authenticates by API key here, off the Max subscription.
     # Own port and own config, so `clc` and openclaw keep their proxy to themselves.

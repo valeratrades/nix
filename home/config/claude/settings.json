@@ -1,7 +1,11 @@
 {
-  "model": "claude-opus-5-5",
+  "env": {
+    "SSH_ASKPASS_REQUIRE": "never",
+    "SUDO_ASKPASS": "/run/current-system/sw/bin/false",
+    "GIT_TERMINAL_PROMPT": "0",
+    "GIT_ASKPASS": "/run/current-system/sw/bin/false"
+  },
   "permissions": {
-    "defaultMode": "bypassPermissions",
     "allow": [
       "Bash",
       "Read",
@@ -14,8 +18,10 @@
       "Grep",
       "Agent",
       "Skill"
-    ]
+    ],
+    "defaultMode": "bypassPermissions"
   },
+  "model": "opus",
   "hooks": {
     "PreToolUse": [
       {
@@ -79,6 +85,10 @@
       }
     ]
   },
+  "statusLine": {
+    "type": "command",
+    "command": "~/.claude/hooks/limits.sh"
+  },
   "enabledPlugins": {
     "code-review@claude-code-plugins": true,
     "codex@codex-plugin-cc": true,
@@ -107,17 +117,7 @@
   "showThinkingSummaries": true,
   "skipDangerousModePermissionPrompt": true,
   "crossSessionInbound": "accept",
-  "statusLine": {
-    "type": "command",
-    "command": "~/.claude/hooks/limits.sh"
-  },
   "thinking": {
     "display": "summarized"
-  },
-  "env": {
-    "SSH_ASKPASS_REQUIRE": "never",
-    "SUDO_ASKPASS": "/run/current-system/sw/bin/false",
-    "GIT_TERMINAL_PROMPT": "0",
-    "GIT_ASKPASS": "/run/current-system/sw/bin/false"
   }
 }
