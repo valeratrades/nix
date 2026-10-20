@@ -23,11 +23,11 @@
         "v_flakes": "v_flakes_2"
       },
       "locked": {
-        "lastModified": 1792537596,
-        "narHash": "sha256-ke6ARwSgVRLaUEUwJLBVBmWh45Ikh7O7c5+F16RuTEg=",
+        "lastModified": 1792538756,
+        "narHash": "sha256-qzZvqu30bmpGGnm1jHUU4R35wlakopK4l0Nc3XezDZ8=",
         "owner": "valeratrades",
         "repo": "auto_redshift",
-        "rev": "1c6548b74c2252b34db27f49e29461bf2c79815c",
+        "rev": "81657cc8f4317ead0896dfc721209a058bde0650",
         "type": "github"
       },
       "original": {
@@ -5833,15 +5833,14 @@
     },
     "wallpaper_carousel": {
       "inputs": {
-        "v_flakes": "v_flakes_10",
-        "wrap-it": "wrap-it"
+        "v_flakes": "v_flakes_10"
       },
       "locked": {
-        "lastModified": 1791574415,
-        "narHash": "sha256-u3z7RUg5lCsZ76KTzrUy13r673sfmXhK6BTZ/PX1vYI=",
+        "lastModified": 1792540668,
+        "narHash": "sha256-Hk2vivkaIJrpgV7LqIFmeqIux6TtUZZ7/ZgnCY6x4tI=",
         "owner": "valeratrades",
         "repo": "wallpaper_carousel",
-        "rev": "50cd1cf86174d83dfa22845df7f0cc7a0545cdb9",
+        "rev": "f540d60fdc2e8d86f90deb9e374df0b04f889d38",
         "type": "github"
       },
       "original": {
@@ -5870,23 +5869,6 @@
       "original": {
         "owner": "winapps-org",
         "repo": "winapps",
-        "type": "github"
-      }
-    },
-    "wrap-it": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1765366157,
-        "narHash": "sha256-dwTtL/++Vdnmn+E3iyLuMaptTjTfBNfyvJ4Cl+dn1rY=",
-        "owner": "valeratrades",
-        "repo": "wrap-it",
-        "rev": "cf3de8ced50c353ccfd534f3bb1ae9f6d5a04788",
-        "type": "github"
-      },
-      "original": {
-        "owner": "valeratrades",
-        "repo": "wrap-it",
-        "rev": "cf3de8ced50c353ccfd534f3bb1ae9f6d5a04788",
         "type": "github"
       }
     }
