@@ -81,6 +81,14 @@ in
 
   # Machine-wide, so every profile gets the same set regardless of account.
   environment.etc."opt/chrome/policies/managed/extensions.json".text = builtins.toJSON {
+    # Content scripts otherwise inject into every page; runtime_allowed_hosts beats runtime_blocked_hosts.
+    ExtensionSettings = {
+      "ajlhmclpjddfebgfpahnlodliljdnbie" = { # Moss: 5.4MB per page
+        runtime_blocked_hosts = [ "*://*" ];
+        runtime_allowed_hosts = [ "*://*.x.com" "*://*.twitter.com" ];
+      };
+      "pmjeegjhjdlccodhacdgbgfagbpmccpe".runtime_blocked_hosts = [ "*://*" ]; # Clockify: kept installed (and its data), inert
+    };
     ExtensionInstallForcelist = lib.optional lazyRestore "${lazyRestoreId};file://${lazyRestoreDir}/updates.xml" ++ map (id: "${id};https://clients2.google.com/service/update2/crx") [
       "abocjojdmemdpiffeadpdnicnlhcndcg" # SocialFocus
       "ajlhmclpjddfebgfpahnlodliljdnbie" # Moss
