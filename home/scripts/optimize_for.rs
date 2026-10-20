@@ -113,7 +113,7 @@ fn main() {
 	apply(boost, profile, max_freq);
 
 	let scoped = if restore.is_some() { " (scoped)" } else { "" };
-	println!("{name}{scoped}: boost {}, profile {profile}, cpu up to {} MHz", if boost { "on" } else { "off" }, max_freq / 1000);
+	println!("{name}{scoped}: boost {}, profile {profile}, cpu capped at {} MHz", if boost { "on" } else { "off" }, max_freq / 1000);
 
 	if matches!(args.mode, Mode::Battery) {
 		let (path, max) = backlight();
