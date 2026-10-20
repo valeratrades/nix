@@ -8,7 +8,7 @@ edition = "2024"
 clap = { version = "4.5.49", features = ["derive"] }
 ---
 
-use clap::{Parser, ValueEnum};
+use clap::{CommandFactory, Parser, ValueEnum};
 use std::fs;
 use std::os::unix::process::ExitStatusExt;
 use std::path::{Path, PathBuf};
@@ -23,6 +23,10 @@ const CPUFREQ: &str = "/sys/devices/system/cpu/cpufreq";
 /// excursion rather than to the hardware ceiling, so a hot spell cannot silently undo a chosen mode.
 /// Single source of truth for "what this machine should be doing when it is not thermally stressed".
 const BASE_FREQ: &str = "/run/optimize_for.base-freq";
+const DGPU: &str = "/sys/bus/pci/devices/0000:01:00.0"; // nvidiaBusId in graphics.nix
+const BACKLIGHT: &str = "/sys/class/backlight";
+const SYSTEM_PROFILE: &str = "/nix/var/nix/profiles/system";
+const BATTERY_BRIGHTNESS_PCT: u64 = 15;
 
 /// NB: a mode sets a *power envelope*, never airflow. platform_profile is a power limit knob
 /// (PPT/STAPM) on this EC, and under legion_laptop it was also the only way to reach the fan curve,
@@ -43,6 +47,8 @@ enum Mode {
 	Quiet,
 	/// Boost on, highest power envelope (full power)
 	Performance,
+	/// Longevity, dimmed backlight, and next boot without the dGPU (the `battery` specialisation)
+	Battery,
 	/// Show current status
 	Status,
 }
@@ -51,7 +57,7 @@ impl Mode {
 	/// (boost, platform_profile); None for Status, which changes nothing
 	fn settings(self) -> Option<(bool, &'static str)> {
 		match self {
-			Mode::Longevity => Some((false, "balanced")),
+			Mode::Longevity | Mode::Battery => Some((false, "balanced")),
 			Mode::Quiet => Some((false, "low-power")),
 			Mode::Performance => Some((true, "performance")),
 			Mode::Status => None,
@@ -93,6 +99,9 @@ fn main() {
 		show_status();
 		return;
 	};
+	if matches!(args.mode, Mode::Battery) && !args.cmd.is_empty() {
+		Args::command().error(clap::error::ErrorKind::ArgumentConflict, "battery can't be scoped: dropping the dGPU takes a reboot").exit();
+	}
 	let name = args.mode.to_possible_value().expect("Status is the only skipped variant").get_name().to_string();
 
 	// Boost has to land before the ceiling is read: amd-pstate swings cpuinfo_max_freq between the
@@ -105,6 +114,20 @@ fn main() {
 
 	let scoped = if restore.is_some() { " (scoped)" } else { "" };
 	println!("{name}{scoped}: boost {}, profile {profile}, cpu up to {} MHz", if boost { "on" } else { "off" }, max_freq / 1000);
+
+	if matches!(args.mode, Mode::Battery) {
+		let (path, max) = backlight();
+		fs::write(path.join("brightness"), (max * BATTERY_BRIGHTNESS_PCT / 100).to_string()).expect("backlight is root-writable");
+		println!("backlight {BATTERY_BRIGHTNESS_PCT}%");
+		if Path::new(DGPU).exists() {
+			let link = fs::read_link(SYSTEM_PROFILE).expect("system profile is a generation symlink");
+			let generation = link.to_str().and_then(|l| l.strip_prefix("system-")?.strip_suffix("-link")).unwrap_or_else(|| panic!("unexpected profile link {link:?}"));
+			let entry = format!("nixos-generation-{generation}-specialisation-battery.conf");
+			let status = Command::new("bootctl").args(["set-oneshot", &entry]).status().expect("bootctl ships with systemd-boot");
+			assert!(status.success(), "bootctl set-oneshot {entry} failed");
+			println!("dGPU still up; next boot is {entry}, reboot to drop it");
+		}
+	}
 
 	let Some(cmd) = args.cmd.split_first() else { return };
 
@@ -176,5 +199,18 @@ fn show_status() {
 	println!("boost:    {}", if read_boost() { "on" } else { "off" });
 	println!("profile:  {}", read_profile());
 	println!("cpu:      {} MHz of {} MHz ({}%)", max_freq / 1000, ceiling / 1000, max_freq * 100 / ceiling);
+	let (path, max) = backlight();
+	let brightness: u64 = fs::read_to_string(path.join("brightness")).expect("backlight exposes brightness").trim().parse().expect("brightness is an integer");
+	println!("light:    {}%", brightness * 100 / max);
+	println!("dgpu:     {}", if Path::new(DGPU).exists() { "present" } else { "removed" });
 	println!("profiles: {}", fs::read_to_string(PLATFORM_PROFILE_CHOICES).expect("lenovo-wmi-gamezone registers the handler").trim());
+}
+
+/// (device dir, max_brightness). The index shifts with GPU probe order, hence the scan.
+fn backlight() -> (PathBuf, u64) {
+	let mut devices: Vec<PathBuf> = fs::read_dir(BACKLIGHT).expect("backlight class present").map(|e| e.expect("backlight entries are readable").path()).collect();
+	assert_eq!(devices.len(), 1, "expected only the eDP backlight, got {devices:?}");
+	let path = devices.pop().expect("length asserted");
+	let max = fs::read_to_string(path.join("max_brightness")).expect("backlight exposes max_brightness").trim().parse().expect("max_brightness is an integer");
+	(path, max)
 }

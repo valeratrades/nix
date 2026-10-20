@@ -97,6 +97,18 @@ in
 		};
 	};
 
+	# Boot entry for `optimize_for battery`. The dGPU can't be dropped at runtime: sway's EGL holds
+	# /dev/nvidia0, so the driver never unloads. Here no nvidia module exists, and the device is
+	# removed on add so its bridge can reach D3cold.
+	specialisation.battery.configuration = lib.mkIf (!disableNvidia) {
+		system.nixos.tags = [ "battery" ];
+		services.xserver.videoDrivers = lib.mkForce [ "modesetting" "amdgpu" ]; # drops the whole hardware.nvidia stack, incl. its explicit nvidia_uvm load
+		systemd.paths.nvidia-drm-late.enable = false;
+		services.udev.extraRules = ''
+			ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", ATTR{remove}="1"
+		'';
+	};
+
 	# Only set nvidia kernel params when nvidia is enabled
 	boot.kernelParams = lib.mkIf (!disableNvidia) [
 		"nvidia-drm.modeset=1"
