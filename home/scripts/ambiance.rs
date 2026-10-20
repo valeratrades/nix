@@ -30,6 +30,10 @@ struct Args {
     /// Run a `timer` alongside; takes the same input. Without a value, counts up.
     #[arg(short, long, global = true, num_args = 0..=1)]
     timer: Option<Option<timer::Countdown>>,
+
+    /// Run alongside the previous `timer`'s countdown; same as `timer --continue`
+    #[arg(short = 'c', long = "continue", global = true, conflicts_with = "timer")]
+    cont: bool,
 }
 
 #[derive(Subcommand, Debug)]
@@ -370,7 +374,13 @@ fn setup_math_firefox() {
 
 #[tokio::main]
 async fn main() {
-    let args = Args::parse();
+    let mut args = Args::parse();
+    if args.cont {
+        args.timer = Some(Some(timer::Countdown::previous().unwrap_or_else(|e| {
+            eprintln!("{e}");
+            std::process::exit(1);
+        })));
+    }
 
     match args.command {
         Commands::MathFirefox => {

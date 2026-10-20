@@ -142,7 +142,16 @@ mod timeframe {
 #[command(about = "Countdown timer with visual feedback and notifications")]
 struct Args {
     /// Time: seconds (90), mm:ss (1:30), hh:mm:ss (1:30:00), or timeframe (5m, 1h, 30s). Omit to count up from 0:00.
+    #[arg(conflicts_with = "cont")]
     time: Option<Countdown>,
+
+    /// Continue the previous countdown: from where `--pause` froze it, else if its deadline is still ahead
+    #[arg(short = 'c', long = "continue")]
+    cont: bool,
+
+    /// Stop the running timer, freezing what's left for `--continue` (otherwise it keeps running out while stopped)
+    #[arg(short, long)]
+    pause: bool,
 
     /// Halt (pause) the running timer
     #[arg(long, short = 'H')]
@@ -182,6 +191,40 @@ impl std::str::FromStr for Countdown {
         };
         Ok(Self(secs))
     }
+}
+
+impl Countdown {
+    /// What's left of the last countdown, per the `left`/`deadline` record it wrote on exit.
+    pub fn previous() -> Result<Self, String> {
+        let record = match fs::read_to_string(last_file()) {
+            Ok(s) => s,
+            Err(e) if e.kind() == ErrorKind::NotFound => return Err("No previous timer to continue".to_string()),
+            Err(e) => return Err(e.to_string()),
+        };
+        let corrupt = || format!("corrupt {}: {record:?}", last_file().display());
+        let (kind, n) = record.trim().split_once(' ').ok_or_else(corrupt)?;
+        let n: u64 = n.parse().map_err(|_| corrupt())?;
+        let left = match kind {
+            "left" => n,
+            "deadline" => n.saturating_sub(unix_now()),
+            _ => return Err(corrupt()),
+        };
+        match left {
+            0 => Err("Previous timer has already run out".to_string()),
+            left => Ok(Self(left as i32)),
+        }
+    }
+}
+
+fn last_file() -> PathBuf {
+    PathBuf::from("/tmp/timer_last")
+}
+
+fn unix_now() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .expect("clock is past 1970")
+        .as_secs()
 }
 
 fn read_control() -> Option<String> {
@@ -295,8 +338,8 @@ pub fn run(countdown: Option<Countdown>, quiet: bool) -> Result<(), String> {
                 break;
             }
         }
-        // Timer was cancelled externally
-        if read_control().is_none() || INTERRUPTED.load(Ordering::Relaxed) {
+        // Timer was cancelled or `--pause`d externally
+        if matches!(read_control().as_deref(), None | Some("frozen")) || INTERRUPTED.load(Ordering::Relaxed) {
             break;
         }
 
@@ -340,7 +383,20 @@ pub fn run(countdown: Option<Countdown>, quiet: bool) -> Result<(), String> {
         }
     }
 
+    let frozen = read_control().as_deref() == Some("frozen");
     cleanup();
+    if notify && left > 0 {
+        let record = match frozen {
+            true => format!("left {left}"),
+            false => format!("deadline {}", unix_now() + left as u64),
+        };
+        fs::write(last_file(), record).map_err(|e| e.to_string())?;
+    } else {
+        match fs::remove_file(last_file()) {
+            Err(e) if e.kind() != ErrorKind::NotFound => return Err(e.to_string()),
+            _ => {}
+        }
+    }
     Ok(())
 }
 
@@ -361,6 +417,19 @@ pub fn main() {
         return;
     }
 
+    if args.pause {
+        match read_control().as_deref() {
+            Some("running" | "paused") => {
+                if let Err(e) = write_control("frozen") {
+                    eprintln!("{e}");
+                    std::process::exit(1);
+                }
+            }
+            _ => eprintln!("No timer running"),
+        }
+        return;
+    }
+
     if args.resume {
         match read_control().as_deref() {
             Some("paused") => {
@@ -375,7 +444,17 @@ pub fn main() {
         return;
     }
 
-    if let Err(e) = run(args.time, args.quiet) {
+    let countdown = match args.cont {
+        true => match Countdown::previous() {
+            Ok(c) => Some(c),
+            Err(e) => {
+                eprintln!("{e}");
+                std::process::exit(1);
+            }
+        },
+        false => args.time,
+    };
+    if let Err(e) = run(countdown, args.quiet) {
         eprintln!("{e}");
         std::process::exit(1);
     }
