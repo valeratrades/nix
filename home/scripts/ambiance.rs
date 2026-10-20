@@ -7,6 +7,8 @@ edition = "2024"
 [dependencies]
 clap = { version = "4.5.49", features = ["derive"] }
 tokio = { version = "1", features = ["full"] }
+libc = "0.2"
+crossterm = "0.28"
 ---
 // a thing to procedurally set up environment for performing distinctly different and cognitively demanding tasks
 
@@ -15,12 +17,19 @@ use std::process::Stdio;
 use tokio::process::Command;
 use tokio::signal;
 
+#[path = "timer.rs"]
+pub mod timer; // pub so its `main` isn't dead code here
+
 #[derive(Parser, Debug)]
 #[command(name = "ambiance")]
 #[command(about = "Set up work ambiance")]
 struct Args {
     #[command(subcommand)]
     command: Commands,
+
+    /// Run a `timer` alongside; takes the same input. Without a value, counts up.
+    #[arg(short, long, global = true, num_args = 0..=1)]
+    timer: Option<Option<timer::Countdown>>,
 }
 
 #[derive(Subcommand, Debug)]
@@ -118,14 +127,6 @@ impl Drop for Ambiance {
             .status();
         println!("Restoring wallpaper: {}", self.wallpaper.image);
     }
-}
-
-// Needed for process group kills - link libc directly since we only need kill()
-mod libc {
-    unsafe extern "C" {
-        pub fn kill(pid: i32, sig: i32) -> i32;
-    }
-    pub const SIGTERM: i32 = 15;
 }
 
 fn kill_running_pp() {
@@ -227,7 +228,7 @@ async fn balance_volumes() {
     }
 }
 
-async fn setup_math() {
+async fn setup_math(timer: Option<Option<timer::Countdown>>) {
     // tedi exposes the selected issue only through `open`; echo as $EDITOR prints its path
     let selected = std::process::Command::new("tedi")
         .args(["sprints", "selected", "open", "--offline"])
@@ -308,7 +309,10 @@ async fn setup_math() {
     balance_volumes().await;
 
     println!("Ambiance running. Ctrl+C to stop and restore.");
-    signal::ctrl_c().await.expect("failed to listen for ctrl+c");
+    match timer {
+        Some(countdown) => timer::run(countdown, false).expect("timer failed"), // returns on Ctrl-C
+        None => signal::ctrl_c().await.expect("failed to listen for ctrl+c"),
+    }
     println!("\nTearing down...");
     drop(ambiance);
 }
@@ -369,7 +373,10 @@ async fn main() {
     let args = Args::parse();
 
     match args.command {
-        Commands::MathFirefox => setup_math_firefox(),
-        Commands::Math => setup_math().await,
+        Commands::MathFirefox => {
+            assert!(args.timer.is_none(), "--timer is not supported for math-firefox");
+            setup_math_firefox()
+        }
+        Commands::Math => setup_math(args.timer).await,
     }
 }

@@ -142,7 +142,7 @@ mod timeframe {
 #[command(about = "Countdown timer with visual feedback and notifications")]
 struct Args {
     /// Time: seconds (90), mm:ss (1:30), hh:mm:ss (1:30:00), or timeframe (5m, 1h, 30s). Omit to count up from 0:00.
-    time: Option<String>,
+    time: Option<Countdown>,
 
     /// Halt (pause) the running timer
     #[arg(long, short = 'H')]
@@ -157,33 +157,30 @@ struct Args {
     quiet: bool,
 }
 
-fn parse_time(input: &str) -> Result<i32, String> {
-    use std::str::FromStr;
+/// seconds to count down from
+#[derive(Clone, Copy, Debug)]
+pub struct Countdown(i32);
 
-    if input.contains(':') {
-        // mm:ss or hh:mm:ss format
-        let parts: Vec<&str> = input.split(':').collect();
-        match parts.len() {
-            2 => {
-                let mins: i32 = parts[0].parse::<i32>().map_err(|e| e.to_string())?;
-                let secs: i32 = parts[1].parse::<i32>().map_err(|e| e.to_string())?;
-                Ok(mins * 60 + secs)
+impl std::str::FromStr for Countdown {
+    type Err = String;
+
+    fn from_str(input: &str) -> Result<Self, Self::Err> {
+        let secs = if input.contains(':') {
+            let parts = input
+                .split(':')
+                .map(|p| p.parse::<i32>().map_err(|e| e.to_string()))
+                .collect::<Result<Vec<_>, _>>()?;
+            match parts[..] {
+                [mins, secs] => mins * 60 + secs,
+                [hours, mins, secs] => hours * 3600 + mins * 60 + secs,
+                _ => return Err("Time format must be mm:ss or hh:mm:ss".to_string()),
             }
-            3 => {
-                let hours: i32 = parts[0].parse::<i32>().map_err(|e| e.to_string())?;
-                let mins: i32 = parts[1].parse::<i32>().map_err(|e| e.to_string())?;
-                let secs: i32 = parts[2].parse::<i32>().map_err(|e| e.to_string())?;
-                Ok(hours * 3600 + mins * 60 + secs)
-            }
-            _ => Err("Time format must be mm:ss or hh:mm:ss".to_string()),
-        }
-    } else if input.chars().any(|c| c.is_ascii_alphabetic()) {
-        // Timeframe format (e.g., 5m, 1h, 30s)
-        let tf = timeframe::Timeframe::from_str(input)?;
-        Ok(tf.as_secs() as i32)
-    } else {
-        // Plain seconds
-        input.parse::<i32>().map_err(|e| e.to_string())
+        } else if input.chars().any(|c| c.is_ascii_alphabetic()) {
+            timeframe::Timeframe::from_str(input)?.as_secs() as i32
+        } else {
+            input.parse::<i32>().map_err(|e| e.to_string())?
+        };
+        Ok(Self(secs))
     }
 }
 
@@ -191,7 +188,7 @@ fn read_control() -> Option<String> {
     match fs::read_to_string(control_file()) {
         Ok(s) => Some(s.trim().to_string()),
         Err(e) if e.kind() == ErrorKind::NotFound => None,
-        Err(_) => None,
+        Err(e) => panic!("reading {}: {e}", control_file().display()),
     }
 }
 
@@ -258,9 +255,10 @@ fn toggle_pause() -> Result<(), String> {
     }
 }
 
-fn timer(initial: Option<i32>, quiet: bool) -> Result<(), String> {
-    let mut left = initial.unwrap_or(0);
-    let notify = initial.is_some();
+/// Blocks until Ctrl-C, SIGINT/SIGTERM, or external cancellation; owns the terminal (raw mode) and the process' SIGINT/SIGTERM handlers meanwhile.
+pub fn run(countdown: Option<Countdown>, quiet: bool) -> Result<(), String> {
+    let notify = countdown.is_some();
+    let mut left = countdown.map_or(0, |c| c.0); // count-up starts at 0:00
     let mut notified = false;
 
     unsafe {
@@ -346,7 +344,7 @@ fn timer(initial: Option<i32>, quiet: bool) -> Result<(), String> {
     Ok(())
 }
 
-fn main() {
+pub fn main() {
     let args = Args::parse();
 
     if args.halt {
@@ -377,18 +375,7 @@ fn main() {
         return;
     }
 
-    let initial = match args.time {
-        Some(t) => match parse_time(&t) {
-            Ok(secs) => Some(secs),
-            Err(e) => {
-                eprintln!("{e}");
-                std::process::exit(1);
-            }
-        },
-        None => None,
-    };
-
-    if let Err(e) = timer(initial, args.quiet) {
+    if let Err(e) = run(args.time, args.quiet) {
         eprintln!("{e}");
         std::process::exit(1);
     }
