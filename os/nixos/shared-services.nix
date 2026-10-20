@@ -8,7 +8,9 @@ in {
   # 2026-10-19 a drop-in shadowed it and boot stopped at `login:` with no login program. See ongoing_debug/2026-10-18_slow-boot.md.
   # Not a build check: `systemd --test` needs a cgroup hierarchy the sandbox lacks.
   system.preSwitchChecks.gettyAutologin = ''
-    cmd=$(SYSTEMD_UNIT_PATH="$1/etc/systemd/system:" ${config.systemd.package}/lib/systemd/systemd --test --system --unit=getty@tty1.service --no-pager 2>/dev/null \
+    # as root `systemd --test` exits 1 without a word
+    cmd=$(SYSTEMD_UNIT_PATH="$1/etc/systemd/system:" ${pkgs.util-linux}/bin/setpriv --reuid=nobody --regid=nogroup --clear-groups \
+      ${config.systemd.package}/lib/systemd/systemd --test --system --unit=getty@tty1.service --no-pager 2>/dev/null \
       | ${pkgs.gawk}/bin/awk '/→ Unit getty@tty1.service:/{f=1; next} /→ Unit /{f=0} f && /Command Line:/{print $3; exit}')
     if ! ${pkgs.gnugrep}/bin/grep -q -- "--autologin ${user.username} " "$cmd" 2>/dev/null; then
       echo "getty@tty1 would exec '$cmd', not NixOS's autologin getty: this generation boots to a dead login prompt" >&2
