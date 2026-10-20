@@ -4,6 +4,17 @@ let
 redisPort = 49974;
 postgresqlPort = 52362;
 in {
+  # Builds only if tty1, as merged by systemd itself, execs NixOS's autologin getty. 2026-10-19 a drop-in
+  # shadowed it and boot stopped at `login:` with no login program. See ongoing_debug/2026-10-18_slow-boot.md.
+  system.checks = [ (pkgs.runCommand "getty-tty1-autologins" { } ''
+    SYSTEMD_UNIT_PATH=${config.system.build.etc}/etc/systemd/system: \
+      ${config.systemd.package}/lib/systemd/systemd --test --system --unit=getty@tty1.service --no-pager 2>/dev/null \
+      | awk '/→ Unit getty@tty1.service:/{f=1; next} /→ Unit /{f=0} f && /Command Line:/{print $3; exit}' > cmd
+    echo "getty@tty1 execs: $(cat cmd)"
+    grep -q -- "--autologin ${user.username} " "$(cat cmd)"
+    touch $out
+  '') ];
+
   services = {
     fstrim.enable = true;
     getty.autologinUser = user.username;
