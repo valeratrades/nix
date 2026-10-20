@@ -69,9 +69,9 @@ release commits them.
 
 Labels are `github/labels.nix`, synced to every consumer; `github/git-ops.rs` lints open issues on commit.
 
-- Exactly one `t:*` and one `i:*` per issue.
+- Exactly one `i:*` per issue is required; one `t:*` and one `h:*` are strongly suggested.
 - `t:architectural` is for issues where behavior stays the same and the code's shape is the deliverable; don't tag them `t:chore`/`t:feature`.
 - `i:0`–`i:9` is importance, running up: `i:9` is critical, `i:3` is the default.
 - When assigning `i:*` yourself, always keep on the safe side. `i:5` is already a very big issue (`i:6` is the default production bug, for comparison). `i:5`+ is reserved for implementations that drive business forward.
-- `h:N` is the estimate: 68% sure it's done within N hours. Fibonacci, `h:1`–`h:233`. Round up to the next step; at most one per issue.
+- `h:N` is the estimate: 68% sure it's done within N hours. Fibonacci, `h:1`–`h:233`. Round up to the next step.
 - To hand an issue to Claude (CI implements it), label it `ext:claude`.
