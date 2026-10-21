@@ -21,6 +21,9 @@ function claude
         end
         set i (math $i + 1)
     end
+    if [ "$TERM_PROGRAM" = ghostty ]; or begin; set -q TMUX; and [ (tmux display -p '#{client_termname}') = xterm-ghostty ]; end
+        echo "claude: ghostty eats alt+g / alt+shift+g (its scroll_to_top/bottom), so claude's scroll top/bottom won't fire" >&2
+    end
     if set -q acc[1]
         set -lx CLAUDE_CONFIG_DIR $HOME/.claude-account$acc
         if not test -f $CLAUDE_CONFIG_DIR/.credentials.json
