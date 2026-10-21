@@ -3,6 +3,6 @@
   "$docs": "https://code.claude.com/docs/en/keybindings",
   "bindings": [
     { "context": "Chat", "bindings": { "alt+a": "chat:stash", "ctrl+s": null } },
-    { "context": "Scroll", "bindings": { "alt+j": "scroll:bottom" } }
+    { "context": "Scroll", "bindings": { "alt+g": "scroll:top", "alt+shift+g": "scroll:bottom" } }
   ]
 }
