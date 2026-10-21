@@ -46,7 +46,8 @@ let
 			# Ponytail ships its plugin body at the repo root (marketplace.json `source: "./"`),
 			# so point pluginSrc at "." instead of the default `<pluginsSubdir>/<plugin-name>`.
 			ponytail = {
-				repo = "DietrichGebert/ponytail";
+				# Fork: band's session.start awaited a `git grep` over tracked binaries (4s in a repo of mp4s), stalling every session start.
+				repo = "valeratrades/ponytail";
 				pluginSrc = ".";
 			};
 			# Fork of `plugins/plugin-dev` from the claude-code-plugins marketplace, vendored into
@@ -158,6 +159,7 @@ let
 				${pkgs.git}/bin/git clone --depth 1 "https://github.com/${cfg.repo}.git" "$MARKET_DIR" 2>&1 || true
 			else
 				echo "Updating marketplace ${name}..."
+				${pkgs.git}/bin/git -C "$MARKET_DIR" remote set-url origin "https://github.com/${cfg.repo}.git" # else repointing `repo` at a fork keeps pulling the old one
 				${pkgs.git}/bin/git -C "$MARKET_DIR" fetch --depth 1 origin 2>&1 || true
 				${pkgs.git}/bin/git -C "$MARKET_DIR" reset --hard origin/HEAD 2>&1 || true
 			fi
