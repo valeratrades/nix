@@ -25,15 +25,14 @@ function claude
         echo "claude: ghostty eats alt+g / alt+shift+g (its scroll_to_top/bottom), so claude's scroll top/bottom won't fire" >&2
     end
     if set -q acc[1]
-        set -lx CLAUDE_CONFIG_DIR $HOME/.claude-account$acc
+        set -fx CLAUDE_CONFIG_DIR $HOME/.claude-account$acc
         if not test -f $CLAUDE_CONFIG_DIR/.credentials.json
             echo "claude: no credentials at $CLAUDE_CONFIG_DIR" >&2
             return 1
         end
-        env -u ANTHROPIC_API_KEY claude $args
-    else
-        env -u ANTHROPIC_API_KEY claude $args
     end
+    # background.slice (CPUWeight=30): agents' builds otherwise share the tmux cgroup with interactive shells and starve them
+    systemd-run --user --scope --quiet --slice=background.slice env -u ANTHROPIC_API_KEY claude $args
 end
 
 function cl
