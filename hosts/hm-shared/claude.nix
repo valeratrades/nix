@@ -120,12 +120,13 @@ let
 		cloudflare-bindings = cloudflare "https://bindings.mcp.cloudflare.com/mcp";
 		cloudflare-builds = cloudflare "https://builds.mcp.cloudflare.com/mcp";
 		cloudflare-observability = cloudflare "https://observability.mcp.cloudflare.com/mcp";
-		fathom = {
-			type = "stdio";
-			command = "npx";
-			args = [ "mcp-remote@latest" "https://api.fathom.ai/mcp" ];
-			env = { };
-		};
+		# never connects, so each session carries a 30s connect timeout; also dropped from ~/.claude.json by hand (this merge only adds)
+		#fathom = {
+		#	type = "stdio";
+		#	command = "npx";
+		#	args = [ "mcp-remote@latest" "https://api.fathom.ai/mcp" ];
+		#	env = { };
+		#};
 	};
 
 	parsePluginId = id: let
