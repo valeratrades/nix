@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
-# Playing mpv dominates the toggle; mpv instances we paused are resumed on the next toggle.
+# Our players (mpv, timer, ambiance) playing dominate the toggle; the ones we paused are resumed on the next toggle.
 set -uo pipefail
 
-cache="${XDG_CACHE_HOME:-$HOME/.cache}/play_pause_mpv_paused"
+cache="${XDG_CACHE_HOME:-$HOME/.cache}/play_pause_ours_paused"
 obj=/org/mpris/MediaPlayer2
 iface=org.mpris.MediaPlayer2.Player
 
 status() { busctl --user get-property "$1" $obj $iface PlaybackStatus 2>/dev/null; } # empty if the instance is gone
 
-mapfile -t mpvs < <(busctl --user list --no-legend | awk '$1 ~ /^org\.mpris\.MediaPlayer2\.mpv(\.|$)/ {print $1}')
+mapfile -t ours < <(busctl --user list --no-legend | awk '$1 ~ /^org\.mpris\.MediaPlayer2\.(mpv|timer|ambiance)(\.|$)/ {print $1}')
 
 playing=()
-for p in "${mpvs[@]}"; do
+for p in "${ours[@]}"; do
 	[ "$(status "$p")" = 's "Playing"' ] && playing+=("$p")
 done
 if [ ${#playing[@]} -gt 0 ]; then
@@ -23,7 +23,7 @@ fi
 if [ -f "$cache" ]; then
 	mapfile -t paused <"$cache"
 	rm "$cache"
-	# something else started playing since we paused mpv: toggle means "pause that", not "resume mpv"
+	# something else started playing since we paused ours: toggle means "pause that", not "resume ours"
 	if ! playerctl -a status 2>/dev/null | grep -qx Playing; then
 		resumed=0
 		for p in "${paused[@]}"; do

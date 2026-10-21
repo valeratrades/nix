@@ -8,10 +8,13 @@ edition = "2024"
 clap = { version = "4.5.49", features = ["derive"] }
 libc = "0.2"
 crossterm = "0.28"
+zbus = "5"
 ---
 
 #[path = "shared/keys.rs"]
 mod keys;
+#[path = "shared/mpris.rs"]
+mod mpris;
 
 use clap::Parser;
 use keys::{Key, Keys};
@@ -274,16 +277,16 @@ fn space_pressed_within(keys: &Keys, dur: Duration) -> Result<bool, String> {
     }
 }
 
-fn toggle_pause() -> Result<(), String> {
-    match read_control().as_deref() {
-        Some("running") => write_control("paused"),
-        Some("paused") => write_control("running"),
+fn set_paused(paused: bool) -> Result<(), String> {
+    match (read_control().as_deref(), paused) {
+        (Some("running"), true) => write_control("paused"),
+        (Some("paused"), false) => write_control("running"),
         _ => Ok(()),
     }
 }
 
 /// Blocks until Ctrl-C, SIGINT/SIGTERM, or external cancellation; owns the terminal (raw mode) and the process' SIGINT/SIGTERM handlers meanwhile.
-/// `on_pause` sees every pause and resume, from Space or `--halt`/`--resume`, and a final resume on exit if paused.
+/// `on_pause` sees every pause and resume, from Space, MPRIS or `--halt`/`--resume`, and a final resume on exit if paused.
 pub fn run(countdown: Option<Countdown>, quiet: bool, mut on_pause: impl FnMut(bool)) -> Result<(), String> {
     let notify = countdown.is_some();
     let mut left = countdown.map_or(0, |c| c.0); // count-up starts at 0:00
@@ -299,6 +302,7 @@ pub fn run(countdown: Option<Countdown>, quiet: bool, mut on_pause: impl FnMut(b
 
     // Mark as running
     write_control("running")?;
+    let mpris = mpris::serve("timer", || read_control().as_deref() == Some("paused"), set_paused).map_err(|e| e.to_string())?;
 
     loop {
         if INTERRUPTED.load(Ordering::Relaxed) {
@@ -311,7 +315,7 @@ pub fn run(countdown: Option<Countdown>, quiet: bool, mut on_pause: impl FnMut(b
                     Some(keys) => {
                         draw_line(left, true);
                         if space_pressed_within(keys, Duration::from_millis(100))? {
-                            toggle_pause()?;
+                            set_paused(false)?;
                         }
                     }
                     None => sleep(Duration::from_millis(100)),
@@ -342,7 +346,7 @@ pub fn run(countdown: Option<Countdown>, quiet: bool, mut on_pause: impl FnMut(b
                     break;
                 }
                 if space_pressed_within(keys, end - now)? {
-                    toggle_pause()?;
+                    set_paused(true)?;
                     break;
                 }
             }
@@ -368,6 +372,7 @@ pub fn run(countdown: Option<Countdown>, quiet: bool, mut on_pause: impl FnMut(b
     }
 
     let frozen = matches!(read_control().as_deref(), Some("frozen" | "paused"));
+    drop(mpris);
     drop(keys);
     cleanup();
     if notify && left > 0 {

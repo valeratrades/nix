@@ -9,11 +9,14 @@ clap = { version = "4.5.49", features = ["derive"] }
 tokio = { version = "1", features = ["full"] }
 libc = "0.2"
 crossterm = "0.28"
+zbus = "5"
 ---
 // a thing to procedurally set up environment for performing distinctly different and cognitively demanding tasks
 
 use clap::{Parser, Subcommand};
 use std::process::Stdio;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use tokio::process::Command;
 use tokio::signal;
 
@@ -21,6 +24,8 @@ use tokio::signal;
 pub mod timer; // pub so its `main` isn't dead code here
 #[path = "shared/keys.rs"]
 mod keys;
+#[path = "shared/mpris.rs"]
+mod mpris;
 
 #[derive(Parser, Debug)]
 #[command(name = "ambiance")]
@@ -181,11 +186,17 @@ fn parse_sink_input_id(line: &str, name: &str) -> Option<String> {
 struct Sinks {
     mpv: String,
     bbeats: String,
+    paused: AtomicBool,
 }
 
 impl Sinks {
+    fn paused(&self) -> bool {
+        self.paused.load(Ordering::Relaxed)
+    }
+
     /// muting stands in for pausing: bbeats runs as root, out of reach of SIGSTOP
     fn set_paused(&self, paused: bool) {
+        self.paused.store(paused, Ordering::Relaxed);
         for id in [&self.mpv, &self.bbeats] {
             let status = std::process::Command::new("pulsemixer")
                 .args(["--id", id, if paused { "--mute" } else { "--unmute" }])
@@ -249,7 +260,11 @@ async fn balance_volumes() -> Sinks {
             .status()
             .expect("failed to set mpv volume");
         assert!(status.success(), "pulsemixer --set-volume failed");
-        return Sinks { mpv: mpv_id, bbeats: bbeats_id };
+        return Sinks {
+            mpv: mpv_id,
+            bbeats: bbeats_id,
+            paused: AtomicBool::new(false),
+        };
     }
 }
 
@@ -331,32 +346,37 @@ async fn setup_math(timer: Option<Option<timer::Countdown>>) {
     assert!(status.success(), "tedi sprints selected resume failed");
 
     // Balance volumes: set exam ambiance (mpv) to 87% of bbeats volume
-    let sinks = balance_volumes().await;
+    let sinks = Arc::new(balance_volumes().await);
 
     println!("Ambiance running.");
     match timer {
         Some(countdown) => timer::run(countdown, false, |paused| sinks.set_paused(paused)).expect("timer failed"), // returns on Ctrl-C
-        None => match keys::Keys::grab().expect("failed to grab terminal") {
-            Some(keys) => {
-                let mut paused = false;
-                loop {
-                    match keys.next_within(std::time::Duration::from_secs(60)).expect("failed to read terminal") {
-                        Some(keys::Key::TogglePause) => {
-                            paused = !paused;
-                            sinks.set_paused(paused);
-                            print!("\r\x1b[K{}", if paused { "[paused]" } else { "" });
+        None => {
+            let (get, set) = (sinks.clone(), sinks.clone());
+            let mpris = mpris::serve("ambiance", move || get.paused(), move |paused| Ok(set.set_paused(paused))).expect("failed to serve MPRIS");
+            match keys::Keys::grab().expect("failed to grab terminal") {
+                Some(keys) => {
+                    let mut shown = false;
+                    loop {
+                        match keys.next_within(std::time::Duration::from_millis(200)).expect("failed to read terminal") {
+                            Some(keys::Key::TogglePause) => sinks.set_paused(!sinks.paused()),
+                            Some(keys::Key::Quit) => break,
+                            None => {}
+                        }
+                        if sinks.paused() != shown {
+                            shown = sinks.paused();
+                            print!("\r\x1b[K{}", if shown { "[paused]" } else { "" });
                             std::io::Write::flush(&mut std::io::stdout()).expect("stdout is the terminal");
                         }
-                        Some(keys::Key::Quit) => break,
-                        None => {}
                     }
                 }
-                if paused {
-                    sinks.set_paused(false); // bbeats may outlive us
-                }
+                None => signal::ctrl_c().await.expect("failed to listen for ctrl+c"),
             }
-            None => signal::ctrl_c().await.expect("failed to listen for ctrl+c"),
-        },
+            drop(mpris);
+            if sinks.paused() {
+                sinks.set_paused(false); // bbeats may outlive us
+            }
+        }
     }
     println!("\nTearing down...");
     drop(ambiance);
