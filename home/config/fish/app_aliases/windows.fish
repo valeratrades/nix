@@ -38,4 +38,4 @@ function winvm
 	end
 end
 
-alias wayland_wine="DISPLAY='' wine64"
+function wayland_wine --wraps wine64; DISPLAY='' wine64 $argv; end

@@ -1,9 +1,9 @@
-alias caclip="cargo clippy --tests -- -Dclippy::all"
-alias ctn="cargo test -- --nocapture"
-alias cpad="cargo publish --allow-dirty"
-alias cflags="set -x RUST_LOG 'debug,hyper=info'; set -x RUST_BACKTRACE 1; set -x RUST_LIB_BACKTRACE 0"
-alias cscript="cargo +nightly -Zscript" # https://doc.rust-lang.org/cargo/reference/unstable.html#script
-alias nextest_examples="cargo nextest run --examples"
+function caclip; cargo clippy --tests -- -Dclippy::all $argv; end
+function ctn; cargo test -- --nocapture $argv; end
+function cpad --wraps 'cargo publish --allow-dirty'; cargo publish --allow-dirty $argv; end
+function cflags; set -gx RUST_LOG 'debug,hyper=info'; set -gx RUST_BACKTRACE 1; set -gx RUST_LIB_BACKTRACE 0; end
+function cscript --wraps 'cargo +nightly -Zscript'; cargo +nightly -Zscript $argv; end # https://doc.rust-lang.org/cargo/reference/unstable.html#script
+function nextest_examples --wraps 'cargo nextest run --examples'; cargo nextest run --examples $argv; end
 function cb
 	set binary ./target/release/(basename (pwd))
 	set needs_build true
@@ -141,7 +141,7 @@ function cir
 	cargo insta review
 end
 
-alias cu="cargo clean && cargo clean --doc && cargo update"
+function cu; cargo clean && cargo clean --doc && cargo update $argv; end
 
 function ct
 	function cleanup
@@ -242,9 +242,9 @@ function sccache_retry
 end
 
 # Aliases for common commands with sccache retry
-alias scb="sccache_retry cargo build"
-alias scr="sccache_retry cargo run"
-alias scc="sccache_retry cargo check"
+function scb --wraps 'cargo build'; sccache_retry cargo build $argv; end
+function scr --wraps 'cargo run'; sccache_retry cargo run $argv; end
+function scc --wraps 'cargo check'; sccache_retry cargo check $argv; end
 
 # `target/` only grows when cargo runs, so this arms off cargo invocations rather than every prompt.
 # The probe is a `du` over ~125k inodes — 0.4s warm, far too dear to pay per command; the 1-in-20

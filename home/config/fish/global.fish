@@ -1,6 +1,9 @@
 # Everything can rely on functions from here
 
-alias exa="eza"
+function exa --wraps eza; eza $argv; end
+function ls; command ls --color=tty $argv; end
+function ll --wraps 'ls -l'; ls -l $argv; end
+function l --wraps 'ls -alh'; ls -alh $argv; end
 
 # for super ls
 function sl
@@ -11,14 +14,14 @@ function sl
     end
 end
 
-alias lt="eza --sort new"
+function lt --wraps 'eza --sort new'; eza --sort new $argv; end
 
 function mkfile
     set file_path "$argv[1]"
     mkdir -p (dirname "$file_path")
     touch "$file_path"
 end
-alias mkf="mkfile"
+function mkf --wraps mkfile; mkfile $argv; end
 
 function cs
     argparse 't/tmux' 'm/math' 'a/allow' 'd/detach' -- $argv
@@ -89,9 +92,9 @@ function pu
     $HOME/s/help_scripts/pip_upload.sh
 end
 
-alias pt="pytest"
-alias pk="pytest -k "
-alias pm="py src/main.py"
+function pt --wraps pytest; pytest $argv; end
+function pk --wraps 'pytest -k'; pytest -k $argv; end
+function pm --wraps 'py src/main.py'; py src/main.py $argv; end
 
 # Adjust font size in Alacritty
 function fontsize

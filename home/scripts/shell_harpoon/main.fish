@@ -62,7 +62,7 @@ if test -e "$temp_file"
     source $temp_file
 end
 
-alias ,s="source $harpoon_config_path; and _s"
-alias ,r="source $harpoon_config_path; and _r"
-alias ,n="source $harpoon_config_path; and _n"
-alias ,t="source $harpoon_config_path; and _t"
+function ,s; source $harpoon_config_path; and _s $argv; end
+function ,r; source $harpoon_config_path; and _r $argv; end
+function ,n; source $harpoon_config_path; and _n $argv; end
+function ,t; source $harpoon_config_path; and _t $argv; end

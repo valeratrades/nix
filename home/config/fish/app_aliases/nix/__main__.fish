@@ -1,5 +1,4 @@
-alias n="nix"
-complete -c n -w nix
+function n --wraps nix; nix $argv; end
 
 # `nix develop`: fully offline when the env is already realized locally; online only
 # when something is genuinely missing. The probe realizes the same env, so the offline
@@ -25,18 +24,18 @@ function nix --wraps nix
 		command nix $argv
 	end
 end
-alias flake-build="sudo nixos-rebuild switch --flake .#myhost --show-trace -L -v"
+function flake-build --wraps 'sudo nixos-rebuild switch --flake .#myhost --show-trace -L -v'; sudo nixos-rebuild switch --flake .#myhost --show-trace -L -v $argv; end
 #TODO!: make into a function and git-commit with $argv concatenation for message
-alias nixup="git -C '$NIXOS_CONFIG' add -A && nix flake update --flake '$NIXOS_CONFIG' && sudo nixos-rebuild switch --show-trace -v --impure --fast && git_upload '$NIXOS_CONFIG'"
+function nixup; git -C $NIXOS_CONFIG add -A && nix flake update --flake $NIXOS_CONFIG && sudo nixos-rebuild switch --show-trace -v --impure --fast && git_upload $NIXOS_CONFIG $argv; end
 #TODO!: add git wrapper
-alias nhup="nh os switch --hostname vlaptop '$NIXOS_CONFIG' -- --impure"
-alias nshell="nix-shell --command fish"
-alias ndevelop="nix develop --command fish"
+function nhup; nh os switch --hostname vlaptop $NIXOS_CONFIG -- --impure $argv; end
+function nshell --wraps 'nix-shell --command fish'; nix-shell --command fish $argv; end
+function ndevelop --wraps 'nix develop --command fish'; nix develop --command fish $argv; end
 #alias nupdate="nix flake lock --update-input nixpkgs --update-input"
-alias nup="nix flake update"
-alias up="$NIXOS_CONFIG/home/scripts/maintenance.rs"
-alias typst_workspace="$NIXOS_CONFIG/home/scripts/typst_workspace.rs"
-alias tw=typst_workspace
+function nup --wraps 'nix flake update'; nix flake update $argv; end
+function up; $NIXOS_CONFIG/home/scripts/maintenance.rs $argv; end
+function typst_workspace; $NIXOS_CONFIG/home/scripts/typst_workspace.rs $argv; end
+function tw --wraps typst_workspace; typst_workspace $argv; end
 
 function nsync
 	if [ (whoami) == "v" ]

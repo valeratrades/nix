@@ -1,6 +1,5 @@
 set __fish_scripts_weird_dir (status dirname)
-alias emacs="printf \"\033[31mno\033[0m\n\""
-alias nano="printf \"\033[31mno\033[0m\n\""
+function emacs; printf "\033[31mno\033[0m\n" $argv; end
 
 function print_sturdy
     echo "+---+---+---+---+---++---+---+---+---+---+"
@@ -85,7 +84,7 @@ function what
     cat $__fish_scripts_weird_dir/sbf_tweet.txt | python3 $__fish_scripts_weird_dir/what.py | figlet
 end
 
-alias bad_apple="bad-apple-rs"
+function bad_apple --wraps bad-apple-rs; bad-apple-rs $argv; end
 
 function russian_roulette
     set r (math (random) % 6)

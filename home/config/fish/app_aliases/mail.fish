@@ -1,11 +1,10 @@
 # himalaya mail shortcuts
 
-alias m="himalaya"
-complete -c m -w himalaya
+function m --wraps himalaya; himalaya $argv; end
 
-alias mi="himalaya envelope list -f INBOX"
-alias ma="himalaya envelope list -f '[Gmail]/All Mail'"
-alias ms="himalaya envelope list -f '[Gmail]/Spam'"
+function mi --wraps 'himalaya envelope list -f INBOX'; himalaya envelope list -f INBOX $argv; end
+function ma --wraps "himalaya envelope list -f '[Gmail]/All Mail'"; himalaya envelope list -f '[Gmail]/All Mail' $argv; end
+function ms --wraps "himalaya envelope list -f '[Gmail]/Spam'"; himalaya envelope list -f '[Gmail]/Spam' $argv; end
 function me --description "List sent mail with recipient info" --wraps "himalaya envelope list -f '[Gmail]/Sent Mail'"
 	himalaya envelope list -f '[Gmail]/Sent Mail' -o json $argv \
 		| jq -r '
@@ -36,12 +35,12 @@ function me --description "List sent mail with recipient info" --wraps "himalaya
 			    printf g "%-*s" r "  " d "%-*s" r "  %-*s  " d "%-*s" r "  " d "%s" r "\n", w1,id[i], w2,fl[i], w3,su[i], w4,to[i], dt[i]
 			}'
 end
-alias md="himalaya envelope list -f '[Gmail]/Drafts'"
-alias mt="himalaya envelope list -f '[Gmail]/Trash'"
-alias mu="himalaya envelope list -f INBOX -- 'not flag seen'"
-alias mr="himalaya message read -f '[Gmail]/All Mail'" # mr <ID>; mr <ID1> <ID2>
-alias mR="himalaya message reply -f '[Gmail]/All Mail'" # mR <ID>; mR -A <ID> to reply-all
-alias mf="himalaya folder list" # overwrites some `METAFONT` thing I have, but no clue what it is, and don't care
+function md --wraps "himalaya envelope list -f '[Gmail]/Drafts'"; himalaya envelope list -f '[Gmail]/Drafts' $argv; end
+function mt --wraps "himalaya envelope list -f '[Gmail]/Trash'"; himalaya envelope list -f '[Gmail]/Trash' $argv; end
+function mu; himalaya envelope list -f INBOX -- 'not flag seen' $argv; end
+function mr --wraps "himalaya message read -f '[Gmail]/All Mail'"; himalaya message read -f '[Gmail]/All Mail' $argv; end # mr <ID>; mr <ID1> <ID2>
+function mR --wraps "himalaya message reply -f '[Gmail]/All Mail'"; himalaya message reply -f '[Gmail]/All Mail' $argv; end # mR <ID>; mR -A <ID> to reply-all
+function mf --wraps 'himalaya folder list'; himalaya folder list $argv; end # overwrites some `METAFONT` thing I have, but no clue what it is, and don't care
 function mw --description "Write a new email (Ctrl-C discards)" --wraps "himalaya message write"
 	# himalaya catches SIGINT and loops instead of exiting.
 	# We background it (keeping stdin via <&0) so bash can trap INT and SIGKILL it.

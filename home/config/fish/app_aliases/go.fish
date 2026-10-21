@@ -1,4 +1,2 @@
-alias gor="/usr/local/bin/go run -gcflags=\"-nounusederrors\""
-complete -c gor -w go
-alias gob="/usr/local/bin/go build -gcflags=\"-nounusederrors\""
-complete -c gob -w go
+function gor --wraps 'go run'; /usr/local/bin/go run -gcflags="-nounusederrors" $argv; end
+function gob --wraps 'go build'; /usr/local/bin/go build -gcflags="-nounusederrors" $argv; end

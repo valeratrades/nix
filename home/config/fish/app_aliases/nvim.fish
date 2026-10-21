@@ -76,15 +76,12 @@ function et
    nvim /tmp/a_temporary_note.$ext -c 'nnoremap q gg^vG^g_"+y:qa!<CR>' -c 'startinsert'
 end
 
-alias ec="e $NIXOS_CONFIG/home/config/nvim"
-alias es="nvim $NIXOS_CONFIG/home/config/fish/main.fish"
-alias epy="e ~/envs/Python/lib/python3.11/site-packages"
+function ec; e $NIXOS_CONFIG/home/config/nvim $argv; end
+function es; nvim $NIXOS_CONFIG/home/config/fish/main.fish $argv; end
+function epy; e ~/envs/Python/lib/python3.11/site-packages $argv; end
 
 
 # to simplify pasting stuff
-alias nano="nvim"
-complete -c nano -w nvim
-alias vi="nvim"
-complete -c vi -w nvim
-alias vim="nvim"
-complete -c vim -w nvim
+function nano --wraps nvim; nvim $argv; end
+function vi --wraps nvim; nvim $argv; end
+function vim --wraps nvim; nvim $argv; end

@@ -1,4 +1,4 @@
-alias cc="cd && clear"
+function cc; cd && clear $argv; end
 
 # name => base path. Each generates a `cs` shortcut that takes an optional
 # path suffix (first non-flag arg) and forwards any flags (-t, -a, …) to `cs`.

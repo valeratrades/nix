@@ -1,2 +1,1 @@
-alias pip "pip --disable-pip-version-check"
-# No completion wrapper needed - alias keeps same name, inherits completions automatically
+function pip; command pip --disable-pip-version-check $argv; end

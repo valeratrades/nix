@@ -66,7 +66,7 @@ function refresh_shell_init_caches
 
     if command -v zoxide &>/dev/null
         echo "  zoxide..."
-        zoxide init fish > "$__shell_init_cache_dir/zoxide.fish"
+        zoxide init fish --no-cmd > "$__shell_init_cache_dir/zoxide_no_cmd.fish"
     end
     if command -v todo &>/dev/null
         echo "  todo..."
@@ -107,7 +107,9 @@ end
 
 ## optional {{{
 if command -v zoxide &>/dev/null
-    cached_init zoxide "zoxide init fish"
+    cached_init zoxide_no_cmd "zoxide init fish --no-cmd" # --no-cmd: its `--cmd` defines z/zi via `alias`
+    function z --wraps __zoxide_z; __zoxide_z $argv; end
+    function zi --wraps __zoxide_zi; __zoxide_zi $argv; end
 end
 if command -v tedi &>/dev/null
     cached_init tedi "tedi init fish"

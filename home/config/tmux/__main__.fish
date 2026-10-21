@@ -1,5 +1,5 @@
 set __fish_config_tmux_dir (status dirname)
-alias claude_sessions="$__fish_config_tmux_dir/claude_sessions.rs"
+function claude_sessions; $__fish_config_tmux_dir/claude_sessions.rs $argv; end
 
 # Run the claude_sessions.rs classifier snapshot tests. Wraps the nightly
 # toolchain resolution the cargo-script runner already cached, so you don't

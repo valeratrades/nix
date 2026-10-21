@@ -4,10 +4,8 @@ function ta
 	tmux attach -t $argv
 end
 complete -c ta -w tmux
-alias tl="tmux ls"
-complete -c tl -w tmux
-alias tks="tmux kill-server"
-complete -c tks -w tmux
+function tl --wraps 'tmux ls'; tmux ls $argv; end
+function tks --wraps 'tmux kill-server'; tmux kill-server $argv; end
 
 function tkc --description "Kill the current tmux session"
 	if test -z "$TMUX"

@@ -2,4 +2,4 @@
 # See legacy_main.fish for the original fish implementation (kept for reference)
 
 set __fish_file_snippets_dir (status dirname)
-alias new_project="$__fish_file_snippets_dir/new_project.rs"
+function new_project; $__fish_file_snippets_dir/new_project.rs $argv; end

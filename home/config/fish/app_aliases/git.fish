@@ -4,12 +4,10 @@ set __fish_config_git_dir (status dirname)
 #TODO!!: start assigning difficulty score to all entries. Default to NaN.
 # Could do it through a label with say black-color. Probably a series of labels, simply named {[1-9],NaN}
 
-alias gl="lazygit"
-complete -c gl -w lazygit
+function gl --wraps lazygit; lazygit $argv; end
 
 set -g GIT_SHARED_MAIN_BRANCHES master main release stg prod
-alias g="git"
-complete -c g -w git
+function g --wraps git; git $argv; end
 
 function gg
 	set prefix ""
@@ -50,20 +48,20 @@ function gg
 	end
 end
 
-alias ggf="gg -p feat"
-alias ggx="gg -p fix"
-alias ggc="gg -p chore"
-alias ggh="gg -p hack"
-alias ggs="gg -p style"
-alias ggt="gg -p test"
-alias ggr="gg -p refactor" # had `rw` for rewrite; but think `refactor` is more precise, - doesn't conflict with `move`
-alias ggp="gg -p perf"
-alias ggd="gg -p docs"
-alias ggi="gg -p ci"
-alias ggm="gg -p move"
-alias ggn="gg -p nuke" # important to have this here, as it additionally promotes simplification whenever possible
-alias ggb="gg -p bump" # bump deps
-alias ggl="gg -p logging"
+function ggf; gg -p feat $argv; end
+function ggx; gg -p fix $argv; end
+function ggc; gg -p chore $argv; end
+function ggh; gg -p hack $argv; end
+function ggs; gg -p style $argv; end
+function ggt; gg -p test $argv; end
+function ggr; gg -p refactor $argv; end # had `rw` for rewrite; but think `refactor` is more precise, - doesn't conflict with `move`
+function ggp; gg -p perf $argv; end
+function ggd; gg -p docs $argv; end
+function ggi; gg -p ci $argv; end
+function ggm; gg -p move $argv; end
+function ggn; gg -p nuke $argv; end # important to have this here, as it additionally promotes simplification whenever possible
+function ggb; gg -p bump $argv; end # bump deps
+function ggl; gg -p logging $argv; end
 
 function ggw
 	if test (count $argv) -gt 0
@@ -157,9 +155,9 @@ function gcs --description 'git commit squash: gcs [commit_hash] ["new title"] (
 	return $code
 end
 
-alias gup="git add -A && git commit --fixup (git rev-parse HEAD)"
-alias gupp="gup && git push --follow-tags"
-alias gups="gup && git -c sequence.editor=true rebase -i --autosquash HEAD~2"
+function gup; git add -A && git commit --fixup (git rev-parse HEAD) $argv; end
+function gupp; gup && git push --follow-tags $argv; end
+function gups; gup && git -c sequence.editor=true rebase -i --autosquash HEAD~2 $argv; end
 
 function gbl
 	# get branches sorted by date, with HEAD, name, commit hash, subject and author
@@ -269,8 +267,7 @@ function gi --wraps "gh issue create"
 	gh issue create -b "" -t $argv
 end
 complete -c gi -w gh
-alias gil="gh issue list"
-complete -c gil -w gh
+function gil --wraps 'gh issue list'; gh issue list $argv; end
 function gill
 	set -l labels (gh label list --sort name --limit 1000 $argv)
 	or return
@@ -282,12 +279,9 @@ function gill
 end
 complete -c gill -w 'gh label list'
 
-alias gia="gh issue edit --add-assignee"
-complete -c gia -w gh
-alias giam="gh issue edit --add-assignee @me"
-complete -c giam -w gh
-alias gial="gh issue edit --add-label"
-complete -c gial -w gh
+function gia --wraps 'gh issue edit --add-assignee'; gh issue edit --add-assignee $argv; end
+function giam --wraps 'gh issue edit --add-assignee @me'; gh issue edit --add-assignee @me $argv; end
+function gial --wraps 'gh issue edit --add-label'; gh issue edit --add-label $argv; end
 
 function giem
 	set issue $argv[1]
@@ -295,16 +289,13 @@ function giem
 	gh issue edit $issue --milestone $milestone
 end
 
-alias gic="gh issue close -r completed"
-complete -c gic -w gh
-alias gir="gh issue close -r \"not planned\"" # for "retract"
-complete -c gir -w gh
-alias gix="gh issue delete --yes"
-complete -c gix -w gh
+function gic --wraps 'gh issue close -r completed'; gh issue close -r completed $argv; end
+function gir --wraps "gh issue close -r 'not planned'"; gh issue close -r "not planned" $argv; end # for "retract"
+function gix --wraps 'gh issue delete --yes'; gh issue delete --yes $argv; end
 
-alias git_rate_limit 'curl -L -X GET -H "Accept: application/vnd.github+json" -H "Authorization: token $GITHUB_KEY" https://api.github.com/rate_limit'
+function git_rate_limit; curl -L -X GET -H "Accept: application/vnd.github+json" -H "Authorization: token $GITHUB_KEY" https://api.github.com/rate_limit $argv; end
 
-alias eg 'git branch -D tmp/experiment; git cb tmp/experiment'
+function eg; git branch -D tmp/experiment; git cb tmp/experiment $argv; end
 
 #DEPRECATE: once we know that equivalents defined in git_scripts.rs are working properly
 #function gpf
@@ -386,7 +377,7 @@ function gml
 	gh api repos/:owner/:repo/milestones --jq '.[] | select(.state=="open") | "\(.title): \(.description | split("\n")[0] | gsub("\r"; ""))"'
 end
 
-alias git_zip="rm -f ~/Downloads/last_git_zip.zip && git ls-files -o -c --exclude-standard | zip ~/Downloads/last_git_zip.zip -@"
+function git_zip; rm -f ~/Downloads/last_git_zip.zip && git ls-files -o -c --exclude-standard | zip ~/Downloads/last_git_zip.zip -@ $argv; end
 
 function gco
 	set initial_query ""

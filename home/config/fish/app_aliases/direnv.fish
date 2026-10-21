@@ -1,5 +1,4 @@
-alias dira="git add -A && direnv allow"
-complete -c dira -w direnv
+function dira --wraps 'direnv allow'; git add -A && direnv allow $argv; end
 function dirw
 	# direnv wrap
 	direnv allow && \
@@ -25,5 +24,4 @@ function dirr
 	end
 end
 complete -c dirr -w direnv
-alias dird="direnv deny"
-complete -c dird -w direnv
+function dird --wraps 'direnv deny'; direnv deny $argv; end

@@ -1,4 +1,4 @@
-alias sudo="sudo -E"
+function sudo; command sudo -E $argv; end
 
 function chh
     sudo chmod -R 777 ~/
@@ -55,8 +55,8 @@ function matrix
     cleanup
 end
 
-alias fd="fd -I --full-path" # Ignores .gitignore, etc.
-alias rg="rg -I --glob '!.git' -H" # Ignores case sensitivity and .git directories.
+function fd; command fd -I --full-path $argv; end # Ignores .gitignore, etc.
+function rg; command rg -I --glob '!.git' -H $argv; end # Ignores case sensitivity and .git directories.
 function pkill
     for arg in $argv
         if string match -qr '^[^-]' $arg
@@ -74,51 +74,49 @@ function pkill
     command pkill $argv
 end
 
-alias ureload="pkill -u (whoami)" # Kill all processes of the current user.
-alias rf="sudo rm -rf"
+function ureload; pkill -u (whoami) $argv; end # Kill all processes of the current user.
+function rf --wraps 'sudo rm -rf'; sudo rm -rf $argv; end
 #alias massren="py $HOME/clone/massren/massren -d '' $argv"
-alias jp="jupyter lab -y"
+function jp --wraps 'jupyter lab -y'; jupyter lab -y $argv; end
 #alias tree="tree -I 'target|debug|_*'"
-alias tree="eza --tree"
-alias lhost="nohup chromium http://localhost:8080/ > /dev/null 2>&1 &"
-alias sound="qpwgraph"
-alias video_cut="video-cut"
-alias ss="sudo systemctl"
-alias wl_copy="wl-copy"
-alias gz="tar -xvzf -C"
-alias tokej="tokei -o json | jq . > /tmp/tokei.json"
-alias book="booktyping run --myopia"
-alias tokio-console="tokio-console --lang en_US.UTF-8"
-alias tokio_console="tokio-console"
-alias fm="yazi" # File manager
-alias t="eza --no-quotes -snew -r | head -n 1" # --no-quotes: else eza wraps space-containing names in '' when piped, breaking `unzip (t)` etc.
-alias mongodb="mongosh \"mongodb+srv://test.di2kklr.mongodb.net/\" --apiVersion 1 --username valeratrades --password qOcydRtmgFfJnnpd"
-alias sql="sqlite3"
-alias poetry="POETRY_KEYRING_DISABLED=true poetry"
-alias dk="sudo docker"
-alias hardware="sudo lshw"
-alias keys="xev -event keyboard"
-alias audio="qpwgraph"
-alias test_mic="arecord -c1 -vvv /tmp/mic.wav"
-alias nano="nvim"
-alias neofetch="fastfetch"
-alias pro_audio="pulsemixer"
-alias pfind="procs --tree | fzf"
-alias tree="fd . | as-tree"
-alias bak="XDG_CONFIG_HOME=/home/v/.dots/home/v/.config"
-alias as_term="script -qfc"
-alias wget="aria2c -x16"
-alias cdd="cd .. && cd -" # effectively just reloads `direnv`
-alias monkey="smassh"
-alias bbeats="sudo -Es nice -n -20 /etc/profiles/per-user/v/bin/bbeats" # otherwise any demanding process will produce bad breaks in sound
-alias workspaces="swaymsg -t get_tree" # shortcut for ease of remembrance by Ania and Tima
-alias q "ask_llm -f"
-alias ytd "yt-dlp -x --audio-format mp3 --cookies-from-browser firefox " # downloads audio from yt; you provide <URL>
-alias dr="deno run -A ./tmp/cmd.ts" # `dr` for `deno run`; follows https://matklad.github.io/2026/01/27/make-ts.html
-alias accounting="nix run ~/s/ev_invest/_service_arb/accounting"
+function lhost; nohup chromium http://localhost:8080/ >/dev/null 2>&1 &; end
+function sound --wraps qpwgraph; qpwgraph $argv; end
+function video_cut --wraps video-cut; video-cut $argv; end
+function ss --wraps 'sudo systemctl'; sudo systemctl $argv; end
+function wl_copy --wraps wl-copy; wl-copy $argv; end
+function gz --wraps 'tar -xvzf -C'; tar -xvzf -C $argv; end
+function tokej; tokei -o json | jq . >/tmp/tokei.json $argv; end
+function book --wraps 'booktyping run --myopia'; booktyping run --myopia $argv; end
+function tokio-console; command tokio-console --lang en_US.UTF-8 $argv; end
+function tokio_console --wraps tokio-console; tokio-console $argv; end
+function fm --wraps yazi; yazi $argv; end # File manager
+function t; eza --no-quotes -snew -r | head -n 1 $argv; end # --no-quotes: else eza wraps space-containing names in '' when piped, breaking `unzip (t)` etc.
+function mongodb --wraps mongosh; mongosh "mongodb+srv://test.di2kklr.mongodb.net/" --apiVersion 1 --username valeratrades --password qOcydRtmgFfJnnpd $argv; end
+function sql --wraps sqlite3; sqlite3 $argv; end
+function poetry; POETRY_KEYRING_DISABLED=true command poetry $argv; end
+function dk --wraps 'sudo docker'; sudo docker $argv; end
+function hardware --wraps 'sudo lshw'; sudo lshw $argv; end
+function keys --wraps 'xev -event keyboard'; xev -event keyboard $argv; end
+function audio --wraps qpwgraph; qpwgraph $argv; end
+function test_mic --wraps 'arecord -c1 -vvv /tmp/mic.wav'; arecord -c1 -vvv /tmp/mic.wav $argv; end
+function neofetch --wraps fastfetch; fastfetch $argv; end
+function pro_audio --wraps pulsemixer; pulsemixer $argv; end
+function pfind; procs --tree | fzf $argv; end
+function tree; fd . | as-tree $argv; end
+function bak --wraps XDG_CONFIG_HOME=/home/v/.dots/home/v/.config; XDG_CONFIG_HOME=/home/v/.dots/home/v/.config $argv; end
+function as_term --wraps 'script -qfc'; script -qfc $argv; end
+function wget --wraps 'aria2c -x16'; aria2c -x16 $argv; end
+function cdd; cd .. && cd - $argv; end # effectively just reloads `direnv`
+function monkey --wraps smassh; smassh $argv; end
+function bbeats; sudo -Es nice -n -20 /etc/profiles/per-user/v/bin/bbeats $argv; end # otherwise any demanding process will produce bad breaks in sound
+function workspaces --wraps 'swaymsg -t get_tree'; swaymsg -t get_tree $argv; end # shortcut for ease of remembrance by Ania and Tima
+function q --wraps 'ask_llm -f'; ask_llm -f $argv; end
+function ytd --wraps yt-dlp; yt-dlp -x --audio-format mp3 --cookies-from-browser firefox $argv; end # downloads audio from yt; you provide <URL>
+function dr --wraps 'deno run -A ./tmp/cmd.ts'; deno run -A ./tmp/cmd.ts $argv; end # `dr` for `deno run`; follows https://matklad.github.io/2026/01/27/make-ts.html
+function accounting --wraps 'nix run ~/s/ev_invest/_service_arb/accounting'; nix run ~/s/ev_invest/_service_arb/accounting $argv; end
 
-alias oclaw="cd ~/.openclaw/workspace && tn openclaw" # openclaw agent workspace in a named tmux session
-alias oc="node ~/g/openclaw/openclaw.mjs" # openclaw CLI, same invocation as configureOpenclaw's local helper
+function oclaw; cd ~/.openclaw/workspace && tn openclaw $argv; end # openclaw agent workspace in a named tmux session
+function oc --wraps 'node ~/g/openclaw/openclaw.mjs'; node ~/g/openclaw/openclaw.mjs $argv; end # openclaw CLI, same invocation as configureOpenclaw's local helper
 
 function ubuntu_vm
 	set -l iso_dir "$HOME/.cache/gnome-boxes/isos"
@@ -324,18 +322,18 @@ function where
     end
 end
 
-alias sr="source $NIXOS_CONFIG/home/config/fish/__main__.fish" # Fish equivalent for reloading configuration.
+function sr; source $NIXOS_CONFIG/home/config/fish/__main__.fish $argv; end # Fish equivalent for reloading configuration.
 #
 
 # # waydroid
-alias wui="waydroid show-full-ui" # default way to open it, after initiating the session with `waydroid session start`
+function wui --wraps 'waydroid show-full-ui'; waydroid show-full-ui $argv; end # default way to open it, after initiating the session with `waydroid session start`
 #
 
 #gpg id = gpg --list-keys --with-colons | awk -F: '/uid/ && /valeratrades@gmail.com/ {getline; print $5}'
 
 # # keyd
-alias rkeyd="sudo keyd reload && sudo journalctl -eu keyd"
-alias lkeyd="sudo keyd -m"
+function rkeyd; sudo keyd reload && sudo journalctl -eu keyd $argv; end
+function lkeyd --wraps 'sudo keyd -m'; sudo keyd -m $argv; end
 #
 
 # # lean
