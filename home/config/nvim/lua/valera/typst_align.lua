@@ -22,7 +22,7 @@ local function split_prefix(s)
 	return s:sub(1, i - 1), s:sub(i)
 end
 
-local function render_block(text, start_col, seps)
+local function render_block(text, opening_line, seps)
 	local rows, cells, from = {}, {}, 1
 	for _, sep in ipairs(seps) do
 		cells[#cells + 1] = text:sub(from, sep.offset - 1)
@@ -40,8 +40,9 @@ local function render_block(text, start_col, seps)
 		local prefix, rest = split_prefix(row[1])
 		if r > 1 and not prefix:find("\n") and (rest ~= "" or #row > 1) then return nil end -- rows sharing a line can't be aligned independently
 		prefix = prefix:gsub("[ \t]+\n", "\n")
+		if prefix:find("\n") then prefix = prefix:gsub("[ \t]*$", "") .. opening_line:match("^[ \t]*") end -- existing indent is stale padding
 		row[1] = rest
-		out[r] = (r == 1 and not prefix:find("\n")) and { pre = start_col, s = prefix } or { pre = 0, s = prefix }
+		out[r] = (r == 1 and not prefix:find("\n")) and { pre = vim.fn.strdisplaywidth(opening_line), s = prefix } or { pre = 0, s = prefix }
 		cols = math.max(cols, #row - 1)
 	end
 
@@ -116,7 +117,7 @@ return function(buf)
 			if has_align then
 				local text = table.concat(lines, "\n")
 				local line = vim.api.nvim_buf_get_lines(buf, sr, sr + 1, true)[1]
-				local new = render_block(text, vim.fn.strdisplaywidth(line:sub(1, sc)), seps)
+				local new = render_block(text, line:sub(1, sc), seps)
 				if new and new ~= text then
 					edits[#edits + 1] = { sr, sc, er, ec, vim.split(new, "\n") }
 				end
