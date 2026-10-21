@@ -2033,6 +2033,12 @@ fn classify_activity(
     if Regex::new(r"\b\d+ shells?\b").unwrap().is_match(&below_input_box) {
         return ActivityResult { state: ClaudeState::Ongoing, draft_content: None, question_content: None, plan_mode };
     }
+    // Background agents get a row each under the box's bottom rule: "◯ <type>  <desc>  <elapsed> · ↓ <n> tokens".
+    // shortcut: a completed agent's row reads the same in plain text (only its color differs) until evicted; check the .esc capture if that window ever shows up as a false ongoing.
+    let agent_row = Regex::new(r"^(❯ |  )[◯●] \S+ {2,}.*\d+[smh](\s·\s[↑↓] \S+ tokens)?\s*$").unwrap();
+    if content.lines().rev().take_while(|l| !l.trim_start().starts_with('─')).any(|l| agent_row.is_match(l)) {
+        return ActivityResult { state: ClaudeState::Ongoing, draft_content: None, question_content: None, plan_mode };
+    }
 
     // A failed tool result the turn never answered: the chrome row
     // "⎿  Error: <…>" with no assistant row ("●") anywhere below it, sitting

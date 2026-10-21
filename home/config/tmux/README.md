@@ -15,11 +15,11 @@ A pane reading `finished` only means Claude stopped talking. `mod report` inside
 last human-prompted turn, plus the closings of any turns task notifications woke
 up after it, led by the human prompt that opened it — a closing that answers a
 question reads as a dead end without it) and has an LLM — via the `ask_llm` crate — judge it as
-`finished` / `stuck` / `partial` / `ongoing`, which become states of their own:
-`stuck` (no progress for any reason — blocked, lost, or refused) is colored like `question`, `partial` like `error`.
-`ongoing` is a turn that ended waiting on the agent's own background processes or
-subagents — still working, so it's colored a darker `active`, and `supervise_sessions`
-watches it like `active`; `partial` just leaves work undone.
+`finished` / `stuck` / `partial`, which become states of their own:
+`stuck` (no progress for any reason — blocked, lost, or refused) is colored like `question`, `partial` like `error`;
+`partial` just leaves work undone. A turn that ended with its own background shells or
+agents still live never reaches the judge: the pane footer lists them, and it reads
+`ongoing` — colored a darker `active`, and `supervise_sessions` watches it like `active`.
 
 **Invariant — doubt escalates.** Severity runs `finished` < `partial` < `stuck`.
 `finished` tells me nothing needs a look; the others tell me a human should check.
