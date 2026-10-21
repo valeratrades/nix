@@ -3,7 +3,8 @@
     "SSH_ASKPASS_REQUIRE": "never",
     "SUDO_ASKPASS": "/run/current-system/sw/bin/false",
     "GIT_TERMINAL_PROMPT": "0",
-    "GIT_ASKPASS": "/run/current-system/sw/bin/false"
+    "GIT_ASKPASS": "/run/current-system/sw/bin/false",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet"
   },
   "permissions": {
     "allow": [
