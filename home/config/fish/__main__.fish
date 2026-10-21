@@ -68,31 +68,6 @@ function refresh_shell_init_caches
         echo "  zoxide..."
         zoxide init fish --no-cmd > "$__shell_init_cache_dir/zoxide_no_cmd.fish"
     end
-    if command -v todo &>/dev/null
-        echo "  todo..."
-        todo init fish > "$__shell_init_cache_dir/todo.fish" 2>/dev/null
-    end
-    if command -v tg &>/dev/null
-        echo "  tg..."
-        tg init fish > "$__shell_init_cache_dir/tg.fish" 2>/dev/null
-    end
-    if command -v discretionary_engine &>/dev/null
-        echo "  discretionary_engine..."
-        discretionary_engine init fish > "$__shell_init_cache_dir/discretionary_engine.fish" 2>/dev/null
-    end
-    if command -v himalaya &>/dev/null
-        echo "  himalaya..."
-        himalaya completion fish > "$__shell_init_cache_dir/himalaya.fish" 2>/dev/null
-    end
-    if command -v watchexec &>/dev/null
-        echo "  watchexec..."
-        watchexec --completions fish > "$__shell_init_cache_dir/watchexec.fish" 2>/dev/null
-    end
-    if command -v shuttle &>/dev/null
-        echo "  shuttle..."
-        shuttle generate shell fish > "$__shell_init_cache_dir/shuttle.fish" 2>/dev/null
-        shuttle generate manpage > "$XDG_DATA_HOME/man/man1/shuttle.1" 2>/dev/null
-    end
     if command -v atuin &>/dev/null
         echo "  atuin..."
         atuin init fish --disable-up-arrow --disable-ctrl-r > "$__shell_init_cache_dir/atuin.fish" 2>/dev/null
@@ -111,28 +86,7 @@ if command -v zoxide &>/dev/null
     function z --wraps __zoxide_z; __zoxide_z $argv; end
     function zi --wraps __zoxide_zi; __zoxide_zi $argv; end
 end
-if command -v tedi &>/dev/null
-    cached_init tedi "tedi init fish"
-end
-if command -v tg &>/dev/null
-    cached_init tg "tg init fish"
-end
-if command -v discretionary_engine &>/dev/null
-    cached_init discretionary_engine "discretionary_engine init fish"
-end
-if command -v himalaya &>/dev/null
-    cached_init himalaya "himalaya completion fish"
-end
-if command -v watchexec &>/dev/null
-    cached_init watchexec "watchexec --completions fish"
-end
-if command -v shuttle &>/dev/null
-    cached_init shuttle "shuttle generate shell fish"
-    if not test -f "$XDG_DATA_HOME/man/man1/shuttle.1"
-        mkdir -p "$XDG_DATA_HOME/man/man1"
-        shuttle generate manpage > "$XDG_DATA_HOME/man/man1/shuttle.1"
-    end
-end
+# completion-and-alias-only inits (tedi, tg, discretionary_engine, shuttle) are baked into their packages for autoload: home/config/fish/with_fish_init.nix
 ##,}}}
 # pre-empts the init's `(atuin uuid)` with the same condition; v7 because atuin reads its timestamp as session start
 if not set -q ATUIN_SESSION; or test "$ATUIN_SHLVL" != "$SHLVL"
