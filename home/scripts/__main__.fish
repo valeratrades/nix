@@ -80,10 +80,8 @@ set -g __maintenance_last_run "$XDG_STATE_HOME/fish/maintenance_last_run"
 
 # Warn if maintenance hasn't been run in over a month
 if test -f $__maintenance_last_run
-    set -l last_run (cat $__maintenance_last_run)
-    set -l now (date +%s)
     set -l month_seconds 2592000 # 30 days
-    if test (math $now - $last_run) -gt $month_seconds
+    if test (path mtime --relative $__maintenance_last_run) -gt $month_seconds # mtime: maintenance.rs rewrites the stamp on every run
         echo "Warning: maintenance hasn't been run in over a month. Run 'up' to update."
     end
 else

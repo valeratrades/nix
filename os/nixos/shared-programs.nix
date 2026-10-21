@@ -127,4 +127,13 @@
       };
     };
   };
+
+  # gnupg.agent's only contribution is `export GPG_TTY=$(tty)`, which babelfish turns into a `tty` spawn on every startup
+  environment.etc."fish/interactiveShellInit.fish".source = lib.mkForce (pkgs.writeText "interactiveShellInit.fish" ''
+    test -t 0; and set -gx GPG_TTY (path resolve /proc/self/fd/0)
+  '');
+  assertions = [{
+    assertion = config.environment.interactiveShellInit == "# Bind gpg-agent to this TTY if gpg commands are used.\nexport GPG_TTY=$(tty)\n";
+    message = "os/nixos/shared-programs.nix replaces /etc/fish/interactiveShellInit.fish, which now has contributions beyond gnupg's GPG_TTY";
+  }];
 }

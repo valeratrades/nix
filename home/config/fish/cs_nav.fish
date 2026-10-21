@@ -23,9 +23,10 @@ set -l _cs_navs \
     csn "$HOME/nix/" \
     csu "$HOME/uni/" \
 
-for i in (seq 1 2 (count $_cs_navs))
-    set -l name $_cs_navs[$i]
-    set -l base $_cs_navs[(math $i + 1)]
+while set -q _cs_navs[1]
+    set -l name $_cs_navs[1]
+    set -l base $_cs_navs[2]
+    set -e _cs_navs[1..2]
 
     function $name --inherit-variable base
         set -l flags

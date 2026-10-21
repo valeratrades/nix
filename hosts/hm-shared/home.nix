@@ -29,7 +29,15 @@
     direnv = {
       enable = true;
       enableFishIntegration = true;
-      package = pkgs.direnv;
+      # vendor_conf.d hook baked at build time; upstream's runs `direnv hook fish` on every startup
+      package = pkgs.symlinkJoin {
+        inherit (pkgs.direnv) name meta;
+        paths = [ pkgs.direnv ];
+        postBuild = ''
+          rm $out/share/fish/vendor_conf.d/direnv.fish
+          ${pkgs.direnv}/bin/direnv hook fish > $out/share/fish/vendor_conf.d/direnv.fish
+        '';
+      };
       nix-direnv = {
         enable = true; # faster on nix
         # _nix_clean_old_gcroots uses pattern `{nix,flake}-profile*` which matches `flake-tmp-profile.*`,

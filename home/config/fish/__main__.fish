@@ -8,8 +8,8 @@ test -f $HOME/s/g/private/credentials.fish; and source $HOME/s/g/private/credent
 # sops secrets are written for systemd (`writeSecretsEnvd` in hosts/v-laptop/home.nix), and
 # environment.d is read by user *units* only - sway is exec'd from this shell, not from a unit.
 if test -f $HOME/.config/environment.d/30-secrets.conf
-    for __secret_line in (cat $HOME/.config/environment.d/30-secrets.conf)
-        string match -q '?*=*' -- $__secret_line; and set -gx (string split -m1 = -- $__secret_line)
+    for __secret_line in (string match -r '^[^=]+=.*' < $HOME/.config/environment.d/30-secrets.conf)
+        set -gx (string split -m1 = -- $__secret_line)
     end
     set -e __secret_line
 end
@@ -19,7 +19,7 @@ end
 # redirect: sway's startup/DRM/renderer errors go to a persistent file instead of vanishing on
 # tty1, so a failed boot is diagnosable from the rollback (journal never sees it). `-d` comes from
 # the NixOS sway wrapper when vars `debug` is set (os/nixos/desktop/programs/sway.nix).
-string match -q /dev/tty1 -- (tty); and exec sway 2>$HOME/.sway.log
+string match -q /dev/tty1 -- (path resolve /proc/self/fd/0); and exec sway 2>$HOME/.sway.log
 
 source $__fish_config_main_dir/global.fish #NB: other things can rely on functions in it
 source $__fish_config_main_dir/other.fish
@@ -127,10 +127,17 @@ end
 if command -v shuttle &>/dev/null
     cached_init shuttle "shuttle generate shell fish"
     if not test -f "$XDG_DATA_HOME/man/man1/shuttle.1"
+        mkdir -p "$XDG_DATA_HOME/man/man1"
         shuttle generate manpage > "$XDG_DATA_HOME/man/man1/shuttle.1"
     end
 end
 ##,}}}
+# pre-empts the init's `(atuin uuid)` with the same condition; v7 because atuin reads its timestamp as session start
+if not set -q ATUIN_SESSION; or test "$ATUIN_SHLVL" != "$SHLVL"
+    read -l uuid_v4 </proc/sys/kernel/random/uuid
+    set -gx ATUIN_SESSION (printf %012x (math (path mtime /proc/self) \* 1000))7(string sub -s 14 (string replace -a - '' $uuid_v4)) # shortcut: second-precision timestamp, fish has no finer builtin clock
+    set -gx ATUIN_SHLVL $SHLVL
+end
 cached_init atuin "atuin init fish --disable-up-arrow --disable-ctrl-r"
 bind \cr "_atuin_bind_up" # configured in $XDG_CONFIG_HOME/atuin/config.toml
 bind \cg "_atuin_search" # global search
@@ -154,4 +161,3 @@ cached_init starship "starship init fish --print-full-init" # somehow fixes the 
 #,}}}
 
 set -g MANPATH "$XDG_DATA_HOME/man:$MANPATH";
-mkdir -p "$XDG_DATA_HOME/man/man1/"
