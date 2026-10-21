@@ -552,6 +552,7 @@
       ".config/tedi.nix".source = "${self}/home/config/tedi.nix";
 
       ".lesskey".source = "${self}/home/config/lesskey";
+      ".config/mpv/input.conf".source = "${self}/home/config/mpv/input.conf";
 
       # Compose-key sequences. `include "%L"` pulls in the system defaults so
       # standard compose bindings keep working; entries below extend them.
