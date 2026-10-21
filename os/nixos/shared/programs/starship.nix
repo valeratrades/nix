@@ -62,9 +62,9 @@ in
       ruby = {
         format = "[$symbol]($style) ";
       };
-      nodejs = {
-        format = "[$symbol]($style) ";
-      };
+      # replaced by symbol-only `custom.*`: these run `node --version`/`go version` (~50ms) on every prompt for their engines check, even with $version unused
+      nodejs.disabled = true;
+      golang.disabled = true;
       rust = {
         disabled = true; # relies on rustup. This doesn't generalize. Updated (in `custom`) to use `rustc` from the active env instead.
         format = "[$version]($style) ";
@@ -80,7 +80,7 @@ in
       palette = "google_calendar";
 
       format = "$username$status$character";
-      right_format = "\${custom.readonly}\${custom.path}$git_branch$git_commit$git_state$git_status\${custom.rust}$all"; # `all` does _not_ duplicate explicitly enabled modules
+      right_format = "$directory$git_branch$git_commit$git_state$git_status\${custom.rust}$all"; # `all` does _not_ duplicate explicitly enabled modules
 
       hostname = {
         style = "white";
@@ -120,29 +120,29 @@ in
       package = {
         disabled = true;
       };
+      # replicates fish's `prompt_pwd`
       directory = {
-        disabled = true;
-        truncation_length = 0; # disables truncation
+        format = "[$read_only]($read_only_style)[$path]($style) ";
+        style = "bold cyan";
+        read_only = "🔒 ";
+        read_only_style = "bold red";
+        home_symbol = "~";
+        truncation_length = 1;
+        truncation_symbol = "";
+        truncate_to_repo = false;
+        fish_style_pwd_dir_length = 1;
       };
+      # every module here that spawns a process costs ~3ms per prompt idle, 10x that under load
+      battery.disabled = true; # occasional 65ms sysfs read, for a warning eww already shows
+      netns.disabled = true;
       # Only useful for vim-mode, but I prefer to use my global vim keyd layer instead. Rest of this module is reimplemented with `status`.
       character = {
         disabled = true;
       };
-      direnv = {
-        format = "[$symbol$allowed]($style) ";
-        symbol = " ";
-
+      # loaded env only, from the var direnv exports; the `direnv` module spawns `direnv status` every prompt
+      env_var.DIRENV_FILE = {
+        format = "[ +]($style) ";
         style = "bold basil";
-        denied_msg = "-";
-        not_allowed_msg = "~";
-        allowed_msg = "+";
-
-        #format = "[$symbol]($allowed) "; # starship is not smart enough. Leaving for if it gets better.
-        #denied_msg = "purple";
-        #not_allowed_msg = "bold red";
-        #allowed_msg = "bold basil";
-
-        disabled = false;
       };
       status = {
         # ? can I remake the `$character` with this?
@@ -174,32 +174,45 @@ in
       #TODO!: sigure out how to quickly estimate the dir size, display here with `(gray)`
       # if ordering is not forced, will be sorted alphabetically
       custom = {
-        path = {
-          # replicates fish's `prompt_pwd` function
-          command = ''
-            case "$PWD" in
-              "$HOME"*) p="~''${PWD#"$HOME"}" ;;
-              *) p="$PWD" ;;
-            esac
-            printf "%s" "$p" | sed 's:\([^/]\)[^/]*/:\1/:g'
-          '';
-          when = ''true'';
-          style = "bold cyan";
-          shell = ["dash"];
-        };
         # every custom module must pin `shell`: unset falls back to $STARSHIP_SHELL (fish),
         # so each `when` would pay a full interactive fish startup (~240ms) per prompt
-        readonly = {
-          command = ''printf "🔒"'';
-          when = ''! [ -w . ]'';
-          style = "bold red";
-          shell = ["dash"];
-        };
         rust = {
-          command = ''rustc -V | cut -d ' ' -f 2'';
-          when = ''[ -f Cargo.toml ] || [ -n "$(find . -maxdepth 1 -name "*.rs" 2>/dev/null | head -1)" ]'';
+          # `rustc -V` through the rustup proxy is ~25ms per prompt; cached per (resolved rustc, nearest rust-toolchain file), invalidated by builtin `-nt` against what rustup resolves from
+          command = ''
+            IFS=:
+            for p in $PATH; do [ -x "$p/rustc" ] && r="$p/rustc" && break; done
+            d=$PWD
+            while [ -n "$d" ] && ! [ -f "$d/rust-toolchain.toml" ] && ! [ -f "$d/rust-toolchain" ]; do d=''${d%/*}; done
+            t=$d/rust-toolchain.toml; [ -f "$t" ] || t=$d/rust-toolchain
+            c="$HOME/.cache/starship_rustc$r$d/v"
+            if [ "$c" -nt "$r" ] && [ "$c" -nt "$HOME/.rustup/settings.toml" ] && [ "$c" -nt "$HOME/.rustup/toolchains" ] && { [ -z "$d" ] || [ "$c" -nt "$t" ]; }; then
+              read -r v < "$c"
+            else
+              v=$(rustc -V | cut -d ' ' -f 2)
+              mkdir -p "''${c%/*}" && printf '%s\n' "$v" > "$c"
+            fi
+            printf %s "$v"
+          '';
+          detect_files = [ "Cargo.toml" ];
+          detect_extensions = [ "rs" ];
           style = "bold red";
-          shell = ["dash"];
+          shell = [ "dash" ];
+        };
+        nodejs = {
+          symbol = " ";
+          format = "[$symbol]($style) ";
+          style = "bold green";
+          detect_files = [ "package.json" ".node-version" ".nvmrc" ];
+          detect_extensions = [ "js" "mjs" "cjs" "ts" "mts" "cts" ];
+          detect_folders = [ "node_modules" ];
+        };
+        golang = {
+          symbol = "🐹 ";
+          format = "via [$symbol]($style)";
+          style = "bold cyan";
+          detect_files = [ "go.mod" "go.sum" "go.work" "glide.yaml" "Gopkg.yml" "Gopkg.lock" ".go-version" ];
+          detect_extensions = [ "go" ];
+          detect_folders = [ "Godeps" ];
         };
       };
 

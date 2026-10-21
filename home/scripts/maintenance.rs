@@ -147,14 +147,12 @@ fn main() {
         }
     }
 
-    // Show shell startup profile at the end
     println!("\n\x1b[34m═══ Shell Startup Profile ═══\x1b[0m\n");
-    let script_dir = std::env::current_exe()
-        .ok()
-        .and_then(|p| p.parent().map(|p| p.to_path_buf()))
-        .unwrap_or_else(|| PathBuf::from("/home/v/nix/home/scripts/maintenance"));
-    let profile_script = script_dir.join("profile_shell_init.rs");
-    let _ = Command::new(&profile_script).status();
+    let status = Command::new("/home/v/nix/scripts/profile_shell.rs")
+        .args(["startup", "--runs", "3"])
+        .status()
+        .expect("script is in the repo");
+    assert!(status.success(), "profile_shell.rs: {status}");
 }
 
 fn clean_old_build_artefacts() -> bool {

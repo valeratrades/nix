@@ -34,7 +34,7 @@ function shutdown
 end
 function reboot; smart_shutdown --reboot $argv; end
 function supervise_sessions; $__fish_scripts_dir/supervise_sessions.rs $argv; end
-function profile_shell_init; $__fish_scripts_dir/maintenance/profile_shell_init.rs $argv; end
+function profile_shell; $NIXOS_CONFIG/scripts/profile_shell.rs $argv; end
 function ambiance; $__fish_scripts_dir/ambiance.rs $argv; end
 function pp; $__fish_scripts_dir/pp.rs $argv; end
 function ex; $__fish_scripts_dir/excalidraw/main.rs $argv; end
