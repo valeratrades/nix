@@ -25,6 +25,10 @@ struct Args {
     #[arg(short = 'r', long)]
     reboot: bool,
 
+    /// Only record the tmux/claude inventory for `restore_sessions`, then exit
+    #[arg(short = 's', long)]
+    save_only: bool,
+
     /// Internal flag: run as detached process (used when inside tmux)
     #[arg(long, hide = true)]
     detached: bool,
@@ -146,6 +150,11 @@ fn main() {
     unsafe {
         let path = std::env::var("PATH").unwrap_or_default();
         std::env::set_var("PATH", format!("/etc/profiles/per-user/v/bin:{path}"));
+    }
+
+    if args.save_only {
+        write_inventory(args.dry_run);
+        return;
     }
 
     // If we're inside tmux and not already detached, re-exec ourselves detached from tmux

@@ -33,6 +33,7 @@ function shutdown
 	end
 end
 function reboot; smart_shutdown --reboot $argv; end
+function save_sessions; smart_shutdown --save-only $argv; end
 function supervise_sessions; $__fish_scripts_dir/supervise_sessions.rs $argv; end
 function profile_shell; $NIXOS_CONFIG/scripts/profile_shell.rs $argv; end
 function ambiance; $__fish_scripts_dir/ambiance.rs $argv; end
