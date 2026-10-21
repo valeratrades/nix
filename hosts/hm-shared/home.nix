@@ -29,13 +29,14 @@
     direnv = {
       enable = true;
       enableFishIntegration = true;
-      # vendor_conf.d hook baked at build time; upstream's runs `direnv hook fish` on every startup
+      # our own fish hook replaces upstream's (which runs `direnv hook fish` on every startup)
       package = pkgs.symlinkJoin {
         inherit (pkgs.direnv) name meta;
         paths = [ pkgs.direnv ];
         postBuild = ''
           rm $out/share/fish/vendor_conf.d/direnv.fish
-          ${pkgs.direnv}/bin/direnv hook fish > $out/share/fish/vendor_conf.d/direnv.fish
+          substitute ${../../home/config/fish/direnv_hook.fish} $out/share/fish/vendor_conf.d/direnv.fish \
+            --replace-fail @direnv@ ${pkgs.direnv}/bin/direnv
         '';
       };
       nix-direnv = {
