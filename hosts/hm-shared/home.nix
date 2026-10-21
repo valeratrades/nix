@@ -339,9 +339,7 @@
       "/usr/lib/rustup/bin/"
       "${config.home.homeDirectory}/.local/bin/"
       "${config.home.homeDirectory}/pkg/packages.modular.com_mojo/bin"
-      "${config.home.homeDirectory}/.local/share/flatpak"
       "/usr/bin"
-      "/var/lib/flatpak"
     ];
     pointerCursor = {
       name = "Adwaita";

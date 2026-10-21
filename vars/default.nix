@@ -41,6 +41,7 @@ in
 		disableNvidia = false;  # set to true to use AMD iGPU only (better battery, fewer driver issues)
 		gpuAcceleration = false;  # forced Firefox GPU rendering (webrender compositor + dmabuf + gpu-process). Off: runs hot on this chassis.
 		clickhouse = false;
+		flatpak = false;
 		openclaw = true;
 		debug = false; # verbose systemd logging (boot + shutdown); flip on when something starts misbehaving
 		speed_over_safety = true; # e.g. login doesn't wait for home-manager activation, so a fresh generation's session can start on the previous one's files
@@ -64,6 +65,7 @@ in
 		kbd = "iso";
 		gpuAcceleration = true;
 		clickhouse = true;
+		flatpak = false;
 		openclaw = false;
 		debug = false;
 		speed_over_safety = false;
@@ -83,6 +85,7 @@ in
 		kbd = "ansi";
 		gpuAcceleration = true;
 		clickhouse = true;
+		flatpak = false;
 		openclaw = false;
 		debug = false;
 		speed_over_safety = false;

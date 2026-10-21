@@ -1,6 +1,8 @@
 {
   self,
   pkgs,
+  lib,
+  user,
   mylib,
   ...
 }:
@@ -11,7 +13,7 @@
   environment.systemPackages =
     with pkgs;
     lib.lists.flatten [
-      flatpak
+      (lib.optional user.flatpak flatpak)
       self.packages.${pkgs.stdenv.hostPlatform.system}.wlr-gamma-service
       keyd
       granted # access cloud
