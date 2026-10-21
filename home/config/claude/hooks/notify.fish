@@ -5,6 +5,10 @@
 
 set label $argv[1]
 
+# a claude launched from inside another claude's shell inherits CLAUDECODE; one I started myself doesn't
+test -n "$CLAUDE_PID"; or begin; echo "notify.fish: CLAUDE_PID unset" >&2; exit 1; end
+string match -q 'CLAUDECODE=*' (string split0 < /proc/$CLAUDE_PID/environ); and exit 0
+
 read input
 set session_id (echo $input | jq -r .session_id)
 set stamp_file /tmp/claude-notify-$label-$session_id
