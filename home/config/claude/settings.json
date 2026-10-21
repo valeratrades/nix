@@ -112,6 +112,11 @@
   },
   "alwaysThinkingEnabled": true,
   "effortLevel": "high",
+  "modelSettings": {
+    "claude-opus-5-5": {
+      "effortLevel": "high"
+    }
+  },
   "autoCompactWindow": 1000000,
   "showClearContextOnPlanAccept": true,
   "tui": "fullscreen",
@@ -120,10 +125,5 @@
   "crossSessionInbound": "accept",
   "thinking": {
     "display": "summarized"
-  },
-  "modelSettings": {
-    "claude-opus-5-5": {
-      "effortLevel": "high"
-    }
   }
 }
