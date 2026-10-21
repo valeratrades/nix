@@ -1,6 +1,6 @@
 # Desktop freezes solid, kernel alive — power button needed
 
-Status: **cause confirmed** (2nd incident reproduced it, 08:31:41, stall dump captured). Not fixed.
+Status: **cause confirmed, fix applied** (`WLR_RENDERER=gles2`, sway.nix). Effective from the first boot after it; a sway started before it still deadlocks on the next `switch`.
 
 ## Signature
 
@@ -76,8 +76,15 @@ to Vulkan, and why boot -3 (EGL still visible) survived the same hotplug.
 Trigger: any system daemon-reload while nvidia_drm is not loaded yet. It never loads at boot, so
 **the first `nixos-rebuild switch` of every boot freezes the desktop.**
 
-Fix candidates (untested):
-- hide the NVIDIA Vulkan ICD from sway the same way EGL is hidden (`VK_DRIVER_FILES` = radeon only,
-  sway.nix), and unset it in `nvidia-offload`. Open question: whether HDMI on the dGPU still
-  comes up once wlroots has no renderer for card0.
-- and/or make `nvidia-drm-late` actually fire at boot, before Xwayland exists.
+## Fix: `WLR_RENDERER=gles2` in sway's env
+
+wlroots 0.19.3 `renderer_autocreate`: with WLR_RENDERER=gles2, only GLES is tried. It fails on
+card0 (mesa-only EGL), so `init_mgpu_renderer` logs "falling back to scanning out from primary
+GPU" and returns true. Vulkan is never entered, and HDMI on the dGPU still lights up. AMD was
+already on GLES under `auto` (GLES is tried first), so the desktop doesn't change.
+
+Rejected: hiding the NVIDIA Vulkan ICD via `VK_DRIVER_FILES`. It leaks into every app and needs
+another unset in `nvidia-offload`, whereas WLR_RENDERER is read only by wlroots.
+
+Still open: `nvidia-drm-late.path` never fires at boot, only on the next daemon-reload. Now harmless,
+but HDMI on the dGPU won't come up until the first switch.

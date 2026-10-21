@@ -14,8 +14,11 @@
       # /dev/nvidia0 for the process lifetime, pinning the dGPU out of RTD3 (D3cold). HDMI on the
       # dGPU still works: wlroots without an mgpu blit renderer scans out from the primary GPU.
       # `nvidia-offload` (graphics.nix) unsets it.
+      # WLR_RENDERER: with NVIDIA EGL hidden, `auto` falls through to Vulkan on nvidia_drm hotplug, and NVIDIA's
+      # Vulkan ICD XOpenDisplay()s sway's own Xwayland from sway's main thread: a permanent freeze.
+      # See ongoing_debug/2026-10-21_sway-freeze.md.
       extraSessionCommands =
-        "	export __EGL_VENDOR_LIBRARY_FILENAMES=/run/opengl-driver/share/glvnd/egl_vendor.d/50_mesa.json;\n	export XDG_CURRENT_DESKTOP=\"sway\";\n	export GDK_BACKEND=\"wayland\";\n	export XDG_BACKEND=\"wayland\";\n	export QT_WAYLAND_FORCE_DPI=\"physical\";\n	export QT_QPA_PLATFORM=\"wayland-egl\";\n	export CLUTTER_BACKEND=\"wayland\";\n	export SDL_VIDEODRIVER=\"wayland\";\n	export BEMENU_BACKEND=\"wayland\";\n	export MOZ_ENABLE_WAYLAND=\"1\";\n	# QT (needs qt5.qtwayland in systemPackages)\n	export QT_QPA_PLATFORM=wayland-egl\n	export SDL_VIDEODRIVER=wayland\n";
+        "	export WLR_RENDERER=gles2;\n	export __EGL_VENDOR_LIBRARY_FILENAMES=/run/opengl-driver/share/glvnd/egl_vendor.d/50_mesa.json;\n	export XDG_CURRENT_DESKTOP=\"sway\";\n	export GDK_BACKEND=\"wayland\";\n	export XDG_BACKEND=\"wayland\";\n	export QT_WAYLAND_FORCE_DPI=\"physical\";\n	export QT_QPA_PLATFORM=\"wayland-egl\";\n	export CLUTTER_BACKEND=\"wayland\";\n	export SDL_VIDEODRIVER=\"wayland\";\n	export BEMENU_BACKEND=\"wayland\";\n	export MOZ_ENABLE_WAYLAND=\"1\";\n	# QT (needs qt5.qtwayland in systemPackages)\n	export QT_QPA_PLATFORM=wayland-egl\n	export SDL_VIDEODRIVER=wayland\n";
     };
     sway.xwayland.enable = true;
   };
