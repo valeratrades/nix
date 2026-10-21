@@ -156,6 +156,28 @@ in
           fi
         done
 
+        # A frozen desktop with a live kernel leaves nothing behind but the power-button shutdown, so a
+        # stall of two consecutive probes snapshots where sway sits, and blocked tasks system-wide.
+        # pid from the socket name: a dead sway's socket outlives it. See ongoing_debug/2026-10-21_sway-freeze.md.
+        sway=none
+        for s in /run/user/*/sway-ipc.*.sock; do
+          pid=''${s%.sock}; pid=''${pid##*.}
+          [ -d "/proc/$pid" ] || continue
+          if timeout 2 ${pkgs.sway}/bin/swaymsg -s "$s" -t get_version >/dev/null 2>&1; then
+            sway=ok; sway_fails=0
+          else
+            sway=STALL; sway_fails=$(( ''${sway_fails:-0} + 1 ))
+            if [ "$sway_fails" = 2 ]; then
+              for t in /proc/$pid/task/*; do
+                echo "sway-stall tid=''${t##*/} comm=$(val "$t/comm") state=$(cut -d' ' -f3 "$t/stat") wchan=$(val "$t/wchan")"
+                sed 's/^/  /' "$t/stack"
+              done
+              timeout 10 ${pkgs.elfutils}/bin/eu-stack -p "$pid" 2>&1 | head -300 | sed 's/^/sway-stall /'
+              echo w > /proc/sysrq-trigger
+            fi
+          fi
+        done
+
         # fmax exposes whether thermal-guard was throttling at the time; batt exposes an adapter
         # brownout, which is the leading explanation for a cut that leaves no software trace at all.
         echo "cpu=$(( $(val "$k10/temp1_input") / 1000 ))C" \
@@ -167,7 +189,8 @@ in
              "fmax=$(( $(val /sys/devices/system/cpu/cpufreq/policy0/scaling_max_freq) / 1000 ))MHz" \
              "ac=$(val /sys/class/power_supply/ADP0/online)" \
              "batt=$(val /sys/class/power_supply/BAT0/status)/$(( $(val "$bat/power1_input") / 1000000 ))W" \
-             "load=$(cut -d' ' -f1 /proc/loadavg)"
+             "load=$(cut -d' ' -f1 /proc/loadavg)" \
+             "sway=$sway"
 
         sleep 5
       done
