@@ -57,6 +57,21 @@ Login as the `nixos` user - configs are automatically available.
 ## Dev
 Currently config is impure. For possibility of reversion, all known places that introduce impurities are marked with `#IMPURE`
 
+## LLM
+Claude Code config lives in [home/config/claude/](home/config/claude/), symlinked into `~/.claude/`.
+
+### Per-repo settings
+`<repo>/.claude/settings.local.json` (gitignored, machine-local) layers over global [settings.json](home/config/claude/settings.json): objects merge by key, arrays concatenate, conflicting scalars take the repo value. Only picked up when the session is started inside that repo.
+
+### Helper agent model
+Global default is `env.CLAUDE_CODE_SUBAGENT_MODEL = "sonnet"`. To bump a repo to Opus:
+```json
+{"env": {"CLAUDE_CODE_SUBAGENT_MODEL": "opus"}}
+```
+in its `.claude/settings.local.json`. Find existing overrides: `rg -l -uu SUBAGENT_MODEL ~/s -g settings.local.json`.
+
+Precedence: `model` arg on the spawn call > agent frontmatter `model:` (eg [agents/](home/config/claude/agents/)) > this env var > session's own model. Forks always inherit the session model.
+
 ## Other
 ### Philosophy
 - No convenience optimisations should be made for suboptimal actions/behaviors/patterns. For example, I will never have `Spotify` pinned to a designated workspace, as it is desirable to maximize friction around these.
