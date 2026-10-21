@@ -504,7 +504,10 @@
         xournalpp # draw on PDFs
       ] ++ [
         inputs.auto_redshift.packages.${pkgs.stdenv.hostPlatform.system}.default # good idea for everyone
-        (inputs.tedi.packages.${pkgs.stdenv.hostPlatform.system}.default.overrideAttrs (old: { doCheck = false; })) # pretty generic at this point
+        (import ../../home/config/fish/with_fish_init.nix pkgs {
+          pkg = inputs.tedi.packages.${pkgs.stdenv.hostPlatform.system}.default.overrideAttrs (old: { doCheck = false; }); # pretty generic at this point
+          cmd = "tedi --github-token _ init fish"; # init output ignores config, but config has to parse
+        })
         inputs.bbeats.packages.${pkgs.stdenv.hostPlatform.system}.default
         inputs.math_tools.packages.${pkgs.stdenv.hostPlatform.system}.default # could be useful to all people currently using my distro
         inputs.reasonable_envsubst.packages.${pkgs.stdenv.hostPlatform.system}.default # have scripts depending on it, and they are currently part of the shared config.

@@ -679,7 +679,11 @@ in {
             docker-client
             arion # configure docker with nix
             podman-compose
-            cargo-shuttle
+            (import ../../home/config/fish/with_fish_init.nix pkgs {
+              pkg = cargo-shuttle;
+              cmd = "shuttle generate shell fish";
+              postBuild = "mkdir -p $out/share/man/man1; $out/bin/shuttle generate manpage > $out/share/man/man1/shuttle.1";
+            })
             devenv
             nix-direnv
           ]
