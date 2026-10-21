@@ -157,7 +157,7 @@ function tn
 	tmux attach-session -t "$session_name:source.0"
 end
 
-# Rebuilds the working set recorded by `smart_shutdown` (`tmux_sessions.tsv` + `claude_restore.tsv`).
+# Rebuilds the working set recorded by `save_sessions` (`tmux_sessions.tsv` + `claude_restore.tsv`).
 # Idempotent: sessions and claudes already live are skipped, so reruns (e.g. home-manager restarting the unit) are safe.
 function restore_sessions
 	argparse 'n/dry-run' -- $argv
@@ -168,7 +168,7 @@ function restore_sessions
 	set -l f "$state_home/claude_restore.tsv"
 	for x in $sf $f
 		if not test -f $x
-			echo "restore_sessions: nothing to restore, $x absent (only smart_shutdown writes it)" >&2
+			echo "restore_sessions: nothing to restore, $x absent (only save_sessions writes it)" >&2
 			return 0
 		end
 	end

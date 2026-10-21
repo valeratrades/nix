@@ -23,7 +23,7 @@ function gn; $__fish_scripts_dir/git_scripts.rs publish $argv; end
 function kbd; $__fish_scripts_dir/kbd.rs $argv; end
 function health; $__fish_scripts_dir/health.rs $argv; end
 function optimize_for; sudo -E $__fish_scripts_dir/optimize_for.rs $argv; end
-function smart_shutdown; $NIXOS_CONFIG/home/scripts/smart_shutdown.rs $argv; end # not the store copy: a shell older than the last switch would record in a format `restore_sessions` no longer reads
+function smart_shutdown; $NIXOS_CONFIG/home/scripts/smart_shutdown.rs $argv; end
 # plain `shutdown now` skips the claude inventory write, silently breaking restore_sessions
 function shutdown
 	if contains -- -r $argv; or contains -- --reboot $argv
@@ -33,7 +33,7 @@ function shutdown
 	end
 end
 function reboot; smart_shutdown --reboot $argv; end
-function save_sessions; smart_shutdown --save-only $argv; end
+function save_sessions; $NIXOS_CONFIG/home/scripts/save_sessions.rs $argv; end # not the store copy: a shell older than the last switch would record in a format `restore_sessions` no longer reads
 function supervise_sessions; $__fish_scripts_dir/supervise_sessions.rs $argv; end
 function profile_shell; $NIXOS_CONFIG/scripts/profile_shell.rs $argv; end
 function ambiance; $__fish_scripts_dir/ambiance.rs $argv; end
