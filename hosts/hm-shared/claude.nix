@@ -71,7 +71,7 @@ let
 			"impeccable@impeccable" = true;
 			"ponytail@ponytail" = true;
 			"cloudflare@claude-plugins-official" = true;
-			"aws-core@claude-plugins-official" = true;
+			"aws-core@claude-plugins-official" = false; # its uvx stdio MCP took 3s to connect
 			"code-simplifier@claude-plugins-official" = true;
 			"typescript-lsp@claude-plugins-official" = true;
 			"hookify@claude-plugins-official" = true;

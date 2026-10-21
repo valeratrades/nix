@@ -105,7 +105,7 @@
     "firecrawl@claude-plugins-official": true,
     "cloudflare@claude-plugins-official": true,
     "frontend-design@claude-plugins-official": true,
-    "aws-core@claude-plugins-official": true
+    "aws-core@claude-plugins-official": false
   },
   "sandbox": {
     "enabled": false
