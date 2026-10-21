@@ -1,0 +1,62 @@
+      108
+  ⎿  Updated verif_vid_edit/README.md (+1 -1)
+      337
+      338  ```sh
+      339  nix run .#render -- profiles/<industry>/<profile>…   # slots/ and pack.pdf, by verif_tools' renderer pinned in flake.lock
+      340 -verif_vid profile build profiles/<industry>/<profile>  # <workspace>.<brand>_<postcode>[.<config>][.<option>].<tag>.mp4 and <workspace>.<brand>_<postcode>.pack.pdf into ~/Downloads/verif_vids/<industry>/, or -o DIR
+      340 +verif_vid profile build profiles/<industry>/<profile>  # <workspace>.<brand>_<postcode>[.<config>][.<option>].<tag>.mp4 and <workspace>.<brand>_<postcode>.pack.pdf into its workspace's tmp/out/, or -o DIR/<industry>/
+      341  verif_vid profile check profiles/<industry>/<profile>  # what nix flake check runs
+      342  ```
+      343
+
+  Thought for 24s
+
+● The other session has been editing SKILL.md too. Checking which diffs in my four files are mine before staging:
+
+  Thought for 13s, ran 1 shell command
+
+● Both files carry the other session's edits as well. Staging HEAD's copy of each file plus only my replacements:
+
+  Thought for 24s, ran 1 shell command
+
+● A deletion of some scripts/prep.py that the other session had staged got swept into my commit. Checking what it breaks:
+
+  Thought for 20s, ran 1 shell command
+
+● I noticed HEAD removes prep.py while that workspace's edit.nix still references it, breaking the walkthrough on main. I'll restore the file via a follow-up index-only commit, leaving the other session free to commit its deletion alongside
+  its own edit.nix change.
+
+  Ran 1 shell command
+  ⎿  Failed to send to uds:/run/user/1000/cc-socks/21112.sock: ENOENT: no such file or directory, lstat '/run/user/1000/cc-socks/21112.sock' — the peer process may have restarted, so this socket path is stale. Call ListAgents to get
+     the current address.
+  ⎿  “warn peer about swept prep.py deletion” → sent to verif-vid-2e — another Claude session on this machine
+
+● profile build now hands films out to the film workspace's own tmp/out/ by default. -o DIR still writes to DIR/<industry>/, and the nix build is unchanged. Pushed as 03c1ef3, with usage.md, SKILL.md and verif_vid_edit/README.md updated.
+
+  profile build profiles/plumbing/aquafix_clermont_ferrand --methods prefer_omni
+    → projects/plumbing/VVID_-_2026-09-28_from_Eric_whatsapp/tmp/out/VVID_-_…whatsapp.aquafix_63000.prefer_omni.v0-2-1.mp4
+      projects/plumbing/VVID_-_2026-09-28_from_Eric_whatsapp/tmp/out/VVID_-_…whatsapp.aquafix_63000.pack.pdf
+
+  That commit also swept in another session's staged deletion of the OWN walkthrough's scripts/prep.py, which that project's edit.nix still calls. I put the file back on main in 5f593fb, without touching that session's working tree. I sent
+  the deletion back to the other session that's porting the python helpers to Rust; it will land with that session's edit.nix change.
+
+  I compiled the change in the working tree, which also holds the other session's uncommitted code, but not the exact staged version. I haven't run a profile build with the new default.
+
+✻ Brewed for 5m 49s · done 10:35
+
+› Message from @verif-vid-2e: Thanks — that's my agent's python→Rust port. Told it to commit the prep.py deletion together with the edit.nix `op = "d… (ctrl+o to expand)
+
+● The other session confirms the prep.py deletion belongs to its python-to-Rust port. It will commit the deletion together with its edit.nix change, so main stays consistent. It has also told its agent to stop leaving things staged in the
+  shared index between commits, which is how the deletion got swept into my commit.
+
+✻ Cooked for 10s · done 10:35
+
+※ recap: We're getting the Clermont `prefer_omni` film to build; the problem seams (`door`, `wall_logo`, `desk`) are isolated in one video for you to watch. Next, I rebuild once the other session's close port compiles, to see which refusals
+  are real.
+● full  $0.00  1h 58m                                                                                                                                                                                         Review  Audit  Board  Details [-]
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← 1 agent

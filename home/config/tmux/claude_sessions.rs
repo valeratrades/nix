@@ -1774,9 +1774,11 @@ fn classify_activity(
     // line — glyph, space, phrase, "… (<elapsed>" — while quoted ones sit mid-line
     // or behind list/chrome prefixes ("- ", "⎿  "). [^…]* keeps the match inside
     // one spinner phrase so a lazy dot can't bridge from a literal "…" in prose to
-    // a later "… (". If the glyph alphabet ever grows past this set, the
-    // transcript override in get_claude_windows still catches the missed Active.
-    let spinner_pattern = Regex::new(r"(?m)^\s*[·✢✳✶✻✽∗*]\s+[^…]*[\p{L}\p{N}]… \(").unwrap();
+    // a later "… (", and its \n keeps a settled "✻ Brewed for …" row from bridging
+    // into a truncated row below ("…d… (ctrl+o to expand)"). If the glyph alphabet
+    // ever grows past this set, the transcript override in get_claude_windows
+    // still catches the missed Active.
+    let spinner_pattern = Regex::new(r"(?m)^\s*[·✢✳✶✻✽∗*]\s+[^…\n]*[\p{L}\p{N}]… \(").unwrap();
     if spinner_pattern.is_match(&last_portion) {
         return ActivityResult { state: working, draft_content: None, question_content: None, plan_mode };
     }
