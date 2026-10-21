@@ -71,7 +71,7 @@ handle_udev_event → handle_add_drm_card → wlr_drm_backend_create → init_dr
 The NVIDIA Vulkan ICD opens `$DISPLAY` while it initializes. sway's own environment has DISPLAY
 pointing at Xwayland, and sway serves Xwayland, so sway waits on itself. GLES was tried first and
 failed, because NVIDIA EGL is hidden from the session (dd38860a). That is why wlroots fell through
-to Vulkan, and why boot -3 (EGL still visible) survived the same hotplug.
+to Vulkan. (Boot -3 had EGL hidden too: its 09:04:56 hotplug logs the same GLES failure.)
 
 Trigger: any system daemon-reload while nvidia_drm is not loaded yet. It never loads at boot, so
 **the first `nixos-rebuild switch` of every boot freezes the desktop.**
