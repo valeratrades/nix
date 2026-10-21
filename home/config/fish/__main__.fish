@@ -135,26 +135,18 @@ cached_init atuin "atuin init fish --disable-up-arrow --disable-ctrl-r"
 bind \cr "_atuin_bind_up" # configured in $XDG_CONFIG_HOME/atuin/config.toml
 bind \cg "_atuin_search" # global search
 
-# Drop malformed invocations from atuin history right after they're recorded. We prune only exit
-# codes that mean "this invocation was never valid in the first place" — never a recall-worthy
-# command that merely failed (a `git push` rejected by a conflict stays in history):
-#   64 EX_USAGE    — command-line usage error (bad flags/syntax)
-#   65 EX_DATAERR  — input data was incorrect
-#   126           — command found but not executable (no +x, is a directory)
-#   127           — command not found (typo)
-# Defined after atuin's init so this fish_postexec handler runs after atuin's own (which fires the
-# `atuin history start`/`history end` pair). The `--exit $code` filter is the safety anchor: it can
-# only ever match the just-failed invocation, never a successful command sharing the same text, so a
-# successful `foo` is never collateral-deleted even when an earlier `foo` failed this way in-session.
-# atuin writes the exit code via a disowned background job, so if our delete loses that race the
-# entry simply survives — benign, never a wrong deletion. `atuin search --delete` is the only
-# sync-safe path (it writes a deletion record to the store; a raw sqlite edit to history.db would be
-# resurrected on next sync).
-function _atuin_drop_invalid_invocation --on-event fish_postexec
+# atuin's own preexec blocks every command on a synchronous `atuin history start`; record start+end in one detached job after the command instead.
+# Cost: the entry's timestamp is the command's end, not its start.
+functions -e _atuin_preexec _atuin_postexec
+function __atuin_remember_cwd --on-event fish_preexec
+    set -g __atuin_cwd $PWD # `cd` would otherwise be recorded under its target
+end
+function __atuin_record --on-event fish_postexec
     set -l code $status
-    contains $code 64 65 126 127; or return
-    set -q ATUIN_SESSION; or return
-    ATUIN_LOG=error atuin search --filter-mode session --exit $code --search-mode full-text --delete -- "$argv[1]" &>/dev/null &
+    test -n "$fish_private_mode"; and return
+    # never-valid invocations stay out of history: 64 EX_USAGE, 65 EX_DATAERR, 126 not executable, 127 not found
+    contains $code 64 65 126 127; and return
+    ATUIN_LOG=error command sh -c 'cd "$1" && id=$(atuin history start -- "$4") && [ -n "$id" ] && atuin history end --exit "$2" --duration "$3" "$id"' _ $__atuin_cwd $code "$CMD_DURATION"000000 $argv[1] &>/dev/null &
     disown
 end
 
