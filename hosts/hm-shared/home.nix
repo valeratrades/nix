@@ -52,14 +52,30 @@
         # dangling store paths (`cp: cannot stat …-unknown`, `cargo -Zscript` panicking
         # on a deleted argument, `rustfmt` falling through to the rustup shim). Missing
         # is not stale: staleness may be ignored, absence must rebuild.
+        # The last three edits are per-load spawn cuts: the reload script is rewritten
+        # (rm+cat+chmod) only when its content changed, and under manual reload the
+        # watched-files staleness scan (`direnv show_dump`) is skipped, as its only
+        # consumer there is the out-of-date warning. `dirr` deletes the .rc, which
+        # rebuilds via profile_rc_missing, and force reload still scans.
         package = pkgs.nix-direnv.overrideAttrs (old: {
-          postFixup = (old.postFixup or "") + ''
+          # ahead of resholve, so commands introduced here get resolved too
+          preFixup = ''
+            chmod u+w $out/share/nix-direnv/direnvrc
             substituteInPlace $out/share/nix-direnv/direnvrc \
               --replace-fail '{nix,flake}-profile*' '{nix-profile-,flake-profile-}*' \
               --replace-fail '_nix build --out-link "$symlink" "$storepath"' '_nix build --out-link "$symlink" "$(readlink -f "$storepath")"' \
               --replace-fail 'if [[ $_nix_direnv_manual_reload -eq 1 && -z ''${_nix_direnv_force_reload-} ]]; then' 'if [[ $_nix_direnv_manual_reload -eq 1 && $profile_missing -eq 0 && $profile_rc_missing -eq 0 && -z ''${_nix_direnv_force_reload-} ]]; then' \
-              --replace-fail 'if [[ $_nix_direnv_allow_fallback -eq 1 ]]; then' 'if [[ $_nix_direnv_allow_fallback -eq 1 && $profile_missing -eq 0 && $profile_rc_missing -eq 0 ]]; then'
-          '';
+              --replace-fail 'if [[ $_nix_direnv_allow_fallback -eq 1 ]]; then' 'if [[ $_nix_direnv_allow_fallback -eq 1 && $profile_missing -eq 0 && $profile_rc_missing -eq 0 ]]; then' \
+              --replace-fail '  rm -f "''${layout_dir}/bin/nix-direnv-reload"
+              cat >"''${layout_dir}/bin/nix-direnv-reload" <<-EOF' '  local reload_script
+              IFS= read -r -d "" reload_script <<-EOF || true' \
+              --replace-fail '  chmod +x "''${layout_dir}/bin/nix-direnv-reload"' '  if [[ ! -x ''${layout_dir}/bin/nix-direnv-reload || $(<"''${layout_dir}/bin/nix-direnv-reload") != "''${reload_script%$'"'"'\n'"'"'}" ]]; then
+                rm -f "''${layout_dir}/bin/nix-direnv-reload"
+                printf %s "$reload_script" >"''${layout_dir}/bin/nix-direnv-reload"
+                chmod +x "''${layout_dir}/bin/nix-direnv-reload"
+              fi' \
+              --replace-fail '  _nix_direnv_watches watches' '  [[ $_nix_direnv_manual_reload -eq 1 && -z ''${_nix_direnv_force_reload-} ]] || _nix_direnv_watches watches'
+          '' + old.preFixup;
         });
       };
       silent = true;
@@ -71,13 +87,8 @@
       # See ongoing_debug/2026-07-11_nix-develop-direnv-offline.md
       stdlib = ''
         _nix_direnv_manual_reload=1
-        # Upstream only refreshes the gcroot mtimes on a cache *hit*, and a cache held
-        # by manual reload never takes that path — it would age out of nh's roots and
-        # become the collectable closure this whole block exists to not source.
-        _nix_direnv_warn_manual_reload() {
-          _nix_refresh_gcroots 2>/dev/null
-          _nix_direnv_warning 'cache is out of date. use "nix-direnv-reload" to reload'
-        }
+        NIX_DIRENV_SKIP_VERSION_CHECK=1
+        log_status() { :; } # `silent` filters every status line anyway; this skips the `direnv log` spawn behind each
       '';
     };
 
@@ -493,10 +504,7 @@
         xournalpp # draw on PDFs
       ] ++ [
         inputs.auto_redshift.packages.${pkgs.stdenv.hostPlatform.system}.default # good idea for everyone
-        (import ../../home/config/fish/with_fish_init.nix pkgs {
-          pkg = inputs.tedi.packages.${pkgs.stdenv.hostPlatform.system}.default.overrideAttrs (old: { doCheck = false; }); # pretty generic at this point
-          cmd = "tedi --github-token _ init fish"; # init output ignores config, but config has to parse
-        })
+        (inputs.tedi.packages.${pkgs.stdenv.hostPlatform.system}.default.overrideAttrs (old: { doCheck = false; })) # pretty generic at this point
         inputs.bbeats.packages.${pkgs.stdenv.hostPlatform.system}.default
         inputs.math_tools.packages.${pkgs.stdenv.hostPlatform.system}.default # could be useful to all people currently using my distro
         inputs.reasonable_envsubst.packages.${pkgs.stdenv.hostPlatform.system}.default # have scripts depending on it, and they are currently part of the shared config.

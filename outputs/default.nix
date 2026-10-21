@@ -169,39 +169,46 @@ in {
             prettier # code formatter
           ];
         name = "dots";
-        shellHook = ''
-          ${self.checks.${system}.pre-commit-check.shellHook}
-
-          # Replace the generated pre-commit hook with a resilient wrapper that
-          # resolves `pre-commit` from $PATH at runtime instead of hardcoding a
-          # Nix store path (which goes stale on flake.lock updates).
-          GIT_WC=$(git rev-parse --show-toplevel 2>/dev/null)
-          if [ -n "$GIT_WC" ] && [ -f "$GIT_WC/.git/hooks/pre-commit" ]; then
-            printf '%s\n' '#!/usr/bin/env bash' \
-              '# Resilient pre-commit hook: resolves pre-commit from PATH.' \
-              '# Dependency-free secret gate FIRST: unlike the pre-commit suite' \
-              '# below, this runs even outside nix develop — whether a leaked' \
-              '# token gets committed must not depend on which shell the commit' \
-              '# happened from.' \
-              '# --no-ext-diff: difftastic is configured as the external differ' \
-              '# and its output has no "+" line markers to anchor on.' \
-              'if git diff --cached --no-ext-diff -U0 --no-color | grep -nE "^\+.*(sk-ant-(api|oat)[0-9a-zA-Z_-]{10}|ghp_[A-Za-z0-9]{20}|github_pat_[A-Za-z0-9_]{20}|AKIA[0-9A-Z]{16}|xox[baprs]-[0-9A-Za-z]{8}|-----BEGIN [A-Z ]*PRIVATE KEY)"; then' \
-              '  echo "ERROR: staged changes contain what looks like a secret (matches above). Commit blocked." >&2' \
-              '  exit 1' \
-              'fi' \
-              '# If not in nix develop (pre-commit not on PATH), warn and skip.' \
-              'if ! command -v pre-commit &>/dev/null; then' \
-              '  echo "WARNING: pre-commit not found on PATH (not in nix develop?), skipping hook." >&2' \
-              '  exit 0' \
-              'fi' \
-              'ARGS=(hook-impl --config=.pre-commit-config.yaml --hook-type=pre-commit)' \
-              'HERE="$(cd "$(dirname "$0")" && pwd)"' \
-              'ARGS+=(--hook-dir "$HERE" -- "$@")' \
-              'exec pre-commit "''${ARGS[@]}"' \
-              > "$GIT_WC/.git/hooks/pre-commit"
-            chmod +x "$GIT_WC/.git/hooks/pre-commit"
-          fi
-        '';
+        shellHook =
+          let
+            hooks = self.checks.${system}.pre-commit-check.config;
+            # Resolves `pre-commit` from $PATH at runtime instead of hardcoding a
+            # Nix store path (which goes stale on flake.lock updates).
+            hook = pkgs.writeText "pre-commit" ''
+              #!/usr/bin/env bash
+              # Resilient pre-commit hook: resolves pre-commit from PATH.
+              # Dependency-free secret gate FIRST: unlike the pre-commit suite
+              # below, this runs even outside nix develop — whether a leaked
+              # token gets committed must not depend on which shell the commit
+              # happened from.
+              # --no-ext-diff: difftastic is configured as the external differ
+              # and its output has no "+" line markers to anchor on.
+              if git diff --cached --no-ext-diff -U0 --no-color | grep -nE "^\+.*(sk-ant-(api|oat)[0-9a-zA-Z_-]{10}|ghp_[A-Za-z0-9]{20}|github_pat_[A-Za-z0-9_]{20}|AKIA[0-9A-Z]{16}|xox[baprs]-[0-9A-Za-z]{8}|-----BEGIN [A-Z ]*PRIVATE KEY)"; then
+                echo "ERROR: staged changes contain what looks like a secret (matches above). Commit blocked." >&2
+                exit 1
+              fi
+              # If not in nix develop (pre-commit not on PATH), warn and skip.
+              if ! command -v pre-commit &>/dev/null; then
+                echo "WARNING: pre-commit not found on PATH (not in nix develop?), skipping hook." >&2
+                exit 0
+              fi
+              ARGS=(hook-impl --config=.pre-commit-config.yaml --hook-type=pre-commit)
+              HERE="$(cd "$(dirname "$0")" && pwd)"
+              ARGS+=(--hook-dir "$HERE" -- "$@")
+              exec pre-commit "''${ARGS[@]}"
+            '';
+          in
+          ''
+            # builtins-only check: runs on every direnv load, the install below spawns git/readlink/chmod
+            if [[ ! .pre-commit-config.yaml -ef ${hooks.configFile} || ! -x .git/hooks/pre-commit || $(<.git/hooks/pre-commit) != "$(<${hook})" ]]; then
+              ${hooks.installationScript}
+              GIT_WC=$(git rev-parse --show-toplevel 2>/dev/null)
+              if [ -n "$GIT_WC" ] && [ -f "$GIT_WC/.git/hooks/pre-commit" ]; then
+                install -m 0755 ${hook} "$GIT_WC/.git/hooks/pre-commit"
+              fi
+            fi
+            export PATH=${hooks.package}/bin:$PATH
+          '';
       };
     });
 
