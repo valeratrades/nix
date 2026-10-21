@@ -80,7 +80,10 @@ Trigger: any system daemon-reload while nvidia_drm is not loaded yet. It never l
 
 wlroots 0.19.3 `renderer_autocreate`: with WLR_RENDERER=gles2, only GLES is tried. It fails on
 card0 (mesa-only EGL), so `init_mgpu_renderer` logs "falling back to scanning out from primary
-GPU" and returns true. Vulkan is never entered, and HDMI on the dGPU still lights up. AMD was
+GPU" and returns true. Vulkan is never entered. **Wrong: HDMI does NOT light up** — the output stays
+power=false/0x0, every modeset logs "Requested backend configuration failed" (boots of 2026-10-21 14:53, 17:40).
+Cross-GPU direct scanout doesn't work here; sway needs a real GLES renderer on card0 → NVIDIA EGL unhidden
+for the session again (dGPU was D0/active anyway: sway holds card0 for KMS, chrome holds it too). AMD was
 already on GLES under `auto` (GLES is tried first), so the desktop doesn't change.
 
 Rejected: hiding the NVIDIA Vulkan ICD via `VK_DRIVER_FILES`. It leaks into every app and needs

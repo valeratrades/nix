@@ -15,7 +15,7 @@ Status: not achievable on driver 595.71.05 / kernel 7.0.3. Boot-time alternative
 
 - Stake: held by sway, the dGPU idles at P8, 3.74 W, 1 MiB VRAM.
 
-## In flight (`#TEST:` in graphics.nix, sway.nix)
+## Failed (mesa-only EGL reverted 2026-10-21): dGPU stayed active/D0, HDMI on the dGPU never came up (see 2026-10-21_sway-freeze.md)
 nvidia-persistenced (no last-close teardown → no deadlock) + mesa-only EGL session, so the driver's own RTD3 drops the
 dGPU whenever idle, in-session, no reboots. Done when, after a fresh boot:
 - `/sys/bus/pci/devices/0000:01:00.0/power/runtime_status` = suspended while idle (or does persistence keep it active?)

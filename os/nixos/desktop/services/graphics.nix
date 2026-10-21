@@ -56,7 +56,7 @@ in
 			powerManagement.finegrained = false;
 			dynamicBoost.enable = false;
 			# A client that never closes: the driver's last-close adapter teardown deadlocks against ACPI
-			# power-source events, and sway no longer holds the dGPU (sway.nix). See ongoing_debug/2026-10-20_dgpu-runtime-off.md.
+			# power-source events. See ongoing_debug/2026-10-20_dgpu-runtime-off.md.
 			nvidiaPersistenced = true; #TEST: idle dGPU reaches runtime_status=suspended (D3cold) with no deadlock. See ongoing_debug/2026-10-20_dgpu-runtime-off.md
 
 			# PRIME configuration for hybrid graphics (AMD iGPU + NVIDIA dGPU)
@@ -99,9 +99,7 @@ in
 		};
 	};
 
-	# Upstream's `nvidia-offload`, plus giving back the NVIDIA EGL vendor that sway.nix hides from the session.
 	environment.systemPackages = lib.optional (!disableNvidia) (pkgs.writeShellScriptBin "nvidia-offload" ''
-		unset __EGL_VENDOR_LIBRARY_FILENAMES
 		export __NV_PRIME_RENDER_OFFLOAD=1
 		export __NV_PRIME_RENDER_OFFLOAD_PROVIDER=NVIDIA-G0
 		export __GLX_VENDOR_LIBRARY_NAME=nvidia
