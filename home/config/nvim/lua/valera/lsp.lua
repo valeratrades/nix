@@ -341,6 +341,7 @@ vim.lsp.config('tinymist', {
 		--outputPath = "/tmp/typ/$name", -- put PDFs in /tmp, instead of littering next to the source
 		exportPdf = 'never', -- currently always using `TypstWatch` of `typst.vim`
 		formatterMode = 'disable',
+		systemFonts = os.getenv("TYPST_IGNORE_SYSTEM_FONTS") ~= "true", -- tinymist reads TYPST_FONT_PATHS but has no env for this one
 	},
 })
 vim.lsp.enable('tinymist')

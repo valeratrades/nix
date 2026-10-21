@@ -10,6 +10,22 @@
   environment.sessionVariables.LITELLM_MIXED_PORT = toString myvars.ports.litellmMixed;
   environment.sessionVariables.CHROME_DEBUG_PORT = toString myvars.ports.chromeDebug;
 
+  # typst parses every system font on each start, no cache: ~0.85s for google-fonts + nerd-fonts alone.
+  # Project flakes export their own TYPST_FONT_PATHS, overriding this.
+  environment.sessionVariables.TYPST_IGNORE_SYSTEM_FONTS = "true";
+  environment.sessionVariables.TYPST_FONT_PATHS = toString (pkgs.symlinkJoin {
+    name = "typst-fonts";
+    paths = with pkgs; [
+      (google-fonts.override { fonts = [ "Lato" "EBGaramond" "SpaceMono" ]; })
+      liberation_ttf
+      gyre-fonts
+      dejavu_fonts
+      noto-fonts
+      noto-fonts-cjk-sans
+      noto-fonts-color-emoji
+    ];
+  });
+
   environment.variables = {
     QT_QPA_PLATFORMTHEME = "xdgdesktopportal";
     GTK_USE_PORTAL = "1";
