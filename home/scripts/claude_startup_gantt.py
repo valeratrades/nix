@@ -80,6 +80,7 @@ for name in pending(lines):
 spans.sort()
 spans = [sp for i, sp in enumerate(spans) if not any(abs(sp[0] - o[0]) < 0.05 and abs(sp[1] - o[1]) < 0.05 for o in spans[:i])]  # one event often logs twice
 mount = next((t - t0 for t, s in lines if 'REPL mounted' in s), None)
+ready = max((b for _, b, l, _ in spans if 'session.start settled' in l), default=None)  # plugin skills, commands and panels register only after every handler calls next()
 
 cols = shutil.get_terminal_size((160, 50)).columns
 lw = min(60, max(len(l) for _, _, l, _ in spans))
@@ -106,4 +107,6 @@ for a, b, label, ch in spans:
 	print(f'{label[:lw]:<{lw}} {b - a:6.2f}s  {"".join(row)}')
 if mount is not None:
 	print(f'\n┊ prompt usable (REPL mounted) at {mount:.2f}s; ' + (f'{len(pending(lines))} MCP server(s) still pending at {end:.2f}s' if pending(lines) else f'everything settled at {end:.2f}s'))
+if ready is not None:
+	print(f'┆ session.start chain done at {ready:.2f}s')
 print(f'log: {log}', file=sys.stderr)
