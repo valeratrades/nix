@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""`/model` switches the current session only, never the saved default in settings.json.
+"""`/model` and `/effort` switch the current session only, never the saved default in settings.json.
 
 1. Picker Enter. It called onSetDefault before applying the pick; now it applies only,
    same as the picker's built-in `s` (use this session only). Covers both pickers that
@@ -31,6 +31,18 @@ PATCHES = [
 		b'Ee=(J,re)=>{let Se=!Tt();z(null);',
 		b'Ee=(J,re)=>{let Se=!1;z(null);',
 	),
+	(
+		"effort writer",
+		"grep -ao 'let [A-Za-z0-9_$]*=[A-Za-z0-9_$]*!==void 0?[A-Za-z0-9_$]*([A-Za-z0-9_$]*):void 0;if([A-Za-z0-9_$]*&&([A-Za-z0-9_$]*===void 0||'",
+		b'let d=e!==void 0?pEe(e):void 0;if(r&&(e===void 0||d!==void 0)&&!Cr())',
+		b'let d=e!==void 0?pEe(e):void 0;if(0&&(e===void 0||d!==void 0)&&!Cr())',
+	),
+	(
+		"/effort persist flag",
+		"grep -ao 'async function [A-Za-z0-9_$]*([A-Za-z0-9_$,]*=!0,[A-Za-z0-9_$]*){let [A-Za-z0-9_$]*=!1,[A-Za-z0-9_$]*=null,[A-Za-z0-9_$]*=await [A-Za-z0-9_$]*([A-Za-z0-9_$,]*('",
+		b'E=await P(e,t,r,(d)=>',
+		b'E=await P(e,t,0,(d)=>',
+	),
 ]
 
 
@@ -47,7 +59,7 @@ def die(name: str, hint: str, msg: str) -> None:
 		f"  2. Locate the new spelling in bin/.claude-unwrapped:\n"
 		f"       {hint} <binary>\n"
 		"  3. Update the anchor/replacement (same-length overwrite), or drop the entry if\n"
-		"     upstream made /model session-scoped by default.\n"
+		"     upstream made /model or /effort session-scoped by default.\n"
 		"================================================================================\n"
 	)
 	sys.exit(1)
