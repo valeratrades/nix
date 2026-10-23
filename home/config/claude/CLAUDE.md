@@ -102,6 +102,9 @@
 
 - after finishing implementation, include all the trade-offs that you took at cross-roads, especially those concerning correctness and performance
 
+- when making changes to deps we own and have locally, prefer linking to them by path while testing. We assume that release will be successful when needed. And as such, we should optimize for iteration speed, which is trivially faster when pointing via local path.
+  // just don't forget to keep this local path pointer local-only, or undo it after
+
 ## Testing
 - if a change is not trivial, always test.
     And any time you write actual tests in code, - read https://matklad.github.io/2021/05/31/how-to-test.html
