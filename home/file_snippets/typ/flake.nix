@@ -32,9 +32,7 @@
           rootDir = ./.;
           badges = [ "loc" ];
         };
-        hooks = builtins.concatStringsSep "" (
-          map v_flakes.utils.unwrapShellHook [ readme.shellHook typ.shellHook github.shellHook ]
-        );
+        combined = v_flakes.utils.combine { rust = v_flakes.rs.default_nightly system; modules = [ readme typ github ]; };
       in
       {
         apps.help = {
@@ -86,15 +84,12 @@
         devShells.default = pkgs.mkShell {
           shellHook =
             pre-commit-check.shellHook
-            + hooks
+            + combined.shellHook
             + ''
               cp -f ${(v_flakes.files.treefmt) { inherit pkgs; }} ./.treefmt.toml
             '';
 
-          packages = pre-commit-check.enabledPackages
-            ++ typ.enabledPackages
-            ++ readme.enabledPackages
-            ++ github.enabledPackages;
+          packages = pre-commit-check.enabledPackages ++ combined.enabledPackages;
         };
       }
     );

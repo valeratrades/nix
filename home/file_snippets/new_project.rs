@@ -62,6 +62,11 @@ enum ProjectCommand {
         /// Project name
         name: String,
     },
+    /// Create a new v_flakes-only project (data collections: assets, skills, ...)
+    Nix {
+        /// Project name
+        name: String,
+    },
 }
 
 #[derive(Clone, ValueEnum, Default)]
@@ -530,6 +535,13 @@ fn typst(name: &str) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+fn nix(name: &str) -> Result<(), Box<dyn std::error::Error>> {
+    fs::create_dir_all(name)?;
+    shared_before(name, "nix")?;
+    shared_after(name, "nix")?;
+    Ok(())
+}
+
 fn rust_workspace(name: &str, preset: &RustPreset) -> Result<(), Box<dyn std::error::Error>> {
     let file_snippets = get_file_snippets_path();
     let lang = "rs";
@@ -680,6 +692,7 @@ fn main() {
         ProjectCommand::Golang { name } => golang(&name),
         ProjectCommand::Lean { name } => lean(&name),
         ProjectCommand::Typst { name } => typst(&name),
+        ProjectCommand::Nix { name } => nix(&name),
     };
 
     if let Err(e) = result {
