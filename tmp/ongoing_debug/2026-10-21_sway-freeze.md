@@ -89,5 +89,8 @@ already on GLES under `auto` (GLES is tried first), so the desktop doesn't chang
 Rejected: hiding the NVIDIA Vulkan ICD via `VK_DRIVER_FILES`. It leaks into every app and needs
 another unset in `nvidia-offload`, whereas WLR_RENDERER is read only by wlroots.
 
-Still open: `nvidia-drm-late.path` never fires at boot, only on the next daemon-reload. Now harmless,
-but HDMI on the dGPU won't come up until the first switch.
+`nvidia-drm-late.path` never fired at boot: it started (00:02:39.7) before user-runtime-dir@1000 mounted the
+/run/user/1000 tmpfs (00:02:41.2), so its inotify watch sat on the covered dir. Fix 541ac02c: path unit
+wantedBy/after/bindsTo user-runtime-dir@uid. Unverified until a fresh boot: HDMI-A-1 should be in
+`swaymsg -t get_outputs` with no switch, and `journalctl -b -u nvidia-drm-late` should show a start ~at login.
+Verified 2026-10-23: a live `systemctl start nvidia-drm-late` (gles2 + NVIDIA EGL) hotplugs HDMI without freezing sway.
