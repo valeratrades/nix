@@ -284,6 +284,8 @@
     };
   };
 
+  xdg.configFile."maintenance/config.json".text = builtins.toJSON (import "${self}/home/scripts/maintenance/config.nix");
+
   xdg.configFile."lspmux/config.toml".text = ''
     # rust-analyzer shells out to cargo/rustc and the project's native build inputs, none of
     # which exist in the daemon's login env, so the client's PATH has to come along. Cost:

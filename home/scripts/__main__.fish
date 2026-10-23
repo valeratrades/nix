@@ -78,11 +78,10 @@ function choose_port; $__fish_scripts_dir/choose_port.sh $argv; end
 
 set -g __maintenance_last_run "$XDG_STATE_HOME/fish/maintenance_last_run"
 
-# Warn if maintenance hasn't been run in over a month
 if test -f $__maintenance_last_run
-    set -l month_seconds 2592000 # 30 days
-    if test (path mtime --relative $__maintenance_last_run) -gt $month_seconds # mtime: maintenance.rs rewrites the stamp on every run
-        echo "Warning: maintenance hasn't been run in over a month. Run 'up' to update."
+    set -l warn_after_days (string match -rg '"warn_after_days":(\d+)' < $XDG_CONFIG_HOME/maintenance/config.json) # from home/scripts/maintenance/config.nix
+    if test (path mtime --relative $__maintenance_last_run) -gt (math $warn_after_days \* 86400) # mtime: maintenance/main.rs rewrites the stamp on every run
+        echo "Warning: maintenance hasn't been run in over $warn_after_days days. Run 'up' to update."
     end
 else
     echo "Warning: maintenance has never been run. Run 'up' to update."

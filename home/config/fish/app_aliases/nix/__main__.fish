@@ -33,7 +33,7 @@ function nshell --wraps 'nix-shell --command fish'; nix-shell --command fish $ar
 function ndevelop --wraps 'nix develop --command fish'; nix develop --command fish $argv; end
 #alias nupdate="nix flake lock --update-input nixpkgs --update-input"
 function nup --wraps 'nix flake update'; nix flake update $argv; end
-function up; $NIXOS_CONFIG/home/scripts/maintenance.rs $argv; end
+function up; $NIXOS_CONFIG/home/scripts/maintenance/main.rs $argv; end
 function typst_workspace; $NIXOS_CONFIG/home/scripts/typst_workspace.rs $argv; end
 function tw --wraps typst_workspace; typst_workspace $argv; end
 
