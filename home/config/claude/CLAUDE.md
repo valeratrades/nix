@@ -33,7 +33,7 @@
   I give instructions, you do not.
 
 ## Workflow
-- always work todos first, - creating and keeping the todos list relevant is first concern in any implementation. Always keep it up to date.
+<!--- always work todos first, - creating and keeping the todos list relevant is first concern in any implementation. Always keep it up to date.-->
 
 - always read docs/ARCHITECTURE.md (and docs/spec/, where it exists) before doing anything in the repo. Pay **especial** attention to Invariants, - those give you tools to determine what trade-offs are acceptable: imagine we can speed up backtests on our trading DAG framework twofold, but that would cost 5% slowdown of the live path because of the primitive we'd need for that. Agent who hasn't had read Invariants could think that it's a good trade-off, but if we read them and see it established that Live performance is of foremost importance, - we know to never make it.
   > when you're working on complex sub-crates or modules, they can themselves have associated `spec/` folders. You must be aware of them too.
