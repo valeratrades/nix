@@ -37,21 +37,7 @@ Absolutely everything else follows suit from this.
 ## Top Level Docs
 
 ### Readme Assets
-top-level README.md is defined through [docs/.readme_assets], - make changes there, and don't ever worry about what is in README.md now, - CI handles recompiling it automatically on pre-commit.
-
-so it's one asset file per README section, composed by `readme_fw`. README.md itself is generated, - once again, never edit it directly.
-
-> README is further from the code than ARCHITECTURE.md: it holds only what the **user** needs. Low level code details in ARCHITECTURE.md are not great, in README worse.
-
-Sections to know are:
-- [docs/.readme_assets/description.md]
-- [docs/.readme_assets/installation.(md|sh)]
-- [docs/.readme_assets/usage.(md|sh)]
-- [docs/.readme_assets/other.md]
-There are more, - consult [the framework](https://github.com/valeratrades/v_flakes/blob/main/readme_fw/skill/SKILL.md) if needed
-
-Usage and Installation are automatically checked against ASD-STE100 (Simplified Technical English). Write them for it: one meaning per word, active voice, short sentences. Words the project owns go in `docs/glossary.nix`, ordinary English never does.
-For more info, here is the tool that does it: [ste_checker](https://github.com/valeratrades/ste_checker/blob/main/skill/SKILL.md)
+[readme_fw](/home/v/s/v_flakes/readme_fw/skill/SKILL.md#readme_fw)
 
 ### ARCHITECTURE.md
 the most important file in the repo is [docs/ARCHITECTURE.md]. Every recurring contributor reads it in full, so every line is paid for many times over, - it must be as small and as informative as it can be. Ruthlessness here is required.
