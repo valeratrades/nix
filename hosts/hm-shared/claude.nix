@@ -1,4 +1,4 @@
-{ lib, pkgs, user, ... }:
+{ lib, pkgs, user, myvars, ... }:
 let
 	# Skills-only repos: GitHub repos holding bare `<skill>/SKILL.md` dirs with no plugin wrapper.
 	# The sync script clones the repo and synthesizes a plugin around it, looking each skill up by
@@ -121,6 +121,12 @@ let
 		cloudflare-bindings = cloudflare "https://bindings.mcp.cloudflare.com/mcp";
 		cloudflare-builds = cloudflare "https://builds.mcp.cloudflare.com/mcp";
 		cloudflare-observability = cloudflare "https://observability.mcp.cloudflare.com/mcp";
+		chrome-devtools = {
+			type = "stdio";
+			command = "npx";
+			args = [ "-y" "chrome-devtools-mcp@latest" "--browserUrl=http://127.0.0.1:${toString myvars.ports.chromeDebug}" "--no-usage-statistics" ];
+			env = { };
+		};
 		# never connects, so each session carries a 30s connect timeout; also dropped from ~/.claude.json by hand (this merge only adds)
 		#fathom = {
 		#	type = "stdio";
