@@ -87,9 +87,14 @@ in
 	# nvidia_drm (blacklisted above against udev's PCI autoload) comes up only once sway has picked
 	# its GPUs, so sway starts on AMD alone and wlroots' DRM hotplug monitor adds card1 (HDMI) when
 	# it registers. See ongoing_debug/2026-10-18_slow-boot.md.
-	systemd.paths.nvidia-drm-late = lib.mkIf (!disableNvidia) {
-		wantedBy = [ "multi-user.target" ];
-		pathConfig.PathExistsGlob = "/run/user/${toString config.users.users.${user.username}.uid}/wayland-*"; # sway binds its socket after wlr_backend_autocreate; a glob in a dir component is never inotify-watched
+	systemd.paths.nvidia-drm-late = let
+		uid = toString config.users.users.${user.username}.uid;
+		runtimeDir = "user-runtime-dir@${uid}.service"; # watching before its tmpfs mounts leaves inotify on the covered dir, so it never fires
+	in lib.mkIf (!disableNvidia) {
+		wantedBy = [ runtimeDir ];
+		after = [ runtimeDir ];
+		bindsTo = [ runtimeDir ];
+		pathConfig.PathExistsGlob = "/run/user/${uid}/wayland-*"; # sway binds its socket after wlr_backend_autocreate; a glob in a dir component is never inotify-watched
 	};
 	systemd.services.nvidia-drm-late = lib.mkIf (!disableNvidia) {
 		serviceConfig = {
