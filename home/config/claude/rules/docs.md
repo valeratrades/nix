@@ -35,6 +35,7 @@ Absolutely everything else follows suit from this.
   To give an example of when docs are necessary, through the same lense, - consider what if we had a magical rust-flag to say "force zero-cost", - we wouldn't need to add this as an Invariant, would we. And then it's absence is what makes us have it listed. Documentation that stays is **documentation we can't remove**.
 
 ## Top Level Docs
+detail level runs README < [ARCHITECTURE.md](#architecturemd) < [spec](#spec). README holds only what the **user** needs; low level code details in ARCHITECTURE.md are not great, in README worse.
 
 ### Readme Assets
 [readme_fw](/home/v/s/v_flakes/readme_fw/skill/SKILL.md#readme_fw)
