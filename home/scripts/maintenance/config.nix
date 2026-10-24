@@ -8,5 +8,6 @@ rec {
     "lakefile.lean" "lakefile.toml" "typst.toml" "pyvenv.cfg" "*.dist-info" "Local State"
   ];
 
+  redirect_unused_days = 30; # `redirects/` hop not traversed for this long: old path and hop are removed
   cache_limit_gb = 20; # past it after the outdated sweep, least recently used ~/.cache units go first
 }

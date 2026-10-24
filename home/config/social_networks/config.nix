@@ -1,6 +1,6 @@
 # the daemons' half is devops': the cluster runs from it, so the laptop reads the same file
 let
-  daemons = import /home/v/s/ev_invest/devops/nix/platform/social_networks.nix;
+  daemons = import /home/v/s/ev/devops/nix/platform/social_networks.nix;
 in
 daemons // {
   venues = "/home/v/s/g/rolodex/venues";
@@ -43,6 +43,6 @@ daemons // {
   };
   purposes = {
     rolodex = import ./rolodex.nix; # `social_networks rolodex <cmd>`
-    reviews = import /home/v/s/ev_invest/_service_arb/remote_reviews_automations/reviews.nix;
+    reviews = import /home/v/s/ev/_service_arb/remote_reviews_automations/reviews.nix;
   };
 }

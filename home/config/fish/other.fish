@@ -113,7 +113,7 @@ function workspaces --wraps 'swaymsg -t get_tree'; swaymsg -t get_tree $argv; en
 function q --wraps 'ask_llm -f'; ask_llm -f $argv; end
 function ytd --wraps yt-dlp; yt-dlp -x --audio-format mp3 --cookies-from-browser firefox $argv; end # downloads audio from yt; you provide <URL>
 function dr --wraps 'deno run -A ./tmp/cmd.ts'; deno run -A ./tmp/cmd.ts $argv; end # `dr` for `deno run`; follows https://matklad.github.io/2026/01/27/make-ts.html
-function accounting --wraps 'nix run ~/s/ev_invest/_service_arb/accounting'; nix run ~/s/ev_invest/_service_arb/accounting $argv; end
+function accounting --wraps 'nix run ~/s/ev/_service_arb/accounting'; nix run ~/s/ev/_service_arb/accounting $argv; end
 
 function oclaw; cd ~/.openclaw/workspace && tn openclaw $argv; end # openclaw agent workspace in a named tmux session
 function oc --wraps 'node ~/g/openclaw/openclaw.mjs'; node ~/g/openclaw/openclaw.mjs $argv; end # openclaw CLI, same invocation as configureOpenclaw's local helper

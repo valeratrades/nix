@@ -31,7 +31,7 @@ struct Args {
     #[arg(long)]
     skip_rebuild: bool,
 
-    /// Only run specific tasks (comma-separated: clean,cache,nightly,shadows,rebuild)
+    /// Only run specific tasks (comma-separated: clean,cache,nightly,shadows,redirects,rebuild)
     #[arg(long)]
     only: Option<String>,
 
@@ -46,11 +46,13 @@ struct Config {
     outdated_after_days: u64,
     unit_markers: Vec<String>,
     cache_limit_gb: u64,
+    redirect_unused_days: u64,
 }
 
 struct Ctx {
     cfg: Config,
     home: PathBuf,
+    state: PathBuf,
     log: PathBuf,
     dry_run: bool,
 }
@@ -74,13 +76,14 @@ fn main() {
     let ctx = Ctx {
         cfg: serde_json::from_str(&config).unwrap_or_else(|e| panic!("{}: {e}", config_path.display())),
         home: PathBuf::from(env("HOME")),
+        state: state.clone(),
         log: state.join("maintenance/log"),
         dry_run: args.dry_run,
     };
 
     let tasks: Vec<&str> = match args.only {
         Some(ref only) => only.split(',').collect(),
-        None => vec!["clean", "cache", "nightly", "shadows", "rebuild"],
+        None => vec!["clean", "cache", "nightly", "shadows", "redirects", "rebuild"],
     };
 
     std::thread::scope(|s| {
@@ -103,6 +106,9 @@ fn main() {
         }
         if tasks.contains(&"shadows") {
             s.spawn(|| ctx.check_cargo_nix_shadows());
+        }
+        if tasks.contains(&"redirects") {
+            s.spawn(|| ctx.sweep_redirects());
         }
     });
 
@@ -335,6 +341,45 @@ impl Ctx {
                     }
                     _ => {}
                 }
+            }
+        }
+    }
+
+    /// `~/<p>` -> `$XDG_STATE_HOME/maintenance/redirects/<p>` -> new location: only traversals reach the hop, so its atime is the last follow (`ls -l` readlinks just the front)
+    fn sweep_redirects(&self) {
+        let hops = self.state.join("maintenance/redirects");
+        println!("\x1b[34mSweeping redirects in {} unfollowed for {} days\x1b[0m", hops.display(), self.cfg.redirect_unused_days);
+        for entry in WalkDir::new(&hops).min_depth(1) {
+            let entry = match entry {
+                Ok(entry) => entry,
+                Err(e) if e.io_error().is_some_and(|e| e.kind() == io::ErrorKind::NotFound) && e.depth() == 0 => return,
+                Err(e) => {
+                    self.report(true, e);
+                    continue;
+                }
+            };
+            if entry.file_type().is_dir() {
+                continue;
+            }
+            let hop = entry.path();
+            let front = self.home.join(hop.strip_prefix(&hops).expect("walked from hops"));
+            let unused_days = (|| -> io::Result<u64> {
+                if !entry.file_type().is_symlink() {
+                    return Err(io::Error::other("hop is not a symlink"));
+                }
+                let target = fs::read_link(&front)?;
+                if target != hop {
+                    return Err(io::Error::other(format!("{} points to {}, not the hop", front.display(), target.display())));
+                }
+                Ok(fs::symlink_metadata(hop)?.accessed()?.elapsed().map_or(0, |e| e.as_secs() / 86400)) // Err: followed in the future, so in use
+            })();
+            match unused_days {
+                Ok(days) if days >= self.cfg.redirect_unused_days => {
+                    self.remove(&front, format_args!("redirect unfollowed {days}d"));
+                    self.remove(hop, format_args!("hop of {}", front.display()));
+                }
+                Ok(_) => {}
+                Err(e) => self.report(true, format_args!("keeping redirect {}: {e}", hop.display())),
             }
         }
     }

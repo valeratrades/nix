@@ -6,10 +6,10 @@ set -l _cs_navs \
     csc "$NIXOS_CONFIG/home/config/" \
     csd "$HOME/Downloads/" \
     css "$HOME/s/" \
-    cse "$HOME/s/ev_invest/" \
-    csq "$HOME/s/ev_invest/_quant/" \
-    csa "$HOME/s/ev_invest/_service_arb/" \
-    csre "$HOME/s/ev_invest/_estate/" \
+    cse "$HOME/s/ev/" \
+    csq "$HOME/s/ev/_quant/" \
+    csa "$HOME/s/ev/_service_arb/" \
+    csre "$HOME/s/ev/_estate/" \
     csr "$HOME/trading/" \
     csh "$NIXOS_CONFIG/home/scripts/" \
     csm "$HOME/math/" \
