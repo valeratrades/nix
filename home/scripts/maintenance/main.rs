@@ -27,6 +27,9 @@ use walkdir::WalkDir;
 #[command(name = "maintenance")]
 #[command(about = "System maintenance: clean outdated ~/tmp, ~/.cache and build artefacts, refresh nightly version cache, and rebuild NixOS")]
 struct Args {
+    #[command(subcommand)]
+    cmd: Option<Cmd>,
+
     /// Skip the NixOS rebuild step
     #[arg(long)]
     skip_rebuild: bool,
@@ -38,6 +41,12 @@ struct Args {
     /// Report what would be removed, then stop before touching anything
     #[arg(long)]
     dry_run: bool,
+}
+
+#[derive(clap::Subcommand, Debug)]
+enum Cmd {
+    /// Move `from` to `to`, leaving `from` as a redirect the `redirects` task removes once unfollowed for redirect_unused_days
+    Mv { from: PathBuf, to: PathBuf },
 }
 
 /// written by home-manager from ./config.nix
@@ -52,7 +61,7 @@ struct Config {
 struct Ctx {
     cfg: Config,
     home: PathBuf,
-    state: PathBuf,
+    redirects: PathBuf,
     log: PathBuf,
     dry_run: bool,
 }
@@ -76,10 +85,13 @@ fn main() {
     let ctx = Ctx {
         cfg: serde_json::from_str(&config).unwrap_or_else(|e| panic!("{}: {e}", config_path.display())),
         home: PathBuf::from(env("HOME")),
-        state: state.clone(),
+        redirects: state.join("maintenance/redirects"),
         log: state.join("maintenance/log"),
         dry_run: args.dry_run,
     };
+    if let Some(Cmd::Mv { from, to }) = args.cmd {
+        return ctx.mv(&from, &to);
+    }
 
     let tasks: Vec<&str> = match args.only {
         Some(ref only) => only.split(',').collect(),
@@ -346,10 +358,25 @@ impl Ctx {
     }
 
     /// `~/<p>` -> `$XDG_STATE_HOME/maintenance/redirects/<p>` -> new location: only traversals reach the hop, so its atime is the last follow (`ls -l` readlinks just the front)
+    fn mv(&self, from: &Path, to: &Path) {
+        let from = fs::canonicalize(from).unwrap_or_else(|e| panic!("{}: {e}", from.display()));
+        let to = std::path::absolute(to).unwrap_or_else(|e| panic!("{}: {e}", to.display()));
+        let to = fs::canonicalize(to.parent().expect("absolute, and not /")).unwrap_or_else(|e| panic!("{}: {e}", to.display())).join(to.file_name().expect("absolute, and not /"));
+        let hop = self.redirects.join(from.strip_prefix(&self.home).unwrap_or_else(|_| panic!("{} is outside $HOME", from.display())));
+        for taken in [&to, &hop] {
+            assert!(fs::symlink_metadata(taken).is_err_and(|e| e.kind() == io::ErrorKind::NotFound), "{} already exists", taken.display());
+        }
+        fs::create_dir_all(hop.parent().expect("under redirects")).unwrap_or_else(|e| panic!("{}: {e}", hop.display()));
+        fs::rename(&from, &to).unwrap_or_else(|e| panic!("{} -> {}: {e}", from.display(), to.display()));
+        std::os::unix::fs::symlink(&to, &hop).unwrap_or_else(|e| panic!("{}: {e}", hop.display()));
+        std::os::unix::fs::symlink(&hop, &from).unwrap_or_else(|e| panic!("{}: {e}", from.display()));
+        self.report(false, format_args!("moved {} -> {}, redirect lives until unfollowed {}d", from.display(), to.display(), self.cfg.redirect_unused_days));
+    }
+
     fn sweep_redirects(&self) {
-        let hops = self.state.join("maintenance/redirects");
+        let hops = &self.redirects;
         println!("\x1b[34mSweeping redirects in {} unfollowed for {} days\x1b[0m", hops.display(), self.cfg.redirect_unused_days);
-        for entry in WalkDir::new(&hops).min_depth(1) {
+        for entry in WalkDir::new(hops).min_depth(1) {
             let entry = match entry {
                 Ok(entry) => entry,
                 Err(e) if e.io_error().is_some_and(|e| e.kind() == io::ErrorKind::NotFound) && e.depth() == 0 => return,
@@ -362,7 +389,7 @@ impl Ctx {
                 continue;
             }
             let hop = entry.path();
-            let front = self.home.join(hop.strip_prefix(&hops).expect("walked from hops"));
+            let front = self.home.join(hop.strip_prefix(hops).expect("walked from hops"));
             let unused_days = (|| -> io::Result<u64> {
                 if !entry.file_type().is_symlink() {
                     return Err(io::Error::other("hop is not a symlink"));
