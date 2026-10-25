@@ -622,6 +622,7 @@
         default_profile = "master";
         profiles = {
           master = { user_id = "@${user.defaultUsername}:matrix.org"; };
+          main = { user_id = "@${user.defaultUsername}:main"; url = "https://rpi5.taila74a7d.ts.net:8448"; };
         };
         macros = {
           normal = {
