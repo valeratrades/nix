@@ -403,7 +403,7 @@
               --replace-fail "Exec=Telegram" "Exec=$out/bin/Telegram"
           '')
           element-desktop # GUI matrix client
-          #iamb # TUI matrix client (rust) #dbg: broken in nixpkgs - type recursion limit in matrix-sdk
+          iamb # TUI matrix client (rust)
           zulip
         ]
         [
