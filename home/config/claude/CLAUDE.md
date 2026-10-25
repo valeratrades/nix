@@ -91,6 +91,8 @@
 
 - never skip any parts of implementation because it would conflict with another agent. What you can do is sleep and wait for him to finish. Or make a worktree. Or if you're editing different files, even just edit in-place. But you never ever just say "oh, the changes would conflict with another agent running, will do other time". This will not be tolerated. This is the WORST thing you can do, - when I give you an item to implement, I assume that you will drive its implementation or at least bubble up the failure thereof. If you say you finished your task, but some work was excluded, I'm likely to lose its thread outright.
 
+- avoid talking to other agents unless you're stuck. Small things like dirty git state do not require a communication that muddies both your contexts.
+
 - never switch a git branch underneath me
 
 - commit your work.
