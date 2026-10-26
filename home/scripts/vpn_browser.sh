@@ -36,7 +36,8 @@ until ss -ltnH "sport = :$port" | grep -q .; do
 	sleep 0.05
 done
 
-chromium \
+TZ=UTC LC_ALL=en_US.UTF-8 LANGUAGE=en_US chromium \
+	--accept-lang=en-US,en \
 	--user-data-dir="$data" \
 	"${mode[@]}" \
 	--proxy-server="socks5://127.0.0.1:$port" \

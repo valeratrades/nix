@@ -49,18 +49,23 @@ let
           inputs = [ "limiter:Input L" "limiter:Input R" ];
           outputs = [ "limiter:Output L" "limiter:Output R" ];
         };
+        # WirePlumber only treats the non-Stream (Audio/Sink) node as a smart filter; without it
+        # both sides are plain streams and the capture one auto-links to the default mic.
         "capture.props" = {
           "node.name" = "hp_safety_in_${slug}";
-          "node.passive" = true;
-        };
-        "playback.props" = {
-          "node.name" = "hp_safety_out_${slug}";
-          "node.passive" = true;
+          "media.class" = "Audio/Sink";
           # Smart insertion: only ever sits in front of this device's node, so
           # speakers/builtin (and any unlisted device) stay unlimited.
           "filter.smart" = true;
           "filter.smart.name" = "hp-safety-${slug}";
-          "filter.smart.targets" = [{ "node.description" = desc; }];
+          "filter.smart.target" = { "node.description" = desc; };
+          # Outlives its target device; must never win default-sink election (see 90-obs-virtual-mic.conf).
+          "priority.session" = 0;
+          "priority.driver" = 0;
+        };
+        "playback.props" = {
+          "node.name" = "hp_safety_out_${slug}";
+          "node.passive" = true;
         };
       };
     };
