@@ -452,7 +452,7 @@
           (runCommand "google-chrome-bare" { } "mkdir -p $out/bin && ln -s ${google-chrome}/bin/google-chrome-stable $out/bin/google-chrome-bare")
           (writeShellApplication {
             name = "vpn_browser";
-            runtimeInputs = [ chromium wireproxy wgcf iproute2 ];
+            runtimeInputs = [ chromium wireproxy iproute2 curl ];
             text = builtins.readFile "${self}/home/scripts/vpn_browser.sh";
           })
           alacritty
