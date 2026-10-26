@@ -1,13 +1,14 @@
 # Shared Wine wrapper for Sway - fixes cursor by temporarily resetting monitor positions
-# Usage: wineApp { name, winePrefix, setupScript, runCmd, runtimeInputs ? [] }
+# Usage: wineApp { name, winePrefix, setupScript, runCmd, runtimeInputs ? [], x11 ? false }
+# x11 = true runs through Xwayland: no monitor-position hack, so outputs are never touched
 { lib, writeShellApplication, wineWow64Packages, winetricks, curl, unzip, coreutils, sway, jq }:
 
-{ name, winePrefix, setupScript ? "", runCmd, runtimeInputs ? [] }:
+{ name, winePrefix, setupScript ? "", runCmd, runtimeInputs ? [], x11 ? false }:
 
 writeShellApplication {
   inherit name;
   runtimeInputs = [
-    wineWow64Packages.waylandFull
+    (if x11 then wineWow64Packages.full else wineWow64Packages.waylandFull)
     winetricks
     curl
     unzip
@@ -22,6 +23,9 @@ writeShellApplication {
     WINEARCH=win64
     export WINEPREFIX WINEARCH
 
+    ${if x11 then ''
+    unset WAYLAND_DISPLAY
+    '' else ''
     # Wine cursor fix: temporarily move all outputs to 0 0
     # Must happen BEFORE any wine commands (including setup)
     SAVED_OUTPUTS=$(swaymsg -t get_outputs | jq -r '.[] | "\(.name) \(.rect.x) \(.rect.y)"')
@@ -38,6 +42,7 @@ writeShellApplication {
     swaymsg -t get_outputs | jq -r '.[].name' | while read -r name; do
         swaymsg output "$name" pos 0 0 2>/dev/null || true
     done
+    ''}
 
     # Run setup if needed
     ${setupScript}

@@ -512,6 +512,7 @@ in {
         [
           sierra-chart
           tiger-trade
+          coinpoker
         ]
 
         # Trading bots
