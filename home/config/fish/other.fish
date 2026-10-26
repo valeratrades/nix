@@ -499,3 +499,6 @@ function active_agents -d "count busy claude panes in the current tmux session"
 	end
 	$NIXOS_CONFIG/home/config/tmux/claude_sessions.rs -c | rg -cI "^"(tmux display-message -p '#S')'\s+(active|limit)\s*$'; or echo 0
 end
+
+function vb --wraps vpn_browser; vpn_browser $argv; end
+complete -c vpn_browser -f -a '(ls ~/.local/state/vpn_browser/profiles 2>/dev/null)'

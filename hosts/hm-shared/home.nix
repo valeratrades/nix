@@ -450,6 +450,11 @@
           }))
           # chrome without the flags above, for programs that launch it on a profile of their own (social_networks' burner)
           (runCommand "google-chrome-bare" { } "mkdir -p $out/bin && ln -s ${google-chrome}/bin/google-chrome-stable $out/bin/google-chrome-bare")
+          (writeShellApplication {
+            name = "vpn_browser";
+            runtimeInputs = [ chromium wireproxy wgcf iproute2 ];
+            text = builtins.readFile "${self}/home/scripts/vpn_browser.sh";
+          })
           alacritty
         ]
         [
