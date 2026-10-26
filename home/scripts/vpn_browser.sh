@@ -41,7 +41,6 @@ TZ=UTC LC_ALL=en_US.UTF-8 LANGUAGE=en_US chromium \
 	--user-data-dir="$data" \
 	"${mode[@]}" \
 	--proxy-server="socks5://127.0.0.1:$port" \
-	--host-resolver-rules="MAP * ~NOTFOUND , EXCLUDE 127.0.0.1" \
 	--force-webrtc-ip-handling-policy=disable_non_proxied_udp \
 	--no-first-run \
 	--no-default-browser-check
