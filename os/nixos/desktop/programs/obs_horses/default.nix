@@ -1,4 +1,4 @@
-# Self-contained OBS addon: while `$XDG_RUNTIME_DIR/obs_horses` exists (sway obs-mode `h`), a gallop plays behind the Camera scene
+# Self-contained OBS addon: while `$XDG_RUNTIME_DIR/obs_horses` exists (sway obs-mode `h` on, `H` off), a gallop plays behind the Camera scene
 # (visible where Background Removal cut it out) whenever a key was pressed recently. Nothing of it is ever saved into the scene collection.
 { pkgs, lib, user, ... }:
 let

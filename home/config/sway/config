@@ -477,7 +477,8 @@ mode "obs" {
 	# Goes via obs-websocket (obs-cmd), so OBS focus is not required.
 	bindsym f exec "$switch_out && /home/v/.config/sway/obs_filter_toggle.sh Camera 'Background Removal'"
 	# Horses behind the camera while typing (os/nixos/desktop/programs/obs_horses)
-	bindsym h exec "$switch_out && { rm $XDG_RUNTIME_DIR/obs_horses 2>/dev/null || touch $XDG_RUNTIME_DIR/obs_horses; }"
+	bindsym h exec "$switch_out && touch $XDG_RUNTIME_DIR/obs_horses"
+	bindsym Shift+h exec "$switch_out && rm -f $XDG_RUNTIME_DIR/obs_horses"
 
 
 	bindsym $mod+comma exec $switch_out
@@ -488,4 +489,4 @@ mode "obs" {
 	bindsym q exec $switch_out
 
 }
-bindsym $mod+comma exec "swaymsg mode obs && eww --no-daemonize update sway_mode='obs (v,r,p,b,s,c,f,h)'"
+bindsym $mod+comma exec "swaymsg mode obs && eww --no-daemonize update sway_mode='obs (v,r,p,b,s,c,f,h/H)'"
