@@ -7,7 +7,11 @@ let
   startAfterMs = 500; # horses appear once typing has been continuous this long
   stopAfterMs = 130; # horses keep running this long after the last key is released
   burstGapMs = 400; # a pause longer than this restarts the `startAfterMs` count
-  nativeKeysPerSec = 8; # key presses/s at which the gallop plays at its recorded speed
+  # gallop speed = (presses/s / nativeKeysPerSec) ^ speedExponent. At 30fps output with 15 frames per stride:
+  # 100wpm ≈ 8 presses/s → ×2.3; 170wpm ≈ 14/s → ×8.6, legs nearly a blur; 200wpm ≈ 17/s → ×12.9, blurred
+  nativeKeysPerSec = 6;
+  speedExponent = 2.5;
+  maxSpeed = 14; # past ~×22 strides outrun 30fps and the gallop aliases into slow or backward motion
 
   # Muybridge's 1878 gallop (public domain, commons.wikimedia.org/wiki/File:Muybridge_race_horse_animated.gif) as a 4x3 herd, each horse phase-shifted
   tiles = lib.genList (i: rec { inherit i; col = lib.mod i 4; row = i / 4; phase = lib.mod (7 * row + 4 * col) 15; }) 12;
@@ -46,7 +50,7 @@ in
     after = [ "keyd.service" ];
     startLimitIntervalSec = 0; # keyd recreates its virtual keyboard on restart; retry until it's back
     serviceConfig = {
-      ExecStart = "${pkgs.python3.withPackages (ps: [ ps.evdev ])}/bin/python3 -I ${./gallop_speed.py} /run/obs-typing/speed ${toString stopAfterMs} ${toString startAfterMs} ${toString nativeKeysPerSec} ${toString burstGapMs}";
+      ExecStart = "${pkgs.python3.withPackages (ps: [ ps.evdev ])}/bin/python3 -I ${./gallop_speed.py} /run/obs-typing/speed ${toString stopAfterMs} ${toString startAfterMs} ${toString nativeKeysPerSec} ${toString burstGapMs} ${toString speedExponent} ${toString maxSpeed}";
       User = "obs-typing"; # static: DynamicUser hides preserved runtime dirs under root-only /run/private
       SupplementaryGroups = [ "input" ];
       RuntimeDirectory = "obs-typing";
