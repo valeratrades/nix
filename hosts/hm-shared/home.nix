@@ -765,7 +765,7 @@
 
 	# Force obs-websocket server enabled. OBS rewrites this file on shutdown,
 	# so we patch it on every home-manager generation rather than symlinking.
-	# Used by sway obs-mode `f` keybind to toggle the camera blur filter.
+	# Used by obs-cmd.
 	home.activation.obsWebsocketEnable = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
 		cfg="${config.home.homeDirectory}/.config/obs-studio/plugin_config/obs-websocket/config.json"
 		if [ -f "$cfg" ]; then

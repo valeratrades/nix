@@ -36,7 +36,7 @@
         (mpv.override { scripts = [ mpvScripts.mpris ]; }) # MPRIS so playerctl/media keys can toggle it
         chafa
         obs-cli
-        obs-cmd # obs-websocket-v5 CLI; used by sway obs-mode `f` (blur toggle)
+        obs-cmd # obs-websocket-v5 CLI
         ffmpeg
 
         bubblewrap # used by `meet_cam` fish fn to hide /dev/video0 from chromium
