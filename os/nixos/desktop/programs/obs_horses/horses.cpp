@@ -1,5 +1,6 @@
 #include <obs-module.h>
 #include <obs-frontend-api.h>
+#include <graphics/image-file.h>
 #include <util/dstr.h>
 #include <util/threading.h>
 #include <QLabel>
@@ -7,6 +8,8 @@
 #include <QPointer>
 #include <QStatusBar>
 #include <QTimer>
+#include <atomic>
+#include <cstdlib>
 #include <fcntl.h>
 #include <unistd.h>
 
@@ -14,17 +17,19 @@ OBS_DECLARE_MODULE()
 
 #define TARGET "Camera"
 #define TARGET_BR "Background Removal" // the collection's own filter on TARGET; the cutout copies its settings and replaces it
-#define TYPING "/run/obs-typing/typing"
+#define SPEED "/run/obs-typing/speed"
 
 static struct dstr toggle_path;
-static obs_source_t *gallop, *horses, *cutout;
+static gs_image_file4_t gif; // not an image_source: its playback rate isn't adjustable
+static obs_source_t *horses, *cutout;
 static obs_weak_source_t *detached_from;
-static volatile bool wanted, typing, queued;
+static volatile bool wanted, queued;
+static std::atomic<float> speed;
 static QPointer<QLabel> status;
 
 static bool galloping(void)
 {
-	return os_atomic_load_bool(&wanted) && os_atomic_load_bool(&typing);
+	return os_atomic_load_bool(&wanted) && speed > 0;
 }
 
 static void attach(obs_source_t *target)
@@ -87,15 +92,17 @@ static void poll(void)
 {
 	bool want = access(toggle_path.array, F_OK) == 0;
 	if (want) {
-		char c = 0;
-		int fd = open(TYPING, O_RDONLY);
-		bool ok = fd >= 0 && read(fd, &c, 1) == 1 && (c == '0' || c == '1');
+		char buf[16] = {};
+		int fd = open(SPEED, O_RDONLY);
+		ssize_t n = fd >= 0 ? read(fd, buf, sizeof(buf) - 1) : -1;
 		if (fd >= 0)
 			close(fd);
-		if (ok) {
-			os_atomic_set_bool(&typing, c == '1');
+		char *end = buf;
+		float s = n > 0 ? strtof(buf, &end) : -1;
+		if (n > 0 && end == buf + n && s >= 0) {
+			speed = s;
 		} else {
-			blog(LOG_ERROR, "[horses] can't read %s (obs-typing.service down?), toggling off", TYPING);
+			blog(LOG_ERROR, "[horses] can't read a speed from %s (obs-typing.service down?), toggling off", SPEED);
 			unlink(toggle_path.array);
 			want = false;
 		}
@@ -104,9 +111,14 @@ static void poll(void)
 }
 
 // graphics thread
-static void tick(void *, float)
+static void tick(void *, float seconds)
 {
 	poll();
+	if (galloping() && gs_image_file4_tick(&gif, (uint64_t)(seconds * speed * 1e9f))) {
+		obs_enter_graphics();
+		gs_image_file4_update_texture(&gif);
+		obs_leave_graphics();
+	}
 	obs_source_t *target = obs_filter_get_parent(horses);
 	if (!target) {
 		if (!os_atomic_set_bool(&queued, true))
@@ -137,11 +149,14 @@ static void render(void *self, gs_effect_t *)
 {
 	if (galloping()) {
 		obs_source_t *parent = obs_filter_get_parent((obs_source_t *)self);
-		gs_matrix_push();
-		gs_matrix_scale3f((float)obs_source_get_base_width(parent) / (float)obs_source_get_width(gallop),
-				  (float)obs_source_get_base_height(parent) / (float)obs_source_get_height(gallop), 1.0f);
-		obs_source_video_render(gallop);
-		gs_matrix_pop();
+		gs_texture_t *tex = gif.image3.image2.image.texture;
+		gs_effect_t *effect = obs_get_base_effect(OBS_EFFECT_DEFAULT);
+		bool srgb = gs_framebuffer_srgb_enabled();
+		gs_enable_framebuffer_srgb(true);
+		gs_effect_set_texture_srgb(gs_effect_get_param_by_name(effect, "image"), tex);
+		while (gs_effect_loop(effect, "Draw"))
+			gs_draw_sprite(tex, 0, obs_source_get_base_width(parent), obs_source_get_base_height(parent));
+		gs_enable_framebuffer_srgb(srgb);
 	}
 	obs_source_skip_video_filter((obs_source_t *)self);
 }
@@ -167,20 +182,18 @@ bool obs_module_load(void)
 	return true;
 }
 
-// image_source is registered by another module, so not before this
 void obs_module_post_load(void)
 {
-	char *gif = obs_module_file("horses.gif");
-	if (!gif)
+	char *path = obs_module_file("horses.gif");
+	if (!path)
 		bcrash("[horses] horses.gif missing from the plugin's data dir");
-	obs_data_t *settings = obs_data_create();
-	obs_data_set_string(settings, "file", gif);
-	gallop = obs_source_create_private("image_source", "horses gallop", settings);
-	obs_data_release(settings);
-	bfree(gif);
-	if (!obs_source_get_width(gallop) || !obs_source_get_height(gallop))
-		bcrash("[horses] image_source failed to decode horses.gif");
-	obs_source_inc_showing(gallop); // image_source only advances gif frames while showing
+	gs_image_file4_init(&gif, path, GS_IMAGE_ALPHA_PREMULTIPLY_SRGB);
+	bfree(path);
+	if (!gif.image3.image2.image.loaded)
+		bcrash("[horses] failed to decode horses.gif");
+	obs_enter_graphics();
+	gs_image_file4_init_texture(&gif);
+	obs_leave_graphics();
 
 	horses = obs_source_create_private("horses_filter", "Horses", NULL);
 	signal_handler_connect(obs_get_signal_handler(), "source_save", on_source_save, NULL);
@@ -191,7 +204,9 @@ void obs_module_post_load(void)
 	status = new QLabel(window);
 	auto *timer = new QTimer(status);
 	QObject::connect(timer, &QTimer::timeout, status, [] {
-		status->setText(!os_atomic_load_bool(&wanted) ? "horses off" : galloping() ? "🐎 galloping" : "🐎 on");
+		status->setText(!os_atomic_load_bool(&wanted) ? "horses off"
+				: galloping()                    ? QString("🐎 galloping ×%1").arg(speed.load(), 0, 'f', 1)
+								 : "🐎 on");
 	});
 	timer->start(100);
 	window->statusBar()->addPermanentWidget(status);
@@ -208,7 +223,8 @@ void obs_module_unload(void)
 	obs_weak_source_release(detached_from);
 	obs_source_release(horses);
 	obs_source_release(cutout);
-	obs_source_dec_showing(gallop);
-	obs_source_release(gallop);
+	obs_enter_graphics();
+	gs_image_file4_free(&gif);
+	obs_leave_graphics();
 	dstr_free(&toggle_path);
 }
