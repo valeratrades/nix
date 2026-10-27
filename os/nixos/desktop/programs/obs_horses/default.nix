@@ -42,6 +42,9 @@ in
       DynamicUser = true;
       SupplementaryGroups = [ "input" ];
       RuntimeDirectory = "obs-typing";
+      # a stopped detector means nobody is typing; without these a `switch` restart makes the plugin see a missing file and toggle itself off
+      RuntimeDirectoryPreserve = true;
+      ExecStopPost = "${pkgs.runtimeShell} -c 'printf 0 > /run/obs-typing/typing'";
       Restart = "always";
       RestartSec = 1;
     };
