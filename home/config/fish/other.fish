@@ -90,7 +90,16 @@ function book --wraps 'booktyping run --myopia'; booktyping run --myopia $argv; 
 function tokio-console; command tokio-console --lang en_US.UTF-8 $argv; end
 function tokio_console --wraps tokio-console; tokio-console $argv; end
 function fm --wraps yazi; yazi $argv; end # File manager
-function t; eza --no-quotes -snew -r | head -n 1 $argv; end # --no-quotes: else eza wraps space-containing names in '' when piped, breaking `unzip (t)` etc.
+function t # `t -N`: Nth newest, 1-indexed like `cl -N`
+    set -l n 1
+    if string match -qr '^-[1-9]$' -- $argv[1]
+        set n (string sub -s 2 -- $argv[1])
+    else if set -q argv[1]
+        echo "t: expected -N (1-9), got $argv[1]" >&2
+        return 1
+    end
+    eza --no-quotes -snew -r | sed -n {$n}p  # --no-quotes: else eza wraps space-containing names in '' when piped, breaking `unzip (t)` etc.
+end
 function mongodb --wraps mongosh; mongosh "mongodb+srv://test.di2kklr.mongodb.net/" --apiVersion 1 --username valeratrades --password qOcydRtmgFfJnnpd $argv; end
 function sql --wraps sqlite3; sqlite3 $argv; end
 function poetry; POETRY_KEYRING_DISABLED=true command poetry $argv; end
