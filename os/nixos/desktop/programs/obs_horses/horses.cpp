@@ -13,7 +13,7 @@
 OBS_DECLARE_MODULE()
 
 #define TARGET "Camera"
-#define TARGET_BR "Background Removal" // the collection's own filter on TARGET, left disabled; the cutout copies its settings
+#define TARGET_BR "Background Removal" // the collection's own filter on TARGET; the cutout copies its settings and replaces it
 #define TYPING "/run/obs-typing/typing"
 
 static struct dstr toggle_path;
@@ -36,6 +36,7 @@ static void attach(obs_source_t *target)
 		obs_data_t *settings = obs_source_get_settings(br);
 		cutout = obs_source_create_private(obs_source_get_id(br), "Horses cutout", settings);
 		obs_data_release(settings);
+		obs_source_set_enabled(br, false); // would cut out the camera-only scene too
 		obs_source_release(br);
 	}
 	obs_source_filter_add(target, cutout);
@@ -114,8 +115,8 @@ static void tick(void *, float)
 	}
 	obs_source_t *transition = obs_get_output_source(0);
 	obs_source_t *program = transition ? obs_transition_get_active_source(transition) : NULL;
-	// composited scenes always want the cutout; the camera-only scene keeps the real background unless horses replace it
-	obs_source_set_enabled(cutout, program != target || galloping());
+	// composited scenes cut the room out so it doesn't cover the screen; the camera-only scene keeps it, horses only around the camera
+	obs_source_set_enabled(cutout, program != target);
 	obs_source_release(program);
 	obs_source_release(transition);
 }

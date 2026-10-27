@@ -1,5 +1,6 @@
-# Self-contained OBS addon owning the Camera scene's background: cut out in composited scenes, real background in the camera-only one,
-# except while `$XDG_RUNTIME_DIR/obs_horses` exists (sway obs-mode `h` on, `H` off) and a key was just pressed: then a gallop plays behind the cutout.
+# Self-contained OBS addon owning the Camera scene's background: cut out in composited scenes, kept in the camera-only one.
+# While `$XDG_RUNTIME_DIR/obs_horses` exists (sway obs-mode `h` on, `H` off) and a key was just pressed, a gallop plays behind the camera:
+# through the cutout in composited scenes, around the camera frame in the camera-only one.
 # State shows in OBS's status bar. Nothing of it is ever saved into the scene collection.
 { pkgs, lib, user, ... }:
 let
