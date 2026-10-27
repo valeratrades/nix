@@ -8,12 +8,10 @@ OBS_DECLARE_MODULE()
 
 #define TARGET "Camera"
 #define TYPING "/run/obs-typing/typing"
-#define POLL_S 0.1f
 
 static struct dstr toggle_path;
 static obs_source_t *gallop, *filter;
 static volatile bool wanted, typing, queued;
-static float since_poll;
 
 // fires before `target` serializes its filters: keeps the filter out of the scene collection and undo snapshots
 static void on_save(void *unused, calldata_t *cd)
@@ -68,11 +66,8 @@ static void poll(void)
 static void tick(void *unused, float seconds)
 {
 	UNUSED_PARAMETER(unused);
-	since_poll += seconds;
-	if (since_poll >= POLL_S) {
-		since_poll = 0;
-		poll();
-	}
+	UNUSED_PARAMETER(seconds);
+	poll();
 	if (os_atomic_load_bool(&wanted) != (obs_filter_get_parent(filter) != NULL) && !os_atomic_set_bool(&queued, true))
 		obs_queue_task(OBS_TASK_UI, reconcile, NULL, false);
 }

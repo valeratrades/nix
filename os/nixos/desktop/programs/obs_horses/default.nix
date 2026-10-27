@@ -2,6 +2,8 @@
 # (visible where Background Removal cut it out) whenever a key was pressed recently. Nothing of it is ever saved into the scene collection.
 { pkgs, lib, user, ... }:
 let
+  stopAfterMs = 130; # horses keep running this long after the last key is released
+
   # Muybridge's 1878 gallop (public domain, commons.wikimedia.org/wiki/File:Muybridge_race_horse_animated.gif) as a 4x3 herd, each horse phase-shifted
   tiles = lib.genList (i: rec { inherit i; col = lib.mod i 4; row = i / 4; phase = lib.mod (7 * row + 4 * col) 15; }) 12;
   herd = pkgs.runCommand "horses.gif" { nativeBuildInputs = [ pkgs.ffmpeg ]; } ''
@@ -36,7 +38,7 @@ in
     after = [ "keyd.service" ];
     startLimitIntervalSec = 0; # keyd recreates its virtual keyboard on restart; retry until it's back
     serviceConfig = {
-      ExecStart = "${pkgs.python3.withPackages (ps: [ ps.evdev ])}/bin/python3 -I ${./typing_bit.py} /run/obs-typing/typing";
+      ExecStart = "${pkgs.python3.withPackages (ps: [ ps.evdev ])}/bin/python3 -I ${./typing_bit.py} /run/obs-typing/typing ${toString stopAfterMs}";
       DynamicUser = true;
       SupplementaryGroups = [ "input" ];
       RuntimeDirectory = "obs-typing";
