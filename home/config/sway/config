@@ -377,7 +377,7 @@ mode "screenshot" {
 	bindsym Escape exec $switch_out
 	bindsym q exec $switch_out
 }
-bindsym $mod+Insert exec "swaymsg mode screenshot && eww --no-daemonize update sway_mode='screenshot (f,d=3s,D=5s,o)'"
+bindsym $mod+Insert exec "swaymsg mode screenshot && eww --no-daemonize update sway_mode='screenshot (f=fullscreen,d=3s,D=5s,o=edit)'"
 #
 
 mode "size_presets" {
