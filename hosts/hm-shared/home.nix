@@ -109,7 +109,18 @@
       # SIGKILL — THE slow-shutdown bug. Without systemd, panes are plain children
       # of the tmux server and get killed cleanly.
       # See ongoing_debug/2026-06-05_slow-shutdown.md.
-      package = pkgs.tmux.override { withSystemd = false; };
+      package = let tmux = pkgs.tmux.override { withSystemd = false; };
+      in pkgs.symlinkJoin {
+        inherit (tmux) name;
+        meta = removeAttrs tmux.meta [ "outputsToInstall" ]; # the join is single-output; `man` is merged in below
+        paths = [ tmux tmux.man ];
+        postBuild = ''
+          rm $out/bin/tmux
+          substitute ${../../home/config/tmux/kill_server_guard.sh} $out/bin/tmux \
+            --replace-fail @bash@ ${pkgs.bash}/bin/bash --replace-fail @tmux@ ${tmux}/bin/tmux
+          chmod +x $out/bin/tmux
+        '';
+      };
       plugins = with pkgs; [
         #tmuxPlugins.resurrect # persist sessions
         tmuxPlugins.open # open files
