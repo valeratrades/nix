@@ -19,7 +19,7 @@ use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::fmt::Display;
 use std::fs;
-use std::io::{self, BufRead, Write};
+use std::io::{self, Write};
 use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
@@ -581,17 +581,49 @@ impl Ctx {
         }
     }
 
-    /// Claude names a `projects/` dir after its cwd with every non-alphanumeric replaced by `-`; history and config hold the path itself.
-    fn rebase_claude(&self, from: &str, to: &str) {
-        let encode = |path: &str| path.chars().map(|c| if c.is_ascii_alphanumeric() { c } else { '-' }).collect::<String>();
-        let (old, new) = (encode(from), encode(to));
-        let config_dirs = fs::read_dir(&self.home).unwrap_or_else(|e| panic!("{}: {e}", self.home.display()));
-        for dir in config_dirs {
-            let dir = dir.unwrap_or_else(|e| panic!("{}: {e}", self.home.display())).path();
-            let name = dir.file_name().expect("listed").to_string_lossy().into_owned();
-            if name != ".claude" && !name.starts_with(".claude-account") {
-                continue;
+    /// `~/.claude`, and `~/.claude-accountN` of `--acc N`
+    fn claude_dirs(&self) -> Vec<PathBuf> {
+        let entries = fs::read_dir(&self.home).unwrap_or_else(|e| panic!("{}: {e}", self.home.display()));
+        let dirs = entries.map(|entry| entry.unwrap_or_else(|e| panic!("{}: {e}", self.home.display())).path());
+        dirs.filter(|dir| dir.file_name().is_some_and(|n| n == ".claude" || n.to_string_lossy().starts_with(".claude-account"))).collect()
+    }
+
+    /// `(cwd, pid)` per running claude; the cwd is the one it started in, which a move leaves behind
+    fn live_claudes(&self) -> Vec<(String, u64)> {
+        let mut live = vec![];
+        for sessions in self.claude_dirs().into_iter().map(|dir| dir.join("sessions")) {
+            let entries = match fs::read_dir(&sessions) {
+                Ok(entries) => entries,
+                Err(e) if e.kind() == io::ErrorKind::NotFound => continue, // account never ran an interactive session
+                Err(e) => panic!("{}: {e}", sessions.display()),
+            };
+            for f in entries.map(|f| f.unwrap_or_else(|e| panic!("{}: {e}", sessions.display())).path()) {
+                if f.extension().is_none_or(|e| e != "json") {
+                    continue;
+                }
+                let session: Value = match fs::read_to_string(&f) {
+                    Ok(raw) => serde_json::from_str(&raw).unwrap_or_else(|e| panic!("{}: {e}", f.display())),
+                    Err(e) if e.kind() == io::ErrorKind::NotFound => continue, // its claude exited since listing
+                    Err(e) => panic!("{}: {e}", f.display()),
+                };
+                let pid = session["pid"].as_u64().unwrap_or_else(|| panic!("{}: no pid", f.display()));
+                let cwd = session["cwd"].as_str().unwrap_or_else(|| panic!("{}: no cwd", f.display()));
+                if Path::new(&format!("/proc/{pid}")).exists() {
+                    live.push((cwd.to_owned(), pid));
+                }
             }
+        }
+        live
+    }
+
+    /// history and config hold the path itself
+    fn rebase_claude(&self, from: &str, to: &str) {
+        let (old, new) = (claude_encode(from), claude_encode(to));
+        if let Some(alike) = alike_encoded(Path::new("/"), &old) {
+            return self.report(true, format_args!("left claude projects of {from} in place: {} encodes alike", alike.display()));
+        }
+        for dir in self.claude_dirs() {
+            let name = dir.file_name().expect("listed").to_string_lossy().into_owned();
             let projects = dir.join("projects");
             match fs::read_dir(&projects) {
                 Ok(entries) => {
@@ -601,14 +633,6 @@ impl Ctx {
                         let Some(rest) = name.strip_prefix(&old).filter(|rest| rest.is_empty() || rest.starts_with('-')) else { continue };
                         if project.is_symlink() {
                             continue; // an earlier move's redirect
-                        }
-                        match claude_project_cwd(&project) {
-                            Ok(Some(cwd)) if encode(&cwd) != name || rebase(&cwd, from, to).is_none() => continue, // another path encoding alike, e.g. `{from}_x`
-                            Ok(_) => {} // shortcut: no transcript to read the cwd from, so the name prefix decides; an alike-encoding sibling could be taken along
-                            Err(e) => {
-                                self.report(true, format_args!("keeping {}: {e}", project.display()));
-                                continue;
-                            }
                         }
                         let target = projects.join(format!("{new}{rest}"));
                         assert!(target.file_name().expect("joined").len() <= 200, "{}: claude hashes names past 200 chars", target.display());
@@ -629,8 +653,15 @@ impl Ctx {
             }
             self.rewrite(&dir.join("history.jsonl"), |old| {
                 old.lines()
-                    .map(|line| {
-                        let mut entry: Value = serde_json::from_str(line).expect("claude writes one json per line");
+                    .enumerate()
+                    .map(|(i, line)| {
+                        let mut entry: Value = match serde_json::from_str(line) {
+                            Ok(entry) => entry,
+                            Err(e) => {
+                                self.report(true, format_args!("{}:{}: {e}, left as is", dir.join("history.jsonl").display(), i + 1));
+                                return format!("{line}\n");
+                            }
+                        };
                         match entry["project"].as_str().and_then(|project| rebase(project, from, to)) {
                             Some(project) => {
                                 entry["project"] = Value::String(project);
@@ -742,17 +773,28 @@ impl Ctx {
         if !listed.status.success() {
             return self.report(true, format_args!("zoxide query: {}", String::from_utf8_lossy(&listed.stderr)));
         }
-        for line in String::from_utf8(listed.stdout).expect("zoxide paths are UTF-8").lines() {
-            let (score, path) = line.trim_start().split_once(' ').expect("`<score> <path>`");
-            let Some(new) = rebase(path, from, to) else { continue };
-            if self.run(Command::new("zoxide").args(["add", "--score", score, &new])) && self.run(Command::new("zoxide").args(["remove", path])) {
+        let listed = String::from_utf8(listed.stdout).expect("zoxide paths are UTF-8");
+        let moved: Vec<(&str, &str, String)> = listed
+            .lines()
+            .filter_map(|line| {
+                let (score, path) = line.trim_start().split_once(' ').expect("`<score> <path>`");
+                Some((score, path, rebase(path, from, to)?))
+            })
+            .collect();
+        // removes first: each add may age out low-ranked entries, listed ones included
+        let removed: Vec<_> = moved.into_iter().filter(|(_, path, _)| self.run(Command::new("zoxide").args(["remove", path]))).collect();
+        for (score, path, new) in removed {
+            if self.run(Command::new("zoxide").args(["add", "--score", score, &new])) {
                 self.report(false, format_args!("zoxide: {path} -> {new}"));
             }
         }
     }
 
+    /// Claude scans every `projects/` dir, so for those the follow that counts is a live claude still writing there, not atime.
     fn sweep_redirects(&self) {
         let hops = &self.redirects;
+        let live = self.live_claudes();
+        let claude_projects: Vec<PathBuf> = self.claude_dirs().into_iter().map(|dir| dir.join("projects")).collect();
         println!("\x1b[34mSweeping redirects in {} unfollowed for {} days\x1b[0m", hops.display(), self.cfg.stale_days(self.cfg.stale_multipliers.redirects));
         for entry in WalkDir::new(hops).min_depth(1) {
             let entry = match entry {
@@ -768,6 +810,24 @@ impl Ctx {
             }
             let hop = entry.path();
             let front = self.home.join(hop.strip_prefix(hops).expect("walked from hops"));
+            let front_str = front.to_str().expect("fronts are UTF-8 paths");
+            let holders = |claude_dir: bool| -> Vec<String> {
+                let held = |cwd: &str| match claude_dir {
+                    true => front.file_name().is_some_and(|name| *name == *claude_encode(cwd)),
+                    false => rebase(cwd, front_str, front_str).is_some(),
+                };
+                live.iter().filter(|(cwd, _)| held(cwd)).map(|(cwd, pid)| format!("claude {pid} in {cwd}")).collect()
+            };
+            if front.parent().is_some_and(|p| claude_projects.iter().any(|projects| projects == p)) {
+                match holders(true).as_slice() {
+                    [] => {
+                        self.remove(&front, "redirect no live claude writes through");
+                        self.remove(hop, format_args!("hop of {}", front.display()));
+                    }
+                    holders => self.report(true, format_args!("{} still written by {}", front.display(), holders.join(", "))),
+                }
+                continue;
+            }
             let last_follow = (|| -> io::Result<(u64, bool)> {
                 if !entry.file_type().is_symlink() {
                     return Err(io::Error::other("hop is not a symlink"));
@@ -785,7 +845,10 @@ impl Ctx {
                     self.remove(&front, format_args!("redirect unfollowed {days}d"));
                     self.remove(hop, format_args!("hop of {}", front.display()));
                 }
-                Ok((days, true)) => self.report(true, format_args!("{} was followed {days}d ago: something still points at the old path", front.display())),
+                Ok((days, true)) => match holders(false).as_slice() {
+                    [] => self.report(true, format_args!("{} was followed {days}d ago: something still points at the old path", front.display())),
+                    holders => self.report(true, format_args!("{} was followed {days}d ago, and {} still started under it", front.display(), holders.join(", "))),
+                },
                 Ok((_, false)) => {}
                 Err(e) => self.report(true, format_args!("keeping redirect {}: {e}", hop.display())),
             }
@@ -856,25 +919,34 @@ fn unit(path: PathBuf) -> io::Result<Unit> {
     Ok(Unit { path, last_use, bytes })
 }
 
+/// the `projects/` dir name claude gives a cwd
+fn claude_encode(path: &str) -> String {
+    path.chars().map(|c| if c.is_ascii_alphanumeric() { c } else { '-' }).collect()
+}
+
 /// `path` re-rooted from `from` onto `to`, if it lies under `from`
 fn rebase(path: &str, from: &str, to: &str) -> Option<String> {
     let rest = path.strip_prefix(from)?;
     (rest.is_empty() || rest.starts_with('/')).then(|| format!("{to}{rest}"))
 }
 
-/// the cwd the first transcript line recording one names, which the dir is named after
-fn claude_project_cwd(project: &Path) -> io::Result<Option<String>> {
-    for entry in WalkDir::new(project) {
-        let entry = entry?;
-        if entry.path().extension().is_none_or(|e| e != "jsonl") {
+/// A real path under `dir` whose encoding is `encoded`, or starts with it at a `-` boundary; `from` itself is a redirect by now, which this skips.
+fn alike_encoded(dir: &Path, encoded: &str) -> Option<PathBuf> {
+    let encoded = encoded.strip_prefix('-').expect("encodes an absolute path");
+    for entry in fs::read_dir(dir).ok()? { // unreadable: nothing claude ran in
+        let Ok(entry) = entry else { continue };
+        if !entry.file_type().is_ok_and(|t| t.is_dir()) {
             continue;
         }
-        for line in io::BufReader::new(fs::File::open(entry.path())?).lines() {
-            let line: Value = serde_json::from_str(&line?).map_err(io::Error::other)?;
-            if let Some(cwd) = line["cwd"].as_str() {
-                return Ok(Some(cwd.to_owned()));
-            }
+        let name = claude_encode(&entry.file_name().to_string_lossy());
+        if name == encoded || name.starts_with(&format!("{encoded}-")) {
+            return Some(entry.path());
+        }
+        if let Some(rest) = encoded.strip_prefix(&name).filter(|rest| rest.starts_with('-'))
+            && let Some(alike) = alike_encoded(&entry.path(), rest)
+        {
+            return Some(alike);
         }
     }
-    Ok(None)
+    None
 }
