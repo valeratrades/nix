@@ -40,7 +40,7 @@ in
     if lib.length disks == 1 then {
       main = disk (lib.elemAt disks 0) {
         ESP = esp;
-        root = ext4 { end = "-${swap}"; } "/" [ ];
+        root = ext4 { end = "-${swap}"; } "/" [ "-m" "1" ]; # holds /home too; 1% still leaves root GBs to recover with
         swap = swapPart;
       };
     } else if lib.length disks == 2 then {
