@@ -67,7 +67,7 @@
 (defwidget sway_mode []
 	(box
 		:visible {sway_mode != "default"}
-		"#${sway_mode}"
+		(label :markup "#${replace(sway_mode, '([(,])([^=,()]+)', '\\1<span color=\"white\">\\2</span>')}")
 	)
 )
 
