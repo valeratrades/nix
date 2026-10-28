@@ -19,7 +19,7 @@ use std::io::{self, Write};
 use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use walkdir::WalkDir;
 
 /// System maintenance script
@@ -63,6 +63,7 @@ struct Ctx {
     home: PathBuf,
     redirects: PathBuf,
     log: PathBuf,
+    last_clean: PathBuf,
     dry_run: bool,
 }
 
@@ -87,6 +88,7 @@ fn main() {
         home: PathBuf::from(env("HOME")),
         redirects: state.join("maintenance/redirects"),
         log: state.join("maintenance/log"),
+        last_clean: state.join("maintenance/last_clean"),
         dry_run: args.dry_run,
     };
     if let Some(Cmd::Mv { from, to }) = args.cmd {
@@ -289,9 +291,9 @@ impl Ctx {
         Ok(false)
     }
 
-    fn project_unused_days(&self, project: &Path) -> Option<u64> {
+    fn project_last_use(&self, project: &Path) -> Option<SystemTime> {
         match unit(project.to_path_buf()) {
-            Ok(unit) => self.unused_days(unit.last_use),
+            Ok(unit) => Some(unit.last_use),
             Err(e) => {
                 self.report(true, format_args!("keeping artefacts of {}: {e}", project.display()));
                 None
@@ -301,6 +303,21 @@ impl Ctx {
 
     fn clean_old_build_artefacts(&self) {
         println!("\x1b[34mCleaning old build artefacts\x1b[0m");
+        let started = SystemTime::now();
+        let last_clean = match fs::read_to_string(&self.last_clean) {
+            Ok(secs) => UNIX_EPOCH + Duration::from_secs(secs.trim().parse().unwrap_or_else(|e| panic!("{}: {e}", self.last_clean.display()))),
+            Err(e) if e.kind() == io::ErrorKind::NotFound => UNIX_EPOCH, // never cleaned: everything was touched since
+            Err(e) => panic!("{}: {e}", self.last_clean.display()),
+        };
+        let cargo = |project: &Path, args: &[&str], why: String| match self.dry_run {
+            true => self.report(false, format_args!("would cargo {} {} ({why})", args.join(" "), project.display())),
+            false => {
+                if self.run(Command::new("cargo").args(args).current_dir(project)) {
+                    self.report(false, format_args!("cargo {} {} ({why})", args.join(" "), project.display()));
+                }
+            }
+        };
+        let sweep_days = self.cfg.outdated_after_days.to_string();
 
         for dir in ["tmp", "s", "g", "leetcode", "uni"].map(|d| self.home.join(d)) {
             if !dir.exists() {
@@ -325,17 +342,14 @@ impl Ctx {
                 match entry.file_name().to_str() {
                     Some("target" | "node_modules") if is_dir => walk.skip_current_dir(),
                     Some("Cargo.toml") if project.join("target").exists() => {
-                        if let Some(days) = self.project_unused_days(project) {
-                            match self.dry_run {
-                                true => self.report(false, format_args!("would cargo clean {} (unused {days}d)", project.display())),
-                                false => {
-                                    if self.run(Command::new("cargo").arg("clean").current_dir(project)) {
-                                        self.report(false, format_args!("cargo clean {} (unused {days}d)", project.display()));
-                                    }
-                                }
-                            }
+                        let Some(last_use) = self.project_last_use(project) else { continue };
+                        match self.unused_days(last_use) {
+                            Some(days) => cargo(project, &["clean"], format!("unused {days}d")),
+                            None if last_use > last_clean => cargo(project, &["sweep", "--time", &sweep_days], "touched since last clean".into()),
+                            None => {}
                         }
                     }
+                    Some("worktrees") if is_dir && project.ends_with(".claude") => self.remove_stale_worktrees(entry.path()), // before the walk reads it, so it descends only into survivors
                     // repo root: clean stale dist/ and result/ (nix build symlink)
                     Some(".git") => {
                         if is_dir {
@@ -345,7 +359,7 @@ impl Ctx {
                         if artefacts.is_empty() {
                             continue;
                         }
-                        if let Some(days) = self.project_unused_days(project) {
+                        if let Some(days) = self.project_last_use(project).and_then(|t| self.unused_days(t)) {
                             for artefact in &artefacts {
                                 self.remove(artefact, format_args!("project unused {days}d"));
                             }
@@ -353,6 +367,35 @@ impl Ctx {
                     }
                     _ => {}
                 }
+            }
+        }
+
+        if !self.dry_run {
+            let secs = started.duration_since(UNIX_EPOCH).unwrap().as_secs();
+            fs::write(&self.last_clean, secs.to_string()).unwrap_or_else(|e| panic!("{}: {e}", self.last_clean.display()));
+        }
+    }
+
+    /// plain `git worktree remove` refuses dirty or locked worktrees, so only uncommitted-nothing goes; the branch stays
+    fn remove_stale_worktrees(&self, worktrees: &Path) {
+        let repo = worktrees.parent().and_then(Path::parent).expect("<repo>/.claude/worktrees");
+        let entries = match fs::read_dir(worktrees) {
+            Ok(entries) => entries,
+            Err(e) => return self.report(true, format_args!("keeping {}: {e}", worktrees.display())),
+        };
+        for entry in entries {
+            let worktree = match entry {
+                Ok(entry) => entry.path(),
+                Err(e) => {
+                    self.report(true, format_args!("keeping an entry of {}: {e}", worktrees.display()));
+                    continue;
+                }
+            };
+            let Some(days) = self.project_last_use(&worktree).and_then(|t| self.unused_days(t)) else { continue };
+            if self.dry_run {
+                self.report(false, format_args!("would git worktree remove {} (unused {days}d)", worktree.display()));
+            } else if self.run(Command::new("git").arg("-C").arg(repo).args(["worktree", "remove"]).arg(&worktree)) {
+                self.report(false, format_args!("git worktree remove {} (unused {days}d)", worktree.display()));
             }
         }
     }
