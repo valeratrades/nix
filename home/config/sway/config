@@ -73,7 +73,6 @@ exec libinput-gestures
 exec "sh -c 'sudo chmod 766 /var/run/keyd.socket'"
 exec keyd-application-mapper -d
 # PipeWire is managed by systemd (services.pipewire in audio.nix)
-exec wlr-gamma-service --min-interval-ms 50
 bindsym $mod+g exec ringboard-egui
 bindsym $mod+Shift+g exec ringboard wipe
 #
