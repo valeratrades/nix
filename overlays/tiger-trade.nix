@@ -1,56 +1,51 @@
-# Tiger Trade terminal via Wine
-# Requires .NET Framework 4.7.2+ which is installed on first run
+# Tiger Trade terminal via Wine. A .NET 10 WPF app: runtime from Microsoft's zips, Direct3D through DXVK (Wine's own GL path fails to init on the hybrid AMD+NVIDIA laptop and the app hangs).
 final: prev:
 let
   wineApp = prev.callPackage ./wine-wrapper.nix {};
+  version = "7.4.9792.30944";
+  setup = prev.fetchurl {
+    url = "https://cdn-gl.tiger.trade/download/release/TigerTradeSetup_${version}.exe";
+    hash = "sha256-+SkVX1Aa3SUaVKu/I1bp3fXUxShU4miUy6PG4kIGMTs=";
+  };
+  # WiX Burn bundle: its last cabinet holds the MSI, unpacked here so no installer GUI ever runs
+  app = prev.runCommand "tiger-trade-${version}" { nativeBuildInputs = with prev; [ python3 cabextract msitools ]; } ''
+    off=$(python3 -c 'import sys; print(open(sys.argv[1], "rb").read().rindex(b"MSCF\0\0\0\0"))' ${setup})
+    tail -c +$((off + 1)) ${setup} > bundle.cab
+    cabextract -q bundle.cab
+    msiextract -C msi a0
+    mv "msi/Program Files/TigerTrade" $out
+  '';
+  dotnetVersion = "10.0.14"; # TigerTrade.runtimeconfig.json: NETCore + WindowsDesktop + AspNetCore 10.0
+  dotnet = prev.runCommand "dotnet-runtime-${dotnetVersion}-win-x64" { nativeBuildInputs = [ prev.unzip ]; } ''
+    mkdir $out
+    unzip -qo ${prev.fetchurl {
+      url = "https://builds.dotnet.microsoft.com/dotnet/WindowsDesktop/${dotnetVersion}/windowsdesktop-runtime-${dotnetVersion}-win-x64.zip";
+      hash = "sha256-rP3D9GTsO9dGnNrNvGlYQu/ST/PlFNL8KDeJAr4pMcw=";
+    }} -d $out
+    unzip -qo ${prev.fetchurl {
+      url = "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/${dotnetVersion}/aspnetcore-runtime-${dotnetVersion}-win-x64.zip";
+      hash = "sha256-rmHNTbZTxP7JtK10/IvbLXNReZZtQA/f5kxl8bNsIBQ=";
+    }} -d $out
+  '';
 in {
   tiger-trade = wineApp {
     name = "tiger-trade";
+    x11 = true;
     winePrefix = "$HOME/.wine-tigertrade";
     setupScript = ''
-      TT_DIR="$WINEPREFIX/drive_c/Program Files/TigerTrade"
-      TT_VERSION="7.1"
-      TT_INSTALLER_URL="https://storage.googleapis.com/tiger-trade-site-content-cdn-production/download/TigerTradeSetup_''${TT_VERSION}.exe"
-
-      if [ ! -f "$TT_DIR/TigerTrade.exe" ]; then
-          echo "Tiger Trade not found. Setting up..."
-
-          if [ ! -d "$WINEPREFIX" ]; then
-              echo "Initializing Wine prefix at $WINEPREFIX..."
-              wineboot --init
-
-              echo "Installing fonts..."
-              winetricks -q corefonts
-
-              echo ""
-              echo "Installing .NET Framework 4.7.2 (this takes a while)..."
-              echo "You may see Windows installer dialogs - follow any prompts."
-              echo ""
-              winetricks -q dotnet472
-
-              echo ".NET installation complete."
-          fi
-
-          echo "Downloading Tiger Trade v$TT_VERSION..."
-          TMP_INSTALLER=$(mktemp --suffix=.exe)
-          curl -L -o "$TMP_INSTALLER" "$TT_INSTALLER_URL"
-
-          echo ""
-          echo "Running installer..."
-          echo "Follow the installation wizard. Default install path is recommended."
-          echo ""
-          wine "$TMP_INSTALLER"
-          rm "$TMP_INSTALLER"
-
-          if [ ! -f "$TT_DIR/TigerTrade.exe" ]; then
-              echo ""
-              echo "WARNING: TigerTrade.exe not found at expected location."
-              echo "If you installed to a different path, edit this script or run manually:"
-              printf '  WINEPREFIX=%s wine "C:\\path\\to\\TigerTrade.exe"\n' "$WINEPREFIX"
-              exit 1
-          fi
+      TT_DIR="$WINEPREFIX/drive_c/TigerTrade"
+      if [ ! -d "$WINEPREFIX" ]; then
+          WINEDLLOVERRIDES="mscoree,mshtml=" wineboot --init # skips the Mono/Gecko install prompts
       fi
+      if ! cmp -s "${app}/TigerTrade.exe" "$TT_DIR/TigerTrade.exe"; then # first run or version bump
+          rm -rf "$TT_DIR"
+          cp -r --no-preserve=mode "${app}" "$TT_DIR"
+      fi
+      cp --no-preserve=mode ${prev.dxvk.bin}/x64/*.dll "$WINEPREFIX/drive_c/windows/system32/"
+      cp --no-preserve=mode ${prev.dxvk.bin}/x32/*.dll "$WINEPREFIX/drive_c/windows/syswow64/"
+      export WINEDLLOVERRIDES="d3d8,d3d9,d3d10core,d3d11,dxgi=n,b;mshtml=" # mscoree stays builtin: CoreCLR needs it to load IL-only assemblies
+      export DOTNET_ROOT="Z:${builtins.replaceStrings [ "/" ] [ "\\" ] "${dotnet}"}"
     '';
-    runCmd = ''wine "$WINEPREFIX/drive_c/Program Files/TigerTrade/TigerTrade.exe" "$@"'';
+    runCmd = ''wine "$WINEPREFIX/drive_c/TigerTrade/TigerTrade.exe" "$@"'';
   };
 }
