@@ -6,6 +6,12 @@ return require "lazier" {
 			--file = {
 			--	[".rs"] = { glyph = "", hl = "MiniIconsOrange" },
 			--},
+			directory = {
+				target = { glyph = "󰛫", hl = "MiniIconsGrey" },
+				examples = { glyph = "󰚝", hl = "MiniIconsAzure" },
+				crates = { glyph = "󰉓", hl = "MiniIconsOrange" },
+				scripts = { glyph = "󱧺", hl = "MiniIconsGreen" },
+			},
 		})
 		local oil = require("oil")
 
