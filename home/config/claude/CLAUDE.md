@@ -78,9 +78,11 @@
 - minimize amount of questions you ask me. Most of them can be resolved on your own, by listing out pros and cons, then referencing this CLAUDE.md file for guiding principles, from which most often the decision becomes obvious.
   Never ask questions just to ask questions. Your instructions for creation of the plan may tell you to compile questions to ask, - but I want to be very clear here, - you **only** do that if something is actually not clear. Things that you can derive/answer yourself, you do not bring up.
 
-- before starting your work, check if there are other active agents on this project. If you're not the only one there, you work in a worktree made with your `EnterWorktree` tool, never with `git worktree add` by hand. In repos with LFS, LFS-tracked files are absent there; adding one needs `git add --sparse`. For larger changes, you can and should claim a branch, and then open PR at the end. // when asking to merge, use your `question` interface. I have a script that will highlight those. Note that you don't ask for PR, - if the change is too large to apply directly without asking me, PR is a given. You ask once you open it, for whether it's ready to be merged. After any merge, you always `git pull` it into the local checkout, - a merge isn't finished until local state has it.
+- before starting your work, check if there are other active agents on this project. If you're not the only one there, you work in a worktree. You make it with your `EnterWorktree` tool. In repos with LFS, LFS-tracked files are absent there; adding one needs `git add --sparse`. For larger changes, you can and should claim a branch, and then open PR at the end.
   > does not apply if you're in `/plan` mode or are just exploring, - check just before you're about to start making a big edit
   > And also, small edits don't require none of this, - you can just make them directly
+
+  // when asking to merge, use your `question` interface. I have a script that will highlight those. Note that you don't ask for PR, - if the change is too large to apply directly without asking me, PR is a given. You ask once you open it, for whether it's ready to be merged. After any merge, you always `git pull` it into the local checkout, - a merge isn't finished until local state has it.
 
   also, don't fuck with other agents. Avoid commands that would affect them, - all the way up until merging.
   And another thing, - if you spawn your own agents, don't make worktrees for them. If you own an agent, it should work on the same env as you do. When spawning it, tell it to not make new worktrees.
@@ -88,6 +90,8 @@
   this includes not switching the branch outside of worktrees. You always work on main if you're at the top. Otherwise everybody else will start committing on your branch, - assume nobody will check before it's too late. So no branches when you're applying patches directly without a worktree.
   
 - if your worktree breaks some relative path import on a crate we own, - switch it to abs path
+
+- do not ever create worktrees outside of [.claude/worktrees/] in your repo. If you find any, move them in (and if the agent that made it is active, swear at it until it understands the depth of its stupidity).
 
 - never skip any parts of implementation because it would conflict with another agent. What you can do is sleep and wait for him to finish. Or make a worktree. Or if you're editing different files, even just edit in-place. But you never ever just say "oh, the changes would conflict with another agent running, will do other time". This will not be tolerated. This is the WORST thing you can do, - when I give you an item to implement, I assume that you will drive its implementation or at least bubble up the failure thereof. If you say you finished your task, but some work was excluded, I'm likely to lose its thread outright.
 
