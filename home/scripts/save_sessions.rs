@@ -105,6 +105,12 @@ fn main() {
                 continue; // claude on another tmux server
             };
             let cwd = j["cwd"].as_str().unwrap_or_else(|| panic!("{}: no cwd", f.display()));
+            // claude records a physical path, so any symlink in it is a `maintenance mv` redirect left since
+            let cwd = match std::fs::canonicalize(cwd) {
+                Ok(cwd) => cwd.into_os_string().into_string().expect("cwd is UTF-8"),
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => cwd.to_owned(), // deleted: restore reports it stale
+                Err(e) => panic!("{cwd}: {e}"),
+            };
             let id = j["sessionId"].as_str().unwrap_or_else(|| panic!("{}: no sessionId", f.display()));
             content.push_str(&format!("{session_name}\t{cwd}\t{id}\t{}\n", config_dir.display()));
         }

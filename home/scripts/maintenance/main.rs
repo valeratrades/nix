@@ -7,19 +7,22 @@ edition = "2024"
 [dependencies]
 clap = { version = "4.5.49", features = ["derive"] }
 serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+serde_json = { version = "1", features = ["preserve_order"] }
+sha2 = "0.10"
 v_utils = "2"
 walkdir = "2"
 ---
 
 use clap::Parser;
 use serde::Deserialize;
+use serde_json::Value;
+use sha2::{Digest, Sha256};
 use std::fmt::Display;
 use std::fs;
-use std::io::{self, Write};
+use std::io::{self, BufRead, Write};
 use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Stdio};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use v_utils::Percent;
 use walkdir::WalkDir;
@@ -47,7 +50,8 @@ struct Args {
 
 #[derive(clap::Subcommand, Debug)]
 enum Cmd {
-    /// Move `from` to `to`, leaving `from` as a redirect the `redirects` task removes once unfollowed for stale_multipliers.redirects
+    /// Move `from` to `to`, leaving `from` as a redirect the `redirects` task removes once unfollowed for stale_multipliers.redirects.
+    /// Then re-roots what records the old path: git worktree links, tmux sessions, claude projects/history/config, direnv trust, zoxide. A `from` already redirecting to `to` gets just that.
     Mv { from: PathBuf, to: PathBuf },
 }
 
@@ -76,6 +80,8 @@ impl Config {
 struct Ctx {
     cfg: Config,
     home: PathBuf,
+    state: PathBuf,
+    data: PathBuf,
     redirects: PathBuf,
     log: PathBuf,
     last_clean: PathBuf,
@@ -101,6 +107,8 @@ fn main() {
     let ctx = Ctx {
         cfg: serde_json::from_str(&config).unwrap_or_else(|e| panic!("{}: {e}", config_path.display())),
         home: PathBuf::from(env("HOME")),
+        state: state.clone(),
+        data: PathBuf::from(env("XDG_DATA_HOME")),
         redirects: state.join("maintenance/redirects"),
         log: state.join("maintenance/log"),
         last_clean: state.join("maintenance/last_clean"),
@@ -416,20 +424,331 @@ impl Ctx {
         }
     }
 
-    /// `~/<p>` -> `$XDG_STATE_HOME/maintenance/redirects/<p>` -> new location: only traversals reach the hop, so its atime is the last follow (`ls -l` readlinks just the front)
+    fn hop(&self, front: &Path) -> PathBuf {
+        self.redirects.join(front.strip_prefix(&self.home).unwrap_or_else(|_| panic!("{} is outside $HOME", front.display())))
+    }
+
     fn mv(&self, from: &Path, to: &Path) {
-        let from = fs::canonicalize(from).unwrap_or_else(|e| panic!("{}: {e}", from.display()));
-        let to = std::path::absolute(to).unwrap_or_else(|e| panic!("{}: {e}", to.display()));
-        let to = fs::canonicalize(to.parent().expect("absolute, and not /")).unwrap_or_else(|e| panic!("{}: {e}", to.display())).join(to.file_name().expect("absolute, and not /"));
-        let hop = self.redirects.join(from.strip_prefix(&self.home).unwrap_or_else(|_| panic!("{} is outside $HOME", from.display())));
-        for taken in [&to, &hop] {
+        let [from, to] = [from, to].map(|p| {
+            let p = std::path::absolute(p).unwrap_or_else(|e| panic!("{}: {e}", p.display()));
+            let parent = fs::canonicalize(p.parent().expect("absolute, and not /")).unwrap_or_else(|e| panic!("{}: {e}", p.display()));
+            parent.join(p.file_name().expect("absolute, and not /"))
+        });
+        let moved = fs::read_link(&from).is_ok_and(|hop| hop == self.hop(&from) && fs::read_link(&hop).is_ok_and(|target| target == to));
+        if !moved {
+            let meta = fs::symlink_metadata(&from).unwrap_or_else(|e| panic!("{}: {e}", from.display()));
+            assert!(!meta.is_symlink(), "{} is a symlink not redirecting to {}", from.display(), to.display());
+            self.relocate(&from, &to);
+        }
+        let [from, to] = [&from, &to].map(|p| p.to_str().unwrap_or_else(|| panic!("{} is not UTF-8", p.display())));
+        self.rebase_git(from, to);
+        self.rebase_tmux(from, to);
+        self.rebase_claude(from, to);
+        self.rebase_direnv(from, to);
+        self.rebase_zoxide(from, to);
+    }
+
+    fn relocate(&self, from: &Path, to: &Path) {
+        for taken in [to, &self.hop(from)] {
             assert!(fs::symlink_metadata(taken).is_err_and(|e| e.kind() == io::ErrorKind::NotFound), "{} already exists", taken.display());
         }
-        fs::create_dir_all(hop.parent().expect("under redirects")).unwrap_or_else(|e| panic!("{}: {e}", hop.display()));
-        fs::rename(&from, &to).unwrap_or_else(|e| panic!("{} -> {}: {e}", from.display(), to.display()));
-        std::os::unix::fs::symlink(&to, &hop).unwrap_or_else(|e| panic!("{}: {e}", hop.display()));
-        std::os::unix::fs::symlink(&hop, &from).unwrap_or_else(|e| panic!("{}: {e}", from.display()));
+        fs::rename(from, to).unwrap_or_else(|e| panic!("{} -> {}: {e}", from.display(), to.display()));
+        self.redirect(from, to);
         self.report(false, format_args!("moved {} -> {}, redirect lives until unfollowed {}d", from.display(), to.display(), self.cfg.stale_days(self.cfg.stale_multipliers.redirects)));
+    }
+
+    /// `~/<p>` -> `$XDG_STATE_HOME/maintenance/redirects/<p>` -> new location: only traversals reach the hop, so its atime is the last follow (`ls -l` readlinks just the front)
+    fn redirect(&self, from: &Path, to: &Path) {
+        let hop = self.hop(from);
+        assert!(fs::symlink_metadata(&hop).is_err_and(|e| e.kind() == io::ErrorKind::NotFound), "{} already exists", hop.display());
+        fs::create_dir_all(hop.parent().expect("under redirects")).unwrap_or_else(|e| panic!("{}: {e}", hop.display()));
+        std::os::unix::fs::symlink(to, &hop).unwrap_or_else(|e| panic!("{}: {e}", hop.display()));
+        std::os::unix::fs::symlink(&hop, from).unwrap_or_else(|e| panic!("{}: {e}", from.display()));
+    }
+
+    /// Replaces `path` with `edit`'s output if that differs, keeping its mode. False if `path` is missing.
+    fn rewrite(&self, path: &Path, edit: impl FnOnce(&str) -> String) -> bool {
+        let (old, meta) = match fs::read_to_string(path).and_then(|old| Ok((old, fs::metadata(path)?))) {
+            Ok(read) => read,
+            Err(e) if e.kind() == io::ErrorKind::NotFound => return false,
+            Err(e) => {
+                self.report(true, format_args!("{}: {e}", path.display()));
+                return true;
+            }
+        };
+        let new = edit(&old);
+        if new == old {
+            return true;
+        }
+        let tmp = PathBuf::from(format!("{}.maintenance-tmp", path.display()));
+        let written = fs::write(&tmp, &new).and_then(|()| fs::set_permissions(&tmp, meta.permissions())).and_then(|()| fs::rename(&tmp, path)); // rename: claude reads its files concurrently
+        match written {
+            Ok(()) => self.report(false, format_args!("rebased paths in {}", path.display())),
+            Err(e) => self.report(true, format_args!("{}: {e}", path.display())),
+        }
+        true
+    }
+
+    /// Re-roots the path a worktree link holds (`gitdir: <p>` in a `.git` file, bare in `.git/worktrees/<n>/gitdir`), returning where it points.
+    fn rebase_link(&self, link: &Path, from: &str, to: &str) -> Option<PathBuf> {
+        let mut target = None;
+        let exists = self.rewrite(link, |old| {
+            let old = old.trim_end();
+            let (prefix, path) = old.strip_prefix("gitdir: ").map_or(("", old), |path| ("gitdir: ", path));
+            let path = rebase(path, from, to).unwrap_or_else(|| path.to_owned());
+            target = Some(link.parent().expect("a file in a dir").join(&path)); // submodules' links are relative
+            format!("{prefix}{path}\n")
+        });
+        if !exists {
+            self.report(true, format_args!("dangling worktree link: {} is missing", link.display()));
+        }
+        target
+    }
+
+    /// Worktree links are absolute both ways, and git keeps accepting the old side while the redirect resolves.
+    fn rebase_git(&self, from: &str, to: &str) {
+        let mut walk = WalkDir::new(to).into_iter();
+        while let Some(entry) = walk.next() {
+            let entry = match entry {
+                Ok(entry) => entry,
+                Err(e) => {
+                    self.report(true, e);
+                    continue;
+                }
+            };
+            let is_dir = entry.file_type().is_dir();
+            match entry.file_name().to_str() {
+                Some("target" | "node_modules" | ".direnv") if is_dir => walk.skip_current_dir(),
+                Some(".git") if is_dir => {
+                    walk.skip_current_dir();
+                    let admins = match fs::read_dir(entry.path().join("worktrees")) {
+                        Ok(admins) => admins,
+                        Err(e) if e.kind() == io::ErrorKind::NotFound => continue,
+                        Err(e) => {
+                            self.report(true, format_args!("{}: {e}", entry.path().display()));
+                            continue;
+                        }
+                    };
+                    for admin in admins {
+                        match admin {
+                            Ok(admin) => {
+                                if let Some(worktree) = self.rebase_link(&admin.path().join("gitdir"), from, to) {
+                                    self.rebase_link(&worktree, from, to);
+                                }
+                            }
+                            Err(e) => self.report(true, format_args!("{}: {e}", entry.path().display())),
+                        }
+                    }
+                }
+                Some(".git") => {
+                    if let Some(admin) = self.rebase_link(entry.path(), from, to)
+                        && admin.parent().is_some_and(|p| p.ends_with("worktrees"))
+                    {
+                        self.rebase_link(&admin.join("gitdir"), from, to);
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+
+    fn rebase_tmux(&self, from: &str, to: &str) {
+        let sessions = Command::new("tmux").args(["list-sessions", "-F", "#{session_name}\t#{session_path}"]).output().expect("tmux is installed");
+        let stderr = String::from_utf8_lossy(&sessions.stderr);
+        if !sessions.status.success() && !stderr.contains("no server running") && !stderr.contains("error connecting") {
+            self.report(true, format_args!("tmux list-sessions: {stderr}"));
+        }
+        for line in String::from_utf8(sessions.stdout).expect("tmux session paths are UTF-8").lines() {
+            let (name, path) = line.split_once('\t').expect("format string has a tab");
+            let Some(path) = rebase(path, from, to) else { continue };
+            // a control-mode client attaches without a terminal, and attach's `-c` is the only setter of session_path
+            if self.run(Command::new("tmux").args(["-C", "attach-session", "-t", &format!("={name}"), "-c", &path]).stdin(Stdio::null()).stdout(Stdio::null())) {
+                self.report(false, format_args!("tmux session {name} now starts in {path}"));
+            }
+        }
+        for tsv in ["tmux_sessions.tsv", "claude_restore.tsv"] {
+            self.rewrite(&self.state.join(tsv), |old| {
+                old.lines()
+                    .map(|line| {
+                        let mut fields: Vec<String> = line.split('\t').map(str::to_owned).collect();
+                        if let Some(path) = rebase(&fields[1], from, to) {
+                            fields[1] = path; // both files keep the path second
+                        }
+                        fields.join("\t") + "\n"
+                    })
+                    .collect()
+            });
+        }
+    }
+
+    /// Claude names a `projects/` dir after its cwd with every non-alphanumeric replaced by `-`; history and config hold the path itself.
+    fn rebase_claude(&self, from: &str, to: &str) {
+        let encode = |path: &str| path.chars().map(|c| if c.is_ascii_alphanumeric() { c } else { '-' }).collect::<String>();
+        let (old, new) = (encode(from), encode(to));
+        let config_dirs = fs::read_dir(&self.home).unwrap_or_else(|e| panic!("{}: {e}", self.home.display()));
+        for dir in config_dirs {
+            let dir = dir.unwrap_or_else(|e| panic!("{}: {e}", self.home.display())).path();
+            let name = dir.file_name().expect("listed").to_string_lossy().into_owned();
+            if name != ".claude" && !name.starts_with(".claude-account") {
+                continue;
+            }
+            let projects = dir.join("projects");
+            match fs::read_dir(&projects) {
+                Ok(entries) => {
+                    for entry in entries {
+                        let project = entry.unwrap_or_else(|e| panic!("{}: {e}", projects.display())).path();
+                        let name = project.file_name().expect("listed").to_str().expect("claude encodes to ASCII");
+                        let Some(rest) = name.strip_prefix(&old).filter(|rest| rest.is_empty() || rest.starts_with('-')) else { continue };
+                        if project.is_symlink() {
+                            continue; // an earlier move's redirect
+                        }
+                        match claude_project_cwd(&project) {
+                            Ok(Some(cwd)) if encode(&cwd) != name || rebase(&cwd, from, to).is_none() => continue, // another path encoding alike, e.g. `{from}_x`
+                            Ok(_) => {} // shortcut: no transcript to read the cwd from, so the name prefix decides; an alike-encoding sibling could be taken along
+                            Err(e) => {
+                                self.report(true, format_args!("keeping {}: {e}", project.display()));
+                                continue;
+                            }
+                        }
+                        let target = projects.join(format!("{new}{rest}"));
+                        assert!(target.file_name().expect("joined").len() <= 200, "{}: claude hashes names past 200 chars", target.display());
+                        match fs::symlink_metadata(&target) {
+                            Err(e) if e.kind() == io::ErrorKind::NotFound => self.relocate(&project, &target),
+                            Ok(_) if self.merge(&project, &target) => {
+                                fs::remove_dir(&project).unwrap_or_else(|e| panic!("{}: {e}", project.display()));
+                                self.redirect(&project, &target);
+                                self.report(false, format_args!("merged {} into {}", project.display(), target.display()));
+                            }
+                            Ok(_) => {}
+                            Err(e) => panic!("{}: {e}", target.display()),
+                        }
+                    }
+                }
+                Err(e) if e.kind() == io::ErrorKind::NotFound => {}
+                Err(e) => self.report(true, format_args!("{}: {e}", projects.display())),
+            }
+            self.rewrite(&dir.join("history.jsonl"), |old| {
+                old.lines()
+                    .map(|line| {
+                        let mut entry: Value = serde_json::from_str(line).expect("claude writes one json per line");
+                        match entry["project"].as_str().and_then(|project| rebase(project, from, to)) {
+                            Some(project) => {
+                                entry["project"] = Value::String(project);
+                                entry.to_string() + "\n"
+                            }
+                            None => format!("{line}\n"),
+                        }
+                    })
+                    .collect()
+            });
+            let config = match name.as_str() {
+                ".claude" => self.home.join(".claude.json"),
+                _ => dir.join(".claude.json"),
+            };
+            self.rewrite(&config, |old| {
+                let mut config: Value = serde_json::from_str(old).unwrap_or_else(|e| panic!("{}: {e}", config.display()));
+                match self.rebase_json(&mut config, from, to) {
+                    true => serde_json::to_string_pretty(&config).expect("was json"),
+                    false => old.to_owned(),
+                }
+            });
+        }
+    }
+
+    /// Re-roots every string and key under `from`; a key already present at its new path wins over the old one.
+    fn rebase_json(&self, value: &mut Value, from: &str, to: &str) -> bool {
+        match value {
+            Value::String(s) => match rebase(s, from, to) {
+                Some(new) => {
+                    *s = new;
+                    true
+                }
+                None => false,
+            },
+            Value::Array(values) => values.iter_mut().fold(false, |changed, v| self.rebase_json(v, from, to) | changed),
+            Value::Object(map) => {
+                let changed = map.values_mut().fold(false, |changed, v| self.rebase_json(v, from, to) | changed);
+                let keys: Vec<(String, String)> = map.keys().filter_map(|key| Some((key.clone(), rebase(key, from, to)?))).collect();
+                for (key, new) in &keys {
+                    let value = map.shift_remove(key).expect("listed above");
+                    match map.contains_key(new) {
+                        true => self.report(true, format_args!("dropped claude config of {key}: {new} has its own")),
+                        false => _ = map.insert(new.clone(), value),
+                    }
+                }
+                changed || !keys.is_empty()
+            }
+            _ => false,
+        }
+    }
+
+    /// Moves `src`'s entries into `dst`, recursing into dirs both have. False if a name taken in both kept `src` non-empty.
+    fn merge(&self, src: &Path, dst: &Path) -> bool {
+        let mut emptied = true;
+        for entry in fs::read_dir(src).unwrap_or_else(|e| panic!("{}: {e}", src.display())) {
+            let entry = entry.unwrap_or_else(|e| panic!("{}: {e}", src.display()));
+            let (from, to) = (entry.path(), dst.join(entry.file_name()));
+            match fs::symlink_metadata(&to) {
+                Err(e) if e.kind() == io::ErrorKind::NotFound => fs::rename(&from, &to).unwrap_or_else(|e| panic!("{} -> {}: {e}", from.display(), to.display())),
+                Ok(meta) if meta.is_dir() && entry.file_type().is_ok_and(|t| t.is_dir()) => match self.merge(&from, &to) {
+                    true => fs::remove_dir(&from).unwrap_or_else(|e| panic!("{}: {e}", from.display())),
+                    false => emptied = false,
+                },
+                Ok(_) => {
+                    self.report(true, format_args!("kept {}: {} is taken", from.display(), to.display()));
+                    emptied = false;
+                }
+                Err(e) => panic!("{}: {e}", to.display()),
+            }
+        }
+        emptied
+    }
+
+    /// direnv trusts `allow/sha256(<rc path>\n<rc>)`; only a trust still current at the old path carries over.
+    fn rebase_direnv(&self, from: &str, to: &str) {
+        let allow = self.data.join("direnv/allow");
+        let entries = match fs::read_dir(&allow) {
+            Ok(entries) => entries,
+            Err(e) if e.kind() == io::ErrorKind::NotFound => return,
+            Err(e) => return self.report(true, format_args!("{}: {e}", allow.display())),
+        };
+        let hash = |path: &str, rc: &[u8]| format!("{:x}", Sha256::new().chain_update(path).chain_update("\n").chain_update(rc).finalize());
+        for entry in entries {
+            let entry = entry.unwrap_or_else(|e| panic!("{}: {e}", allow.display())).path();
+            let old = fs::read_to_string(&entry).unwrap_or_else(|e| panic!("{}: {e}", entry.display()));
+            let old = old.trim_end();
+            let Some(new) = rebase(old, from, to) else { continue };
+            let rc = match fs::read(&new) {
+                Ok(rc) => rc,
+                Err(e) if e.kind() == io::ErrorKind::NotFound => continue, // rc deleted since, nothing to trust
+                Err(e) => {
+                    self.report(true, format_args!("{new}: {e}"));
+                    continue;
+                }
+            };
+            if entry.file_name().is_none_or(|name| *name != *hash(old, &rc)) {
+                continue; // trusted an older revision of the rc
+            }
+            let trust = allow.join(hash(&new, &rc));
+            if !trust.exists() {
+                fs::write(&trust, format!("{new}\n")).unwrap_or_else(|e| panic!("{}: {e}", trust.display()));
+                self.report(false, format_args!("direnv trusts {new}"));
+            }
+        }
+    }
+
+    fn rebase_zoxide(&self, from: &str, to: &str) {
+        let listed = Command::new("zoxide").args(["query", "--list", "--score"]).current_dir("/").output().expect("zoxide is installed"); // `/`: query leaves out the cwd
+        if !listed.status.success() {
+            return self.report(true, format_args!("zoxide query: {}", String::from_utf8_lossy(&listed.stderr)));
+        }
+        for line in String::from_utf8(listed.stdout).expect("zoxide paths are UTF-8").lines() {
+            let (score, path) = line.trim_start().split_once(' ').expect("`<score> <path>`");
+            let Some(new) = rebase(path, from, to) else { continue };
+            if self.run(Command::new("zoxide").args(["add", "--score", score, &new])) && self.run(Command::new("zoxide").args(["remove", path])) {
+                self.report(false, format_args!("zoxide: {path} -> {new}"));
+            }
+        }
     }
 
     fn sweep_redirects(&self) {
@@ -449,7 +768,7 @@ impl Ctx {
             }
             let hop = entry.path();
             let front = self.home.join(hop.strip_prefix(hops).expect("walked from hops"));
-            let unused_days = (|| -> io::Result<u64> {
+            let last_follow = (|| -> io::Result<(u64, bool)> {
                 if !entry.file_type().is_symlink() {
                     return Err(io::Error::other("hop is not a symlink"));
                 }
@@ -457,14 +776,17 @@ impl Ctx {
                 if target != hop {
                     return Err(io::Error::other(format!("{} points to {}, not the hop", front.display(), target.display())));
                 }
-                Ok(fs::symlink_metadata(hop)?.accessed()?.elapsed().map_or(0, |e| e.as_secs() / 86400)) // Err: followed in the future, so in use
+                let meta = fs::symlink_metadata(hop)?;
+                let days = meta.accessed()?.elapsed().map_or(0, |e| e.as_secs() / 86400); // Err: followed in the future, so in use
+                Ok((days, meta.accessed()? > meta.modified()?)) // a symlink's mtime is its creation, the move
             })();
-            match unused_days {
-                Ok(days) if days >= self.cfg.stale_days(self.cfg.stale_multipliers.redirects) => {
+            match last_follow {
+                Ok((days, _)) if days >= self.cfg.stale_days(self.cfg.stale_multipliers.redirects) => {
                     self.remove(&front, format_args!("redirect unfollowed {days}d"));
                     self.remove(hop, format_args!("hop of {}", front.display()));
                 }
-                Ok(_) => {}
+                Ok((days, true)) => self.report(true, format_args!("{} was followed {days}d ago: something still points at the old path", front.display())),
+                Ok((_, false)) => {}
                 Err(e) => self.report(true, format_args!("keeping redirect {}: {e}", hop.display())),
             }
         }
@@ -532,4 +854,27 @@ fn unit(path: PathBuf) -> io::Result<Unit> {
         bytes += meta.blocks() * 512;
     }
     Ok(Unit { path, last_use, bytes })
+}
+
+/// `path` re-rooted from `from` onto `to`, if it lies under `from`
+fn rebase(path: &str, from: &str, to: &str) -> Option<String> {
+    let rest = path.strip_prefix(from)?;
+    (rest.is_empty() || rest.starts_with('/')).then(|| format!("{to}{rest}"))
+}
+
+/// the cwd the first transcript line recording one names, which the dir is named after
+fn claude_project_cwd(project: &Path) -> io::Result<Option<String>> {
+    for entry in WalkDir::new(project) {
+        let entry = entry?;
+        if entry.path().extension().is_none_or(|e| e != "jsonl") {
+            continue;
+        }
+        for line in io::BufReader::new(fs::File::open(entry.path())?).lines() {
+            let line: Value = serde_json::from_str(&line?).map_err(io::Error::other)?;
+            if let Some(cwd) = line["cwd"].as_str() {
+                return Ok(Some(cwd.to_owned()));
+            }
+        }
+    }
+    Ok(None)
 }
