@@ -1,5 +1,5 @@
 #!/bin/sh
-# `gx` of copy-mode-vi. `$1`: cursor line; `$2`: cursor x (0-based)
+# `$1`: line; `$2`: x (0-based). Exits 1 when no URL is under x
 url=$(printf '%s\n' "$1" | awk -v x="$(($2 + 1))" '{
 	off = 0; s = $0
 	while (match(s, /https?:\/\/[^ \t"<>()`'"'"'│]+/)) {
@@ -8,5 +8,5 @@ url=$(printf '%s\n' "$1" | awk -v x="$(($2 + 1))" '{
 		off += RSTART + RLENGTH - 1; s = substr(s, RSTART + RLENGTH)
 	}
 }')
-[ -n "$url" ] || { tmux display-message "gx: no URL under cursor"; exit 1; }
+[ -n "$url" ] || exit 1
 xdg-open "$url" >/dev/null 2>&1
