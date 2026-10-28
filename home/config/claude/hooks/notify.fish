@@ -11,6 +11,8 @@ string match -q 'CLAUDECODE=*' (string split0 < /proc/$CLAUDE_PID/environ); and 
 
 read input
 set session_id (echo $input | jq -r .session_id)
+set transcript_path (echo $input | jq -r .transcript_path)
+test "$(jq -r 'select(.turnOrigin) | .turnOrigin' $transcript_path | tail -1)" = task_notification; and exit 0 # turn woken by a finished background task, not by me
 set stamp_file /tmp/claude-notify-$label-$session_id
 set now (date +%s)
 
@@ -23,9 +25,10 @@ end
 
 echo $now > $stamp_file
 
-set transcript_path (echo $input | jq -r .transcript_path)
 set chat_name (head -1 $transcript_path | jq -r .summary)
 set tmux_session (tmux display-message -p "#S" 2>/dev/null || echo "no session")
 set cwd (echo $input | jq -r .cwd)
 
-beep -l=15 "CC: $label on:\n$tmux_session\n$chat_name\n$cwd"
+set beep_args -l=15
+string match -q '\**' $tmux_session; and set beep_args -l=600 --max-absolute-headphones-volume=20 # starred session
+beep $beep_args "CC: $label on:\n$tmux_session\n$chat_name\n$cwd"
