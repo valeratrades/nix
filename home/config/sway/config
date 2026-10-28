@@ -367,8 +367,8 @@ mode "screenshot" {
 	bindsym i exec "$switch_out && $important_screenshot"
 	bindsym t exec "$switch_out && $trading_screenshot"
 	bindsym f exec "$switch_out && $fullscreen_screenshot"
-	bindsym d exec "$switch_out && ~/.config/sway/delayed_screenshot.sh full 3"
-	bindsym s exec "$switch_out && ~/.config/sway/delayed_screenshot.sh region 5"
+	bindsym d exec "$switch_out && ~/.config/sway/delayed_screenshot.sh 3"
+	bindsym Shift+d exec "$switch_out && ~/.config/sway/delayed_screenshot.sh 5"
 	bindsym o exec "$switch_out && $swappy_last"
 	bindsym Insert exec "$switch_out && $throwaway_screenshot"
 
@@ -379,7 +379,7 @@ mode "screenshot" {
 	bindsym Escape exec $switch_out
 	bindsym q exec $switch_out
 }
-bindsym $mod+Insert exec "swaymsg mode screenshot && eww --no-daemonize update sway_mode='screenshot (i,t,f,d=3s,s=select+5s,o)'"
+bindsym $mod+Insert exec "swaymsg mode screenshot && eww --no-daemonize update sway_mode='screenshot (i,t,f,d=3s,D=5s,o)'"
 #
 
 mode "size_presets" {

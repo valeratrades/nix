@@ -73,6 +73,7 @@
 
 (defwidget screenshot_timer []
 	(box
+		:class "white"
 		:visible {screenshot_timer != ""}
 		"📷${screenshot_timer}"
 	)
