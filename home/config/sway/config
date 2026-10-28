@@ -172,7 +172,7 @@ mode "monitors" {
 	bindsym Escape exec $switch_out
 	bindsym q exec $switch_out
 }
-bindsym $mod+Period exec "swaymsg mode monitors && eww --no-daemonize update sway_mode='monitors (a,s,t,u)'"
+bindsym $mod+Period exec "swaymsg mode monitors && eww --no-daemonize update sway_mode='monitors (a=all,s=laptop,t=toggle_ext,u=projector)'"
 
 set $resize_centered $sway_root/resize_centered.sh
 set $fallback_wallpaper $sway_root/wallpapers/333333.png
@@ -290,7 +290,7 @@ mode "eww" {
 	bindsym Escape exec $switch_out
 	bindsym q exec $switch_out
 }
-bindsym $mod+e exec "swaymsg mode eww && eww --no-daemonize update sway_mode='eww (h,f,a,c)'"
+bindsym $mod+e exec "swaymsg mode eww && eww --no-daemonize update sway_mode='eww (h=hide,f=open_focused,a=open_all,c=claude)'"
 
 # paste clipboard contents through keystrokes
 bindsym $mod+Ctrl+Shift+p exec ${NIXOS_CONFIG}/home/scripts/clipboard_to_keystrokes.rs
@@ -403,7 +403,7 @@ mode "size_presets" {
 	bindsym Escape exec $switch_out
 	bindsym q exec $switch_out
 }
-bindsym $mod+apostrophe exec "swaymsg mode size_presets && eww --no-daemonize update sway_mode='size_presets (1-8)'"
+bindsym $mod+apostrophe exec "swaymsg mode size_presets && eww --no-daemonize update sway_mode='size_presets (1=350x650,2-5=width,6-8=height,snrt=move)'"
 
 focus_wrapping no
 bindsym $mod+$left focus left
@@ -440,7 +440,7 @@ mode "move_or_resize" {
 	bindsym q exec $switch_out
 
 }
-bindsym $mod+k exec "swaymsg mode move_or_resize && eww --no-daemonize update sway_mode='move_or_resize (snrt,2,3,5)'"
+bindsym $mod+k exec "swaymsg mode move_or_resize && eww --no-daemonize update sway_mode='move_or_resize (snrt=resize,S+snrt=move,2=1/2,3=2/3,5=3/5)'"
 
 mode "obs" {
 	#NB: Manual starting of obs before any of these is currently required.
@@ -484,4 +484,4 @@ mode "obs" {
 	bindsym q exec $switch_out
 
 }
-bindsym $mod+comma exec "swaymsg mode obs && eww --no-daemonize update sway_mode='obs (v,r,p,b,s,c,h/H)'"
+bindsym $mod+comma exec "swaymsg mode obs && eww --no-daemonize update sway_mode='obs (v=vcam,V=stream,r=rec,R=stop,p=pause,P=unpause,b=cam_bot,t=cam_top,s=screen,c=camera,h=horses,H=no_horses)'"
