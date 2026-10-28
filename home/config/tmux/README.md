@@ -15,13 +15,16 @@ A pane reading `finished` only means Claude stopped talking. `mod report` inside
 last human-prompted turn, plus the closings of any turns task notifications woke
 up after it, led by the human prompt that opened it — a closing that answers a
 question reads as a dead end without it) and has an LLM — via the `ask_llm` crate — judge it as
-`finished` / `stuck` / `partial`, which become states of their own:
+`finished` / `answered` / `stuck` / `partial`, which become states of their own:
 `stuck` (no progress for any reason — blocked, lost, or refused) is colored like `question`, `partial` like `error`;
-`partial` just leaves work undone. A turn that ended with its own background shells or
+`partial` just leaves work undone. `answered` (a reply I have to weigh or work with before anything
+moves — a comparison, a recommendation, a hint) is colored between `finished` and `partial`. A question
+settled by a plain fact stays `finished`; so does a check on the agent's own work that came back clean
+("yes, it's pushed"), while one that came back short ("no, only a local commit") is `partial`. A turn that ended with its own background shells or
 agents still live never reaches the judge: the pane footer lists them, and it reads
 `ongoing` — colored a darker `active`, and `supervise_sessions` watches it like `active`.
 
-**Invariant — doubt escalates.** Severity runs `finished` < `partial` < `stuck`.
+**Invariant — doubt escalates.** Severity runs `finished` < `answered` < `partial` < `stuck`.
 `finished` tells me nothing needs a look; the others tell me a human should check.
 So when the judge can't settle a report, the more severe reading wins. A wasted
 check still costs real time, though: the judging prompt must not lean on `partial`

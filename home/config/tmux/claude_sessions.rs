@@ -90,6 +90,8 @@ const COLOR_INFO_ONGOING: &str = "#3f8aa8";
 const COLOR_INFO_NEGATIVE: &str = "#ffffff";
 /// oklch(0.85 0.06 142) — green with chroma pulled near grey, visible without popping.
 const COLOR_INFO_GOOD: &str = "#b8d8b4";
+/// oklch(0.8 0.09 95) — between COLOR_INFO_GOOD and COLOR_WARN: nothing broke, but the next move is mine.
+const COLOR_INFO_ANSWERED: &str = "#d0be79";
 const COLOR_DEBUG: &str = "#000000";
 const COLOR_TRACE: &str = "#6b6b6b";
 
@@ -108,6 +110,7 @@ enum ClaudeState {
     Limit,    // Session usage limit hit ("You've hit your session limit · resets ...")
     Interrupted, // User aborted the turn (esc); dropped back to a live prompt
     Stuck,    // Finished, but its closing report says the work didn't land (see mod report)
+    Answered, // Finished, but its closing report answers a question I now have to act on
     Partial,  // Finished, but its closing report says part of the work was skipped
     Ongoing,  // Turn ended, but a background shell it spawned is still running
 }
@@ -145,6 +148,7 @@ impl ClaudeState {
             ClaudeState::Limit => "limit",
             ClaudeState::Interrupted => "interrupted",
             ClaudeState::Stuck => "stuck",
+            ClaudeState::Answered => "answered",
             ClaudeState::Partial => "partial",
             ClaudeState::Ongoing => "ongoing",
         }
@@ -362,7 +366,7 @@ impl fmt::Display for Sessions {
                 //               darker COLOR_INFO_ONGOING: turn over, a background shell still running.
                 //   limit    -> COLOR_INFO_NEGATIVE: wedged on the usage clock — nothing
                 //               to act on, but worth seeing at a glance.
-                //   finished -> COLOR_INFO_GOOD.
+                //   finished -> COLOR_INFO_GOOD. answered -> COLOR_INFO_ANSWERED.
                 // Every other state stays uncolored — no span, no noise.
                 let state_cell = match entry.state {
                     ClaudeState::Question | ClaudeState::Stuck => {
@@ -382,6 +386,9 @@ impl fmt::Display for Sessions {
                     }
                     ClaudeState::Finished => {
                         format!("<span foreground=\"{COLOR_INFO_GOOD}\">{}</span>", pango_escape(&padded_state))
+                    }
+                    ClaudeState::Answered => {
+                        format!("<span foreground=\"{COLOR_INFO_ANSWERED}\">{}</span>", pango_escape(&padded_state))
                     }
                     ClaudeState::Done => {
                         format!("<span foreground=\"{COLOR_TRACE}\">{}</span>", pango_escape(&padded_state))
@@ -403,6 +410,7 @@ impl fmt::Display for Sessions {
                 let colored_state = match entry.state {
                     ClaudeState::Active | ClaudeState::Planning => padded_state.blue(),
                     ClaudeState::Finished => padded_state.green(),
+                    ClaudeState::Answered => padded_state.truecolor(0xd0, 0xbe, 0x79),
                     ClaudeState::Done => padded_state.bright_black(),
                     ClaudeState::Empty => padded_state.yellow(),
                     ClaudeState::Draft => padded_state.cyan(),
@@ -867,6 +875,7 @@ mod report {
     #[serde(rename_all = "lowercase")]
     pub enum Verdict {
         Finished,
+        Answered,
         Partial,
         Stuck,
     }
@@ -879,15 +888,16 @@ mod report {
         pub of: usize,
     }
 
-    const SYSTEM: &str = "You read the closing report a coding agent left at the end of its session and judge how the session ended. When known, the user's prompt that opened the turn comes first, in <prompt> tags; a question there that the report answers is finished.
+    const SYSTEM: &str = "You read the closing report a coding agent left at the end of its session and judge how the session ended. When known, the user's prompt that opened the turn comes first, in <prompt> tags.
 
-finished — the implementation the agent settled on is in the tree
+finished — the implementation the agent settled on is in the tree; or the prompt asked a question and the answer leaves the user nothing to do. That includes a check the user asked for on the agent's own work that came back clean: yes, it is pushed, merged, published
+answered — the prompt asked a question and the answer is something the user now has to weigh, apply, or act on: a comparison, a recommendation, an analysis, options to pick from, a hint, the command or steps to take. The next step is the user's
 stuck — the work is not moving, whatever the cause: the agent is blocked on something it cannot resolve, failed, lost the thread, is out of ideas, declined or refused the task on safety or policy grounds, or handed it back for the user to do. An offer to do some other, narrower task instead does not change that
-partial — the agent left asked-for code unwritten, giving no reason it could not be written; or a task it was carrying out stopped short of its goal and now waits on steps the user has to take, even if it also asks the user something
+partial — the agent left asked-for code unwritten, giving no reason it could not be written; or a task it was carrying out stopped short of its goal and now waits on steps the user has to take, even if it also asks the user something; or a check the user asked for on the agent's own work came back short: not pushed, not merged, not published
 
 Judge the implementation, nothing else. A test not written, a check not run, a verification left for the user, work the report never claims was asked for — none of that is partial. Neither is a part the agent reports as impossible, done differently, or dropped because the codebase would not take it: a reason given revises the ask rather than falling short of it, however plainly the report says the ask was not met.
 
-Answer with exactly one word: finished, stuck, or partial.";
+Answer with exactly one word: finished, answered, stuck, or partial.";
 
     /// Long reports are all preamble; the verdict lives in the closing lines.
     const MAX_REPORT: usize = 8000;
@@ -1060,6 +1070,7 @@ Answer with exactly one word: finished, stuck, or partial.";
     fn parse(answer: &str) -> Option<Verdict> {
         match answer.trim().split_whitespace().next()?.trim_matches(['"', '.', '`', '*']).to_lowercase().as_str() {
             "finished" => Some(Verdict::Finished),
+            "answered" => Some(Verdict::Answered),
             "stuck" => Some(Verdict::Stuck),
             "partial" => Some(Verdict::Partial),
             _ => None,
@@ -1122,10 +1133,12 @@ Answer with exactly one word: finished, stuck, or partial.";
         /// not production's severity max: one call, and only a miss is retried as a majority of 3.
         #[test]
         fn reports_classify_to_their_named_verdict() {
+            let mut misses = Vec::new();
             for file in crate::tests::versioned_cases("reports", "md") {
                 let stem = file.file_stem().unwrap().to_string_lossy().to_string();
                 let expected = match stem.split("__").next().unwrap() {
                     "finished" => Verdict::Finished,
+                    "answered" => Verdict::Answered,
                     "stuck" => Verdict::Stuck,
                     "partial" => Verdict::Partial,
                     other => panic!("report {stem:?} has unknown verdict prefix {other:?}"),
@@ -1136,8 +1149,11 @@ Answer with exactly one word: finished, stuck, or partial.";
                 }
                 let votes = samples(&report, 3);
                 let consensus = votes.iter().find(|v| votes.iter().filter(|w| w == v).count() >= 2);
-                assert_eq!(consensus, Some(&expected), "report {stem:?}, votes {votes:?}");
+                if consensus != Some(&expected) {
+                    misses.push(format!("{stem}: votes {votes:?}"));
+                }
             }
+            assert!(misses.is_empty(), "misjudged reports:\n{}", misses.join("\n"));
         }
 
         #[test]
@@ -1582,6 +1598,7 @@ fn get_claude_windows(vote: bool) -> Vec<ClaudeWindow> {
                                 match tally.map(|t| t.verdict) {
                                     Some(report::Verdict::Stuck) => ClaudeState::Stuck,
                                     Some(report::Verdict::Partial) => ClaudeState::Partial,
+                                    Some(report::Verdict::Answered) => ClaudeState::Answered,
                                     Some(report::Verdict::Finished) | None => ClaudeState::Finished,
                                 }
                             };
@@ -2379,6 +2396,7 @@ fn should_recompute(prev: &CacheState, windows: &[ClaudeWindow]) -> bool {
                     | ClaudeState::Question
                     | ClaudeState::Stuck
                     | ClaudeState::Partial
+                    | ClaudeState::Answered
                     | ClaudeState::Ongoing
             )
         {
