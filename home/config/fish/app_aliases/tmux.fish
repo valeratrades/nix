@@ -215,10 +215,10 @@ function restore_sessions
 	end
 
 	set -l done 0
-	set -l drafts # pane, escaped draft; typed once the claude there is up
-	while read -l --delimiter \t session cwd id config_dir draft
+	set -l pending # pane, escaped draft, escaped rewind target; replayed once the claude there is up
+	while read -l --delimiter \t session cwd id config_dir draft rewind
 		if test -z "$config_dir"; or not string match -qr '^[0-9a-f-]{36}$' -- "$id"
-			echo "restore_sessions: malformed line in $f: '$session	$cwd	$id	$config_dir	$draft' (want '<session_name>	<cwd>	<session_id>	<config_dir>	<draft>')" >&2
+			echo "restore_sessions: malformed line in $f: '$session	$cwd	$id	$config_dir	$draft	$rewind' (want '<session_name>	<cwd>	<session_id>	<config_dir>	<draft>	<rewind>')" >&2
 			set failed 1
 			continue
 		end
@@ -245,6 +245,7 @@ function restore_sessions
 
 		if set -q _flag_dry_run
 			echo "restore_sessions: would run in $session: $cmd"
+			test -n "$rewind"; and echo "restore_sessions: would rewind $session to: $rewind"
 			test -n "$draft"; and echo "restore_sessions: would type draft into $session: $draft"
 			continue
 		end
@@ -272,7 +273,7 @@ function restore_sessions
 		end
 		set done (math $done + 1)
 		echo "restore_sessions: $session ← $id ($cwd)"
-		test -n "$draft"; and set -a drafts $target $draft
+		test -n "$draft$rewind"; and set -a pending $target "$draft" "$rewind"
 	end <$f
 
 	for pane in $nvims
@@ -296,9 +297,10 @@ function restore_sessions
 		echo "restore_sessions: $pane ← nvim session"
 	end
 
-	for i in (seq 1 2 (count $drafts))
-		set -l pane $drafts[$i]
-		set -l lines (printf %b $drafts[(math $i + 1)])
+	for i in (seq 1 3 (count $pending))
+		set -l pane $pending[$i]
+		set -l lines (printf %b $pending[(math $i + 1)])
+		set -l rewind (printf %b $pending[(math $i + 2)] | string collect)
 		set -l waited 0
 		while not string match -qr '(?m)^─.*─\n❯\x{a0}$' -- (tmux capture-pane -p -t $pane | string collect) # empty prompt box: claude is up and takes input
 			test $waited -ge 120; and break
@@ -306,11 +308,87 @@ function restore_sessions
 			set waited (math $waited + 1)
 		end
 		if test $waited -ge 120
-			echo "restore_sessions: $pane — claude never showed an empty prompt, draft not typed:" >&2
+			echo "restore_sessions: $pane — claude never showed an empty prompt, rewind not replayed, draft not typed:" >&2
 			printf '%s\n' $lines >&2
 			set failed 1
 			continue
 		end
+		if test -n "$rewind" # replays the user's Esc Esc: claude keeps a rewind in memory only, so the transcript resumes at its end
+			set -l want (string replace -ra '\s+' ' ' -- $rewind | string trim)
+			set -l stuck "rewind dialog never opened"
+			tmux send-keys -t $pane Escape
+			sleep 0.2 # back to back they read as alt+Esc
+			tmux send-keys -t $pane Escape
+			for step in (seq 20)
+				sleep 0.3
+				string match -qr '(?m)^ +Rewind$' -- (tmux capture-pane -p -t $pane | string collect); and set stuck; and break
+			end
+			if test -z "$stuck"
+				set stuck "no prompt listed in the rewind dialog matches"
+				set -l prev
+				for step in (seq 500)
+					set -l sel (string match -rg '(?s)\n +Rewind\n.*?\n +❯ ([^\n]*\S)' -- (tmux capture-pane -p -t $pane | string collect)) # below the title: tool output above can hold a `❯` too
+					set sel (string replace -r '…$' '' -- $sel | string replace -ra '\s+' ' ')
+					if test -n "$sel"; and test "$sel" != '(current)'; and test (string sub -l (string length -- $sel) -- $want) = "$sel"
+						tmux send-keys -t $pane Enter
+						set stuck
+						break
+					end
+					test $step -gt 1; and test "$sel" = "$prev"; and break # Up no longer moves: top of the list
+					set prev $sel
+					tmux send-keys -t $pane Up
+					sleep 0.2
+				end
+			end
+			if test -z "$stuck"
+				set stuck "no 'Restore conversation' option" # never Enter on another: those rewrite files or summarize
+				for step in (seq 20)
+					sleep 0.3
+					set -l opt (string match -rg '(?s)\n +Rewind\n.*?\n +❯ \d+\. ([^\n]*\S)' -- (tmux capture-pane -p -t $pane | string collect))
+					if test "$opt" = 'Restore conversation'
+						tmux send-keys -t $pane Enter
+						set stuck
+						break
+					end
+					test -n "$opt"; and tmux send-keys -t $pane Down
+				end
+			end
+			if test -z "$stuck"
+				set stuck "rewind never landed on a refilled prompt"
+				for step in (seq 20)
+					sleep 0.3
+					if string match -qr '(?m)^─.*─\n❯\x{a0}\S' -- (tmux capture-pane -p -t $pane | string collect)
+						tmux send-keys -t $pane C-c # drop the prompt claude refills; the saved draft is what was in the box
+						set stuck
+						break
+					end
+				end
+			end
+			if test -n "$stuck"
+				echo "restore_sessions: $pane — $stuck, not rewound to: $rewind" >&2
+				set failed 1
+				for step in (seq 4)
+					string match -qr '(?m)^ +Rewind$' -- (tmux capture-pane -p -t $pane | string collect); or break
+					tmux send-keys -t $pane Escape # the confirm step backs into the list, the list closes
+					sleep 0.6 # apart, or two read as Esc Esc and reopen it
+				end
+			else
+				echo "restore_sessions: $pane ← rewound to: $rewind"
+			end
+			set waited 0
+			while not string match -qr '(?m)^─.*─\n❯\x{a0}$' -- (tmux capture-pane -p -t $pane | string collect)
+				test $waited -ge 20; and break
+				sleep 0.5
+				set waited (math $waited + 1)
+			end
+			if test $waited -ge 20; and test (count $lines) -gt 0
+				echo "restore_sessions: $pane — prompt box not empty after the rewind, draft not typed:" >&2
+				printf '%s\n' $lines >&2
+				set failed 1
+				continue
+			end
+		end
+		test (count $lines) -gt 0; or continue
 		for j in (seq (count $lines))
 			test $j -gt 1; and tmux send-keys -t $pane C-j # newline without submitting
 			set -l rest $lines[$j]
