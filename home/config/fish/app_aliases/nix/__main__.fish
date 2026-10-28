@@ -28,7 +28,7 @@ function flake-build --wraps 'sudo nixos-rebuild switch --flake .#myhost --show-
 #TODO!: make into a function and git-commit with $argv concatenation for message
 function nixup; git -C $NIXOS_CONFIG add -A && nix flake update --flake $NIXOS_CONFIG && sudo nixos-rebuild switch --show-trace -v --impure --fast && git_upload $NIXOS_CONFIG $argv; end
 #TODO!: add git wrapper
-function nhup; nh os switch --hostname vlaptop $NIXOS_CONFIG -- --impure $argv; end
+function nhup; nh os switch --hostname (hostname) $NIXOS_CONFIG -- --impure $argv; end
 function nshell --wraps 'nix-shell --command fish'; nix-shell --command fish $argv; end
 function ndevelop --wraps 'nix develop --command fish'; nix develop --command fish $argv; end
 #alias nupdate="nix flake lock --update-input nixpkgs --update-input"
