@@ -78,13 +78,14 @@ function choose_port; $__fish_scripts_dir/choose_port.sh $argv; end
 
 set -g __maintenance_last_run "$XDG_STATE_HOME/fish/maintenance_last_run"
 
-if test -f $__maintenance_last_run
-    set -l warn_after_days (string match -rg '"warn_after_days":(\d+)' < $XDG_CONFIG_HOME/maintenance/config.json) # from home/scripts/maintenance/config.nix
-    if test (path mtime --relative $__maintenance_last_run) -gt (math $warn_after_days \* 86400) # mtime: maintenance/main.rs rewrites the stamp on every run
-        echo "Warning: maintenance hasn't been run in over $warn_after_days days. Run 'up' to update."
+set -l __maintenance_config (string collect < $XDG_CONFIG_HOME/maintenance/config.json) # from home/scripts/maintenance/config.nix
+if test (random 0 999) -lt (math -s0 (string match -rg '"warn_probability":([\d.]+)' -- $__maintenance_config) \* 1000)
+    set -l stale_after_days (string match -rg '"stale_after_days":(\d+)' -- $__maintenance_config)
+    if not test -f $__maintenance_last_run
+        echo "Warning: maintenance has never been run. Run 'up' to update."
+    else if test (path mtime --relative $__maintenance_last_run) -gt (math $stale_after_days \* 86400) # mtime: maintenance/main.rs rewrites the stamp on every run
+        echo "Warning: maintenance hasn't been run in over $stale_after_days days. Run 'up' to update."
     end
-else
-    echo "Warning: maintenance has never been run. Run 'up' to update."
 end
 
 function cross_project_version_alignment; $__fish_scripts_dir/maintenance/cross_project_version_alignment.rs $argv; end

@@ -8,6 +8,7 @@ edition = "2024"
 clap = { version = "4.5.49", features = ["derive"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+v_utils = "2"
 walkdir = "2"
 ---
 
@@ -20,6 +21,7 @@ use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use v_utils::Percent;
 use walkdir::WalkDir;
 
 /// System maintenance script
@@ -45,17 +47,30 @@ struct Args {
 
 #[derive(clap::Subcommand, Debug)]
 enum Cmd {
-    /// Move `from` to `to`, leaving `from` as a redirect the `redirects` task removes once unfollowed for redirect_unused_days
+    /// Move `from` to `to`, leaving `from` as a redirect the `redirects` task removes once unfollowed for stale_multipliers.redirects
     Mv { from: PathBuf, to: PathBuf },
 }
 
 /// written by home-manager from ./config.nix
 #[derive(Deserialize)]
 struct Config {
-    outdated_after_days: u64,
+    stale_after_days: u64,
+    stale_multipliers: StaleMultipliers,
     unit_markers: Vec<String>,
     cache_limit_gb: u64,
-    redirect_unused_days: u64,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct StaleMultipliers {
+    llm_worktrees: Percent,
+    redirects: Percent,
+}
+
+impl Config {
+    fn stale_days(&self, multiplier: Percent) -> u64 {
+        (self.stale_after_days as f64 * *multiplier).round() as u64
+    }
 }
 
 struct Ctx {
@@ -201,9 +216,9 @@ impl Ctx {
         }
     }
 
-    fn unused_days(&self, last_use: SystemTime) -> Option<u64> {
+    fn unused_days(&self, last_use: SystemTime, stale_after_days: u64) -> Option<u64> {
         let days = last_use.elapsed().map_or(0, |e| e.as_secs() / 86400); // Err: last use is in the future, so in use
-        (days >= self.cfg.outdated_after_days).then_some(days)
+        (days >= stale_after_days).then_some(days)
     }
 
     fn remove(&self, path: &Path, why: impl Display) {
@@ -220,13 +235,13 @@ impl Ctx {
 
     /// Removes outdated units under `root`, then with a `limit` (bytes) the least recently used ones until the rest fits.
     fn sweep(&self, root: &Path, limit: Option<u64>) {
-        println!("\x1b[34mSweeping {} for units unused for {} days\x1b[0m", root.display(), self.cfg.outdated_after_days);
+        println!("\x1b[34mSweeping {} for units unused for {} days\x1b[0m", root.display(), self.cfg.stale_after_days);
         let (mut units, mut dirs) = (vec![], vec![]);
         self.collect(root, &mut units, &mut dirs);
         units.sort_by_key(|u| u.last_use);
         let mut kept: u64 = units.iter().map(|u| u.bytes).sum();
         for unit in &units {
-            let days = self.unused_days(unit.last_use);
+            let days = self.unused_days(unit.last_use, self.cfg.stale_after_days);
             let over_limit = limit.is_some_and(|limit| kept > limit);
             if days.is_none() && !over_limit {
                 break; // sorted: everything after is fresher
@@ -241,7 +256,7 @@ impl Ctx {
         for (dir, mtime) in dirs.iter().rev() {
             match fs::read_dir(dir) {
                 Ok(mut entries) => {
-                    if let (None, Some(days)) = (entries.next(), self.unused_days(*mtime)) {
+                    if let (None, Some(days)) = (entries.next(), self.unused_days(*mtime, self.cfg.stale_after_days)) {
                         self.remove(dir, format_args!("empty, unused {days}d"));
                     }
                 }
@@ -317,7 +332,7 @@ impl Ctx {
                 }
             }
         };
-        let sweep_days = self.cfg.outdated_after_days.to_string();
+        let sweep_days = self.cfg.stale_after_days.to_string();
 
         for dir in ["tmp", "s", "g", "leetcode", "uni"].map(|d| self.home.join(d)) {
             if !dir.exists() {
@@ -343,7 +358,7 @@ impl Ctx {
                     Some("target" | "node_modules") if is_dir => walk.skip_current_dir(),
                     Some("Cargo.toml") if project.join("target").exists() => {
                         let Some(last_use) = self.project_last_use(project) else { continue };
-                        match self.unused_days(last_use) {
+                        match self.unused_days(last_use, self.cfg.stale_after_days) {
                             Some(days) => cargo(project, &["clean"], format!("unused {days}d")),
                             None if last_use > last_clean => cargo(project, &["sweep", "--time", &sweep_days], "touched since last clean".into()),
                             None => {}
@@ -359,7 +374,7 @@ impl Ctx {
                         if artefacts.is_empty() {
                             continue;
                         }
-                        if let Some(days) = self.project_last_use(project).and_then(|t| self.unused_days(t)) {
+                        if let Some(days) = self.project_last_use(project).and_then(|t| self.unused_days(t, self.cfg.stale_after_days)) {
                             for artefact in &artefacts {
                                 self.remove(artefact, format_args!("project unused {days}d"));
                             }
@@ -378,6 +393,7 @@ impl Ctx {
 
     /// plain `git worktree remove` refuses dirty or locked worktrees, so only uncommitted-nothing goes; the branch stays
     fn remove_stale_worktrees(&self, worktrees: &Path) {
+        let stale_after_days = self.cfg.stale_days(self.cfg.stale_multipliers.llm_worktrees);
         let repo = worktrees.parent().and_then(Path::parent).expect("<repo>/.claude/worktrees");
         let entries = match fs::read_dir(worktrees) {
             Ok(entries) => entries,
@@ -391,7 +407,7 @@ impl Ctx {
                     continue;
                 }
             };
-            let Some(days) = self.project_last_use(&worktree).and_then(|t| self.unused_days(t)) else { continue };
+            let Some(days) = self.project_last_use(&worktree).and_then(|t| self.unused_days(t, stale_after_days)) else { continue };
             if self.dry_run {
                 self.report(false, format_args!("would git worktree remove {} (unused {days}d)", worktree.display()));
             } else if self.run(Command::new("git").arg("-C").arg(repo).args(["worktree", "remove"]).arg(&worktree)) {
@@ -413,12 +429,12 @@ impl Ctx {
         fs::rename(&from, &to).unwrap_or_else(|e| panic!("{} -> {}: {e}", from.display(), to.display()));
         std::os::unix::fs::symlink(&to, &hop).unwrap_or_else(|e| panic!("{}: {e}", hop.display()));
         std::os::unix::fs::symlink(&hop, &from).unwrap_or_else(|e| panic!("{}: {e}", from.display()));
-        self.report(false, format_args!("moved {} -> {}, redirect lives until unfollowed {}d", from.display(), to.display(), self.cfg.redirect_unused_days));
+        self.report(false, format_args!("moved {} -> {}, redirect lives until unfollowed {}d", from.display(), to.display(), self.cfg.stale_days(self.cfg.stale_multipliers.redirects)));
     }
 
     fn sweep_redirects(&self) {
         let hops = &self.redirects;
-        println!("\x1b[34mSweeping redirects in {} unfollowed for {} days\x1b[0m", hops.display(), self.cfg.redirect_unused_days);
+        println!("\x1b[34mSweeping redirects in {} unfollowed for {} days\x1b[0m", hops.display(), self.cfg.stale_days(self.cfg.stale_multipliers.redirects));
         for entry in WalkDir::new(hops).min_depth(1) {
             let entry = match entry {
                 Ok(entry) => entry,
@@ -444,7 +460,7 @@ impl Ctx {
                 Ok(fs::symlink_metadata(hop)?.accessed()?.elapsed().map_or(0, |e| e.as_secs() / 86400)) // Err: followed in the future, so in use
             })();
             match unused_days {
-                Ok(days) if days >= self.cfg.redirect_unused_days => {
+                Ok(days) if days >= self.cfg.stale_days(self.cfg.stale_multipliers.redirects) => {
                     self.remove(&front, format_args!("redirect unfollowed {days}d"));
                     self.remove(hop, format_args!("hop of {}", front.display()));
                 }
