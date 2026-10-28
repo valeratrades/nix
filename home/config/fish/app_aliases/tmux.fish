@@ -174,6 +174,7 @@ function restore_sessions
 	end
 
 	set -l fresh # sessions built by this run, whose empty `claude` window takes the first claude
+	set -l nvims # `source.0` panes of fresh sessions, where `tn` starts `nvim .`
 	set -l failed 0
 	while read -l --delimiter \t name path
 		if test -z "$path"
@@ -183,7 +184,7 @@ function restore_sessions
 		end
 		tmux has-session -t "=$name" 2>/dev/null; and continue
 		if set -q _flag_dry_run
-			echo "restore_sessions: would build $name at $path"
+			echo "restore_sessions: would build $name at $path, and load its nvim session"
 			set -a fresh $name
 			continue
 		end
@@ -204,6 +205,7 @@ function restore_sessions
 			continue
 		end
 		set -a fresh $name
+		set -a nvims (tmux display-message -p -t "=$name:source.0" '#{pane_id}')
 		echo "restore_sessions: built $name at $path"
 	end <$sf
 
@@ -272,6 +274,27 @@ function restore_sessions
 		echo "restore_sessions: $session ← $id ($cwd)"
 		test -n "$draft"; and set -a drafts $target $draft
 	end <$f
+
+	for pane in $nvims
+		set -l sock
+		set -l waited 0
+		while true # tmux keys typed mid-startup land in the buffer as text; wait for the server to finish VimEnter
+			set -l tui (pgrep -P (tmux display-message -p -t $pane '#{pane_pid}') -x nvim)
+			set -l server (test -n "$tui"; and pgrep -P $tui -x nvim)
+			set sock $XDG_RUNTIME_DIR/nvim.$server.0
+			test -n "$server"; and nvim --server $sock --remote-expr v:vim_did_enter 2>/dev/null | string match -q 1; and break # stderr: socket not up yet, polled again
+			test $waited -ge 120; and break
+			sleep 0.5
+			set waited (math $waited + 1)
+		end
+		if test $waited -ge 120
+			echo "restore_sessions: $pane — nvim never came up, its session not loaded" >&2
+			set failed 1
+			continue
+		end
+		nvim --server $sock --remote-send '<Cmd>Persisted load<CR><Cmd>Persisted start<CR>' # what `<space>sel` runs
+		echo "restore_sessions: $pane ← nvim session"
+	end
 
 	for i in (seq 1 2 (count $drafts))
 		set -l pane $drafts[$i]
