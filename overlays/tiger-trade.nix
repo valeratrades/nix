@@ -27,6 +27,18 @@ let
       hash = "sha256-rmHNTbZTxP7JtK10/IvbLXNReZZtQA/f5kxl8bNsIBQ=";
     }} -d $out
   '';
+  # System.Management (the app's hardware info, which feeds its HardwareID) needs these natives from a .NET Framework install: <InstallRoot>\v4.0.30319\wminet_utils.dll plus the CLR's private CRT in system32
+  netfx = prev.runCommand "netfx48-wminet-utils" { nativeBuildInputs = with prev; [ p7zip cabextract ]; } ''
+    7z e -y ${prev.fetchurl {
+      url = "https://download.microsoft.com/download/f/3/a/f3a6af84-da23-40a5-8d1c-49cc10c8e76f/NDP48-x86-x64-AllOS-ENU.exe";
+      hash = "sha256-Cjo5DEfmOdD3/GWyEZX+5rf2WwZvgPcMYPqxkdFLfkA=";
+    }} netfx_Full.mzz > /dev/null
+    cabextract -q -F wminet_utils_dll_amd64 -F ucrtbase_clr0400_dll_amd64 -F vcruntime140_clr0400_dll_amd64 netfx_Full.mzz
+    install -Dm444 wminet_utils_dll_amd64 $out/v4.0.30319/wminet_utils.dll
+    install -Dm444 ucrtbase_clr0400_dll_amd64 $out/system32/ucrtbase_clr0400.dll
+    install -Dm444 vcruntime140_clr0400_dll_amd64 $out/system32/vcruntime140_clr0400.dll
+  '';
+  winPath = p: "Z:${builtins.replaceStrings [ "/" ] [ "\\" ] "${p}"}";
 in {
   tiger-trade = wineApp {
     name = "tiger-trade";
@@ -43,8 +55,12 @@ in {
       fi
       cp --no-preserve=mode ${prev.dxvk.bin}/x64/*.dll "$WINEPREFIX/drive_c/windows/system32/"
       cp --no-preserve=mode ${prev.dxvk.bin}/x32/*.dll "$WINEPREFIX/drive_c/windows/syswow64/"
+      cp --no-preserve=mode ${netfx}/system32/*.dll "$WINEPREFIX/drive_c/windows/system32/" # imports are not resolved from wminet_utils.dll's own dir
+      if ! grep -qF "${builtins.baseNameOf netfx}" "$WINEPREFIX/system.reg"; then
+          wine reg add 'HKLM\SOFTWARE\Microsoft\.NETFramework' /v InstallRoot /t REG_SZ /d "${winPath netfx}\\" /f /reg:64
+      fi
       export WINEDLLOVERRIDES="d3d8,d3d9,d3d10core,d3d11,dxgi=n,b;mshtml=" # mscoree stays builtin: CoreCLR needs it to load IL-only assemblies
-      export DOTNET_ROOT="Z:${builtins.replaceStrings [ "/" ] [ "\\" ] "${dotnet}"}"
+      export DOTNET_ROOT="${winPath dotnet}"
     '';
     runCmd = ''wine "$WINEPREFIX/drive_c/TigerTrade/TigerTrade.exe" "$@"'';
   };
