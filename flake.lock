@@ -4733,6 +4733,7 @@
         "prettify_log": "prettify_log",
         "reasonable_envsubst": "reasonable_envsubst",
         "rust-overlay": "rust-overlay_9",
+        "skargo": "skargo",
         "snapshot_fonts": "snapshot_fonts",
         "sops-nix": "sops-nix",
         "tedi": "tedi",
@@ -5020,6 +5021,26 @@
         "owner": "oxalica",
         "repo": "rust-overlay",
         "rev": "adf987c76af8d17b8256d23631bcf203f81e1a63",
+        "type": "github"
+      }
+    },
+    "skargo": {
+      "inputs": {
+        "v_flakes": [
+          "v_flakes"
+        ]
+      },
+      "locked": {
+        "lastModified": 1793181402,
+        "narHash": "sha256-dYc5vmW7/ydVbXWRK6Gy6zgayv3nAgU/08W2DSnekHc=",
+        "owner": "EV-Main",
+        "repo": "skills",
+        "rev": "29de43a7bc44a37ee9bd08714c59b9498814c989",
+        "type": "github"
+      },
+      "original": {
+        "owner": "EV-Main",
+        "repo": "skills",
         "type": "github"
       }
     },

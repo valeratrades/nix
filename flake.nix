@@ -149,6 +149,10 @@
     };
     # takes nixpkgs through its own v_flakes, so there is nothing here to override
     ask_llm.url = "github:valeratrades/ask_llm";
+    skargo = {
+      url = "github:EV-Main/skills";
+      inputs.v_flakes.follows = "v_flakes";
+    };
     translate_infrequent = {
       url = "github:valeratrades/translate_infrequent";
       inputs.nixpkgs.follows = "nixpkgs";

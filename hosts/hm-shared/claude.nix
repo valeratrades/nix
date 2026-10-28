@@ -294,6 +294,11 @@ let
 	'';
 in
 {
+	programs.skargo = {
+		enable = true;
+		lockFile = ../../home/config/skargo/skargo.lock; # `skargo lock` next to it, after editing skargo.toml
+	};
+
 	#DEPRECATE: malware reminder has been stripped in later versions; keeping it here for posterity (or situations of them adding sth similar)
 	# Skipped during boot: activation then blocks login, and the network isn't up for the fetches anyway.
 	home.activation.claudePluginSync = lib.hm.dag.entryAfter [ "writeBoundary" ] ''

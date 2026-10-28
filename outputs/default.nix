@@ -113,6 +113,7 @@ in {
             inputs.auto_redshift.homeManagerModules.auto_redshift
             inputs.wallpaper_carousel.homeManagerModules.wallpaper-carousel
             inputs.btc_line.homeManagerModules.btc_line
+            inputs.skargo.homeManagerModules.default
           ];
 
           home-manager.users."${user.username}" = import
