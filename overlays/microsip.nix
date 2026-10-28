@@ -52,6 +52,7 @@ let
       fi
       if [ ! -f "$MS_DIR/MicroSIP.ini" ]; then
           pw=$(grep -Po 'set sipup_sip_pass "\K[^"]+' "$HOME/s/g/private/credentials.fish")
+          [[ $pw != *$'\n'* ]] || { echo "sipup_sip_pass set twice in credentials.fish" >&2; exit 1; }
           cp --no-preserve=mode "${ini}" "$MS_DIR/MicroSIP.ini"
           printf 'password=%s\n' "$pw" >>"$MS_DIR/MicroSIP.ini" # [Account1] is the last section
       fi
