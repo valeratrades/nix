@@ -21,7 +21,7 @@ struct Args {
     dry_run: bool,
 }
 
-/// `tmux_sessions.tsv`: `session_name\tsession_path` per tmux session; `claude_restore.tsv`: `session_name\tcwd\tsession_id\tconfig_dir` per live tmux-hosted claude.
+/// `tmux_sessions.tsv`: `session_name\tsession_path` per tmux session; `claude_restore.tsv`: `session_name\tcwd\tsession_id\tconfig_dir\tdraft` per live tmux-hosted claude, `draft` being its unsubmitted input with `\\`, `\n`, `\t` escaped.
 /// Both consumed by fish's `restore_sessions` on boot.
 fn main() {
     let dry_run = Args::parse().dry_run;
@@ -45,7 +45,7 @@ fn main() {
     }
 
     let (out, sessions) = match (
-        Command::new("tmux").args(["list-panes", "-a", "-F", "#{pane_id}\t#{session_name}"]).output(),
+        Command::new("tmux").args(["list-panes", "-a", "-F", "#{pane_id}\t#{session_name}\t#{pane_width}"]).output(),
         Command::new("tmux").args(["list-sessions", "-F", "#{session_name}\t#{session_path}"]).output(),
     ) {
         (Ok(out), Ok(sessions)) if out.status.success() && sessions.status.success() => (out, String::from_utf8_lossy(&sessions.stdout).into_owned()),
@@ -67,11 +67,12 @@ fn main() {
         std::fs::write(&sessions_path, &sessions).expect("failed to write session inventory");
         println!("Recorded {} session(s) to {sessions_path}", sessions.lines().count());
     }
-    let panes: Vec<(String, String)> = String::from_utf8_lossy(&out.stdout)
+    let panes: Vec<(String, String, usize)> = String::from_utf8_lossy(&out.stdout)
         .lines()
         .map(|l| {
-            let (id, p) = l.split_once('\t').expect("format string has a tab");
-            (id.to_string(), p.to_string())
+            let mut f = l.split('\t');
+            let mut next = || f.next().expect("format string has three fields").to_string();
+            (next(), next(), next().parse().expect("pane_width is a number"))
         })
         .collect();
 
@@ -101,7 +102,7 @@ fn main() {
                 continue; // not launched inside tmux, nothing to rebuild it into
             };
             let pane_id = tmux.rsplit_once('.').unwrap_or_else(|| panic!("{}: unexpected tmux field '{tmux}'", f.display())).1;
-            let Some((_, session_name)) = panes.iter().find(|(id, _)| id == pane_id) else {
+            let Some((_, session_name, width)) = panes.iter().find(|(id, ..)| id == pane_id) else {
                 continue; // claude on another tmux server
             };
             let cwd = j["cwd"].as_str().unwrap_or_else(|| panic!("{}: no cwd", f.display()));
@@ -112,7 +113,12 @@ fn main() {
                 Err(e) => panic!("{cwd}: {e}"),
             };
             let id = j["sessionId"].as_str().unwrap_or_else(|| panic!("{}: no sessionId", f.display()));
-            content.push_str(&format!("{session_name}\t{cwd}\t{id}\t{}\n", config_dir.display()));
+            let draft = draft(pane_id, *width).unwrap_or_else(|| {
+                println!("{session_name} ({pane_id}): no prompt box on screen, its draft is not recorded");
+                String::new() // a dialog covers the box; nothing to read
+            });
+            let draft = draft.replace('\\', "\\\\").replace('\n', "\\n").replace('\t', "\\t");
+            content.push_str(&format!("{session_name}\t{cwd}\t{id}\t{}\t{draft}\n", config_dir.display()));
         }
     }
 
@@ -125,3 +131,40 @@ fn main() {
     println!("Recorded {n} claude(s) to {path}");
 }
 
+
+/// Unsubmitted input of the claude in `pane`, read back off its prompt box; `None` when no box is on screen.
+/// shortcut: a draft taller than the box's on-screen budget keeps only its visible rows, and wide (CJK/emoji) chars skew the wrap widths; upgrade if either bites.
+fn draft(pane: &str, width: usize) -> Option<String> {
+    let out = Command::new("tmux").args(["capture-pane", "-p", "-t", pane]).output().expect("tmux unreachable");
+    assert!(out.status.success(), "capture-pane -t {pane} failed: {}", String::from_utf8_lossy(&out.stderr));
+    let screen = String::from_utf8_lossy(&out.stdout);
+    let rows: Vec<&str> = screen.lines().map(|r| r.trim_end_matches(' ')).collect();
+    let border = |r: &str| r.starts_with('─') && r.ends_with('─'); // may carry the session name mid-line
+    let top = (1..rows.len()).rev().find(|&i| border(rows[i - 1]) && rows[i].starts_with("❯\u{a0}"))?;
+    let bottom = top + rows[top..].iter().position(|r| border(r))?;
+    let w = width - 4; // what ink wraps the box text at
+    let mut text = String::new();
+    let mut prev: Option<&str> = None;
+    for (i, row) in rows[top..bottom].iter().enumerate() {
+        let row = match i {
+            0 => row.strip_prefix("❯\u{a0}").expect("matched on it above"),
+            _ if row.is_empty() => "",
+            _ => row.strip_prefix("  ").unwrap_or_else(|| panic!("{pane}: prompt box row without its indent: '{row}'")),
+        };
+        if let Some(p) = prev {
+            // ink can't say soft wrap from newline, so infer it: a word that fit on `p` would not have been carried over
+            let first = row.split_once(' ').map_or(row, |(f, _)| f).chars().count();
+            let last = p.rsplit_once(' ').map_or(p, |(_, l)| l).chars().count();
+            let len = p.chars().count();
+            text.push_str(match () {
+                _ if row.is_empty() => "\n",
+                _ if len == w && last + first > w => "", // a word longer than the box, broken mid-word
+                _ if len + 1 + first > w => " ",
+                _ => "\n",
+            });
+        }
+        text.push_str(row);
+        prev = Some(row);
+    }
+    Some(text)
+}

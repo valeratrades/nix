@@ -213,9 +213,10 @@ function restore_sessions
 	end
 
 	set -l done 0
-	while read -l --delimiter \t session cwd id config_dir
+	set -l drafts # pane, escaped draft; typed once the claude there is up
+	while read -l --delimiter \t session cwd id config_dir draft
 		if test -z "$config_dir"; or not string match -qr '^[0-9a-f-]{36}$' -- "$id"
-			echo "restore_sessions: malformed line in $f: '$session	$cwd	$id	$config_dir' (want '<session_name>	<cwd>	<session_id>	<config_dir>')" >&2
+			echo "restore_sessions: malformed line in $f: '$session	$cwd	$id	$config_dir	$draft' (want '<session_name>	<cwd>	<session_id>	<config_dir>	<draft>')" >&2
 			set failed 1
 			continue
 		end
@@ -242,6 +243,7 @@ function restore_sessions
 
 		if set -q _flag_dry_run
 			echo "restore_sessions: would run in $session: $cmd"
+			test -n "$draft"; and echo "restore_sessions: would type draft into $session: $draft"
 			continue
 		end
 		if not tmux has-session -t "=$session" 2>/dev/null
@@ -249,9 +251,10 @@ function restore_sessions
 			set failed 1
 			continue
 		end
-		set -l target "=$session:claude"
+		set -l target
 		if set -l i (contains -i -- $session $fresh)
 			set -e fresh[$i]
+			set target (tmux display-message -p -t "=$session:claude" '#{pane_id}') # later claude windows reuse the name
 		else
 			set target (tmux new-window -P -F '#{pane_id}' -t "=$session:" -c $cwd -n claude)
 			if test $status != 0
@@ -267,7 +270,36 @@ function restore_sessions
 		end
 		set done (math $done + 1)
 		echo "restore_sessions: $session ← $id ($cwd)"
+		test -n "$draft"; and set -a drafts $target $draft
 	end <$f
+
+	for i in (seq 1 2 (count $drafts))
+		set -l pane $drafts[$i]
+		set -l lines (printf %b $drafts[(math $i + 1)])
+		set -l waited 0
+		while not string match -qr '(?m)^─.*─\n❯\x{a0}$' -- (tmux capture-pane -p -t $pane | string collect) # empty prompt box: claude is up and takes input
+			test $waited -ge 120; and break
+			sleep 0.5
+			set waited (math $waited + 1)
+		end
+		if test $waited -ge 120
+			echo "restore_sessions: $pane — claude never showed an empty prompt, draft not typed:" >&2
+			printf '%s\n' $lines >&2
+			set failed 1
+			continue
+		end
+		for j in (seq (count $lines))
+			test $j -gt 1; and tmux send-keys -t $pane C-j # newline without submitting
+			set -l rest $lines[$j]
+			while test -n "$rest" # one big write reads as a paste and collapses into `[Pasted text]`
+				printf %s (string sub -l 100 -- $rest) | tmux load-buffer -b restore_draft - # no trailing newline: pasted, it would submit
+				tmux paste-buffer -d -b restore_draft -t $pane
+				set rest (string sub -s 101 -- $rest)
+				sleep 0.05
+			end
+		end
+		echo "restore_sessions: $pane ← draft ("(count $lines)" lines)"
+	end
 
 	if test $failed = 1
 		echo "restore_sessions: some entries failed; keeping $f so a rerun can retry" >&2
