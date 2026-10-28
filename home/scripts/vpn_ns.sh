@@ -6,7 +6,7 @@ wg="${XDG_STATE_HOME:-$HOME/.local/state}/vpn_browser/proton.conf" # WireGuard c
 if [ -z "${VPN_NS_INNER:-}" ]; then
 	[ -f "$wg" ] || { echo "missing $wg" >&2; exit 1; }
 	# own namespaces, pasta only attached: its spawn mode also unshares IPC, and X's MIT-SHM segments then don't resolve
-	VPN_NS_INNER=1 OUTER_UID=$(id -u) OUTER_GID=$(id -g) unshare --user --map-root-user --net --mount -- "$0" "$@" &
+	VPN_NS_INNER=1 OUTER_UID=$(id -u) OUTER_GID=$(id -g) unshare --user --map-root-user --net --mount -- "$0" "$@" <&0 & # explicit stdin: a bare `&` gets /dev/null, killing TUIs
 	ns=$!
 	until [ "$(readlink "/proc/$ns/ns/net")" != "$(readlink /proc/self/ns/net)" ]; do sleep 0.01; done
 	pasta --config-net --quiet -4 --no-map-gw -t none -u none -T none -U none "$ns"

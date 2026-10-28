@@ -520,6 +520,7 @@ in {
           vpn_ns
           microsip
           linphone
+          baresip
         ]
 
         # Trading bots
