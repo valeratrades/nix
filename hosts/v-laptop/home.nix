@@ -513,8 +513,13 @@ in {
           sierra-chart
           tiger-trade
           coinpoker
-          microsip
+        ]
+
+        # SIP (through Proton)
+        [
           vpn_ns
+          microsip
+          linphone
         ]
 
         # Trading bots
