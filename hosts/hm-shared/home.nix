@@ -239,6 +239,15 @@
     };
   };
 
+  systemd.user.services.vpn_ns = {
+    Unit.Description = "Proton VPN namespace that `vpn_ns <cmd>` joins";
+    Service = {
+      Type = "notify";
+      NotifyAccess = "all"; # readiness comes from inside the namespace, not from the main pid
+      ExecStart = "${pkgs.vpn_ns}/bin/vpn_ns --hold";
+    };
+  };
+
   systemd.user.services.wlr-gamma = {
     Unit = {
       Description = "wlroots Brightness Control";
@@ -463,9 +472,10 @@
           (runCommand "google-chrome-bare" { } "mkdir -p $out/bin && ln -s ${google-chrome}/bin/google-chrome-stable $out/bin/google-chrome-bare")
           (writeShellApplication {
             name = "vpn_browser";
-            runtimeInputs = [ chromium wireproxy iproute2 curl ];
+            runtimeInputs = [ chromium vpn_ns ];
             text = builtins.readFile "${self}/home/scripts/vpn_browser.sh";
           })
+          vpn_ns
           alacritty
         ]
         [

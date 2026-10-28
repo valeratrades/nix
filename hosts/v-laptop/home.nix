@@ -517,9 +517,7 @@ in {
 
         # SIP (through Proton)
         [
-          vpn_ns
           microsip
-          linphone
           baresip
         ]
 

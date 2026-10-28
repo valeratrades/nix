@@ -7,9 +7,12 @@ let
     hash = "sha256-TVWcAr4CtDl51BtIryh2obYcKOQlTdjppCZGcGrGIfo=";
     stripRoot = false;
   };
+  # SRTP=dtls + ICE=1: the SIPUP device has WebRTC on, and sends no media to plain RTP
   ini = prev.writeText "MicroSIP.ini" ''
     [Settings]
     accountId=1
+    enableSTUN=1
+    STUN=stun.l.google.com:19302
     [Account1]
     label=SIPUP
     server=sip.sipup.org
@@ -22,13 +25,13 @@ let
     dialingPrefix=
     dialPlan=
     hideCID=0
-    SRTP=
+    SRTP=dtls
     transport=tcp
     publicAddr=
     registerRefresh=300
     keepAlive=15
     publish=0
-    ICE=0
+    ICE=1
     allowRewrite=0
     disableSessionTimer=0
   ''; # password appended at seed time from credentials.fish, MicroSIP encrypts it in place on first load
