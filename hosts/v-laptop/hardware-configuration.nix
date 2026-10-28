@@ -32,9 +32,9 @@
 
 	# to get the id, do `blkid` for the partition, and take the `UUID` value
 	boot.resumeDevice = "/dev/disk/by-uuid/4fc0e3da-5640-4939-a5e2-e19ad7419e46"; # for hibernation. NB: make sure that it matches the swap partition. Must be updated if it changes
-	#TODO!!!: resize swap partition from 64GB to 16GB: `./shrink-swap.sh --apply` (live, keeps UUIDs)
+	#TODO!!!: resize swap partition from 32GB to 16GB: `./shrink-swap.sh 16 --apply` (live, keeps UUIDs)
 	swapDevices = [
-    # 64GB swap partition on first disk
+    # 32GB swap partition on first disk
 		{ device = "/dev/disk/by-uuid/4fc0e3da-5640-4939-a5e2-e19ad7419e46"; }
 	];
 
