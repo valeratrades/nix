@@ -232,6 +232,7 @@ in {
 			"evdi" # only needed with displaylink
 			"ip_tables" # WinApps folder sharing
 			"iptable_nat" # WinApps folder sharing
+			"wireguard" # vpn_ns: unprivileged netns can't autoload it
     ];
     extraModprobeConfig = ''
             options v4l2loopback devices=1 video_nr=1 card_label="OBS Cam" exclusive_caps=1
@@ -422,6 +423,7 @@ in {
     (import (mylib.relativeToRoot "overlays/sierra-chart.nix"))
     (import (mylib.relativeToRoot "overlays/tiger-trade.nix"))
     (import (mylib.relativeToRoot "overlays/coinpoker.nix"))
+    (import (mylib.relativeToRoot "overlays/microsip.nix"))
     (import (mylib.relativeToRoot "overlays/metascalp.nix"))
     (import (mylib.relativeToRoot "overlays/gologin.nix"))
     (import (mylib.relativeToRoot "overlays/graphify.nix"))

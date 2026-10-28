@@ -513,6 +513,8 @@ in {
           sierra-chart
           tiger-trade
           coinpoker
+          microsip
+          vpn_ns
         ]
 
         # Trading bots
