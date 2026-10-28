@@ -111,6 +111,9 @@
 - when making changes to deps we own and have locally, prefer linking to them by path while testing. We assume that release will be successful when needed. And as such, we should optimize for iteration speed, which is trivially faster when pointing via local path.
   // just don't forget to keep this local path pointer local-only, or undo it after
 
+- if you've fully implemented an issue you were given, close it.
+  castaway Issues / PRs / worktrees are all bad, - avoid leaving them if the work is done.
+
 ## Testing
 - if a change is not trivial, always test.
     And any time you write actual tests in code, - read https://matklad.github.io/2021/05/31/how-to-test.html
