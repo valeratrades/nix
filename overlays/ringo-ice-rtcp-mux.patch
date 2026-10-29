@@ -1,0 +1,102 @@
+crates/ringo-core/src/account.rs --- Rust
+11 11     pub outbound: Option<String>,
+12 12     pub stun_server: Option<String>,
+13 13     pub media_enc: Option<String>,
+.. 14     /// Media NAT traversal module (baresip account param `medianat`), e.g. `ice`.
+.. 15     #[serde(default)]
+.. 16     pub media_nat: Option<String>,
+.. 17     /// Multiplex RTP and RTCP on one port (baresip account param `rtcp_mux`).
+.. 18     #[serde(default)]
+.. 19     pub rtcp_mux: bool,
+14 20     pub regint: Option<u32>,
+15 21     pub mwi: bool,
+16 22     /// DTMF transmission mode (`rtpevent` / `info` / `auto`). `info` sends DTMF as
+
+crates/ringo-core/src/baresip/config.rs --- Rust
+183 183             }
+184 184         }
+... 185 
+... 186         if let Some(ref medianat) = account.media_nat {
+... 187             if !medianat.is_empty() {
+... 188                 let m = cstr(medianat, "media_nat")?;
+... 189                 account_set_medianat(acc, m.as_ptr());
+... 190             }
+... 191         }
+... 192 
+... 193         account_set_rtcp_mux(acc, account.rtcp_mux);
+185 194 
+186 195         let regint = account.regint.unwrap_or(3600);
+187 196         account_set_regint(acc, regint);
+
+crates/ringo-flow/src/script/js/dsl/agent.rs --- Rust
+186 186             outbound: self.outbound,
+187 187             stun_server: self.stun_server,
+188 188             media_enc: self.media_enc,
+... 189             media_nat: None,
+... 190             rtcp_mux: false,
+189 191             regint: self.regint,
+190 192             mwi: self.mwi.unwrap_or(false),
+191 193             dtmf_mode: self.dtmf_mode,
+
+crates/ringo-flow/src/script/rhai/convert.rs --- Rust
+419 419         outbound: get("outbound"),
+420 420         stun_server: get("stun_server"),
+421 421         media_enc: get("media_enc"),
+... 422         media_nat: None,
+... 423         rtcp_mux: false,
+422 424         regint: map
+423 425             .get("regint")
+424 426             .and_then(|d| d.as_int().ok())
+
+crates/ringo-mcp/src/config.rs --- Rust
+414 414         media_enc: entry
+415 415             .media_enc
+416 416             .or_else(|| profile.and_then(|p| p.media_enc.clone())),
+... 417         media_nat: profile.and_then(|p| p.media_nat.clone()),
+... 418         rtcp_mux: profile.is_some_and(|p| p.rtcp_mux),
+417 419         regint: entry.regint.or(profile.and_then(|p| p.regint)),
+418 420         mwi: entry.mwi.or(profile.map(|p| p.mwi)).unwrap_or(false),
+419 421         dtmf_mode: entry.dtmf_mode,
+
+crates/ringo-phone/src/app.rs --- Rust
+108 108         outbound: p.outbound.clone(),
+109 109         stun_server: p.stun_server.clone(),
+110 110         media_enc: p.media_enc.clone(),
+... 111         media_nat: p.media_nat.clone(),
+... 112         rtcp_mux: p.rtcp_mux,
+111 113         regint: p.regint,
+112 114         mwi: p.mwi,
+113 115         dtmf_mode: None, // ringo-phone uses baresip's default (real, clocked audio device)
+
+crates/ringo-phone/src/form/mod.rs --- Rust
+264 264             mwi: get_toggle(self.field(Mwi)),
+265 265             auto_hold: get_toggle(self.field(AutoHold)),
+266 266             catchall: prev_profile.catchall,
+... 267             media_nat: prev_profile.media_nat.clone(),
+... 268             rtcp_mux: prev_profile.rtcp_mux,
+267 269             reject_code: get_text(self.field(RejectCode))
+268 270                 .trim()
+269 271                 .parse()
+
+crates/ringo-profile/src/profile.rs --- 1/2 --- Rust
+ 25  25     pub outbound: Option<String>,
+ 26  26     pub stun_server: Option<String>,
+ 27  27     pub media_enc: Option<String>,
+ ..  28     #[serde(default)]
+ ..  29     pub media_nat: Option<String>,
+ ..  30     #[serde(default)]
+ ..  31     pub rtcp_mux: bool,
+ 28  32     /// Restrict/order the offered audio codecs (most-preferred first), e.g.
+ 29  33     /// `["opus", "PCMU"]`. Empty = baresip's default set/order.
+ 30  34     #[serde(default)]
+
+crates/ringo-profile/src/profile.rs --- 2/2 --- Rust
+ 94  98             outbound: None,
+ 95  99             stun_server: None,
+ 96 100             media_enc: None,
+ .. 101             media_nat: None,
+ .. 102             rtcp_mux: false,
+ 97 103             audio_codecs: Vec::new(),
+ 98 104             regint: None,
+ 99 105             notes: None,
+

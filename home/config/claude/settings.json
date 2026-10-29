@@ -47,6 +47,7 @@
     ],
     "Notification": [
       {
+        "matcher": "^(permission_prompt|worker_permission_prompt|agent_needs_input|elicitation_dialog|elicitation_url_dialog)$",
         "hooks": [
           {
             "type": "command",
