@@ -29,7 +29,8 @@ case "${1:-}" in
 	ip link set wg0 up
 	endpoint=$(sed -n 's/^Endpoint *= *\(.*\):[0-9]*$/\1/p' "$wg")
 	ip route add "$endpoint" via "$gw" dev "$dev"
-	ip route replace default dev wg0
+	ip route del default via "$gw" dev "$dev" # no fallback: tunnel down means no network, not the host's IP
+	ip route add default dev wg0
 
 	resolv=$(mktemp)
 	sed -n 's/^DNS *= *//p' "$wg" | tr ',' '\n' | tr -d ' ' | grep -v : | sed 's/^/nameserver /' >"$resolv"
