@@ -53,5 +53,14 @@ esac
 
 systemctl --user start vpn_ns.service
 pid=$(<"$pidfile")
+ns=$(readlink "/proc/$pid/ns/net")
+# a restarted service leaves joiners in a namespace with no egress; they go down with it instead. The ns check skips a reused pid
+(
+	while kill -0 "$pid" 2>/dev/null; do
+		sleep 1
+		[ -e "/proc/$$" ] || exit 0
+	done
+	[ "$(readlink "/proc/$$/ns/net")" != "$ns" ] || kill $$
+) </dev/null &
 exec nsenter --target "$pid" --user --net --mount --preserve-credentials --wdns="$PWD" -- \
 	unshare --user --map-user="$(id -u)" --map-group="$(id -g)" -- "$@"

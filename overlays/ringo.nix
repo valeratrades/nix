@@ -20,7 +20,8 @@ let
   config = prev.writeText "ringo.toml" ''
     [baresip.extra]
     net_af = "ipv4"
-  ''; # the namespace is v4-only
+    net_interface = "wg0"
+  ''; # v4-only namespace; wlp4s0 would put the LAN address in the SDP, and ICE then stalls on pairs the tunnel drops
   launcher = prev.writeShellScript "ringo" ''
     set -euo pipefail
     dir="$HOME/.config/ringo"
