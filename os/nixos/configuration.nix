@@ -426,6 +426,7 @@ in {
     (import (mylib.relativeToRoot "overlays/vpn_ns.nix"))
     (import (mylib.relativeToRoot "overlays/microsip.nix"))
     (import (mylib.relativeToRoot "overlays/baresip.nix"))
+    (import (mylib.relativeToRoot "overlays/ringo.nix") inputs)
     (import (mylib.relativeToRoot "overlays/metascalp.nix"))
     (import (mylib.relativeToRoot "overlays/gologin.nix"))
     (import (mylib.relativeToRoot "overlays/graphify.nix"))

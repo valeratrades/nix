@@ -519,6 +519,7 @@ in {
         [
           microsip
           baresip
+          ringo
         ]
 
         # Trading bots

@@ -162,6 +162,7 @@
       inputs.v-utils.inputs.nixpkgs.follows = "nixpkgs";
     };
     wallpaper_carousel.url = "github:valeratrades/wallpaper_carousel";
+    ringo.url = "github:davidborzek/ringo"; # own nixpkgs, so ringo.cachix.org paths match
     snapshot_fonts = {
       url = "github:valeratrades/snapshot_fonts?ref=release";
       inputs.nixpkgs.follows = "nixpkgs";
