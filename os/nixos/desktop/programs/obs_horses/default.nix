@@ -1,10 +1,11 @@
 # Self-contained OBS addon owning the Camera scene's background: cut out in composited scenes, kept in the camera-only one.
-# While `$XDG_RUNTIME_DIR/obs_horses` exists (sway obs-mode `h` on, `H` off) and you're typing, a gallop paced by your keypress rate plays behind the camera:
+# While `$XDG_RUNTIME_DIR/obs_horses` exists (sway obs-mode `h` on, `H` off) and you're typing fast enough, a gallop paced by your keypress rate plays behind the camera:
 # through the cutout in composited scenes, around the camera frame in the camera-only one.
 # State shows in OBS's status bar. Nothing of it is ever saved into the scene collection.
 { pkgs, lib, user, ... }:
 let
-  startAfterMs = 500; # horses appear once typing has been continuous this long
+  startAfterMs = 750; # horses appear once typing has been continuous this long
+  minKeysPerSec = 5; # ≈60wpm; slower typing gets no horses
   stopAfterMs = 130; # horses keep running this long after the last key is released
   burstGapMs = 400; # a pause longer than this restarts the `startAfterMs` count
   # gallop speed = (presses/s / nativeKeysPerSec) ^ speedExponent. At 30fps output with 15 frames per stride:
@@ -50,7 +51,7 @@ in
     after = [ "keyd.service" ];
     startLimitIntervalSec = 0; # keyd recreates its virtual keyboard on restart; retry until it's back
     serviceConfig = {
-      ExecStart = "${pkgs.python3.withPackages (ps: [ ps.evdev ])}/bin/python3 -I ${./gallop_speed.py} /run/obs-typing/speed ${toString stopAfterMs} ${toString startAfterMs} ${toString nativeKeysPerSec} ${toString burstGapMs} ${toString speedExponent} ${toString maxSpeed}";
+      ExecStart = "${pkgs.python3.withPackages (ps: [ ps.evdev ])}/bin/python3 -I ${./gallop_speed.py} /run/obs-typing/speed ${toString stopAfterMs} ${toString startAfterMs} ${toString nativeKeysPerSec} ${toString burstGapMs} ${toString speedExponent} ${toString maxSpeed} ${toString minKeysPerSec}";
       User = "obs-typing"; # static: DynamicUser hides preserved runtime dirs under root-only /run/private
       SupplementaryGroups = [ "input" ];
       RuntimeDirectory = "obs-typing";

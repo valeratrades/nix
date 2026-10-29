@@ -1,11 +1,11 @@
 """Publishes to argv[1] how fast the horses should gallop: (key presses/s over the last second / argv[4]) ** argv[6], capped at argv[7].
-Nonzero while a key is held or was released less than argv[2] ms ago, and the burst (no pause over argv[5] ms) has lasted argv[3] ms."""
+Nonzero while the rate is at least argv[8], and a key is held or was released less than argv[2] ms ago, and the burst (no pause over argv[5] ms) has lasted argv[3] ms."""
 import os, select, sys, time
 from collections import deque
 from evdev import InputDevice, ecodes, list_devices
 
 out, STOP_S, START_S, NATIVE, GAP_S = sys.argv[1], int(sys.argv[2]) / 1000, int(sys.argv[3]) / 1000, float(sys.argv[4]), int(sys.argv[5]) / 1000
-EXPONENT, MAX_SPEED = float(sys.argv[6]), float(sys.argv[7])
+EXPONENT, MAX_SPEED, MIN_RATE = float(sys.argv[6]), float(sys.argv[7]), float(sys.argv[8])
 assert GAP_S >= STOP_S, "a burst can't end before its horses stop"
 WINDOW_S = 1.0
 
@@ -46,7 +46,7 @@ while True:
         presses.popleft()
     galloping = (down or now < last_release + STOP_S) and now - burst_start >= START_S
     rate = (len(presses) - 1) / (presses[-1] - presses[0]) if len(presses) > 1 else 0.0  # intervals, so a burst's first second isn't overcounted
-    speed = round(min(MAX_SPEED, (rate / NATIVE) ** EXPONENT), 2) if galloping else 0.0
+    speed = round(min(MAX_SPEED, (rate / NATIVE) ** EXPONENT), 2) if galloping and rate >= MIN_RATE else 0.0
     if speed != published:
         publish(speed)
         published = speed
