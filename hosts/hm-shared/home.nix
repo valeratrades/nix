@@ -150,6 +150,13 @@
     settings.StartupWMClass = "obs";
     settings.Keywords = "obs;studio;streaming;recording;";
   };
+  xdg.desktopEntries.discord_private = {
+    name = "Discord (private)";
+    exec = "discord_private";
+    icon = "discord";
+    terminal = false;
+    settings.StartupWMClass = "discord_private";
+  };
 
   dconf = {
     enable = true;
@@ -474,6 +481,11 @@
             name = "vpn_browser";
             runtimeInputs = [ chromium vpn_ns ];
             text = builtins.readFile "${self}/home/scripts/vpn_browser.sh";
+          })
+          (writeShellApplication {
+            name = "discord_private";
+            runtimeInputs = [ mullvad-browser vpn_ns ];
+            text = builtins.readFile "${self}/home/scripts/discord_private.sh";
           })
           vpn_ns
           alacritty
