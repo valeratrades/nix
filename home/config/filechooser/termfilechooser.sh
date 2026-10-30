@@ -10,6 +10,7 @@ directory="$2"
 save="$3"
 path="$4"
 out="$5"
+case "$path" in /var/offload/*) path="/home/${path#/var/offload/}" ;; esac # apps resolve the ~/Downloads etc. symlinks
 
 logfile="$HOME/.local/state/termfilechooser.log"
 echo "$(date): multiple=$multiple, directory=$directory, save=$save, path=$path, out=$out" >> "$logfile"
