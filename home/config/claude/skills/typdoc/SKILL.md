@@ -10,7 +10,7 @@ A `.typ` next to a sub-crate, documenting how that sub-crate operates. Text draw
 written as Typst code that recounts them at render.
 
 Worked example, and the file to read before writing a new one:
-<https://github.com/EV-invest/trading_data/blob/main/trading_data_dag/model.typ>
+<https://github.com/EV-Quant/trading_data/blob/main/trading_data_dag/model.typ>
 (siblings: `trading_data_persistence/weaver.typ`, `trading_data_persistence/book.typ`)
 
 ## The order

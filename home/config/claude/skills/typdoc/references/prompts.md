@@ -2,7 +2,7 @@
 <!--added to showcase what kinds of problems appeared in naive approach, - to ensure that our harness covers all of them-->
 
 Verbatim, from the sessions that produced
-<https://github.com/EV-invest/trading_data/blob/main/trading_data_dag/model.typ>,
+<https://github.com/EV-Quant/trading_data/blob/main/trading_data_dag/model.typ>,
 `trading_data_persistence/weaver.typ` and `trading_data_persistence/book.typ` (2026-08-03/04).
 
 ## Opening a document
