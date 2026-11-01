@@ -29,6 +29,7 @@ in {
       # Wine otherwise reserves a caption sway never draws, shifting all input down by its height
       wine reg add 'HKCU\Software\Wine\X11 Driver' /v Decorated /d N /f
     '';
-    runCmd = ''wine "$WINEPREFIX/drive_c/CoinPoker/CoinPoker.exe" --no-sandbox "$@"'';
+    # in-process GPU: Wine offsets a GPU child's output by its toplevel's client origin only when both live in one process; otherwise framed windows render a caption-height off their input
+    runCmd = ''wine "$WINEPREFIX/drive_c/CoinPoker/CoinPoker.exe" --no-sandbox --in-process-gpu "$@"'';
   };
 }
