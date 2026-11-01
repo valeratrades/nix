@@ -46,7 +46,7 @@ in {
   assertions = map (name: { assertion = builtins.match "[A-Z_][A-Z0-9_]*" name != null; message = "sops env key `${name}` is not an env var name"; }) (builtins.attrNames secretsEnv);
   warnings = map (v: "${v}: set both in sops (secrets/users/v/default.json) and in credentials.fish, which shadows it in fish") secretsEnvCollisions;
 
-  home.activation.writeSecretsEnvd = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+  home.activation.writeSecretsEnvd = lib.hm.dag.entryAfter [ "writeBoundary" "sops-nix" ] ''
     mkdir -p "${config.home.homeDirectory}/.config/environment.d"
     dest="${config.home.homeDirectory}/.config/environment.d/30-secrets.conf"
     {
@@ -101,7 +101,7 @@ in {
       tools.alsoAllow = [ "group:messaging" ];
     };
     cfgHash = builtins.hashString "sha256" ocModel;
-  in lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+  in lib.hm.dag.entryAfter [ "writeBoundary" "sops-nix" ] ''
     repo="${config.home.homeDirectory}/g/openclaw"
     tgTokenFile="${config.sops.secrets."social-networks/telegram_token_test".path}" # test bot: the main one is tg-server's getUpdates long-poll, one consumer per bot token
     node="${lib.getExe pkgs.nodejs_22}"
