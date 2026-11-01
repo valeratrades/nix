@@ -1,7 +1,7 @@
 # Shared Wine wrapper for Sway - fixes cursor by temporarily resetting monitor positions
 # Usage: wineApp { name, winePrefix, setupScript, runCmd, runtimeInputs ? [], x11 ? false }
 # x11 = true runs through Xwayland: no monitor-position hack, so outputs are never touched
-{ lib, writeShellApplication, wineWow64Packages, winetricks, curl, unzip, coreutils, sway, jq }:
+{ lib, writeShellApplication, wineWow64Packages, winetricks, curl, unzip, coreutils, sway, jq, xev, xdotool }:
 
 { name, winePrefix, setupScript ? "", runCmd, runtimeInputs ? [], x11 ? false }:
 
@@ -15,7 +15,7 @@ writeShellApplication {
     coreutils
     sway
     jq
-  ] ++ runtimeInputs;
+  ] ++ lib.optionals x11 [ xev xdotool ] ++ runtimeInputs;
   text = ''
     set -euo pipefail
 
@@ -25,6 +25,24 @@ writeShellApplication {
 
     ${if x11 then ''
     unset WAYLAND_DISPLAY
+
+    # Wine parks GPU surfaces of closed windows in a 1x1 holder at root 0,0; Xwayland ignores its empty shape and keeps their last frame on screen
+    holders=$(mktemp -u)
+    mkfifo "$holders"
+    stdbuf -oL xev -root -event substructure > "$holders" &
+    xev_pid=$!
+    holder=
+    while read -r line; do
+        if [[ $line =~ window\ (0x[0-9a-f]+),\ \(0,0\),\ width\ 1,\ height\ 1$ ]]; then
+            holder=''${BASH_REMATCH[1]}
+        elif [[ $line == "border_width 0, override YES" && -n $holder ]]; then
+            xdotool windowmove "$holder" -20000 -20000
+            holder=
+        else
+            holder=
+        fi
+    done < "$holders" &
+    trap 'kill $xev_pid; rm -f "$holders"' EXIT
     '' else ''
     # Wine cursor fix: temporarily move all outputs to 0 0
     # Must happen BEFORE any wine commands (including setup)
