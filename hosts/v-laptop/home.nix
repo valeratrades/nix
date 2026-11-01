@@ -46,16 +46,28 @@ in {
   assertions = map (name: { assertion = builtins.match "[A-Z_][A-Z0-9_]*" name != null; message = "sops env key `${name}` is not an env var name"; }) (builtins.attrNames secretsEnv);
   warnings = map (v: "${v}: set both in sops (secrets/users/v/default.json) and in credentials.fish, which shadows it in fish") secretsEnvCollisions;
 
-  home.activation.writeSecretsEnvd = lib.hm.dag.entryAfter [ "writeBoundary" "sops-nix" ] ''
-    mkdir -p "${config.home.homeDirectory}/.config/environment.d"
-    dest="${config.home.homeDirectory}/.config/environment.d/30-secrets.conf"
-    {
-      ${lib.concatStrings (lib.mapAttrsToList (env: key: ''
-        echo "${env}=$(cat ${config.sops.secrets.${key}.path})"
-      '') secretsEnv)}
-    } > "$dest"
-    chmod 600 "$dest"
-    ${pkgs.systemd}/bin/systemctl --user daemon-reload || true
+  # upstream's restarts the old unit, which reloadSystemd only later swaps, so it decrypts the previous manifest
+  home.activation.sops-nix = lib.mkForce ''
+    if [ -n "''${XDG_RUNTIME_DIR:-}" ]; then
+      ${pkgs.coreutils}/bin/env ${lib.escapeShellArgs (lib.mapAttrsToList (n: v: "${n}=${v}") config.sops.environment)} ${lib.head config.systemd.user.services.sops-nix.Service.ExecStart}
+    else
+      echo "sops-nix: no user session, its unit decrypts once one starts"
+    fi
+  '';
+
+  home.activation.writeSecretsEnvd = let paths = lib.mapAttrs (_: key: config.sops.secrets.${key}.path) secretsEnv; in lib.hm.dag.entryAfter [ "writeBoundary" "sops-nix" ] ''
+    if [ -n "''${XDG_RUNTIME_DIR:-}" ]; then # without a session nothing is decrypted, and the last switch's file stands
+      cat ${lib.escapeShellArgs (lib.attrValues paths)} >/dev/null
+      mkdir -p "${config.home.homeDirectory}/.config/environment.d"
+      dest="${config.home.homeDirectory}/.config/environment.d/30-secrets.conf"
+      {
+        ${lib.concatStrings (lib.mapAttrsToList (env: path: ''
+          echo "${env}=$(cat ${path})"
+        '') paths)}
+      } > "$dest"
+      chmod 600 "$dest"
+      ${pkgs.systemd}/bin/systemctl --user daemon-reload
+    fi
   '';
 
   # OpenClaw — multi-channel AI gateway, run from the checkout at ~/g/openclaw.
