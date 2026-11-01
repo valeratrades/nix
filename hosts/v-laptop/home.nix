@@ -282,6 +282,20 @@ in {
     Install.WantedBy = [ "default.target" ];
   };
 
+  # `accounting` in fish
+  systemd.user.services.accounting = {
+    Unit.Description = "Books: Grafana over the hledger journal, with rate/usage pulls";
+    Service = {
+      Type = "simple";
+      ExecStartPre = "${pkgs.networkmanager}/bin/nm-online -q -t 86400"; # user manager has no network-online.target
+      ExecStart = "/run/current-system/sw/bin/nix run %h/s/ev/_service_arb/accounting";
+      TimeoutStartSec = "infinity";
+      Restart = "on-failure";
+      RestartSec = 30;
+    };
+    Install.WantedBy = [ "default.target" ];
+  };
+
   # Ensure tg-server waits for sops-nix secrets to be available
   systemd.user.services.tg-server = {
     Unit = {
@@ -298,6 +312,14 @@ in {
       LoadCredential = lib.mkAfter [ "openai_key:${config.sops.secrets."ai/env/OPENAI_API_KEY".path}" ];
       ExecStart = lib.mkForce "/bin/sh -c 'TELEGRAM_API_HASH=\"$(cat %d/tg_api_hash)\" PHONE_NUMBER_FR=\"$(cat %d/tg_phone)\" TELEGRAM_ALERTS_CHANNEL_ID=\"$(cat %d/tg_alerts_channel)\" OPENAI_API_KEY=\"$(cat %d/openai_key)\" ${tgPkg}/bin/tg server'";
     };
+  };
+
+  xdg.desktopEntries.coinpoker = {
+    name = "CoinPoker";
+    exec = "coinpoker";
+    icon = "${config.home.homeDirectory}/.wine-coinpoker/drive_c/CoinPoker/resources/assets/cp-icon.png";
+    terminal = false;
+    settings.StartupWMClass = "coinpoker.exe";
   };
 
   fonts.fontconfig.enable = true;
