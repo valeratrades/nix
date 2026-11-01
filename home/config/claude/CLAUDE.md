@@ -114,6 +114,11 @@
 - if you've fully implemented an issue you were given, close it.
   castaway Issues / PRs / worktrees are all bad, - avoid leaving them if the work is done.
 
+- when testing visual changes, default to headless
+  Unless you specifically need me to validate the UI, use headless mode, - normally all the same screenshotting and navigation is possible in it.
+  If there is no headless mode or ability to nicely see what's inside it, spawn an agent to make one.
+  And if we don't control the app, play with it in a different sway workspace, - you claim an unused one and only render things there; never open windows in my face, (ie in whatever ws is currently open).
+
 ## Testing
 - if a change is not trivial, always test.
     And any time you write actual tests in code, - read https://matklad.github.io/2021/05/31/how-to-test.html
