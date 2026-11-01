@@ -4,6 +4,24 @@ let
   #TODO: `ssh-add ~/.ssh/id_ed25519` as part of the setup
   sshConfigPath = "${config.home.homeDirectory}/.ssh";
   tgPkg = inputs.tg.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  # env var -> sops key, into environment.d so every systemd user service inherits them
+  secretsEnv = {
+    OPENAI_API_KEY = "openai_api_key";
+    OPENAI_KEY = "openai_api_key";
+    TELEGRAM_MAIN_BOT_TOKEN = "telegram_token_main";
+    TELEGRAM_BOT_KEY = "telegram_token_main";
+    DEEPSEEK_KEY = "deepsek_key"; # `cld` (home/config/fish/app_aliases/llm.fish), openclaw gateway
+    DEEPSEEK_API_KEY = "deepsek_key";
+    DEEPSEEK_PLATFORM_TOKEN = "deepseek_platform_token";
+    ALPACA_API_KEY = "alpaca_api_pubkey"; # btc_line's ~/.config/btc_line.nix { env = ... }
+    ALPACA_API_SECRET = "alpaca_api_secret";
+    ENCRYPTION_KEY = "encryption_key";
+  };
+  # a fish `set` of the same name shadows the sops value in every shell
+  credentialsFishVars = lib.concatMap
+    (l: let m = builtins.match "[[:space:]]*set[[:space:]]+(-[^[:space:]]+[[:space:]]+)*([^-[:space:]][^[:space:]]*).*" l; in lib.optional (m != null) (builtins.elemAt m 1))
+    (lib.splitString "\n" (builtins.readFile "${config.home.homeDirectory}/s/g/private/credentials.fish")); #IMPURE
+  secretsEnvCollisions = lib.intersectLists (builtins.attrNames secretsEnv) credentialsFishVars;
 in {
   nix.extraOptions = "!include ${config.home.homeDirectory}/s/g/private/sops/";
   # ref: https://www.youtube.com/watch?v=G5f6GC7SnhU
@@ -53,27 +71,15 @@ in {
     alpacaSecret = config.sops.secrets.alpaca_api_secret.path;
   };
 
-  # Write secrets to environment.d so ALL systemd user services (openclaw-gateway, tg-server, etc.)
-  # inherit them automatically. Generated from sops-decrypted files at `home-manager switch` time.
+  warnings = map (v: "${v}: set both in sops (secretsEnv, hosts/v-laptop/home.nix) and in credentials.fish, which shadows it in fish") secretsEnvCollisions;
+
   home.activation.writeSecretsEnvd = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     mkdir -p "${config.home.homeDirectory}/.config/environment.d"
     dest="${config.home.homeDirectory}/.config/environment.d/30-secrets.conf"
     {
-      echo "OPENAI_API_KEY=$(cat ${config.sops.secrets.openai_api_key.path})"
-      echo "OPENAI_KEY=$(cat ${config.sops.secrets.openai_api_key.path})"
-      echo "TELEGRAM_MAIN_BOT_TOKEN=$(cat ${config.sops.secrets.telegram_token_main.path})"
-      echo "TELEGRAM_BOT_KEY=$(cat ${config.sops.secrets.telegram_token_main.path})"
-      # DEEPSEEK_KEY is consumed by the `cld` fish function (home/config/fish/app_aliases/llm.fish)
-      # and by the openclaw gateway (DeepSeek is OpenAI-compatible; see configureOpenclaw below).
-      echo "DEEPSEEK_KEY=$(cat ${config.sops.secrets.deepsek_key.path})"
-      echo "DEEPSEEK_API_KEY=$(cat ${config.sops.secrets.deepsek_key.path})"
-      echo "DEEPSEEK_PLATFORM_TOKEN=$(cat ${config.sops.secrets.deepseek_platform_token.path})"
-      # btc_line's ~/.config/btc_line.nix references these via { env = ... }.
-      echo "ALPACA_API_KEY=$(cat ${config.sops.secrets.alpaca_api_pubkey.path})"
-      echo "ALPACA_API_SECRET=$(cat ${config.sops.secrets.alpaca_api_secret.path})"
-      # Was environment.variables.ENCRYPTION_KEY in os/nixos/shared-services.nix
-      # (committed in plaintext, since burned). Session-scoped now.
-      echo "ENCRYPTION_KEY=$(cat ${config.sops.secrets.encryption_key.path})"
+      ${lib.concatStrings (lib.mapAttrsToList (env: key: ''
+        echo "${env}=$(cat ${config.sops.secrets.${key}.path})"
+      '') secretsEnv)}
     } > "$dest"
     chmod 600 "$dest"
     ${pkgs.systemd}/bin/systemctl --user daemon-reload || true
