@@ -26,6 +26,8 @@ in {
           7z x -o"$CP_DIR" "$WORK/app-64.7z" -y
           rm -rf "$WORK"
       fi
+      # Wine otherwise reserves a caption sway never draws, shifting all input down by its height
+      wine reg add 'HKCU\Software\Wine\X11 Driver' /v Decorated /d N /f
     '';
     runCmd = ''wine "$WINEPREFIX/drive_c/CoinPoker/CoinPoker.exe" --no-sandbox "$@"'';
   };
