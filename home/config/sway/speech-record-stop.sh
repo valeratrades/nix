@@ -48,9 +48,7 @@ if [ "$DRIVER" = "whisper" ]; then
         | sed 's/^\s*//' | tr -d '\n')
 
 else
-    if [ -z "${OPENAI_API_KEY:-}" ]; then
-        OPENAI_API_KEY=$(grep -Po 'set openaikey "\K[^"]+' "$HOME/s/g/private/credentials.fish" 2>/dev/null || true)
-    fi
+    OPENAI_API_KEY=${OPENAI_API_KEY:-$(cat "$HOME/.config/sops-nix/secrets/ai/env/OPENAI_API_KEY")}
 
     RESP=$(curl -sf "https://api.openai.com/v1/audio/transcriptions" \
         -H "Authorization: Bearer ${OPENAI_API_KEY}" \

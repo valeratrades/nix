@@ -55,7 +55,7 @@ let
   # Packed at login rather than in the store: the signing key (which fixes the ID) lives in sops.
   lazyRestoreId = "ekfifhbofidfehoabdglklkgdghjimja";
   lazyRestoreDir = "${config.users.users.${user.username}.home}/.local/share/chrome-lazy-restore";
-  lazyRestore = config.home-manager.users.${user.username}.sops.secrets ? chrome_lazy_restore_pem;
+  lazyRestore = config.home-manager.users.${user.username}.sops.secrets ? "other/chrome_lazy_restore_pem";
   lazyRestoreSrc = pkgs.runCommand "chrome-lazy-restore-src" { } ''
     cp -r ${../../../../home/config/chrome/lazy_restore} $out
     chmod -R u+w $out
@@ -136,7 +136,7 @@ in
           set -euo pipefail
           export PATH=${lib.makeBinPath [ pkgs.go-crx3 pkgs.jq pkgs.coreutils ]}
           mkdir -p ${lazyRestoreDir}
-          crx3 pack ${lazyRestoreSrc} -p ${config.sops.secrets.chrome_lazy_restore_pem.path} -o ${lazyRestoreDir}/lazy_restore.crx
+          crx3 pack ${lazyRestoreSrc} -p ${config.sops.secrets."other/chrome_lazy_restore_pem".path} -o ${lazyRestoreDir}/lazy_restore.crx
           id=$(crx3 id ${lazyRestoreDir}/lazy_restore.crx)
           [ "$id" = ${lazyRestoreId} ] || { echo "packed ID $id, policy expects ${lazyRestoreId}: key changed?" >&2; exit 1; }
           cat > ${lazyRestoreDir}/updates.xml <<EOF

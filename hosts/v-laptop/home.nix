@@ -4,19 +4,10 @@ let
   #TODO: `ssh-add ~/.ssh/id_ed25519` as part of the setup
   sshConfigPath = "${config.home.homeDirectory}/.ssh";
   tgPkg = inputs.tg.packages.${pkgs.stdenv.hostPlatform.system}.default;
-  # env var -> sops key, into environment.d so every systemd user service inherits them
-  secretsEnv = {
-    OPENAI_API_KEY = "openai_api_key";
-    OPENAI_KEY = "openai_api_key";
-    TELEGRAM_MAIN_BOT_TOKEN = "telegram_token_main";
-    TELEGRAM_BOT_KEY = "telegram_token_main";
-    DEEPSEEK_KEY = "deepsek_key"; # `cld` (home/config/fish/app_aliases/llm.fish), openclaw gateway
-    DEEPSEEK_API_KEY = "deepsek_key";
-    DEEPSEEK_PLATFORM_TOKEN = "deepseek_platform_token";
-    ALPACA_API_KEY = "alpaca_api_pubkey"; # btc_line's ~/.config/btc_line.nix { env = ... }
-    ALPACA_API_SECRET = "alpaca_api_secret";
-    ENCRYPTION_KEY = "encryption_key";
-  };
+  sopsFile = "${self}/secrets/users/v/default.json";
+  sopsTree = removeAttrs (builtins.fromJSON (builtins.readFile sopsFile)) [ "sops" ]; # key names are plaintext in a sops file
+  # `<scope>.env.NAME` -> NAME in environment.d, so every systemd user service inherits it
+  secretsEnv = lib.concatMapAttrs (scope: v: lib.mapAttrs (name: _: "${scope}/env/${name}") (v.env or { })) sopsTree;
   # a fish `set` of the same name shadows the sops value in every shell
   credentialsFishVars = lib.concatMap
     (l: let m = builtins.match "[[:space:]]*set[[:space:]]+(-[^[:space:]]+[[:space:]]+)*([^-[:space:]][^[:space:]]*).*" l; in lib.optional (m != null) (builtins.elemAt m 1))
@@ -27,36 +18,17 @@ in {
   # ref: https://www.youtube.com/watch?v=G5f6GC7SnhU
   sops = {
     age.sshKeyPaths = [ "${sshConfigPath}/id_ed25519" ];
-    defaultSopsFile = "${self}/secrets/users/v/default.json";
+    defaultSopsFile = sopsFile;
     defaultSopsFormat = "json";
-    secrets.telegram_token_main = { mode = "0400"; };
-    # openclaw's Telegram channel binds to the *test* bot (@test_my_nonsense_bot) so it doesn't
-    # fight tg-server over the main bot's getUpdates long-poll (one consumer per bot token).
-    secrets.telegram_token_test = { mode = "0400"; };
-    secrets.telegram_api_hash = { mode = "0400"; };
-    secrets.telegram_phone = { mode = "0400"; };
-    secrets.telegram_alerts_channel = { mode = "0400"; };
-    secrets.mail_main_addr = { mode = "0400"; };
-    secrets.mail_main_pass = { mode = "0400"; };
-    secrets.mail_spam_addr = { mode = "0400"; };
-    secrets.mail_spam_pass = { mode = "0400"; };
-    secrets.mail_test_pass = { mode = "0400"; };
-    secrets.alpaca_api_pubkey = { mode = "0400"; };
-    secrets.alpaca_api_secret = { mode = "0400"; };
-    secrets.openai_api_key = { mode = "0400"; };
-    # NB: sops key is misspelled upstream as `deepsek_key` (single `e`); keep matching the stored name.
-    secrets.deepsek_key = { mode = "0400"; };
-    secrets.deepseek_platform_token = { mode = "0400"; }; # platform.deepseek.com session, the only reader of per-day usage; read by the service_arb accounting usage.rs
-    secrets.encryption_key = { mode = "0400"; };
-    secrets.chrome_lazy_restore_pem = { mode = "0400"; }; # signs the lazy-restore extension, os/nixos/desktop/programs/chrome.nix
+    secrets = let leaves = prefix: lib.concatMapAttrs (k: v: if builtins.isAttrs v then leaves "${prefix}${k}/" v else { "${prefix}${k}" = { }; }); in leaves "" sopsTree;
   };
 
   tg = {
     enable = true;
     package = import ../../home/config/fish/with_fish_init.nix pkgs { pkg = inputs.tg.packages.${pkgs.stdenv.hostPlatform.system}.default; cmd = "tg init fish"; };
-    apiHash = config.sops.secrets.telegram_api_hash.path;
-    phone = config.sops.secrets.telegram_phone.path;
-    alertsChannel = config.sops.secrets.telegram_alerts_channel.path;
+    apiHash = config.sops.secrets."social-networks/telegram_api_hash".path;
+    phone = config.sops.secrets."social-networks/telegram_phone".path;
+    alertsChannel = config.sops.secrets."social-networks/telegram_alerts_channel".path;
   };
 
   wallpaper-carousel = {
@@ -67,11 +39,12 @@ in {
   btc_line = {
     enable = true;
     package = inputs.btc_line.packages.${pkgs.stdenv.hostPlatform.system}.default;
-    alpacaKey = config.sops.secrets.alpaca_api_pubkey.path;
-    alpacaSecret = config.sops.secrets.alpaca_api_secret.path;
+    alpacaKey = config.sops.secrets."trading/env/ALPACA_API_KEY".path;
+    alpacaSecret = config.sops.secrets."trading/env/ALPACA_API_SECRET".path;
   };
 
-  warnings = map (v: "${v}: set both in sops (secretsEnv, hosts/v-laptop/home.nix) and in credentials.fish, which shadows it in fish") secretsEnvCollisions;
+  assertions = map (name: { assertion = builtins.match "[A-Z_][A-Z0-9_]*" name != null; message = "sops env key `${name}` is not an env var name"; }) (builtins.attrNames secretsEnv);
+  warnings = map (v: "${v}: set both in sops (secrets/users/v/default.json) and in credentials.fish, which shadows it in fish") secretsEnvCollisions;
 
   home.activation.writeSecretsEnvd = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     mkdir -p "${config.home.homeDirectory}/.config/environment.d"
@@ -130,7 +103,7 @@ in {
     cfgHash = builtins.hashString "sha256" ocModel;
   in lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     repo="${config.home.homeDirectory}/g/openclaw"
-    tgTokenFile="${config.sops.secrets.telegram_token_test.path}"
+    tgTokenFile="${config.sops.secrets."social-networks/telegram_token_test".path}" # test bot: the main one is tg-server's getUpdates long-poll, one consumer per bot token
     node="${lib.getExe pkgs.nodejs_22}"
     oc() { "$node" "$repo/openclaw.mjs" "$@"; }
     # Each oc call spawns node (~7s), 5 calls => ~35-62s. This block is idempotent but only needs
@@ -241,8 +214,8 @@ in {
       # Reboots and hm switches re-arm the start limit; page once per login session (%t is tmpfs).
       ExecStart = "${pkgs.writeShellScript "openclaw-alert" ''
         [ -e "$XDG_RUNTIME_DIR/openclaw-gateway-alerted" ] && exit 0
-        token=$(cat ${config.sops.secrets.telegram_token_test.path})
-        chat=$(cat ${config.sops.secrets.telegram_alerts_channel.path})
+        token=$(cat ${config.sops.secrets."social-networks/telegram_token_test".path})
+        chat=$(cat ${config.sops.secrets."social-networks/telegram_alerts_channel".path})
         ${pkgs.curl}/bin/curl -fsS -m 10 "https://api.telegram.org/bot$token/sendMessage" \
           -d chat_id="$chat" \
           --data-urlencode text="openclaw-gateway is DOWN on ${user.desktopHostName} (start limit hit). If ~/g/openclaw HEAD moved without a rebuild, run: openclaw-rebuild. Logs: journalctl --user -u openclaw-gateway"
@@ -262,7 +235,7 @@ in {
     };
     Service = {
       Type = "simple";
-      LoadCredential = [ "openai_key:${config.sops.secrets.openai_api_key.path}" ];
+      LoadCredential = [ "openai_key:${config.sops.secrets."ai/env/OPENAI_API_KEY".path}" ];
       ExecStart = "/bin/sh -c 'OPENAI_API_KEY=\"$(cat %d/openai_key)\" ${lib.getExe pkgs.litellm} --config ${config.home.homeDirectory}/.config/litellm/openai.yaml --port ${toString myvars.ports.litellm}'";
       Restart = "on-failure";
       RestartSec = 5;
@@ -307,10 +280,10 @@ in {
 
     Service = {
       # Wait for the sops-nix secret file to exist before systemd tries to load it
-      ExecStartPre = lib.mkBefore "${pkgs.bash}/bin/bash -c 'while [ ! -f ${config.sops.secrets.telegram_api_hash.path} ]; do ${pkgs.coreutils}/bin/sleep 0.1; done'";
+      ExecStartPre = lib.mkBefore "${pkgs.bash}/bin/bash -c 'while [ ! -f ${config.sops.secrets."social-networks/telegram_api_hash".path} ]; do ${pkgs.coreutils}/bin/sleep 0.1; done'";
       RestartSec = 5;
       # Inject OpenAI key so tg-server can do voice transcription
-      LoadCredential = lib.mkAfter [ "openai_key:${config.sops.secrets.openai_api_key.path}" ];
+      LoadCredential = lib.mkAfter [ "openai_key:${config.sops.secrets."ai/env/OPENAI_API_KEY".path}" ];
       ExecStart = lib.mkForce "/bin/sh -c 'TELEGRAM_API_HASH=\"$(cat %d/tg_api_hash)\" PHONE_NUMBER_FR=\"$(cat %d/tg_phone)\" TELEGRAM_ALERTS_CHANNEL_ID=\"$(cat %d/tg_alerts_channel)\" OPENAI_API_KEY=\"$(cat %d/openai_key)\" ${tgPkg}/bin/tg server'";
     };
   };
@@ -659,9 +632,9 @@ in {
       himalaya.enable = true;
     };
   in {
-    valeratrades = gmail { address = "valeratrades@gmail.com"; passSecret = "mail_main_pass"; } // { primary = true; };
-    v79166789533 = gmail { address = "v79166789533@gmail.com"; passSecret = "mail_spam_pass"; };
-    "1cryptoicos" = gmail { address = "1cryptoicos@gmail.com"; passSecret = "mail_test_pass"; };
+    valeratrades = gmail { address = "valeratrades@gmail.com"; passSecret = "other/mail_main_pass"; } // { primary = true; };
+    v79166789533 = gmail { address = "v79166789533@gmail.com"; passSecret = "other/mail_spam_pass"; };
+    "1cryptoicos" = gmail { address = "1cryptoicos@gmail.com"; passSecret = "other/mail_test_pass"; };
   };
   programs.neomutt = {
     enable = true;

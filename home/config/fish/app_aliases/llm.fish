@@ -156,7 +156,7 @@ function clc
 
     function use_deepseek
         set -lx ANTHROPIC_BASE_URL 'https://api.deepseek.com/anthropic'
-        set -lx ANTHROPIC_AUTH_TOKEN "$DEEPSEEK_KEY"
+        set -lx ANTHROPIC_AUTH_TOKEN "$DEEPSEEK_API_KEY"
         set -lx ANTHROPIC_MODEL 'deepseek-v4-pro[1m]'
         set -lx ANTHROPIC_DEFAULT_SONNET_MODEL 'deepseek-v4-pro[1m]'
         set -lx ANTHROPIC_DEFAULT_OPUS_MODEL 'deepseek-v4-pro[1m]'

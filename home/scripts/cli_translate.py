@@ -5,7 +5,7 @@ import sys
 import os
 import pyperclip
 
-api_key = os.getenv("OPENAI_KEY")
+api_key = os.getenv("OPENAI_API_KEY")
 # second var is cost of 1k tokens
 gpt35 = ("gpt-3.5-turbo", 0.002)
 gpt4t = ("gpt-4-1106-preview", 0.015)  # price is a guess, and is not to be trusted
