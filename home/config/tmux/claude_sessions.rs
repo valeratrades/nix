@@ -871,7 +871,7 @@ mod report {
     use serde::{Deserialize, Serialize};
 
     /// Ordered by severity, so votes combine by `max`.
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
     #[serde(rename_all = "lowercase")]
     pub enum Verdict {
         Finished,
@@ -892,8 +892,8 @@ mod report {
 
 finished — the implementation the agent settled on is in the tree; or the prompt asked a question and the answer leaves the user nothing to do. That includes a check the user asked for on the agent's own work that came back clean: yes, it is pushed, merged, published
 answered — the prompt asked a question and the answer is something the user now has to weigh, apply, or act on: a comparison, a recommendation, an analysis, options to pick from, a hint, the command or steps to take. The next step is the user's
-stuck — the work is not moving, whatever the cause: the agent is blocked on something it cannot resolve, failed, lost the thread, is out of ideas, declined or refused the task on safety or policy grounds, or handed it back for the user to do, such as a physical step it needs done before it can go on, like plugging a device in. An offer to do some other, narrower task instead does not change that
-partial — the agent left asked-for code unwritten, giving no reason it could not be written; or a task it was carrying out stopped short of its goal and now waits on steps the user has to take, even if it also asks the user something; or a check the user asked for on the agent's own work came back short: not pushed, not merged, not published
+stuck — the work is not moving, whatever the cause: the agent is blocked on something it cannot resolve, failed, lost the thread, is out of ideas, declined or refused the task on safety or policy grounds, or handed it back for the user to do. An offer to do some other, narrower task instead does not change that
+partial — the agent left asked-for code unwritten, giving no reason it could not be written; or a task it was carrying out stopped short of its goal and now waits on steps the user has to take, even if it also asks the user something, or is a single physical action like replugging a device; or a check the user asked for on the agent's own work came back short: not pushed, not merged, not published
 
 Judge the implementation, nothing else. A test not written, a check not run, a verification left for the user, work the report never claims was asked for — none of that is partial. Neither is a part the agent reports as impossible, done differently, or dropped because the codebase would not take it: a reason given revises the ask rather than falling short of it, however plainly the report says the ask was not met.
 
@@ -950,29 +950,37 @@ Answer with exactly one word: finished, answered, stuck, or partial.";
     }
 
     /// Text of the final assistant turn. Read from the tail for the same reason
-    /// transcript_tail does: transcripts reach tens of MB.
+    /// transcript_tail does: transcripts reach tens of MB. The tail grows until it
+    /// holds the opening prompt, as attachments can bury it under hundreds of KB.
     fn last_report(session_file: &Path) -> Option<String> {
-        const TAIL_BYTES: u64 = 256 * 1024;
         let mut file = fs::File::open(session_file).ok()?;
         let len = file.metadata().ok()?.len();
-        let start = len.saturating_sub(TAIL_BYTES);
-        file.seek(SeekFrom::Start(start)).ok()?;
-        let mut bytes = Vec::new();
-        file.read_to_end(&mut bytes).ok()?;
-        let buf = String::from_utf8_lossy(&bytes);
+        let mut tail: u64 = 256 * 1024;
+        loop {
+            let start = len.saturating_sub(tail);
+            file.seek(SeekFrom::Start(start)).ok()?;
+            let mut bytes = Vec::new();
+            file.read_to_end(&mut bytes).ok()?;
+            let buf = String::from_utf8_lossy(&bytes);
 
-        let mut lines = buf.lines();
-        if start > 0 {
-            lines.next(); // likely-partial first record
+            let mut lines = buf.lines();
+            if start > 0 {
+                lines.next(); // likely-partial first record
+            }
+            match extract_last_text(&lines.collect::<Vec<_>>()) {
+                Some(report) => return report,
+                None if start == 0 => return None,
+                None => tail *= 4,
+            }
         }
-        extract_last_text(&lines.collect::<Vec<_>>())
     }
 
     /// Pure half of last_report, over whole transcript lines. A closing turn can
     /// be split across records — the thinking block lands in its own entry — so
     /// only text blocks count. Turns a task notification woke up amend the report
     /// the human prompt's turn closed with, so each of their closings is kept.
-    fn extract_last_text(lines: &[&str]) -> Option<String> {
+    /// `None` when the lines run out before that prompt.
+    fn extract_last_text(lines: &[&str]) -> Option<Option<String>> {
         let mut closings = Vec::new();
         let mut prompt = None;
         let mut want_closing = true;
@@ -1027,8 +1035,9 @@ Answer with exactly one word: finished, answered, stuck, or partial.";
                 want_closing = false;
             }
         }
+        let prompt = prompt?;
         if closings.is_empty() {
-            return None;
+            return Some(None);
         }
         closings.reverse();
         let report = closings.join("\n\n");
@@ -1037,16 +1046,11 @@ Answer with exactly one word: finished, answered, stuck, or partial.";
             cut += 1;
         }
         let report = &report[cut..];
-        Some(match prompt {
-            Some(p) => {
-                let mut end = p.len().min(MAX_PROMPT);
-                while !p.is_char_boundary(end) {
-                    end -= 1;
-                }
-                format!("<prompt>\n{}\n</prompt>\n\n{report}", p[..end].trim())
-            }
-            None => report.to_string(),
-        })
+        let mut end = prompt.len().min(MAX_PROMPT);
+        while !prompt.is_char_boundary(end) {
+            end -= 1;
+        }
+        Some(Some(format!("<prompt>\n{}\n</prompt>\n\n{report}", prompt[..end].trim())))
     }
 
     /// `n` concurrent judgements; a call that fails or answers off-format is a missing vote.
@@ -1116,43 +1120,79 @@ Answer with exactly one word: finished, answered, stuck, or partial.";
         fn closing_text_is_read_past_a_thinking_only_turn() {
             let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/2.1.154");
             let raw = fs::read_to_string(dir.join("finished__idle_pane_own_transcript.jsonl")).unwrap();
-            let report = extract_last_text(&raw.lines().collect::<Vec<_>>()).unwrap();
-            assert!(report.starts_with("Done, all green."), "got {report:?}");
+            let report = extract_last_text(&raw.lines().collect::<Vec<_>>()).unwrap().unwrap();
+            assert!(report.contains("</prompt>\n\nDone, all green."), "got {report:?}");
         }
 
         #[test]
         fn a_turn_still_holding_a_tool_call_yields_no_report() {
             let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/2.1.154");
             let raw = fs::read_to_string(dir.join("finished__stale_interrupt_marker.jsonl")).unwrap();
-            assert_eq!(extract_last_text(&raw.lines().collect::<Vec<_>>()), None);
+            assert_eq!(extract_last_text(&raw.lines().collect::<Vec<_>>()), Some(None));
         }
 
-        /// The prompt IS the classifier, so it gets pinned against real closing
-        /// reports — `tests/reports/<claude version>/<verdict>__<desc>.md`. Drop a misjudged
-        /// report in and it's covered with no code edit. What's pinned is the judge's consensus,
-        /// not production's severity max: one call, and only a miss is retried as a majority of 3.
+        #[test]
+        fn the_opening_prompt_is_kept_however_far_back_it_sits() {
+            let path = std::env::temp_dir().join(format!("claude_sessions_far_prompt_{}.jsonl", std::process::id()));
+            let records = [
+                serde_json::json!({"type": "user", "origin": {"kind": "human"}, "message": {"content": "log me in"}}),
+                serde_json::json!({"type": "attachment", "content": "x".repeat(1024 * 1024)}),
+                serde_json::json!({"type": "assistant", "message": {"content": [{"type": "text", "text": "Click Authorize."}]}}),
+            ];
+            fs::write(&path, records.map(|r| r.to_string()).join("\n")).unwrap();
+            let report = last_report(&path).unwrap();
+            fs::remove_file(&path).unwrap();
+            assert!(report.starts_with("<prompt>\nlog me in\n</prompt>"), "got {report:?}");
+        }
+
+        /// The prompt IS the classifier, so it gets pinned against real closing reports, see
+        /// README. What's pinned is the judge's consensus, not production's severity max: one
+        /// call, and only a disallowed sample is retried as a majority of 3.
         #[test]
         fn reports_classify_to_their_named_verdict() {
             let mut misses = Vec::new();
+            let mut lost = Vec::new();
+            let mut budget = 0;
             for file in crate::tests::versioned_cases("reports", "md") {
                 let stem = file.file_stem().unwrap().to_string_lossy().to_string();
-                let expected = match stem.split("__").next().unwrap() {
-                    "finished" => Verdict::Finished,
-                    "answered" => Verdict::Answered,
-                    "stuck" => Verdict::Stuck,
-                    "partial" => Verdict::Partial,
-                    other => panic!("report {stem:?} has unknown verdict prefix {other:?}"),
-                };
-                let report = fs::read_to_string(&file).unwrap();
-                if samples(&report, 1) == [expected] {
-                    continue;
+                let verdict = |name: &str| parse(name).unwrap_or_else(|| panic!("report {stem:?}: unknown verdict {name:?}"));
+                let mut names = stem.split("__").next().unwrap().split('+');
+                let primary = verdict(names.next().unwrap());
+                let mut allowed = HashMap::from([(primary, 0)]);
+                for secondary in names {
+                    let (name, loss) = secondary.split_at(secondary.len().saturating_sub(1));
+                    let loss: u32 = loss.parse().unwrap_or_else(|_| panic!("report {stem:?}: {secondary:?} needs a trailing loss 1..=3"));
+                    assert!((1..=3).contains(&loss), "report {stem:?}: {secondary:?} loss outside 1..=3");
+                    assert!(allowed.insert(verdict(name), loss).is_none(), "report {stem:?}: {name:?} listed twice");
                 }
-                let votes = samples(&report, 3);
-                let consensus = votes.iter().find(|v| votes.iter().filter(|w| w == v).count() >= 2);
-                if consensus != Some(&expected) {
-                    misses.push(format!("{stem}: votes {votes:?}"));
+                budget += allowed.values().max().unwrap();
+
+                let report = fs::read_to_string(&file).unwrap();
+                let first = samples(&report, 1);
+                let drawn = match first.as_slice() {
+                    [v] if allowed.contains_key(v) => *v,
+                    _ => {
+                        let votes = samples(&report, 3);
+                        let consensus = votes.iter().copied().find(|v| votes.iter().filter(|&w| w == v).count() >= 2);
+                        match consensus.filter(|v| allowed.contains_key(v)) {
+                            Some(v) => v,
+                            None => {
+                                misses.push(format!("{stem}: votes {votes:?}"));
+                                continue;
+                            }
+                        }
+                    }
+                };
+                if allowed[&drawn] > 0 {
+                    lost.push((stem, drawn, allowed[&drawn]));
                 }
             }
+            let total: u32 = lost.iter().map(|(_, _, l)| l).sum();
+            let mut summary = format!("report loss {total}/{budget}\n");
+            for (stem, v, l) in &lost {
+                summary += &format!("  -{l} {stem}: drew {v:?}\n");
+            }
+            std::io::Write::write_all(&mut std::io::stderr(), summary.as_bytes()).unwrap(); // raw stderr escapes libtest's capture, so a passing run still shows drift
             assert!(misses.is_empty(), "misjudged reports:\n{}", misses.join("\n"));
         }
 

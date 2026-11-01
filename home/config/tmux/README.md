@@ -45,9 +45,16 @@ classified — that signal has already decayed.
 The judging prompt is the whole classifier, so it's pinned by
 `tests/reports/<claude version>/<verdict>__<desc>.md` — real closing reports, same
 drop-a-file-in-and-it's-covered deal as the pane fixtures. They pin the judge's
-consensus, not the severity max: one live call each, and a miss is retried as a
-majority of 3, which only then fails the test. Editing the
-prompt invalidates every cached verdict (they were drawn by a different judge).
+consensus, not the severity max: one live call each, and a disallowed verdict is retried as a
+majority of 3, which only then fails the test.
+
+A report that reads more than one way names its secondary verdicts with their loss 1..=3:
+`stuck+partial1+answered3__<desc>.md` takes `stuck` free, `partial` at 1, `answered` at 3,
+anything else fails. Every run prints `report loss <lost>/<budget>`, the budget being the sum of
+each case's worst loss, with a line per case that lost points, so drift shows on a green run too.
+Never put this in the `.md` body: the judge reads it verbatim.
+
+Editing the prompt invalidates every cached verdict (they were drawn by a different judge).
 
 It runs on `ask_llm::Model::Fast`; when that provider is out of quota, `ask_llm`'s
 fallback graph moves the call to the next model.
