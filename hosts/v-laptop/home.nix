@@ -28,6 +28,7 @@ in {
     secrets.openai_api_key = { mode = "0400"; };
     # NB: sops key is misspelled upstream as `deepsek_key` (single `e`); keep matching the stored name.
     secrets.deepsek_key = { mode = "0400"; };
+    secrets.deepseek_platform_token = { mode = "0400"; }; # platform.deepseek.com session, the only reader of per-day usage; read by the service_arb accounting usage.rs
     secrets.encryption_key = { mode = "0400"; };
     secrets.chrome_lazy_restore_pem = { mode = "0400"; }; # signs the lazy-restore extension, os/nixos/desktop/programs/chrome.nix
   };
@@ -66,6 +67,7 @@ in {
       # and by the openclaw gateway (DeepSeek is OpenAI-compatible; see configureOpenclaw below).
       echo "DEEPSEEK_KEY=$(cat ${config.sops.secrets.deepsek_key.path})"
       echo "DEEPSEEK_API_KEY=$(cat ${config.sops.secrets.deepsek_key.path})"
+      echo "DEEPSEEK_PLATFORM_TOKEN=$(cat ${config.sops.secrets.deepseek_platform_token.path})"
       # btc_line's ~/.config/btc_line.nix references these via { env = ... }.
       echo "ALPACA_API_KEY=$(cat ${config.sops.secrets.alpaca_api_pubkey.path})"
       echo "ALPACA_API_SECRET=$(cat ${config.sops.secrets.alpaca_api_secret.path})"
