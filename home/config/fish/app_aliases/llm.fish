@@ -2,8 +2,9 @@
 set -g utmost_importance_projects $HOME/ev_invest/trading_data $HOME/ev_invest/risk_management
 
 # --acc N | -a N selects credentials in ~/.claude-accountN; without it, default ~/.claude (master)
-# `env -u ANTHROPIC_API_KEY`: credentials.fish exports it session-wide, and its presence outranks the
-# OAuth session -- billing the Max sub as API credits and disabling claude.ai connectors.
+# `env -u`: credentials.fish exports both session-wide, and either outranks the config dir's login --
+# ANTHROPIC_API_KEY bills as API credits, CLAUDE_CODE_OAUTH_TOKEN pins every --acc to its one account
+# and lacks the scopes claude.ai connectors need.
 function claude
     set -l args
     set -l acc
@@ -26,13 +27,32 @@ function claude
     end
     if set -q acc[1]
         set -fx CLAUDE_CONFIG_DIR $HOME/.claude-account$acc
-        if not test -f $CLAUDE_CONFIG_DIR/.credentials.json
-            echo "claude: no credentials at $CLAUDE_CONFIG_DIR" >&2
+        if not test -d $CLAUDE_CONFIG_DIR
+            echo "claude: no $CLAUDE_CONFIG_DIR (mkdir it to add an account; claude asks to log in on first start)" >&2
             return 1
+        end
+        # all but auth-bound state is master's, so `-a N -c` picks up a session started under another account
+        set -l per_account '^(\.credentials\.json|\.claude\.json|backups|policy-limits\.json|remote-settings\.json|daemon|jobs)'
+        for dst in $CLAUDE_CONFIG_DIR/{*,.*}
+            set -l name (path basename -- $dst)
+            if test -L $dst; or string match -qr -- $per_account $name
+                continue
+            end
+            if test -e $HOME/.claude/$name
+                echo "claude: $dst diverged from master ~/.claude/$name; merge it there and remove it" >&2
+                return 1
+            end
+            mv -- $dst $HOME/.claude/$name; or return 1
+        end
+        for src in $HOME/.claude/{*,.*}
+            set -l name (path basename -- $src)
+            if not string match -qr -- $per_account $name; and not test -L $CLAUDE_CONFIG_DIR/$name
+                ln -s -- $src $CLAUDE_CONFIG_DIR/$name; or return 1
+            end
         end
     end
     # background.slice (CPUWeight=30): agents' builds otherwise share the tmux cgroup with interactive shells and starve them
-    systemd-run --user --scope --quiet --slice=background.slice env -u ANTHROPIC_API_KEY claude $args
+    systemd-run --user --scope --quiet --slice=background.slice env -u ANTHROPIC_API_KEY -u CLAUDE_CODE_OAUTH_TOKEN claude $args
 end
 
 function cl
