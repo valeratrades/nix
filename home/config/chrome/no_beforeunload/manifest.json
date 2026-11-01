@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "No beforeunload",
+  "version": "0.1.0",
+  "description": "Closing or leaving a page never asks \"Leave site?\".",
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_start",
+      "all_frames": true,
+      "match_origin_as_fallback": true
+    }
+  ]
+}
