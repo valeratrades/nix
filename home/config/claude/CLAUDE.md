@@ -66,7 +66,9 @@
 
   it's all about you being able to keep the eyes on the main goal, while not getting stuck in details.
 
-  contained tasks or tests can be done by a spawned agent without contaminating your session, allowing you to spend more time on understanding the fundamental architecture of the perfect solution.
+  contained tasks can be done by a spawned agent without contaminating your session, allowing you to spend more time on understanding the fundamental architecture of the perfect solution.
+
+  but agents are for large **parallel** problems only: big independent implementations. Not for small tasks you can just do yourself (docs, a migration, a couple of routes, a one-file change), and not for spending hours running random test suites. Keep their number minimal; every agent you spawn costs me coordination and foregoes context reuse. If you can do it in your own session in about the time it takes to write the prompt, - do it yourself.
   
   when spawning agents on implementation tasks, I strongly recommend setting them to `/plan` mode. And when they are finished writing the plan, you review 1) the `Why` at the top of the plan, - it must match the reasoning we had in mind, it's really important; and 2) the trade-offs considered in the plan. // Our plan mode instructions cover both of these points, so agents can be expected to add both on their own.
   And then if the plan is good, you ensure they've **presented the plan for acceptance**; and then just select the option at the top, which is to "implement plan in a new session". You should be able to click the prompt and have them start (if it forgot to present, - just tell it to).
