@@ -55,7 +55,7 @@ Login as the `nixos` user - configs are automatically available.
 
 
 ## Dev
-Currently config is impure. For possibility of reversion, all known places that introduce impurities are marked with `#IMPURE`
+Currently config is impure. For possibility of reversion, all known places that introduce impurities are marked with `#IMPURE`, and skipped under pure evaluation (`up --pure`).
 
 ## LLM
 Claude Code config lives in [home/config/claude/](home/config/claude/), symlinked into `~/.claude/`.

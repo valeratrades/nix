@@ -39,6 +39,10 @@ struct Args {
     #[arg(long)]
     skip_rebuild: bool,
 
+    /// Rebuild without `--impure`; skips what reads outside the flake (`#IMPURE` in the config)
+    #[arg(long)]
+    pure: bool,
+
     /// Only run specific tasks (comma-separated: clean,cache,nightly,shadows,redirects,rebuild)
     #[arg(long)]
     only: Option<String>,
@@ -169,16 +173,12 @@ fn main() {
             git
         };
 
-        let rebuilt = ctx.run(Command::new("sudo").args([
-            "nixos-rebuild",
-            "switch",
-            "--impure",
-            "--no-reexec",
-            "--flake",
-            &format!("{}#{}", nixos_config, hostname),
-            "--show-trace",
-            "-v",
-        ]));
+        let mut rebuild = Command::new("sudo");
+        rebuild.args(["nixos-rebuild", "switch", "--no-reexec", "--flake", &format!("{}#{}", nixos_config, hostname), "--show-trace", "-v"]);
+        if !args.pure {
+            rebuild.arg("--impure");
+        }
+        let rebuilt = ctx.run(&mut rebuild);
         if rebuilt && ctx.run(git().args(["add", "-A"])) {
             match git().args(["diff", "--cached", "--quiet"]).status().map(|s| s.code()) {
                 Ok(Some(0)) => {}

@@ -9,9 +9,9 @@ let
   # `<scope>.env.NAME` -> NAME in environment.d, so every systemd user service inherits it
   secretsEnv = lib.concatMapAttrs (scope: v: lib.mapAttrs (name: _: "${scope}/env/${name}") (v.env or { })) sopsTree;
   # a fish `set` of the same name shadows the sops value in every shell
-  credentialsFishVars = lib.concatMap
+  credentialsFishVars = lib.optionals (!lib.inPureEvalMode) (lib.concatMap
     (l: let m = builtins.match "[[:space:]]*set[[:space:]]+(-[^[:space:]]+[[:space:]]+)*([^-[:space:]][^[:space:]]*).*" l; in lib.optional (m != null) (builtins.elemAt m 1))
-    (lib.splitString "\n" (builtins.readFile "${config.home.homeDirectory}/s/g/private/credentials.fish")); #IMPURE
+    (lib.splitString "\n" (builtins.readFile "${config.home.homeDirectory}/s/g/private/credentials.fish"))); #IMPURE
   secretsEnvCollisions = lib.intersectLists (builtins.attrNames secretsEnv) credentialsFishVars;
 in {
   nix.extraOptions = "!include ${config.home.homeDirectory}/s/g/private/sops/";
