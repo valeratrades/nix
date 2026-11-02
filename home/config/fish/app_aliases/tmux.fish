@@ -210,15 +210,15 @@ function restore_sessions
 	end <$sf
 
 	set -l live
-	for s in $HOME/.claude*/sessions/*.json
+	for s in $HOME/.claude/sessions/*.json
 		test -d /proc/(jq -r .pid $s); and set -a live (jq -r .sessionId $s)
 	end
 
 	set -l done 0
 	set -l pending # pane, escaped draft, escaped rewind target; replayed once the claude there is up
-	while read -l --delimiter \t session cwd id config_dir draft rewind
-		if test -z "$config_dir"; or not string match -qr '^[0-9a-f-]{36}$' -- "$id"
-			echo "restore_sessions: malformed line in $f: '$session	$cwd	$id	$config_dir	$draft	$rewind' (want '<session_name>	<cwd>	<session_id>	<config_dir>	<draft>	<rewind>')" >&2
+	while read -l --delimiter \t session cwd id draft rewind
+		if not string match -qr '^[0-9a-f-]{36}$' -- "$id"
+			echo "restore_sessions: malformed line in $f: '$session	$cwd	$id	$draft	$rewind' (want '<session_name>	<cwd>	<session_id>	<draft>	<rewind>')" >&2
 			set failed 1
 			continue
 		end
@@ -231,17 +231,7 @@ function restore_sessions
 			set failed 1
 			continue
 		end
-		set -l acc
-		if test "$config_dir" != "$HOME/.claude"
-			set acc (string replace -r "^$HOME/\.claude-account" '' -- $config_dir)
-			if not string match -qr '^[0-9]+$' -- $acc
-				echo "restore_sessions: $id — unknown config dir $config_dir" >&2
-				set failed 1
-				continue
-			end
-			set acc --acc $acc
-		end
-		set -l cmd "cd "(string escape -- $cwd)"; and cl --resume $id $acc"
+		set -l cmd "cd "(string escape -- $cwd)"; and cl --resume $id"
 
 		if set -q _flag_dry_run
 			echo "restore_sessions: would run in $session: $cmd"

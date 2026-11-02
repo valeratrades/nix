@@ -19,6 +19,8 @@ claude-code.overrideAttrs (old: {
 		${pkgs.python3}/bin/python3 ${./patch-claude-planaccept.py} "$out/bin/.claude-unwrapped"
 		${pkgs.python3}/bin/python3 ${./patch-claude-sessionmodel.py} "$out/bin/.claude-unwrapped"
 		${pkgs.python3}/bin/python3 ${./patch-claude-linuxpaste.py} "$out/bin/.claude-unwrapped"
+		mkdir -p "$out/lib"
+		${pkgs.python3}/bin/python3 ${./patch-claude-accounts.py} "$out/bin/.claude-unwrapped" ${./claude-accounts.mjs} "$out/lib/claude-accounts.mjs"
 		${pkgs.python3}/bin/python3 ${./detach-claude-bytecode.py} "$TMPDIR/claude-unpatched" "$out/bin/.claude-unwrapped"
 		# every workspace trusted, nested repos included (they stopped inheriting trust from `/`)
 		wrapProgram "$out/bin/claude" --set CLAUDE_CODE_SANDBOXED 1

@@ -581,36 +581,32 @@ impl Ctx {
         }
     }
 
-    /// `~/.claude`, and `~/.claude-accountN` of `--acc N`
-    fn claude_dirs(&self) -> Vec<PathBuf> {
-        let entries = fs::read_dir(&self.home).unwrap_or_else(|e| panic!("{}: {e}", self.home.display()));
-        let dirs = entries.map(|entry| entry.unwrap_or_else(|e| panic!("{}: {e}", self.home.display())).path());
-        dirs.filter(|dir| dir.file_name().is_some_and(|n| n == ".claude" || n.to_string_lossy().starts_with(".claude-account"))).collect()
+    fn claude_dir(&self) -> PathBuf {
+        self.home.join(".claude")
     }
 
     /// `(cwd, pid)` per running claude; the cwd is the one it started in, which a move leaves behind
     fn live_claudes(&self) -> Vec<(String, u64)> {
         let mut live = vec![];
-        for sessions in self.claude_dirs().into_iter().map(|dir| dir.join("sessions")) {
-            let entries = match fs::read_dir(&sessions) {
-                Ok(entries) => entries,
-                Err(e) if e.kind() == io::ErrorKind::NotFound => continue, // account never ran an interactive session
-                Err(e) => panic!("{}: {e}", sessions.display()),
+        let sessions = self.claude_dir().join("sessions");
+        let entries = match fs::read_dir(&sessions) {
+            Ok(entries) => entries,
+            Err(e) if e.kind() == io::ErrorKind::NotFound => return live, // claude never ran an interactive session
+            Err(e) => panic!("{}: {e}", sessions.display()),
+        };
+        for f in entries.map(|f| f.unwrap_or_else(|e| panic!("{}: {e}", sessions.display())).path()) {
+            if f.extension().is_none_or(|e| e != "json") {
+                continue;
+            }
+            let session: Value = match fs::read_to_string(&f) {
+                Ok(raw) => serde_json::from_str(&raw).unwrap_or_else(|e| panic!("{}: {e}", f.display())),
+                Err(e) if e.kind() == io::ErrorKind::NotFound => continue, // its claude exited since listing
+                Err(e) => panic!("{}: {e}", f.display()),
             };
-            for f in entries.map(|f| f.unwrap_or_else(|e| panic!("{}: {e}", sessions.display())).path()) {
-                if f.extension().is_none_or(|e| e != "json") {
-                    continue;
-                }
-                let session: Value = match fs::read_to_string(&f) {
-                    Ok(raw) => serde_json::from_str(&raw).unwrap_or_else(|e| panic!("{}: {e}", f.display())),
-                    Err(e) if e.kind() == io::ErrorKind::NotFound => continue, // its claude exited since listing
-                    Err(e) => panic!("{}: {e}", f.display()),
-                };
-                let pid = session["pid"].as_u64().unwrap_or_else(|| panic!("{}: no pid", f.display()));
-                let cwd = session["cwd"].as_str().unwrap_or_else(|| panic!("{}: no cwd", f.display()));
-                if Path::new(&format!("/proc/{pid}")).exists() {
-                    live.push((cwd.to_owned(), pid));
-                }
+            let pid = session["pid"].as_u64().unwrap_or_else(|| panic!("{}: no pid", f.display()));
+            let cwd = session["cwd"].as_str().unwrap_or_else(|| panic!("{}: no cwd", f.display()));
+            if Path::new(&format!("/proc/{pid}")).exists() {
+                live.push((cwd.to_owned(), pid));
             }
         }
         live
@@ -622,68 +618,63 @@ impl Ctx {
         if let Some(alike) = alike_encoded(Path::new("/"), &old) {
             return self.report(true, format_args!("left claude projects of {from} in place: {} encodes alike", alike.display()));
         }
-        for dir in self.claude_dirs() {
-            let name = dir.file_name().expect("listed").to_string_lossy().into_owned();
-            let projects = dir.join("projects");
-            match fs::read_dir(&projects) {
-                Ok(entries) => {
-                    for entry in entries {
-                        let project = entry.unwrap_or_else(|e| panic!("{}: {e}", projects.display())).path();
-                        let name = project.file_name().expect("listed").to_str().expect("claude encodes to ASCII");
-                        let Some(rest) = name.strip_prefix(&old).filter(|rest| rest.is_empty() || rest.starts_with('-')) else { continue };
-                        if project.is_symlink() {
-                            continue; // an earlier move's redirect
+        let dir = self.claude_dir();
+        let projects = dir.join("projects");
+        match fs::read_dir(&projects) {
+            Ok(entries) => {
+                for entry in entries {
+                    let project = entry.unwrap_or_else(|e| panic!("{}: {e}", projects.display())).path();
+                    let name = project.file_name().expect("listed").to_str().expect("claude encodes to ASCII");
+                    let Some(rest) = name.strip_prefix(&old).filter(|rest| rest.is_empty() || rest.starts_with('-')) else { continue };
+                    if project.is_symlink() {
+                        continue; // an earlier move's redirect
+                    }
+                    let target = projects.join(format!("{new}{rest}"));
+                    assert!(target.file_name().expect("joined").len() <= 200, "{}: claude hashes names past 200 chars", target.display());
+                    match fs::symlink_metadata(&target) {
+                        Err(e) if e.kind() == io::ErrorKind::NotFound => self.relocate(&project, &target),
+                        Ok(_) if self.merge(&project, &target) => {
+                            fs::remove_dir(&project).unwrap_or_else(|e| panic!("{}: {e}", project.display()));
+                            self.redirect(&project, &target);
+                            self.report(false, format_args!("merged {} into {}", project.display(), target.display()));
                         }
-                        let target = projects.join(format!("{new}{rest}"));
-                        assert!(target.file_name().expect("joined").len() <= 200, "{}: claude hashes names past 200 chars", target.display());
-                        match fs::symlink_metadata(&target) {
-                            Err(e) if e.kind() == io::ErrorKind::NotFound => self.relocate(&project, &target),
-                            Ok(_) if self.merge(&project, &target) => {
-                                fs::remove_dir(&project).unwrap_or_else(|e| panic!("{}: {e}", project.display()));
-                                self.redirect(&project, &target);
-                                self.report(false, format_args!("merged {} into {}", project.display(), target.display()));
-                            }
-                            Ok(_) => {}
-                            Err(e) => panic!("{}: {e}", target.display()),
-                        }
+                        Ok(_) => {}
+                        Err(e) => panic!("{}: {e}", target.display()),
                     }
                 }
-                Err(e) if e.kind() == io::ErrorKind::NotFound => {}
-                Err(e) => self.report(true, format_args!("{}: {e}", projects.display())),
             }
-            self.rewrite(&dir.join("history.jsonl"), |old| {
-                old.lines()
-                    .enumerate()
-                    .map(|(i, line)| {
-                        let mut entry: Value = match serde_json::from_str(line) {
-                            Ok(entry) => entry,
-                            Err(e) => {
-                                self.report(true, format_args!("{}:{}: {e}, left as is", dir.join("history.jsonl").display(), i + 1));
-                                return format!("{line}\n");
-                            }
-                        };
-                        match entry["project"].as_str().and_then(|project| rebase(project, from, to)) {
-                            Some(project) => {
-                                entry["project"] = Value::String(project);
-                                entry.to_string() + "\n"
-                            }
-                            None => format!("{line}\n"),
-                        }
-                    })
-                    .collect()
-            });
-            let config = match name.as_str() {
-                ".claude" => self.home.join(".claude.json"),
-                _ => dir.join(".claude.json"),
-            };
-            self.rewrite(&config, |old| {
-                let mut config: Value = serde_json::from_str(old).unwrap_or_else(|e| panic!("{}: {e}", config.display()));
-                match self.rebase_json(&mut config, from, to) {
-                    true => serde_json::to_string_pretty(&config).expect("was json"),
-                    false => old.to_owned(),
-                }
-            });
+            Err(e) if e.kind() == io::ErrorKind::NotFound => {}
+            Err(e) => self.report(true, format_args!("{}: {e}", projects.display())),
         }
+        self.rewrite(&dir.join("history.jsonl"), |old| {
+            old.lines()
+                .enumerate()
+                .map(|(i, line)| {
+                    let mut entry: Value = match serde_json::from_str(line) {
+                        Ok(entry) => entry,
+                        Err(e) => {
+                            self.report(true, format_args!("{}:{}: {e}, left as is", dir.join("history.jsonl").display(), i + 1));
+                            return format!("{line}\n");
+                        }
+                    };
+                    match entry["project"].as_str().and_then(|project| rebase(project, from, to)) {
+                        Some(project) => {
+                            entry["project"] = Value::String(project);
+                            entry.to_string() + "\n"
+                        }
+                        None => format!("{line}\n"),
+                    }
+                })
+                .collect()
+        });
+        let config = self.home.join(".claude.json");
+        self.rewrite(&config, |old| {
+            let mut config: Value = serde_json::from_str(old).unwrap_or_else(|e| panic!("{}: {e}", config.display()));
+            match self.rebase_json(&mut config, from, to) {
+                true => serde_json::to_string_pretty(&config).expect("was json"),
+                false => old.to_owned(),
+            }
+        });
     }
 
     /// Re-roots every string and key under `from`; a key already present at its new path wins over the old one.
@@ -794,7 +785,7 @@ impl Ctx {
     fn sweep_redirects(&self) {
         let hops = &self.redirects;
         let live = self.live_claudes();
-        let claude_projects: Vec<PathBuf> = self.claude_dirs().into_iter().map(|dir| dir.join("projects")).collect();
+        let claude_projects = self.claude_dir().join("projects");
         println!("\x1b[34mSweeping redirects in {} unfollowed for {} days\x1b[0m", hops.display(), self.cfg.stale_days(self.cfg.stale_multipliers.redirects));
         for entry in WalkDir::new(hops).min_depth(1) {
             let entry = match entry {
@@ -818,7 +809,7 @@ impl Ctx {
                 };
                 live.iter().filter(|(cwd, _)| held(cwd)).map(|(cwd, pid)| format!("claude {pid} in {cwd}")).collect()
             };
-            if front.parent().is_some_and(|p| claude_projects.iter().any(|projects| projects == p)) {
+            if front.parent() == Some(claude_projects.as_path()) {
                 match holders(true).as_slice() {
                     [] => {
                         self.remove(&front, "redirect no live claude writes through");

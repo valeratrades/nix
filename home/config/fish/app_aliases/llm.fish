@@ -1,61 +1,67 @@
 # dirs where fable is forced and opus is refused; matches the dir itself and anything under it
 set -g utmost_importance_projects $HOME/ev_invest/trading_data $HOME/ev_invest/risk_management
 
-# --acc N | -a N selects credentials in ~/.claude-accountN; without it, default ~/.claude (master)
-# `env -u`: credentials.fish exports both session-wide, and either outranks the config dir's login --
-# ANTHROPIC_API_KEY bills as API credits, CLAUDE_CODE_OAUTH_TOKEN pins every --acc to its one account
+# Accounts are logins only, in ~/.claude/accounts/N; all else is the one ~/.claude. Every claude runs on the one
+# `current` links, following `cl rotate-acc` and the rate-limit menu in place (hosts/v-laptop/claude-accounts.mjs).
+# `env -u`: credentials.fish exports both session-wide, and either outranks the account's login --
+# ANTHROPIC_API_KEY bills as API credits, CLAUDE_CODE_OAUTH_TOKEN pins every claude to its one account
 # and lacks the scopes claude.ai connectors need.
 function claude
-    set -l args
-    set -l acc
-    set -l i 1
-    while [ $i -le (count $argv) ]
-        if contains -- $argv[$i] --acc -a
-            set i (math $i + 1)
-            set acc $argv[$i]
-            if [ -z "$acc" ]
-                echo "claude: --acc requires an account number" >&2
-                return 1
-            end
-        else
-            set -a args $argv[$i]
-        end
-        set i (math $i + 1)
-    end
     if [ "$TERM_PROGRAM" = ghostty ]; or begin; set -q TMUX; and [ (tmux display -p '#{client_termname}') = xterm-ghostty ]; end
         echo "claude: ghostty eats alt+g / alt+shift+g (its scroll_to_top/bottom), so claude's scroll top/bottom won't fire" >&2
     end
-    if set -q acc[1]
-        set -fx CLAUDE_CONFIG_DIR $HOME/.claude-account$acc
-        if not test -d $CLAUDE_CONFIG_DIR
-            echo "claude: no $CLAUDE_CONFIG_DIR (mkdir it to add an account; claude asks to log in on first start)" >&2
-            return 1
-        end
-        # all but auth-bound state is master's, so `-a N -c` picks up a session started under another account
-        set -l per_account '^(\.credentials\.json|\.claude\.json|backups|policy-limits\.json|remote-settings\.json|daemon|jobs)'
-        for dst in $CLAUDE_CONFIG_DIR/{*,.*}
-            set -l name (path basename -- $dst)
-            if test -L $dst; or string match -qr -- $per_account $name
-                continue
-            end
-            if test -e $HOME/.claude/$name
-                echo "claude: $dst diverged from master ~/.claude/$name; merge it there and remove it" >&2
-                return 1
-            end
-            mv -- $dst $HOME/.claude/$name; or return 1
-        end
-        for src in $HOME/.claude/{*,.*}
-            set -l name (path basename -- $src)
-            if not string match -qr -- $per_account $name; and not test -L $CLAUDE_CONFIG_DIR/$name
-                ln -s -- $src $CLAUDE_CONFIG_DIR/$name; or return 1
-            end
-        end
+    set -fx CLAUDE_SECURESTORAGE_CONFIG_DIR (path resolve $HOME/.claude/accounts/current)
+    if not test -d $CLAUDE_SECURESTORAGE_CONFIG_DIR
+        echo "claude: ~/.claude/accounts/current names no account dir (`cl rotate-acc` sets it)" >&2
+        return 1
     end
     # background.slice (CPUWeight=30): agents' builds otherwise share the tmux cgroup with interactive shells and starve them
-    systemd-run --user --scope --quiet --slice=background.slice env -u ANTHROPIC_API_KEY -u CLAUDE_CODE_OAUTH_TOKEN claude $args
+    systemd-run --user --scope --quiet --slice=background.slice env -u ANTHROPIC_API_KEY -u CLAUDE_CODE_OAUTH_TOKEN claude $argv
 end
 
 function cl
+    if [ "$argv[1]" = rotate-acc ]
+        set -l root $HOME/.claude/accounts
+        set -l acc $argv[2]
+        if [ -z "$acc" ]
+            set -l rows
+            for d in $root/*
+                set -l name (path basename -- $d)
+                if [ $name = current ]; or [ (path resolve -- $d) = (path resolve -- $root/current) ]
+                    continue
+                end
+                set -l label "not logged in"
+                if test -f $d/meta.json
+                    # same reading as the rate-limit menu's entries
+                    set label (jq -r '[.email,
+                        ([["5h", .usage.five_hour], ["week", .usage.seven_day]] | map(select(.[1]) | .[1] as $w
+                            | "\(.[0]) \(if $w.resets_at and ($w.resets_at[0:19] + "Z" | fromdateiso8601) <= now then 100 else 100 - $w.utilization | round end)% left")
+                            | join(" · ")),
+                        "as of \(.fetchedAt / 1000 | localtime | strftime("%H:%M"))"] | join(" · ")' $d/meta.json)
+                    or return 1
+                else if test -f $d/.credentials.json
+                    set label "usage unknown"
+                end
+                set -a rows "$name	$label"
+            end
+            if not set -q rows[1]
+                echo "cl rotate-acc: no account besides the current one in $root" >&2
+                return 1
+            end
+            set acc (printf '%s\n' $rows | fzf --delimiter \t --prompt 'account> ' | string split -f1 \t)
+            or return 1
+        end
+        if not test -d $root/$acc
+            echo "cl rotate-acc: no $root/$acc (mkdir it to add an account)" >&2
+            return 1
+        end
+        ln -s $acc $root/current.$fish_pid; and mv -T $root/current.$fish_pid $root/current
+        or return 1
+        if not test -f $root/$acc/.credentials.json
+            echo "cl rotate-acc: account $acc has no login yet: running claudes stay where they are; /login in a new one adds it" >&2
+        end
+        return
+    end
     if [ "$argv[1]" = review ]
         # `-f` here selects by hand rather than picking fable; `cl review -m claude-fable-5-1` still works
         set -l pick_args

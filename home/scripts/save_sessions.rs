@@ -22,7 +22,7 @@ struct Args {
     dry_run: bool,
 }
 
-/// `tmux_sessions.tsv`: `session_name\tsession_path` per tmux session; `claude_restore.tsv`: `session_name\tcwd\tsession_id\tconfig_dir\tdraft\trewind` per live tmux-hosted claude, `draft` being its unsubmitted input and `rewind` the prompt it sits rewound to, both with `\\`, `\n`, `\t` escaped.
+/// `tmux_sessions.tsv`: `session_name\tsession_path` per tmux session; `claude_restore.tsv`: `session_name\tcwd\tsession_id\tdraft\trewind` per live tmux-hosted claude, `draft` being its unsubmitted input and `rewind` the prompt it sits rewound to, both with `\\`, `\n`, `\t` escaped.
 /// Both consumed by fish's `restore_sessions` on boot.
 fn main() {
     let dry_run = Args::parse().dry_run;
@@ -77,68 +77,63 @@ fn main() {
         })
         .collect();
 
-    // claude keeps `<config_dir>/sessions/<pid>.json` for each live process; `--acc N` sessions live under ~/.claude-accountN
+    // claude keeps `~/.claude/sessions/<pid>.json` for each live process
     let mut content = String::new();
-    for entry in std::fs::read_dir(&home).expect("HOME unreadable") {
-        let config_dir = entry.expect("HOME entry unreadable").path();
-        let name = config_dir.file_name().unwrap().to_string_lossy().into_owned();
-        if name != ".claude" && !name.starts_with(".claude-account") {
+    let config_dir = Path::new(&home).join(".claude");
+    let sessions: Vec<_> = match std::fs::read_dir(config_dir.join("sessions")) {
+        Ok(sessions) => sessions.map(|f| f.expect("sessions entry unreadable").path()).collect(),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => vec![], // claude never ran an interactive session
+        Err(e) => panic!("{}/sessions: {e}", config_dir.display()),
+    };
+    for f in sessions {
+        if f.extension().is_none_or(|e| e != "json") {
             continue;
         }
-        let Ok(sessions) = std::fs::read_dir(config_dir.join("sessions")) else {
-            continue; // account never ran an interactive session
-        };
-        for f in sessions {
-            let f = f.expect("sessions entry unreadable").path();
-            if f.extension().is_none_or(|e| e != "json") {
-                continue;
-            }
-            let raw = std::fs::read_to_string(&f).expect("session file unreadable");
-            let j: serde_json::Value = serde_json::from_str(&raw).unwrap_or_else(|e| panic!("{}: {e}", f.display()));
-            let pid = j["pid"].as_u64().unwrap_or_else(|| panic!("{}: no pid", f.display()));
-            if !std::path::Path::new(&format!("/proc/{pid}")).exists() {
-                continue; // left behind by a crashed claude
-            }
-            let Some(tmux) = j["tmux"].as_str() else {
-                continue; // not launched inside tmux, nothing to rebuild it into
-            };
-            let pane_id = tmux.rsplit_once('.').unwrap_or_else(|| panic!("{}: unexpected tmux field '{tmux}'", f.display())).1;
-            let Some((_, session_name, width)) = panes.iter().find(|(id, ..)| id == pane_id) else {
-                continue; // claude on another tmux server
-            };
-            let cwd = j["cwd"].as_str().unwrap_or_else(|| panic!("{}: no cwd", f.display()));
-            let slug: String = cwd.chars().map(|c| if c.is_ascii_alphanumeric() { c } else { '-' }).collect(); // how claude names the project dir holding its transcript
-            // claude records a physical path, so any symlink in it is a `maintenance mv` redirect left since
-            let cwd = match std::fs::canonicalize(cwd) {
-                Ok(cwd) => cwd.into_os_string().into_string().expect("cwd is UTF-8"),
-                Err(e) if e.kind() == std::io::ErrorKind::NotFound => cwd.to_owned(), // deleted: restore reports it stale
-                Err(e) => panic!("{cwd}: {e}"),
-            };
-            let id = j["sessionId"].as_str().unwrap_or_else(|| panic!("{}: no sessionId", f.display()));
-            let out = Command::new("tmux").args(["capture-pane", "-p", "-t", pane_id]).output().expect("tmux unreachable");
-            assert!(out.status.success(), "capture-pane -t {pane_id} failed: {}", String::from_utf8_lossy(&out.stderr));
-            let screen = String::from_utf8_lossy(&out.stdout);
-            let rows: Vec<&str> = screen.lines().map(|r| r.trim_end_matches(' ')).collect();
-            let (draft, rewind) = match (1..rows.len()).rev().find(|&i| border(rows[i - 1]) && rows[i].starts_with("❯\u{a0}")) {
-                Some(top) => {
-                    let rewind = rewind(&rows, top, &config_dir.join("projects").join(slug).join(format!("{id}.jsonl"))).unwrap_or_else(|e| {
-                        println!("{session_name} ({pane_id}): {e}, so whether it sits rewound is not recorded");
-                        None // restores onto the transcript's end, as before rewinds were tracked
-                    });
-                    let draft = draft(&rows, top, *width).unwrap_or_else(|| {
-                        println!("{session_name} ({pane_id}): prompt box runs off screen, its draft is not recorded");
-                        String::new() // its bottom border is out of view
-                    });
-                    (draft, rewind.unwrap_or_default())
-                }
-                None => {
-                    println!("{session_name} ({pane_id}): no prompt box on screen, its draft and rewind are not recorded");
-                    (String::new(), String::new()) // a dialog covers the box; nothing to read
-                }
-            };
-            let esc = |s: String| s.replace('\\', "\\\\").replace('\n', "\\n").replace('\t', "\\t");
-            content.push_str(&format!("{session_name}\t{cwd}\t{id}\t{}\t{}\t{}\n", config_dir.display(), esc(draft), esc(rewind)));
+        let raw = std::fs::read_to_string(&f).expect("session file unreadable");
+        let j: serde_json::Value = serde_json::from_str(&raw).unwrap_or_else(|e| panic!("{}: {e}", f.display()));
+        let pid = j["pid"].as_u64().unwrap_or_else(|| panic!("{}: no pid", f.display()));
+        if !std::path::Path::new(&format!("/proc/{pid}")).exists() {
+            continue; // left behind by a crashed claude
         }
+        let Some(tmux) = j["tmux"].as_str() else {
+            continue; // not launched inside tmux, nothing to rebuild it into
+        };
+        let pane_id = tmux.rsplit_once('.').unwrap_or_else(|| panic!("{}: unexpected tmux field '{tmux}'", f.display())).1;
+        let Some((_, session_name, width)) = panes.iter().find(|(id, ..)| id == pane_id) else {
+            continue; // claude on another tmux server
+        };
+        let cwd = j["cwd"].as_str().unwrap_or_else(|| panic!("{}: no cwd", f.display()));
+        let slug: String = cwd.chars().map(|c| if c.is_ascii_alphanumeric() { c } else { '-' }).collect(); // how claude names the project dir holding its transcript
+        // claude records a physical path, so any symlink in it is a `maintenance mv` redirect left since
+        let cwd = match std::fs::canonicalize(cwd) {
+            Ok(cwd) => cwd.into_os_string().into_string().expect("cwd is UTF-8"),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => cwd.to_owned(), // deleted: restore reports it stale
+            Err(e) => panic!("{cwd}: {e}"),
+        };
+        let id = j["sessionId"].as_str().unwrap_or_else(|| panic!("{}: no sessionId", f.display()));
+        let out = Command::new("tmux").args(["capture-pane", "-p", "-t", pane_id]).output().expect("tmux unreachable");
+        assert!(out.status.success(), "capture-pane -t {pane_id} failed: {}", String::from_utf8_lossy(&out.stderr));
+        let screen = String::from_utf8_lossy(&out.stdout);
+        let rows: Vec<&str> = screen.lines().map(|r| r.trim_end_matches(' ')).collect();
+        let (draft, rewind) = match (1..rows.len()).rev().find(|&i| border(rows[i - 1]) && rows[i].starts_with("❯\u{a0}")) {
+            Some(top) => {
+                let rewind = rewind(&rows, top, &config_dir.join("projects").join(slug).join(format!("{id}.jsonl"))).unwrap_or_else(|e| {
+                    println!("{session_name} ({pane_id}): {e}, so whether it sits rewound is not recorded");
+                    None // restores onto the transcript's end, as before rewinds were tracked
+                });
+                let draft = draft(&rows, top, *width).unwrap_or_else(|| {
+                    println!("{session_name} ({pane_id}): prompt box runs off screen, its draft is not recorded");
+                    String::new() // its bottom border is out of view
+                });
+                (draft, rewind.unwrap_or_default())
+            }
+            None => {
+                println!("{session_name} ({pane_id}): no prompt box on screen, its draft and rewind are not recorded");
+                (String::new(), String::new()) // a dialog covers the box; nothing to read
+            }
+        };
+        let esc = |s: String| s.replace('\\', "\\\\").replace('\n', "\\n").replace('\t', "\\t");
+        content.push_str(&format!("{session_name}\t{cwd}\t{id}\t{}\t{}\n", esc(draft), esc(rewind)));
     }
 
     let n = content.lines().count();

@@ -285,14 +285,11 @@ let
 
 		echo "$INSTALLED" > "$PLUGINS_DIR/installed_plugins.json"
 
-		[ -f "$HOME/.claude.json" ] || echo '{}' > "$HOME/.claude.json"
-		# accounts from `claude --acc N` (fish/app_aliases/llm.fish) each own a .claude.json, as it carries the login identity
-		for CLAUDE_JSON in "$HOME/.claude.json" "$HOME"/.claude-account*/.claude.json; do
-			[ -f "$CLAUDE_JSON" ] || continue # glob matched nothing: no secondary accounts
-			${pkgs.jq}/bin/jq --slurpfile m ${(pkgs.formats.json { }).generate "claude-mcp-servers.json" mcpServers} \
-				'.mcpServers = ((.mcpServers // {}) + $m[0])' "$CLAUDE_JSON" > "$CLAUDE_JSON.tmp"
-			mv "$CLAUDE_JSON.tmp" "$CLAUDE_JSON"
-		done
+		CLAUDE_JSON="$HOME/.claude.json"
+		[ -f "$CLAUDE_JSON" ] || echo '{}' > "$CLAUDE_JSON"
+		${pkgs.jq}/bin/jq --slurpfile m ${(pkgs.formats.json { }).generate "claude-mcp-servers.json" mcpServers} \
+			'.mcpServers = ((.mcpServers // {}) + $m[0])' "$CLAUDE_JSON" > "$CLAUDE_JSON.tmp"
+		mv "$CLAUDE_JSON.tmp" "$CLAUDE_JSON"
 		echo "Claude plugins synced."
 	'';
 in
