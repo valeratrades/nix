@@ -56,7 +56,7 @@ model_list:
       api_key: os.environ/ANTHROPIC_API_KEY
 
   # -- OpenAI, per-token ----------------------------------------------------------------------
-  - model_name: token-6.1-sol
+  - model_name: token-sol
     litellm_params:
       model: openai/gpt-6.1-sol
       api_key: os.environ/OPENAI_API_KEY
@@ -64,7 +64,7 @@ model_list:
       mode: responses
       supports_tool_choice: true
 
-  - model_name: token-6.1-terra
+  - model_name: token-terra
     litellm_params:
       model: openai/gpt-6.1-terra
       api_key: os.environ/OPENAI_API_KEY
@@ -72,15 +72,7 @@ model_list:
       mode: responses
       supports_tool_choice: true
 
-  - model_name: token-6-sol
-    litellm_params:
-      model: openai/gpt-6-sol
-      api_key: os.environ/OPENAI_API_KEY
-    model_info:
-      mode: responses
-      supports_tool_choice: true
-
-  - model_name: token-6-luna
+  - model_name: token-luna
     litellm_params:
       model: openai/gpt-6-luna
       api_key: os.environ/OPENAI_API_KEY
@@ -88,33 +80,9 @@ model_list:
       mode: responses
       supports_tool_choice: true
 
-  - model_name: token-6-astra
+  - model_name: token-astra
     litellm_params:
       model: openai/gpt-6-astra
-      api_key: os.environ/OPENAI_API_KEY
-    model_info:
-      mode: responses
-      supports_tool_choice: true
-
-  - model_name: token-sol
-    litellm_params:
-      model: openai/gpt-5.6-sol
-      api_key: os.environ/OPENAI_API_KEY
-    model_info:
-      mode: responses
-      supports_tool_choice: true
-
-  - model_name: token-terra
-    litellm_params:
-      model: openai/gpt-5.6-terra
-      api_key: os.environ/OPENAI_API_KEY
-    model_info:
-      mode: responses
-      supports_tool_choice: true
-
-  - model_name: token-luna
-    litellm_params:
-      model: openai/gpt-5.6-luna
       api_key: os.environ/OPENAI_API_KEY
     model_info:
       mode: responses
@@ -129,7 +97,7 @@ model_list:
       supports_tool_choice: true
 
   # -- OpenAI, ChatGPT subscription -----------------------------------------------------------
-  - model_name: sub-6.1-sol
+  - model_name: sub-sol
     litellm_params:
       model: chatgpt/gpt-6.1-sol
       allowed_openai_params: [context_management]
@@ -137,7 +105,7 @@ model_list:
       mode: responses
       supports_tool_choice: true
 
-  - model_name: sub-6.1-terra
+  - model_name: sub-terra
     litellm_params:
       model: chatgpt/gpt-6.1-terra
       allowed_openai_params: [context_management]
@@ -145,15 +113,7 @@ model_list:
       mode: responses
       supports_tool_choice: true
 
-  - model_name: sub-6-sol
-    litellm_params:
-      model: chatgpt/gpt-6-sol
-      allowed_openai_params: [context_management]
-    model_info:
-      mode: responses
-      supports_tool_choice: true
-
-  - model_name: sub-6-luna
+  - model_name: sub-luna
     litellm_params:
       model: chatgpt/gpt-6-luna
       allowed_openai_params: [context_management]
@@ -161,33 +121,9 @@ model_list:
       mode: responses
       supports_tool_choice: true
 
-  - model_name: sub-6-astra
+  - model_name: sub-astra
     litellm_params:
       model: chatgpt/gpt-6-astra
-      allowed_openai_params: [context_management]
-    model_info:
-      mode: responses
-      supports_tool_choice: true
-
-  - model_name: sub-sol
-    litellm_params:
-      model: chatgpt/gpt-5.6-sol
-      allowed_openai_params: [context_management]
-    model_info:
-      mode: responses
-      supports_tool_choice: true
-
-  - model_name: sub-terra
-    litellm_params:
-      model: chatgpt/gpt-5.6-terra
-      allowed_openai_params: [context_management]
-    model_info:
-      mode: responses
-      supports_tool_choice: true
-
-  - model_name: sub-luna
-    litellm_params:
-      model: chatgpt/gpt-5.6-luna
       allowed_openai_params: [context_management]
     model_info:
       mode: responses
