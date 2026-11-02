@@ -11,6 +11,10 @@ class ClampMaxTokens(CustomLogger):
     async def async_pre_call_hook(self, user_api_key_dict, cache, data, call_type):
         if data.get("max_tokens", OPENAI_MIN_OUTPUT_TOKENS) < OPENAI_MIN_OUTPUT_TOKENS:
             data["max_tokens"] = OPENAI_MIN_OUTPUT_TOKENS
+        # mixed.yaml `sub-*` (chatgpt/): litellm 1.83.7 lifts only a str system prompt into
+        # `instructions`; a block list stays an input item, which the Codex backend 400s on.
+        if data.get("model", "").startswith("sub-") and isinstance(data.get("system"), list):
+            data["system"] = "\n".join(b["text"] for b in data["system"] if b.get("type") == "text")
         return data
 
 

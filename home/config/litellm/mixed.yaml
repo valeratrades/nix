@@ -16,6 +16,12 @@
 #
 # See openai.yaml for why the gpt-5.6 entries need mode/supports_tool_choice spelled out.
 #
+# `sub-*` groups bill the ChatGPT subscription (litellm's chatgpt/ provider, Codex OAuth), not
+# OPENAI_API_KEY. Enumerated from chatgpt.com/backend-api/codex/models; tokens live in
+# $CHATGPT_TOKEN_DIR, set by `clm`. `allowed_openai_params` only gets Claude Code's
+# `context_management` past litellm's param check; the chatgpt transform then strips it, as the
+# Codex backend has no equivalent -- so context editing is a no-op on these groups.
+#
 # Known defect, litellm 1.83.7, OpenAI groups only: translating Anthropic tool_choice to the
 # Responses API, the string-valued modes get wrapped in an object -- `{"type":"auto"}` and
 # `{"type":"required"}` -- where the API wants a bare string, and 400s. Omitted tool_choice and
@@ -83,6 +89,71 @@ model_list:
     litellm_params:
       model: openai/gpt-5.5-pro
       api_key: os.environ/OPENAI_API_KEY
+    model_info:
+      mode: responses
+      supports_tool_choice: true
+
+  # -- OpenAI, ChatGPT subscription -----------------------------------------------------------
+  - model_name: sub-6.1-sol
+    litellm_params:
+      model: chatgpt/gpt-6.1-sol
+      allowed_openai_params: [context_management]
+    model_info:
+      mode: responses
+      supports_tool_choice: true
+
+  - model_name: sub-6.1-terra
+    litellm_params:
+      model: chatgpt/gpt-6.1-terra
+      allowed_openai_params: [context_management]
+    model_info:
+      mode: responses
+      supports_tool_choice: true
+
+  - model_name: sub-6-sol
+    litellm_params:
+      model: chatgpt/gpt-6-sol
+      allowed_openai_params: [context_management]
+    model_info:
+      mode: responses
+      supports_tool_choice: true
+
+  - model_name: sub-6-luna
+    litellm_params:
+      model: chatgpt/gpt-6-luna
+      allowed_openai_params: [context_management]
+    model_info:
+      mode: responses
+      supports_tool_choice: true
+
+  - model_name: sub-6-astra
+    litellm_params:
+      model: chatgpt/gpt-6-astra
+      allowed_openai_params: [context_management]
+    model_info:
+      mode: responses
+      supports_tool_choice: true
+
+  - model_name: sub-5.6-sol
+    litellm_params:
+      model: chatgpt/gpt-5.6-sol
+      allowed_openai_params: [context_management]
+    model_info:
+      mode: responses
+      supports_tool_choice: true
+
+  - model_name: sub-5.6-terra
+    litellm_params:
+      model: chatgpt/gpt-5.6-terra
+      allowed_openai_params: [context_management]
+    model_info:
+      mode: responses
+      supports_tool_choice: true
+
+  - model_name: sub-5.6-luna
+    litellm_params:
+      model: chatgpt/gpt-5.6-luna
+      allowed_openai_params: [context_management]
     model_info:
       mode: responses
       supports_tool_choice: true

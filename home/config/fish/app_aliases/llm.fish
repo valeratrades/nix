@@ -190,7 +190,8 @@ function clm
     end
     set -l health "http://127.0.0.1:$LITELLM_MIXED_PORT/health/liveliness"
     if not curl -sf -m 2 $health >/dev/null 2>&1
-        litellm --config $NIXOS_CONFIG/home/config/litellm/mixed.yaml --port $LITELLM_MIXED_PORT >/tmp/litellm-mixed.log 2>&1 &
+        # chatgpt/ groups' OAuth tokens; litellm's default dir is ~/.config/litellm, which is this repo
+        CHATGPT_TOKEN_DIR=$HOME/.local/state/litellm/chatgpt litellm --config $NIXOS_CONFIG/home/config/litellm/mixed.yaml --port $LITELLM_MIXED_PORT >/tmp/litellm-mixed.log 2>&1 &
         disown
         for i in (seq 40)
             curl -sf -m 1 $health >/dev/null 2>&1; and break
@@ -203,7 +204,7 @@ function clm
     end
 
     # These three pick the defaults only; mixed.yaml registers more (sonnet, fable, haiku, sol,
-    # pro), each reachable as `clm -m <group>`.
+    # pro, and the ChatGPT-subscription `*-sub` groups), each reachable as `clm -m <group>`.
     set -lx ANTHROPIC_BASE_URL "http://127.0.0.1:$LITELLM_MIXED_PORT"
     set -lx ANTHROPIC_AUTH_TOKEN 'local'
     set -lx ANTHROPIC_MODEL 'opus'
