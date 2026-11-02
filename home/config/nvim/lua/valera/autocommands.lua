@@ -1,65 +1,131 @@
--- Track closed tabs for reopen with Ctrl+Shift+T
+-- Ctrl+Shift+T: reopen the last closed window in its old spot, or the whole tab if the tab is what got closed
 do
-	local tab_buffers = {}    -- tabnr -> snapshot before leave
-	local closed_tabs = {}    -- stack of {wins, cwd}
+	local closed = {} -- stack of {tab?, wins = old id -> snapshot, layout, sizes, cwd, focus}; no `tab` means a closed tab
+	local moved = {} -- old win id -> window reopened in its place, so older snapshots still resolve
 
-	vim.api.nvim_create_autocmd("TabLeave", {
-		callback = function()
-			local tabnr = vim.api.nvim_get_current_tabpage()
-			local wins = vim.api.nvim_tabpage_list_wins(tabnr)
-			local current_win = vim.api.nvim_get_current_win()
-			local snapshots = {}
-			for _, win in ipairs(wins) do
-				local buf = vim.api.nvim_win_get_buf(win)
-				local name = vim.api.nvim_buf_get_name(buf)
-				if name ~= "" and vim.bo[buf].buftype == "" then
-					snapshots[#snapshots + 1] = {
-						path = name,
-						cursor = vim.api.nvim_win_get_cursor(win),
-						focused = win == current_win,
-					}
-				end
+	local function live(id, tab)
+		while moved[id] do id = moved[id] end
+		if vim.api.nvim_win_is_valid(id) and vim.api.nvim_win_get_tabpage(id) == tab then return id end
+	end
+	local function restorable(s)
+		return vim.api.nvim_buf_is_valid(s.buf) or (s.path ~= "" and s.buftype ~= "terminal")
+	end
+	local reopenable_buftypes = { [""] = true, acwrite = true, help = true, terminal = true } -- the rest are plugin UI
+
+	vim.api.nvim_create_autocmd("WinClosed", {
+		callback = function(args)
+			local win = tonumber(args.match)
+			local buf = vim.api.nvim_win_get_buf(win)
+			if vim.api.nvim_win_get_config(win).relative ~= "" or not reopenable_buftypes[vim.bo[buf].buftype] then return end
+			local tab = vim.api.nvim_win_get_tabpage(win)
+			local tabnr = vim.api.nvim_tabpage_get_number(tab)
+			local sizes = {}
+			for _, w in ipairs(vim.api.nvim_tabpage_list_wins(tab)) do
+				sizes[w] = { vim.api.nvim_win_get_width(w), vim.api.nvim_win_get_height(w) }
 			end
-			tab_buffers[tabnr] = { wins = snapshots, cwd = vim.fn.getcwd(-1, vim.fn.tabpagenr()) }
+			closed[#closed + 1] = {
+				tab = tab,
+				wins = { [win] = {
+					buf = buf,
+					path = vim.api.nvim_buf_get_name(buf),
+					buftype = vim.bo[buf].buftype,
+					listed = vim.bo[buf].buflisted,
+					view = vim.api.nvim_win_call(win, vim.fn.winsaveview),
+				} },
+				layout = vim.fn.winlayout(tabnr),
+				sizes = sizes,
+				cwd = vim.fn.getcwd(-1, tabnr),
+				focus = win,
+				tab_focus = vim.api.nvim_tabpage_get_win(tab),
+			}
 		end,
-		desc = "Snapshot tab buffers before leaving",
+		desc = "Snapshot closing window for reopen",
 	})
 
 	vim.api.nvim_create_autocmd("TabClosed", {
-		callback = function(args)
-			local tabnr = tonumber(args.file)
-			local saved = tab_buffers[tabnr]
-			if saved and #saved.wins > 0 then
-				closed_tabs[#closed_tabs + 1] = saved
+		callback = function()
+			local wins, first = {}, nil
+			while closed[#closed] and closed[#closed].tab and not vim.api.nvim_tabpage_is_valid(closed[#closed].tab) do
+				first = table.remove(closed)
+				for id, s in pairs(first.wins) do wins[id] = s end
 			end
-			tab_buffers[tabnr] = nil
+			if not first then return end
+			closed[#closed + 1] = { wins = wins, layout = first.layout, sizes = first.sizes, cwd = first.cwd, focus = first.tab_focus }
 		end,
-		desc = "Push closed tab buffers to reopen stack",
+		desc = "Fold the closed tab's windows into one reopen entry",
 	})
 
-	function ReopenLastClosedTab()
-		if #closed_tabs == 0 then
-			vim.notify("No closed tabs to reopen", vim.log.levels.INFO)
-			return
+	function ReopenLastClosed()
+		local e = table.remove(closed)
+		if not e then return vim.notify("Nothing closed to reopen", vim.log.levels.INFO) end
+		if not vim.iter(vim.tbl_values(e.wins)):any(restorable) then
+			return vim.notify("Buffers of the last closed " .. (e.tab and "window" or "tab") .. " are gone", vim.log.levels.WARN)
 		end
-		local entry = table.remove(closed_tabs)
-		vim.cmd("tabnew")
-		if entry.cwd then
-			vim.cmd("tcd " .. vim.fn.fnameescape(entry.cwd))
+
+		local spare
+		if e.tab then
+			assert(vim.api.nvim_tabpage_is_valid(e.tab), "closing a tab folds its windows into a tab entry")
+			vim.api.nvim_set_current_tabpage(e.tab)
+		else
+			vim.cmd.tabnew()
+			vim.cmd.tcd(vim.fn.fnameescape(e.cwd))
+			vim.bo.bufhidden = "wipe"
+			spare = vim.api.nvim_get_current_win()
 		end
-		local focus_win = nil
-		local first = true
-		for _, w in ipairs(entry.wins) do
-			if first then
-				vim.cmd("edit " .. vim.fn.fnameescape(w.path))
-				first = false
-			else
-				vim.cmd("vsplit " .. vim.fn.fnameescape(w.path))
+		local tab = vim.api.nvim_get_current_tabpage()
+
+		local reopened = {}
+		local function place(id)
+			local s = e.wins[id]
+			if not s then return live(id, tab) end
+			if not restorable(s) then return end
+			local buf = vim.api.nvim_buf_is_valid(s.buf) and s.buf or vim.fn.bufadd(s.path)
+			local w = spare or vim.api.nvim_open_win(buf, false, { split = "below", win = -1 })
+			spare = nil
+			vim.api.nvim_win_set_buf(w, buf)
+			vim.bo[buf].buflisted = s.listed
+			moved[id] = w
+			reopened[w] = s
+			return w
+		end
+		local function prune(node)
+			if node[1] == "leaf" then
+				local w = place(node[2])
+				return w and { "leaf", w }
 			end
-			vim.api.nvim_win_set_cursor(0, w.cursor)
-			if w.focused then focus_win = vim.api.nvim_get_current_win() end
+			local kids = vim.iter(node[2]):map(prune):totable()
+			if #kids <= 1 then return kids[1] end
+			return { node[1], kids }
 		end
-		if focus_win then vim.api.nvim_set_current_win(focus_win) end
+		local function first(node)
+			while node[1] ~= "leaf" do node = node[2][1] end
+			return node[2]
+		end
+		-- kids are laid out as single windows before recursing, so each split lands in the intended container
+		local function arrange(node)
+			if node[1] == "leaf" then return end
+			for i = 2, #node[2] do
+				assert(vim.fn.win_splitmove(first(node[2][i]), first(node[2][i - 1]), { vertical = node[1] == "row", rightbelow = true }) == 0)
+			end
+			vim.iter(node[2]):each(arrange)
+		end
+		arrange(prune(e.layout))
+		assert(not spare, "at least one window is restorable")
+
+		for _ = 1, 2 do -- each resize shifts its neighbours, as with winrestcmd()
+			for id, size in pairs(e.sizes) do
+				local w = live(id, tab)
+				if w then
+					vim.api.nvim_win_set_width(w, size[1])
+					vim.api.nvim_win_set_height(w, size[2])
+				end
+			end
+		end
+		for w, s in pairs(reopened) do
+			vim.api.nvim_win_call(w, function() vim.fn.winrestview(s.view) end)
+		end
+		local focus = live(e.focus, tab)
+		if focus then vim.api.nvim_set_current_win(focus) end
 	end
 end
 
