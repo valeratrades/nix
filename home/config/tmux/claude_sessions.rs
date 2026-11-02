@@ -4,7 +4,7 @@
 edition = "2024"
 
 [dependencies]
-ask_llm = { version = "3.9", default-features = false }
+ask_llm = { version = "3.11", default-features = false }
 tokio = { version = "1", features = ["rt", "time", "net"] }
 futures = "0.3"
 clap = { version = "4.5.49", features = ["derive"] }
@@ -2147,8 +2147,9 @@ fn classify_activity(
 }
 
 // ----- usage limits -----
-// 5h + account weekly: Claude Code's statusline stdin, sunk to disk by claude/hooks/limits.sh on
-// every render — header-fed, so as fresh as the last API call of any session.
+// All of the account every claude runs on (ask_llm's `current`).
+// 5h + account weekly: Claude Code's statusline stdin, sunk to disk per account by claude/hooks/limits.sh
+// on every render — header-fed, so as fresh as the last API call of any session on it.
 // fable weekly: only /api/oauth/usage carries per-model caps, and it sticky-429s, hence the cache.
 
 #[derive(Deserialize)]
@@ -2163,12 +2164,12 @@ struct StatuslineWindow {
     resets_at: i64,
 }
 
-fn read_statusline_limits() -> Option<StatuslineLimits> {
+fn read_statusline_limits(account: &str) -> Option<StatuslineLimits> {
     let state = std::env::var("XDG_STATE_HOME")
         .map(PathBuf::from)
         .unwrap_or_else(|_| PathBuf::from(std::env::var("HOME").expect("HOME is set")).join(".local/state")); // XDG spec default, same as limits.sh
-    // Absent until some subscription session renders its statusline.
-    let raw = fs::read_to_string(state.join("claude/rate_limits.json")).ok()?;
+    // Absent until some session on the account renders its statusline.
+    let raw = fs::read_to_string(state.join(format!("claude/rate_limits/{account}.json"))).ok()?;
     Some(serde_json::from_str(&raw).unwrap_or_else(|e| panic!("rate_limits.json written by limits.sh must parse: {e}")))
 }
 
@@ -2184,10 +2185,11 @@ struct FableUsage {
 struct CacheState {
     /// "session:window_index" -> state name (as_str)
     window_states: HashMap<String, String>,
-    fable: Option<FableUsage>,
-    /// Unix epoch of last fetch attempt (success or fail). Throttles retries
+    /// by account
+    fable: HashMap<String, FableUsage>,
+    /// By account: unix epoch of the last fetch attempt (success or fail). Throttles retries
     /// so we don't hammer the endpoint when it's per-minute rate-limited.
-    last_fetch_attempt_at: Option<i64>,
+    last_fetch_attempt_at: HashMap<String, i64>,
 }
 
 #[derive(Deserialize)]
@@ -2256,9 +2258,8 @@ fn rfc3339_epoch(s: &str) -> Option<i64> {
 }
 
 /// None on any failure, so the caller keeps the cached figure.
-fn fetch_fable_usage() -> Option<FableUsage> {
-    let home = std::env::var("HOME").ok()?;
-    let creds_raw = fs::read_to_string(PathBuf::from(home).join(".claude/.credentials.json")).ok()?;
+fn fetch_fable_usage(account: &Path) -> Option<FableUsage> {
+    let creds_raw = fs::read_to_string(account.join(".credentials.json")).ok()?;
     let creds: ClaudeCreds = serde_json::from_str(&creds_raw).ok()?;
 
     let output = Command::new("curl")
@@ -2371,7 +2372,7 @@ impl LimitView {
     }
 }
 
-fn format_usage_header(live: Option<&StatuslineLimits>, fable: Option<FableUsage>, compact: bool) -> String {
+fn format_usage_header(account: &str, live: Option<&StatuslineLimits>, fable: Option<FableUsage>, compact: bool) -> String {
     let total = LimitView::statusline("total", live.and_then(|l| l.five_hour.as_ref()));
     let weekly = LimitView::statusline("weekly", live.and_then(|l| l.seven_day.as_ref()));
     let fable = LimitView::fable(fable);
@@ -2382,11 +2383,8 @@ fn format_usage_header(live: Option<&StatuslineLimits>, fable: Option<FableUsage
     } else {
         vec![total, weekly, fable]
     };
-    limits
-        .iter()
-        .map(|l| if compact { l.compact() } else { l.full() })
-        .collect::<Vec<_>>()
-        .join(" | ")
+    let limits = limits.iter().map(|l| if compact { l.compact() } else { l.full() }).collect::<Vec<_>>().join(" | ");
+    if compact { limits } else { format!("account {account} | {limits}") }
 }
 
 fn current_state_map(windows: &[ClaudeWindow]) -> HashMap<String, String> {
@@ -2408,9 +2406,9 @@ const FABLE_STALE_AFTER_SECS: i64 = 3600;
 /// - no fable figure cached yet, or its window elapsed, or
 /// - a window just transitioned INTO active/finished/question.
 /// Always gated by FETCH_THROTTLE_SECS since last attempt.
-fn should_recompute(prev: &CacheState, windows: &[ClaudeWindow]) -> bool {
+fn should_recompute(prev: &CacheState, windows: &[ClaudeWindow], account: &str) -> bool {
     // Throttle: respect minimum gap between attempts (success OR failure)
-    if let Some(last) = prev.last_fetch_attempt_at {
+    if let Some(&last) = prev.last_fetch_attempt_at.get(account) {
         if now_epoch() - last < FETCH_THROTTLE_SECS {
             return false;
         }
@@ -2419,7 +2417,7 @@ fn should_recompute(prev: &CacheState, windows: &[ClaudeWindow]) -> bool {
     if prev.window_states.is_empty() {
         return true;
     }
-    let Some(fable) = prev.fable else { return true };
+    let Some(fable) = prev.fable.get(account) else { return true };
     if fable.resets_at.is_some_and(|reset| now_epoch() >= reset) {
         return true;
     }
@@ -2532,20 +2530,20 @@ fn main() {
         );
     }
 
-    let cache = load_cache();
-    let did_attempt = should_recompute(&cache, &windows);
-    let fable = if did_attempt { fetch_fable_usage().or(cache.fable) } else { cache.fable };
-    let live = read_statusline_limits();
-    let header = format_usage_header(live.as_ref(), fable, args.compact);
-    save_cache(&CacheState {
-        window_states: current_state_map(&windows),
-        fable,
-        last_fetch_attempt_at: if did_attempt {
-            Some(now_epoch())
-        } else {
-            cache.last_fetch_attempt_at
-        },
-    });
+    let account_dir = ask_llm::providers::claude::accounts::Accounts::home().current().expect("every claude runs on an account, which `cl rotate-acc` sets");
+    let account = account_dir.file_name().expect("an account is a dir").to_str().expect("account names are utf-8").to_string();
+    let mut cache = load_cache();
+    let did_attempt = should_recompute(&cache, &windows, &account);
+    if did_attempt {
+        if let Some(fresh) = fetch_fable_usage(&account_dir) {
+            cache.fable.insert(account.clone(), fresh);
+        }
+        cache.last_fetch_attempt_at.insert(account.clone(), now_epoch());
+    }
+    let live = read_statusline_limits(&account);
+    let header = format_usage_header(&account, live.as_ref(), cache.fable.get(&account).copied(), args.compact);
+    cache.window_states = current_state_map(&windows);
+    save_cache(&cache);
 
     if args.json {
         println!("{}", serde_json::to_string(&sessions.entries).unwrap());
