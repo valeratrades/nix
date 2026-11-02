@@ -48,7 +48,7 @@ else
 fi
 
 chromium_args=(
-	--accept-lang=en-US,en
+	"--accept-lang=en-US,en"
 	--user-data-dir="$data"
 	"${mode[@]}"
 	--no-first-run
