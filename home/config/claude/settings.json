@@ -4,7 +4,8 @@
     "SUDO_ASKPASS": "/run/current-system/sw/bin/false",
     "GIT_TERMINAL_PROMPT": "0",
     "GIT_ASKPASS": "/run/current-system/sw/bin/false",
-    "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet"
+    "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet",
+    "CLAUDE_CODE_ENABLE_TODO_TOOLS": "1"
   },
   "permissions": {
     "allow": [
