@@ -1,7 +1,10 @@
-{ ...
+{ inputs, ...
 }:
 {
-  services.ringboard.wayland.enable = true;
+  services.ringboard.wayland = {
+    enable = true;
+    package = inputs.pin-nixpkgs-ringboard.legacyPackages.x86_64-linux.ringboard-wayland;
+  };
 
   # aarch64 emulation, so this x86_64 host can build the rpi5 SD image.
   # Removable: delete this line + rebuild if Pi image builds move elsewhere.

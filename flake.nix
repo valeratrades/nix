@@ -28,6 +28,7 @@
 
     # pin to avoid rebuilds {
     pin-nixpkgs-ollama.url = "github:nixos/nixpkgs/e4bae1bd10c9c57b2cf517953ab70060a828ee6f";
+    pin-nixpkgs-ringboard.url = "github:nixos/nixpkgs/0bb2eedc20e4739f29e8045034f2828ad7054f8f"; # 0.17: auto-paste no longer ping-pongs keymaps with sway (upstream #66); drop once main nixpkgs has >=0.15
     # }
 
     home-manager = {

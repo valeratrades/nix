@@ -4732,6 +4732,22 @@
         "type": "github"
       }
     },
+    "pin-nixpkgs-ringboard": {
+      "locked": {
+        "lastModified": 1793540411,
+        "narHash": "sha256-fiPJ88izTVucjeo2EQ3jk4aWmLg03I1D4vxnX2QjEgE=",
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "0bb2eedc20e4739f29e8045034f2828ad7054f8f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "0bb2eedc20e4739f29e8045034f2828ad7054f8f",
+        "type": "github"
+      }
+    },
     "pre-commit-hooks": {
       "inputs": {
         "flake-compat": "flake-compat",
@@ -5406,6 +5422,7 @@
         "nixpkgs-stable": "nixpkgs-stable_2",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "pin-nixpkgs-ollama": "pin-nixpkgs-ollama",
+        "pin-nixpkgs-ringboard": "pin-nixpkgs-ringboard",
         "pre-commit-hooks": "pre-commit-hooks_10",
         "prettify_log": "prettify_log",
         "reasonable_envsubst": "reasonable_envsubst",

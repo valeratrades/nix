@@ -502,8 +502,6 @@ in {
         gnome-boxes
         gnome-sound-recorder
 
-        ringboard-wayland
-
         # repo history interactions
         [
           gitui #DEPRECATE: pretty sure lazygit is just better
