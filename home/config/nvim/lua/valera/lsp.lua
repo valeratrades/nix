@@ -190,6 +190,7 @@ vim.g.rust_recommended_style = false
 vim.g.python_recommended_style = false
 vim.g.golang_recommended_style = false
 vim.g.cpp_recommended_style = false
+vim.g.markdown_recommended_style = false
 --,}}}
 
 -- Set default configuration for all LSP servers
