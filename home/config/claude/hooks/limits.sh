@@ -1,7 +1,7 @@
 #!/bin/sh
 # statusLine command that draws nothing: the statusline's stdin is the one place Claude Code
 # hands out the subscription's utilisation, fed by every API response's headers.
-# limits.tsv (weekly history) and sessions.tsv (the window each session is paid from) are read by
+# limits.tsv (weekly history), five_hour.tsv and sessions.tsv (the window each session is paid from) are read by
 # service_arb/accounting's graf; rate_limits/<account>.json (latest snapshot) by tmux/claude_sessions.rs.
 # Sessions on an API key carry no rate_limits.
 d="${XDG_STATE_HOME:-$HOME/.local/state}/claude"
@@ -31,3 +31,10 @@ awk -F '\t' -v used="$1" -v resets="$2" '$3 == resets && $2 + 0 >= used + 0 { se
 session=$(printf '%s' "$input" | jq -er .session_id) || exit 1
 [ "$(awk -F '\t' -v s="$session" '$2 == s { r = $3 } END { print r }' "$d/sessions.tsv")" = "$2" ] ||
   printf '%s\t%s\t%s\n' "$(date +%s)" "$session" "$2" >>"$d/sessions.tsv"
+# a five-hour window is put to the account of the seven-day one it is read beside
+week=$2
+set -- $(printf '%s' "$limits" | jq -r '.five_hour // empty | "\(.used_percentage) \(.resets_at)"')
+[ $# -eq 2 ] || exit 0
+touch "$d/five_hour.tsv"
+awk -F '\t' -v used="$1" -v resets="$2" -v week="$week" '$3 == resets && $4 == week && $2 + 0 >= used + 0 { seen = 1 } END { exit seen }' "$d/five_hour.tsv" &&
+  printf '%s\t%s\t%s\t%s\n' "$(date +%s)" "$1" "$2" "$week" >>"$d/five_hour.tsv"
