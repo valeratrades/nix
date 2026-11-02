@@ -67,7 +67,6 @@ function cl
         else if string match -qr '^-[a-z]+$' -- $arg
             # bundled short flags: extract the model letters, pass the rest back to claude.
             # s/t/l are litellm groups (mixed.yaml, openai.yaml) -- only resolve under clm/clc.
-            # quoted: an unset prefix must stay one empty element, or `{$oa}sol` expands to nothing
             set -l oa "$CLM_OPENAI_PREFIX"
             for pair in o:opus f:claude-fable-5-1 s:{$oa}sol t:{$oa}terra l:{$oa}luna
                 set -l letter (string split -f1 : -- $pair)
@@ -144,6 +143,7 @@ complete -c cl -w claude
 
 function clc
     # for `CLaude Cheap`
+    set -fx CLM_OPENAI_PREFIX ''
 
     function use_deepseek
         set -lx ANTHROPIC_BASE_URL 'https://api.deepseek.com/anthropic'
@@ -182,16 +182,11 @@ end
 
 function clm
     # for `CLaude Mixed` -- Opus driving the session, Luna as the subagent tier.
+    set -fx CLM_OPENAI_PREFIX token-
     # Claude Code resolves one ANTHROPIC_BASE_URL per process, so both providers have to sit behind
     # one litellm. The cost: Opus authenticates by API key here, off the Max subscription.
     # Own port and own config, so `clc` and openclaw keep their proxy to themselves.
     # Both ports are chosen in vars/ports.nix, exported by os/nixos/desktop/environment.nix.
-    # `--sub`: OpenAI tiers and s/t/l bill the ChatGPT subscription (mixed.yaml `sub-*`), not OPENAI_API_KEY
-    if contains -- --sub $argv
-        set -fx CLM_OPENAI_PREFIX sub-
-        set argv (string match -v -- --sub $argv)
-    end
-    set -l oa "$CLM_OPENAI_PREFIX"
     if not set -q LITELLM_MIXED_PORT
         echo "clm: LITELLM_MIXED_PORT unset -- stale session, or environment.nix no longer exports it" >&2
         return 1
@@ -211,14 +206,13 @@ function clm
         end
     end
 
-    # These three pick the defaults only; mixed.yaml registers more (sonnet, fable, haiku, sol,
-    # pro, and the ChatGPT-subscription `*-sub` groups), each reachable as `clm -m <group>`.
+    # These pick defaults only; every group in mixed.yaml remains reachable through `clm -m`.
     set -lx ANTHROPIC_BASE_URL "http://127.0.0.1:$LITELLM_MIXED_PORT"
     set -lx ANTHROPIC_AUTH_TOKEN 'local'
     set -lx ANTHROPIC_MODEL 'opus'
     set -lx ANTHROPIC_DEFAULT_OPUS_MODEL 'opus'
-    set -lx ANTHROPIC_DEFAULT_SONNET_MODEL {$oa}terra
-    set -lx ANTHROPIC_DEFAULT_HAIKU_MODEL {$oa}luna
+    set -lx ANTHROPIC_DEFAULT_SONNET_MODEL 'token-terra'
+    set -lx ANTHROPIC_DEFAULT_HAIKU_MODEL 'token-luna'
 
     cl $argv
 end

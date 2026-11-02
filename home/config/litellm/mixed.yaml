@@ -7,27 +7,21 @@
 # The consequence is unavoidable and not free: Anthropic models authenticate with
 # ANTHROPIC_API_KEY here, so a session on one bills API credits rather than the Max subscription.
 #
-# Model groups are named for the tier, not the upstream id -- `clc` used to send `gpt-5.6-terra`
-# and got a 400, because the group is `terra`.
+# OpenAI groups name both the billing source and model: `token-*` bills OPENAI_API_KEY; `sub-*`
+# bills the ChatGPT subscription through Codex OAuth. Both lists are enumerated from their model
+# endpoints rather than assumed equivalent. Subscription tokens live in $CHATGPT_TOKEN_DIR, set
+# by `clm`.
 #
-# Enumerated from GET /v1/models on both providers, not from memory. Claude 5 has no Haiku, so
-# `haiku` is 4.5; OpenAI 5.6 has no pro, so `pro` is 5.5. Older Claude generations (4.8, 4.7, 4.6)
-# are live on the key too and are one entry each if ever wanted.
-#
-# See openai.yaml for why the gpt-5.6 entries need mode/supports_tool_choice spelled out.
-#
-# `sub-*` groups bill the ChatGPT subscription (litellm's chatgpt/ provider, Codex OAuth), not
-# OPENAI_API_KEY. Enumerated from chatgpt.com/backend-api/codex/models; tokens live in
-# $CHATGPT_TOKEN_DIR, set by `clm`. `sub-<group>` is <group> on the subscription, which is what
-# `clm --sub` relies on; 6.x has no per-token group here, so its names carry the version. `allowed_openai_params` only gets Claude Code's
-# `context_management` past litellm's param check; the chatgpt transform then strips it, as the
-# Codex backend has no equivalent -- so context editing is a no-op on these groups.
+# See openai.yaml for why OpenAI entries need mode/supports_tool_choice spelled out.
+# `allowed_openai_params` only gets Claude Code's `context_management` past litellm's parameter
+# check; the chatgpt transform then strips it, as the Codex backend has no equivalent -- so
+# context editing is a no-op on `sub-*` groups.
 #
 # Known defect, litellm 1.83.7, OpenAI groups only: translating Anthropic tool_choice to the
 # Responses API, the string-valued modes get wrapped in an object -- `{"type":"auto"}` and
 # `{"type":"required"}` -- where the API wants a bare string, and 400s. Omitted tool_choice and
 # the named form `{"type":"tool","name":...}` both work, and Claude Code's agent loop omits it,
-# which is why sessions run fine. Forced-tool flows against sol/terra/luna/pro will fail loudly.
+# which is why sessions run fine. Forced-tool flows against OpenAI groups will fail loudly.
 # Anthropic groups are unaffected. Fixed by a litellm bump, not by anything in this file.
 litellm_settings:
   callbacks: hooks.proxy_handler_instance # clamps max_tokens; see hooks.py
@@ -61,8 +55,48 @@ model_list:
       model: anthropic/claude-haiku-5-5
       api_key: os.environ/ANTHROPIC_API_KEY
 
-  # -- OpenAI ----------------------------------------------------------------------------------
-  - model_name: sol
+  # -- OpenAI, per-token ----------------------------------------------------------------------
+  - model_name: token-6.1-sol
+    litellm_params:
+      model: openai/gpt-6.1-sol
+      api_key: os.environ/OPENAI_API_KEY
+    model_info:
+      mode: responses
+      supports_tool_choice: true
+
+  - model_name: token-6.1-terra
+    litellm_params:
+      model: openai/gpt-6.1-terra
+      api_key: os.environ/OPENAI_API_KEY
+    model_info:
+      mode: responses
+      supports_tool_choice: true
+
+  - model_name: token-6-sol
+    litellm_params:
+      model: openai/gpt-6-sol
+      api_key: os.environ/OPENAI_API_KEY
+    model_info:
+      mode: responses
+      supports_tool_choice: true
+
+  - model_name: token-6-luna
+    litellm_params:
+      model: openai/gpt-6-luna
+      api_key: os.environ/OPENAI_API_KEY
+    model_info:
+      mode: responses
+      supports_tool_choice: true
+
+  - model_name: token-6-astra
+    litellm_params:
+      model: openai/gpt-6-astra
+      api_key: os.environ/OPENAI_API_KEY
+    model_info:
+      mode: responses
+      supports_tool_choice: true
+
+  - model_name: token-sol
     litellm_params:
       model: openai/gpt-5.6-sol
       api_key: os.environ/OPENAI_API_KEY
@@ -70,7 +104,7 @@ model_list:
       mode: responses
       supports_tool_choice: true
 
-  - model_name: terra
+  - model_name: token-terra
     litellm_params:
       model: openai/gpt-5.6-terra
       api_key: os.environ/OPENAI_API_KEY
@@ -78,7 +112,7 @@ model_list:
       mode: responses
       supports_tool_choice: true
 
-  - model_name: luna
+  - model_name: token-luna
     litellm_params:
       model: openai/gpt-5.6-luna
       api_key: os.environ/OPENAI_API_KEY
@@ -86,7 +120,7 @@ model_list:
       mode: responses
       supports_tool_choice: true
 
-  - model_name: pro
+  - model_name: token-pro
     litellm_params:
       model: openai/gpt-5.5-pro
       api_key: os.environ/OPENAI_API_KEY
