@@ -18,7 +18,8 @@
 #
 # `sub-*` groups bill the ChatGPT subscription (litellm's chatgpt/ provider, Codex OAuth), not
 # OPENAI_API_KEY. Enumerated from chatgpt.com/backend-api/codex/models; tokens live in
-# $CHATGPT_TOKEN_DIR, set by `clm`. `allowed_openai_params` only gets Claude Code's
+# $CHATGPT_TOKEN_DIR, set by `clm`. `sub-<group>` is <group> on the subscription, which is what
+# `clm --sub` relies on; 6.x has no per-token group here, so its names carry the version. `allowed_openai_params` only gets Claude Code's
 # `context_management` past litellm's param check; the chatgpt transform then strips it, as the
 # Codex backend has no equivalent -- so context editing is a no-op on these groups.
 #
@@ -134,7 +135,7 @@ model_list:
       mode: responses
       supports_tool_choice: true
 
-  - model_name: sub-5.6-sol
+  - model_name: sub-sol
     litellm_params:
       model: chatgpt/gpt-5.6-sol
       allowed_openai_params: [context_management]
@@ -142,7 +143,7 @@ model_list:
       mode: responses
       supports_tool_choice: true
 
-  - model_name: sub-5.6-terra
+  - model_name: sub-terra
     litellm_params:
       model: chatgpt/gpt-5.6-terra
       allowed_openai_params: [context_management]
@@ -150,7 +151,7 @@ model_list:
       mode: responses
       supports_tool_choice: true
 
-  - model_name: sub-5.6-luna
+  - model_name: sub-luna
     litellm_params:
       model: chatgpt/gpt-5.6-luna
       allowed_openai_params: [context_management]
