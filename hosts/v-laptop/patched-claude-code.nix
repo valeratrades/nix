@@ -5,7 +5,7 @@
 # ELF; we overwrite each occurrence with same-length whitespace so Bun's trailer offsets
 # stay valid. The exact occurrence counts are asserted in the python script so the build
 # fails loudly if upstream changes the wording.
-{ pkgs, claude-code }:
+{ pkgs, claude-code, ask_llm }:
 
 claude-code.overrideAttrs (old: {
 	nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ pkgs.makeWrapper ];
@@ -20,7 +20,7 @@ claude-code.overrideAttrs (old: {
 		${pkgs.python3}/bin/python3 ${./patch-claude-sessionmodel.py} "$out/bin/.claude-unwrapped"
 		${pkgs.python3}/bin/python3 ${./patch-claude-linuxpaste.py} "$out/bin/.claude-unwrapped"
 		mkdir -p "$out/lib"
-		${pkgs.python3}/bin/python3 ${./patch-claude-accounts.py} "$out/bin/.claude-unwrapped" ${./claude-accounts.mjs} "$out/lib/claude-accounts.mjs"
+		${pkgs.python3}/bin/python3 ${./patch-claude-accounts.py} "$out/bin/.claude-unwrapped" ${pkgs.replaceVars ./claude-accounts.mjs { ask_llm = "${ask_llm}/bin/ask_llm"; }} "$out/lib/claude-accounts.mjs"
 		${pkgs.python3}/bin/python3 ${./detach-claude-bytecode.py} "$TMPDIR/claude-unpatched" "$out/bin/.claude-unwrapped"
 		# every workspace trusted, nested repos included (they stopped inheriting trust from `/`)
 		wrapProgram "$out/bin/claude" --set CLAUDE_CODE_SANDBOXED 1

@@ -5,11 +5,11 @@
         "v_flakes": "v_flakes"
       },
       "locked": {
-        "lastModified": 1789772412,
-        "narHash": "sha256-qXZQpJd1P/Dz/Jd8/4MhTtPe2xz9A44aXGH9gwwF7ZY=",
+        "lastModified": 1793609494,
+        "narHash": "sha256-/1VGRooLfTpm5wQ2kluzrdEyLvvbgxgbLOuIy6o6alk=",
         "owner": "valeratrades",
         "repo": "ask_llm",
-        "rev": "94efe4bcd583cdf63d68a2e98440f5f473384de7",
+        "rev": "268121a8e100430277dbec09e1036fc1a21ddc97",
         "type": "github"
       },
       "original": {
@@ -2867,12 +2867,12 @@
     "lean4-nix": {
       "inputs": {
         "flake-parts": [
-          "auto_redshift",
+          "ask_llm",
           "v_flakes",
           "flake-parts"
         ],
         "nixpkgs": [
-          "auto_redshift",
+          "ask_llm",
           "v_flakes",
           "nixpkgs"
         ]
@@ -2895,12 +2895,12 @@
     "lean4-nix_2": {
       "inputs": {
         "flake-parts": [
-          "tedi",
+          "auto_redshift",
           "v_flakes",
           "flake-parts"
         ],
         "nixpkgs": [
-          "tedi",
+          "auto_redshift",
           "v_flakes",
           "nixpkgs"
         ]
@@ -2923,6 +2923,34 @@
     "lean4-nix_3": {
       "inputs": {
         "flake-parts": [
+          "tedi",
+          "v_flakes",
+          "flake-parts"
+        ],
+        "nixpkgs": [
+          "tedi",
+          "v_flakes",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1787854620,
+        "narHash": "sha256-riKig+mBa13TIStQ+IvJzAdNaJmJmRwYMcgO9I9BdUM=",
+        "owner": "lenianiva",
+        "repo": "lean4-nix",
+        "rev": "e04ca093bca4c944f587c5e306cb5ff0c2c6ea87",
+        "type": "github"
+      },
+      "original": {
+        "owner": "lenianiva",
+        "repo": "lean4-nix",
+        "rev": "e04ca093bca4c944f587c5e306cb5ff0c2c6ea87",
+        "type": "github"
+      }
+    },
+    "lean4-nix_4": {
+      "inputs": {
+        "flake-parts": [
           "v_flakes",
           "flake-parts"
         ],
@@ -2946,7 +2974,7 @@
         "type": "github"
       }
     },
-    "lean4-nix_4": {
+    "lean4-nix_5": {
       "inputs": {
         "flake-parts": [
           "wallpaper_carousel",
@@ -2976,7 +3004,7 @@
         "type": "github"
       }
     },
-    "lean4-nix_5": {
+    "lean4-nix_6": {
       "inputs": {
         "flake-parts": [
           "wallpaper_carousel",
@@ -3828,17 +3856,17 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1782467914,
-        "narHash": "sha256-pGvFkM8N0xEkIIXDe5YYfbEAvHrk4IxBrjB/x8OomhE=",
+        "lastModified": 1792208399,
+        "narHash": "sha256-mN15cwddbOOIzzXSSwYUeRfOYeizz47Vy6y3Hzq6DuY=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "e73de5be04e0eff4190a1432b946d469c794e7b4",
+        "rev": "7a6522c868711d06e3a520bbcdfafe9806f4337f",
         "type": "github"
       },
       "original": {
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "e73de5be04e0eff4190a1432b946d469c794e7b4",
+        "rev": "7a6522c868711d06e3a520bbcdfafe9806f4337f",
         "type": "github"
       }
     },
@@ -5373,17 +5401,17 @@
         ]
       },
       "locked": {
-        "lastModified": 1782703273,
-        "narHash": "sha256-WJPfr9EAWVIuTMyb/ilHKUYlg/RNa0xrNiWR+p1iHUg=",
+        "lastModified": 1786638241,
+        "narHash": "sha256-KJhq0HYg2gIZjpsj47z1kWrjoUUAqSqdD2mMWAsOg4k=",
         "owner": "oxalica",
         "repo": "rust-overlay",
-        "rev": "5106a604b3d67cffe8eb51a8bd9f04e607f0d31d",
+        "rev": "892c035d7c2ff75acd5da10424a47ab454e1f3dc",
         "type": "github"
       },
       "original": {
         "owner": "oxalica",
         "repo": "rust-overlay",
-        "rev": "5106a604b3d67cffe8eb51a8bd9f04e607f0d31d",
+        "rev": "892c035d7c2ff75acd5da10424a47ab454e1f3dc",
         "type": "github"
       }
     },
@@ -6201,17 +6229,18 @@
         "devenv": "devenv",
         "flake-parts": "flake-parts",
         "flake-utils": "flake-utils",
+        "lean4-nix": "lean4-nix",
         "nixpkgs": "nixpkgs",
         "pre-commit-hooks": "pre-commit-hooks",
         "process-compose-flake": "process-compose-flake",
         "rust-overlay": "rust-overlay"
       },
       "locked": {
-        "lastModified": 1788050703,
-        "narHash": "sha256-xxAMCcXX0h4OvMmn/YuWFzwRx4NzkXw//h6Q8GXsQQc=",
+        "lastModified": 1793170848,
+        "narHash": "sha256-rThg1j7kTUoYJfIAsjfOU4cdlIaNnG+suUbcRJ2hgQw=",
         "owner": "valeratrades",
         "repo": "v_flakes",
-        "rev": "c090687adaf35406763d123366d8cea9321f8727",
+        "rev": "f5cf48cda71cd4ecc890744434f6afcbb9fb451a",
         "type": "github"
       },
       "original": {
@@ -6226,7 +6255,7 @@
         "devenv": "devenv_9",
         "flake-parts": "flake-parts_18",
         "flake-utils": "flake-utils_14",
-        "lean4-nix": "lean4-nix_3",
+        "lean4-nix": "lean4-nix_4",
         "nixpkgs": "nixpkgs_40",
         "pre-commit-hooks": "pre-commit-hooks_16",
         "process-compose-flake": "process-compose-flake_7",
@@ -6252,7 +6281,7 @@
         "devenv": "devenv_10",
         "flake-parts": "flake-parts_19",
         "flake-utils": "flake-utils_15",
-        "lean4-nix": "lean4-nix_4",
+        "lean4-nix": "lean4-nix_5",
         "nixpkgs": "nixpkgs_41",
         "pre-commit-hooks": "pre-commit-hooks_17",
         "process-compose-flake": "process-compose-flake_8",
@@ -6278,7 +6307,7 @@
         "devenv": "devenv_11",
         "flake-parts": "flake-parts_20",
         "flake-utils": "flake-utils_16",
-        "lean4-nix": "lean4-nix_5",
+        "lean4-nix": "lean4-nix_6",
         "nixpkgs": "nixpkgs_42",
         "pre-commit-hooks": "pre-commit-hooks_18",
         "process-compose-flake": "process-compose-flake_9",
@@ -6304,7 +6333,7 @@
         "devenv": "devenv_2",
         "flake-parts": "flake-parts_2",
         "flake-utils": "flake-utils_2",
-        "lean4-nix": "lean4-nix",
+        "lean4-nix": "lean4-nix_2",
         "nixpkgs": "nixpkgs_2",
         "pre-commit-hooks": "pre-commit-hooks_2",
         "process-compose-flake": "process-compose-flake_2",
@@ -6419,7 +6448,7 @@
         "devenv": "devenv_6",
         "flake-parts": "flake-parts_14",
         "flake-utils": "flake-utils_11",
-        "lean4-nix": "lean4-nix_2",
+        "lean4-nix": "lean4-nix_3",
         "nixpkgs": "nixpkgs_37",
         "pre-commit-hooks": "pre-commit-hooks_13",
         "process-compose-flake": "process-compose-flake_4",

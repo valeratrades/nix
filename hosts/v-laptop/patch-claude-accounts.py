@@ -173,10 +173,10 @@ data[graph[imported[0]]] = with_header(imported[0], sources[imported[0]], load +
 
 with open(template) as f:
 	mjs = f.read()
-if mjs.count("// @@internals@@") != 1:
-	die(f"{template} lacks its `// @@internals@@` line")
+if mjs.count("/* INTERNALS */") != 1:
+	die(f"{template} lacks its `/* INTERNALS */` line")
 with open(out_mjs, "w") as f:
-	f.write(mjs.replace("// @@internals@@", loader))
+	f.write(mjs.replace("/* INTERNALS */", loader))
 
 assert len(data) == original_len, "overwrite must preserve byte length"
 with open(binary, "wb") as f:

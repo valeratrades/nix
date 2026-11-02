@@ -573,6 +573,7 @@ in {
         (import ./patched-claude-code.nix {
           inherit pkgs;
           claude-code = inputs.claude_code_nix.packages.${pkgs.stdenv.hostPlatform.system}.default;
+          ask_llm = inputs.ask_llm.packages.${pkgs.stdenv.hostPlatform.system}.default;
         })
         inputs.codex_nix.packages.${pkgs.stdenv.hostPlatform.system}.default
 
