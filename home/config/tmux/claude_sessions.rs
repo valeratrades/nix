@@ -839,6 +839,9 @@ fn context_tokens(session_file: &Path) -> Option<u64> {
         if v.get("isSidechain").and_then(|x| x.as_bool()) == Some(true) {
             continue;
         }
+        if v.get("message").and_then(|m| m.get("model")).and_then(|x| x.as_str()) == Some("<synthetic>") {
+            continue; // never sent to the API, so billed at zero (e.g. the limit-hit notice)
+        }
         let usage = match v.get("message").and_then(|m| m.get("usage")) {
             Some(u) => u,
             None => continue,
@@ -2668,6 +2671,21 @@ mod tests {
                  name it <state>__<desc>.txt"
             ),
         }
+    }
+
+    /// A limit hit appends a "<synthetic>" assistant turn billed at zero tokens.
+    #[test]
+    fn context_survives_a_limit_hit() {
+        let path = std::env::temp_dir().join(format!("claude_sessions_limit_ctx_{}.jsonl", std::process::id()));
+        let usage = |n: u64| serde_json::json!({"input_tokens": n, "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0, "output_tokens": 0});
+        let records = [
+            serde_json::json!({"type": "assistant", "message": {"model": "claude-opus-5-5", "usage": usage(900_000)}}),
+            serde_json::json!({"type": "assistant", "message": {"model": "<synthetic>", "usage": usage(0)}}),
+        ];
+        fs::write(&path, records.map(|r| r.to_string()).join("\n")).unwrap();
+        let context = context_tokens(&path);
+        fs::remove_file(&path).unwrap();
+        assert_eq!(context, Some(900_000));
     }
 
     /// Walk every `*.txt` fixture, classify it, and assert two things:
