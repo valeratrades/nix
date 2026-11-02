@@ -482,24 +482,7 @@
             runtimeInputs = [ chromium vpn_ns ];
             text = builtins.readFile "${self}/home/scripts/vpn_browser.sh";
           })
-          (writeShellApplication {
-            name = "multilogin";
-            runtimeInputs = [ ];
-            text = ''
-              set -euo pipefail
-              install_dir="''${XDG_DATA_HOME:-$HOME/.local/share}/multilogin/app"
-              [[ -x "$install_dir/multilogin" ]] || {
-                echo "Multilogin is not installed in $install_dir; run multilogin-install" >&2
-                exit 1
-              }
-              exec "$install_dir/multilogin" "$@"
-            '';
-          })
-          (writeShellApplication {
-            name = "multilogin-install";
-            runtimeInputs = [ curl unzip coreutils findutils ];
-            text = builtins.readFile "${self}/home/scripts/multilogin_install.sh";
-          })
+          multilogin # antidetect browser
           (writeShellApplication {
             name = "discord_private";
             runtimeInputs = [ mullvad-browser vpn_ns ];
