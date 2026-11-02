@@ -2979,6 +2979,34 @@
     "lean4-nix_5": {
       "inputs": {
         "flake-parts": [
+          "tg",
+          "v_flakes",
+          "flake-parts"
+        ],
+        "nixpkgs": [
+          "tg",
+          "v_flakes",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1787854620,
+        "narHash": "sha256-riKig+mBa13TIStQ+IvJzAdNaJmJmRwYMcgO9I9BdUM=",
+        "owner": "lenianiva",
+        "repo": "lean4-nix",
+        "rev": "e04ca093bca4c944f587c5e306cb5ff0c2c6ea87",
+        "type": "github"
+      },
+      "original": {
+        "owner": "lenianiva",
+        "repo": "lean4-nix",
+        "rev": "e04ca093bca4c944f587c5e306cb5ff0c2c6ea87",
+        "type": "github"
+      }
+    },
+    "lean4-nix_6": {
+      "inputs": {
+        "flake-parts": [
           "wallpaper_carousel",
           "snapshot_fonts",
           "v_flakes",
@@ -3006,7 +3034,7 @@
         "type": "github"
       }
     },
-    "lean4-nix_6": {
+    "lean4-nix_7": {
       "inputs": {
         "flake-parts": [
           "wallpaper_carousel",
@@ -6257,7 +6285,7 @@
         "devenv": "devenv_9",
         "flake-parts": "flake-parts_18",
         "flake-utils": "flake-utils_14",
-        "lean4-nix": "lean4-nix_4",
+        "lean4-nix": "lean4-nix_5",
         "nixpkgs": "nixpkgs_40",
         "pre-commit-hooks": "pre-commit-hooks_16",
         "process-compose-flake": "process-compose-flake_7",
@@ -6283,7 +6311,7 @@
         "devenv": "devenv_10",
         "flake-parts": "flake-parts_19",
         "flake-utils": "flake-utils_15",
-        "lean4-nix": "lean4-nix_5",
+        "lean4-nix": "lean4-nix_6",
         "nixpkgs": "nixpkgs_41",
         "pre-commit-hooks": "pre-commit-hooks_17",
         "process-compose-flake": "process-compose-flake_8",
@@ -6309,7 +6337,7 @@
         "devenv": "devenv_11",
         "flake-parts": "flake-parts_20",
         "flake-utils": "flake-utils_16",
-        "lean4-nix": "lean4-nix_6",
+        "lean4-nix": "lean4-nix_7",
         "nixpkgs": "nixpkgs_42",
         "pre-commit-hooks": "pre-commit-hooks_18",
         "process-compose-flake": "process-compose-flake_9",
