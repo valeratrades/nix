@@ -19,6 +19,7 @@ claude-code.overrideAttrs (old: {
 		${pkgs.python3}/bin/python3 ${./patch-claude-planaccept.py} "$out/bin/.claude-unwrapped"
 		${pkgs.python3}/bin/python3 ${./patch-claude-sessionmodel.py} "$out/bin/.claude-unwrapped"
 		${pkgs.python3}/bin/python3 ${./patch-claude-linuxpaste.py} "$out/bin/.claude-unwrapped"
+		${pkgs.python3}/bin/python3 ${./patch-claude-rewindorder.py} "$out/bin/.claude-unwrapped"
 		mkdir -p "$out/lib"
 		${pkgs.python3}/bin/python3 ${./patch-claude-accounts.py} "$out/bin/.claude-unwrapped" ${pkgs.replaceVars ./claude-accounts.mjs { ask_llm = "${ask_llm}/bin/ask_llm"; }} "$out/lib/claude-accounts.mjs"
 		${pkgs.python3}/bin/python3 ${./detach-claude-bytecode.py} "$TMPDIR/claude-unpatched" "$out/bin/.claude-unwrapped"
