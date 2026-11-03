@@ -358,8 +358,12 @@ fn pr(target_branch: Option<String>, draft: bool) {
             Ok(o) if String::from_utf8_lossy(&o.stderr).contains("already exists") => {
                 println!("Draft PR already exists");
             }
-            _ => {
-                eprintln!("ERROR: Failed to create draft PR");
+            Ok(o) => {
+                eprintln!("{}ERROR: Failed to create draft PR", String::from_utf8_lossy(&o.stderr));
+                std::process::exit(1);
+            }
+            Err(e) => {
+                eprintln!("ERROR: Failed to create draft PR: {e}");
                 std::process::exit(1);
             }
         }
@@ -428,12 +432,16 @@ fn pr(target_branch: Option<String>, draft: bool) {
             .stdin(Stdio::null())
             .output();
 
-        if !pr_create_output
-            .map(|o| o.status.success())
-            .unwrap_or(false)
-        {
-            eprintln!("ERROR: Failed to create PR");
-            std::process::exit(1);
+        match pr_create_output {
+            Ok(o) if o.status.success() => {}
+            Ok(o) => {
+                eprintln!("{}ERROR: Failed to create PR", String::from_utf8_lossy(&o.stderr));
+                std::process::exit(1);
+            }
+            Err(e) => {
+                eprintln!("ERROR: Failed to create PR: {e}");
+                std::process::exit(1);
+            }
         }
     }
 
@@ -1043,21 +1051,19 @@ fn publish(repo_name: Option<String>, private: bool, public: bool, org: Option<S
         .args(["commit", "-m", commit_msg])
         .output();
 
-    let commit_failed_fatally = match &commit_output {
+    match &commit_output {
         Ok(o) => {
-            // Check if failure is due to "nothing to commit" - that's fine
             let stderr = String::from_utf8_lossy(&o.stderr);
             let stdout = String::from_utf8_lossy(&o.stdout);
-            !o.status.success()
-                && !stderr.contains("nothing to commit")
-                && !stdout.contains("nothing to commit")
+            if !o.status.success() && !stderr.contains("nothing to commit") && !stdout.contains("nothing to commit") {
+                eprintln!("{stdout}{stderr}ERROR: git commit failed");
+                std::process::exit(1);
+            }
         }
-        Err(_) => true,
-    };
-
-    if commit_failed_fatally {
-        eprintln!("ERROR: git commit failed");
-        std::process::exit(1);
+        Err(e) => {
+            eprintln!("ERROR: git commit failed: {e}");
+            std::process::exit(1);
+        }
     }
 
     // gh repo create
