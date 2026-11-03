@@ -89,7 +89,7 @@ fn main() {
         }
     }
 
-    // 1. Pre-shutdown async tasks: claude_sessions->tg and tedi tracking halt
+    // 1. Pre-shutdown async tasks: tedi tracking halt
     let dry_run = args.dry_run;
     let tedi_handle = std::thread::spawn(move || {
         if dry_run {
@@ -107,50 +107,6 @@ fn main() {
         }
     });
 
-    let claude_handle = std::thread::spawn(move || {
-        if dry_run {
-            println!("Dry run - would send claude sessions to telegram");
-            return;
-        }
-        println!("Saving claude sessions to telegram...");
-        let claude_sessions_path = std::env::var("HOME")
-            .map(|h| format!("{h}/nix/home/scripts/claude_sessions/main.rs"))
-            .unwrap_or_else(|_| "/home/v/nix/home/scripts/claude_sessions/main.rs".to_string());
-
-        let output = Command::new(&claude_sessions_path).output();
-
-        match output {
-            Ok(out) if out.status.success() => {
-                let sessions = String::from_utf8_lossy(&out.stdout);
-                let msg = if sessions.trim().is_empty() {
-                    eprintln!("Warning: claude_sessions output empty");
-                    "warning: claude_sessions output was empty"
-                } else {
-                    sessions.as_ref()
-                };
-                // Pass the whole output as a positional argument, NOT via stdin `-`.
-                // The `-` stdin path in `tg send` truncates multi-line input to its
-                // last line; a positional arg preserves every line.
-                let tg_result = Command::new("tg")
-                    .args(["send", "-c", "general", msg])
-                    .status();
-
-                match tg_result {
-                    Ok(status) if status.success() => println!("Claude sessions sent to telegram"),
-                    Ok(_) => eprintln!("Warning: tg command failed"),
-                    Err(e) => eprintln!("Warning: failed to run tg: {e}"),
-                }
-            }
-            Ok(out) => {
-                let stderr = String::from_utf8_lossy(&out.stderr);
-                eprintln!("Warning: claude_sessions failed: {stderr}");
-            }
-            Err(e) => {
-                eprintln!("Warning: failed to run claude_sessions: {e}");
-            }
-        }
-    });
-
     // Must run while the tmux server is still alive (see the kill-server below).
     let dry_run = args.dry_run;
     let inventory_handle = std::thread::spawn(move || {
@@ -161,9 +117,8 @@ fn main() {
         assert!(status.success(), "save_sessions exited {status}");
     });
 
-    // Wait for all three to finish before proceeding with shutdown
+    // Wait for both to finish before proceeding with shutdown
     tedi_handle.join().expect("tedi thread panicked");
-    claude_handle.join().expect("claude_sessions thread panicked");
     inventory_handle.join().expect("inventory thread panicked");
 
     // 2. Kill tmux sessions
