@@ -43,10 +43,19 @@ K("", "l", "t", { desc = "Till char", overwrite = true })
 --,}}}
 
 -- Windows {{{
-K('n', '<C-w>s', '<C-w>h', { desc = 'Win left' })
-K('n', '<C-w>r', '<C-w>j', { desc = 'Win down' })
-K('n', '<C-w>n', '<C-w>k', { desc = 'Win up' })
-K('n', '<C-w>t', '<C-w>l', { desc = 'Win right' })
+for key, dir in pairs({ s = 'h', r = 'j', n = 'k', t = 'l', v = 'w' }) do
+	K('n', '<C-w>' .. key, function() -- skips unfocusable splits; `winnr(dir)` treats them as walls, so walk with noautocmd and switch once
+		local from = vim.api.nvim_get_current_win()
+		local win
+		repeat
+			win = vim.api.nvim_get_current_win()
+			vim.cmd('noautocmd wincmd ' .. dir)
+		until vim.api.nvim_get_current_win() == win or vim.api.nvim_win_get_config(0).focusable ~= false
+		local to = vim.api.nvim_get_current_win()
+		vim.cmd('noautocmd call win_gotoid(' .. from .. ')')
+		if vim.api.nvim_win_get_config(to).focusable ~= false then vim.api.nvim_set_current_win(to) end
+	end, { desc = 'Win ' .. dir })
+end
 
 K('n', '<C-w>S', '<cmd>wincmd H<cr>', { desc = 'move window left' })
 K('n', '<C-w>R', '<cmd>wincmd J<cr>', { desc = 'move window down' })
@@ -67,7 +76,6 @@ K("n", "<C-w>y", function() CloneTab() end, { desc = "windows: clone whole tab t
 K("n", "yt", function() CloneTab() end, { desc = "windows: clone whole tab to the right" })
 
 --Q: is this the correct place for it?
-K('n', '<C-w>v', '<C-w>w', { desc = 'windows: literally <C-w>w' })
 K('n', '<C-w>V', '<cmd>tabprevious<cr>', { desc = 'windows: move to previously active tab' })
 K('n', "<C-w><C-v>", "<nop>", { desc = 'Nop' })
 

@@ -1,3 +1,9 @@
+local function find(pred)
+	for _, v in ipairs(require("trouble.view").get({ mode = "symbols", open = true })) do
+		if v.view.anchor and pred(v.view) then return v.view end
+	end
+end
+
 return require "lazier" {
 	"folke/trouble.nvim",
 	opts = {
@@ -19,11 +25,8 @@ return require "lazier" {
 				local View = require("trouble.view")
 				local Main = require("trouble.view.main")
 				local cur = vim.api.nvim_get_current_win()
-				for _, v in ipairs(View.get({ mode = "symbols", open = true })) do
-					if v.view.anchor == cur or v.view.win.win == cur then
-						return v.view:close()
-					end
-				end
+				local open = find(function(v) return v.anchor == cur or v.win.win == cur end)
+				if open then return open:close() end
 
 				local view = View.new(require("trouble.config").get({
 					mode = "symbols",
@@ -37,6 +40,10 @@ return require "lazier" {
 					return self._main
 				end
 				view.main = main
+				function view:on_mount()
+					View.on_mount(self)
+					vim.api.nvim_win_set_config(self.win.win, { focusable = false }) -- keeps it out of <C-w> nav; reached via <space><space>i
+				end
 				for _, s in ipairs(view.sections) do
 					s.main = main
 				end
@@ -48,6 +55,26 @@ return require "lazier" {
 				view:open()
 			end,
 			desc = "Symbols (Trouble), per pane",
+		},
+		{
+			"<space><space>i",
+			function()
+				local cur = vim.api.nvim_get_current_win()
+				local view = find(function(v) return v.anchor == cur end)
+				if not view then return vim.notify("No symbols view for this pane", vim.log.levels.WARN) end
+				vim.api.nvim_set_current_win(view.win.win)
+			end,
+			desc = "Symbols (Trouble): enter pane's view",
+		},
+		{
+			"<space><space>o",
+			function()
+				local cur = vim.api.nvim_get_current_win()
+				local view = find(function(v) return v.win.win == cur end)
+				if not view then return vim.notify("Not in a symbols view", vim.log.levels.WARN) end
+				vim.api.nvim_set_current_win(view.anchor)
+			end,
+			desc = "Symbols (Trouble): back to parent pane",
 		},
 	},
 }
