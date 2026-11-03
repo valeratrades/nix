@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Account switching: "Switch to account N" entries in the rate-limit menu (`/rate-limit-options`), and every
-running claude following ~/.claude/accounts/current in place.
+"""Account switching: "Switch to account N" entries in the rate-limit menu (`/rate-limit-options`), `/rotate` showing
+that menu with only those entries, and every running claude following ~/.claude/accounts/current in place.
 
 The logic lives in claude-accounts.mjs, as no chunk has room for it. This script writes the .mjs with the
 minified internals it needs resolved to their chunk + export name, and splices its hooks into two modules:
@@ -8,7 +8,9 @@ minified internals it needs resolved to their chunk + export name, and splices i
 2. the menu module: its license header becomes `$acc()`, importing the .mjs; the options list gains the .mjs's
    entries, appended so a late arrival never shifts the focused row; the select handler routes `acct:<name>`
    values to the .mjs's switchTo, showing a status dialog meanwhile, as the panel host retires a menu left
-   without one and drops its result.
+   without one and drops its result. A context flagged `rotate` drops the stock rows;
+3. the command-list module: its license header defines `/rotate`, calling the menu with that flag (a new export would
+   stay invisible: bun reads exports from the precomputed module_info), and the list gains it.
 
 Same-length overwrites (each license header absorbs the growth); take effect only through
 detach-claude-bytecode.py. Anchors are verbatim from claude-code 2.1.303; minified names churn
@@ -30,7 +32,7 @@ MENU_SPLICES = [
 	(
 		"options",
 		b'let ue=_,Pn=R(!1),Rn,En;',
-		b'let[$ao,$as]=y([]),ue=[..._,...$ao],Pn=R(!1),Rn,En;',
+		b'let[$ao,$as]=y([]),ue=t.rotate?$ao:[..._,...$ao],Pn=R(!1),Rn,En;',
 	),
 	(
 		"options load",
@@ -43,6 +45,7 @@ MENU_SPLICES = [
 		b'ht=function Gt(F){if(F.startsWith("acct:"))return fe(e(be,{title:"What do you want to do?",onCancel:nr,exitOnCtrlCD:!0,color:"suggestion",hideInputGuide:!0,children:e(n,{dimColor:!0,children:`Switching to account ${F.slice(5)}\\u2026`})})),$acc().then(m=>m.switchTo(F.slice(5),t,l)).catch(e=>l(`Account switch failed: ${e?.stack??e}`));',
 	),
 ]
+COMMAND_LIST = (b'Z6e,e3e,Fen,', b'Z6e,e3e,$rot,Fen,')
 
 # each pattern matches exactly once across all modules; its groups name the minified internals
 INTERNALS = [
@@ -149,6 +152,17 @@ for name, anchor, replacement in MENU_SPLICES:
 		die(f"{name}: expected 1 occurrence of the anchor in {menu}, found {src.count(anchor)}")
 	src = src.replace(anchor, replacement)
 data[graph[menu]] = with_header(menu, src, b"function $acc(){return " + load + b"}")
+
+lists = [name for name, src in sources.items() if b'{type:"local-jsx",name:"rate-limit-options",' in src]
+if len(lists) != 1:
+	die(f"expected the rate-limit-options command in 1 module, found {lists}")
+anchor, replacement = COMMAND_LIST
+if sources[lists[0]].count(anchor) != 1:
+	die(f"command list: expected 1 occurrence of the anchor in {lists[0]}, found {sources[lists[0]].count(anchor)}")
+data[graph[lists[0]]] = with_header(lists[0], sources[lists[0]].replace(anchor, replacement), (
+	b'var $rot={type:"local-jsx",name:"rotate",description:"Switch every claude to another account",requires:{ink:!0},'
+	b'load:()=>import("' + menu.encode() + b'").then(m=>({call:(d,c)=>m.call(d,{...c,rotate:!0})}))};'
+))
 
 resolved: dict[str, tuple[str, str]] = {}
 for pattern in INTERNALS:
