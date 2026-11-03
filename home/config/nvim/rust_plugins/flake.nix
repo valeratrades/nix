@@ -65,9 +65,6 @@
             cp -f ${(v-utils.files.rust.rustfmt {inherit pkgs;})} ./rustfmt.toml
             cp -f ${(v-utils.hooks.treefmt) { inherit pkgs; }} ./.treefmt.toml
 
-            echo "dummy" > $out/lib/rust_plugins.so #HACK: creates file to satisfy symlink
-            ln -sf $out/lib/rust_plugins.so ../lua/rust_plugins.so #HACK: creates files outside of current directory
-
             echo "Rust plugin dev environment loaded"
             echo "Run 'nix build' to compile and install the plugin"
           '';

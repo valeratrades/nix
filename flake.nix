@@ -100,12 +100,12 @@
       url = "github:valeratrades/decant";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    discretionary_engine = {
-      url = "git+https://github.com/valeratrades/discretionary_engine?submodules=1";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.rust-overlay.follows = "rust-overlay";
-      inputs.flake-utils.follows = "flake-utils";
-    };
+    #discretionary_engine = {
+    #  url = "git+https://github.com/valeratrades/discretionary_engine?submodules=1";
+    #  inputs.nixpkgs.follows = "nixpkgs";
+    #  inputs.rust-overlay.follows = "rust-overlay";
+    #  inputs.flake-utils.follows = "flake-utils";
+    #};
     math_tools = {
       url = "github:valeratrades/math_tools";
       inputs.nixpkgs.follows = "nixpkgs";

@@ -389,12 +389,12 @@
   home = {
     sessionPath = [
       #"${pkgs.lib.makeBinPath [ ]}"
-      "${config.home.homeDirectory}/s/evdev/"
+      #"${config.home.homeDirectory}/s/evdev/"
       "${config.home.homeDirectory}/.cargo/bin/"
       "${config.home.homeDirectory}/go/bin/"
-      "/usr/lib/rustup/bin/"
+      #"/usr/lib/rustup/bin/"
       "${config.home.homeDirectory}/.local/bin/"
-      "${config.home.homeDirectory}/pkg/packages.modular.com_mojo/bin"
+      #"${config.home.homeDirectory}/pkg/packages.modular.com_mojo/bin"
       "/usr/bin"
     ];
     pointerCursor = {
