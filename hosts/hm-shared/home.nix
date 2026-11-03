@@ -15,6 +15,7 @@
   #dbg: look at comment in ./config_symlinks.nix
 
   programs = {
+    man.enable = false; # its man-db would shadow the system's mandoc (os/nixos/configuration.nix)
     neovim = {
       plugins = [
         pkgs.vimPlugins.nvim-treesitter.withAllGrammars # can also choose specific ones with `.withPlugins (p: [ p.c p.java /*etc*/ ]))`
