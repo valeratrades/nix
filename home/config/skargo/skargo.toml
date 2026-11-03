@@ -1,1 +1,2 @@
 skill-creation = { git = "https://github.com/EV-Main/skills", version = "0.1" }
+excalidraw = { git = "https://github.com/EV-Main/skills", version = "0.1" }
