@@ -526,7 +526,6 @@
           oath-toolkit # https://askubuntu.com/questions/1460640/generating-totp-for-2fa-directly-from-the-computer-no-mobile-device
           bitwarden-desktop # seems like bitwarden is lacking TOTP on free plans
           bitwarden-cli
-          keepassxc
           #TODO: attempt to maybe start using it. Or just go agenix/sops. Current system is rather fragile. Priority is low because currently there isn't much to protect.
           pass # linux password manager
           prs # some password manager in rust

@@ -98,6 +98,7 @@ in
       };
       "pmjeegjhjdlccodhacdgbgfagbpmccpe".runtime_blocked_hosts = [ "*://*" ]; # Clockify: kept installed (and its data), inert
     };
+    "3rdparty".extensions."oboonakemofpalcgghocfoadofidjkkk".settings.passkeys = true; # KeePassXC-Browser
     ExtensionInstallForcelist = lib.mapAttrsToList (name: e: "${e.id};file://${packDir name}/updates.xml") selfPacked ++ map (id: "${id};https://clients2.google.com/service/update2/crx") [
       "abocjojdmemdpiffeadpdnicnlhcndcg" # SocialFocus
       "ajlhmclpjddfebgfpahnlodliljdnbie" # Moss
@@ -124,6 +125,7 @@ in
       "mnjggcdmjocbbbhaepdhchncahnbgone" # SponsorBlock
       "nhocmlminaplaendbabmoemehbpgdemn" # Fathom AI Note Taker
       "nkbihfbeogaeaoehlefnkodbefgpgknn" # MetaMask
+      "oboonakemofpalcgghocfoadofidjkkk" # KeePassXC-Browser
       "ofpnikijgfhlmmjlpkfaifhhdonchhoi" # Accept all cookies
       "ogcgkffhplmphkaahpmffcafajaocjbd" # ZenHub
       "omghfjlpggmjjaagoclmmobgdodcjboh" # Browsec VPN
@@ -132,7 +134,25 @@ in
     ];
   };
 
+  # home-manager installs native hosts for chromium only, not proprietary Chrome
+  environment.etc."opt/chrome/native-messaging-hosts/org.keepassxc.keepassxc_browser.json".text = builtins.toJSON {
+    name = "org.keepassxc.keepassxc_browser";
+    description = "KeePassXC integration with native messaging support";
+    path = "${config.home-manager.users.${user.username}.programs.keepassxc.package}/bin/keepassxc-proxy";
+    type = "stdio";
+    allowed_origins = [ "chrome-extension://oboonakemofpalcgghocfoadofidjkkk/" ];
+  };
+
   home-manager.users.${user.username} = { config, ... }: {
+    # Google account passkey lives here, so login never needs a phone
+    programs.keepassxc = {
+      enable = true;
+      settings.Browser = {
+        Enabled = true;
+        UpdateBinaryPath = false; # manifest is the /etc one above
+      };
+    };
+
     systemd.user.services = lib.mapAttrs' (name: e: lib.nameValuePair "chrome-${dashed name}" {
       Unit = {
         Description = "Pack the ${name} Chrome extension with its sops-held key";
