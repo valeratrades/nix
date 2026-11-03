@@ -1,8 +1,7 @@
 #!/usr/bin/env sh
 # default layout is semimak. If you wrote something in russian, you are expected to instantly switch back to semimak. Similar to `normal` mode in vim, - want to be able to assume at any time that current layout is semimak.
 
-# Get the active layout name directly from swaymsg
-current_layout=$(swaymsg -t get_inputs --raw | jq -r '[.[] | select(.xkb_active_layout_name != null) | .xkb_active_layout_name][0]')
+current_layout=$(swaymsg -t get_inputs --raw | jq -r '[.[] | select(.xkb_active_layout_name != null and (.identifier | contains("wlr_virtual_keyboard") | not)) | .xkb_active_layout_name][0]') # ringboard's auto-paste keyboard is always US
 
 # Map to abbreviations
 case "$current_layout" in
