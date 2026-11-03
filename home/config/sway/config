@@ -227,7 +227,7 @@ exec "~/.config/sway/start_doc_scraper.sh"
 
 bindsym $mod+c kill
 bindsym $mod+Return exec alacritty
-bindsym $mod+z floating toggle
+bindsym $mod+z $scratch_forget, floating toggle
 bindsym $mod+Shift+z sticky toggle
 # allows 1) moving by holding $mod + mouse_left_click + moving mouse 2) resizing by holding $mod + mouse_right_click + moving mouse
 floating_modifier $mod normal
