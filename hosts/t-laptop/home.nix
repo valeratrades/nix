@@ -13,6 +13,7 @@
       with pkgs;
       builtins.trace "DEBUG: sourcing Timur-specific home.nix" lib.lists.flatten [
         vscode
+        codex
         [
           # retarded games. Here only following Tsyren's nagging.
           prismlauncher
