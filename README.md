@@ -63,6 +63,14 @@ Claude Code config lives in [home/config/claude/](home/config/claude/), symlinke
 ### Per-repo settings
 `<repo>/.claude/settings.local.json` (gitignored, machine-local) layers over global [settings.json](home/config/claude/settings.json): objects merge by key, arrays concatenate, conflicting scalars take the repo value. Only picked up when the session is started inside that repo.
 
+### Other providers: `clm`
+`clm` runs Claude Code through a local litellm ([mixed.yaml](home/config/litellm/mixed.yaml)), so any model there is one `-m` away, and sessions resume across `cl`/`clm` (`-1`).
+- `opus` `sonnet` `fable` `haiku`: Anthropic, billed to `ANTHROPIC_API_KEY` (not the Max subscription)
+- `sub-{sol,terra,luna,astra}`: OpenAI on the ChatGPT subscription (login in `~/.local/state/litellm/chatgpt`)
+- `token-{sol,terra,luna,astra,pro}`: OpenAI on `OPENAI_API_KEY`; `-s`/`-t`/`-l` pick these
+
+Names are versionless, pointed at the newest model of each tier. For Anthropic-only work prefer `cl`: `clm` bills the API and adds a proxy hop.
+
 ### Helper agent model
 Global default is `env.CLAUDE_CODE_SUBAGENT_MODEL = "sonnet"`. To bump a repo to Opus:
 ```json
