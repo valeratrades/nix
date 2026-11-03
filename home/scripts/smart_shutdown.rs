@@ -114,8 +114,8 @@ fn main() {
         }
         println!("Saving claude sessions to telegram...");
         let claude_sessions_path = std::env::var("HOME")
-            .map(|h| format!("{h}/nix/home/config/tmux/claude_sessions/main.rs"))
-            .unwrap_or_else(|_| "/home/v/nix/home/config/tmux/claude_sessions/main.rs".to_string());
+            .map(|h| format!("{h}/nix/home/scripts/claude_sessions/main.rs"))
+            .unwrap_or_else(|_| "/home/v/nix/home/scripts/claude_sessions/main.rs".to_string());
 
         let output = Command::new(&claude_sessions_path).output();
 

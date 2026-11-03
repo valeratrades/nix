@@ -35,6 +35,19 @@ end
 function reboot; smart_shutdown --reboot $argv; end
 function save_sessions; $NIXOS_CONFIG/home/scripts/save_sessions.rs $argv; end # not the store copy: a shell older than the last switch would record in a format `restore_sessions` no longer reads
 function supervise_sessions; $__fish_scripts_dir/supervise_sessions.rs $argv; end
+function claude_sessions; $__fish_scripts_dir/claude_sessions/main.rs $argv; end
+
+# Run the claude_sessions classifier snapshot tests. Wraps the nightly
+# toolchain resolution the cargo-script runner already cached, so you don't
+# retype the RUST_PATH/PATH dance. Extra args pass straight through to cargo,
+# e.g. `claude_sessions_test -- --nocapture`. Set INSTA_UPDATE=always to
+# record snapshots for newly added fixtures.
+function claude_sessions_test
+    set -l rust_path (cat $HOME/.cargo/target/.rust-store-path)
+    env RUSTC_WRAPPER="" PATH="$rust_path/bin:$PATH" \
+        "$rust_path/bin/cargo" -Zscript test \
+        --manifest-path "$NIXOS_CONFIG/home/scripts/claude_sessions/main.rs" $argv # not the store copy: INSTA_UPDATE writes snapshots next to it
+end
 function profile_shell; $NIXOS_CONFIG/scripts/profile_shell.rs $argv; end
 function ambiance; $__fish_scripts_dir/ambiance.rs $argv; end
 function pp; $__fish_scripts_dir/pp.rs $argv; end

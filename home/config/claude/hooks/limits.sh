@@ -2,7 +2,7 @@
 # statusLine command that draws nothing: the statusline's stdin is the one place Claude Code
 # hands out the subscription's utilisation, fed by every API response's headers.
 # limits.tsv (weekly history), five_hour.tsv and sessions.tsv (the window each session is paid from) are read by
-# service_arb/accounting's graf; rate_limits/<account>.json (latest snapshot) by tmux/claude_sessions/main.rs.
+# service_arb/accounting's graf; rate_limits/<account>.json (latest snapshot) by scripts/claude_sessions/main.rs.
 # Sessions on an API key carry no rate_limits.
 d="${XDG_STATE_HOME:-$HOME/.local/state}/claude"
 f="$d/limits.tsv"
