@@ -515,6 +515,8 @@ in {
           excalidraw_export # svg and png from .excalidraw
         ]
 
+        freeplane # mind maps
+
         pkgs-ollama.ollama-cuda # pinned nixpkgs to avoid rebuilds
 
         ghostty # in case I need inline images

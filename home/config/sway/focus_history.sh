@@ -21,41 +21,56 @@ push() { # <list> <id>
 	echo $((${#kept[@]} - 1)) >"$dir/$1.pos"
 }
 
+mru() { # <list> <id>; unlike the jumplist, jumps never truncate it
+	local ids i kept=("$2")
+	[ -f "$dir/$1.mru" ] || : >"$dir/$1.mru"
+	mapfile -t ids <"$dir/$1.mru"
+	for i in "${ids[@]}"; do [ "$i" = "$2" ] || kept+=("$i"); done
+	printf '%s\n' "${kept[@]:0:max}" >"$dir/$1.mru"
+}
+
 case "$1" in
 daemon)
 	for p in $(pgrep -xf "bash $0 daemon"); do [ "$p" = $$ ] || kill "$p"; done # exec_always re-runs on reload
-	rm -f "$dir"/*.ids "$dir"/*.pos
+	rm -f "$dir"/*.ids "$dir"/*.pos "$dir"/*.mru
 	swaymsg -t subscribe -m '["window"]' | jq --unbuffered -r 'select(.change == "focus" and .container.scratchpad_state == "none") | .container.id' | while read -r id; do
 		ws=$(swaymsg -t get_tree | jq --argjson id "$id" "first($tree | select(.type == \"workspace\" and any($tree; .id == \$id))) | .id")
 		flock 9
 		push global "$id"
-		[ -z "$ws" ] || push "ws_$ws" "$id" # empty when the window closed before we looked
+		[ -z "$ws" ] || { push "ws_$ws" "$id"; mru "ws_$ws" "$id"; } # empty when the window closed before we looked
 		flock -u 9
 	done
 	;;
-back | forward)
-	[ "$1" = back ] && step=-1 || step=1
-	case "$2" in
-	global) scope='.' name='"global"' ;;
-	workspace) scope="first($tree | select(.type == \"workspace\" and any($tree; .focused)))" name='"ws_\(.id)"' ;;
-	*) echo "usage: $0 back|forward global|workspace" >&2 && exit 1 ;;
+back | forward | flip)
+	ws_scope="first($tree | select(.type == \"workspace\" and any($tree; .focused)))"
+	case "$*" in
+	"back global" | "forward global") scope='.' name='"global"' ;;
+	"back workspace" | "forward workspace" | flip) scope=$ws_scope name='"ws_\(.id)"' ;;
+	*) echo "usage: $0 back|forward global|workspace | flip" >&2 && exit 1 ;;
 	esac
-	out=$(swaymsg -t get_tree | jq -r "$scope | $name + \" \" + ([$tree | select(.pid != null and .scratchpad_state == \"none\") | .id] | join(\" \"))")
+	out=$(swaymsg -t get_tree | jq -r "$scope | $name + \" \" + ([$tree | select(.pid != null and .scratchpad_state == \"none\" and (.focused | not)) | .id] | join(\" \"))")
 	read -r list live <<<"$out"
-	live=" $live "
+	live=" $live " # con ids are never reused, so closed, scratchpadded or (for workspace lists) moved-away windows are just skipped
 	flock 9
 	[ -f "$dir/$list.ids" ] || exit 0 # nothing focused here since the daemon started
-	mapfile -t ids <"$dir/$list.ids"
-	p=$(<"$dir/$list.pos")
-	i=$((p + step))
-	while [ "$i" -ge 0 ] && [ "$i" -lt "${#ids[@]}" ] && [[ $live != *" ${ids[$i]} "* ]]; do i=$((i + step)); done # con ids are never reused, so closed, scratchpadded or (for workspace lists) moved-away windows are just skipped
-	[ "$i" -ge 0 ] && [ "$i" -lt "${#ids[@]}" ] || exit 0
-	echo "$i" >"$dir/$list.pos"
+	if [ "$1" = flip ]; then
+		mapfile -t ids <"$dir/$list.mru"
+		for i in "${!ids[@]}"; do [[ $live == *" ${ids[$i]} "* ]] && break; done
+		[[ $live == *" ${ids[$i]} "* ]] || exit 0
+	else
+		[ "$1" = back ] && step=-1 || step=1
+		mapfile -t ids <"$dir/$list.ids"
+		p=$(<"$dir/$list.pos")
+		i=$((p + step))
+		while [ "$i" -ge 0 ] && [ "$i" -lt "${#ids[@]}" ] && [[ $live != *" ${ids[$i]} "* ]]; do i=$((i + step)); done
+		[ "$i" -ge 0 ] && [ "$i" -lt "${#ids[@]}" ] || exit 0
+		echo "$i" >"$dir/$list.pos"
+	fi
 	flock -u 9
 	swaymsg "[con_id=${ids[$i]}] focus" >/dev/null
 	;;
 *)
-	echo "usage: $0 daemon | back|forward global|workspace" >&2
+	echo "usage: $0 daemon | back|forward global|workspace | flip" >&2
 	exit 1
 	;;
 esac
