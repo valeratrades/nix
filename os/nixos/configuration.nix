@@ -639,8 +639,6 @@ in {
 					vimPlugins.luasnip
 					vimPlugins.lean-nvim
 
-          codex
-
           starship
           fish
           dash
