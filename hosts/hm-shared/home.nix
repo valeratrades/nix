@@ -59,6 +59,9 @@
         # watched-files staleness scan (`direnv show_dump`) is skipped, as its only
         # consumer there is the out-of-date warning. `dirr` deletes the .rc, which
         # rebuilds via profile_rc_missing, and force reload still scans.
+        # Under manual reload the flake/shell files aren't watched either: a re-source on
+        # their change imports the same cached .rc, so all it does is replay the stale
+        # shellHook. `dirr` reloads through the .envrc watch.
         package = pkgs.nix-direnv.overrideAttrs (old: {
           # ahead of resholve, so commands introduced here get resolved too
           preFixup = ''
@@ -76,7 +79,9 @@
                 printf %s "$reload_script" >"''${layout_dir}/bin/nix-direnv-reload"
                 chmod +x "''${layout_dir}/bin/nix-direnv-reload"
               fi' \
-              --replace-fail '  _nix_direnv_watches watches' '  [[ $_nix_direnv_manual_reload -eq 1 && -z ''${_nix_direnv_force_reload-} ]] || _nix_direnv_watches watches'
+              --replace-fail '  _nix_direnv_watches watches' '  [[ $_nix_direnv_manual_reload -eq 1 && -z ''${_nix_direnv_force_reload-} ]] || _nix_direnv_watches watches' \
+              --replace-fail '  watch_file "''${files_to_watch[@]}"' '  [[ $_nix_direnv_manual_reload -eq 1 && -z ''${_nix_direnv_force_reload-} ]] || watch_file "''${files_to_watch[@]}"' \
+              --replace-fail '  watch_file "$HOME/.direnvrc" "$HOME/.config/direnv/direnvrc" "shell.nix" "default.nix"' '  [[ $_nix_direnv_manual_reload -eq 1 && -z ''${_nix_direnv_force_reload-} ]] || watch_file "$HOME/.direnvrc" "$HOME/.config/direnv/direnvrc" "shell.nix" "default.nix"'
           '' + old.preFixup;
         });
       };
