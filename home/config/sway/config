@@ -357,7 +357,7 @@ mode "speech" {
 }
 bindsym $mod+q exec "swaymsg mode speech && eww --no-daemonize update sway_mode='speech (w=whisper,g=gpt4o,hold_space=record)'" # q means nothing, we ran out of letters
 
-bindsym $mod+d exec zathura "~/Downloads/$(ls -t ~/Downloads | head -n 1)"
+bindsym $mod+d exec xdg-open "$HOME/Downloads/$(ls -t ~/Downloads | head -n 1)"
 bindsym $mod+Ctrl+i exec xdg-open ~/tmp/Screenshots/"$(ls -t ~/tmp/Screenshots | head -n 1)"
 
 # # Screenshots

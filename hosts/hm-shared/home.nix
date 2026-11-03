@@ -157,6 +157,13 @@
     terminal = false;
     settings.StartupWMClass = "discord_private";
   };
+  xdg.desktopEntries.nvim_alacritty = { # nvim.desktop's `Terminal=true` is a no-op when launched from sway
+    name = "Neovim (alacritty)";
+    exec = "alacritty -e nvim %f";
+    icon = "nvim";
+    terminal = false;
+    mimeType = [ "text/markdown" ];
+  };
 
   dconf = {
     enable = true;
