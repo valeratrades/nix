@@ -238,8 +238,11 @@ bindsym $mod+Escape exec makoctl dismiss --all
 bindsym $mod+End exec $wifi
 
 bindsym $mod+m exec $menu
-bindsym $mod+o split vertical
-bindsym $mod+Shift+o split horizontal
+bindsym $mod+v split vertical
+bindsym $mod+Shift+v split horizontal
+exec_always $sway_root/focus_history.sh daemon
+bindsym $mod+o exec $sway_root/focus_history.sh back
+bindsym $mod+i exec $sway_root/focus_history.sh forward
 bindsym $mod+Ctrl+t layout tabbed
 bindsym $mod+f fullscreen
 bindsym $mod+p focus parent
@@ -352,7 +355,7 @@ mode "speech" {
 bindsym $mod+w exec "swaymsg mode speech && eww --no-daemonize update sway_mode='speech (w=whisper,g=gpt4o,hold_space=record)'"
 
 bindsym $mod+d exec zathura "~/Downloads/$(ls -t ~/Downloads | head -n 1)"
-bindsym $mod+i exec xdg-open ~/tmp/Screenshots/"$(ls -t ~/tmp/Screenshots | head -n 1)"
+bindsym $mod+Shift+i exec xdg-open ~/tmp/Screenshots/"$(ls -t ~/tmp/Screenshots | head -n 1)"
 
 # # Screenshots
 exec mkdir -p ~/tmp/Screenshots >/dev/null
