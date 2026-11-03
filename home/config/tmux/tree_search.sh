@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# `/` in choose-tree. Exact session name (`*` favorite prefix optional): cursor onto it. Otherwise tags every session containing the query, cursor stays. Expansion is never touched.
+# `/` in choose-tree. Exact session name (`*` favorite prefix optional), or the only session containing the query: cursor onto it. Otherwise tags every session containing the query, cursor stays. Expansion is never touched.
 # `$1`: client; `$2`: tree-mode pane; query in @tree_search
 c=$1 p=$2
 q=$(tmux show -gv @tree_search \; set -gu @tree_search)
@@ -25,6 +25,7 @@ readback() {
 }
 
 x=$(printf '%s\n' "$sessions" | grep -xF -e "$q" -e "*$q" | head -1)
+[ -n "$x" ] || [ "$(printf '%s\n' "$sessions" | grep -cF -- "$q")" != 1 ] || x=$(printf '%s\n' "$sessions" | grep -F -- "$q")
 [ -n "$x" ] || cur=$(readback send-keys -t "$p" T)
 
 # Layout: walking down tagging every row leaves exactly the rows without visible children tagged (tagging a child untags its parents); their ancestors fill in the rest.
