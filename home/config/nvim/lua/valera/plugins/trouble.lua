@@ -7,7 +7,6 @@ return require "lazier" {
 				--auto_close = true, -- without `auto_open`, just nukes itself when navigating
 				auto_refresh = true,
 				warn_no_results = false,
-				pinned = false, -- don't pin to initial window (doesn't work)
 				focus = false, -- don't focus on open
 			},
 		},
@@ -16,8 +15,39 @@ return require "lazier" {
 	keys = {
 		{
 			"<space><space>x",
-			"<cmd>Trouble symbols close<cr><cmd>Trouble symbols open<cr>", --HACK: with current impl it's pinned to the window. So if I need it in another one - must first close. (2025/06/06)
-			desc = "Symbols (Trouble)",
+			function()
+				local View = require("trouble.view")
+				local Main = require("trouble.view.main")
+				local cur = vim.api.nvim_get_current_win()
+				for _, v in ipairs(View.get({ mode = "symbols", open = true })) do
+					if v.view.anchor == cur or v.view.win.win == cur then
+						return v.view:close()
+					end
+				end
+
+				local view = View.new(require("trouble.config").get({
+					mode = "symbols",
+					win = { relative = "win", position = "right", win = cur },
+				}))
+				view.anchor = cur
+				-- trouble's `pinned` binds to a buffer and drops it on buffer switch; bind to the pane instead
+				local function main(self)
+					if not vim.api.nvim_win_is_valid(cur) then return end -- anchor pane closed; view is being torn down
+					self._main = Main._info(cur)
+					return self._main
+				end
+				view.main = main
+				for _, s in ipairs(view.sections) do
+					s.main = main
+				end
+				vim.api.nvim_create_autocmd("WinClosed", {
+					pattern = tostring(cur),
+					once = true,
+					callback = function() vim.schedule(function() view:close() end) end, -- can't close windows inside WinClosed
+				})
+				view:open()
+			end,
+			desc = "Symbols (Trouble), per pane",
 		},
 	},
 }
