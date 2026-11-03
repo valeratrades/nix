@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# `/` in choose-tree. Exact session name (`*` favorite prefix optional): cursor onto it, expanded; arriving from another session collapses the rest. Otherwise tags every session containing the query, cursor stays.
+# `/` in choose-tree. Exact session name (`*` favorite prefix optional): cursor onto it. Otherwise tags every session containing the query, cursor stays. Expansion is never touched.
 # `$1`: client; `$2`: tree-mode pane; query in @tree_search
 c=$1 p=$2
 q=$(tmux show -gv @tree_search \; set -gu @tree_search)
@@ -24,21 +24,12 @@ readback() {
 	printf '%s' "$r"
 }
 
-cur=$(readback send-keys -t "$p" T)
-cur_s=${cur#=}
-cur_s=${cur_s%%:*}
 x=$(printf '%s\n' "$sessions" | grep -xF -e "$q" -e "*$q" | head -1)
-if [ -n "$x" ] && [ "$x" != "$cur_s" ]; then
-	rank=$(printf '%s\n' "$sessions" | LC_ALL=C sort | grep -nxF -- "$x" | cut -d: -f1) # choose-tree -O name is strcmp
-	key M-- g
-	move 1 "$rank"
-	key Right
-	exit 0
-fi
+[ -n "$x" ] || cur=$(readback send-keys -t "$p" T)
 
 # Layout: walking down tagging every row leaves exactly the rows without visible children tagged (tagging a child untags its parents); their ancestors fill in the rest.
 # Down wraps, so each pass walks no further than a lower bound on the rows left.
-last=$(readback send-keys -t "$p" G)
+last=$(readback send-keys -t "$p" T G)
 total_s=$(printf '%s\n' "$sessions" | wc -l) # shortcut: assumes no `f` filter hides sessions; a filtered tree over-walks and garbles the tags
 rows=()
 pre=(send-keys -t "$p" T g \;)
@@ -53,14 +44,12 @@ while :; do
 done
 key T # the walk ended wrapped back onto row 0
 
-at=0
-for i in "${!rows[@]}"; do [ "${rows[i]}" = "$cur" ] && cur_i=$i; done
 if [ -n "$x" ]; then
-	for i in "${!rows[@]}"; do [ "${rows[i]}" = "=$x:" ] && x_i=$i; done
-	move 0 "$x_i"
-	[[ ${rows[x_i + 1]} == "=$x:"?* ]] || key Right
+	for i in "${!rows[@]}"; do [ "${rows[i]}" = "=$x:" ] && move 0 "$i"; done
 	exit 0
 fi
+at=0
+for i in "${!rows[@]}"; do [ "${rows[i]}" = "$cur" ] && cur_i=$i; done
 for i in "${!rows[@]}"; do
 	r=${rows[i]}
 	[[ $r == *: ]] || continue
