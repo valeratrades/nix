@@ -24,6 +24,11 @@ settled by a plain fact stays `finished`; so does a check on the agent's own wor
 agents still live never reaches the judge: the pane footer lists them, and it reads
 `ongoing` — colored a darker `active`, and `supervise_sessions` watches it like `active`.
 
+A closing whose last paragraph follows a `---` line asks me for steps the agent can't go on
+without (the convention `claude/CLAUDE.md` sets). The judge is told so and its verdict floored at
+`partial`, so it reads `partial` or `stuck`, never `finished`/`answered` — and it's judged even
+over live background work, which may itself be waiting on those steps.
+
 **Invariant — doubt escalates.** Severity runs `finished` < `answered` < `partial` < `stuck`.
 `finished` tells me nothing needs a look; the others tell me a human should check.
 So when the judge can't settle a report, the more severe reading wins. A wasted

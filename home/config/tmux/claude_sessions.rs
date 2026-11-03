@@ -155,6 +155,17 @@ impl ClaudeState {
     }
 }
 
+impl From<report::Verdict> for ClaudeState {
+    fn from(v: report::Verdict) -> Self {
+        match v {
+            report::Verdict::Finished => ClaudeState::Finished,
+            report::Verdict::Answered => ClaudeState::Answered,
+            report::Verdict::Partial => ClaudeState::Partial,
+            report::Verdict::Stuck => ClaudeState::Stuck,
+        }
+    }
+}
+
 #[derive(Debug)]
 struct ClaudeWindow {
     session: String,
@@ -902,16 +913,22 @@ Judge the implementation, nothing else. A test not written, a check not run, a v
 
 Answer with exactly one word: finished, answered, stuck, or partial.";
 
+    const HANDS_OFF: &str = "\n\n> The report ends in a `---` block: the agent asked the user for steps it cannot go on without, and may have left something running that waits on them. That is partial or stuck, never finished or answered.";
+
     /// Long reports are all preamble; the verdict lives in the closing lines.
     const MAX_REPORT: usize = 8000;
     /// The ask leads a prompt; long ones trail off into pasted context.
     const MAX_PROMPT: usize = 2000;
     const TIMEOUT: Duration = Duration::from_secs(20);
 
-    pub fn classify(session_file: &Path, vote: bool) -> Option<Tally> {
+    /// `ongoing` sessions are only judged when their closing hands the user steps, see `hands_off`.
+    pub fn classify(session_file: &Path, vote: bool, ongoing: bool) -> Option<Tally> {
         // No key means the feature is off, not that anything is wrong. `ask` runs on Model::Fast, so
         // OpenAI is the provider whose absence turns this off.
         if std::env::var("OPENAI_API_KEY").is_err() {
+            return None;
+        }
+        if ongoing && !last_report(session_file).is_some_and(|r| hands_off(&r)) {
             return None;
         }
 
@@ -1056,6 +1073,12 @@ Answer with exactly one word: finished, answered, stuck, or partial.";
         Some(Some(format!("<prompt>\n{}\n</prompt>\n\n{report}", prompt[..end].trim())))
     }
 
+    /// A closing that ends on a `---` block asks the user for steps it can't go on without.
+    /// The convention is declared in ~/nix/home/config/claude/CLAUDE.md; drop this if it goes from there.
+    fn hands_off(report: &str) -> bool {
+        report.trim_end().rsplit_once("\n---\n").is_some_and(|(_, steps)| !steps.trim_start().contains("\n\n"))
+    }
+
     /// `n` concurrent judgements; a call that fails or answers off-format is a missing vote.
     fn samples(report: &str, n: usize) -> Vec<Verdict> {
         // Cheapest tier that reliably returns a single-word verdict; the local
@@ -1064,10 +1087,12 @@ Answer with exactly one word: finished, answered, stuck, or partial.";
         // truncated verdict parses as None, i.e. silently no verdict at all.
         let client = ask_llm::Client::default().model(ask_llm::Model::Fast).max_tokens(8);
         let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build().expect("current-thread runtime builds with no OS resources to fail on");
-        let message = format!("{SYSTEM}\n\n---\n\n{report}");
+        let hands_off = hands_off(report);
+        let note = if hands_off { HANDS_OFF } else { "" };
+        let message = format!("{SYSTEM}{note}\n\n---\n\n{report}");
         let sample = async || {
             let response = tokio::time::timeout(TIMEOUT, client.ask(message.clone())).await.ok()?.ok()?;
-            parse(&response.text)
+            parse(&response.text).map(|v| if hands_off { v.max(Verdict::Partial) } else { v })
         };
         runtime.block_on(futures::future::join_all((0..n).map(|_| sample()))).into_iter().flatten().collect()
     }
@@ -1636,17 +1661,18 @@ fn get_claude_windows(vote: bool) -> Vec<ClaudeWindow> {
                             let state = if stale {
                                 ClaudeState::Done
                             } else {
-                                let tally = metadata.as_ref().and_then(|m| report::classify(&m.file, vote));
+                                let tally = metadata.as_ref().and_then(|m| report::classify(&m.file, vote, false));
                                 votes = tally.filter(|t| t.of > 1).map(|t| (t.votes, t.of));
-                                match tally.map(|t| t.verdict) {
-                                    Some(report::Verdict::Stuck) => ClaudeState::Stuck,
-                                    Some(report::Verdict::Partial) => ClaudeState::Partial,
-                                    Some(report::Verdict::Answered) => ClaudeState::Answered,
-                                    Some(report::Verdict::Finished) | None => ClaudeState::Finished,
-                                }
+                                tally.map_or(ClaudeState::Finished, |t| t.verdict.into())
                             };
                             (state, None, None, None, summary, model, context)
                         }
+                    }
+                    // A `---` hand-off outranks live background work: that work may itself be waiting on the user.
+                    ClaudeState::Ongoing => {
+                        let tally = metadata.as_ref().and_then(|m| report::classify(&m.file, vote, true));
+                        votes = tally.filter(|t| t.of > 1).map(|t| (t.votes, t.of));
+                        (tally.map_or(ClaudeState::Ongoing, |t| t.verdict.into()), None, None, None, summary, model, context)
                     }
                     _ => (
                         activity.state,
