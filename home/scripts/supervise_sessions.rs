@@ -16,7 +16,7 @@ use std::collections::{BTreeSet, HashMap};
 use std::process::Command;
 use std::time::Duration;
 
-const CLAUDE_SESSIONS: &str = "/home/v/nix/home/config/tmux/claude_sessions.rs";
+const CLAUDE_SESSIONS: &str = "/home/v/nix/home/config/tmux/claude_sessions/main.rs";
 const SMART_SHUTDOWN: &str = "/home/v/nix/home/scripts/smart_shutdown.rs";
 const TIMER: &str = "/home/v/nix/home/scripts/timer.rs";
 const TG: &str = "/etc/profiles/per-user/v/bin/tg"; // gateway PATH lacks the user profile; call it explicitly

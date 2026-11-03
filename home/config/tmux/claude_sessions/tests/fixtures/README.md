@@ -1,7 +1,7 @@
 # Terminal-state classifier fixtures
 
 Each `<claude version>/*.txt` here is a **real `tmux capture-pane -p` dump** of a Claude Code pane.
-The test in `claude_sessions.rs` (`mod tests`) feeds every one through the pure
+The test in `main.rs` (`mod tests`) feeds every one through the pure
 `classify_activity` function and checks that:
 
 1. the resulting `ClaudeState` equals the `<state>__` prefix in the filename, and
@@ -14,7 +14,7 @@ No tmux / `/proc` / network / mocks are involved — just text in, state out.
 Every case lives under a directory named for the claude code version that drew
 it (the pane banner's `Claude Code vX.Y.Z`, or `"version"` in its transcript).
 Loose files at the top level fail the test. Versions below `OLDEST_CLAUDE_VERSION`
-in `claude_sessions.rs` are skipped — bump it to retire fixtures of UIs no longer seen.
+in `main.rs` are skipped — bump it to retire fixtures of UIs no longer seen.
 
 ```
 <state>__<description>.txt        # plain capture-pane -p
@@ -64,8 +64,8 @@ Then record its snapshot and confirm it's green:
 
 ```fish
 set RUST_PATH (cat ~/.cargo/target/.rust-store-path)
-env RUSTC_WRAPPER="" PATH="$RUST_PATH/bin:$PATH" INSTA_UPDATE=always cargo -Zscript test --manifest-path ../../../claude_sessions.rs
-env RUSTC_WRAPPER="" PATH="$RUST_PATH/bin:$PATH" INSTA_UPDATE=no     cargo -Zscript test --manifest-path ../../../claude_sessions.rs
+env RUSTC_WRAPPER="" PATH="$RUST_PATH/bin:$PATH" INSTA_UPDATE=always cargo -Zscript test --manifest-path ../../../main.rs
+env RUSTC_WRAPPER="" PATH="$RUST_PATH/bin:$PATH" INSTA_UPDATE=no     cargo -Zscript test --manifest-path ../../../main.rs
 ```
 
 The filename-prefix assertion runs automatically; the snapshot pins the extracted
@@ -76,5 +76,5 @@ caught too.
 
 ```fish
 set RUST_PATH (cat ~/.cargo/target/.rust-store-path)
-env RUSTC_WRAPPER="" PATH="$RUST_PATH/bin:$PATH" cargo -Zscript test --manifest-path ../../claude_sessions.rs
+env RUSTC_WRAPPER="" PATH="$RUST_PATH/bin:$PATH" cargo -Zscript test --manifest-path ../../main.rs
 ```

@@ -1,0 +1,133 @@
+# claude_sessions
+
+- `main.rs` — cargo-script that reports the state of every Claude Code
+  process running in a tmux window (used by the status line / eww widget). Run
+  via `nix-run-cached`; aliased to `claude_sessions` in `../__main__.fish`.
+- `tests/` + `snapshots/` — snapshot tests for the `main.rs` terminal
+  state classifier, plus `tests/reports/` for the closing-report judge (see below).
+
+## Closing-report verdicts
+
+A pane reading `finished` only means Claude stopped talking. `mod report` inside
+`main.rs` takes the session's closing report (the closing text of the
+last human-prompted turn, plus the closings of any turns task notifications woke
+up after it, led by the human prompt that opened it — a closing that answers a
+question reads as a dead end without it) and has an LLM — via the `ask_llm` crate — judge it as
+`finished` / `answered` / `stuck` / `partial`, which become states of their own:
+`stuck` (no progress for any reason — blocked, lost, or refused) is colored like `question`, `partial` like `error`;
+`partial` just leaves work undone. `answered` (a reply I have to weigh or work with before anything
+moves — a comparison, a recommendation, a hint) is colored between `finished` and `partial`. A question
+settled by a plain fact stays `finished`; so does a check on the agent's own work that came back clean
+("yes, it's pushed"), while one that came back short ("no, only a local commit") is `partial`. A turn that ended with its own background shells or
+agents still live never reaches the judge: the pane footer lists them, and it reads
+`ongoing` — colored a darker `active`, and `supervise_sessions` watches it like `active`.
+
+A closing whose last paragraph follows a `---` line asks me for steps the agent can't go on
+without (the convention `claude/CLAUDE.md` sets). The judge is told so and its verdict floored at
+`partial`, so it reads `partial` or `stuck`, never `finished`/`answered` — and it's judged even
+over live background work, which may itself be waiting on those steps.
+
+**Invariant — doubt escalates.** Severity runs `finished` < `answered` < `partial` < `stuck`.
+`finished` tells me nothing needs a look; the others tell me a human should check.
+So when the judge can't settle a report, the more severe reading wins. A wasted
+check still costs real time, though: the judging prompt must not lean on `partial`
+to hedge reports that do read one way.
+
+The judge takes no temperature, so with `--vote` each verdict is drawn from 3 concurrent samples
+and the most severe one wins; without it, one sample. The full view prefixes
+the state with the votes it drew (`2/3 partial`); a lone severe vote can show `1/3`.
+
+The verdict is cached in `~/.cache/claude-session-reports.json` against the
+transcript's mtime, so it costs one call per session settle, not one per
+status-line refresh. Misses are cached too — an unreachable model must not earn
+a doomed HTTP call on every refresh — and retried on the session's next turn. No
+`OPENAI_API_KEY` in the environment turns the whole thing off and every settled
+session just reads `finished`. `done` panes (untouched for 45 min) are never
+classified — that signal has already decayed.
+
+The judging prompt is the whole classifier, so it's pinned by
+`tests/reports/<claude version>/<verdict>__<desc>.md` — real closing reports, same
+drop-a-file-in-and-it's-covered deal as the pane fixtures. They pin the judge's
+consensus, not the severity max: one live call each, and a disallowed verdict is retried as a
+majority of 3, which only then fails the test.
+
+A report that reads more than one way names its secondary verdicts with their loss 1..=3:
+`stuck+partial1+answered3__<desc>.md` takes `stuck` free, `partial` at 1, `answered` at 3,
+anything else fails. Every run prints `report loss <lost>/<budget>`, the budget being the sum of
+each case's worst loss, with a line per case that lost points, so drift shows on a green run too.
+Never put this in the `.md` body: the judge reads it verbatim.
+
+Editing the prompt invalidates every cached verdict (they were drawn by a different judge).
+
+It runs on `ask_llm::Model::Fast`; when that provider is out of quota, `ask_llm`'s
+fallback graph moves the call to the next model.
+
+## Running the tests
+
+The tests live inside `main.rs` itself (it's a single-file
+cargo-script). The simplest way — a fish helper from `../__main__.fish` wraps the
+nightly-toolchain resolution:
+
+```fish
+claude_sessions_test
+```
+
+Extra args pass through to `cargo test`, e.g.:
+
+```fish
+claude_sessions_test -- --nocapture
+INSTA_UPDATE=always claude_sessions_test   # record snapshots for new fixtures
+```
+
+If you'd rather not go through the helper, the raw invocation is:
+
+```fish
+set RUST_PATH (cat ~/.cargo/target/.rust-store-path)
+env RUSTC_WRAPPER="" PATH="$RUST_PATH/bin:$PATH" \
+    cargo -Zscript test --manifest-path ./main.rs
+```
+
+(`RUSTC_WRAPPER=""` disables sccache; the `PATH` prefix points cargo at the
+nix-pinned nightly the runner already cached.)
+
+## What the tests cover
+
+Only the part that actually regresses: `classify_activity` — the pure function
+that turns a captured tmux pane (plain text, plus an escape-coded capture for the
+draft case) into a `ClaudeState` (`empty / active / planning / finished / draft /
+question / input / error / limit`). Everything else in the script is live-environment I/O (`tmux
+list-panes`, `/proc`, `pgrep`, the OAuth usage endpoint, ollama) and is **not**
+unit-tested — it can't be exercised honestly without mocks or a full e2e tmux
+harness.
+
+Each test case is a **real captured pane** stored under `tests/fixtures/`, with
+its expected state encoded in the filename and its full result pinned by an
+`insta` snapshot in `snapshots/`. No mocks.
+
+`finished`, `empty`, and `input` are deliberately **not** held apart with any
+precision — they're treated as interchangeable "nothing's blocked, nothing's
+running" states. `input` (user typed into the box but hasn't sent) is detected
+loosely: a non-empty input line under the `(shift+tab to cycle)` mode footer.
+Its only job is to keep a typed numbered list (`❯ 1. …`) from being misread as a
+`question` selector, and to color such panes white (same as `limit`). A finished
+session showing a dim ghost suggestion may read as `input`; that's fine.
+
+## Adding a test case
+
+When a pane gets classified wrong, capture it and drop it in — no code change
+needed. See `tests/fixtures/README.md` for the full workflow; the short version:
+
+```fish
+tmux capture-pane -t <session>:<window> -p -S -50 > tests/fixtures/<version>/<state>__<desc>.txt
+INSTA_UPDATE=always claude_sessions_test   # record its snapshot
+claude_sessions_test                        # confirm green
+```
+
+`<version>` is the claude code that drew the pane — every case must live under
+one, and cases older than `OLDEST_CLAUDE_VERSION` (in `mod tests`) are skipped,
+so bumping it retires fixtures of UIs no longer seen. Same for `tests/reports/`.
+
+`<state>` is one of `empty active planning finished draft question error`. For draft cases
+also capture the escape-coded pane to `tests/fixtures/<version>/<state>__<desc>.esc`
+(`tmux capture-pane -p -e -S -10`) — it's how typed input is told apart from grey
+ghost suggestions.

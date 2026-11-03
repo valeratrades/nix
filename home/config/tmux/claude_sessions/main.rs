@@ -1,6 +1,7 @@
 #!/home/v/nix/home/scripts/nix-run-cached
 ---cargo
 [package]
+name = "claude_sessions"
 edition = "2024"
 
 [dependencies]
