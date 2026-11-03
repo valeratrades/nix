@@ -1863,7 +1863,9 @@ fn classify_activity(
     // before everything else. Anchored the same way as the API-error chrome:
     // trimmed line STARTS with "⎿" with the limit text as its immediate body,
     // so narration that merely QUOTES the chrome doesn't fire.
-    let limit_pattern = Regex::new(r"(?m)^\s*⎿\s+You['’]ve hit your (\p{L}+ )?limit").unwrap();
+    // The "⚠ Usage limit reached" notice under the input box stays in the window
+    // when a task list pushes the "⎿" row out of it.
+    let limit_pattern = Regex::new(r"(?m)^\s*(⎿\s+You['’]ve hit your (\p{L}+ )?limit|⚠\s+Usage limit reached)").unwrap();
     if limit_pattern.is_match(&last_portion) {
         return ActivityResult { state: ClaudeState::Limit, draft_content: None, question_content: None, plan_mode };
     }
