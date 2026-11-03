@@ -31,6 +31,25 @@ in {
     alertsChannel = config.sops.secrets."social-networks/telegram_alerts_channel".path;
   };
 
+  systemd.user.services.keepassxc = {
+    Unit = {
+      Description = "KeePassXC with the main database unlocked from sops";
+      After = [ "sway-session.target" "sops-nix.service" ];
+      Requires = [ "sops-nix.service" ];
+      PartOf = [ "sway-session.target" ];
+    };
+    Install.WantedBy = [ "sway-session.target" ];
+    Service = {
+      ExecStart = "${config.programs.keepassxc.package}/bin/keepassxc --minimized";
+      # D-Bus rather than --pw-stdin: the latter segfaults in MainWindow::bringToFront (2.7.12)
+      ExecStartPost = toString (pkgs.writeShellScript "keepassxc-unlock" ''
+        for _ in $(seq 50); do ${pkgs.systemd}/bin/busctl --user status org.keepassxc.KeePassXC.MainWindow >/dev/null 2>&1 && break; sleep 0.2; done
+        exec ${pkgs.systemd}/bin/busctl --user call org.keepassxc.KeePassXC.MainWindow /keepassxc org.keepassxc.KeePassXC.MainWindow \
+          openDatabase ss ${config.home.homeDirectory}/s/g/private/keepassxc/main.kdbx "$(cat ${config.sops.secrets."other/keepassxc_password".path})"
+      '');
+    };
+  };
+
   wallpaper-carousel = {
     enable = false; #Q: not sold on having this run hourly. Interferes with any manual wallpaper setting
     package = inputs.wallpaper_carousel.packages.${pkgs.stdenv.hostPlatform.system}.default;
