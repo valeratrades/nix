@@ -164,9 +164,8 @@ mode "monitors" {
 	# university/projector mode: 1080p, all workspaces to external
 	bindsym u exec "$switch_out && swaymsg 'output HDMI-A-1 mode 1920x1080@60Hz pos 0 0; output eDP-1 pos 0 1080; output eDP-2 pos 0 1080'"
 
-	bindsym $mod+k exec $switch_out
+	bindsym $mod+Period exec $switch_out
 	bindsym $mod+c exec $switch_out
-	bindsym $mod+q exec $switch_out
 	bindsym Ctrl+c exec $switch_out
 	bindsym Escape exec $switch_out
 	bindsym q exec $switch_out
@@ -290,7 +289,6 @@ mode "eww" {
 
 	bindsym $mod+e exec $switch_out
 	bindsym $mod+c exec $switch_out
-	bindsym $mod+q exec $switch_out
 	bindsym Ctrl+c exec $switch_out
 	bindsym Escape exec $switch_out
 	bindsym q exec $switch_out
@@ -348,8 +346,8 @@ mode "speech" {
 	bindcode --no-repeat 65 exec ~/.config/sway/speech-record-start.sh
 	bindcode --release 65 exec ~/.config/sway/speech-record-stop.sh
 
-	bindsym $mod+c exec $switch_out
 	bindsym $mod+q exec $switch_out
+	bindsym $mod+c exec $switch_out
 	bindsym Ctrl+c exec $switch_out
 	bindsym Escape exec $switch_out
 	bindsym Return exec $switch_out
@@ -376,7 +374,6 @@ mode "screenshot" {
 
 	bindsym $mod+Insert exec $switch_out
 	bindsym $mod+c exec $switch_out
-	bindsym $mod+q exec $switch_out
 	bindsym Ctrl+c exec $switch_out
 	bindsym Escape exec $switch_out
 	bindsym q exec $switch_out
@@ -402,7 +399,6 @@ mode "size_presets" {
 
 	bindsym $mod+apostrophe exec $switch_out
 	bindsym $mod+c exec $switch_out
-	bindsym $mod+q exec $switch_out
 	bindsym Ctrl+c exec $switch_out
 	bindsym Escape exec $switch_out
 	bindsym q exec $switch_out
@@ -438,7 +434,6 @@ mode "move_or_resize" {
 
 	bindsym $mod+k exec $switch_out
 	bindsym $mod+c exec $switch_out
-	bindsym $mod+q exec $switch_out
 	bindsym Ctrl+c exec $switch_out
 	bindsym Escape exec $switch_out
 	bindsym q exec $switch_out
@@ -482,7 +477,6 @@ mode "obs" {
 
 	bindsym $mod+comma exec $switch_out
 	bindsym $mod+c exec $switch_out
-	bindsym $mod+q exec $switch_out
 	bindsym Ctrl+c exec $switch_out
 	bindsym Escape exec $switch_out
 	bindsym q exec $switch_out
