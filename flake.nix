@@ -143,6 +143,7 @@
     # nixpkgs would change the hash and miss the cache).
     auto_redshift.url = "github:valeratrades/auto_redshift?ref=release";
     btc_line.url = "github:valeratrades/btc_line";
+    call_scripters.url = "github:ev-main/call_scripters";
     bourso-api.url = "github:valeratrades/bourso-api";
     bad_apple_rs = {
       url = "github:lomirus/bad-apple-rs"; # merged my nix-integration pull

@@ -654,6 +654,7 @@ in {
         inputs.translate_infrequent.packages.${pkgs.stdenv.hostPlatform.system}.default
         (inputs.v_flakes.rs.sort_derives pkgs.stdenv.hostPlatform.system) # patched: qualified derives can sort last
         inputs.btc_line.packages.${pkgs.stdenv.hostPlatform.system}.default
+        inputs.call_scripters.packages.${pkgs.stdenv.hostPlatform.system}.default
         inputs.bourso-api.packages.${pkgs.stdenv.hostPlatform.system}.default
         inputs.wallpaper_carousel.packages.${pkgs.stdenv.hostPlatform.system}.default
         inputs.decant.packages.${pkgs.stdenv.hostPlatform.system}.default
