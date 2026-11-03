@@ -35,7 +35,7 @@ in {
     Unit = {
       Description = "KeePassXC with the main database unlocked from sops";
       After = [ "sway-session.target" "sops-nix.service" ];
-      Requires = [ "sops-nix.service" ];
+      Wants = [ "sops-nix.service" ]; # Requires would stop it on every switch's sops-nix restart
       PartOf = [ "sway-session.target" ];
     };
     Install.WantedBy = [ "sway-session.target" ];
