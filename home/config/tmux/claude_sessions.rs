@@ -913,7 +913,7 @@ Judge the implementation, nothing else. A test not written, a check not run, a v
 
 Answer with exactly one word: finished, answered, stuck, or partial.";
 
-    const HANDS_OFF: &str = "\n\n> The report ends in a `---` block: the agent asked the user for steps it cannot go on without, and may have left something running that waits on them. That is partial or stuck, never finished or answered.";
+    const HANDS_OFF: &str = "\n\n> The report ends in a `---` block: the agent asked the user for steps it cannot go on without, and may have left something running that waits on them. That is never finished or answered: stuck while the agent cannot go on until they are done, partial when what was asked has landed and only those steps are left.";
 
     /// Long reports are all preamble; the verdict lives in the closing lines.
     const MAX_REPORT: usize = 8000;
