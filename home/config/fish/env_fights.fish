@@ -28,3 +28,6 @@ function __env_fights_report --on-event fish_postexec
     end
     echo (set_color yellow)(string join \n -- $out | string collect)(set_color normal) >&2
 end
+function __env_fights_cleanup --on-event fish_exit
+    rm -f $__env_fights_out $__env_fights_out.tmp
+end
