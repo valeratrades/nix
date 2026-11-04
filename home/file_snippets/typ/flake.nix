@@ -20,6 +20,7 @@
         pre-commit-check = pre-commit-hooks.lib.${system}.run (v_flakes.files.preCommit { inherit pkgs; });
 
         typ = v_flakes.typ { inherit pkgs; lsp = true; };
+        typst = pkgs.typst.withPackages (p: with p; [ charged-ieee ]); # nix build has no network for `@preview` imports
         github = v_flakes.github {
           inherit pkgs pname;
           enable = true;
@@ -35,41 +36,25 @@
         combined = v_flakes.utils.combine { rust = v_flakes.rs.default_nightly system; modules = [ readme typ github ]; };
       in
       {
-        apps.help = {
-          type = "app";
-          program = "${pkgs.writeShellScriptBin "help" ''
-            cat <<EOF
-            nix build .#default   Build __main__.typ into output.pdf
-            nix develop           Enter the Typst development shell
-            typst watch __main__.typ output.pdf   Watch and rebuild the document
-            EOF
-          ''}/bin/help";
+        apps.help = v_flakes.utils.help {
+          inherit pkgs self system;
+          about = "typst watch __main__.typ output.pdf   live rebuild";
         };
 
         apps.default = {
           type = "app";
           program = "${pkgs.writeShellScriptBin "build" ''
-            exec typst compile __main__.typ output.pdf
+            exec ${typst}/bin/typst compile __main__.typ output.pdf
           ''}/bin/build";
+          meta.description = "compile __main__.typ into output.pdf";
         };
-
-        packages.help = pkgs.writeShellScriptBin "help" ''
-          cat <<EOF
-          nix build .#default   Build __main__.typ into output.pdf
-          nix develop           Enter the Typst development shell
-          typst watch __main__.typ output.pdf   Watch and rebuild the document
-          EOF
-        '';
-
-        packages.build = pkgs.writeShellScriptBin "build" ''
-          exec typst compile __main__.typ output.pdf
-        '';
 
         packages.default = pkgs.stdenvNoCC.mkDerivation {
           name = "${pname}-document";
           src = ./.;
+          meta.description = "__main__.typ compiled to output.pdf";
 
-          nativeBuildInputs = [ pkgs.typst ];
+          nativeBuildInputs = [ typst ];
 
           buildPhase = ''
             typst compile __main__.typ output.pdf
@@ -89,7 +74,7 @@
               cp -f ${(v_flakes.files.treefmt) { inherit pkgs; }} ./.treefmt.toml
             '';
 
-          packages = pre-commit-check.enabledPackages ++ combined.enabledPackages;
+          packages = [ typst ] ++ pre-commit-check.enabledPackages ++ combined.enabledPackages;
         };
       }
     );

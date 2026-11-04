@@ -61,6 +61,10 @@ enum ProjectCommand {
     Typst {
         /// Project name
         name: String,
+
+        /// IEEE-style paper (charged-ieee, refs.bib)
+        #[arg(long, default_value_t = false)]
+        paper: bool,
     },
     /// Create a new v_flakes-only project (data collections: assets, skills, ...)
     Nix {
@@ -505,28 +509,15 @@ fn lean(name: &str) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn typst(name: &str) -> Result<(), Box<dyn std::error::Error>> {
+fn typst(name: &str, paper: bool) -> Result<(), Box<dyn std::error::Error>> {
     let file_snippets = get_file_snippets_path();
     let lang = "typ";
+    let preset = if paper { "paper" } else { "default" };
 
     fs::create_dir_all(name)?;
     shared_before(name, lang)?;
-
-    // Create assets directory
     fs::create_dir_all("assets")?;
-
-    // Copy flake.nix
-    let flake_src = file_snippets.join(format!("{lang}/flake.nix"));
-    if flake_src.exists() {
-        fs::copy(&flake_src, "flake.nix")?;
-    }
-
-    // Copy __main__.typ
-    let main_src = file_snippets.join(format!("{lang}/presets/default/__main__.typ"));
-    if main_src.exists() {
-        fs::copy(&main_src, "__main__.typ")?;
-    }
-
+    copy_dir_all(&file_snippets.join(format!("{lang}/presets/{preset}")), &PathBuf::from("."))?;
     shared_after(name, lang)?;
 
     Ok(())
@@ -688,7 +679,7 @@ fn main() {
         ProjectCommand::Python { name } => python(&name),
         ProjectCommand::Golang { name } => golang(&name),
         ProjectCommand::Lean { name } => lean(&name),
-        ProjectCommand::Typst { name } => typst(&name),
+        ProjectCommand::Typst { name, paper } => typst(&name, paper),
         ProjectCommand::Nix { name } => nix(&name),
     };
 
