@@ -59,7 +59,7 @@ function fd; command fd -I --full-path $argv; end # Ignores .gitignore, etc.
 function rg; command rg -I --glob '!.git' -H $argv; end # Ignores case sensitivity and .git directories.
 function pkill
     for arg in $argv
-        if string match -qr '^[^-]' $arg
+        if string match -qr -- '^[^-]' $arg
             if test (string length $arg) -le 2
                 echo "Warning: pattern '$arg' is very short (<=2 chars) and may match unintended processes."
                 read -P "Continue? [y/N] " confirm
@@ -428,24 +428,32 @@ function cpf
 end
 
 
-function ngrok_open
-	ngrok tcp 22 --log=stdout --log-format=json &
+function ngrok_open -d "expose sshd over ngrok; prints the guest's command to attach to this tmux session"
+	ngrok tcp 22 --log=stdout > /tmp/ngrok_open.log 2>&1 &
 	set -l pid $last_pid
 
 	for i in (seq 10)
 		sleep 1
-		set -l url (curl -s http://localhost:4040/api/tunnels 2>/dev/null | jq -r '.tunnels[0].public_url // empty' 2>/dev/null)
+		set -l url (curl -s http://localhost:4040/api/tunnels 2>/dev/null | jq -r '.tunnels[0].public_url // empty' 2>/dev/null) # api is down until ngrok boots
 		if test -n "$url"
-			set -l host (string replace 'tcp://' '' $url | string split ':')[1]
-			set -l port (string replace 'tcp://' '' $url | string split ':')[2]
-			echo "ssh -p $port v@$host"
+			set -l hp (string replace 'tcp://' '' $url | string split ':')
+			if set -q TMUX
+				echo "ssh -t -p $hp[2] v@$hp[1] tmux attach -t "(tmux display -p '#S')
+			else
+				echo "ssh -p $hp[2] v@$hp[1]"
+			end
 			return 0
 		end
 	end
 
 	echo "Failed to start ngrok tunnel"
+	tail -5 /tmp/ngrok_open.log
 	kill $pid 2>/dev/null
 	return 1
+end
+
+function ngrok_close
+	pkill -x ngrok
 end
 
 function log
