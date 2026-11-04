@@ -1174,6 +1174,17 @@ Answer with exactly one word: finished, answered, stuck, or partial.";
             assert!(report.starts_with("<prompt>\nlog me in\n</prompt>"), "got {report:?}");
         }
 
+        /// A fixture may open with an HTML comment explaining why its verdict is what it is.
+        /// The judge reads the body verbatim, so the note is stripped before it and surfaced
+        /// only in the drift output — where a later break is read against the note's reasoning.
+        fn split_note(raw: &str) -> (Option<String>, String) {
+            let raw = raw.trim_start();
+            match raw.strip_prefix("<!--").and_then(|r| r.split_once("-->")) {
+                Some((note, body)) => (Some(note.trim().to_string()), body.trim_start().to_string()),
+                None => (None, raw.to_string()),
+            }
+        }
+
         /// The prompt IS the classifier, so it gets pinned against real closing reports, see
         /// README. What's pinned is the judge's consensus, not production's severity max: one
         /// call, and only a disallowed sample is retried as a majority of 3.
@@ -1196,7 +1207,7 @@ Answer with exactly one word: finished, answered, stuck, or partial.";
                 }
                 budget += allowed.values().max().unwrap();
 
-                let report = fs::read_to_string(&file).unwrap();
+                let (note, report) = split_note(&fs::read_to_string(&file).unwrap());
                 let first = samples(&report, 1);
                 let drawn = match first.as_slice() {
                     [v] if allowed.contains_key(v) => *v,
@@ -1206,20 +1217,23 @@ Answer with exactly one word: finished, answered, stuck, or partial.";
                         match consensus.filter(|v| allowed.contains_key(v)) {
                             Some(v) => v,
                             None => {
-                                misses.push(format!("{stem}: votes {votes:?}"));
+                                misses.push(format!("{stem}: votes {votes:?}{}", note.as_deref().map(|n| format!("\n    note: {n}")).unwrap_or_default()));
                                 continue;
                             }
                         }
                     }
                 };
                 if allowed[&drawn] > 0 {
-                    lost.push((stem, drawn, allowed[&drawn]));
+                    lost.push((stem, drawn, allowed[&drawn], note));
                 }
             }
-            let total: u32 = lost.iter().map(|(_, _, l)| l).sum();
+            let total: u32 = lost.iter().map(|(.., l, _)| l).sum();
             let mut summary = format!("report loss {total}/{budget}\n");
-            for (stem, v, l) in &lost {
+            for (stem, v, l, note) in &lost {
                 summary += &format!("  -{l} {stem}: drew {v:?}\n");
+                if let Some(note) = note {
+                    summary += &format!("    note: {note}\n");
+                }
             }
             std::io::Write::write_all(&mut std::io::stderr(), summary.as_bytes()).unwrap(); // raw stderr escapes libtest's capture, so a passing run still shows drift
             assert!(misses.is_empty(), "misjudged reports:\n{}", misses.join("\n"));

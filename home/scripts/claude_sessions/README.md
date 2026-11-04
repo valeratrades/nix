@@ -55,7 +55,9 @@ A report that reads more than one way names its secondary verdicts with their lo
 `stuck+partial1+answered3__<desc>.md` takes `stuck` free, `partial` at 1, `answered` at 3,
 anything else fails. Every run prints `report loss <lost>/<budget>`, the budget being the sum of
 each case's worst loss, with a line per case that lost points, so drift shows on a green run too.
-Never put this in the `.md` body: the judge reads it verbatim.
+Never put this in the `.md` body: the judge reads it verbatim. A note on why the verdict
+is what it is goes in a leading `<!-- … -->` comment, stripped before the judge and shown in
+the drift output when the case loses points or misjudges.
 
 Editing the prompt invalidates every cached verdict (they were drawn by a different judge).
 
