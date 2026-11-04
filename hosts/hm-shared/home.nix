@@ -326,6 +326,8 @@
     };
   };
 
+  # sway's own seat default (24) overrides XCURSOR_SIZE for everything it spawns; sway/config includes this instead
+  xdg.configFile."sway_generated/cursor".text = with config.home.pointerCursor; "seat * xcursor_theme ${name} ${toString size}\n";
   xdg.configFile."maintenance/config.json".text = builtins.toJSON (import "${self}/home/scripts/maintenance/config.nix");
 
   xdg.configFile."lspmux/config.toml".text = ''
@@ -407,6 +409,7 @@
     pointerCursor = {
       name = "Adwaita";
       package = pkgs.adwaita-icon-theme;
+      size = 24;
       x11 = {
         enable = true;
         defaultCursor = "Adwaita";
