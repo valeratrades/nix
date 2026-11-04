@@ -1,0 +1,7 @@
+name = "PROJECT_NAME_PLACEHOLDER"
+version = "0.1.0"
+defaultTargets = ["PROJECT_NAME_PLACEHOLDER"]
+
+[[lean_exe]]
+name = "PROJECT_NAME_PLACEHOLDER"
+root = "Main"

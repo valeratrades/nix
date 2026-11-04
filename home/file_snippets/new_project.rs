@@ -495,15 +495,12 @@ fn golang(name: &str) -> Result<(), Box<dyn std::error::Error>> {
 
 fn lean(name: &str) -> Result<(), Box<dyn std::error::Error>> {
     let file_snippets = get_file_snippets_path();
+    let lang = "lean";
 
-    run_cmd!(elan run --install nightly lake new $name)?;
-    shared_before(name, "lean")?;
-
-    // Copy leanpkg.toml
-    let leanpkg_src = file_snippets.join("leanpkg.toml");
-    if leanpkg_src.exists() {
-        fs::copy(&leanpkg_src, "leanpkg.toml")?;
-    }
+    fs::create_dir_all(name)?;
+    shared_before(name, lang)?;
+    copy_dir_all(&file_snippets.join(format!("{lang}/presets/default")), &PathBuf::from("."))?;
+    shared_after(name, lang)?;
 
     Ok(())
 }
