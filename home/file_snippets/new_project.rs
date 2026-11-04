@@ -205,13 +205,6 @@ fn shared_before(project_name: &str, lang: &str) -> Result<(), Box<dyn std::erro
         fs::copy(&flake_src, "flake.nix")?;
     }
 
-    let tracey_src = file_snippets.join(format!("{}/tracey.styx", lang));
-    if tracey_src.exists() {
-        fs::create_dir_all(".config/tracey")?;
-        // replace_placeholders' fd walk skips hidden dirs
-        fs::write(".config/tracey/config.styx", fs::read_to_string(&tracey_src)?.replace("PROJECT_NAME_PLACEHOLDER", project_name))?;
-    }
-
     // NIX_CONFIG covers every `nix` invocation from the project dir (not just the
     // devShell), so `nix run`/`nix build` work on a host whose nix.conf lacks flakes.
     fs::write(
