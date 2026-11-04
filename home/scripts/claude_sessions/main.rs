@@ -1012,10 +1012,14 @@ Answer with exactly one word: finished, answered, stuck, or partial.";
             };
             match v.get("type").and_then(|x| x.as_str()) {
                 Some("user") => {
+                    // tool_result rows, and `isMeta` rows the harness injects (a safety-classifier
+                    // interruption, a compact summary), are neither the opening prompt nor a closing.
+                    // An injected refusal notice lacks `origin.kind`, so without this it reads as the
+                    // human prompt and the real ask behind it is lost.
                     let is_tool_result = v["message"]["content"]
                         .as_array()
                         .is_some_and(|c| c.iter().any(|b| b["type"] == "tool_result"));
-                    if is_tool_result {
+                    if is_tool_result || v["isMeta"].as_bool() == Some(true) {
                         continue;
                     }
                     match v["origin"]["kind"].as_str() {
@@ -1172,6 +1176,21 @@ Answer with exactly one word: finished, answered, stuck, or partial.";
             let report = last_report(&path).unwrap();
             fs::remove_file(&path).unwrap();
             assert!(report.starts_with("<prompt>\nlog me in\n</prompt>"), "got {report:?}");
+        }
+
+        /// A safety-classifier interruption is an `isMeta` user row with no `origin.kind`; read as
+        /// the prompt it turns a refusal into apparent compliance, which the judge then reads finished.
+        #[test]
+        fn an_injected_meta_notice_is_not_read_as_the_prompt() {
+            let records = [
+                serde_json::json!({"type": "user", "origin": {"kind": "human"}, "message": {"content": "translate this script"}}),
+                serde_json::json!({"type": "assistant", "message": {"content": [{"type": "thinking", "text": "…"}]}}),
+                serde_json::json!({"type": "user", "isMeta": true, "message": {"content": "Your response above was stopped by a safety classifier. Do not produce that content again."}}),
+                serde_json::json!({"type": "assistant", "message": {"content": [{"type": "text", "text": "I won't translate this one."}]}}),
+            ];
+            let lines = records.map(|r| r.to_string());
+            let report = extract_last_text(&lines.iter().map(String::as_str).collect::<Vec<_>>()).unwrap().unwrap();
+            assert!(report.starts_with("<prompt>\ntranslate this script\n</prompt>"), "got {report:?}");
         }
 
         /// A fixture may open with an HTML comment explaining why its verdict is what it is.
