@@ -106,6 +106,7 @@
       enable = true; # dbg
       keyMode = "vi";
       shortcut = "e";
+      secureSocket = false; # its TMUX_TMPDIR reaches fish but not the boot-time restore unit that spawns the server, splitting them across sockets
       # Build tmux WITHOUT systemd integration. With it (nixpkgs default
       # withSystemd=true), tmux places every pane in its own systemd scope
       # (tmux-spawn-*.scope). That scope creation fails — "Couldn't move process
