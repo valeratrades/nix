@@ -205,6 +205,13 @@ fn shared_before(project_name: &str, lang: &str) -> Result<(), Box<dyn std::erro
         fs::copy(&flake_src, "flake.nix")?;
     }
 
+    let tracey_src = file_snippets.join(format!("{}/tracey.styx", lang));
+    if tracey_src.exists() {
+        fs::create_dir_all(".config/tracey")?;
+        // replace_placeholders' fd walk skips hidden dirs
+        fs::write(".config/tracey/config.styx", fs::read_to_string(&tracey_src)?.replace("PROJECT_NAME_PLACEHOLDER", project_name))?;
+    }
+
     // NIX_CONFIG covers every `nix` invocation from the project dir (not just the
     // devShell), so `nix run`/`nix build` work on a host whose nix.conf lacks flakes.
     fs::write(
@@ -651,13 +658,13 @@ components = ["rustc-codegen-cranelift-preview"]"#,
             "manifest = (builtins.fromTOML (builtins.readFile ./{name}/Cargo.toml)).package;"
         );
 
-        let rs_needle = "rs = v_flakes.rs { inherit pkgs rust; };";
+        let rs_needle = "rs = v_flakes.rs { inherit pkgs rust; tracey = true; };";
         assert!(
             flake.contains(rs_needle),
             "flake.nix template missing expected v_flakes.rs line"
         );
         let rs_replacement = format!(
-            "rs = v_flakes.rs {{\n          inherit pkgs rust;\n          build = {{\n            deny = false;\n            workspace = let deprecate_by = \"v1.0.0\"; in {{\n              \"./{name}/\" = [ \"git_version\" \"log_directives\" {{ deprecate = {{ by_version = deprecate_by; force = true; }}; }} ];\n            }};\n          }};\n        }};"
+            "rs = v_flakes.rs {{\n          inherit pkgs rust;\n          tracey = true;\n          build = {{\n            deny = false;\n            workspace = let deprecate_by = \"v1.0.0\"; in {{\n              \"./{name}/\" = [ \"git_version\" \"log_directives\" {{ deprecate = {{ by_version = deprecate_by; force = true; }}; }} ];\n            }};\n          }};\n        }};"
         );
 
         let new_flake = flake

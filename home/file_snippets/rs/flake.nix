@@ -22,7 +22,7 @@
         pre-commit-check = pre-commit-hooks.lib.${system}.run (v_flakes.files.preCommit { inherit pkgs; });
         stdenv = pkgs.stdenvAdapters.useMoldLinker pkgs.stdenv;
 
-        rs = v_flakes.rs { inherit pkgs rust; };
+        rs = v_flakes.rs { inherit pkgs rust; tracey = true; };
         github = v_flakes.github {
           inherit pkgs pname rs;
           enable = true;

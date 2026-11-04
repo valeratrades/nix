@@ -1,0 +1,13 @@
+specs (
+  {
+    name PROJECT_NAME_PLACEHOLDER
+    include (docs/spec/**/*.md)
+    impls (
+      {
+        name rust
+        include (**/*.rs)
+        exclude (target/**)
+      }
+    )
+  }
+)

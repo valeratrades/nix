@@ -94,6 +94,8 @@
      memory x result'';
       author = "Charlie Morgan";
     }
+
+    "incompetence may oftentimes resemble randomness"
   ];
   year_progress.enable = true;
   #balance = {
