@@ -2,14 +2,14 @@ return require "lazier" {
 	"brenoprata10/nvim-highlight-colors",
 	lazy = false, -- monkey-patching modules is incompatible with lazier's recorder proxies
 	config = function()
-		-- Patch in oklch()/oklcha() color recognition: oklch(0.80, 0.08, 95), oklcha(0.45, 0.18, 25.0, 0.9)
+		-- Patch in oklch()/oklcha() color recognition: oklch(0.80, 0.08, 95), oklch(0.86 0.09 85), oklcha(0.45, 0.18, 25.0, 0.9)
 		do
 			local color_utils = require("nvim-highlight-colors.color.utils")
 			local buffer_utils = require("nvim-highlight-colors.buffer_utils")
 			local rp = require("rust_plugins")
 
-			local oklch_regex = "oklch%(%s*%d*%.?%d+%s*,%s*%d*%.?%d+%s*,%s*%-?%d*%.?%d+%s*%)"
-			local oklcha_regex = "oklcha%(%s*%d*%.?%d+%s*,%s*%d*%.?%d+%s*,%s*%-?%d*%.?%d+%s*,%s*%d*%.?%d+%s*%)"
+			local oklch_regex = "oklch%(%s*%d*%.?%d+[%s,]+%d*%.?%d+[%s,]+%-?%d*%.?%d+%s*%)"
+			local oklcha_regex = "oklcha%(%s*%d*%.?%d+[%s,]+%d*%.?%d+[%s,]+%-?%d*%.?%d+[%s,]+%d*%.?%d+%s*%)"
 
 			-- Inject oklch/oklcha patterns into the detection pipeline
 			local orig_get_positions = buffer_utils.get_positions_by_regex
