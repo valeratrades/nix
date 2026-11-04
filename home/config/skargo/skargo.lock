@@ -14,6 +14,13 @@ version = "0.2.0"
 commit = "2410b838653162c20ef021c56714a317f6f0fda8"
 
 [[skill]]
+name = "tracey"
+git = "https://github.com/EV-Main/skills"
+path = "skills/tracey"
+version = "0.1.0"
+commit = "17ff7a01c6627b69eac6ad68a3f164d98bd830be"
+
+[[skill]]
 name = "trading-data"
 git = "https://github.com/EV-Quant/trading_data"
 path = "docs/skill"

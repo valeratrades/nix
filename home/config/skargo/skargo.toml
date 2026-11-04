@@ -2,3 +2,4 @@ excalidraw = "0.1"
 skill-creation = "0.2"
 trading-data = "0.1"
 v-flakes = { path = "/home/v/s/v_flakes/docs/skill" }
+tracey = "0.1"
