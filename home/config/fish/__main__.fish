@@ -117,3 +117,4 @@ cached_init starship "starship init fish --print-full-init" # somehow fixes the 
 
 set -g MANPATH "$XDG_DATA_HOME/man:$MANPATH";
 source $__fish_config_main_dir/path_dups.fish
+source $__fish_config_main_dir/env_fights.fish

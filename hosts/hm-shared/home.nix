@@ -196,6 +196,7 @@
       BindsTo = [ "graphical-session.target" ];
       Wants = [ "graphical-session-pre.target" ];
       After = [ "graphical-session-pre.target" ];
+      AssertEnvironment = [ "WAYLAND_DISPLAY" "SWAYSOCK" ]; # units it pulls in snapshot the manager env on start; started early, they keep a session-less one
     };
   };
 
@@ -272,9 +273,9 @@
   systemd.user.services.wlr-gamma = {
     Unit = {
       Description = "wlroots Brightness Control";
-      PartOf = "graphical-session.target";
+      PartOf = "sway-session.target";
     };
-    Install = { WantedBy = [ "graphical-session.target" ]; };
+    Install = { WantedBy = [ "sway-session.target" ]; };
     Service = {
       Type = "simple";
       ExecStart = "${
