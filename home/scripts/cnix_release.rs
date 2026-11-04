@@ -162,7 +162,7 @@ fn run_output(cmd: &str, args: &[&str]) -> Option<String> {
 
 fn get_latest_tag() -> Option<Version> {
     // Get all tags sorted by version (descending), filter for semver tags
-    let output = run_output("git", &["tag", "--list", "v*"])?;
+    let output = run_output("git", &["tag", "--list", "v[0-9]*"])?;
     output
         .lines()
         .filter_map(|tag| tag.parse::<Version>().ok())

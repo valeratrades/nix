@@ -11,4 +11,7 @@ home/config/eww/location
 home/config/claude/skills/ra-shared/
 
 # Linked by programs.skargo from home/config/skargo/skargo.lock, through the ~/.claude/skills dir symlink
+home/config/claude/skills/excalidraw
 home/config/claude/skills/skill-creation
+home/config/claude/skills/trading-data
+home/config/claude/skills/v-flakes
