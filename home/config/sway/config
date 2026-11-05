@@ -187,7 +187,8 @@ workspace 7 output $primary
 workspace 8 output $output_laptop
 workspace 9 output $output_laptop
 workspace 0 output $primary
-set $scratch_forget [con_id=__focused__] unmark scratch_0, unmark scratch_1, unmark scratch_2, unmark scratch_3, unmark scratch_4, unmark scratch_5, unmark scratch_6, unmark scratch_7, unmark scratch_8, unmark scratch_9 # landing on ws 0 drops slot membership, so the next toggle spawns fresh
+# landing on ws 0 drops slot membership, so the next toggle spawns fresh
+set $scratch_forget [con_id=__focused__] unmark scratch_0, unmark scratch_1, unmark scratch_2, unmark scratch_3, unmark scratch_4, unmark scratch_5, unmark scratch_6, unmark scratch_7, unmark scratch_8, unmark scratch_9
 bindsym $mod+1   workspace 1
 bindsym $mod+2   workspace 2
 bindsym $mod+3   workspace 3
@@ -275,7 +276,8 @@ bindsym $mod+Shift+Mod1+6 exec $sway_root/scratchpad_move.sh 6
 bindsym $mod+Shift+Mod1+7 exec $sway_root/scratchpad_move.sh 7
 bindsym $mod+Shift+Mod1+8 exec $sway_root/scratchpad_move.sh 8
 bindsym $mod+Shift+Mod1+9 exec $sway_root/scratchpad_move.sh 9
-bindsym $mod+Shift+minus $scratch_forget, move container to workspace 0 # single hidden slot is the floating terminal; anything else parks on ws 0
+# single hidden slot is the floating terminal; anything else parks on ws 0
+bindsym $mod+Shift+minus $scratch_forget, move container to workspace 0
 bindsym $mod+Mod1+minus $scratch_forget
 bindsym Ctrl+Shift+Escape exec alacritty --class btm-float -e btm -u; for_window [app_id="btm-float"] floating enable
 bindsym $mod+Mod1+t exec ~/s/help_scripts/theme_toggle.sh
