@@ -8,8 +8,14 @@
 #include <QPointer>
 #include <QStatusBar>
 #include <QTimer>
+#include <algorithm>
 #include <atomic>
+#include <cmath>
+#include <cstdio>
 #include <cstdlib>
+#include <numeric>
+#include <random>
+#include <string>
 #include <fcntl.h>
 #include <unistd.h>
 
@@ -18,14 +24,79 @@ OBS_DECLARE_MODULE()
 #define TARGET "Camera"
 #define TARGET_BR "Background Removal" // the collection's own filter on TARGET; the cutout copies its settings and replaces it
 #define SPEED "/run/obs-typing/speed"
+#define HERD 12
+
+// the herd gif is a 4x3 grid of 300x200 horses; each one pitches nose-down around its front hooves and dips, its tile resampled so neighbours stay put
+static const char *STUMBLE_EFFECT = R"(
+uniform float4x4 ViewProj;
+uniform texture2d image;
+uniform float4 pitch0; // radians, one herd row per uniform, one column per component
+uniform float4 pitch1;
+uniform float4 pitch2;
+uniform float4 dip0; // px
+uniform float4 dip1;
+uniform float4 dip2;
+
+sampler_state def_sampler {
+	Filter = Linear;
+	AddressU = Clamp;
+	AddressV = Clamp;
+};
+
+struct VertInOut {
+	float4 pos : POSITION;
+	float2 uv : TEXCOORD0;
+};
+
+VertInOut VSDefault(VertInOut vert_in)
+{
+	VertInOut vert_out;
+	vert_out.pos = mul(float4(vert_in.pos.xyz, 1.0), ViewProj);
+	vert_out.uv = vert_in.uv;
+	return vert_out;
+}
+
+float4 PSStumble(VertInOut vert_in) : TARGET
+{
+	float2 grid = float2(4.0, 3.0);
+	float2 size = float2(300.0, 200.0);
+	float2 hooves = float2(230.0, 190.0);
+	float2 cell = min(floor(vert_in.uv * grid), grid - 1.0);
+	float4 column = 1.0 - step(0.5, abs(float4(0.0, 1.0, 2.0, 3.0) - cell.x));
+	float pitch = dot((cell.y < 0.5) ? pitch0 : ((cell.y < 1.5) ? pitch1 : pitch2), column);
+	float dip = dot((cell.y < 0.5) ? dip0 : ((cell.y < 1.5) ? dip1 : dip2), column);
+	float2 p = vert_in.uv * grid * size - cell * size - hooves - float2(0.0, dip);
+	float c = cos(pitch);
+	float s = sin(pitch);
+	float2 src = clamp(hooves + float2(c * p.x + s * p.y, c * p.y - s * p.x), float2(0.5, 0.5), size - 0.5);
+	return image.Sample(def_sampler, (cell * size + src) / (grid * size));
+}
+
+technique Draw
+{
+	pass
+	{
+		vertex_shader = VSDefault(vert_in);
+		pixel_shader = PSStumble(vert_in);
+	}
+}
+)";
 
 static struct dstr toggle_path;
 static gs_image_file4_t gif; // not an image_source: its playback rate isn't adjustable
+static gs_effect_t *stumble_effect;
 static obs_source_t *horses, *cutout;
 static obs_weak_source_t *detached_from;
 static volatile bool wanted, queued;
 static std::atomic<float> speed;
 static QPointer<QLabel> status;
+// graphics thread only
+static unsigned backspaces;
+static float gravity;
+static struct {
+	float age, length, pitch, dip;
+} stumbles[HERD];
+static std::minstd_rand rng;
 
 static bool galloping(void)
 {
@@ -92,15 +163,18 @@ static void poll(void)
 {
 	bool want = access(toggle_path.array, F_OK) == 0;
 	if (want) {
-		char buf[16] = {};
+		char buf[64] = {};
 		int fd = open(SPEED, O_RDONLY);
 		ssize_t n = fd >= 0 ? read(fd, buf, sizeof(buf) - 1) : -1;
 		if (fd >= 0)
 			close(fd);
-		char *end = buf;
-		float s = n > 0 ? strtof(buf, &end) : -1;
-		if (n > 0 && end == buf + n && s >= 0) {
+		float s, g;
+		unsigned b;
+		int used = 0;
+		if (n > 0 && sscanf(buf, "%f %u %f%n", &s, &b, &g, &used) == 3 && used == n && s >= 0 && g >= 0 && g <= 1) {
 			speed = s;
+			backspaces = b;
+			gravity = g;
 		} else {
 			blog(LOG_ERROR, "[horses] can't read a speed from %s (obs-typing.service down?), toggling off", SPEED);
 			unlink(toggle_path.array);
@@ -110,10 +184,29 @@ static void poll(void)
 	os_atomic_set_bool(&wanted, want);
 }
 
+static void stumble(void)
+{
+	int order[HERD];
+	std::iota(order, order + HERD, 0);
+	std::shuffle(order, order + HERD, rng);
+	int fallers = 1 + (int)lroundf(gravity * 5);
+	std::uniform_real_distribution<float> sway(0.7f, 1.0f);
+	for (int i : order)
+		if (fallers && stumbles[i].age >= stumbles[i].length) {
+			stumbles[i] = {0, 0.4f + 0.5f * gravity, (0.08f + 0.5f * gravity) * sway(rng), 6 + 30 * gravity};
+			fallers--;
+		}
+}
+
 // graphics thread
 static void tick(void *, float seconds)
 {
+	unsigned seen = backspaces;
 	poll();
+	for (auto &h : stumbles)
+		h.age += seconds;
+	if (backspaces != seen && galloping())
+		stumble();
 	if (galloping() && gs_image_file4_tick(&gif, (uint64_t)(seconds * speed * 1e9f))) {
 		obs_enter_graphics();
 		gs_image_file4_update_texture(&gif);
@@ -150,11 +243,21 @@ static void render(void *self, gs_effect_t *)
 	if (galloping()) {
 		obs_source_t *parent = obs_filter_get_parent((obs_source_t *)self);
 		gs_texture_t *tex = gif.image3.image2.image.texture;
-		gs_effect_t *effect = obs_get_base_effect(OBS_EFFECT_DEFAULT);
+		vec4 pitch[3] = {}, dip[3] = {};
+		for (int i = 0; i < HERD; i++) {
+			auto &h = stumbles[i];
+			float jolt = h.age < h.length ? sinf((float)M_PI * sqrtf(h.age / h.length)) : 0; // falls fast, recovers slower
+			pitch[i / 4].ptr[i % 4] = h.pitch * jolt;
+			dip[i / 4].ptr[i % 4] = h.dip * jolt;
+		}
+		for (int r = 0; r < 3; r++) {
+			gs_effect_set_vec4(gs_effect_get_param_by_name(stumble_effect, ("pitch" + std::to_string(r)).c_str()), &pitch[r]);
+			gs_effect_set_vec4(gs_effect_get_param_by_name(stumble_effect, ("dip" + std::to_string(r)).c_str()), &dip[r]);
+		}
 		bool srgb = gs_framebuffer_srgb_enabled();
 		gs_enable_framebuffer_srgb(true);
-		gs_effect_set_texture_srgb(gs_effect_get_param_by_name(effect, "image"), tex);
-		while (gs_effect_loop(effect, "Draw"))
+		gs_effect_set_texture_srgb(gs_effect_get_param_by_name(stumble_effect, "image"), tex);
+		while (gs_effect_loop(stumble_effect, "Draw"))
 			gs_draw_sprite(tex, 0, obs_source_get_base_width(parent), obs_source_get_base_height(parent));
 		gs_enable_framebuffer_srgb(srgb);
 	}
@@ -191,8 +294,14 @@ void obs_module_post_load(void)
 	bfree(path);
 	if (!gif.image3.image2.image.loaded)
 		bcrash("[horses] failed to decode horses.gif");
+	if (gif.image3.image2.image.cx != 1200 || gif.image3.image2.image.cy != 600)
+		bcrash("[horses] horses.gif is %ux%u, the stumble shader expects a 4x3 grid of 300x200", gif.image3.image2.image.cx, gif.image3.image2.image.cy);
 	obs_enter_graphics();
 	gs_image_file4_init_texture(&gif);
+	char *error = NULL;
+	stumble_effect = gs_effect_create(STUMBLE_EFFECT, "horses_stumble.effect", &error);
+	if (!stumble_effect)
+		bcrash("[horses] stumble shader: %s", error);
 	obs_leave_graphics();
 
 	horses = obs_source_create_private("horses_filter", "Horses", NULL);
@@ -224,6 +333,7 @@ void obs_module_unload(void)
 	obs_source_release(horses);
 	obs_source_release(cutout);
 	obs_enter_graphics();
+	gs_effect_destroy(stumble_effect);
 	gs_image_file4_free(&gif);
 	obs_leave_graphics();
 	dstr_free(&toggle_path);

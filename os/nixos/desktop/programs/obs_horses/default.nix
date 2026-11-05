@@ -1,5 +1,5 @@
 # Self-contained OBS addon owning the Camera scene's background: cut out in composited scenes, kept in the camera-only one.
-# While `$XDG_RUNTIME_DIR/obs_horses` exists (sway obs-mode `h` on, `H` off) and you're typing fast enough, a gallop paced by your keypress rate plays behind the camera:
+# While `$XDG_RUNTIME_DIR/obs_horses` exists (sway obs-mode `h` on, `H` off) and you're typing fast enough, a gallop paced by your keypress rate plays behind the camera, horses stumbling on backspace:
 # through the cutout in composited scenes, around the camera frame in the camera-only one.
 # State shows in OBS's status bar. Nothing of it is ever saved into the scene collection.
 { pkgs, lib, user, ... }:
@@ -13,6 +13,9 @@ let
   nativeKeysPerSec = 6;
   speedExponent = 2.5;
   maxSpeed = 14; # past ~×22 strides outrun 30fps and the gallop aliases into slow or backward motion
+  # every backspace trips some horses; the more of your recent presses were backspace, the more horses and the harder they fall
+  backspaceHalfLife = 100; # presses
+  worstBackspaceShare = 0.2; # stumbles are at their gravest from this share on
 
   # Muybridge's 1878 gallop (public domain, commons.wikimedia.org/wiki/File:Muybridge_race_horse_animated.gif) as a 4x3 herd, each horse phase-shifted
   tiles = lib.genList (i: rec { inherit i; col = lib.mod i 4; row = i / 4; phase = lib.mod (7 * row + 4 * col) 15; }) 12;
@@ -51,13 +54,13 @@ in
     after = [ "keyd.service" ];
     startLimitIntervalSec = 0; # keyd recreates its virtual keyboard on restart; retry until it's back
     serviceConfig = {
-      ExecStart = "${pkgs.python3.withPackages (ps: [ ps.evdev ])}/bin/python3 -I ${./gallop_speed.py} /run/obs-typing/speed ${toString stopAfterMs} ${toString startAfterMs} ${toString nativeKeysPerSec} ${toString burstGapMs} ${toString speedExponent} ${toString maxSpeed} ${toString minKeysPerSec}";
+      ExecStart = "${pkgs.python3.withPackages (ps: [ ps.evdev ])}/bin/python3 -I ${./gallop_speed.py} /run/obs-typing/speed ${toString stopAfterMs} ${toString startAfterMs} ${toString nativeKeysPerSec} ${toString burstGapMs} ${toString speedExponent} ${toString maxSpeed} ${toString minKeysPerSec} ${toString backspaceHalfLife} ${toString worstBackspaceShare}";
       User = "obs-typing"; # static: DynamicUser hides preserved runtime dirs under root-only /run/private
       SupplementaryGroups = [ "input" ];
       RuntimeDirectory = "obs-typing";
       # a stopped detector means nobody is typing; without these a `switch` restart makes the plugin see a missing file and toggle itself off
       RuntimeDirectoryPreserve = true;
-      ExecStopPost = "${pkgs.runtimeShell} -c 'printf 0 > /run/obs-typing/speed'";
+      ExecStopPost = "${pkgs.runtimeShell} -c 'printf \"0 0 0\" > /run/obs-typing/speed'";
       Restart = "always";
       RestartSec = 1;
     };
