@@ -404,7 +404,6 @@
       #"/usr/lib/rustup/bin/"
       "${config.home.homeDirectory}/.local/bin/"
       #"${config.home.homeDirectory}/pkg/packages.modular.com_mojo/bin"
-      "/usr/bin"
     ];
     pointerCursor = {
       name = "Adwaita";

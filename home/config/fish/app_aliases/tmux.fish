@@ -216,6 +216,7 @@ function restore_sessions
 
 	set -l done 0
 	set -l pending # pane, escaped draft, escaped rewind target; replayed once the claude there is up
+	set -l typed # ids whose `cl --resume` was typed; the pane's shell runs it only once its direnv load finishes
 	while read -l --delimiter \t session cwd id draft rewind
 		if not string match -qr '^[0-9a-f-]{36}$' -- "$id"
 			echo "restore_sessions: malformed line in $f: '$session	$cwd	$id	$draft	$rewind' (want '<session_name>	<cwd>	<session_id>	<draft>	<rewind>')" >&2
@@ -262,6 +263,7 @@ function restore_sessions
 			continue
 		end
 		set done (math $done + 1)
+		set -a typed $id
 		echo "restore_sessions: $session ← $id ($cwd)"
 		test -n "$draft$rewind"; and set -a pending $target "$draft" "$rewind"
 	end <$f
@@ -390,6 +392,19 @@ function restore_sessions
 			end
 		end
 		echo "restore_sessions: $pane ← draft ("(count $lines)" lines)"
+	end
+
+	for id in $typed # until then this unit reads as done, and `save_sessions` records the working set without them
+		set -l waited 0
+		while not contains -- $id (for s in $HOME/.claude/sessions/*.json; test -d /proc/(jq -r .pid $s); and jq -r .sessionId $s; end)
+			test $waited -ge 600; and break
+			sleep 0.5
+			set waited (math $waited + 1)
+		end
+		if test $waited -ge 600
+			echo "restore_sessions: $id — claude never came up" >&2
+			set failed 1
+		end
 	end
 
 	if test $failed = 1

@@ -117,6 +117,7 @@ bindsym $mod+Shift+F2 exec pamixer --default-source --decrease 5
 bindsym $mod+Shift+F3 exec pamixer --default-source --increase 5
 bindsym XF86AudioPlay exec $sway_root/play_pause.sh
 bindsym XF86AudioPause exec $sway_root/play_pause.sh # bt headsets send AVRCP play/pause as separate keys
+bindsym XF86PowerOff exec flock -n $XDG_RUNTIME_DIR/smart_shutdown.lock ${NIXOS_CONFIG}/home/scripts/smart_shutdown.rs # two power-button devices fire per press; a second save after the first kill-server would record an empty inventory
 bindsym F5 exec $sway_root/play_pause.sh
 bindsym $mod+F12 exec $sway_root/play_pause.sh
 bindsym $mod+F10 exec playerctl position 10-

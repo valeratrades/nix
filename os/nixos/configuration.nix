@@ -785,6 +785,9 @@ in {
 	# stop — exactly when we need the radio gone.
 	# Remove once the kernel carries the mt7925 BT-disconnect fix.
 	# See ongoing_debug/2026-06-05_slow-shutdown.md (v4).
+	# sway binds XF86PowerOff to smart_shutdown; logind's own poweroff would skip `save_sessions`
+	services.logind.settings.Login.HandlePowerKey = "ignore";
+
 	systemd.services.wifi-rfkill-before-net-teardown = {
 		description = "rfkill-block WiFi before network teardown (mt7925e shutdown-hang workaround)";
 		after = [ "NetworkManager.service" "wpa_supplicant.service" "tailscaled.service" ];
