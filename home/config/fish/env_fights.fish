@@ -1,6 +1,7 @@
 # Warns on vars the systemd user env (what units, and the tmux server they restore, start from) holds with another value, or holds that this shell lacks.
 # Names only: values include secrets. Probed in the background (systemctl+jq cost ~15ms), reported at the next prompt; universal key, so each set is reported once, not per shell.
 status is-interactive; or return
+set -q __env_fights_out; and return # re-sourced by `sr`: env by now holds direnv's and the shell's own exports, not what it inherited
 
 set -g __env_fights_out $XDG_RUNTIME_DIR/env_fights.$fish_pid
 command sh -c 'systemctl --user show-environment -o json | jq -r --rawfile inh "/proc/$1/environ" "$2" > "$3.tmp" && mv "$3.tmp" "$3"' _ $fish_pid '
