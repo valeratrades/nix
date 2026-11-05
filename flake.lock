@@ -5952,11 +5952,11 @@
         "v_flakes": "v_flakes_7"
       },
       "locked": {
-        "lastModified": 1793761787,
-        "narHash": "sha256-eY+ts6s66mQckHoaVDZH9odhWiRHM+kfrq04NF4ERr8=",
+        "lastModified": 1793902775,
+        "narHash": "sha256-bb1DqTdrFklTaNjHa05jcN93Fcwkuc87RzGgA4E2MA4=",
         "owner": "ev-main",
         "repo": "scripters",
-        "rev": "d833fefe0aeef1d76feb1def6f4ebcc2eceeafdc",
+        "rev": "24f3c663665ca3777652235ab0d9e91ff7332ce1",
         "type": "github"
       },
       "original": {
@@ -6722,11 +6722,11 @@
         "rust-overlay": "rust-overlay_10"
       },
       "locked": {
-        "lastModified": 1793761300,
-        "narHash": "sha256-uAgDMs4YEsSWbcLwS1cLSY/Ms2DM/eX/frsh0PLGeq8=",
+        "lastModified": 1793894553,
+        "narHash": "sha256-ejCjgwOAR+zc46TljKivdcQUkpFc9dZWw8A5UU9FH2o=",
         "owner": "valeratrades",
         "repo": "v_flakes",
-        "rev": "495604e99bdbecea5bbf8b3e3000771d6e07b25e",
+        "rev": "b5907d538db2b856fd0ae07588e200fc5fd2943e",
         "type": "github"
       },
       "original": {
