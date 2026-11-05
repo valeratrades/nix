@@ -46,11 +46,13 @@ mods = "Alt"
 [[keyboard.bindings]]
 action = "ScrollToTop"
 key = "G"
+mode = "~Alt" # alt screen (tmux, fullscreen apps) has no scrollback here; pass the key through
 mods = "Alt"
 
 [[keyboard.bindings]]
 action = "ScrollToBottom"
 key = "G"
+mode = "~Alt"
 mods = "Shift|Alt"
 
 [[keyboard.bindings]]
