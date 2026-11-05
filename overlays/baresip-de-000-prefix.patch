@@ -1,0 +1,37 @@
+--- a/src/account.c
++++ b/src/account.c
+@@ -1938,6 +1938,22 @@
+ }
+ 
+ 
++static bool is_bare_de_number(const struct pl *pl)
++{
++	size_t i = pl->l && pl->p[0] == '+';
++
++	if (pl->l < i + 3 || pl->p[i] != '4' || pl->p[i + 1] != '9')
++		return false;
++
++	for (i += 2; i < pl->l; i++) {
++		if (!isdigit((unsigned char)pl->p[i]))
++			return false;
++	}
++
++	return true;
++}
++
++
+ /**
+  * Auto complete a SIP uri, add scheme and domain if missing
+  *
+@@ -1979,6 +1995,11 @@
+ 	else
+ 		complete = true;
+ 
++	if (is_bare_de_number(&trimmed)) {
++		err |= mbuf_printf(mb, "000");
++		pl_advance(&trimmed, trimmed.p[0] == '+');
++	}
++
+ 	err |= mbuf_write_pl(mb, &trimmed);
+ 	if (!acc || err)
+ 		goto out;

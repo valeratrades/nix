@@ -4,6 +4,10 @@ inputs: final: prev:
 let
   ringo = inputs.ringo.packages.${prev.stdenv.hostPlatform.system}.ringo-phone.overrideAttrs (old: {
     patches = (old.patches or [ ]) ++ [ ./ringo-ice-rtcp-mux.patch ];
+    # vendored baresip is copied in by upstream's postPatch, after `patches`
+    postPatch = old.postPatch + ''
+      patch -d crates/ringo-core/vendor/baresip -p1 < ${./baresip-de-000-prefix.patch}
+    '';
   });
   # `transport` only tags the AOR, the outbound proxy decides the actual one
   profile = prev.writeText "ringo-sipup-profile.toml" ''
