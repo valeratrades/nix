@@ -505,6 +505,11 @@
             text = builtins.readFile "${self}/home/scripts/discord_private.sh";
           })
           vpn_ns
+          (writeShellApplication {
+            name = "pssh";
+            runtimeInputs = [ openssh vpn_ns gawk ];
+            text = builtins.readFile "${self}/home/scripts/pssh.sh";
+          })
           alacritty
         ]
         [
