@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
 """Account switching: "Switch to account N" entries in the rate-limit menu (`/rate-limit-options`), `/rotate` showing
-that menu with only those entries, and every running claude following ~/.claude/accounts/current in place.
+that menu with only those entries, a hit limit switching to the next account with room left on its own, and every
+running claude following ~/.claude/accounts/current in place.
 
 The logic lives in claude-accounts.mjs, as no chunk has room for it. This script writes the .mjs with the
-minified internals it needs resolved to their chunk + export name, and splices its hooks into two modules:
+minified internals it needs resolved to their chunk + export name, and splices its hooks into these modules:
 1. the credential-dir module (loaded at start-up): its license header starts the .mjs's watcher;
 2. the menu module: its license header becomes `$acc()`, importing the .mjs; the options list gains the .mjs's
    entries, appended so a late arrival never shifts the focused row; the select handler routes `acct:<name>`
    values to the .mjs's switchTo, showing a status dialog meanwhile, as the panel host retires a menu left
-   without one and drops its result. A context flagged `rotate` drops the stock rows;
+   without one and drops its result. A context flagged `rotate` drops the stock rows; a menu opened by a hit limit
+   (not typed) dispatches the first account row not disabled;
 3. the command-list module: its license header defines `/rotate`, calling the menu with that flag (a new export would
-   stay invisible: bun reads exports from the precomputed module_info), and the list gains it.
+   stay invisible: bun reads exports from the precomputed module_info), and the list gains it;
+4. the limit-hit notice: opens the menu on every hit, not only where it would offer an upgrade.
 
 Same-length overwrites (each license header absorbs the growth); take effect only through
 detach-claude-bytecode.py. Anchors are verbatim from claude-code 2.1.303; minified names churn
@@ -37,7 +40,7 @@ MENU_SPLICES = [
 	(
 		"options load",
 		b'Pn.current=!0,i("tengu_rate_limit_options_menu_shown",{...Wbn(o),entry:T8(t.submittedFromComposer)?b("typed"):b("not_typed"),rows:ue.map(ir),blocked:eM(o)})}',
-		b'Pn.current=!0,$acc().then(m=>m.options()).then($as,e=>$as([{label:`Account switch unavailable: ${e}`,value:"acct:",disabled:!0}]))}',
+		b'Pn.current=!0,$acc().then(m=>m.options()).then(r=>{$as(r);let a=!t.rotate&&!T8(t.submittedFromComposer)&&r.find(x=>!x.disabled);if(a)ht(a.value)},e=>$as([{label:`Account switch unavailable: ${e}`,value:"acct:",disabled:!0}]))}',
 	),
 	(
 		"dispatch",
@@ -46,6 +49,7 @@ MENU_SPLICES = [
 	),
 ]
 COMMAND_LIST = (b'Z6e,e3e,Fen,', b'Z6e,e3e,$rot,Fen,')
+LIMIT_NOTICE = (b'Ee=(q||Y)&&!z&&!X&&de==="pending"&&oe&&!ue&&d,', b'Ee=!z&&!X&&de==="pending"&&oe&&!ue&&d,')
 
 # each pattern matches exactly once across all modules; its groups name the minified internals
 INTERNALS = [
@@ -163,6 +167,14 @@ data[graph[lists[0]]] = with_header(lists[0], sources[lists[0]].replace(anchor, 
 	b'var $rot={type:"local-jsx",name:"rotate",description:"Switch every claude to another account",requires:{ink:!0},'
 	b'load:()=>import("' + menu.encode() + b'").then(m=>({call:(d,c)=>m.call(d,{...c,rotate:!0})}))};'
 ))
+
+notices = [name for name, src in sources.items() if b"tengu_rl_checkpoint_copy_shown" in src]
+if len(notices) != 1:
+	die(f"expected the limit-hit notice in 1 module, found {notices}")
+anchor, replacement = LIMIT_NOTICE
+if sources[notices[0]].count(anchor) != 1:
+	die(f"limit notice: expected 1 occurrence of the anchor in {notices[0]}, found {sources[notices[0]].count(anchor)}")
+data[graph[notices[0]]] = with_header(notices[0], sources[notices[0]].replace(anchor, replacement), b"")
 
 resolved: dict[str, tuple[str, str]] = {}
 for pattern in INTERNALS:

@@ -23,7 +23,10 @@ async function claudeAccount(...args) {
 
 export async function options() {
 	const here = fs.realpathSync(process.env[KEY]);
-	return (await claudeAccount("list", "--json")).split("\n").filter(Boolean).map((l) => JSON.parse(l)).filter((a) => a.dir !== here)
+	const all = (await claudeAccount("list", "--json")).split("\n").filter(Boolean).map((l) => JSON.parse(l));
+	const i = all.findIndex((a) => a.dir === here);
+	if (i < 0) throw Error(`${here} is not among the accounts`);
+	return [...all.slice(i + 1), ...all.slice(0, i)] // from the one after this, so a hit limit moves on to the next
 		.map((a) => ({ label: `Switch all to ${a.label}`, value: `acct:${a.name}`, disabled: a.disabled }));
 }
 
