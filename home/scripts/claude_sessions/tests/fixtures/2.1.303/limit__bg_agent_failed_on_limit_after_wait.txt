@@ -1,0 +1,61 @@
+       7 /** The properties a site sends for each event it may write, the vocabularies narrowed. */
+       8 export type SiteProperties = {
+       9   "lead.created@1": LeadCreated;
+      10   "booking.requested@1": import("./booking.ts").BookingRequested;
+     … +69 lines
+
+  Thought for 1m 43s, searched for 1 pattern, ran 20 shell commands
+  ⎿  Found 9 new diagnostic issues in 5 files (ctrl+o to expand)
+
+● Write(~/s/ev/_sa/sites/panel/ts/sites-contract/README.md)
+  ⎿  Wrote 26 lines to ../_sa/sites/panel/ts/sites-contract/README.md
+       1 # @evinvest/sites-contract
+       2
+       3 The Service-Arb sites ↔ panel contract, in TS: what a landing reads from the panel and sends
+       4 to it. Its source is the panel — `crates/panel_core` and `contracts/proto/sa/v1` in
+       5 [EV-Service-Arb/sites_panel](https://github.com/EV-Service-Arb/sites_panel) — and this is its
+       6 only TS form. No runtime dependencies, no Node imports: it is bundled into landing pages and
+       7 the panel's front end.
+       8
+       9 ```text
+      10 src/generated/contract.ts  panel_core's shapes, vocabularies and limits (`nix run .#gen`)
+     … +16 lines
+
+  Thought for 5s, ran 1 shell command
+
+● Agent(Panel frontend onto sites-contract) Opus 5.5 (1M context)
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+  Thought for 2m 40s, ran 28 shell commands
+
+● Now rewriting the booking model to its site-only part.
+
+  Thought for 49s, ran 11 shell commands
+
+● Progress: the panel side is done and green (Rust tests, 415 TS vector tests in the new package); the frontend migration runs in a background agent. I'm now moving sites-tools onto the package.
+
+  Thought for 14s, ran 5 shell commands
+  ⎿  You've hit your session limit · resets 1:30am (UTC)
+     /login to switch to an API usage-billed account.
+
+● Usage limit reached · continuing automatically at 1:30am · esc to cancel
+
+✻ Waiting for 1 background agent to finish
+
+● Agent "Panel frontend onto sites-contract" failed: Agent terminated early due to an API error: You've hit your session limit · resets 1:30am (UTC) (error type rate_limit, HTTP 429, request id req_011CgnL8aeyftHdT7EBoqzxf, model sent to
+the API: claude-opus-5-5)
+
+  9 tasks (4 done, 4 in progress, 1 open)
+  ◼ panel: ts/sites-contract package (generated + hand-written logic, tests on vectors, npmRelease)
+  ◼ panel: frontend imports @evinvest/sites-contract by path; delete copies
+  ◼ panel: docs/ARCHITECTURE contract section + invariant; commit; publish package
+  ◼ sites_tools: depend on @evinvest/sites-contract; delete duplicated modules; kit builds ingest bodies; release minor
+  ◻ brands (aquafix, vifnet) + devops: drop body builders, bump sites-tools, nix run .#test, relock devops
+   … +4 completed
+● full  $36.09  last $36.09  42m 59s  42% reuse  3 duplicate?  ⚠ 2 callers open  ✓  tests                                                                                                                     Review  Audit  Board  Details [-]
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── unify-site-panel-contract ─
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← 1 agent

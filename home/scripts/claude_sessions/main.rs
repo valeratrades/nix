@@ -1909,9 +1909,6 @@ fn classify_activity(
     // fell through to the prompt gate and read as Finished. Same glyph anchoring
     // as the spinner, for the same reason: sessions quote this line in prose.
     let bg_agent_pattern = Regex::new(r"(?m)^\s*[·✢✳✶✻✽∗*]\s+Waiting for \d+ background agents? to finish").unwrap();
-    if bg_agent_pattern.is_match(&last_portion) {
-        return ActivityResult { state: working, draft_content: None, question_content: None, plan_mode };
-    }
 
     // Hitting the session/usage limit renders as a result row
     // "⎿  You've hit your <window> limit · resets ..." (session, weekly, or no
@@ -1924,10 +1921,21 @@ fn classify_activity(
     // trimmed line STARTS with "⎿" with the limit text as its immediate body,
     // so narration that merely QUOTES the chrome doesn't fire.
     // The "⚠ Usage limit reached" notice under the input box stays in the window
-    // when a task list pushes the "⎿" row out of it.
-    let limit_pattern = Regex::new(r"(?m)^\s*(⎿\s+You['’]ve hit your (\p{L}+ )?limit|⚠\s+Usage limit reached)").unwrap();
-    if limit_pattern.is_match(&last_portion) {
-        return ActivityResult { state: ClaudeState::Limit, draft_content: None, question_content: None, plan_mode };
+    // when a task list pushes the "⎿" row out of it. A background agent dying on
+    // the limit is the same account's wall, and it lands below the "Waiting for"
+    // row that would otherwise read as working.
+    let limit_pattern = Regex::new(
+        r#"(?m)^\s*(⎿\s+You['’]ve hit your (\p{L}+ )?limit|⚠\s+Usage limit reached|● Agent ".*" failed: .*You['’]ve hit your (\p{L}+ )?limit)"#,
+    )
+    .unwrap();
+    // last_portion runs bottom-up, so the earlier match is the newer row.
+    let limit = limit_pattern.find(&last_portion).map(|m| m.start());
+    let wait = bg_agent_pattern.find(&last_portion).map(|m| m.start());
+    match (limit, wait) {
+        (Some(l), Some(w)) if w < l => return ActivityResult { state: working, draft_content: None, question_content: None, plan_mode },
+        (Some(_), _) => return ActivityResult { state: ClaudeState::Limit, draft_content: None, question_content: None, plan_mode },
+        (None, Some(_)) => return ActivityResult { state: working, draft_content: None, question_content: None, plan_mode },
+        (None, None) => {}
     }
 
     // Check for question state FIRST: a blocking selection prompt is the
