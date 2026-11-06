@@ -17,6 +17,7 @@ use clap::Parser;
 use serde::Deserialize;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
+use std::collections::{BTreeMap, HashMap};
 use std::fmt::Display;
 use std::fs;
 use std::io::{self, Write};
@@ -43,9 +44,13 @@ struct Args {
     #[arg(long)]
     pure: bool,
 
-    /// Only run specific tasks (comma-separated: clean,cache,nightly,shadows,redirects,rebuild)
+    /// Only run specific tasks (comma-separated: clean,cache,nightly,lockfiles,shadows,redirects,rebuild)
     #[arg(long)]
     only: Option<String>,
+
+    /// `lockfiles` also lists crates the aligned repos resolve with different features
+    #[arg(short, long)]
+    verbose: bool,
 
     /// Report what would be removed, then stop before touching anything
     #[arg(long)]
@@ -124,7 +129,7 @@ fn main() {
 
     let tasks: Vec<&str> = match args.only {
         Some(ref only) => only.split(',').collect(),
-        None => vec!["clean", "cache", "nightly", "shadows", "redirects", "rebuild"],
+        None => vec!["clean", "cache", "nightly", "lockfiles", "shadows", "redirects", "rebuild"],
     };
 
     std::thread::scope(|s| {
@@ -144,6 +149,9 @@ fn main() {
                     ctx.report(false, "Refreshed nightly version file cache");
                 }
             });
+        }
+        if tasks.contains(&"lockfiles") {
+            s.spawn(|| ctx.align_lockfiles(args.verbose));
         }
         if tasks.contains(&"shadows") {
             s.spawn(|| ctx.check_cargo_nix_shadows());
@@ -842,6 +850,142 @@ impl Ctx {
                 },
                 Ok((_, false)) => {}
                 Err(e) => self.report(true, format_args!("keeping redirect {}: {e}", hop.display())),
+            }
+        }
+    }
+
+    /// kache reuses a crate across repos only when its whole dependency closure resolved alike, so every active v_flakes repo updates in the same run
+    fn align_lockfiles(&self, verbose: bool) {
+        println!("\x1b[34mAligning lockfiles of v_flakes repos used in the last {} days\x1b[0m", self.cfg.stale_after_days);
+        let root = self.home.join("s");
+        let entries = match fs::read_dir(&root) {
+            Ok(entries) => entries,
+            Err(e) => return self.report(true, format_args!("{}: {e}", root.display())),
+        };
+        let mut features: BTreeMap<(String, String), BTreeMap<Vec<String>, Vec<String>>> = BTreeMap::new();
+        for entry in entries {
+            let repo = match entry {
+                Ok(entry) => entry.path(),
+                Err(e) => {
+                    self.report(true, format_args!("an entry of {}: {e}", root.display()));
+                    continue;
+                }
+            };
+            if !repo.is_dir() {
+                continue;
+            }
+            match fs::read_to_string(repo.join("flake.nix")) {
+                Ok(flake) if flake.contains("v_flakes") && repo.join(".git").exists() => {}
+                Ok(_) => continue,
+                Err(e) if e.kind() == io::ErrorKind::NotFound => continue,
+                Err(e) => {
+                    self.report(true, format_args!("{}: {e}", repo.display()));
+                    continue;
+                }
+            }
+            if self.project_last_use(&repo).is_none_or(|t| self.unused_days(t, self.cfg.stale_after_days).is_some()) {
+                continue;
+            }
+            let name = repo.file_name().expect("read_dir entry").to_string_lossy().into_owned();
+            let git = || {
+                let mut git = Command::new("git");
+                git.arg("-C").arg(&repo);
+                git
+            };
+            let tracked = match git().args(["ls-files", "--", "Cargo.lock", "*/Cargo.lock"]).output() {
+                Ok(o) if o.status.success() => String::from_utf8(o.stdout).expect("git prints paths as given"),
+                Ok(o) => {
+                    self.report(true, format_args!("{name}: git ls-files: {}", String::from_utf8_lossy(&o.stderr).trim()));
+                    continue;
+                }
+                Err(e) => {
+                    self.report(true, format_args!("{name}: git ls-files: {e}"));
+                    continue;
+                }
+            };
+            let locks: Vec<&str> = tracked.lines().filter(|l| l.matches('/').count() <= 1).collect(); // the root or a cargoRoot, not test fixtures
+            if locks.is_empty() {
+                continue;
+            }
+            let paths: Vec<&str> = locks.iter().copied().chain(["flake.lock"]).collect();
+            match git().args(["status", "--porcelain", "--"]).args(&paths).output() {
+                Ok(o) if o.status.success() && o.stdout.is_empty() => {}
+                Ok(o) if o.status.success() => {
+                    self.report(false, format_args!("{name}: skipped, lockfiles have uncommitted changes"));
+                    continue;
+                }
+                other => {
+                    self.report(true, format_args!("{name}: git status: {other:?}"));
+                    continue;
+                }
+            }
+
+            let flake_lock = match fs::read_to_string(repo.join("flake.lock")) {
+                Ok(lock) => serde_json::from_str::<Value>(&lock).unwrap_or_else(|e| panic!("{name}/flake.lock: {e}")),
+                Err(e) => {
+                    self.report(true, format_args!("{name}/flake.lock: {e}"));
+                    continue;
+                }
+            };
+            let pins_v_flakes = !flake_lock["nodes"]["root"]["inputs"]["v_flakes"].is_null(); // v_flakes itself names the word without the input
+
+            match self.dry_run {
+                true => self.report(false, format_args!("would cargo update{} in {name}", if pins_v_flakes { " + nix flake update v_flakes" } else { "" })),
+                false => {
+                    for lock in &locks {
+                        self.run(Command::new("cargo").arg("update").env("RUSTC_WRAPPER", "").current_dir(repo.join(lock).parent().expect("a file path"))); // resolving needs no wrapper, and a repo's committed config may name one that is not installed
+                    }
+                    if pins_v_flakes {
+                        self.run(Command::new("nix").args(["flake", "update", "v_flakes"]).current_dir(&repo));
+                    }
+                    match git().args(["diff", "--quiet", "--"]).args(&paths).status().map(|s| s.code()) {
+                        Ok(Some(0)) => {}
+                        Ok(Some(1)) => {
+                            if self.run(git().args(["commit", "-m", "chore: align lockfiles across repos", "--"]).args(&paths)) {
+                                self.report(false, format_args!("{name}: lockfiles updated and committed"));
+                            }
+                        }
+                        other => self.report(true, format_args!("{name}: git diff: {other:?}")),
+                    }
+                }
+            }
+
+            if verbose {
+                for lock in &locks {
+                    let dir = repo.join(lock).parent().expect("a file path").to_path_buf();
+                    let out = match Command::new("cargo").args(["metadata", "--format-version", "1", "--locked"]).env("RUSTC_WRAPPER", "").current_dir(&dir).stderr(Stdio::inherit()).output() {
+                        Ok(o) if o.status.success() => o.stdout,
+                        other => {
+                            self.report(true, format_args!("{}: cargo metadata: {:?}", dir.display(), other.map(|o| o.status)));
+                            continue;
+                        }
+                    };
+                    let meta: Value = serde_json::from_slice(&out).expect("cargo metadata prints JSON");
+                    let registry: HashMap<&str, (&str, &str)> = meta["packages"]
+                        .as_array()
+                        .expect("cargo metadata v1 lists packages")
+                        .iter()
+                        .filter(|p| p["source"].as_str().is_some_and(|s| s.starts_with("registry+")))
+                        .map(|p| (p["id"].as_str().unwrap(), (p["name"].as_str().unwrap(), p["version"].as_str().unwrap())))
+                        .collect();
+                    for node in meta["resolve"]["nodes"].as_array().expect("not --no-deps, so resolve is there") {
+                        let Some(&(krate, version)) = registry.get(node["id"].as_str().unwrap()) else { continue };
+                        let mut set: Vec<String> = node["features"].as_array().unwrap().iter().map(|f| f.as_str().unwrap().to_owned()).collect();
+                        set.sort();
+                        features.entry((krate.to_owned(), version.to_owned())).or_default().entry(set).or_default().push(name.clone());
+                    }
+                }
+            }
+        }
+
+        if verbose {
+            let diverging: Vec<_> = features.iter().filter(|(_, sets)| sets.len() > 1).collect();
+            println!("\x1b[34m{} crate versions resolve with different features across repos, so each feature set builds separately\x1b[0m", diverging.len());
+            for ((krate, version), sets) in diverging {
+                println!("  {krate} {version}");
+                for (set, repos) in sets {
+                    println!("    [{}] {}", set.join(","), repos.join(" "));
+                }
             }
         }
     }
