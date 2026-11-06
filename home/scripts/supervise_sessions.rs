@@ -14,11 +14,15 @@ use clap::Parser;
 use serde::Deserialize;
 use std::collections::{BTreeSet, HashMap};
 use std::process::Command;
+use std::sync::Once;
 use std::time::Duration;
 
 const CLAUDE_SESSIONS: &str = "/home/v/nix/home/scripts/claude_sessions/main.rs";
 const SMART_SHUTDOWN: &str = "/home/v/nix/home/scripts/smart_shutdown.rs";
 const TIMER: &str = "/home/v/nix/home/scripts/timer.rs";
+const CLAUDE_LOGOUT_ALL: &str = "/home/v/nix/home/scripts/claude_logout_all.mjs";
+const CHROME_DEBUG_PORT: &str = "49300"; // vars/ports.nix chromeDebug; the gateway's env lacks CHROME_DEBUG_PORT
+const LOGOUT_GRACE_S: &str = "180";
 const TG: &str = "/etc/profiles/per-user/v/bin/tg"; // gateway PATH lacks the user profile; call it explicitly
 const POLL: Duration = Duration::from_secs(60);
 
@@ -40,7 +44,12 @@ struct Args {
     #[arg(long, default_value_t = 3)]
     idle_reads: u8,
 
-    /// Report as usual but don't actually shut down.
+    /// Before shutting down, sign every device out of the claude.ai account Chrome is logged into,
+    /// so nobody else spends its usage until it's logged back in.
+    #[arg(long)]
+    logout: bool,
+
+    /// Report as usual but don't actually shut down, nor revoke any login.
     #[arg(short = 'n', long)]
     dry_run: bool,
 }
@@ -74,6 +83,31 @@ fn tg(msg: &str) {
     }
 }
 
+// Best-effort like tg: a failed logout is reported, but must not block the shutdown.
+fn claude_logout(dry_run: bool) {
+    let mut cmd = Command::new("timeout");
+    cmd.args(["--kill-after=10", LOGOUT_GRACE_S, "node", CLAUDE_LOGOUT_ALL, CHROME_DEBUG_PORT]);
+    if dry_run {
+        cmd.arg("--dry-run");
+    }
+    match cmd.output() {
+        Ok(out) if out.status.success() => tg(&format!("supervise: claude.ai logout\n{}", String::from_utf8_lossy(&out.stdout).trim())),
+        Ok(out) if out.status.code() == Some(124) => tg(&format!("supervise: ⚠ claude.ai logout timed out after {LOGOUT_GRACE_S}s")),
+        Ok(out) => tg(&format!("supervise: ⚠ claude.ai logout failed ({}): {}", out.status, String::from_utf8_lossy(&out.stderr).trim())),
+        Err(e) => tg(&format!("supervise: ⚠ claude.ai logout failed to spawn: {e}")),
+    }
+}
+
+// Both the poller and the horizon end here. The Once makes the horizon wait out a logout the poller
+// already started (bounded by LOGOUT_GRACE_S) rather than power off under it.
+fn finish(logout: bool, dry_run: bool) {
+    static LOGGED_OUT: Once = Once::new();
+    if logout {
+        LOGGED_OUT.call_once(|| claude_logout(dry_run));
+    }
+    shutdown(dry_run);
+}
+
 // smart_shutdown's exit status can't be trusted (it may report success while its
 // poweroff never happens), so we ignore it: if control ever returns here we are
 // still alive and force an unambiguous poweroff ourselves.
@@ -96,7 +130,7 @@ fn shutdown(dry_run: bool) {
 // Runs on a background thread: shut down early once every initially-active session
 // settles. Exits the process on shutdown; a broken snapshot just returns, leaving
 // the main-thread horizon to handle it.
-fn poll_until_settled(idle_reads: u8, dry_run: bool) {
+fn poll_until_settled(idle_reads: u8, logout: bool, dry_run: bool) {
     let Some(initial) = snapshot() else {
         tg("supervise: can't read sessions — deferring to horizon");
         return;
@@ -107,7 +141,7 @@ fn poll_until_settled(idle_reads: u8, dry_run: bool) {
         initial.into_iter().filter(|(_, s)| matches!(s.as_str(), "active" | "planning" | "ongoing")).map(|(n, _)| n).collect();
     if watched.is_empty() {
         tg("supervise: no active sessions — shutting down");
-        shutdown(dry_run);
+        finish(logout, dry_run);
         std::process::exit(0);
     }
     tg(&format!("supervise: watching {} session(s): {}", watched.len(), watched.iter().cloned().collect::<Vec<_>>().join(", ")));
@@ -166,7 +200,7 @@ fn poll_until_settled(idle_reads: u8, dry_run: bool) {
 
         if remaining.is_empty() {
             tg("supervise: all sessions settled — shutting down");
-            shutdown(dry_run);
+            finish(logout, dry_run);
             std::process::exit(0);
         }
     }
@@ -195,10 +229,10 @@ fn main() {
     let horizon = Duration::from_secs(args.timeout_m * 60);
 
     spawn_timer(args.timeout_m);
-    std::thread::spawn(move || poll_until_settled(args.idle_reads, args.dry_run));
+    std::thread::spawn(move || poll_until_settled(args.idle_reads, args.logout, args.dry_run));
 
     // The main thread IS the termination horizon: a pure sleep nothing can block.
     std::thread::sleep(horizon);
     tg(&format!("supervise: {}m horizon reached — shutting down", args.timeout_m));
-    shutdown(args.dry_run);
+    finish(args.logout, args.dry_run);
 }
