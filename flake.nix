@@ -141,7 +141,7 @@
     # No `follows` here on purpose: these build against their OWN locked nixpkgs so the
     # store paths match what each repo's CI pushes to valeratrades.cachix.org (overriding
     # nixpkgs would change the hash and miss the cache). `cached` is the newest rev that CI did push.
-    auto_redshift.url = "github:valeratrades/auto_redshift?ref=release";
+    auto_redshift.url = "github:valeratrades/auto_redshift?ref=cached";
     btc_line.url = "github:valeratrades/btc_line?ref=cached";
     scripters.url = "github:ev-main/scripters?ref=cached";
     bourso-api.url = "github:valeratrades/bourso-api?ref=cached";
