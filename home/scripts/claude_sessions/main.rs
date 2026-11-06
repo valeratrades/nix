@@ -371,8 +371,8 @@ impl fmt::Display for Sessions {
                 //               prose instead of a selector.
                 //   error    -> COLOR_WARN: real, but errors here mostly surface
                 //               during hands-on interaction, so I'm already looking
-                //               — deliberately ranked below question. partial rides
-                //               along: work left on the table, not blocked mid-flight.
+                //               — deliberately ranked below question. partial and
+                //               interrupted ride along: work left on the table, not blocked mid-flight.
                 //   active/planning -> COLOR_INFO_ACTIVE: healthy "it's working" signal,
                 //               informational, lowest of the three. ongoing -> its
                 //               darker COLOR_INFO_ONGOING: turn over, a background shell still running.
@@ -387,7 +387,7 @@ impl fmt::Display for Sessions {
                     ClaudeState::Limit | ClaudeState::Input => {
                         format!("<span foreground=\"{COLOR_INFO_NEGATIVE}\">{}</span>", pango_escape(&padded_state))
                     }
-                    ClaudeState::Error | ClaudeState::Partial => {
+                    ClaudeState::Error | ClaudeState::Partial | ClaudeState::Interrupted => {
                         format!("<span foreground=\"{COLOR_WARN}\">{}</span>", pango_escape(&padded_state))
                     }
                     ClaudeState::Active | ClaudeState::Planning => {
@@ -428,9 +428,8 @@ impl fmt::Display for Sessions {
                     ClaudeState::Draft => padded_state.cyan(),
                     ClaudeState::Question | ClaudeState::Stuck => padded_state.magenta(),
                     ClaudeState::Ongoing => padded_state.truecolor(0x3f, 0x8a, 0xa8),
-                    ClaudeState::Error | ClaudeState::Partial => padded_state.red(),
+                    ClaudeState::Error | ClaudeState::Partial | ClaudeState::Interrupted => padded_state.red(),
                     ClaudeState::Limit | ClaudeState::Input => padded_state.white(),
-                    ClaudeState::Interrupted => padded_state.normal(),
                 };
                 write!(f, "{}  {}{}", padded_name, votes_prefix, colored_state)?;
                 if let Some(c) = &padded_context {
