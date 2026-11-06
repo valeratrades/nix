@@ -784,14 +784,8 @@
       } // lib.optionalAttrs (user ? sccache && user.sccache) {
         build = { rustc-wrapper = "sccache"; };
       } // {
-        # rustup on NixOS bakes the nix store path of ld-wrapper.sh into the toolchain's ld.lld script.
-        # That path goes stale on every rustup package update, breaking `cargo install`.
-        # This bypasses the wrapper entirely, using the stable system lld path instead.
-        # Project-level .cargo/config.toml overrides this, so nix develop envs stay unaffected.
-        target."x86_64-unknown-linux-gnu" = {
-          linker = "clang";
-          rustflags = ["-C" "link-arg=-fuse-ld=/run/current-system/sw/bin/ld.lld"];
-        };
+        # No `rustflags` here: v_flakes writes them as a string, and cargo errors on a key that is a string in one config file and an array in another.
+        target."x86_64-unknown-linux-gnu".linker = "clang";
       });
 			".config/zathura" = {
 				source = "${self}/home/config/zathura";
