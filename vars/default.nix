@@ -37,7 +37,6 @@ in
     wakeTime = "07:10"; # matches system time, (my system time is utc)
     fontSize = 10;
 		kbd = "ansi";
-		sccache = true;
 		disableNvidia = false;  # set to true to use AMD iGPU only (better battery, fewer driver issues)
 		gpuAcceleration = false;  # forced Firefox GPU rendering (webrender compositor + dmabuf + gpu-process). Off: runs hot on this chassis.
 		clickhouse = false;

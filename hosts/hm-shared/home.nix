@@ -420,6 +420,7 @@
     packages = with pkgs;
     # INFO: arrays are always automatically merged, in host-specfic `home.nix`s it may seem like I'm overwriting this, but it only looks this way.
       lib.lists.flatten [
+        inputs.v_flakes.packages.${pkgs.stdenv.hostPlatform.system}.kache # global rustc-wrapper; the same build v_flakes devShells use
         [
           # funsies
           unimatrix
@@ -781,9 +782,7 @@
           lw = "leptos watch --hot-reload";
         };
         cargo-new = { vcs = "none"; };
-      } // lib.optionalAttrs (user ? sccache && user.sccache) {
-        build = { rustc-wrapper = "sccache"; };
-      } // {
+        build.rustc-wrapper = "kache";
         # No `rustflags` here: v_flakes writes them as a string, and cargo errors on a key that is a string in one config file and an array in another.
         target."x86_64-unknown-linux-gnu".linker = "clang";
       });

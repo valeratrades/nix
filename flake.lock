@@ -3069,12 +3069,10 @@
     "lean4-nix_6": {
       "inputs": {
         "flake-parts": [
-          "tg",
           "v_flakes",
           "flake-parts"
         ],
         "nixpkgs": [
-          "tg",
           "v_flakes",
           "nixpkgs"
         ]
@@ -6529,11 +6527,11 @@
         "rust-overlay": "rust-overlay_14"
       },
       "locked": {
-        "lastModified": 1793024085,
-        "narHash": "sha256-BYYsk8Uh5RWmUPsOM0lzsplraUS/ywUSMCacPT0im/U=",
+        "lastModified": 1793940012,
+        "narHash": "sha256-DSNBP4shP1+xjmZUaMKJGscUHfZMZxMsg+nm14lz3Zg=",
         "owner": "valeratrades",
         "repo": "v_flakes",
-        "rev": "6486bf4f526dc82de6f6b5806d6307dd67e60c0b",
+        "rev": "f77bf543af109531d232295a06fa9c60234f42de",
         "type": "github"
       },
       "original": {

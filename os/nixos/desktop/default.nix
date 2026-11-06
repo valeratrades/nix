@@ -109,7 +109,6 @@
         vscode-extensions.github.copilot
         sass # css3 tools
         mold # probably shouldn't be here though
-        sccache
         just
         trunk # fascilitates running CSR web apps
         toml-cli
