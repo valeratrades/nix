@@ -22,7 +22,7 @@ The repo side is the contract, run from the repo root:
   captures exactly the keys given. A key not in `frames` matches no test and is never captured.
 
 In kitstart landings this is `defineFigmaSuite` in `@evinvest/kitstart/testing/e2e` and `apps.figma` in the
-lib's `nix/mk-landing.nix`; read those when the repo side misbehaves.
+EV-Service-Arb/sites_tools' `nix/mk-landing.nix` (`~/s/ev/_sa/sites/tools`); read those when the repo side misbehaves.
 
 ## The loop
 
