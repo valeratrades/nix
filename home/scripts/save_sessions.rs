@@ -46,7 +46,7 @@ fn main() {
     }
 
     let (out, sessions) = match (
-        Command::new("tmux").args(["list-panes", "-a", "-F", "#{pane_id}\t#{session_name}\t#{pane_width}"]).output(),
+        Command::new("tmux").args(["list-panes", "-a", "-F", "#{pane_id}\t#{session_name}\t#{pane_width}\t#{window_index}\t#{pane_index}"]).output(),
         Command::new("tmux").args(["list-sessions", "-F", "#{session_name}\t#{session_path}"]).output(),
     ) {
         (Ok(out), Ok(sessions)) if out.status.success() && sessions.status.success() => (out, String::from_utf8_lossy(&sessions.stdout).into_owned()),
@@ -68,17 +68,18 @@ fn main() {
         std::fs::write(&sessions_path, &sessions).expect("failed to write session inventory");
         println!("Recorded {} session(s) to {sessions_path}", sessions.lines().count());
     }
-    let panes: Vec<(String, String, usize)> = String::from_utf8_lossy(&out.stdout)
+    let panes: Vec<(String, String, usize, (usize, usize))> = String::from_utf8_lossy(&out.stdout)
         .lines()
         .map(|l| {
             let mut f = l.split('\t');
-            let mut next = || f.next().expect("format string has three fields").to_string();
-            (next(), next(), next().parse().expect("pane_width is a number"))
+            let mut next = || f.next().expect("format string has five fields").to_string();
+            let num = |s: String| s.parse::<usize>().unwrap_or_else(|e| panic!("tmux index '{s}': {e}"));
+            (next(), next(), num(next()), (num(next()), num(next())))
         })
         .collect();
 
     // claude keeps `~/.claude/sessions/<pid>.json` for each live process
-    let mut content = String::new();
+    let mut entries: Vec<((&str, (usize, usize)), String)> = Vec::new(); // keyed by tmux position: restore appends windows in file order
     let config_dir = Path::new(&home).join(".claude");
     let sessions: Vec<_> = match std::fs::read_dir(config_dir.join("sessions")) {
         Ok(sessions) => sessions.map(|f| f.expect("sessions entry unreadable").path()).collect(),
@@ -99,7 +100,7 @@ fn main() {
             continue; // not launched inside tmux, nothing to rebuild it into
         };
         let pane_id = tmux.rsplit_once('.').unwrap_or_else(|| panic!("{}: unexpected tmux field '{tmux}'", f.display())).1;
-        let Some((_, session_name, width)) = panes.iter().find(|(id, ..)| id == pane_id) else {
+        let Some((_, session_name, width, position)) = panes.iter().find(|(id, ..)| id == pane_id) else {
             continue; // claude on another tmux server
         };
         let cwd = j["cwd"].as_str().unwrap_or_else(|| panic!("{}: no cwd", f.display()));
@@ -133,8 +134,10 @@ fn main() {
             }
         };
         let esc = |s: String| s.replace('\\', "\\\\").replace('\n', "\\n").replace('\t', "\\t");
-        content.push_str(&format!("{session_name}\t{cwd}\t{id}\t{}\t{}\n", esc(draft), esc(rewind)));
+        entries.push(((session_name, *position), format!("{session_name}\t{cwd}\t{id}\t{}\t{}\n", esc(draft), esc(rewind))));
     }
+    entries.sort();
+    let content: String = entries.into_iter().map(|(_, line)| line).collect();
 
     let n = content.lines().count();
     if dry_run {
