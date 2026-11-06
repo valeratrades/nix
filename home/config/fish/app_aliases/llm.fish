@@ -2,8 +2,8 @@
 set -g utmost_importance_projects $HOME/ev_invest/trading_data $HOME/ev_invest/risk_management
 
 # Accounts are logins only, in ~/.claude/accounts/N, which ask_llm owns (its docs/ARCHITECTURE.md#claude-accounts);
-# all else is the one ~/.claude. Every claude runs on the one `current` links, following `cl rotate-acc` and the
-# rate-limit menu in place (hosts/v-laptop/claude-accounts.mjs).
+# all else is the one ~/.claude. A claude starts on the one `current` links, then follows the one `running` links in
+# place (hosts/v-laptop/claude-accounts.mjs); `cl rotate-acc` and the rate-limit menu move both, `cl rotate-acc --new` only `current`.
 # `env -u`: credentials.fish exports ANTHROPIC_API_KEY session-wide; it outranks the account's login and bills as API credits.
 function claude
     if [ "$TERM_PROGRAM" = ghostty ]; or begin; set -q TMUX; and [ (tmux display -p '#{client_termname}') = xterm-ghostty ]; end
@@ -17,12 +17,16 @@ end
 
 function cl
     if [ "$argv[1]" = rotate-acc ]
-        set -l acc $argv[2]
+        set -l new
+        if contains -- --new $argv
+            set new --new
+        end
+        set -l acc (string match -v -- --new $argv[2..])[1]
         if [ -z "$acc" ]
             set acc (ask_llm dev claude-account list | fzf --delimiter \t --with-nth 2 --prompt 'account> ' | string split -f1 \t)
             or return 1
         end
-        ask_llm dev claude-account rotate $acc
+        ask_llm dev claude-account rotate $new $acc
         return
     end
     if [ "$argv[1]" = review ]

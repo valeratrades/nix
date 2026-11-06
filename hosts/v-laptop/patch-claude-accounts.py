@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Account switching: "Switch to account N" entries in the rate-limit menu (`/rate-limit-options`), `/rotate` showing
 that menu with only those entries, a hit limit switching on its own to the next of the auto-rotated accounts
-(home.nix), and every running claude following ~/.claude/accounts/current in place.
+(home.nix), and every running claude following ~/.claude/accounts/running in place.
 
 The logic lives in claude-accounts.mjs, as no chunk has room for it. This script writes the .mjs with the
 minified internals it needs resolved to their chunk + export name, and splices its hooks into these modules:

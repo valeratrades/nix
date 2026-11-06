@@ -1,5 +1,5 @@
 // Accounts are ~/.claude/accounts/<name>/, owned by ask_llm (its docs/ARCHITECTURE.md#claude-accounts): it relinks
-// `current`, and labels each account. What stays here is the in-process part: each claude follows `current` in place.
+// `current` and `running`, and labels each account. What stays here is the in-process part: each claude follows `running` in place.
 // Loaded through the hooks patch-claude-accounts.py splices into the binary, which also fills in the internals below.
 import fs from "node:fs";
 import path from "node:path";
@@ -7,7 +7,6 @@ import { isMainThread } from "node:worker_threads";
 
 const KEY = "CLAUDE_SECURESTORAGE_CONFIG_DIR";
 const root = path.join(process.env.HOME, ".claude/accounts");
-const current = path.join(root, "current");
 const AUTO = @auto_accounts@;
 
 let internals;
@@ -36,10 +35,10 @@ export async function options() {
 }
 
 let queue = Promise.resolve();
-// moves this process onto `current`; serialized, as the menu and the watcher both trigger it
+// moves this process onto `running`; serialized, as the menu and the watcher both trigger it
 function follow(io = {}) {
 	const step = async () => {
-		const from = process.env[KEY], to = await claudeAccount("current");
+		const from = process.env[KEY], to = await claudeAccount("running");
 		if (fs.realpathSync(from) === to) return;
 		const { mle, Nn, DI, uVe, Kn } = await load();
 		await mle(io); // settles this process's own refresh under the departing account's lock
@@ -73,7 +72,7 @@ function follow(io = {}) {
 export function watch() {
 	if (!isMainThread) return; // workers load the hook module too, and keep no login of their own
 	if (!process.env[KEY]) return; // not launched onto an account, e.g. `claude -p` under an env token, which outranks any account anyway
-	fs.watch(root, (_, file) => file === "current" && follow()).unref();
+	fs.watch(root, (_, file) => file === "running" && follow()).unref();
 }
 
 // what /login does after its OAuth step, with the step replaced by moving every claude onto another account
@@ -84,12 +83,13 @@ export async function switchTo(name, ctx, done) {
 	const account = wn();
 	const previousAccount = account && { accountUuid: account.accountUuid, organizationUuid: account.organizationUuid };
 	const previousGatewayAuth = Br();
-	const prev = fs.readlinkSync(current);
+	const [prevRunning, prevCurrent] = ["running", "current"].map((l) => fs.readlinkSync(path.join(root, l)));
 	await claudeAccount("rotate", name);
 	try {
 		await follow({ credentials: ctx.credentials, storageV5: ctx.storageV5 });
 	} catch (e) {
-		await claudeAccount("rotate", prev);
+		await claudeAccount("rotate", prevRunning);
+		await claudeAccount("rotate", "--new", prevCurrent);
 		throw e;
 	}
 	const r = await kAe(ctx, true, { setAppState: ctx.setAppState, previousAccount, previousGatewayAuth });

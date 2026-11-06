@@ -5,11 +5,11 @@
         "v_flakes": "v_flakes"
       },
       "locked": {
-        "lastModified": 1793996710,
-        "narHash": "sha256-NGvBobQ0/zHXToLdGRFyLvlAvbZMTyptC1TrKlhVkcY=",
+        "lastModified": 1793998310,
+        "narHash": "sha256-ULutK2gGp/AYIVh3AhvW5k0KTfzbrTyO7qXfO8YTKgk=",
         "owner": "valeratrades",
         "repo": "ask_llm",
-        "rev": "d5b49df98dbd5ce2bf223d480bee5fc81daca08c",
+        "rev": "68432e76bb2b7c43a5284bd7a388e6bd73eb3bd6",
         "type": "github"
       },
       "original": {
