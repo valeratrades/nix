@@ -1,6 +1,7 @@
 #!/bin/sh
-# `$1`: line; `$2`: x (0-based). Exits 1 when no URL is under x
-url=$(printf '%s\n' "$1" | awk -v x="$(($2 + 1))" '{
+# `$1`: line; `$2`: x (0-based); `$3`: OSC 8 hyperlink under x, wins over the visible text. Exits 1 when no URL is under x
+url=$3
+[ -n "$url" ] || url=$(printf '%s\n' "$1" | awk -v x="$(($2 + 1))" '{
 	off = 0; s = $0
 	while (match(s, /https?:\/\/[^ \t"<>()`'"'"'│]+/)) {
 		a = off + RSTART; b = a + RLENGTH
