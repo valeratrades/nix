@@ -28,13 +28,14 @@
           enable = true;
           lastSupportedVersion = "CURRENT_NIGHTLY_BY_DATE";
           jobs.default = true;
+          publishCachix = "valeratrades";
         };
         readme = v_flakes.readme-fw {
           inherit pkgs pname;
           defaults = true;
           lastSupportedVersion = "nightly-RUSTC_CURRENT_VERSION";
           rootDir = ./.;
-          badges = [ "msrv" "crates_io" "docs_rs" "loc" "ci" ];
+          badges = [ "msrv" "crates_io" "docs_rs" "loc" "size" "ci" ];
         };
         combined = v_flakes.utils.combine { inherit rust; modules = [ rs github readme ]; };
       in

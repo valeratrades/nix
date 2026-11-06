@@ -41,6 +41,10 @@ enum ProjectCommand {
         /// Generate as a Cargo workspace (with a single member crate) instead of a standalone crate
         #[arg(long, default_value_t = false)]
         workspace: bool,
+
+        /// Library: no binary, so no preset sources, no cachix and no size badge
+        #[arg(long, default_value_t = false, conflicts_with = "preset")]
+        lib: bool,
     },
     /// Create a new Python project
     Python {
@@ -256,38 +260,9 @@ fn copy_dir_all(src: &PathBuf, dst: &PathBuf) -> Result<(), Box<dyn std::error::
     Ok(())
 }
 
-const CACHIX_WORKFLOW: &str = r#"name: cachix
-on:
-  push:
-    branches: [main]
-  workflow_dispatch: {}
-jobs:
-  build:
-    name: build ${{ matrix.system }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - { runner: ubuntu-latest,    system: x86_64-linux }
-          - { runner: ubuntu-24.04-arm, system: aarch64-linux }
-    runs-on: ${{ matrix.runner }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v31
-      - uses: cachix/cachix-action@v17
-        with:
-          name: valeratrades
-          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-      - run: nix build -L '.#packages.${{ matrix.system }}.default'
-"#;
-
-// Cache nix builds of this crate to valeratrades.cachix.org so other machines/arches
-// (e.g. the aarch64 rpi5) download instead of rebuilding under emulation. The push
-// needs the CACHIX_AUTH_TOKEN repo secret, which can only be set once a GitHub remote
-// exists — best-effort it here, otherwise print the one-liner.
+// The flake's `publishCachix` generates cachix.yml; its push needs the CACHIX_AUTH_TOKEN repo
+// secret, which can only be set once a GitHub remote exists — best-effort it here, otherwise print the one-liner.
 fn setup_cachix() {
-    fs::create_dir_all(".github/workflows").ok();
-    fs::write(".github/workflows/cachix.yml", CACHIX_WORKFLOW).ok();
 
     let slug = run_fun!(git remote get-url origin)
         .ok()
@@ -302,10 +277,21 @@ fn setup_cachix() {
     }
 }
 
+// strips what only a binary has from the template flake: the cachix build and its size badge
+fn flake_as_lib() -> Result<(), Box<dyn std::error::Error>> {
+    let flake = fs::read_to_string("flake.nix")?;
+    let cachix = "\n          publishCachix = \"valeratrades\";";
+    let size = " \"size\"";
+    assert!(flake.contains(cachix) && flake.contains(size), "flake.nix template lost its publishCachix or size badge");
+    fs::write("flake.nix", flake.replace(cachix, "").replace(size, ""))?;
+    Ok(())
+}
+
 fn rust(
     name: &str,
     _toolchain: &Toolchain,
     preset: &RustPreset,
+    lib: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let file_snippets = get_file_snippets_path();
     let lang = "rs";
@@ -343,6 +329,14 @@ components = ["rustc-codegen-cranelift-preview"]"#,
 
     // Remove default src directory
     let _ = fs::remove_dir_all("src");
+
+    if lib {
+        fs::create_dir_all("src")?;
+        fs::write("src/lib.rs", "")?;
+        flake_as_lib()?;
+        shared_after(name, lang)?;
+        return Ok(());
+    }
 
     // Copy preset files
     let preset_name = match preset {
@@ -530,7 +524,7 @@ fn nix(name: &str) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn rust_workspace(name: &str, preset: &RustPreset) -> Result<(), Box<dyn std::error::Error>> {
+fn rust_workspace(name: &str, preset: &RustPreset, lib: bool) -> Result<(), Box<dyn std::error::Error>> {
     let file_snippets = get_file_snippets_path();
     let lang = "rs";
 
@@ -554,6 +548,7 @@ components = ["rustc-codegen-cranelift-preview"]"#,
     let workspace_root_src = file_snippets.join(format!("{lang}/workspace_root.toml"));
     let mut workspace_cargo = fs::read_to_string(&workspace_root_src)?;
     let preset_workspace_deps = match preset {
+        _ if lib => "",
         RustPreset::Default => {
             "clap = { version = \"^4.5.4\", features = [\"derive\"] }\nv_utils = { version = \"^2.15.0\", features = [\"io\", \"macros\", \"cli\"] }\n"
         }
@@ -566,6 +561,7 @@ components = ["rustc-codegen-cranelift-preview"]"#,
     // Build member Cargo.toml with workspace dep references
     let base_deps = ["derive-new", "color-eyre", "miette"];
     let preset_deps: &[&str] = match preset {
+        _ if lib => &[],
         RustPreset::Default => &["clap", "v_utils"],
         RustPreset::Light => &["clap"],
         _ => &[],
@@ -601,6 +597,7 @@ components = ["rustc-codegen-cranelift-preview"]"#,
     };
     let preset_dir = file_snippets.join(format!("{lang}/presets/{preset_name}"));
     match preset {
+        _ if lib => fs::create_dir_all(format!("{name}/src"))?,
         RustPreset::Leptos => {
             if preset_dir.exists() {
                 for entry in fs::read_dir(&preset_dir)? {
@@ -654,7 +651,11 @@ components = ["rustc-codegen-cranelift-preview"]"#,
         fs::write(&flake_path, new_flake)?;
     }
 
-    setup_cachix();
+    if lib {
+        flake_as_lib()?;
+    } else {
+        setup_cachix();
+    }
     shared_after(name, lang)?;
 
     Ok(())
@@ -669,11 +670,12 @@ fn main() {
             toolchain,
             preset,
             workspace,
+            lib,
         } => {
             if workspace {
-                rust_workspace(&name, &preset)
+                rust_workspace(&name, &preset, lib)
             } else {
-                rust(&name, &toolchain, &preset)
+                rust(&name, &toolchain, &preset, lib)
             }
         }
         ProjectCommand::Python { name } => python(&name),
