@@ -8,6 +8,7 @@ import { isMainThread } from "node:worker_threads";
 const KEY = "CLAUDE_SECURESTORAGE_CONFIG_DIR";
 const root = path.join(process.env.HOME, ".claude/accounts");
 const current = path.join(root, "current");
+const AUTO = @auto_accounts@;
 
 let internals;
 const load = () => internals ??= (async () => {
@@ -24,10 +25,14 @@ async function claudeAccount(...args) {
 export async function options() {
 	const here = fs.realpathSync(process.env[KEY]);
 	const all = (await claudeAccount("list", "--json")).split("\n").filter(Boolean).map((l) => JSON.parse(l));
-	const i = all.findIndex((a) => a.dir === here);
-	if (i < 0) throw Error(`${here} is not among the accounts`);
-	return [...all.slice(i + 1), ...all.slice(0, i)] // from the one after this, so a hit limit moves on to the next
-		.map((a) => ({ label: `Switch all to ${a.label}`, value: `acct:${a.name}`, disabled: a.disabled }));
+	const unknown = AUTO.filter((e) => !all.some((a) => a.email === e));
+	if (unknown.length) throw Error(`auto-rotated accounts not logged in here: ${unknown.join(", ")}`);
+	const me = all.find((a) => a.dir === here);
+	if (!me) throw Error(`${here} is not among the accounts`);
+	const others = all.filter((a) => a !== me);
+	const ahead = AUTO.includes(me.email) ? AUTO.slice(AUTO.indexOf(me.email) + 1) : [];
+	return [...ahead.flatMap((e) => others.filter((a) => a.email === e)), ...others.filter((a) => !ahead.includes(a.email))]
+		.map((a) => ({ label: `Switch all to ${a.label}`, value: `acct:${a.name}`, disabled: a.disabled, auto: ahead.includes(a.email) }));
 }
 
 let queue = Promise.resolve();

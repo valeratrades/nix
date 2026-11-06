@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Account switching: "Switch to account N" entries in the rate-limit menu (`/rate-limit-options`), `/rotate` showing
-that menu with only those entries, a hit limit switching to the next account with room left on its own, and every
-running claude following ~/.claude/accounts/current in place.
+that menu with only those entries, a hit limit switching on its own to the next of the auto-rotated accounts
+(home.nix), and every running claude following ~/.claude/accounts/current in place.
 
 The logic lives in claude-accounts.mjs, as no chunk has room for it. This script writes the .mjs with the
 minified internals it needs resolved to their chunk + export name, and splices its hooks into these modules:
@@ -10,7 +10,7 @@ minified internals it needs resolved to their chunk + export name, and splices i
    entries, appended so a late arrival never shifts the focused row; the select handler routes `acct:<name>`
    values to the .mjs's switchTo, showing a status dialog meanwhile, as the panel host retires a menu left
    without one and drops its result. A context flagged `rotate` drops the stock rows; a menu opened by a hit limit
-   (not typed) dispatches the first account row not disabled;
+   (not typed) dispatches the first row the .mjs marks `auto` that isn't disabled;
 3. the command-list module: its license header defines `/rotate`, calling the menu with that flag (a new export would
    stay invisible: bun reads exports from the precomputed module_info), and the list gains it;
 4. the limit-hit notice: opens the menu on every hit, not only where it would offer an upgrade.
@@ -40,7 +40,7 @@ MENU_SPLICES = [
 	(
 		"options load",
 		b'Pn.current=!0,i("tengu_rate_limit_options_menu_shown",{...Wbn(o),entry:T8(t.submittedFromComposer)?b("typed"):b("not_typed"),rows:ue.map(ir),blocked:eM(o)})}',
-		b'Pn.current=!0,$acc().then(m=>m.options()).then(r=>{$as(r);let a=!t.rotate&&!T8(t.submittedFromComposer)&&r.find(x=>!x.disabled);if(a)ht(a.value)},e=>$as([{label:`Account switch unavailable: ${e}`,value:"acct:",disabled:!0}]))}',
+		b'Pn.current=!0,$acc().then(m=>m.options()).then(r=>{$as(r);let a=!t.rotate&&!T8(t.submittedFromComposer)&&r.find(x=>x.auto&&!x.disabled);if(a)ht(a.value)},e=>$as([{label:`Account switch unavailable: ${e}`,value:"acct:",disabled:!0}]))}',
 	),
 	(
 		"dispatch",

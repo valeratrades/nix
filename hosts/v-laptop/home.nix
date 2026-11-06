@@ -13,6 +13,9 @@ let
     (l: let m = builtins.match "[[:space:]]*set[[:space:]]+(-[^[:space:]]+[[:space:]]+)*([^-[:space:]][^[:space:]]*).*" l; in lib.optional (m != null) (builtins.elemAt m 1))
     (lib.splitString "\n" (builtins.readFile "${config.home.homeDirectory}/s/g/private/credentials.fish"))); #IMPURE
   secretsEnvCollisions = lib.intersectLists (builtins.attrNames secretsEnv) credentialsFishVars;
+  askLlm = inputs.ask_llm.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  # by email; the session starts on the first, a hit limit moves on to the next. Others are switched to by hand only
+  claudeAutoAccounts = [ "admin@evinvest.ltd" "v79166789533@gmail.com" ];
 in {
   nix.extraOptions = "!include ${config.home.homeDirectory}/s/g/private/sops/";
   # ref: https://www.youtube.com/watch?v=G5f6GC7SnhU
@@ -46,6 +49,23 @@ in {
         for _ in $(seq 50); do ${pkgs.systemd}/bin/busctl --user status org.keepassxc.KeePassXC.MainWindow >/dev/null 2>&1 && break; sleep 0.2; done
         exec ${pkgs.systemd}/bin/busctl --user call org.keepassxc.KeePassXC.MainWindow /keepassxc org.keepassxc.KeePassXC.MainWindow \
           openDatabase ss ${config.home.homeDirectory}/s/g/private/keepassxc/main.kdbx "$(cat ${config.sops.secrets."other/keepassxc_password".path})"
+      '');
+    };
+  };
+
+  systemd.user.services.claude-first-account = {
+    Unit = {
+      Description = "Point claude's current account at the first of the auto-rotated ones";
+      X-SwitchMethod = "keep-old"; # a rebuild mid-session must not move every claude back
+    };
+    Install.WantedBy = [ "default.target" ];
+    Service = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = toString (pkgs.writeShellScript "claude-first-account" ''
+        set -euo pipefail
+        name=$(${askLlm}/bin/ask_llm dev claude-account list --json | ${pkgs.jq}/bin/jq -er --arg e ${lib.escapeShellArg (lib.head claudeAutoAccounts)} 'select(.email == $e) | .name')
+        exec ${askLlm}/bin/ask_llm dev claude-account rotate "$name"
       '');
     };
   };
@@ -592,7 +612,8 @@ in {
         (import ./patched-claude-code.nix {
           inherit pkgs;
           claude-code = inputs.claude_code_nix.packages.${pkgs.stdenv.hostPlatform.system}.default;
-          ask_llm = inputs.ask_llm.packages.${pkgs.stdenv.hostPlatform.system}.default;
+          ask_llm = askLlm;
+          autoAccounts = claudeAutoAccounts;
         })
         inputs.codex_nix.packages.${pkgs.stdenv.hostPlatform.system}.default
 
