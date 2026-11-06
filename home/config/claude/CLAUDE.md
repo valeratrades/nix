@@ -83,7 +83,7 @@
 - minimize amount of questions you ask me. Most of them can be resolved on your own, by listing out pros and cons, then referencing this CLAUDE.md file for guiding principles, from which most often the decision becomes obvious.
   Never ask questions just to ask questions. Your instructions for creation of the plan may tell you to compile questions to ask, - but I want to be very clear here, - you **only** do that if something is actually not clear. Things that you can derive/answer yourself, you do not bring up.
 
-- before starting your work, check if there are other active agents on this project. If you're not the only one there, you work in a worktree. You make it with your `EnterWorktree` tool. In repos with LFS, LFS-tracked files are absent there; adding one needs `git add --sparse`. For larger changes, you can and should claim a branch, and then open PR at the end.
+- before starting your work, check if there are other active agents on this project. If you're not the only one there, you work in a worktree. It is to be in [.claude/worktrees/] exactly, with or without your `EnterWorktree` tool. In repos with LFS, LFS-tracked files are absent there; adding one needs `git add --sparse`. For larger changes, you can and should claim a branch, and then open PR at the end.
   > does not apply if you're in `/plan` mode or are just exploring, - check just before you're about to start making a big edit
   > And also, small edits don't require none of this, - you can just make them directly
 
@@ -107,6 +107,7 @@
 - commit your work.
   If the unstaged changes are shared with another agent, - just pick yours manually. Same even in the case where you both edited the same file, - stage individual hunks then (or maybe the file is big and contains multiple semantic section, - then should be modularized, so you don't step on each others toes)
   If you couldn't merge/PR your changes for whatever reason, - add a huge disclaimer about it when reporting task completion. If you say you're done, but your changes are in an uncommitted / not PRed worktree, - if I don't check, it could end up just being left there forever, invalidating all your work.
+  > however don't spam PRs please. If you have a lot of connected work, most often you just put it all on the same branch and PR at once. Splitting across many review sessions seldom makes sense. Iteration speed above all.
 
 - before using `git checkout` or any other resetting action on the repo, check for other active agents, and also check that those files don't have edits that aren't yours. Unless you know you're alone, prefer undoing by hand or hunk-by-hunk.
   And if you can avoid messing with current state in the first place, - even better: eg to bench something, you can just fork off a worktree from a commit you want to look at, instead of modifying state in-place by stashing.
@@ -116,8 +117,10 @@
 - when making changes to deps we own and have locally, prefer linking to them by path while testing. We assume that release will be successful when needed. And as such, we should optimize for iteration speed, which is trivially faster when pointing via local path.
   // just don't forget to keep this local path pointer local-only, or undo it after
 
-- if you've fully implemented an issue you were given, close it.
+- if your work has tracking issue(s), update it.
+
   castaway Issues / PRs / worktrees are all bad, - avoid leaving them if the work is done.
+  However, do not do that lightly on parent issues, - we can't close an epic if we did a small part of it lol. It's more about just having the tracking state be honest. If we fully finished something, we close the issue. If we did a part of it, we update the body and todos/children of it. If our understanding changed, we update what the issue says (btw careful about appending, - prefer changing instead. As we learn more, we often can remove wrong assumptions and get to more concise understanding outlined in its description)
 
 - when testing visual changes, default to headless
   Unless you specifically need me to validate the UI, use headless mode, - normally all the same screenshotting and navigation is possible in it.
