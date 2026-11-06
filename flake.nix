@@ -140,11 +140,12 @@
     };
     # No `follows` here on purpose: these build against their OWN locked nixpkgs so the
     # store paths match what each repo's CI pushes to valeratrades.cachix.org (overriding
-    # nixpkgs would change the hash and miss the cache).
+    # nixpkgs would change the hash and miss the cache). `cached` is the newest rev that CI did push.
     auto_redshift.url = "github:valeratrades/auto_redshift?ref=release";
-    btc_line.url = "github:valeratrades/btc_line";
-    scripters.url = "github:ev-main/scripters";
-    bourso-api.url = "github:valeratrades/bourso-api";
+    btc_line.url = "github:valeratrades/btc_line?ref=cached";
+    scripters.url = "github:ev-main/scripters?ref=cached";
+    bourso-api.url = "github:valeratrades/bourso-api?ref=cached";
+    wallpaper_carousel.url = "github:valeratrades/wallpaper_carousel?ref=cached";
     bad_apple_rs = {
       url = "github:lomirus/bad-apple-rs"; # merged my nix-integration pull
       inputs.nixpkgs.follows = "nixpkgs";
@@ -163,7 +164,6 @@
       # cannot be refetched. Every other v-utils in our graph resolves to a real ref; pin this one too.
       inputs.v-utils.inputs.nixpkgs.follows = "nixpkgs";
     };
-    wallpaper_carousel.url = "github:valeratrades/wallpaper_carousel";
     ringo.url = "github:davidborzek/ringo"; # own nixpkgs, so ringo.cachix.org paths match
     snapshot_fonts = {
       url = "github:valeratrades/snapshot_fonts?ref=release";
