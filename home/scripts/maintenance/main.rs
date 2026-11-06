@@ -17,6 +17,7 @@ use clap::Parser;
 use serde::Deserialize;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
+use std::cell::Cell;
 use std::collections::{BTreeMap, HashMap};
 use std::fmt::Display;
 use std::fs;
@@ -24,6 +25,7 @@ use std::io::{self, Write};
 use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+use std::sync::Mutex;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use v_utils::Percent;
 use walkdir::WalkDir;
@@ -48,9 +50,9 @@ struct Args {
     #[arg(long)]
     only: Option<String>,
 
-    /// `lockfiles` also lists crates the aligned repos resolve with different features
-    #[arg(short, long)]
-    verbose: bool,
+    /// 1: subprocess output only when it fails, plus formatted results. 2: everything live. 3: `lockfiles` also lists crates the aligned repos resolve with different features
+    #[arg(short, long, default_value_t = 1, value_parser = clap::value_parser!(u8).range(1..=3))]
+    verbosity: u8,
 
     /// Report what would be removed, then stop before touching anything
     #[arg(long)]
@@ -95,6 +97,13 @@ struct Ctx {
     log: PathBuf,
     last_clean: PathBuf,
     dry_run: bool,
+    verbosity: u8,
+    /// `(task, err, msg)` of every report, for the summary at the end
+    done: Mutex<Vec<(&'static str, bool, String)>>,
+}
+
+thread_local! {
+    static TASK: Cell<Option<&'static str>> = const { Cell::new(None) }; // what `report` files its lines under
 }
 
 struct Unit {
@@ -122,47 +131,50 @@ fn main() {
         log: state.join("maintenance/log"),
         last_clean: state.join("maintenance/last_clean"),
         dry_run: args.dry_run,
+        verbosity: args.verbosity,
+        done: Mutex::new(vec![]),
     };
     if let Some(Cmd::Mv { from, to }) = args.cmd {
-        return ctx.mv(&from, &to);
+        TASK.set(Some("mv"));
+        ctx.mv(&from, &to);
+        return ctx.print_report(&["mv"]);
     }
 
-    let tasks: Vec<&str> = match args.only {
+    let mut tasks: Vec<&str> = match args.only {
         Some(ref only) => only.split(',').collect(),
         None => vec!["clean", "cache", "nightly", "lockfiles", "shadows", "redirects", "rebuild"],
     };
+    if args.skip_rebuild || args.dry_run {
+        tasks.retain(|t| *t != "rebuild");
+    }
 
+    let parallel: [(&'static str, &(dyn Fn() + Sync)); 6] = [
+        ("clean", &|| {
+            ctx.sweep(&ctx.home.join("tmp"), None); // before artefact cleaning, which also walks ~/tmp
+            ctx.clean_old_build_artefacts();
+        }),
+        ("cache", &|| ctx.sweep(&ctx.home.join(".cache"), Some(ctx.cfg.cache_limit_gb << 30))),
+        ("nightly", &|| {
+            let script = "/home/v/nix/home/scripts/maintenance/cross_project_version_alignment.rs";
+            if ctx.run(Command::new(script).args(["rust", "--discover"])) {
+                ctx.report(false, "Refreshed nightly version file cache");
+            }
+        }),
+        ("lockfiles", &|| ctx.align_lockfiles()),
+        ("shadows", &|| ctx.check_cargo_nix_shadows()),
+        ("redirects", &|| ctx.sweep_redirects()),
+    ];
     std::thread::scope(|s| {
-        if tasks.contains(&"clean") {
-            s.spawn(|| {
-                ctx.sweep(&ctx.home.join("tmp"), None); // before artefact cleaning, which also walks ~/tmp
-                ctx.clean_old_build_artefacts();
+        for (name, task) in parallel.into_iter().filter(|(name, _)| tasks.contains(name)) {
+            s.spawn(move || {
+                TASK.set(Some(name));
+                task();
             });
-        }
-        if tasks.contains(&"cache") {
-            s.spawn(|| ctx.sweep(&ctx.home.join(".cache"), Some(ctx.cfg.cache_limit_gb << 30)));
-        }
-        if tasks.contains(&"nightly") {
-            s.spawn(|| {
-                let script = "/home/v/nix/home/scripts/maintenance/cross_project_version_alignment.rs";
-                if ctx.run(Command::new(script).args(["rust", "--discover"])) {
-                    ctx.report(false, "Refreshed nightly version file cache");
-                }
-            });
-        }
-        if tasks.contains(&"lockfiles") {
-            s.spawn(|| ctx.align_lockfiles(args.verbose));
-        }
-        if tasks.contains(&"shadows") {
-            s.spawn(|| ctx.check_cargo_nix_shadows());
-        }
-        if tasks.contains(&"redirects") {
-            s.spawn(|| ctx.sweep_redirects());
         }
     });
 
     if args.dry_run {
-        return;
+        return ctx.print_report(&tasks);
     }
 
     let fish_state_dir = state.join("fish");
@@ -170,7 +182,8 @@ fn main() {
     let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
     fs::write(fish_state_dir.join("maintenance_last_run"), now.to_string()).expect("dir created above");
 
-    if tasks.contains(&"rebuild") && !args.skip_rebuild {
+    if tasks.contains(&"rebuild") {
+        TASK.set(Some("rebuild"));
         let nixos_config = env("NIXOS_CONFIG");
         let hostname = String::from_utf8_lossy(&Command::new("hostname").output().expect("Failed to get hostname").stdout)
             .trim()
@@ -181,19 +194,32 @@ fn main() {
             git
         };
 
+        let flake = format!("{nixos_config}#{hostname}");
         let mut rebuild = Command::new("sudo");
-        rebuild.args(["nixos-rebuild", "switch", "--no-reexec", "--flake", &format!("{}#{}", nixos_config, hostname), "--show-trace", "-v"]);
+        rebuild.args(["nixos-rebuild", "switch", "--no-reexec", "--flake", &flake, "--show-trace"]);
+        if ctx.verbosity >= 2 {
+            rebuild.arg("-v");
+        }
         if !args.pure {
             rebuild.arg("--impure");
         }
         let rebuilt = ctx.run(&mut rebuild);
+        if rebuilt {
+            ctx.report(false, format_args!("switched to {flake}"));
+        }
         if rebuilt && ctx.run(git().args(["add", "-A"])) {
             match git().args(["diff", "--cached", "--quiet"]).status().map(|s| s.code()) {
                 Ok(Some(0)) => {}
-                Ok(Some(1)) => _ = ctx.run(git().args(["commit", "-m", "_"])),
+                Ok(Some(1)) => {
+                    if ctx.run(git().args(["commit", "-m", "_"])) {
+                        ctx.report(false, "committed config changes");
+                    }
+                }
                 other => ctx.report(true, format_args!("git diff --cached: {other:?}")),
             }
-            ctx.run(git().arg("push"));
+            if ctx.run(git().arg("push")) {
+                ctx.report(false, "pushed");
+            }
         }
     }
 
@@ -203,26 +229,58 @@ fn main() {
         .status()
         .expect("script is in the repo");
     assert!(status.success(), "profile_shell.rs: {status}");
+    ctx.print_report(&tasks);
 }
 
 impl Ctx {
-    /// printed, and appended to the log so removals stay traceable after the terminal is gone
+    /// appended to the log so removals stay traceable after the terminal is gone, and kept for the summary
     fn report(&self, err: bool, msg: impl Display) {
-        match err {
-            true => eprintln!("\x1b[31m{msg}\x1b[0m"),
-            false => println!("\x1b[32m{msg}\x1b[0m"),
+        let msg = msg.to_string();
+        match (self.verbosity >= 2, err) {
+            (false, _) => {}
+            (true, true) => eprintln!("\x1b[31m{msg}\x1b[0m"),
+            (true, false) => println!("\x1b[32m{msg}\x1b[0m"),
         }
         let secs = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
         let mut log = fs::OpenOptions::new().create(true).append(true).open(&self.log).unwrap_or_else(|e| panic!("{}: {e}", self.log.display()));
         let line = format!("{secs} {} {msg}\n", if err { "ERR" } else { "ok " }); // one write, so O_APPEND keeps threads' lines whole
         log.write_all(line.as_bytes()).unwrap_or_else(|e| panic!("{}: {e}", self.log.display()));
+        let task = TASK.get().expect("every task sets it first");
+        self.done.lock().expect("poisoned only by a panicking task, which the scope re-raises").push((task, err, msg));
     }
 
+    fn print_report(&self, tasks: &[&str]) {
+        const SHOWN: usize = 10;
+        let done = self.done.lock().expect("tasks are joined");
+        println!("\n\x1b[34m═══ Report ═══\x1b[0m");
+        for task in tasks {
+            let [ok, err]: [Vec<&str>; 2] = [false, true].map(|want| done.iter().filter(|(t, e, _)| t == task && *e == want).map(|(.., msg)| msg.as_str()).collect());
+            match (ok.len(), err.len()) {
+                (0, 0) => println!("{task}: nothing to do"),
+                (ok, 0) => println!("{task}: {ok} done"),
+                (ok, err) => println!("{task}: {ok} done, \x1b[31m{err} failed\x1b[0m"),
+            }
+            for (lines, color) in [(ok, 32), (err, 31)] {
+                for msg in lines.iter().take(SHOWN) {
+                    println!("  \x1b[{color}m{msg}\x1b[0m");
+                }
+                if lines.len() > SHOWN {
+                    println!("  \x1b[{color}m… {} more in {}\x1b[0m", lines.len() - SHOWN, self.log.display());
+                }
+            }
+        }
+    }
+
+    /// below verbosity 2 the output is kept back, and shown only in the report of a failure
     fn run(&self, cmd: &mut Command) -> bool {
-        match cmd.status() {
-            Ok(s) if s.success() => true,
-            Ok(s) => {
-                self.report(true, format_args!("{cmd:?}: {s}"));
+        let ran = match self.verbosity {
+            1 => cmd.output().map(|o| (o.status, [o.stdout, o.stderr].map(|out| String::from_utf8_lossy(&out).into_owned()).concat())),
+            _ => cmd.status().map(|s| (s, String::new())),
+        };
+        match ran {
+            Ok((s, _)) if s.success() => true,
+            Ok((s, output)) => {
+                self.report(true, format_args!("{cmd:?}: {s}{}", output.lines().map(|l| format!("\n    {l}")).collect::<String>()));
                 false
             }
             Err(e) => {
@@ -251,7 +309,9 @@ impl Ctx {
 
     /// Removes outdated units under `root`, then with a `limit` (bytes) the least recently used ones until the rest fits.
     fn sweep(&self, root: &Path, limit: Option<u64>) {
-        println!("\x1b[34mSweeping {} for units unused for {} days\x1b[0m", root.display(), self.cfg.stale_after_days);
+        if self.verbosity >= 2 {
+            println!("\x1b[34mSweeping {} for units unused for {} days\x1b[0m", root.display(), self.cfg.stale_after_days);
+        }
         let (mut units, mut dirs) = (vec![], vec![]);
         self.collect(root, &mut units, &mut dirs);
         units.sort_by_key(|u| u.last_use);
@@ -333,7 +393,9 @@ impl Ctx {
     }
 
     fn clean_old_build_artefacts(&self) {
-        println!("\x1b[34mCleaning old build artefacts\x1b[0m");
+        if self.verbosity >= 2 {
+            println!("\x1b[34mCleaning old build artefacts\x1b[0m");
+        }
         let started = SystemTime::now();
         let last_clean = match fs::read_to_string(&self.last_clean) {
             Ok(secs) => UNIX_EPOCH + Duration::from_secs(secs.trim().parse().unwrap_or_else(|e| panic!("{}: {e}", self.last_clean.display()))),
@@ -356,7 +418,9 @@ impl Ctx {
                 continue;
             }
 
-            println!("Searching for stale projects in: \x1b[34m{}\x1b[0m", dir.display());
+            if self.verbosity >= 2 {
+                println!("Searching for stale projects in: \x1b[34m{}\x1b[0m", dir.display());
+            }
 
             let mut walk = WalkDir::new(&dir).into_iter();
             while let Some(entry) = walk.next() {
@@ -794,7 +858,9 @@ impl Ctx {
         let hops = &self.redirects;
         let live = self.live_claudes();
         let claude_projects = self.claude_dir().join("projects");
-        println!("\x1b[34mSweeping redirects in {} unfollowed for {} days\x1b[0m", hops.display(), self.cfg.stale_days(self.cfg.stale_multipliers.redirects));
+        if self.verbosity >= 2 {
+            println!("\x1b[34mSweeping redirects in {} unfollowed for {} days\x1b[0m", hops.display(), self.cfg.stale_days(self.cfg.stale_multipliers.redirects));
+        }
         for entry in WalkDir::new(hops).min_depth(1) {
             let entry = match entry {
                 Ok(entry) => entry,
@@ -855,8 +921,10 @@ impl Ctx {
     }
 
     /// kache reuses a crate across repos only when its whole dependency closure resolved alike, so every active v_flakes repo updates in the same run
-    fn align_lockfiles(&self, verbose: bool) {
-        println!("\x1b[34mAligning lockfiles of v_flakes repos used in the last {} days\x1b[0m", self.cfg.stale_after_days);
+    fn align_lockfiles(&self) {
+        if self.verbosity >= 2 {
+            println!("\x1b[34mAligning lockfiles of v_flakes repos used in the last {} days\x1b[0m", self.cfg.stale_after_days);
+        }
         let root = self.home.join("s");
         let entries = match fs::read_dir(&root) {
             Ok(entries) => entries,
@@ -950,7 +1018,7 @@ impl Ctx {
                 }
             }
 
-            if verbose {
+            if self.verbosity >= 3 {
                 for lock in &locks {
                     let dir = repo.join(lock).parent().expect("a file path").to_path_buf();
                     let out = match Command::new("cargo").args(["metadata", "--format-version", "1", "--locked"]).env("RUSTC_WRAPPER", "").current_dir(&dir).stderr(Stdio::inherit()).output() {
@@ -978,7 +1046,7 @@ impl Ctx {
             }
         }
 
-        if verbose {
+        if self.verbosity >= 3 {
             let diverging: Vec<_> = features.iter().filter(|(_, sets)| sets.len() > 1).collect();
             println!("\x1b[34m{} crate versions resolve with different features across repos, so each feature set builds separately\x1b[0m", diverging.len());
             for ((krate, version), sets) in diverging {
