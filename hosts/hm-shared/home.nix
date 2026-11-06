@@ -339,6 +339,12 @@
     instance_timeout = 3600
   '';
 
+  xdg.configFile."kache/config.toml".text = ''
+    [cache]
+    fallback = "${pkgs.sccache}/bin/sccache"
+    preserve_incremental = true # workspace crates stay incremental from the first build, as under sccache
+  '';
+
   systemd.user.services.nvim-lsp-log-trim = {
     Unit.Description = "Trim neovim's LSP log back down when it outgrows its cap";
     Service = let
