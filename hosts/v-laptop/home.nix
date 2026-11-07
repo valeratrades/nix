@@ -14,7 +14,7 @@ let
     (lib.splitString "\n" (builtins.readFile "${config.home.homeDirectory}/s/g/private/credentials.fish"))); #IMPURE
   secretsEnvCollisions = lib.intersectLists (builtins.attrNames secretsEnv) credentialsFishVars;
   askLlm = inputs.ask_llm.packages.${pkgs.stdenv.hostPlatform.system}.default;
-  # by email; the session starts on the first, a hit limit moves on to the next. Others are switched to by hand only
+  # by email; the session starts on the first with room left, a hit limit moves on to the next such. Others are switched to by hand only
   claudeAutoAccounts = [ "admin@evinvest.ltd" "v79166789533@gmail.com" ];
 in {
   nix.extraOptions = "!include ${config.home.homeDirectory}/s/g/private/sops/";
@@ -55,7 +55,7 @@ in {
 
   systemd.user.services.claude-first-account = {
     Unit = {
-      Description = "Point claude's current account at the first of the auto-rotated ones";
+      Description = "Point claude's current account at the first of the auto-rotated ones with room left";
       X-SwitchMethod = "keep-old"; # a rebuild mid-session must not move every claude back
     };
     Install.WantedBy = [ "default.target" ];
@@ -64,7 +64,12 @@ in {
       RemainAfterExit = true;
       ExecStart = toString (pkgs.writeShellScript "claude-first-account" ''
         set -euo pipefail
-        name=$(${askLlm}/bin/ask_llm dev claude-account list --json | ${pkgs.jq}/bin/jq -er --arg e ${lib.escapeShellArg (lib.head claudeAutoAccounts)} 'select(.email == $e) | .name')
+        name=$(${askLlm}/bin/ask_llm dev claude-account list --json | ${pkgs.jq}/bin/jq -nr --argjson auto ${lib.escapeShellArg (builtins.toJSON claudeAutoAccounts)} \
+          '[inputs] as $all | first($auto[] as $e | $all[] | select(.email == $e and (.disabled | not)) | .name) // empty')
+        if [ -z "$name" ]; then
+          echo "every auto-rotated account is spent until its reset; current stays where it is"
+          exit 0
+        fi
         exec ${askLlm}/bin/ask_llm dev claude-account rotate "$name"
       '');
     };
