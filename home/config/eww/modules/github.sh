@@ -2,7 +2,7 @@
 # Prints the unread GitHub notification count. Issue/PR threads whose activity since our last read is all by `ours` get marked done.
 set -uo pipefail
 
-ours='["valeratrades","github-actions[bot]"]'
+ours='["valeratrades","github-actions[bot]","ev-notion-sync[bot]"]'
 state="${XDG_STATE_HOME:-$HOME/.local/state}/eww/github_watermark"
 
 notifications=$(timeout 10 gh api notifications 2>/dev/null) || { echo ""; exit 0; }
