@@ -146,6 +146,7 @@
     scripters.url = "github:ev-main/scripters?ref=cached";
     bourso-api.url = "github:valeratrades/bourso-api?ref=cached";
     wallpaper_carousel.url = "github:valeratrades/wallpaper_carousel?ref=cached";
+    translate_infrequent.url = "github:valeratrades/translate_infrequent?ref=cached"; # `cached` moves on `v*` tags only
     bad_apple_rs = {
       url = "github:lomirus/bad-apple-rs"; # merged my nix-integration pull
       inputs.nixpkgs.follows = "nixpkgs";
@@ -155,14 +156,6 @@
     skargo = {
       url = "github:EV-Main/skills";
       inputs.v_flakes.follows = "v_flakes";
-    };
-    translate_infrequent = {
-      url = "github:valeratrades/translate_infrequent";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.flake-utils.follows = "flake-utils";
-      # its v-utils publishes nixpkgs as a `path:` into /nix/store, which dies with the next gc and
-      # cannot be refetched. Every other v-utils in our graph resolves to a real ref; pin this one too.
-      inputs.v-utils.inputs.nixpkgs.follows = "nixpkgs";
     };
     ringo.url = "github:davidborzek/ringo"; # own nixpkgs, so ringo.cachix.org paths match
     snapshot_fonts = {
