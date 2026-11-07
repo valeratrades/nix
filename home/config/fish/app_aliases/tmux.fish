@@ -18,12 +18,16 @@ end
 function tk --description "Kill tmux session + direnv deny its root"
 	if test (count $argv) != 1
 		echo "Usage: tk <session_name>"
-		returnt1
+		return 1
 	end
 	set requested_session $argv[1]
-	set session_path (tmux display-message -p -t "$requested_session" "#{session_path}")
-	tmux kill-session -t "$requested_session"
-	direnv deny "$session_path" >/dev/null 2>&1
+	set root (tmux display-message -p -t "$requested_session" "#{session_path}"); or return
+	tmux kill-session -t "$requested_session"; or return
+	while not test -e "$root/.envrc" # direnv deny walks up to the nearest .envrc and fails when there is none
+		test "$root" = /; and return 0
+		set root (path dirname $root)
+	end
+	direnv deny "$root"
 end
 
 function tmux_new_session_base
