@@ -278,7 +278,8 @@ K('', '<space>.', '<cmd>tabe .<cr>', { desc = "Open . in new tab" })
 -- zero width space digraph
 vim.cmd.digraph("zs " .. 0x200b)
 
-K('n', 'U', '<C-r>', { desc = "helix: redo", overwrite = true }) -- '<C-r>` is then used by lsp for `refresh` action
+K('n', 'U', '<C-r>', { desc = "helix: redo", overwrite = true })
+K('n', '<C-r>', '<Nop>', { desc = "Unbound: redo is on U; buffer-local maps (lsp, oil) take <C-r>" })
 K('n', '<tab>', 'i<tab>', { desc = "Insert tab", overwrite = true })
 
 -- trying out:
