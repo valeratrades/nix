@@ -2,9 +2,9 @@
 name: figma-render
 description: "Render a site's current pages into Figma as editable auto-layout frames, every page at every breakpoint, from the repo's own e2e harness (`nix run .#figma`). Use when asked to put/drop/dump/render/push the site, landing or its pages into Figma, to get a Figma snapshot of what the code renders now, or to lay out all breakpoints side by side in Figma for rearranging by hand."
 license: "BlueOak-1.0.0"
-compatibility: "Figma MCP (generate_figma_design, use_figma, create_new_file); a repo whose flake has `apps.figma` (kitstart's mkLanding has it)"
+compatibility: "Figma MCP (generate_figma_design, use_figma, create_new_file); a repo whose flake has `apps.figma` over `@evinvest/figma-render` (sites_tools' mkLanding, site_conductor)"
 metadata:
-  version: "0.1.0"
+  version: "0.2.0"
 ---
 
 # figma-render
@@ -21,15 +21,18 @@ The repo side is the contract, run from the repo root:
 - `FIGMA_CAPTURES='{"<key>": {"captureId": …, "endpoint": …}, …}' nix run .#figma` builds the site and
   captures exactly the keys given. A key not in `frames` matches no test and is never captured.
 
-In kitstart landings this is `defineFigmaSuite` in `@evinvest/kitstart/testing/e2e` and `apps.figma` in the
-EV-Service-Arb/sites_tools' `nix/mk-landing.nix` (`~/s/ev/_sa/sites/tools`); read those when the repo side misbehaves.
+Both are `evinvest-figma-render`, the bin of `@evinvest/figma-render` (EV-Main/web_std `ts/figma-render`,
+`~/s/ev/web_std`), over the repo's `defineFigmaSuite` specs. Landings wrap it in sites_tools'
+`@evinvest/sites-tools/testing/e2e` and `nix/mk-landing.nix` (`~/s/ev/_sa/sites/tools`); site_conductor in
+`frontend/tests/e2e` and its flake. Read those when the repo side misbehaves. The Figma steps below stay with
+the agent: Figma's MCP registers only allowlisted OAuth clients, so the bin cannot call it.
 
 ## The loop
 
 1. `frames`. If `file` is null, the repo has no render board yet: load `figma-create-new-file`, create a design
    file `<pname> — renders` (separate from the brand's design file, which stays hand-made) in the plan the
-   brand's other Figma files live in, then set `figmaFile = "<key>";` in the repo's `mkLanding` call and commit
-   it.
+   other render boards live in ("EV Invest's team"), then set `figmaFile = "<key>";` in the repo's flake
+   (`mkLanding`'s argument, or the `figmaFile` binding) and commit it.
 2. `create_session` on the file.
 3. `use_figma` (load `figma-use` first): create a page named `<git rev-parse --short HEAD> <YYYY-MM-DD>`, with
    ` dirty` appended when `git status --porcelain` is non-empty, since the render is of the working tree.
