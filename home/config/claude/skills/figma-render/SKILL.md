@@ -4,7 +4,7 @@ description: "Render a site's current pages into Figma as editable auto-layout f
 license: "BlueOak-1.0.0"
 compatibility: "a repo whose flake has `apps.figma` over `@evinvest/figma-render` (sites_tools' mkLanding, site_conductor); Figma MCP `create_new_file` only to create a render board"
 metadata:
-  version: "0.3.0"
+  version: "0.4.0"
 ---
 
 # figma-render
@@ -20,6 +20,11 @@ The whole render is one command, run from the repo root:
 - `nix run .#figma -- frames` prints `{ "file": <fileKey> | null, "frames": ["<project> <page>", …] }`.
 - `nix run .#figma` builds the site and renders every frame onto a new page `<short sha> <YYYY-MM-DD>[ dirty]`
   of `file`, named `<project> <page>`, a row per page and a column per project. Its stdout is the page's link.
+
+- `nix run .#figma -- --folder <figma folder URL> --name <file>` renders into the file `<file>` of that folder
+  instead (created if missing, left holding only the new page); it needs `FIGMA_TOKEN`, a Figma personal access token
+  with `folders:read`. This is what CI runs: v_flakes `github.figma = { };` adds `figma.yml`, which renders on a `v*`
+  tag or a `[figma]` comment into the file named after the repo in the org variable `FIGMA_FOLDER`.
 
 Both are `evinvest-figma-render`, the bin of `@evinvest/figma-render` (EV-Main/web_std `ts/figma-render`,
 `~/s/ev/web_std`), over the repo's `defineFigmaSuite` specs. It is its own client of Figma's MCP server and
