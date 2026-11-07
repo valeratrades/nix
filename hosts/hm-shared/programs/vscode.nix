@@ -86,6 +86,12 @@
 				version = "1.0.5";
 				sha256 = "06svwyqjzzgffyiymcs3vp90r93zz8x7sfm41kgi8qfyw1k5g1qz";
 			}
+			{
+				name = "color-spaces";
+				publisher = "colorjs";
+				version = "0.1.1";
+				sha256 = "1z9yhkmmy87qak0jg0nw5m94ghv5r83xmdq8v6i1w902n0z5va9x";
+			}
 			] ++ [
 				# Excalidraw: draw schemas in-editor (.excalidraw files). Personal fork
 				# (valeratrades.excalidraw-editor) built from source by its own flake.
