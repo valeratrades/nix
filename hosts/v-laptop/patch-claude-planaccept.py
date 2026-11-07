@@ -2,9 +2,9 @@
 """Plan-accept dialog: add "clear context and implement as Sonnet" next to the clear-context approval.
 
 1. Option builder. When the clear-context option is shown, a second clear-context option follows
-   it that also switches the model. The keep-context approvals are dropped from that dialog;
-   they survive only where no clear-context option exists (remote sessions, setting off), so
-   every dialog keeps an approval.
+   it that also switches the model, then a single keep-context approval in the session's mode;
+   the default-mode keep-context approval survives only where no clear-context option exists
+   (remote sessions, setting off).
 
 2. Accept handler. The new value is remapped to the first (clear-context) option before any
    other branch reads it, after a session-only model switch through the same function `/model`
@@ -36,15 +36,15 @@ PATCHES = [
 		b'if(tt!==null)Oe["yes-default-keep-context"]=tt,Ue["yes-default-keep-context"]="default",'
 		b'De.push({label:tt.node,value:"yes-default-keep-context"})}',
 		b'if(!ve&&h)De.push({label:`Yes, clear context${ze} and implement as Sonnet`,value:"yes-sonnet"});'
-		b'if(!ve&&!h){let a="yes-accept-edits-keep-context",d="yes-default-keep-context";'
+		b'if(!ve){let a="yes-accept-edits-keep-context",d="yes-default-keep-context";'
 		b'if(ee){let it=yAe("bypassPermissions",{isBypassPermissionsModeAvailable:ee});'
 		b'if(it!==null)Oe[a]=it,Ue[a]="bypassPermissions",De.push({label:it.node,value:a})}'
 		b'else if(Ge){let it=M_n("exit-plan-resume");Oe["yes-resume-auto-mode"]=it,Ue["yes-resume-auto-mode"]="auto",'
 		b'De.push({label:it.node,value:"yes-resume-auto-mode"})}'
 		b'else{let it=yAe("acceptEdits",{labelVariant:"plan-keep-context"});'
 		b'if(it!==null)Oe[a]=it,Ue[a]="acceptEdits",De.push({label:it.node,value:a})}'
-		b'let tt=yAe("default",{labelVariant:"plan-keep-context"});'
-		b'if(tt!==null)Oe[d]=tt,Ue[d]="default",De.push({label:tt.node,value:d})}',
+		b'if(!h){let tt=yAe("default",{labelVariant:"plan-keep-context"});'
+		b'if(tt!==null)Oe[d]=tt,Ue[d]="default",De.push({label:tt.node,value:d})}}',
 	),
 	(
 		"plan-accept handler",
