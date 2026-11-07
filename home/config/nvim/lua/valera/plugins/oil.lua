@@ -86,7 +86,7 @@ return require "lazier" {
 				["<C-t>"] = "actions.select_tab",
 				["gp"] = false, -- use `<C-p>` instead
 				["<C-c>"] = "actions.close",
-				["<C-l>"] = "actions.refresh",
+				["<C-r>"] = "actions.refresh",
 				["_"] = "actions.open_cwd",
 				["`"] = "actions.cd",
 				["~"] = "actions.tcd",
