@@ -8,6 +8,7 @@ import { isMainThread } from "node:worker_threads";
 const KEY = "CLAUDE_SECURESTORAGE_CONFIG_DIR";
 const root = path.join(process.env.HOME, ".claude/accounts");
 const AUTO = @auto_accounts@;
+const AUTO_OFF = path.join(process.env.HOME, ".local/state/claude-auto-rotate-off"); // `cl auto off`
 
 let internals;
 const load = () => internals ??= (async () => {
@@ -29,7 +30,7 @@ export async function options() {
 	const me = all.find((a) => a.dir === here);
 	if (!me) throw Error(`${here} is not among the accounts`);
 	const others = all.filter((a) => a !== me);
-	const ahead = AUTO.includes(me.email) ? AUTO.slice(AUTO.indexOf(me.email) + 1) : [];
+	const ahead = AUTO.includes(me.email) && !fs.existsSync(AUTO_OFF) ? AUTO.slice(AUTO.indexOf(me.email) + 1) : [];
 	return [...ahead.flatMap((e) => others.filter((a) => a.email === e)), ...others.filter((a) => !ahead.includes(a.email))]
 		.map((a) => ({ label: `Switch all to ${a.label}`, value: `acct:${a.name}`, disabled: a.disabled, auto: ahead.includes(a.email) }));
 }

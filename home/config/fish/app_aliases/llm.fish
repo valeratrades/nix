@@ -4,6 +4,7 @@ set -g utmost_importance_projects $HOME/ev_invest/trading_data $HOME/ev_invest/r
 # Accounts are logins only, in ~/.claude/accounts/N, which ask_llm owns (its docs/ARCHITECTURE.md#claude-accounts);
 # all else is the one ~/.claude. A claude starts on the one `current` links, then follows the one `running` links in
 # place (hosts/v-laptop/claude-accounts.mjs); `cl rotate-acc` and the rate-limit menu move both, `cl rotate-acc --new` only `current`.
+# `cl auto off` stops both the hit-limit rotation and the boot-time pick of the first auto account.
 # `env -u`: credentials.fish exports ANTHROPIC_API_KEY session-wide; it outranks the account's login and bills as API credits.
 function claude
     if [ "$TERM_PROGRAM" = ghostty ]; or begin; set -q TMUX; and [ (tmux display -p '#{client_termname}') = xterm-ghostty ]; end
@@ -16,6 +17,20 @@ function claude
 end
 
 function cl
+    if [ "$argv[1]" = auto ]
+        # read by hosts/v-laptop/claude-accounts.mjs and the claude-first-account service in home.nix
+        set -l off ~/.local/state/claude-auto-rotate-off
+        switch "$argv[2]"
+            case on
+                rm -f $off
+            case off
+                mkdir -p (path dirname $off); and touch $off
+            case '*'
+                echo "usage: cl auto on|off" >&2
+                return 1
+        end
+        return
+    end
     if [ "$argv[1]" = rotate-acc ]
         set -l new
         if contains -- --new $argv

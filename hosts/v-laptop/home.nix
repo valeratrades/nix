@@ -64,6 +64,10 @@ in {
       RemainAfterExit = true;
       ExecStart = toString (pkgs.writeShellScript "claude-first-account" ''
         set -euo pipefail
+        if [ -e "$HOME/.local/state/claude-auto-rotate-off" ]; then
+          echo "auto-rotation is off (cl auto off); current stays where it is"
+          exit 0
+        fi
         name=$(${askLlm}/bin/ask_llm dev claude-account list --json | ${pkgs.jq}/bin/jq -nr --argjson auto ${lib.escapeShellArg (builtins.toJSON claudeAutoAccounts)} \
           '[inputs] as $all | first($auto[] as $e | $all[] | select(.email == $e and (.disabled | not)) | .name) // empty')
         if [ -z "$name" ]; then
