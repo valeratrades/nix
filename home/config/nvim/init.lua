@@ -1,4 +1,5 @@
 require('vim._core.ui2').enable({}) -- no hit-enter prompts: overflowing messages collapse to `[+x]`, full text via `g<`
+vim.api.nvim_create_autocmd("SwapExists", { callback = function() vim.v.swapchoice = "e" end }) -- E325 never prompts; a stale swap is left on disk for `nvim -r`
 
 -- Create/update symlink to rust_plugins.so
 -- This must happen BEFORE trying to require the plugin
