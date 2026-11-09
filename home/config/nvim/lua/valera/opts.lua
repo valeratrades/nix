@@ -32,8 +32,11 @@ local xdg_substitutions = {
 	{ os.getenv("HOME"), "~" },
 }
 
+local tabline_offset = 0 -- display cells scrolled off the left, persisted so the view only moves when the current tab would leave it
 function _G.custom_tabline()
-	local s = ""
+	local current = vim.fn.tabpagenr()
+	local tabs = {}
+	local total = 0
 	for i = 1, vim.fn.tabpagenr("$") do
 		local winnr = vim.fn.tabpagewinnr(i)
 		local bufnr = vim.fn.tabpagebuflist(i)[winnr]
@@ -68,13 +71,32 @@ function _G.custom_tabline()
 			name = scheme and (scheme .. path) or path
 		end
 
-		local is_current = (i == vim.fn.tabpagenr())
-		s = s .. "%" .. i .. "T"
-		s = s .. (is_current and "%#TabLineSel#" or "%#TabLine#")
-		s = s .. " " .. name .. " "
+		local text = " " .. name .. " "
+		local width = vim.fn.strdisplaywidth(text)
+		tabs[i] = { text = text, start = total, width = width }
+		total = total + width
 	end
-	s = s .. "%T%#TabLineFill#"
-	return s
+
+	local cols = vim.o.columns
+	local cur = tabs[current]
+	tabline_offset = math.min(tabline_offset, math.max(0, total - cols))
+	tabline_offset = math.max(tabline_offset, cur.start + cur.width - cols)
+	tabline_offset = math.min(tabline_offset, cur.start) -- tab wider than the screen: its start wins
+
+	local s = ""
+	for i, tab in ipairs(tabs) do
+		local from, to = tabline_offset - tab.start, tabline_offset + cols - tab.start
+		if to > 0 and from < tab.width then
+			local visible, col = "", 0
+			for _, ch in ipairs(vim.fn.split(tab.text, "\\zs")) do
+				local w = vim.fn.strdisplaywidth(ch)
+				if col >= from and col + w <= to then visible = visible .. ch end
+				col = col + w
+			end
+			s = s .. "%" .. i .. "T" .. (i == current and "%#TabLineSel#" or "%#TabLine#") .. visible
+		end
+	end
+	return s .. "%T%#TabLineFill#"
 end
 
 o.mouse = "a"
