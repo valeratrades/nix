@@ -1,5 +1,6 @@
 {
   self,
+  inputs,
   pkgs,
   lib,
   user,
@@ -154,12 +155,12 @@
             typescript-language-server # `ts_ls`
           ]
 
-          # typst
-          [
+          # typst; from v_flakes' nixpkgs so the system toolchain matches project devShells (bundle export needs >=0.15)
+          (with import inputs.v_flakes.default_nixpkgs { inherit (pkgs.stdenv.hostPlatform) system; }; [
             typst
             tinymist # lsp; also comes with `typlite`, - typst to latex converter
             typstyle # formatter (also formats codeblocks)
-          ]
+          ])
           # nix
           [
             nixd # nix lsp; overlays/nixd-schema-directive.nix
