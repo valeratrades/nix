@@ -150,6 +150,13 @@ in
       settings.Browser = {
         Enabled = true;
         UpdateBinaryPath = false; # manifest is the /etc one above
+        AlwaysAllowAccess = true; # else every login form Chrome loads pops a dialog
+      };
+      # a tray icon nobody draws: `--minimized` then hide()s the main window instead of mapping it minimized, which sway ignores
+      settings.GUI = {
+        ShowTrayIcon = true;
+        MinimizeToTray = true;
+        MinimizeOnClose = true;
       };
       # the login unlock is from sops anyway; relocking only brings back the password prompt
       settings.Security = {

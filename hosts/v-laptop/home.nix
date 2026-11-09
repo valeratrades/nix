@@ -50,7 +50,6 @@ in {
         set -e
         ${pkgs.systemd}/bin/busctl --user call org.keepassxc.KeePassXC.MainWindow /keepassxc org.keepassxc.KeePassXC.MainWindow \
           openDatabase ss ${config.home.homeDirectory}/s/g/private/keepassxc/main.kdbx "$(cat ${config.sops.secrets."other/keepassxc_password".path})"
-        ${pkgs.sway}/bin/swaymsg '[app_id="org.keepassxc.KeePassXC"] move scratchpad' # --minimized is a no-op without a tray
       '');
     };
   };
