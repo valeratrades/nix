@@ -127,10 +127,18 @@ fn get_window_list() -> Result<Vec<String>, String> {
 
 fn open_eww_windows(monitor_index: usize) -> Result<(), String> {
     let windows = get_window_list()?;
+    let zoom = Command::new("eww")
+        .args(["--no-daemonize", "get", "zoom"])
+        .output()
+        .map_err(|e| format!("Failed to get eww zoom: {e}"))?;
+    if !zoom.status.success() {
+        return Err("eww get zoom failed".to_string());
+    }
+    let zoom = String::from_utf8(zoom.stdout).map_err(|e| format!("Invalid UTF-8: {e}"))?;
 
     for window in &windows {
         Command::new("eww")
-            .args(["--no-daemonize", "open", window, "--screen", &monitor_index.to_string()])
+            .args(["--no-daemonize", "open", window, "--screen", &monitor_index.to_string(), "--arg", &format!("zoom={}", zoom.trim())])
             .status()
             .map_err(|e| format!("Failed to open {window}: {e}"))?;
     }

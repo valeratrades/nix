@@ -288,7 +288,8 @@ set $eww_visibility_toggle ~/.config/sway/eww_visibility_toggle.sh
 bindsym $mod+Shift+e exec $eww_visibility_toggle
 mode "eww" {
 	bindsym h exec "$switch_out && $eww_visibility_toggle"
-	bindsym f exec "$switch_out && ${NIXOS_CONFIG}/home/scripts/eww_open_on.rs focused"
+	bindsym f exec "$switch_out && ~/.config/eww/scripts/toggle_zoom.sh"
+	bindsym m exec "$switch_out && ${NIXOS_CONFIG}/home/scripts/eww_open_on.rs focused"
 	bindsym a exec "$switch_out && ${NIXOS_CONFIG}/home/scripts/eww_open_on.rs all"
 	bindsym c exec "$switch_out && ~/.config/eww/scripts/toggle_claude_sessions.sh"
 
@@ -298,7 +299,7 @@ mode "eww" {
 	bindsym Escape exec $switch_out
 	bindsym q exec $switch_out
 }
-bindsym $mod+e exec "swaymsg mode eww && eww --no-daemonize update sway_mode='eww (h=hide,f=open_focused,a=open_all,c=claude)'"
+bindsym $mod+e exec "swaymsg mode eww && eww --no-daemonize update sway_mode='eww (h=hide,f=zoom,m=open_focused,a=open_all,c=claude)'"
 
 # paste clipboard contents through keystrokes
 bindsym $mod+Ctrl+Shift+p exec ${NIXOS_CONFIG}/home/scripts/clipboard_to_keystrokes.rs

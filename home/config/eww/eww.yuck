@@ -4,20 +4,19 @@
 
 
 (defvar bar_visible "true")
-(defvar myopia "false")
+(defvar zoom 1)
 (defvar todo_timer "None")
 (defvar sway_mode "default")
 (defvar cargo_compiling "false")
 (defvar timer "")
 (defvar screenshot_timer "")
 
-;;TODO!: fix the thing with overlapping on myopia=true
-
-(defwindow bar
+; every window takes `zoom`; rows sit `row * 19 * zoom` down: Noto Sans Mono at 12px is 17px tall, +2px gap
+(defwindow bar [zoom]
 	:monitor 0
-	:geometry (geometry :anchor "top right" :y 0 :width "0%" :height "17px")
+	:geometry (geometry :anchor "top right" :y 0 :width "0%" :height "0%")
 	(box
-		:class {myopia == "true" ? "myopia" : ""}
+		:style "font-size: ${12 * zoom}px"
 		:space-evenly false
 		:visible {bar_visible == "true"}
 
@@ -268,11 +267,11 @@
 
 (defpoll btc_line_poll :initial "{\"main\": \"\", \"additional\": \"\", \"main_stale\": false}" :interval "5s" "./modules/btc_line.rs 2>/dev/null")
 
-(defwindow btc_line_upper
+(defwindow btc_line_upper [zoom]
 	:monitor 0
-	:geometry (geometry :anchor "top right" :y 20 :width "0%" :height "14px")
+	:geometry (geometry :anchor "top right" :y {1 * 19 * zoom} :width "0%" :height "0%")
 	(box
-		:class {myopia == "true" ? "myopia" : ""}
+		:style "font-size: ${12 * zoom}px"
 		:visible {bar_visible == "true" && btc_line_main_str != ""}
 		:space-evenly false
 		"${btc_line_poll.additional != "None" ? btc_line_additional_str : ""}"
@@ -281,21 +280,22 @@
 	)
 )
 
-(defwindow btc_line_lower
+(defwindow btc_line_lower [zoom]
 	:monitor 0
-	:geometry (geometry :anchor "top right" :y 34 :width "0%" :height "14px")
+	:geometry (geometry :anchor "top right" :y {2 * 19 * zoom} :width "0%" :height "0%")
 	(box
-		:class {myopia == "true" ? "myopia" : ""}
+		:style "font-size: ${12 * zoom}px"
 		:visible {bar_visible == "true" && btc_line_spy_str != ""}
 		:class "text"
 		btc_line_spy_str
 	)
 )
 
-(defwindow tedi_blocker
+(defwindow tedi_blocker [zoom]
 	:monitor 0
-	:geometry (geometry :anchor "top right" :y 41 :width "0%" :height "0%")
+	:geometry (geometry :anchor "top right" :y {3 * 19 * zoom} :width "0%" :height "0%")
 	(box
+		:style "font-size: ${12 * zoom}px"
 		(what)
 	)
 )
@@ -326,10 +326,11 @@
 )
 
 ;; Claude sessions widget
-(defwindow claude_sessions
+(defwindow claude_sessions [zoom]
 	:monitor 0
-	:geometry (geometry :anchor "top right" :y 60 :width "0%" :height "0%")
+	:geometry (geometry :anchor "top right" :y {4 * 19 * zoom} :width "0%" :height "0%")
 	(box
+		:style "font-size: ${12 * zoom}px"
 		(claude_sessions_widget)
 	)
 )

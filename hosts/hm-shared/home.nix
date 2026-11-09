@@ -218,7 +218,7 @@
       # and the visibility toggle silently does nothing. Retrying the real call is also the
       # readiness check; a separate `ping` first was a TOCTOU that let exactly that through.
       open = pkgs.writeShellScript "eww-widgets-open" ''
-        until ${eww} --no-daemonize open-many $(cat "$HOME/.config/eww/eww_windows.txt"); do sleep 0.1; done # ordering decides who overlays who
+        until zoom=$(${eww} --no-daemonize get zoom) && ${eww} --no-daemonize open-many $(cat "$HOME/.config/eww/eww_windows.txt") --arg zoom=$zoom; do sleep 0.1; done # ordering decides who overlays who
       '';
     in {
       # --restart: a stray daemon makes a plain `daemon` exit 0 ("already running"), which
