@@ -120,6 +120,21 @@ in {
     fi
   '';
 
+  # `@local/v-utils:0.0.0` = live checkout, like a cargo path override; typst wants an exact version matching the manifest, hence our own toml
+  home.activation.typUtilsLocal = let
+    manifest = (pkgs.formats.toml { }).generate "typst.toml" {
+      package = { name = "v-utils"; version = "0.0.0"; entrypoint = "src/lib.typ"; authors = [ "Valera" ]; license = "MIT"; description = "Local HEAD of ~/s/typ/typ_utils"; };
+    };
+  in lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    repo="${config.home.homeDirectory}/s/typ/typ_utils"
+    pkg="${config.home.homeDirectory}/.local/share/typst/packages/local/v-utils/0.0.0"
+    mkdir -p "$pkg"
+    case "$(realpath "$pkg")/" in "$(realpath -m "$repo")"/*) echo "typUtilsLocal: $pkg resolves into $repo; refusing to write the manifest over the checkout's" >&2; exit 1;; esac
+    [ -d "$repo" ] || echo "typUtilsLocal: $repo missing; @local/v-utils:0.0.0 dangles until it's cloned (github.com/valeratrades/typ_utils)" >&2
+    ln -sfn ${manifest} "$pkg/typst.toml"
+    ln -sfn "$repo" "$pkg/src" # -n: replace an existing link, never descend into it (would plant a loop inside the checkout)
+  '';
+
   # OpenClaw — multi-channel AI gateway, run from the checkout at ~/g/openclaw.
   # Engine is GPT-5.6 Luna, reached through the local litellm proxy below rather than openclaw's
   # native `openai` provider: openclaw routes that one through the codex app-server runtime, whose
