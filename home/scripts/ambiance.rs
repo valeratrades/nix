@@ -260,11 +260,13 @@ async fn balance_volumes() -> Sinks {
             .status()
             .expect("failed to set mpv volume");
         assert!(status.success(), "pulsemixer --set-volume failed");
-        return Sinks {
+        let sinks = Sinks {
             mpv: mpv_id,
             bbeats: bbeats_id,
             paused: AtomicBool::new(false),
         };
+        sinks.set_paused(false); // stream-restore resurrects the mute of a session that ended paused
+        return sinks;
     }
 }
 
@@ -373,10 +375,10 @@ async fn setup_math(timer: Option<Option<timer::Countdown>>) {
                 None => signal::ctrl_c().await.expect("failed to listen for ctrl+c"),
             }
             drop(mpris);
-            if sinks.paused() {
-                sinks.set_paused(false); // bbeats may outlive us
-            }
         }
+    }
+    if sinks.paused() {
+        sinks.set_paused(false); // bbeats may outlive us, and stream-restore remembers the mute
     }
     println!("\nTearing down...");
     drop(ambiance);
