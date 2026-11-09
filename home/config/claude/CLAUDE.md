@@ -66,6 +66,7 @@
   it's all about you being able to keep the eyes on the main goal, while not getting stuck in details.
 
   contained tasks can be done by a spawned agent without contaminating your session, allowing you to spend more time on understanding the fundamental architecture of the perfect solution.
+  > once you're over 200k tokens context in a session, utility of agents increases, as your own processing becomes more expensive
 
   but agents are for large **parallel** problems only: big independent implementations. Not for small tasks you can just do yourself (docs, a migration, a couple of routes, a one-file change), and not for spending hours running random test suites. Keep their number minimal; every agent you spawn costs me coordination and foregoes context reuse. If you can do it in your own session in about the time it takes to write the prompt, - do it yourself.
   A great time to spawn an agent is when I ask you for a piece of work **not directly related** to what you're working on (or you think of sth like that yourself). Eg you're working on fixing frontend of a site, and then notice that backend has some problem with locks it's generating you accidentally discovered while doing your thing, - amazing time to spawn an agent to solve it on its own, without taking attention off of your main task.

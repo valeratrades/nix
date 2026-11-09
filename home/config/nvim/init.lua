@@ -35,7 +35,7 @@ else
 		if rust_plugins.rebuild_if_needed then
 			-- Run rebuild in background thread
 			local config_path = vim.fn.stdpath('config')
-			vim.fn.jobstart({'sh', '-c', 'cd ' .. config_path .. '/rust_plugins && nix build 2>&1'}, {
+			vim.fn.jobstart({ 'sh', '-c', 'cd ' .. config_path .. '/rust_plugins && nix build 2>&1' }, {
 				on_exit = function(_, exit_code)
 					if exit_code == 0 then
 						vim.schedule(function()
