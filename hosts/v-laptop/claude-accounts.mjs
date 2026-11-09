@@ -36,10 +36,10 @@ export async function options() {
 }
 
 let queue = Promise.resolve();
-// moves this process onto `running`; serialized, as the menu and the watcher both trigger it
-function follow(io = {}) {
+// moves this process onto `dir`, else `running`; serialized, as the menu and the watcher both trigger it
+function follow(io = {}, dir) {
 	const step = async () => {
-		const from = process.env[KEY], to = await claudeAccount("running");
+		const from = process.env[KEY], to = dir ?? await claudeAccount("running");
 		if (fs.realpathSync(from) === to) return;
 		const { mle, Nn, DI, uVe, Kn } = await load();
 		await mle(io); // settles this process's own refresh under the departing account's lock
@@ -76,8 +76,10 @@ export function watch() {
 	fs.watch(root, (_, file) => file === "running" && follow()).unref();
 }
 
-// what /login does after its OAuth step, with the step replaced by moving every claude onto another account
+// what /login does after its OAuth step, with the step replaced by moving every claude onto another account;
+// `ctx.alone`: only this claude and new ones, keeping the others' prompt caches
 export async function switchTo(name, ctx, done) {
+	const { alone } = ctx;
 	if (typeof ctx.setAppState !== "function") throw Error("menu context carries no setAppState");
 	ctx.cancelRateLimitAutoQueueContinue?.();
 	const { wn, Br, kAe } = await load();
@@ -85,15 +87,15 @@ export async function switchTo(name, ctx, done) {
 	const previousAccount = account && { accountUuid: account.accountUuid, organizationUuid: account.organizationUuid };
 	const previousGatewayAuth = Br();
 	const [prevRunning, prevCurrent] = ["running", "current"].map((l) => fs.readlinkSync(path.join(root, l)));
-	await claudeAccount("rotate", name);
+	await claudeAccount("rotate", ...(alone ? ["--new"] : []), name);
 	try {
-		await follow({ credentials: ctx.credentials, storageV5: ctx.storageV5 });
+		await follow({ credentials: ctx.credentials, storageV5: ctx.storageV5 }, alone ? fs.realpathSync(path.join(root, name)) : undefined);
 	} catch (e) {
-		await claudeAccount("rotate", prevRunning);
+		if (!alone) await claudeAccount("rotate", prevRunning);
 		await claudeAccount("rotate", "--new", prevCurrent);
 		throw e;
 	}
 	const r = await kAe(ctx, true, { setAppState: ctx.setAppState, previousAccount, previousGatewayAuth });
 	if (r.relaunching || r.gatewayLoginError !== undefined) throw Error(`post-login hooks: ${JSON.stringify(r)}`);
-	done(`Switched every claude to account ${name} (${wn()?.emailAddress})`, { display: "system", shouldQuery: true });
+	done(`Switched ${alone ? "this and new claudes" : "every claude"} to account ${name} (${wn()?.emailAddress})`, { display: "system", shouldQuery: true });
 }

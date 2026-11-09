@@ -3,7 +3,8 @@ set -g utmost_importance_projects $HOME/ev_invest/trading_data $HOME/ev_invest/r
 
 # Accounts are logins only, in ~/.claude/accounts/N, which ask_llm owns (its docs/ARCHITECTURE.md#claude-accounts);
 # all else is the one ~/.claude. A claude starts on the one `current` links, then follows the one `running` links in
-# place (hosts/v-laptop/claude-accounts.mjs); `cl rotate-acc` and the rate-limit menu move both, `cl rotate-acc --new` only `current`.
+# place (hosts/v-laptop/claude-accounts.mjs); `cl rotate-acc` and the rate-limit menu move both, `cl rotate-acc --new` and a hit limit
+# (moving only the claude that hit it, to the next auto account) only `current`.
 # `cl auto off` stops both the hit-limit rotation and the boot-time pick of the first auto account.
 # `env -u`: credentials.fish exports ANTHROPIC_API_KEY session-wide; it outranks the account's login and bills as API credits.
 function claude
