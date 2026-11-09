@@ -1,4 +1,8 @@
-function dira --wraps 'direnv allow'; git add -A && direnv allow $argv; end
+function dira --wraps 'direnv allow'
+	# the stale-env pitfall: a cached profile older than flake.lock/shellHook lacks new tools (e.g. treefmt),
+	# and shellHook outputs only exist after an evaluation, so stage again at the end
+	git add -A && direnv allow $argv && dirr && direnv exec . true && git add -A
+end
 function dirw
 	# direnv wrap
 	direnv allow && \
