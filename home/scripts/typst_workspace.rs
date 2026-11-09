@@ -14,10 +14,10 @@ serde_json = "1.0"
 //!
 //! ```text
 //! workspace (splith)
-//! ├── T  nvim -p <srcs> -c 'tabdo TypstWatch'       60%
+//! ├── T  nvim -p <srcs>, TypstWatch on each .typ    60%
 //! └── C0 splitv                                      40%
 //!     ├── C1 tabbed  ← docs[0..n]                    50%
-//!     └── P  tabbed  ← typst-out viewer per src      50%
+//!     └── P  tabbed  ← typst-out viewer per .typ src 50%
 //! ```
 //!
 //! `srcs.focus` / `docs.focus` (0-based, as nix's `elemAt`) pick the tab each lands on.
@@ -343,8 +343,11 @@ fn read_config(cwd: &Path) -> Result<(Scope, Scope)> {
 	let srcs = scope("srcs")?;
 	let docs = scope("docs")?;
 
+	if !srcs.files.iter().any(|s| is_typ(s)) {
+		return Err(miette!(help = EXAMPLE, "{CONFIG}: no `.typ` among srcs"));
+	}
 	let mut stems = HashSet::new();
-	for s in &srcs.files {
+	for s in srcs.files.iter().filter(|s| is_typ(s)) {
 		let stem = s.file_stem().ok_or_else(|| miette!("{CONFIG}: src `{}` has no file name", s.display()))?.to_string_lossy().into_owned();
 		if !stems.insert(stem.clone()) {
 			return Err(miette!("{CONFIG}: two srcs share the stem `{stem}` — their viewers would be indistinguishable"));
@@ -363,6 +366,10 @@ fn read_config(cwd: &Path) -> Result<(Scope, Scope)> {
 	}
 
 	Ok((srcs, docs))
+}
+
+fn is_typ(p: &Path) -> bool {
+	p.extension().is_some_and(|e| e == "typ")
 }
 
 // --- build -------------------------------------------------------------------
@@ -423,8 +430,10 @@ fn build() -> Result<()> {
 		Ok(ids)
 	};
 	let doc_ids = tab(z1, docs.files[1..].iter().map(|d| doc_cmd(d)).collect())?;
-	let placeholders = tab(p0, vec!["zathura".to_owned(); srcs.files.len() - 1])?;
-	let viewer = placeholders[srcs.focus];
+	let typs: Vec<&PathBuf> = srcs.files.iter().filter(|s| is_typ(s)).collect();
+	let placeholders = tab(p0, vec!["zathura".to_owned(); typs.len() - 1])?;
+	// a non-.typ focus has no viewer of its own; the next .typ's (else the last) stands in
+	let viewer = placeholders[srcs.files[..srcs.focus].iter().filter(|s| is_typ(s)).count().min(typs.len() - 1)];
 
 	cmd(&format!("unmark {MARK}"))?;
 	// focusing is the only way to pick a tab, and it would drag us onto a workspace the user left
@@ -435,7 +444,7 @@ fn build() -> Result<()> {
 	}
 	drop(watch);
 
-	let slots = srcs.files.iter().zip(&placeholders).map(|(s, p)| {
+	let slots = typs.iter().zip(&placeholders).map(|(s, p)| {
 		format!("{}={p}", s.file_stem().expect("checked in read_config").to_string_lossy())
 	});
 	let exe = std::env::current_exe().map_err(|e| miette!("cannot find own path: {e}"))?;
@@ -449,9 +458,11 @@ fn build() -> Result<()> {
 		.spawn()
 		.map_err(|e| miette!("failed to spawn the placeholder swap: {e}"))?;
 
-	let tab = srcs.focus + 1; // vim tabs count from 1
+	// vim tabs count from 1; `call` rather than `:TypstWatch`, which lacks -bar and would swallow the `|`
+	let watches: String = srcs.files.iter().enumerate().filter(|(_, s)| is_typ(s)).map(|(i, _)| format!("tabnext {} | call typst#TypstWatch() | ", i + 1)).collect();
+	let tab = srcs.focus + 1;
 	let srcs = srcs.files.iter().map(|s| sh_quote(s)).collect::<Vec<_>>().join(" ");
-	let e = Command::new("fish").arg("-c").arg(format!(r#"e -p {srcs} -c "'tabdo TypstWatch'" -c "'tabnext {tab}'""#)).exec(); // `e` evals its args, eating one layer of quotes
+	let e = Command::new("fish").arg("-c").arg(format!(r#"e -p {srcs} -c "'{watches}tabnext {tab}'""#)).exec(); // `e` evals its args, eating one layer of quotes
 	Err(miette!("exec fish: {e}"))
 }
 
