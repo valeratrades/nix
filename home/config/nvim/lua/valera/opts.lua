@@ -103,7 +103,7 @@ o.mouse = "a"
 o.showtabline = 2 -- tabline shown even if only 1 file is open // reason: consistency
 o.tabline = "%!v:lua.custom_tabline()"
 
-o.swapfile = false
+o.updatecount = 0 -- `-n`: no swap for any buffer; `swapfile` misses the ones `nvim -p a b` creates before config runs
 o.backup = false
 o.undofile = true
 o.undodir = os.getenv("HOME") .. "/.vim/undodir"
