@@ -98,7 +98,10 @@ in
       };
       "pmjeegjhjdlccodhacdgbgfagbpmccpe".runtime_blocked_hosts = [ "*://*" ]; # Clockify: kept installed (and its data), inert
     };
-    "3rdparty".extensions."oboonakemofpalcgghocfoadofidjkkk".settings.passkeys = true; # KeePassXC-Browser
+    "3rdparty".extensions."oboonakemofpalcgghocfoadofidjkkk".settings = { # KeePassXC-Browser
+      passkeys = true;
+      showLoginNotifications = false; # the "Username or password changed! Save it?" banner
+    };
     ExtensionInstallForcelist = lib.mapAttrsToList (name: e: "${e.id};file://${packDir name}/updates.xml") selfPacked ++ map (id: "${id};https://clients2.google.com/service/update2/crx") [
       "abocjojdmemdpiffeadpdnicnlhcndcg" # SocialFocus
       "ajlhmclpjddfebgfpahnlodliljdnbie" # Moss
@@ -147,6 +150,7 @@ in
     # Google account passkey lives here, so login never needs a phone
     programs.keepassxc = {
       enable = true;
+      package = pkgs.keepassxc.overrideAttrs (o: { patches = (o.patches or [ ]) ++ [ ./keepassxc-passkey-no-confirm.patch ]; }); # a lone matching passkey answers without its confirm dialog
       settings.Browser = {
         Enabled = true;
         UpdateBinaryPath = false; # manifest is the /etc one above

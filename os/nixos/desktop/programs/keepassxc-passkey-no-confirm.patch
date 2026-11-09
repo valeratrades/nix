@@ -1,0 +1,15 @@
+--- a/src/browser/BrowserService.cpp
++++ b/src/browser/BrowserService.cpp
+@@ -762,10 +762,9 @@
+     raiseWindow();
+     BrowserPasskeysConfirmationDialog confirmDialog(m_currentDatabaseWidget);
+     confirmDialog.authenticateCredential(entries, rpId, timeout);
+-    auto dialogResult = confirmDialog.exec();
+-    if (dialogResult == QDialog::Accepted) {
++    if (entries.size() == 1 || confirmDialog.exec() == QDialog::Accepted) {
+         hideWindow();
+-        const auto selectedEntry = confirmDialog.getSelectedEntry();
++        const auto selectedEntry = entries.size() == 1 ? entries.first() : confirmDialog.getSelectedEntry();
+         if (!selectedEntry) {
+             return getPasskeyError(ERROR_PASSKEYS_UNKNOWN_ERROR);
+         }
