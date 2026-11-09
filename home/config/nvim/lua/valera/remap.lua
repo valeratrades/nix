@@ -75,8 +75,8 @@ K("n", "<C-w>K", function() MoveToNewTab() end, { desc = "windows: move to new t
 K("n", "<C-w>y", function() CloneTab() end, { desc = "windows: clone whole tab to the right" })
 K("n", "yt", function() CloneTab() end, { desc = "windows: clone whole tab to the right" })
 
---Q: is this the correct place for it?
-K('n', '<C-w>V', '<cmd>tabprevious<cr>', { desc = 'windows: move to previously active tab' })
+K('n', '<C-w>V', 'g<Tab>', { desc = 'windows: tab last visited' })
+K('n', '<C-w>v', '<C-w>p', { desc = 'windows: window last visited' })
 K('n', "<C-w><C-v>", "<nop>", { desc = 'Nop' })
 
 K('n', '<C-w>x', '<cmd>tabclose<cr>', { desc = 'windows: tabclose' })
