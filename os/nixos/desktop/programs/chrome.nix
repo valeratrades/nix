@@ -151,6 +151,7 @@ in
         Enabled = true;
         UpdateBinaryPath = false; # manifest is the /etc one above
       };
+      settings.Security.LockDatabaseScreenLock = false; # the login unlock is from sops anyway; relocking only brings back the password prompt
     };
 
     systemd.user.services = lib.mapAttrs' (name: e: lib.nameValuePair "chrome-${dashed name}" {

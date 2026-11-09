@@ -47,8 +47,10 @@ in {
       # D-Bus rather than --pw-stdin: the latter segfaults in MainWindow::bringToFront (2.7.12)
       ExecStartPost = toString (pkgs.writeShellScript "keepassxc-unlock" ''
         for _ in $(seq 50); do ${pkgs.systemd}/bin/busctl --user status org.keepassxc.KeePassXC.MainWindow >/dev/null 2>&1 && break; sleep 0.2; done
-        exec ${pkgs.systemd}/bin/busctl --user call org.keepassxc.KeePassXC.MainWindow /keepassxc org.keepassxc.KeePassXC.MainWindow \
+        set -e
+        ${pkgs.systemd}/bin/busctl --user call org.keepassxc.KeePassXC.MainWindow /keepassxc org.keepassxc.KeePassXC.MainWindow \
           openDatabase ss ${config.home.homeDirectory}/s/g/private/keepassxc/main.kdbx "$(cat ${config.sops.secrets."other/keepassxc_password".path})"
+        ${pkgs.sway}/bin/swaymsg '[app_id="org.keepassxc.KeePassXC"] move scratchpad' # --minimized is a no-op without a tray
       '');
     };
   };

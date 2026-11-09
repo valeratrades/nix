@@ -217,7 +217,7 @@ assign [app_id="google-chrome"] 2
 assign [app_id="dorion"] 4
 assign [app_id="spotube"] 4
 # main window only; its passkey/association dialogs must open where I am
-assign [app_id="org.keepassxc.KeePassXC" title="KeePassXC$"] 9
+assign [app_id="org.keepassxc.KeePassXC" title="^(KeePassXC|.+\.kdbx( \[Locked\])? - KeePassXC)$"] 9
 assign [app_id="org.telegram.desktop"] 4
 assign [app_id="com.ktechpit.whatsie"] 4
 assign [app_id="com.github.flxzt.rnote"] 9
