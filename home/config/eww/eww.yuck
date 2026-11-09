@@ -274,26 +274,17 @@
 		:style "font-size: ${12 * zoom}px"
 		:visible {bar_visible == "true" && btc_line_main_str != ""}
 		:space-evenly false
+		(label :visible {btc_line_spy_str != ""} :text btc_line_spy_str)
+		(label :visible {btc_line_spy_str != ""} :class "white" :text "|")
 		"${btc_line_poll.additional != "None" ? btc_line_additional_str : ""}"
 		(label :class {btc_line_poll.main_stale ? "warn" : ""} :text "")
 		"${btc_line_main_str}"
 	)
 )
 
-(defwindow btc_line_lower [zoom]
-	:monitor 0
-	:geometry (geometry :anchor "top right" :y {2 * 19 * zoom} :width "0%" :height "0%")
-	(box
-		:style "font-size: ${12 * zoom}px"
-		:visible {bar_visible == "true" && btc_line_spy_str != ""}
-		:class "text"
-		btc_line_spy_str
-	)
-)
-
 (defwindow tedi_blocker [zoom]
 	:monitor 0
-	:geometry (geometry :anchor "top right" :y {3 * 19 * zoom} :width "0%" :height "0%")
+	:geometry (geometry :anchor "top right" :y {2 * 19 * zoom} :width "0%" :height "0%")
 	(box
 		:style "font-size: ${12 * zoom}px"
 		(what)
@@ -328,7 +319,7 @@
 ;; Claude sessions widget
 (defwindow claude_sessions [zoom]
 	:monitor 0
-	:geometry (geometry :anchor "top right" :y {4 * 19 * zoom} :width "0%" :height "0%")
+	:geometry (geometry :anchor "top right" :y {3 * 19 * zoom} :width "0%" :height "0%")
 	(box
 		:style "font-size: ${12 * zoom}px"
 		(claude_sessions_widget)
