@@ -27,6 +27,28 @@ in
     # See ongoing_debug/2026-06-05_slow-shutdown.md.
     tmux = base.tmux.override { withSystemd = false; };
 
+    # `{nix,flake}-profile*` also matches `flake-tmp-profile.*`, deleting the tmp profile before its GC root is made.
+    #WAIT: https://github.com/nix-community/nix-direnv/issues/546
+    #WAIT: https://github.com/direnv/direnv/issues/1181
+    # Both `-eq 1` guards end in `_nix_import_env "$profile_rc"` without consulting `profile_missing`, so a cache
+    # whose closure was GC'd still gets sourced, replaying a shellHook of dangling store paths. Staleness may be
+    # ignored, absence must rebuild.
+    # Under manual reload the watched-files staleness scan and the watches themselves are skipped: their only
+    # consumer there is the out-of-date warning. `dirr` deletes the .rc, which rebuilds via profile_rc_missing.
+    nix-direnv = base.nix-direnv.overrideAttrs (old: {
+      # ahead of resholve, so commands introduced here get resolved too
+      preFixup = ''
+        chmod u+w $out/share/nix-direnv/direnvrc
+        substituteInPlace $out/share/nix-direnv/direnvrc \
+          --replace-fail '{nix,flake}-profile*' '{nix-profile-,flake-profile-}*' \
+          --replace-fail '_nix build --out-link "$symlink" "$storepath"' '_nix build --out-link "$symlink" "$(readlink -f "$storepath")"' \
+          --replace-fail 'if [[ $_nix_direnv_manual_reload -eq 1 && -z ''${_nix_direnv_force_reload-} ]]; then' 'if [[ $_nix_direnv_manual_reload -eq 1 && $profile_missing -eq 0 && $profile_rc_missing -eq 0 && -z ''${_nix_direnv_force_reload-} ]]; then' \
+          --replace-fail 'if [[ $_nix_direnv_allow_fallback -eq 1 ]]; then' 'if [[ $_nix_direnv_allow_fallback -eq 1 && $profile_missing -eq 0 && $profile_rc_missing -eq 0 ]]; then' \
+          --replace-fail '  _nix_direnv_watches watches' '  [[ $_nix_direnv_manual_reload -eq 1 && -z ''${_nix_direnv_force_reload-} ]] || _nix_direnv_watches watches' \
+          --replace-fail '  watch_file "''${files_to_watch[@]}"' '  [[ $_nix_direnv_manual_reload -eq 1 && -z ''${_nix_direnv_force_reload-} ]] || watch_file "''${files_to_watch[@]}"'
+      '' + old.preFixup;
+    });
+
     # valeratrades/nixd@schema-directive reads a `#:schema <module>` first line and types that file
     # against the module's options. Drop once upstream has it; RFC at nix-community/nixd#889.
     nixd = base.callPackage (base.fetchFromGitHub {

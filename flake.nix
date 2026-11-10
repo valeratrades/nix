@@ -10,7 +10,7 @@
   #REVIEW: the rebuild-avoidance goal is now met by valeratrades.cachix.org (hosted) above; this TODO only remains if you specifically want a self-hosted cache.
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/f4a03c008967841f2a0b3cb7c436fc6fc31671f6";
+    nixpkgs.url = "github:NixOS/nixpkgs/22b3ccd8e6a37cf59337fbe39fbd8ca46b6e9a8a";
     rust-overlay.url = "github:oxalica/rust-overlay/adf987c76af8d17b8256d23631bcf203f81e1a63";
     flake-utils.url = "github:numtide/flake-utils/11707dc2f618dd54ca8739b309ec4fc024de578b";
 

@@ -42,48 +42,7 @@
       };
       nix-direnv = {
         enable = true; # faster on nix
-        # _nix_clean_old_gcroots uses pattern `{nix,flake}-profile*` which matches `flake-tmp-profile.*`,
-        # deleting the tmp profile before _nix_add_gcroot can create the GC root symlink.
-        # Result: "error: getting status of '.direnv/flake-tmp-profile.XXX': No such file or directory"
-        # Caching still works, but GC root isn't created, so dependencies get deleted on nix-collect-garbage.
-        #WAIT: https://github.com/nix-community/nix-direnv/issues/546
-        #WAIT: https://github.com/direnv/direnv/issues/1181
-        # Both `-eq 1` guards below gate a branch that ends in `_nix_import_env
-        # "$profile_rc"`, and neither consults `profile_missing` — so a cache whose
-        # closure nix-collect-garbage took is still sourced, replaying a shellHook of
-        # dangling store paths (`cp: cannot stat …-unknown`, `cargo -Zscript` panicking
-        # on a deleted argument, `rustfmt` falling through to the rustup shim). Missing
-        # is not stale: staleness may be ignored, absence must rebuild.
-        # The last three edits are per-load spawn cuts: the reload script is rewritten
-        # (rm+cat+chmod) only when its content changed, and under manual reload the
-        # watched-files staleness scan (`direnv show_dump`) is skipped, as its only
-        # consumer there is the out-of-date warning. `dirr` deletes the .rc, which
-        # rebuilds via profile_rc_missing, and force reload still scans.
-        # Under manual reload the flake/shell files aren't watched either: a re-source on
-        # their change imports the same cached .rc, so all it does is replay the stale
-        # shellHook. `dirr` reloads through the .envrc watch.
-        package = pkgs.nix-direnv.overrideAttrs (old: {
-          # ahead of resholve, so commands introduced here get resolved too
-          preFixup = ''
-            chmod u+w $out/share/nix-direnv/direnvrc
-            substituteInPlace $out/share/nix-direnv/direnvrc \
-              --replace-fail '{nix,flake}-profile*' '{nix-profile-,flake-profile-}*' \
-              --replace-fail '_nix build --out-link "$symlink" "$storepath"' '_nix build --out-link "$symlink" "$(readlink -f "$storepath")"' \
-              --replace-fail 'if [[ $_nix_direnv_manual_reload -eq 1 && -z ''${_nix_direnv_force_reload-} ]]; then' 'if [[ $_nix_direnv_manual_reload -eq 1 && $profile_missing -eq 0 && $profile_rc_missing -eq 0 && -z ''${_nix_direnv_force_reload-} ]]; then' \
-              --replace-fail 'if [[ $_nix_direnv_allow_fallback -eq 1 ]]; then' 'if [[ $_nix_direnv_allow_fallback -eq 1 && $profile_missing -eq 0 && $profile_rc_missing -eq 0 ]]; then' \
-              --replace-fail '  rm -f "''${layout_dir}/bin/nix-direnv-reload"
-              cat >"''${layout_dir}/bin/nix-direnv-reload" <<-EOF' '  local reload_script
-              IFS= read -r -d "" reload_script <<-EOF || true' \
-              --replace-fail '  chmod +x "''${layout_dir}/bin/nix-direnv-reload"' '  if [[ ! -x ''${layout_dir}/bin/nix-direnv-reload || $(<"''${layout_dir}/bin/nix-direnv-reload") != "''${reload_script%$'"'"'\n'"'"'}" ]]; then
-                rm -f "''${layout_dir}/bin/nix-direnv-reload"
-                printf %s "$reload_script" >"''${layout_dir}/bin/nix-direnv-reload"
-                chmod +x "''${layout_dir}/bin/nix-direnv-reload"
-              fi' \
-              --replace-fail '  _nix_direnv_watches watches' '  [[ $_nix_direnv_manual_reload -eq 1 && -z ''${_nix_direnv_force_reload-} ]] || _nix_direnv_watches watches' \
-              --replace-fail '  watch_file "''${files_to_watch[@]}"' '  [[ $_nix_direnv_manual_reload -eq 1 && -z ''${_nix_direnv_force_reload-} ]] || watch_file "''${files_to_watch[@]}"' \
-              --replace-fail '  watch_file "$HOME/.direnvrc" "$HOME/.config/direnv/direnvrc" "shell.nix" "default.nix"' '  [[ $_nix_direnv_manual_reload -eq 1 && -z ''${_nix_direnv_force_reload-} ]] || watch_file "$HOME/.direnvrc" "$HOME/.config/direnv/direnvrc" "shell.nix" "default.nix"'
-          '' + old.preFixup;
-        });
+        package = pkgs.patched.nix-direnv;
       };
       silent = true;
       # Any existing nix-direnv cache is used as-is: no re-evaluation, no network,
