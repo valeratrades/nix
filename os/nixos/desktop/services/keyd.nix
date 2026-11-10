@@ -1,6 +1,12 @@
-{ ...
+{ lib, ...
 }:
 {
+  # keyd setegid()s to this group when creating its socket, so keyd-application-mapper can connect; nixpkgs' hardening forbids that
+  users.groups.keyd = { };
+  systemd.services.keyd.serviceConfig = {
+    CapabilityBoundingSet = [ "CAP_SETGID" ];
+    SystemCallFilter = lib.mkAfter [ "@setuid" ];
+  };
   services.keyd = {
     enable = true;
     # keyd expects qwerty keypresses and receives exact keycodes, so since I use semimak, here are defined the qwerty names of the keys I'm actually pressing (enormously confusing all the way)
