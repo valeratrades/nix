@@ -18,6 +18,7 @@ in {
     tarball-ttl = 4294967295;
     # GC keeps the build closure of gcrooted dev shells, so direnv caches stay valid offline
     keep-outputs = true;
+    extra-substituters = [ "https://valeratrades.cachix.org" ];
     trusted-substituters = [
       "https://cache.nixos.org"
       "https://nix-community.cachix.org"

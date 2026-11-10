@@ -91,11 +91,8 @@
     # -----------------------------------------------------------------
     # My packages
     # ----------------------------------------------------------------
-    tedi.url = "github:valeratrades/tedi";
-    booktyping = {
-      url = "github:valeratrades/booktyping";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    tedi.url = "github:valeratrades/tedi?ref=cached";
+    booktyping.url = "github:valeratrades/booktyping?ref=cached";
     decant = {
       url = "github:valeratrades/decant";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -106,38 +103,13 @@
     #  inputs.rust-overlay.follows = "rust-overlay";
     #  inputs.flake-utils.follows = "flake-utils";
     #};
-    math_tools = {
-      url = "github:valeratrades/math_tools";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.rust-overlay.follows = "rust-overlay";
-      inputs.flake-utils.follows = "flake-utils";
-    };
-    tg.url = "github:valeratrades/tg";
-    bbeats = {
-      url = "github:valeratrades/bbeats";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    book_parser = {
-      url = "github:valeratrades/book_parser";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.rust-overlay.follows = "rust-overlay";
-    };
-    prettify_log = {
-      url = "github:valeratrades/prettify_log?ref=release";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.rust-overlay.follows = "rust-overlay";
-      inputs.flake-utils.follows = "flake-utils";
-    };
-    distributions = {
-      url = "github:valeratrades/distributions";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.rust-overlay.follows = "rust-overlay";
-      inputs.flake-utils.follows = "flake-utils";
-    };
-    reasonable_envsubst = {
-      url = "github:valeratrades/reasonable_envsubst";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    math_tools.url = "github:valeratrades/math_tools?ref=cached";
+    tg.url = "github:valeratrades/tg?ref=cached";
+    bbeats.url = "github:valeratrades/bbeats?ref=cached";
+    book_parser.url = "github:valeratrades/book_parser?ref=cached";
+    prettify_log.url = "github:valeratrades/prettify_log?ref=cached";
+    distributions.url = "github:valeratrades/distributions?ref=cached";
+    reasonable_envsubst.url = "github:valeratrades/reasonable_envsubst?ref=cached";
     # No `follows` here on purpose: these build against their OWN locked nixpkgs so the
     # store paths match what each repo's CI pushes to valeratrades.cachix.org (overriding
     # nixpkgs would change the hash and miss the cache). `cached` is the newest rev that CI did push.
@@ -151,12 +123,8 @@
       url = "github:lomirus/bad-apple-rs"; # merged my nix-integration pull
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    # takes nixpkgs through its own v_flakes, so there is nothing here to override
-    ask_llm.url = "github:valeratrades/ask_llm";
-    skargo = {
-      url = "github:EV-Main/skills";
-      inputs.v_flakes.follows = "v_flakes";
-    };
+    ask_llm.url = "github:valeratrades/ask_llm?ref=cached";
+    skargo.url = "github:EV-Main/skills?ref=cached";
     ringo.url = "github:davidborzek/ringo"; # own nixpkgs, so ringo.cachix.org paths match
     snapshot_fonts = {
       url = "github:valeratrades/snapshot_fonts?ref=release";
