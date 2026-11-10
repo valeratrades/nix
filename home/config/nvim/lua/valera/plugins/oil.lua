@@ -152,5 +152,17 @@ return require "lazier" {
 				},
 			},
 		})
+		-- lazier only replays recorded calls; a returned fn runs for real
+		return function()
+			local mini_icons = require("mini.icons")
+			-- `src_<ext>/` dirs: `src` glyph, colored as the `<ext>` language
+			local mini_get = mini_icons.get
+			mini_icons.get = function(category, name)
+				local ext = category == "directory" and vim.fs.basename(name):match("^src_(.+)$")
+				if not ext then return mini_get(category, name) end
+				local _, hl, is_default = mini_get("extension", ext)
+				return "󰴉", is_default and "MiniIconsPurple" or hl, false
+			end
+		end
 	end
 }
