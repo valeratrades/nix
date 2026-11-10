@@ -127,9 +127,7 @@ in {
 		# was the USER manager (user@1000.service) waiting 90s on a tmux pane running
 		# nvim (nvim ignores SIGTERM → scope rides out the full default). user.conf is
 		# a separate file, so cap it too. See ongoing_debug/2026-06-05_slow-shutdown.md.
-		user.extraConfig = ''
-			DefaultTimeoutStopSec=15s
-		'';
+		user.settings.Manager.DefaultTimeoutStopSec = "15s";
 
 		services = {
 			dlm.wantedBy = [ "multi-user.target" ];
@@ -145,9 +143,9 @@ in {
 		};
   };
   boot = {
-    # 7.0 for lenovo-wmi-other's fan hwmon: it decouples fan RPM from platform_profile, which
+    # >=7.0 for lenovo-wmi-other's fan hwmon: it decouples fan RPM from platform_profile, which
     # legion_laptop never could on this EC. See ongoing_debug/2026-09-01_kernel-7.0-fan-lever.md.
-    kernelPackages = pkgs.linuxPackages_7_0;
+    kernelPackages = pkgs.linuxPackages_latest;
 
     #TODO: uncomment when kernel compile time is available (~2h min)
     # kernelPatches = [{

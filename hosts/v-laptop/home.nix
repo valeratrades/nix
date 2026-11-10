@@ -628,7 +628,7 @@ in {
         ]
 
         zed-editor-fhs
-				zed
+				super # formerly `zed`
 				#claude-code #DEPRECATE: once sure that https://github.com/sadjow/claude-code-nix is the way to go
         # NB: per-Read malware-reminder was removed upstream as of claude-code 2.1.154, but the
         # patch infra now strips a DIFFERENT annoyance: the always-on AskUserQuestion guidance
@@ -719,6 +719,8 @@ in {
       flavor = "gmail.com";
       realName = "Valera";
       passwordCommand = "cat ${config.sops.secrets.${passSecret}.path}"; # app password, - gmail rejects account passwords over IMAP/SMTP
+      imap.authentication = "plain";
+      smtp.authentication = "plain";
       folders = {
         inbox = "INBOX";
         sent = "[Gmail]/Sent Mail";
