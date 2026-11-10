@@ -11,8 +11,8 @@ in {
     # as root `systemd --test` exits 1 without a word
     cmd=$(SYSTEMD_UNIT_PATH="$1/etc/systemd/system:" ${pkgs.util-linux}/bin/setpriv --reuid=nobody --regid=nogroup --clear-groups \
       ${config.systemd.package}/lib/systemd/systemd --test --system --unit=getty@tty1.service --no-pager 2>/dev/null \
-      | ${pkgs.gawk}/bin/awk '/→ Unit getty@tty1.service:/{f=1; next} /→ Unit /{f=0} f && /Command Line:/{print $3; exit}')
-    if ! ${pkgs.gnugrep}/bin/grep -q -- "--autologin ${user.username} " "$cmd" 2>/dev/null; then
+      | ${pkgs.gawk}/bin/awk '/→ Unit getty@tty1.service:/{f=1; next} /→ Unit /{f=0} f && /Command Line:/{sub(/.*Command Line: /, ""); print; exit}')
+    if ! ${pkgs.gnugrep}/bin/grep -q -- "--autologin ${user.username} " <<<"$cmd"; then
       echo "getty@tty1 would exec '$cmd', not NixOS's autologin getty: this generation boots to a dead login prompt" >&2
       exit 1
     fi
