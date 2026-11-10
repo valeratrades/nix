@@ -14,7 +14,7 @@ serde_json = "1.0"
 //!
 //! ```text
 //! workspace (splith)
-//! ├── T  nvim -p <srcs>, TypstWatch on each .typ    60%
+//! ├── T  nvim -p <srcs>, Watch on each .typ    60%
 //! └── C0 splitv                                      40%
 //!     ├── C1 tabbed  ← docs[0..n]                    50%
 //!     └── P  tabbed  ← typst-out viewer per .typ src 50%
@@ -458,8 +458,8 @@ fn build() -> Result<()> {
 		.spawn()
 		.map_err(|e| miette!("failed to spawn the placeholder swap: {e}"))?;
 
-	// vim tabs count from 1; `call` rather than `:TypstWatch`, which lacks -bar and would swallow the `|`
-	let watches: String = srcs.files.iter().enumerate().filter(|(_, s)| is_typ(s)).map(|(i, _)| format!("tabnext {} | call typst#TypstWatch() | ", i + 1)).collect();
+	// vim tabs count from 1; `call` rather than `:Watch`, which lacks -bar and would swallow the `|`
+	let watches: String = srcs.files.iter().enumerate().filter(|(_, s)| is_typ(s)).map(|(i, _)| format!("tabnext {} | call typst#Watch() | ", i + 1)).collect();
 	let tab = srcs.focus + 1;
 	let srcs = srcs.files.iter().map(|s| sh_quote(s)).collect::<Vec<_>>().join(" ");
 	let e = Command::new("fish").arg("-c").arg(format!(r#"e -p {srcs} -c "'{watches}tabnext {tab}'""#)).exec(); // `e` evals its args, eating one layer of quotes
