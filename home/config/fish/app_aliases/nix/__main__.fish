@@ -26,7 +26,13 @@ function nix --wraps nix
 end
 function flake-build --wraps 'sudo nixos-rebuild switch --flake .#myhost --show-trace -L -v'; sudo nixos-rebuild switch --flake .#myhost --show-trace -L -v $argv; end
 #TODO!: make into a function and git-commit with $argv concatenation for message
-function nixup; git -C $NIXOS_CONFIG add -A && nix flake update --flake $NIXOS_CONFIG && sudo nixos-rebuild switch --show-trace -v --impure --fast && git_upload $NIXOS_CONFIG $argv; end
+function nixup
+	argparse patches -- $argv; or return
+	set -l frozen nixpkgs-patched claude_code_nix # patched packages, see overlays/patched.nix; `--patches` moves them too
+	set -q _flag_patches; and set frozen
+	set -l inputs (for i in (jq -r '.nodes.root.inputs | keys[]' $NIXOS_CONFIG/flake.lock); contains -- $i $frozen; or echo $i; end)
+	git -C $NIXOS_CONFIG add -A && nix flake update --flake $NIXOS_CONFIG $inputs && sudo nixos-rebuild switch --show-trace -v --impure --fast && git_upload $NIXOS_CONFIG $argv
+end
 #TODO!: add git wrapper
 function nhup; nh os switch --hostname (hostname) $NIXOS_CONFIG -- --impure $argv; end
 function nshell --wraps 'nix-shell --command fish'; nix-shell --command fish $argv; end

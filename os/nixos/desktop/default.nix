@@ -94,9 +94,9 @@
           #wine-staging # nightly wine
           winetricks # install deps for wine
           #bottles # ... python
-          lutris # supposed to be more modern `playonlinux`. It's in python.
+          #lutris # supposed to be more modern `playonlinux`. It's in python.
 					heroic
-          playonlinux # oh wait, this shit's in python too
+          #playonlinux # oh wait, this shit's in python too
         ]
         # MacOS
         [
@@ -163,7 +163,7 @@
           ])
           # nix
           [
-            nixd-schema-directive # nix lsp
+            patched.nixd # nix lsp
             niv # nix build dep management
             nix-diff
             statix # Lints and suggestions for the nix programming language

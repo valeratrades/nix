@@ -38,23 +38,6 @@
         "type": "github"
       }
     },
-    "baresip": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1793822005,
-        "narHash": "sha256-cwNlErJjG0XlvRHQ6v14/tttjBfsbS+iR0NxFKIlQhc=",
-        "owner": "baresip",
-        "repo": "baresip",
-        "rev": "8a4f18c1c1b5331daa026236dcdd108deff601e8",
-        "type": "github"
-      },
-      "original": {
-        "owner": "baresip",
-        "ref": "v4.13.0",
-        "repo": "baresip",
-        "type": "github"
-      }
-    },
     "bbeats": {
       "inputs": {
         "nixpkgs": "nixpkgs_3"
@@ -5323,6 +5306,22 @@
         "url": "https://channels.nixos.org/nixpkgs-unstable/nixexprs.tar.zst"
       }
     },
+    "nixpkgs-patched": {
+      "locked": {
+        "lastModified": 1794042290,
+        "narHash": "sha256-ziZn2PvCJE5JEEpqTdxXwJpPB+L3YqoCpTAMCzyaP3U=",
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "f4a03c008967841f2a0b3cb7c436fc6fc31671f6",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nixos",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "nixpkgs-regression": {
       "locked": {
         "lastModified": 1643052045,
@@ -5670,22 +5669,6 @@
     },
     "nixpkgs_27": {
       "locked": {
-        "lastModified": 1785090369,
-        "narHash": "sha256-m0pDuRJG7EDo9ri+4Ksu83VsI+PlxNC9lNBfydejce4=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "624af665418d3c65d544145b4d34ad696439570e",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "ref": "nixos-unstable",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
-    "nixpkgs_28": {
-      "locked": {
         "lastModified": 1744536153,
         "narHash": "sha256-awS2zRgF4uTwrOKwwiJcByDzDOdo3Q1rPZbiHQg/N38=",
         "owner": "NixOS",
@@ -5697,6 +5680,22 @@
         "owner": "NixOS",
         "ref": "nixpkgs-unstable",
         "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs_28": {
+      "locked": {
+        "lastModified": 1792208399,
+        "narHash": "sha256-mN15cwddbOOIzzXSSwYUeRfOYeizz47Vy6y3Hzq6DuY=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "7a6522c868711d06e3a520bbcdfafe9806f4337f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "7a6522c868711d06e3a520bbcdfafe9806f4337f",
         "type": "github"
       }
     },
@@ -5829,22 +5828,6 @@
       }
     },
     "nixpkgs_36": {
-      "locked": {
-        "lastModified": 1792208399,
-        "narHash": "sha256-mN15cwddbOOIzzXSSwYUeRfOYeizz47Vy6y3Hzq6DuY=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "7a6522c868711d06e3a520bbcdfafe9806f4337f",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "7a6522c868711d06e3a520bbcdfafe9806f4337f",
-        "type": "github"
-      }
-    },
-    "nixpkgs_37": {
       "locked": {
         "lastModified": 1792208399,
         "narHash": "sha256-mN15cwddbOOIzzXSSwYUeRfOYeizz47Vy6y3Hzq6DuY=",
@@ -6761,23 +6744,6 @@
         "type": "github"
       }
     },
-    "re": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1793820702,
-        "narHash": "sha256-ns1MnNbSj+63f2ZfQwhRATO0TXPaf9NftppCNp4Ms98=",
-        "owner": "baresip",
-        "repo": "re",
-        "rev": "b827bcaf55a18be141ca7bcee1e22872a3a29656",
-        "type": "github"
-      },
-      "original": {
-        "owner": "baresip",
-        "ref": "v4.13.0",
-        "repo": "re",
-        "type": "github"
-      }
-    },
     "reasonable_envsubst": {
       "inputs": {
         "nixpkgs": "nixpkgs_26"
@@ -6794,26 +6760,6 @@
         "owner": "valeratrades",
         "ref": "cached",
         "repo": "reasonable_envsubst",
-        "type": "github"
-      }
-    },
-    "ringo": {
-      "inputs": {
-        "baresip": "baresip",
-        "nixpkgs": "nixpkgs_27",
-        "re": "re"
-      },
-      "locked": {
-        "lastModified": 1794234572,
-        "narHash": "sha256-FPRGHLfzDexU+eR3wmF+Ti4MY7Fk8ebNckJ64L0QE7o=",
-        "owner": "davidborzek",
-        "repo": "ringo",
-        "rev": "791e042aedd8bf1643f06dc7bf75b82218d78682",
-        "type": "github"
-      },
-      "original": {
-        "owner": "davidborzek",
-        "repo": "ringo",
         "type": "github"
       }
     },
@@ -6843,6 +6789,7 @@
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs_24",
         "nixpkgs-2405": "nixpkgs-2405",
+        "nixpkgs-patched": "nixpkgs-patched",
         "nixpkgs-stable": "nixpkgs-stable_2",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "pin-nixpkgs-ollama": "pin-nixpkgs-ollama",
@@ -6850,7 +6797,6 @@
         "pre-commit-hooks": "pre-commit-hooks_10",
         "prettify_log": "prettify_log",
         "reasonable_envsubst": "reasonable_envsubst",
-        "ringo": "ringo",
         "rust-overlay": "rust-overlay_13",
         "scripters": "scripters",
         "skargo": "skargo",
@@ -6960,7 +6906,7 @@
     },
     "rust-overlay_13": {
       "inputs": {
-        "nixpkgs": "nixpkgs_28"
+        "nixpkgs": "nixpkgs_27"
       },
       "locked": {
         "lastModified": 1778037418,
@@ -7969,7 +7915,7 @@
         "flake-parts": "flake-parts_16",
         "flake-utils": "flake-utils_14",
         "lean4-nix": "lean4-nix_9",
-        "nixpkgs": "nixpkgs_29",
+        "nixpkgs": "nixpkgs_28",
         "pre-commit-hooks": "pre-commit-hooks_12",
         "process-compose-flake": "process-compose-flake_10",
         "rust-overlay": "rust-overlay_14"
@@ -7995,7 +7941,7 @@
         "flake-parts": "flake-parts_17",
         "flake-utils": "flake-utils_15",
         "lean4-nix": "lean4-nix_10",
-        "nixpkgs": "nixpkgs_30",
+        "nixpkgs": "nixpkgs_29",
         "pre-commit-hooks": "pre-commit-hooks_13",
         "process-compose-flake": "process-compose-flake_11",
         "rust-overlay": "rust-overlay_15"
@@ -8021,7 +7967,7 @@
         "flake-parts": "flake-parts_18",
         "flake-utils": "flake-utils_16",
         "lean4-nix": "lean4-nix_11",
-        "nixpkgs": "nixpkgs_31",
+        "nixpkgs": "nixpkgs_30",
         "pre-commit-hooks": "pre-commit-hooks_14",
         "process-compose-flake": "process-compose-flake_12",
         "rust-overlay": "rust-overlay_16"
@@ -8047,7 +7993,7 @@
         "flake-parts": "flake-parts_19",
         "flake-utils": "flake-utils_17",
         "lean4-nix": "lean4-nix_12",
-        "nixpkgs": "nixpkgs_32",
+        "nixpkgs": "nixpkgs_31",
         "pre-commit-hooks": "pre-commit-hooks_15",
         "process-compose-flake": "process-compose-flake_13",
         "rust-overlay": "rust-overlay_17"
@@ -8073,7 +8019,7 @@
         "flake-parts": "flake-parts_20",
         "flake-utils": "flake-utils_18",
         "lean4-nix": "lean4-nix_13",
-        "nixpkgs": "nixpkgs_33",
+        "nixpkgs": "nixpkgs_32",
         "pre-commit-hooks": "pre-commit-hooks_16",
         "process-compose-flake": "process-compose-flake_14",
         "rust-overlay": "rust-overlay_18"
@@ -8099,7 +8045,7 @@
         "flake-parts": "flake-parts_21",
         "flake-utils": "flake-utils_19",
         "lean4-nix": "lean4-nix_14",
-        "nixpkgs": "nixpkgs_34",
+        "nixpkgs": "nixpkgs_33",
         "pre-commit-hooks": "pre-commit-hooks_17",
         "process-compose-flake": "process-compose-flake_15",
         "rust-overlay": "rust-overlay_19"
@@ -8125,7 +8071,7 @@
         "flake-parts": "flake-parts_22",
         "flake-utils": "flake-utils_20",
         "lean4-nix": "lean4-nix_15",
-        "nixpkgs": "nixpkgs_35",
+        "nixpkgs": "nixpkgs_34",
         "pre-commit-hooks": "pre-commit-hooks_18",
         "process-compose-flake": "process-compose-flake_16",
         "rust-overlay": "rust-overlay_20"
@@ -8151,7 +8097,7 @@
         "flake-parts": "flake-parts_23",
         "flake-utils": "flake-utils_21",
         "lean4-nix": "lean4-nix_16",
-        "nixpkgs": "nixpkgs_36",
+        "nixpkgs": "nixpkgs_35",
         "pre-commit-hooks": "pre-commit-hooks_19",
         "process-compose-flake": "process-compose-flake_17",
         "rust-overlay": "rust-overlay_21"
@@ -8177,7 +8123,7 @@
         "flake-parts": "flake-parts_24",
         "flake-utils": "flake-utils_22",
         "lean4-nix": "lean4-nix_17",
-        "nixpkgs": "nixpkgs_37",
+        "nixpkgs": "nixpkgs_36",
         "pre-commit-hooks": "pre-commit-hooks_20",
         "process-compose-flake": "process-compose-flake_18",
         "rust-overlay": "rust-overlay_22"

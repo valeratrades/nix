@@ -23,6 +23,7 @@
     v_flakes.url = "github:valeratrades/v_flakes?ref=v1.6";
 
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs-patched.url = "github:nixos/nixpkgs/nixos-unstable"; # overlays/patched.nix
     nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-24.11";
     nixpkgs-2405.url = "github:nixos/nixpkgs/nixos-24.05";
 
@@ -125,7 +126,6 @@
     #};
     ask_llm.url = "github:valeratrades/ask_llm?ref=cached";
     skargo.url = "github:EV-Main/skills?ref=cached";
-    ringo.url = "github:davidborzek/ringo"; # own nixpkgs, so ringo.cachix.org paths match
     snapshot_fonts.url = "github:valeratrades/snapshot_fonts?ref=release";
 
     # Personal fork of pomdtr.excalidraw-editor (VSCode/VSCodium). Exposes a

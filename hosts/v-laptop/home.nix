@@ -598,7 +598,6 @@ in {
         [
           microsip
           baresip
-          ringo
         ]
 
         # Trading bots
@@ -610,7 +609,7 @@ in {
           graphify
         ]
 
-        gologin # antidetect browser
+        #gologin # antidetect browser
 
         # Windows (via WinApps/Docker VM)
         [

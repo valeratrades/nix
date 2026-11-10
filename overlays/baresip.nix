@@ -1,11 +1,8 @@
 # baresip (terminal SIP client) inside `vpn_ns`, SIPUP account seeded on first run.
-# Bare `49…`/`+49…` dials gain the `000` prefix (patch shared with ringo).
 # ICE + DTLS-SRTP + rtcp-mux: the SIPUP device has WebRTC on, and sends no media to plain RTP. net_af: the namespace is v4-only.
 final: prev:
 let
-  baresip = prev.baresip.overrideAttrs (old: {
-    patches = (old.patches or [ ]) ++ [ ./baresip-de-000-prefix.patch ];
-  });
+  baresip = final.patched.baresip;
   config = prev.writeText "baresip-config" ''
     module			stdio.so
     module			g711.so

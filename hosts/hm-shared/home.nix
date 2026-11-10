@@ -107,16 +107,7 @@
       keyMode = "vi";
       shortcut = "e";
       secureSocket = false; # its TMUX_TMPDIR reaches fish but not the boot-time restore unit that spawns the server, splitting them across sockets
-      # Build tmux WITHOUT systemd integration. With it (nixpkgs default
-      # withSystemd=true), tmux places every pane in its own systemd scope
-      # (tmux-spawn-*.scope). That scope creation fails — "Couldn't move process
-      # … Permission denied" (319+ times in the journal) — leaving the scope in a
-      # broken cgroup state. At shutdown, systemd's control-group SIGTERM can't
-      # reach the process, so the scope rides out its full stop timeout before
-      # SIGKILL — THE slow-shutdown bug. Without systemd, panes are plain children
-      # of the tmux server and get killed cleanly.
-      # See ongoing_debug/2026-06-05_slow-shutdown.md.
-      package = let tmux = pkgs.tmux.override { withSystemd = false; };
+      package = let tmux = pkgs.patched.tmux; # see overlays/patched.nix
       in pkgs.symlinkJoin {
         inherit (tmux) name;
         meta = removeAttrs tmux.meta [ "outputsToInstall" ]; # the join is single-output; `man` is merged in below
@@ -428,7 +419,7 @@
           cowsay
           xdotool # most options don't work on wayland though
           wlrctl # wayland mouse/keyboard emulation for sway
-          wtype # wl-clipboard-compatible xdotool type for Wayland (used by speech-to-text)
+          patched.wtype # wl-clipboard-compatible xdotool type for Wayland (used by speech-to-text)
           playerctl # MPRIS CLI; drives XF86AudioPlay / $mod+F5 media bindings in sway
           whisper-cpp # local STT via whisper-cli (speech mode driver "w")
         ]
@@ -541,7 +532,7 @@
         [
           # RDP clients (linux-to-linux doesn't really work)
           remmina
-          anydesk # works to manage windows/linux+X11, but obviously can't RDP linux running wayland
+          #anydesk # upstream re-publishes 8.1.0 in place, nixpkgs hash mismatches. Works to manage windows/linux+X11, but obviously can't RDP linux running wayland
           freerdp
         ]
         [

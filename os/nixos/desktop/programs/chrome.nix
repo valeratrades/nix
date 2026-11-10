@@ -150,7 +150,7 @@ in
     # Google account passkey lives here, so login never needs a phone
     programs.keepassxc = {
       enable = true;
-      package = pkgs.keepassxc.overrideAttrs (o: { patches = (o.patches or [ ]) ++ [ ./keepassxc-passkey-no-confirm.patch ]; }); # a lone matching passkey answers without its confirm dialog
+      package = pkgs.patched.keepassxc;
       settings.Browser = {
         Enabled = true;
         UpdateBinaryPath = false; # manifest is the /etc one above

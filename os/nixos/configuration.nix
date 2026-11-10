@@ -404,6 +404,7 @@ in {
   };
 
   nixpkgs.overlays = [
+    (import (mylib.relativeToRoot "overlays/patched.nix") inputs)
     (self: super: {
       # canvas npm package doesn't build with nodejs v24's V8 API changes
       excalidraw_export = super.excalidraw_export.override { buildNpmPackage = super.buildNpmPackage.override { nodejs = super.nodejs_22; }; };
@@ -414,14 +415,11 @@ in {
     (import (mylib.relativeToRoot "overlays/vpn_ns.nix"))
     (import (mylib.relativeToRoot "overlays/microsip.nix"))
     (import (mylib.relativeToRoot "overlays/baresip.nix"))
-    (import (mylib.relativeToRoot "overlays/ringo.nix") inputs)
     (import (mylib.relativeToRoot "overlays/metascalp.nix"))
     (import (mylib.relativeToRoot "overlays/gologin.nix"))
     (import (mylib.relativeToRoot "overlays/multilogin.nix"))
     (import (mylib.relativeToRoot "overlays/graphify.nix"))
     (import (mylib.relativeToRoot "overlays/tree-sitter-memcap.nix"))
-    (import (mylib.relativeToRoot "overlays/nixd-schema-directive.nix"))
-    (import (mylib.relativeToRoot "overlays/wtype.nix"))
     (import (mylib.relativeToRoot "overlays/pandoc.nix"))
   ];
 

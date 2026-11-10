@@ -1,0 +1,43 @@
+# Packages we build from patched source. They sit on `nixpkgs-patched` rather than `nixpkgs`, so a
+# dependency bump leaves them untouched; `nixup --patches` is the one place that moves it.
+inputs: final: prev:
+let
+  base = import inputs.nixpkgs-patched { localSystem = prev.stdenv.hostPlatform.system; };
+in
+{
+  patched = {
+    # wtype hands out keycodes 1..N in order of first use, and Chromium reads those as physical
+    # keys: pasting text with enough distinct chars sent F5/Ctrl/Alt/Power/BrowserBack into Chrome.
+    wtype = base.wtype.overrideAttrs (old: {
+      patches = (old.patches or [ ]) ++ [ ./wtype-safe-keycodes.patch ];
+    });
+
+    # bare `49…`/`+49…` dials gain the `000` prefix
+    baresip = base.baresip.overrideAttrs (old: {
+      patches = (old.patches or [ ]) ++ [ ./baresip-de-000-prefix.patch ];
+    });
+
+    # a lone matching passkey answers without its confirm dialog
+    keepassxc = base.keepassxc.overrideAttrs (old: {
+      patches = (old.patches or [ ]) ++ [ ./keepassxc-passkey-no-confirm.patch ];
+    });
+
+    # Without systemd, panes are plain children of the server instead of tmux-spawn-*.scope units,
+    # whose broken cgroup state made shutdown ride out the full stop timeout.
+    # See ongoing_debug/2026-06-05_slow-shutdown.md.
+    tmux = base.tmux.override { withSystemd = false; };
+
+    # valeratrades/nixd@schema-directive reads a `#:schema <module>` first line and types that file
+    # against the module's options. Drop once upstream has it; RFC at nix-community/nixd#889.
+    nixd = base.callPackage (base.fetchFromGitHub {
+      owner = "valeratrades";
+      repo = "nixd";
+      rev = "7fcdc56452ccfe2c37ca66b1b70fd440f6a473e5";
+      hash = "sha256-cyvikKVDVvuwAjxDyXNEZF7vmbakHfET5at0fbwyEds=";
+    }) {
+      # the versions nixd's own flake builds against
+      nixComponents = base.nixVersions.nixComponents_2_34;
+      llvmPackages = base.llvmPackages_21;
+    };
+  };
+}
