@@ -45,7 +45,8 @@
     #CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING = "1";
     #MAX_THINKING_TOKENS = 63999;
 
-    CLAUDE_CODE_DISABLE_AUTO_MEMORY = "1";
+    CLAUDE_CODE_DISABLE_AUTO_MEMORY = "1"; # `cl` re-enables it per-session
+    CLAUDE_CODE_DISABLE_ORG_MEMORY = "1";
     CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = "1"; # serveys and shit
 #,}}}1
     UV_MALWARE_CHECK = "1"; # may become default in the future, - deprecate when it is

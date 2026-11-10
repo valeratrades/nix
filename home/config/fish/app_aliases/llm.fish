@@ -129,19 +129,30 @@ function cl
         return 1
     end
 
-    if set -q resume_n[1]
-        if [ $resume_n -eq 1 ]
-            set -a passthrough_args --continue
-        else
-            set -l proj_dir $HOME/.claude/projects/(string replace -ra '[^a-zA-Z0-9]' - -- (pwd -P))
-            set -l sessions (command ls -t $proj_dir/*.jsonl 2>/dev/null)
-            if [ (count $sessions) -lt $resume_n ]
-                echo "cl: only "(count $sessions)" session(s) recorded for this directory" >&2
-                return 1
-            end
-            set -a passthrough_args --resume (basename $sessions[$resume_n] .jsonl)
+    # memory is per-session, never per-project: its dir is keyed by the session id, so cl has to own that id
+    for arg in $passthrough_args
+        if contains -- $arg -c --continue -r --resume --fork-session --session-id
+            echo "cl: '$arg' would detach the session from its memory dir; resume with -N" >&2
+            return 1
         end
     end
+    set -l proj_dir $HOME/.claude/projects/(string replace -ra '[^a-zA-Z0-9]' - -- (pwd -P))
+    set -l session_id
+    if set -q resume_n[1]
+        set -l sessions (command ls -t $proj_dir/*.jsonl 2>/dev/null)
+        if [ (count $sessions) -lt $resume_n ]
+            echo "cl: only "(count $sessions)" session(s) recorded for this directory" >&2
+            return 1
+        end
+        set session_id (basename $sessions[$resume_n] .jsonl)
+        set -a passthrough_args --resume $session_id
+    else
+        set session_id (cat /proc/sys/kernel/random/uuid)
+        set -a passthrough_args --session-id $session_id
+    end
+    # environment.nix keeps it off for any claude not started through here
+    set -fx CLAUDE_CODE_DISABLE_AUTO_MEMORY 0
+    set -a passthrough_args --settings "{\"autoMemoryDirectory\":\"$proj_dir/$session_id/memory\"}"
 
     if [ $no_verify -eq 0 ] && [ -n "$repo" ] && [ -f "$repo/AGENTS.md" ]
         if not git -C $repo check-ignore -q -- .claude/
