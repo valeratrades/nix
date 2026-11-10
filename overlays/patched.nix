@@ -35,12 +35,16 @@ in
     # ignored, absence must rebuild.
     # Under manual reload the watched-files staleness scan and the watches themselves are skipped: their only
     # consumer there is the out-of-date warning. `dirr` deletes the .rc, which rebuilds via profile_rc_missing.
+    # A failed load (e.g. v_flakes' generation guard) keeps no `watch_file` — not even the .rc — so the reload
+    # touches .envrc, the one file direnv still watches, for open shells to pick the rebuilt cache up.
     nix-direnv = base.nix-direnv.overrideAttrs (old: {
       # ahead of resholve, so commands introduced here get resolved too
       preFixup = ''
         chmod u+w $out/share/nix-direnv/direnvrc
         substituteInPlace $out/share/nix-direnv/direnvrc \
           --replace-fail '{nix,flake}-profile*' '{nix-profile-,flake-profile-}*' \
+          --replace-fail '_nix_direnv_force_reload=1 direnv exec "$PWD" true' '_nix_direnv_force_reload=1 direnv exec "$PWD" true
+touch "$PWD/.envrc"' \
           --replace-fail '_nix build --out-link "$symlink" "$storepath"' '_nix build --out-link "$symlink" "$(readlink -f "$storepath")"' \
           --replace-fail 'if [[ $_nix_direnv_manual_reload -eq 1 && -z ''${_nix_direnv_force_reload-} ]]; then' 'if [[ $_nix_direnv_manual_reload -eq 1 && $profile_missing -eq 0 && $profile_rc_missing -eq 0 && -z ''${_nix_direnv_force_reload-} ]]; then' \
           --replace-fail 'if [[ $_nix_direnv_allow_fallback -eq 1 ]]; then' 'if [[ $_nix_direnv_allow_fallback -eq 1 && $profile_missing -eq 0 && $profile_rc_missing -eq 0 ]]; then' \
