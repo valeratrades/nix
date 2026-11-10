@@ -434,6 +434,7 @@ in {
     (import (mylib.relativeToRoot "overlays/tree-sitter-memcap.nix"))
     (import (mylib.relativeToRoot "overlays/nixd-schema-directive.nix"))
     (import (mylib.relativeToRoot "overlays/wtype.nix"))
+    (import (mylib.relativeToRoot "overlays/pandoc.nix"))
   ];
 
   nix.settings.download-buffer-size = "50G";
@@ -656,7 +657,7 @@ in {
           gnupg
           gnused
           gnutar
-          pandoc
+          pandoc-static
           wkhtmltopdf
 					texliveTeTeX # theoretically adds extensions to pandoc
         ]
