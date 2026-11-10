@@ -43,6 +43,7 @@ in
 		flatpak = false;
 		openclaw = true;
 		debug = false; # verbose systemd logging (boot + shutdown); flip on when something starts misbehaving
+		optional_patches = [ ]; # names in overlays/patched.nix built instead of the stock package; off by default as each is a local compile
 		speed_over_safety = true; # e.g. login doesn't wait for home-manager activation, so a fresh generation's session can start on the previous one's files
 		default_s_inactive_to_retire = 1200; # idle LSP servers paged out to swap after this many seconds (20m)
 		# Hearing-safety: max dB SPL per headphone, keyed by PipeWire node.description.
@@ -67,6 +68,7 @@ in
 		flatpak = false;
 		openclaw = false;
 		debug = false;
+		optional_patches = [ ];
 		speed_over_safety = false;
 		default_s_inactive_to_retire = 1200;
     };
@@ -87,6 +89,7 @@ in
 		flatpak = false;
 		openclaw = false;
 		debug = false;
+		optional_patches = [ ];
 		speed_over_safety = false;
 		default_s_inactive_to_retire = 1200;
   };

@@ -54,8 +54,8 @@ in
 {
   programs.nixcord = {
     enable = true; # also installs discord package
-    discord.enable = true; # when Vesktop is available, it's strictly preferable
-    vesktop.enable = true;
+    discord.enable = true;
+    vesktop.enable = false; # vencord builds from git on every nixcord bump, never cached
     discord.openASAR.enable = true;
 
     # NB: nixcord *copies* this over ~/.config/discord/settings.json on every activation rather than

@@ -352,7 +352,6 @@ in {
           font-awesome_4
           font-awesome_5
         ]
-        google-fonts
         ipafont
         [
           # nerd
@@ -405,17 +404,12 @@ in {
 
   nixpkgs.overlays = [
     (import (mylib.relativeToRoot "overlays/patched.nix") inputs)
-    (self: super: {
-      # canvas npm package doesn't build with nodejs v24's V8 API changes
-      excalidraw_export = super.excalidraw_export.override { buildNpmPackage = super.buildNpmPackage.override { nodejs = super.nodejs_22; }; };
-    })
     (import (mylib.relativeToRoot "overlays/sierra-chart.nix"))
     (import (mylib.relativeToRoot "overlays/tiger-trade.nix"))
     (import (mylib.relativeToRoot "overlays/coinpoker.nix"))
     (import (mylib.relativeToRoot "overlays/vpn_ns.nix"))
     (import (mylib.relativeToRoot "overlays/microsip.nix"))
     (import (mylib.relativeToRoot "overlays/baresip.nix"))
-    (import (mylib.relativeToRoot "overlays/metascalp.nix"))
     (import (mylib.relativeToRoot "overlays/gologin.nix"))
     (import (mylib.relativeToRoot "overlays/multilogin.nix"))
     (import (mylib.relativeToRoot "overlays/graphify.nix"))
@@ -443,7 +437,6 @@ in {
   #      hash = input.narHash;
   #    };
   #};
-  documentation.dev.enable = true;
   documentation.man = {
     man-db.enable =
       false; # In order to enable to mandoc man-db has to be disabled.

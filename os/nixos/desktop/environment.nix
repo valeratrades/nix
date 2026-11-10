@@ -16,7 +16,39 @@
   environment.sessionVariables.TYPST_FONT_PATHS = toString (pkgs.symlinkJoin {
     name = "typst-fonts";
     paths = with pkgs; [
-      (google-fonts.override { fonts = [ "Lato" "EBGaramond" "SpaceMono" ]; })
+      # the files `google-fonts.override { fonts = [ ... ]; }` picked, without its 2.9G whole-repo source
+      (let rev = "5174b3333331c966c38f4355d50b03ca1c1df2f9"; in runCommand "google-fonts-typst" { } (lib.concatStrings (lib.mapAttrsToList (f: hash: ''
+        install -Dm444 ${fetchurl {
+          url = "https://raw.githubusercontent.com/google/fonts/${rev}/ofl/${builtins.replaceStrings [ "[" "]" ] [ "%5B" "%5D" ] f}";
+          name = builtins.replaceStrings [ "[" "]" ] [ "" "" ] (baseNameOf f);
+          inherit hash;
+        }} "$out/share/fonts/truetype/${baseNameOf f}"
+      '') {
+          "lato/Lato-Black.ttf" = "sha256-gIxig5xi28595omvdgNmb8f4uB4N9TfYpSEsh1gNQzc=";
+          "lato/Lato-BlackItalic.ttf" = "sha256-MhT3W/lng6VxvSUzjIZ8Zp58XnwIoifxintjdm1ubL4=";
+          "lato/Lato-Bold.ttf" = "sha256-igqs510zeU7s5LKBh7/B3wu9KIi12KVuAXiMjWXRa+E=";
+          "lato/Lato-BoldItalic.ttf" = "sha256-YsG38NLnS0WWAVTDUg78M3tVPbCWG/3JUNVhgzRZbMg=";
+          "lato/Lato-ExtraBold.ttf" = "sha256-YQGN5iva+Q1KyAsdU8XBMHVsjpIZrqPSdz/JvVhpr5c=";
+          "lato/Lato-ExtraBoldItalic.ttf" = "sha256-pCs4S5w3kTphAj46R8B/6tJud2Enu8nmoMlv5BMIk3Q=";
+          "lato/Lato-ExtraLight.ttf" = "sha256-mJmJtIHbXfCCfZDFH9CNAk/nvE42cEbiWEoNOwSHk20=";
+          "lato/Lato-ExtraLightItalic.ttf" = "sha256-/FZSYlC5tkzgkIxSNQsD6RuEr+ywj9KDShLle5Gr2zE=";
+          "lato/Lato-Italic.ttf" = "sha256-45nETv4ThxAFMdJsfkgAxdEiUbiQ1mVKMJjHxnnLF4Y=";
+          "lato/Lato-Light.ttf" = "sha256-zyp3RQO69BjVhPSZZ70WDh4D8IfBOyVgLygCTsd4jwg=";
+          "lato/Lato-LightItalic.ttf" = "sha256-cA5nIv0UoQ52RjR6axTEhtTDZKNzumHHDgtczueBFjU=";
+          "lato/Lato-Medium.ttf" = "sha256-06wYKmgz4AV0XddWefutCBwLElNd9Ok62O1XgXoxozg=";
+          "lato/Lato-MediumItalic.ttf" = "sha256-7Lzmz/pC2KZ6/rJ6nW6F1RXoFIHUss7OmJ6DOkgEhAU=";
+          "lato/Lato-Regular.ttf" = "sha256-1jbkaDIx+THtoiLViOlE0IK/0726AvkovuRhwPGFslE=";
+          "lato/Lato-SemiBold.ttf" = "sha256-cbi33svnWoge0me+U51AK9HpQgt5lliq2k4NG9WvgDw=";
+          "lato/Lato-SemiBoldItalic.ttf" = "sha256-Wt62szTY+5nvBTvAUrlSdz1UQxXg4dZooSwM6L1RN1w=";
+          "lato/Lato-Thin.ttf" = "sha256-ZjxVv+mjgnD/9E2ic79NeS6vw+fhIB9iwwZMrYDF1ec=";
+          "lato/Lato-ThinItalic.ttf" = "sha256-5ehuIZzmmHsXVHDZTVd1Ojh9GGC2NdpjJ6YOjRmjO+s=";
+          "ebgaramond/EBGaramond-Italic[wght].ttf" = "sha256-O2gWIfnFLvPgE5VTBQCcXQD4WlDGEol6O08Yu85JBFg=";
+          "ebgaramond/EBGaramond[wght].ttf" = "sha256-t/HdkWQ+T4H2DkP6nEuhF2Y6ABYhkT3P0hNwak2D5tk=";
+          "spacemono/SpaceMono-Bold.ttf" = "sha256-QF5z1Br7flkG784gajJq9clW844lXzVCHCYOhh5ZnFk=";
+          "spacemono/SpaceMono-BoldItalic.ttf" = "sha256-zcyV7d7jEoealyhJTllfWRyxWfPydtebxYZz3sflcTg=";
+          "spacemono/SpaceMono-Italic.ttf" = "sha256-7KJkyGkKkf6DfRmmut8tiJYWEMTIqvyxllJhkqnyWMU=";
+          "spacemono/SpaceMono-Regular.ttf" = "sha256-lYN+GCuu6tqDNo93SNsoNX8KG3XGuE/3Blte35M8jhg=";
+        })))
       liberation_ttf
       gyre-fonts
       dejavu_fonts
