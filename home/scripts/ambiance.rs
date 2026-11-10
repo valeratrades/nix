@@ -208,6 +208,7 @@ impl Sinks {
 }
 
 async fn balance_volumes() -> Sinks {
+    const BBEATS_VOLUME: u32 = 73; // stream % compose multiplicatively with sink %: 33% at a 100% sink, re-expressed for the 45% `$mod+Shift+F1` sink
     const RATIO: f64 = 0.87;
     const MAX_WAIT: std::time::Duration = std::time::Duration::from_secs(10);
     const POLL_INTERVAL: std::time::Duration = std::time::Duration::from_millis(300);
@@ -238,28 +239,15 @@ async fn balance_volumes() -> Sinks {
             continue;
         };
 
-        let bbeats_vol = std::process::Command::new("pulsemixer")
-            .args(["--id", &bbeats_id, "--get-volume"])
-            .output()
-            .expect("failed to get bbeats volume");
-        let vol_str = String::from_utf8_lossy(&bbeats_vol.stdout);
-        let bbeats_volume: u32 = vol_str
-            .split_whitespace()
-            .next()
-            .expect("no volume value from pulsemixer")
-            .parse()
-            .expect("failed to parse bbeats volume");
-
-        let target = (bbeats_volume as f64 * RATIO).round() as u32;
-        println!(
-            "Setting exam ambiance volume to {target}% (bbeats at {bbeats_volume}%, ratio {RATIO})"
-        );
-
-        let status = std::process::Command::new("pulsemixer")
-            .args(["--id", &mpv_id, "--set-volume", &target.to_string()])
-            .status()
-            .expect("failed to set mpv volume");
-        assert!(status.success(), "pulsemixer --set-volume failed");
+        let mpv_volume = (BBEATS_VOLUME as f64 * RATIO).round() as u32;
+        println!("Setting bbeats to {BBEATS_VOLUME}%, exam ambiance to {mpv_volume}% (of the sink volume)");
+        for (id, volume) in [(&bbeats_id, BBEATS_VOLUME), (&mpv_id, mpv_volume)] {
+            let status = std::process::Command::new("pulsemixer")
+                .args(["--id", id, "--set-volume", &volume.to_string()])
+                .status()
+                .expect("failed to run pulsemixer");
+            assert!(status.success(), "pulsemixer --set-volume failed for sink input {id}");
+        }
         let sinks = Sinks {
             mpv: mpv_id,
             bbeats: bbeats_id,
@@ -347,7 +335,6 @@ async fn setup_math(timer: Option<Option<timer::Countdown>>) {
         .expect("failed to wait on tedi sprints selected resume");
     assert!(status.success(), "tedi sprints selected resume failed");
 
-    // Balance volumes: set exam ambiance (mpv) to 87% of bbeats volume
     let sinks = Arc::new(balance_volumes().await);
 
     println!("Ambiance running.");
