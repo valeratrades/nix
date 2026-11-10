@@ -73,6 +73,8 @@ function cl
 
     set -l model
     set -l resume_n
+    set -l resume_pick 0
+    set -l session_id
 
     for arg in $argv
         if [ $expect_model -eq 1 ]
@@ -80,6 +82,12 @@ function cl
             set expect_model 0
         else if string match -qr '^-[1-9]$' -- $arg
             set resume_n (string sub -s 2 -- $arg)
+        else if contains -- $arg -c --continue
+            set resume_n 1
+        else if contains -- $arg -r --resume
+            set resume_pick 1
+        else if [ $resume_pick -eq 1 ] && [ -z "$session_id" ] && string match -qr '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' -- $arg
+            set session_id $arg
         else if [ "$arg" = --no-verify ]
             set no_verify 1
         else if [ "$arg" = -m ]
@@ -131,14 +139,25 @@ function cl
 
     # memory is per-session, never per-project: its dir is keyed by the session id, so cl has to own that id
     for arg in $passthrough_args
-        if contains -- $arg -c --continue -r --resume --fork-session --session-id
-            echo "cl: '$arg' would detach the session from its memory dir; resume with -N" >&2
+        if contains -- $arg --fork-session --session-id
+            echo "cl: '$arg' would detach the session from its memory dir" >&2
             return 1
         end
     end
     set -l proj_dir $HOME/.claude/projects/(string replace -ra '[^a-zA-Z0-9]' - -- (pwd -P))
-    set -l session_id
-    if set -q resume_n[1]
+    if [ $resume_pick -eq 1 ]
+        if [ -z "$session_id" ]
+            # own picker instead of claude's: cl must know the id to point autoMemoryDirectory at it
+            set session_id (for f in (command ls -t $proj_dir/*.jsonl 2>/dev/null)
+                    set -l title (command grep -h '"type":"ai-title"' $f | tail -1 | jq -r .aiTitle)
+                    printf '%s\t%s\t%s\n' (basename $f .jsonl) (date -r $f '+%m-%d %H:%M') "$title"
+                end | fzf --delimiter='\t' --with-nth=2.. --no-sort | string split -f1 \t)
+            if [ -z "$session_id" ]
+                return 1
+            end
+        end
+        set -a passthrough_args --resume $session_id
+    else if set -q resume_n[1]
         set -l sessions (command ls -t $proj_dir/*.jsonl 2>/dev/null)
         if [ (count $sessions) -lt $resume_n ]
             echo "cl: only "(count $sessions)" session(s) recorded for this directory" >&2
