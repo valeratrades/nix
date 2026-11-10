@@ -126,12 +126,7 @@
     ask_llm.url = "github:valeratrades/ask_llm?ref=cached";
     skargo.url = "github:EV-Main/skills?ref=cached";
     ringo.url = "github:davidborzek/ringo"; # own nixpkgs, so ringo.cachix.org paths match
-    snapshot_fonts = {
-      url = "github:valeratrades/snapshot_fonts?ref=release";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.rust-overlay.follows = "rust-overlay";
-      inputs.flake-utils.follows = "flake-utils";
-    };
+    snapshot_fonts.url = "github:valeratrades/snapshot_fonts?ref=release";
 
     # Personal fork of pomdtr.excalidraw-editor (VSCode/VSCodium). Exposes a
     # packages.default that builds the .vsix from source; consumed in vscode.nix.
