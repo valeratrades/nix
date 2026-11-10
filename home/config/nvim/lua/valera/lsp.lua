@@ -410,7 +410,7 @@ vim.lsp.config('leanls', {
 		editDelay = 250,
 	},
 })
-vim.lsp.enable('leanls')
+-- no `vim.lsp.enable('leanls')`: lean.nvim enables it on load; enabling earlier caches a resolution made before its `lsp/leanls.lua` is on rtp (no `cmd`)
 
 -- Rust configuration
 local function codelldb_adapter()
