@@ -695,7 +695,7 @@ in {
         inputs.distributions.packages.${pkgs.stdenv.hostPlatform.system}.default # ? shared?
         inputs.book_parser.packages.${pkgs.stdenv.hostPlatform.system}.default
         #(import ../../home/config/fish/with_fish_init.nix pkgs { pkg = inputs.discretionary_engine.packages.${pkgs.stdenv.hostPlatform.system}.default; cmd = "discretionary_engine init fish"; })
-        inputs.bad_apple_rs.packages.${pkgs.stdenv.hostPlatform.system}.default
+        #inputs.bad_apple_rs.packages.${pkgs.stdenv.hostPlatform.system}.default
         inputs.ask_llm.packages.${pkgs.stdenv.hostPlatform.system}.default
         inputs.translate_infrequent.packages.${pkgs.stdenv.hostPlatform.system}.default
         (inputs.v_flakes.rs.sort_derives pkgs.stdenv.hostPlatform.system) # patched: qualified derives can sort last

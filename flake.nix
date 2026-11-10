@@ -119,10 +119,11 @@
     bourso-api.url = "github:valeratrades/bourso-api?ref=cached";
     wallpaper_carousel.url = "github:valeratrades/wallpaper_carousel?ref=cached";
     translate_infrequent.url = "github:valeratrades/translate_infrequent?ref=cached"; # `cached` moves on `v*` tags only
-    bad_apple_rs = {
-      url = "github:lomirus/bad-apple-rs"; # merged my nix-integration pull
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    # not cached. If adding it back, - fork and put on cachix
+    #bad_apple_rs = {
+    #  url = "github:lomirus/bad-apple-rs";
+    #  inputs.nixpkgs.follows = "nixpkgs";
+    #};
     ask_llm.url = "github:valeratrades/ask_llm?ref=cached";
     skargo.url = "github:EV-Main/skills?ref=cached";
     ringo.url = "github:davidborzek/ringo"; # own nixpkgs, so ringo.cachix.org paths match
