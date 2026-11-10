@@ -84,6 +84,8 @@ in
     extraLadspaPackages = [ pkgs.lsp-plugins ];
     # Per-device brickwall limiters generated from user.sound.device_limiters
     # (target dB SPL) and headphone-calibration.nix (max SPL at 0 dBFS).
+    # sway runs Xwayland with `-terminate`; when it exits, x11-bell's IO-error handler segfaults pipewire (1.6.9)
+    extraConfig.pipewire."10-no-x11-bell"."context.properties"."module.x11.bell" = false;
     extraConfig.pipewire."50-headphone-safety" = lib.mkIf (limiters != { }) {
       "context.modules" = lib.mapAttrsToList mkModule limiters;
     };
