@@ -16,9 +16,9 @@ minified internals it needs resolved to their chunk + export name, and splices i
    stay invisible: bun reads exports from the precomputed module_info), and the list gains it;
 4. the limit-hit notice: opens the menu on every hit, not only where it would offer an upgrade.
 
-Same-length overwrites (each license header absorbs the growth); take effect only through
-detach-claude-bytecode.py. Anchors are verbatim from claude-code 2.1.303; minified names churn
-every release.
+Same-length overwrites: each license header absorbs the growth, paid for in the menu by its own analytics calls and in
+the command list module by dead stub commands; take effect only through detach-claude-bytecode.py. Anchors are verbatim
+from claude-code 2.1.322; minified names churn every release.
 
 Usage: patch-claude-accounts.py <binary> <claude-accounts.mjs template> <output .mjs path>
 Invoked from: hosts/v-laptop/patched-claude-code.nix (overrideAttrs.postFixup).
@@ -35,31 +35,36 @@ NAME = rb"[\w$]+"
 MENU_SPLICES = [
 	(
 		"options",
-		b'let ue=_,Pn=R(!1),Rn,En;',
-		b'let[$ao,$as]=y([]),ue=t.rotate?$ao:[..._,...$ao],Pn=R(!1),Rn,En;',
+		b'let M=U,gr,hr;',
+		b'let[$ao,$as]=y([]),M=t.rotate?$ao:[...U,...$ao],gr,hr;',
 	),
 	(
 		"options load",
-		b'Pn.current=!0,i("tengu_rate_limit_options_menu_shown",{...Wbn(o),entry:T8(t.submittedFromComposer)?b("typed"):b("not_typed"),rows:ue.map(ir),blocked:eM(o)})}',
-		b'Pn.current=!0,$acc().then(m=>m.options()).then(r=>{$as(r);let a=!t.rotate&&!T8(t.submittedFromComposer)&&r.find(x=>x.auto&&!x.disabled);if(a)t.alone=1,ht(a.value)},e=>$as([{label:`Account switch unavailable: ${e}`,value:"acct:",disabled:!0}]))}',
+		b'Ar.current=!0,l("tengu_rate_limit_options_menu_shown",{...TXn(i),...Eit(),entry:U1(t.submittedFromComposer)?b("typed"):b("not_typed"),rows:M.map(cs),blocked:bC(i)})}',
+		b'Ar.current=!0,$acc().then(m=>m.options()).then(r=>{$as(r);let a=!t.rotate&&!U1(t.submittedFromComposer)&&r.find(x=>x.auto&&!x.disabled);if(a)t.alone=1,Dt(a.value)},e=>$as([{label:`Account switch unavailable: ${e}`,value:"acct:",disabled:!0}]))}',
 	),
 	(
-		"dispatch",
-		b'ht=function Gt(F){',
-		b'ht=function Gt(F){if(F.startsWith("acct:"))return fe(e(be,{title:"What do you want to do?",onCancel:nr,exitOnCtrlCD:!0,color:"suggestion",hideInputGuide:!0,children:e(n,{dimColor:!0,children:`Switching to account ${F.slice(5)}\\u2026`})})),$acc().then(m=>m.switchTo(F.slice(5),t,l)).catch(e=>l(`Account switch failed: ${e?.stack??e}`));',
+		"dispatch",  # ahead of the row-change refusal, which the late account rows would trip on the auto-dispatch
+		b'Dt=function ci(W){',
+		b'Dt=function ci(W){if(W.startsWith("acct:"))return me(e(Ee,{title:"What do you want to do?",onCancel:fs,exitOnCtrlCD:!0,color:"suggestion",hideInputGuide:!0,children:e(n,{dimColor:!0,children:`Switching to account ${W.slice(5)}\\u2026`})})),$acc().then(m=>m.switchTo(W.slice(5),t,d)).catch(e=>d(`Account switch failed: ${e?.stack??e}`));',
 	),
 ]
-COMMAND_LIST = (b'Z6e,e3e,Fen,', b'Z6e,e3e,$rot,Fen,')
-LIMIT_NOTICE = (b'Ee=(q||Y)&&!z&&!X&&de==="pending"&&oe&&!ue&&d,', b'Ee=!z&&!X&&de==="pending"&&oe&&!ue&&d,')
+MENU_ANALYTICS = (rb'[\w$]+\("tengu_rate_limit_options_menu_\w+",(?:\{\}|[\w$]+\(\))\),', 8)
+COMMAND_LIST = (b'_st,kst,OSn,', b'_st,kst,$rot,OSn,')
+DEAD_STUBS = [  # always-disabled internal-list placeholders
+	(b'var $Sn={isEnabled:()=>!1,isHidden:!0,name:"stub"};var HSn={isEnabled:()=>!1,isHidden:!0,name:"stub"};var BSn={isEnabled:()=>!1,isHidden:!0,name:"stub"};', b''),
+	(b'SSn,$Sn,HSn,BSn,Cst,', b'SSn,Cst,'),
+]
+LIMIT_NOTICE = (b'$e=(q||V)&&!z&&!te&&ce==="pending"&&le&&!fe&&d,', b'$e=!z&&!te&&ce==="pending"&&le&&!fe&&d,')
 
 # each pattern matches exactly once across all modules; its groups name the minified internals
 INTERNALS = [
 	rb"function (?P<mle>" + NAME + rb")\(\{retryCount:\w=0,force:\w=!1,entryAccessToken:",
-	rb"function (?P<Nn>" + NAME + rb")\(\)\{if\(" + NAME + rb"\(\)\)return null;let (\w)=" + NAME + rb"\.of\(" + NAME + rb"\(\)\.host\);if\(\2\.value!==void 0\)return \2\.value;",
-	rb"async function (?P<uVe>" + NAME + rb")\(\w,\{storageV5:\w,credentials:\w\}=\{\}\)\{let \w=await " + NAME + rb"\(\w,\{storageV5:\w,credentials:\w\}\),\w=await " + NAME + rb"\(\w,\w\);if\((?P<DI>" + NAME + rb")\(\),process\.env\.CLAUDE_CODE_OAUTH_TOKEN\)",
+	rb"function (?P<Nn>" + NAME + rb")\(\)\{if\(" + NAME + rb"\(\)\)return null;let (\w)=" + NAME + rb"\.of\(" + NAME + rb"\(\)\.host\);if\(\2\.value===void 0\)\2\.value=" + NAME + rb"\(\);return \2\.value\?\?",
+	rb"async function (?P<uVe>" + NAME + rb")\(\w,\{storageV5:\w,credentials:\w,clock:\w\}=\{\}\)\{let\{departingLoginMayRemain:[^;]*;if\((?P<DI>" + NAME + rb")\(\),process\.env\.CLAUDE_CODE_OAUTH_TOKEN\)",
 	rb"async function (?P<kAe>" + NAME + rb")\(\w,\w,\w\)\{if\(\w\.onChangeAPIKey\(\),!\w\)return\{bridgeDisconnected:!1,",
 	rb"function (?P<wn>" + NAME + rb")\(\)\{return " + NAME + rb"\(\)\?" + NAME + rb"\(\)\.oauthAccount:void 0\}",
-	rb"function (?P<Br>" + NAME + rb")\(\)\{return " + NAME + rb"\(\)\.host\.credentialSlots\.gatewayAuth\(\)\}",	rb"clientId:\w\}=\w,\w=(?P<Kn>" + NAME + rb")\(\),\w=" + NAME + rb"\(\);try\{let \w=" + NAME + rb"\.of\(" + NAME + rb"\(\)\.host\),\w=await \w\.mutate\(",
+	rb"function (?P<Br>" + NAME + rb")\(\)\{return " + NAME + rb"\(\)\.host\.credentialSlots\.gatewayAuth\(\)\}",	rb"clientId:\w\}=\w,\w=(?P<Kn>" + NAME + rb")\(\),\w=" + NAME + rb"\(\);try\{let \w=" + NAME + rb"\.of\(" + NAME + rb"\(\)\.host\),\w,\w=await \w\.mutate\(",
 ]
 # credential-storage dir; bundled into several modules, the hook goes into the one mle's module imports
 CREDENTIAL_DIR = rb"function (?P<jx>" + NAME + rb")\(\)\{let \w=process\.env\.CLAUDE_SECURESTORAGE_CONFIG_DIR;"
@@ -128,7 +133,7 @@ def hits(pattern: bytes) -> list[tuple[str, re.Match]]:
 
 def with_header(mod: str, src: bytes, code: bytes) -> bytes:
 	"""`src` (`mod`'s source after its other splices) with its license header replaced by `code`, padded to the original length."""
-	header = re.match(rb"// @bun @bytecode\n(// [^\n]*\n|\n)*?(?=// Version:)", src)
+	header = re.match(rb"// @bun @bytecode\n(// [^\n]*\n|\n)*", src)
 	if header is None or b"Anthropic PBC" not in header.group(0):
 		die(f"license header of {mod} not where expected")
 	code = b"// @bun @bytecode\n" + code
@@ -156,15 +161,21 @@ for name, anchor, replacement in MENU_SPLICES:
 	if src.count(anchor) != 1:
 		die(f"{name}: expected 1 occurrence of the anchor in {menu}, found {src.count(anchor)}")
 	src = src.replace(anchor, replacement)
+pattern, expected = MENU_ANALYTICS
+src, n = re.subn(pattern, b"", src)
+if n != expected:
+	die(f"menu analytics: expected {expected} calls in {menu}, found {n}")
 data[graph[menu]] = with_header(menu, src, b"function $acc(){return " + load + b"}")
 
 lists = [name for name, src in sources.items() if b'{type:"local-jsx",name:"rate-limit-options",' in src]
 if len(lists) != 1:
 	die(f"expected the rate-limit-options command in 1 module, found {lists}")
-anchor, replacement = COMMAND_LIST
-if sources[lists[0]].count(anchor) != 1:
-	die(f"command list: expected 1 occurrence of the anchor in {lists[0]}, found {sources[lists[0]].count(anchor)}")
-data[graph[lists[0]]] = with_header(lists[0], sources[lists[0]].replace(anchor, replacement), (
+src = sources[lists[0]]
+for anchor, replacement in [COMMAND_LIST, *DEAD_STUBS]:
+	if src.count(anchor) != 1:
+		die(f"command list: expected 1 occurrence of {anchor[:40]!r} in {lists[0]}, found {src.count(anchor)}")
+	src = src.replace(anchor, replacement)
+data[graph[lists[0]]] = with_header(lists[0], src, (
 	b'var $rot={type:"local-jsx",name:"rotate",description:"Switch every claude to another account",requires:{ink:!0},'
 	b'load:()=>import("' + menu.encode() + b'").then(m=>({call:(d,c)=>m.call(d,{...c,rotate:!0})}))};'
 ))

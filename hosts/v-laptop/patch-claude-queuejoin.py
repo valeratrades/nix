@@ -39,12 +39,12 @@ import sys
 THIS_FILE = "hosts/v-laptop/patch-claude-queuejoin.py (in your nix config)"
 
 # Head of the mid-turn submit branch inside the submit helper (`yq`), verbatim from
-# claude-code 2.1.303: `Dt` is the turn guard, `Qt` is isExternalLoading, `L` is the turn.
+# claude-code 2.1.322: `eo` is the turn guard, `to` is isExternalLoading, `D` is the turn.
 # Must occur exactly once.
-ANCHOR = (b'if(Dt.isActive||Qt||qt){if(eo!=="prompt"&&eo!=="bash"){'
-          b'm("prompt_queued","mode_not_queueable");return}if(Wn())return;')
-REPLACEMENT = (b'if(Dt.isActive||Qt||qt){if(eo!=="prompt"&&eo!=="bash"){'
-               b'return}if(Wn())return;L.interruptForSubmit();').ljust(len(ANCHOR))
+ANCHOR = (b'if(eo.isActive||to||no){if(co!=="prompt"&&co!=="bash"){'
+          b'm("prompt_queued","mode_not_queueable");return}if(yo())return;')
+REPLACEMENT = (b'if(eo.isActive||to||no){if(co!=="prompt"&&co!=="bash"){'
+               b'return}if(yo())return;D.interruptForSubmit();').ljust(len(ANCHOR))
 assert len(REPLACEMENT) == len(ANCHOR), "same-length overwrite required"
 
 

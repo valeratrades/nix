@@ -8,9 +8,9 @@ honours that: `claude -m 'claude-opus-5[1m]'` runs fine on this account. The int
 `/model` switch does not — it runs an extra validator that answers "Opus with 1M context
 is not available for your account".
 
-That validator gates on `!aY()&&!KO()`. `aY()` resolves, for a claude.ai login, to the
+That validator gates on `!aY()&&!JSe()`. `aY()` resolves, for a claude.ai login, to the
 extra-usage state, which here is `org_level_disabled` — a Sonnet-1M/Pro condition that
-has no bearing on Opus on Max. `KO()` is the sub-expression that should carry Max through
+has no bearing on Opus on Max. `JSe()` is the sub-expression that should carry Max through
 (firstParty, not Pro, `subscriptionType === "max"`) and reads as true for this account,
 so the gate should never fire in the first place. It fires anyway. Since the flag path
 proves the server grants the model, the refusal is client-side only.
@@ -36,12 +36,12 @@ import sys
 
 THIS_FILE = "hosts/v-laptop/patch-claude-1m.py (in your nix config)"
 
-# The opus-1m unavailability predicate, verbatim from claude-code 2.1.303 (`X7r`; the
-# sibling `J7r` is the Sonnet one, deliberately left alone). True means "refuse".
+# The opus-1m unavailability predicate, verbatim from claude-code 2.1.322 (`jXo`; the
+# sibling `WXo` is the Sonnet one, deliberately left alone). True means "refuse".
 # Anchored on the body only — the minified function name churns every release.
 # Must occur exactly once.
 ANCHOR = (b'let o=e.toLowerCase();if(!(o.includes("opus")&&o.includes("[1m]")))return!1;'
-          b'if(L(e).every((i)=>Vk(i)))return!1;return!tW()&&!Kq()')
+          b'if(L(e).every((s)=>PA(s)))return!1;return!aY()&&!JSe()')
 REPLACEMENT = b'return!1;'.ljust(len(ANCHOR))
 assert len(REPLACEMENT) == len(ANCHOR), "same-length overwrite required"
 

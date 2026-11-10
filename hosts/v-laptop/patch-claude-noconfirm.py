@@ -8,15 +8,16 @@
    interactive by nature (AskUserQuestion, ExitPlanMode).
 
 2. Invisible-Unicode review on submit. A prompt carrying zero-width/bidi/tag characters
-   outside emoji sequences is stripped and parked, waiting for a second Enter. Instead the
-   stripped text and pastes are sent straight away.
+   outside emoji sequences is stripped; upstream sends the cleaned text on, except when its
+   review predicate (bidi removed, empty, `/` or `!` prefix, non-prompt mode) parks it for a
+   second Enter. The predicate is pinned false, so the stripped text and pastes always go.
 
 3. "Switch model?" cache-miss dialog. Raised on a model switch while the prompt cache is
    warm; its predicate now always says no.
 
 Same-length overwrite (padded with spaces) so Bun's compiled-ELF trailer offsets stay valid;
 takes effect only through detach-claude-bytecode.py. Anchors are verbatim from claude-code
-2.1.303; minified names churn every release.
+2.1.322; minified names churn every release.
 
 Invoked from: hosts/v-laptop/patched-claude-code.nix (overrideAttrs.postFixup).
 """
@@ -28,26 +29,22 @@ PATCHES = [
 	(
 		"bypass-immune predicate",
 		"grep -ao 'function [A-Za-z0-9_$]*(e){return [A-Za-z0-9_$]*(e).some(([a-z])=>[A-Za-z0-9_$]*\\[[a-z]\\]?.bypassImmune===!0)}'",
-		b'return d(e).some((o)=>Fpn[o]?.bypassImmune===!0)',
+		b'return d(e).some((o)=>kPe[o]?.bypassImmune===!0)',
 		b'return!1',
 	),
 	(
 		"invisible-unicode submit review",
-		"grep -ao 'if([A-Za-z0-9_$]*.removed.removedTotal>0){[^}]*}[^}]*prompt-invisible-removed[^}]*}[^}]*}'",
-		b'if(Wf.removed.removedTotal>0){xd(),cxt(Wf.removed,"prompt");let AL=Wf.input.trim()==="";'
-		b'if(R6r(To,fc,Wf.input),no(Wf.input),eo(Wf.input.length),Wf.pastedContents!==ee.pastedContents)'
-		b'co(Wf.pastedContents);cl({key:"prompt-invisible-removed",kind:"feedback",'
-		b'text:NBe(Wf.removed.removedTotal,AL?"empty":"review"),priority:"immediate",timeoutMs:Rb}),'
-		b'jx(xto);return}',
-		b'if(Wf.removed.removedTotal>0)fc=Wf.input,Fw=Wf.pastedContents;',
+		"grep -ao 'let [A-Za-z0-9_$]*=[A-Za-z0-9_$]*.input.trim()===\"\";let [A-Za-z0-9_$]*=[A-Za-z0-9_$]*([A-Za-z0-9_$]*.input,[A-Za-z0-9_$]*.removed,[A-Za-z0-9_$]*.mode);'",
+		b'let uG=df.input.trim()==="";let PB=Dxn(df.input,df.removed,te.mode);',
+		b'let uG=df.input.trim()==="";let PB=!1;',
 	),
 	(
 		"model-switch cache-miss dialog",
-		"grep -ao 'function [A-Za-z0-9_$]*(e,o,i,s,n){if(n===void 0)return!1;.\\{0,240\\}has(c)===!0))}'",
-		b'function rcr(e,o,i,s,n){if(n===void 0)return!1;let l=kh();if(l===0||l===s)return!1;let r=Mn(Gce(e));'
-		b'if(r===Mn(Gce(SZ({mainLoopModel:o,mainLoopModelForSession:i}))))return!1;let c=n.response?.message.model;'
-		b'return!(typeof c==="string"&&(c===r||nhn(r)?.has(c)===!0))}',
-		b'function rcr(){return!1}',
+		"grep -ao 'function [A-Za-z0-9_$]*(e,o,[a-z],[a-z],n){if(n===void 0)return!1;.\\{0,240\\}has([a-z])===!0))}'",
+		b'function LJr(e,o,s,a,n){if(n===void 0)return!1;let l=Ab();if(l===0||l===a)return!1;let r=Yn(eye(e));'
+		b'if(r===Yn(eye(Bce({mainLoopModel:o,mainLoopModelForSession:s}))))return!1;let u=n.response?.message.model;'
+		b'return!(typeof u==="string"&&(u===r||i6n(r)?.has(u)===!0))}',
+		b'function LJr(){return!1}',
 	),
 ]
 

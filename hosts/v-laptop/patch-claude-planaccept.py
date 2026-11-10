@@ -13,7 +13,7 @@
 
 Same-length overwrite (padded with spaces) so Bun's compiled-ELF trailer offsets stay valid;
 takes effect only through detach-claude-bytecode.py. Anchors are verbatim from claude-code
-2.1.303; minified names churn every release.
+2.1.322; minified names churn every release.
 
 Invoked from: hosts/v-laptop/patched-claude-code.nix (overrideAttrs.postFixup).
 """
@@ -25,48 +25,48 @@ PATCHES = [
 	(
 		"plan-accept options",
 		"grep -ao 'if(![A-Za-z0-9_$]*){if([A-Za-z0-9_$]*){let [A-Za-z0-9_$]*=[A-Za-z0-9_$]*(\"bypassPermissions\".\\{0,1100\\}'",
-		b'if(!ve){if(ee){let it=yAe("bypassPermissions",{isBypassPermissionsModeAvailable:ee});'
-		b'if(it!==null)Oe["yes-accept-edits-keep-context"]=it,Ue["yes-accept-edits-keep-context"]="bypassPermissions",'
-		b'De.push({label:it.node,value:"yes-accept-edits-keep-context"})}'
-		b'else if(Ge){let it=M_n("exit-plan-resume");Oe["yes-resume-auto-mode"]=it,Ue["yes-resume-auto-mode"]="auto",'
-		b'De.push({label:it.node,value:"yes-resume-auto-mode"})}'
-		b'else{let it=yAe("acceptEdits",{labelVariant:"plan-keep-context"});'
-		b'if(it!==null)Oe["yes-accept-edits-keep-context"]=it,Ue["yes-accept-edits-keep-context"]="acceptEdits",'
-		b'De.push({label:it.node,value:"yes-accept-edits-keep-context"})}'
-		b'let tt=yAe("default",{labelVariant:"plan-keep-context"});'
-		b'if(tt!==null)Oe["yes-default-keep-context"]=tt,Ue["yes-default-keep-context"]="default",'
-		b'De.push({label:tt.node,value:"yes-default-keep-context"})}',
-		b'if(!ve&&h)De.push({label:`Yes, clear context${ze} and implement as Sonnet`,value:"yes-sonnet"});'
-		b'if(!ve){let a="yes-accept-edits-keep-context",d="yes-default-keep-context";'
-		b'if(ee){let it=yAe("bypassPermissions",{isBypassPermissionsModeAvailable:ee});'
-		b'if(it!==null)Oe[a]=it,Ue[a]="bypassPermissions",De.push({label:"Yes, implement without clearing context",value:a})}'
-		b'else if(Ge){let it=M_n("exit-plan-resume");Oe["yes-resume-auto-mode"]=it,Ue["yes-resume-auto-mode"]="auto",'
-		b'De.push({label:it.node,value:"yes-resume-auto-mode"})}'
-		b'else{let it=yAe("acceptEdits",{labelVariant:"plan-keep-context"});'
-		b'if(it!==null)Oe[a]=it,Ue[a]="acceptEdits",De.push({label:it.node,value:a})}'
-		b'if(!h){let tt=yAe("default",{labelVariant:"plan-keep-context"});'
-		b'if(tt!==null)Oe[d]=tt,Ue[d]="default",De.push({label:tt.node,value:d})}}',
+		b'if(!Oe){if(Pt){let Mt=HBe("bypassPermissions",{isBypassPermissionsModeAvailable:te});'
+		b'if(Mt!==null)Je["yes-accept-edits-keep-context"]=Mt,et["yes-accept-edits-keep-context"]="bypassPermissions",'
+		b'Ve.push({label:Mt.node,value:"yes-accept-edits-keep-context"})}'
+		b'else if(wt){let Mt=$st("exit-plan-resume");Je["yes-resume-auto-mode"]=Mt,et["yes-resume-auto-mode"]="auto",'
+		b'Ve.push({label:Mt.node,value:"yes-resume-auto-mode"})}'
+		b'else{let Mt=HBe("acceptEdits",{labelVariant:"plan-keep-context"});'
+		b'if(Mt!==null)Je["yes-accept-edits-keep-context"]=Mt,et["yes-accept-edits-keep-context"]="acceptEdits",'
+		b'Ve.push({label:Mt.node,value:"yes-accept-edits-keep-context"})}'
+		b'let Ot=xt?null:HBe("default",{labelVariant:"plan-keep-context"});'
+		b'if(Ot!==null)Je["yes-default-keep-context"]=Ot,et["yes-default-keep-context"]="default",'
+		b'Ve.push({label:Ot.node,value:"yes-default-keep-context"})}',
+		b'if(!Oe&&h)Ve.push({label:`Yes, clear context${rt} and implement as Sonnet`,value:"yes-sonnet"});'
+		b'if(!Oe){let a="yes-accept-edits-keep-context",d="yes-default-keep-context";'
+		b'if(Pt){let Mt=HBe("bypassPermissions",{isBypassPermissionsModeAvailable:te});'
+		b'if(Mt!==null)Je[a]=Mt,et[a]="bypassPermissions",Ve.push({label:"Yes, implement without clearing context",value:a})}'
+		b'else if(wt){let Mt=$st("exit-plan-resume");Je["yes-resume-auto-mode"]=Mt,et["yes-resume-auto-mode"]="auto",'
+		b'Ve.push({label:Mt.node,value:"yes-resume-auto-mode"})}'
+		b'else{let Mt=HBe("acceptEdits",{labelVariant:"plan-keep-context"});'
+		b'if(Mt!==null)Je[a]=Mt,et[a]="acceptEdits",Ve.push({label:Mt.node,value:a})}'
+		b'if(!h){let Ot=xt?null:HBe("default",{labelVariant:"plan-keep-context"});'
+		b'if(Ot!==null)Je[d]=Ot,et[d]="default",Ve.push({label:Ot.node,value:d})}}',
 	),
 	(
 		"plan-accept handler",
 		"grep -ao 'async function [A-Za-z0-9_$]*([A-Za-z0-9_$]*){if([A-Za-z0-9_$]*()||[A-Za-z0-9_$]*()){[A-Za-z0-9_$]*();return}.\\{0,400\\}'",
-		b'async function er(fr){if(Or()||or()){ns();return}if(!L())return;'
-		b'let dr=ze.trim(),tr=dr||void 0,Nr=(Ps)=>Mit(fr,{currentPlan:Ro,planEditedLocally:fn,acceptFeedback:tr,'
-		b'trimmedFeedback:dr,hasImages:uo,imageBlocks:Ps,showClearContext:_t,keepContextRow:po.keepContextRows[fr]??null});'
-		b'if(fr==="ultraplan"&&Dt){i("tengu_plan_exit",{planLengthChars:Ro.length,outcome:b("ultraplan")}),C(Nr()),'
-		b'B_r({arg:"",source:"exit_plan_mode",seedPlan:Ro,getAppState:le.getState,setAppState:le.setState,'
-		b'signal:new AbortController().signal,queue:De,surface:{...Dt,note:rr,queue:De,session:Oe},'
-		b'onStatusMessage:Pr,storageV5:ve,credentials:_e}).then(Pr).catch(l);return}'
-		b'let gr=fr==="yes-accept-edits-keep-context"||fr==="yes-default-keep-context"||fr==="yes-resume-auto-mode";',
-		b'async function er(fr){if(Or()||or()){ns();return}if(!L())return;'
-		b'if(fr==="yes-sonnet")fr=jo[0].value,Mqe(Oe,"sonnet",le.getState,ee,!1,"command").catch(l);'
-		b'let dr=ze.trim(),tr=dr||void 0,Nr=(Ps)=>Mit(fr,{currentPlan:Ro,planEditedLocally:fn,acceptFeedback:tr,'
-		b'trimmedFeedback:dr,hasImages:uo,imageBlocks:Ps,showClearContext:_t,keepContextRow:po.keepContextRows[fr]??null});'
-		b'if(fr==="ultraplan"&&Dt){C(Nr()),'
-		b'B_r({arg:"",source:"exit_plan_mode",seedPlan:Ro,getAppState:le.getState,setAppState:le.setState,'
-		b'signal:new AbortController().signal,queue:De,surface:{...Dt,note:rr,queue:De,session:Oe},'
-		b'onStatusMessage:Pr,storageV5:ve,credentials:_e}).then(Pr).catch(l);return}'
-		b'let gr=fr.endsWith("-keep-context")||fr==="yes-resume-auto-mode";',  # only the two keep-context option values end so
+		b'async function Dr(zn){if(lr()||mr()){Mr();return}if(!D())return;'
+		b'let fs=rt.trim(),_s=fs||void 0,Js=(ra)=>OSt(zn,{currentPlan:xo,planEditedLocally:On,acceptFeedback:_s,'
+		b'trimmedFeedback:fs,hasImages:Cr,imageBlocks:ra,showClearContext:Dt,keepContextRow:Yo.keepContextRows[zn]??null});'
+		b'if(zn==="ultraplan"&&to){l("tengu_plan_exit",{planLengthChars:xo.length,outcome:b("ultraplan")}),M(Js()),'
+		b'rao({arg:"",source:"exit_plan_mode",seedPlan:xo,getAppState:xe.getState,setAppState:xe.setState,'
+		b'signal:new AbortController().signal,queue:We,surface:{...to,note:us,queue:We,session:Ve},'
+		b'onStatusMessage:kr,storageV5:Oe,credentials:Fe}).then(kr).catch(a);return}'
+		b'let yi=zn==="yes-accept-edits-keep-context"||zn==="yes-default-keep-context"||zn==="yes-resume-auto-mode";',
+		b'async function Dr(zn){if(lr()||mr()){Mr();return}if(!D())return;'
+		b'if(zn==="yes-sonnet")zn=cn[0].value,edt(Ve,"sonnet",xe.getState,te,!1,"command").catch(a);'
+		b'let fs=rt.trim(),_s=fs||void 0,Js=(ra)=>OSt(zn,{currentPlan:xo,planEditedLocally:On,acceptFeedback:_s,'
+		b'trimmedFeedback:fs,hasImages:Cr,imageBlocks:ra,showClearContext:Dt,keepContextRow:Yo.keepContextRows[zn]??null});'
+		b'if(zn==="ultraplan"&&to){M(Js()),'
+		b'rao({arg:"",source:"exit_plan_mode",seedPlan:xo,getAppState:xe.getState,setAppState:xe.setState,'
+		b'signal:new AbortController().signal,queue:We,surface:{...to,note:us,queue:We,session:Ve},'
+		b'onStatusMessage:kr,storageV5:Oe,credentials:Fe}).then(kr).catch(a);return}'
+		b'let yi=zn.endsWith("-keep-context")||zn==="yes-resume-auto-mode";',  # only the two keep-context option values end so
 	),
 ]
 

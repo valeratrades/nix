@@ -10,7 +10,7 @@
 
 Same-length overwrite (padded with spaces) so Bun's compiled-ELF trailer offsets stay valid;
 takes effect only through detach-claude-bytecode.py. Anchors are verbatim from claude-code
-2.1.303; minified names churn every release.
+2.1.322; minified names churn every release.
 
 Invoked from: hosts/v-laptop/patched-claude-code.nix (overrideAttrs.postFixup).
 """
@@ -21,27 +21,27 @@ THIS_FILE = "hosts/v-laptop/patch-claude-sessionmodel.py (in your nix config)"
 PATCHES = [
 	(
 		"model picker enter",
-		"grep -ao 'function [A-Za-z0-9_$]*([A-Za-z0-9_$]*){if([A-Za-z0-9_$]*)[A-Za-z0-9_$]*([A-Za-z0-9_$]*===[A-Za-z0-9_$]*?null:[A-Za-z0-9_$]*);[A-Za-z0-9_$]*([A-Za-z0-9_$]*)}'",
-		b'function dr(Kn){if(H)H(Kn===tS?null:Kn);Ir(Kn)}',
-		b'function dr(Kn){Ir(Kn)}',
+		"grep -ao 'if([A-Za-z0-9_$]*)[A-Za-z0-9_$]*([A-Za-z0-9_$]*===[A-Za-z0-9_$]*?null:[A-Za-z0-9_$]*);[A-Za-z0-9_$]*([A-Za-z0-9_$]*)}'",
+		b'if(H)H(rs===BR?null:rs);na(rs)}',
+		b'na(rs)}',
 	),
 	(
 		"inline /model <name>",
 		"grep -ao '=([A-Za-z0-9_$]*,[A-Za-z0-9_$]*)=>{let [A-Za-z0-9_$]*=![A-Za-z0-9_$]*();[A-Za-z0-9_$]*(null);.\\{0,80\\}\"command\"'",
-		b'Ee=(J,re)=>{let Se=!Tt();z(null);',
-		b'Ee=(J,re)=>{let Se=!1;z(null);',
+		b'Re=(ie,Ye)=>{let _e=!vt();se(null);',
+		b'Re=(ie,Ye)=>{let _e=!1;se(null);',
 	),
 	(
 		"effort writer",
 		"grep -ao 'let [A-Za-z0-9_$]*=[A-Za-z0-9_$]*!==void 0?[A-Za-z0-9_$]*([A-Za-z0-9_$]*):void 0;if([A-Za-z0-9_$]*&&([A-Za-z0-9_$]*===void 0||'",
-		b'let d=e!==void 0?pEe(e):void 0;if(r&&(e===void 0||d!==void 0)&&!Cr())',
-		b'let d=e!==void 0?pEe(e):void 0;if(0&&(e===void 0||d!==void 0)&&!Cr())',
+		b'let f=e!==void 0?LNe(e):void 0;if(r&&(e===void 0||f!==void 0)&&!or())',
+		b'let f=e!==void 0?LNe(e):void 0;if(0&&(e===void 0||f!==void 0)&&!or())',
 	),
 	(
 		"/effort persist flag",
 		"grep -ao 'async function [A-Za-z0-9_$]*([A-Za-z0-9_$,]*=!0,[A-Za-z0-9_$]*){let [A-Za-z0-9_$]*=!1,[A-Za-z0-9_$]*=null,[A-Za-z0-9_$]*=await [A-Za-z0-9_$]*([A-Za-z0-9_$,]*('",
-		b'E=await P(e,t,r,(d)=>',
-		b'E=await P(e,t,0,(d)=>',
+		b'E=await W(e,t,r,(c)=>',
+		b'E=await W(e,t,0,(c)=>',
 	),
 ]
 
