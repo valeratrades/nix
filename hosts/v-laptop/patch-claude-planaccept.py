@@ -4,7 +4,8 @@
 1. Option builder. When the clear-context option is shown, a second clear-context option follows
    it that also switches the model, then a single keep-context approval in the session's mode;
    the default-mode keep-context approval survives only where no clear-context option exists
-   (remote sessions, setting off).
+   (remote sessions, setting off). The bypass keep-context row gets a plain label instead of
+   upstream's bolded "switch to Bypass Permissions" one.
 
 2. Accept handler. The new value is remapped to the first (clear-context) option before any
    other branch reads it, after a session-only model switch through the same function `/model`
@@ -38,7 +39,7 @@ PATCHES = [
 		b'if(!ve&&h)De.push({label:`Yes, clear context${ze} and implement as Sonnet`,value:"yes-sonnet"});'
 		b'if(!ve){let a="yes-accept-edits-keep-context",d="yes-default-keep-context";'
 		b'if(ee){let it=yAe("bypassPermissions",{isBypassPermissionsModeAvailable:ee});'
-		b'if(it!==null)Oe[a]=it,Ue[a]="bypassPermissions",De.push({label:it.node,value:a})}'
+		b'if(it!==null)Oe[a]=it,Ue[a]="bypassPermissions",De.push({label:"Yes, implement without clearing context",value:a})}'
 		b'else if(Ge){let it=M_n("exit-plan-resume");Oe["yes-resume-auto-mode"]=it,Ue["yes-resume-auto-mode"]="auto",'
 		b'De.push({label:it.node,value:"yes-resume-auto-mode"})}'
 		b'else{let it=yAe("acceptEdits",{labelVariant:"plan-keep-context"});'
