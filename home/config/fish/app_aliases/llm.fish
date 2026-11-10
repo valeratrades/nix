@@ -146,16 +146,6 @@ function cl
     end
     set -l proj_dir $HOME/.claude/projects/(string replace -ra '[^a-zA-Z0-9]' - -- (pwd -P))
     if [ $resume_pick -eq 1 ]
-        if [ -z "$session_id" ]
-            # own picker instead of claude's: cl must know the id to point autoMemoryDirectory at it
-            set session_id (for f in (command ls -t $proj_dir/*.jsonl 2>/dev/null)
-                    set -l title (command grep -h '"type":"ai-title"' $f | tail -1 | jq -r .aiTitle)
-                    printf '%s\t%s\t%s\n' (basename $f .jsonl) (date -r $f '+%m-%d %H:%M') "$title"
-                end | fzf --delimiter='\t' --with-nth=2.. --no-sort | string split -f1 \t)
-            if [ -z "$session_id" ]
-                return 1
-            end
-        end
         set -a passthrough_args --resume $session_id
     else if set -q resume_n[1]
         set -l sessions (command ls -t $proj_dir/*.jsonl 2>/dev/null)
@@ -170,8 +160,11 @@ function cl
         set -a passthrough_args --session-id $session_id
     end
     # environment.nix keeps it off for any claude not started through here
-    set -fx CLAUDE_CODE_DISABLE_AUTO_MEMORY 0
-    set -a passthrough_args --settings "{\"autoMemoryDirectory\":\"$proj_dir/$session_id/memory\"}"
+    # claude's own picker hides the chosen id from us, so that session runs without memory
+    if [ -n "$session_id" ]
+        set -fx CLAUDE_CODE_DISABLE_AUTO_MEMORY 0
+        set -a passthrough_args --settings "{\"autoMemoryDirectory\":\"$proj_dir/$session_id/memory\"}"
+    end
 
     if [ $no_verify -eq 0 ] && [ -n "$repo" ] && [ -f "$repo/AGENTS.md" ]
         if not git -C $repo check-ignore -q -- .claude/
