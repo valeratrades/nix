@@ -163,7 +163,7 @@
           ])
           # nix
           [
-            nixd # nix lsp; overlays/nixd-schema-directive.nix
+            nixd-schema-directive # nix lsp
             niv # nix build dep management
             nix-diff
             statix # Lints and suggestions for the nix programming language

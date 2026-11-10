@@ -405,20 +405,9 @@ in {
 
   nixpkgs.overlays = [
     (self: super: {
-      rustup = super.rustup.overrideAttrs (old: {
-        doCheck = false;
-        doInstallCheck = false;
-      });
-      # openldap upstream test017-syncreplication-refresh is timing-flaky;
-      # not on hydra cache for some configurations, so skip the test suite locally.
-      openldap = super.openldap.overrideAttrs (old: {
-        doCheck = false;
-      });
       # canvas npm package doesn't build with nodejs v24's V8 API changes
       excalidraw_export = super.excalidraw_export.override { buildNpmPackage = super.buildNpmPackage.override { nodejs = super.nodejs_22; }; };
     })
-    inputs.neovim-nightly-overlay.overlays.default
-    (import (mylib.relativeToRoot "overlays/rnote.nix"))
     (import (mylib.relativeToRoot "overlays/sierra-chart.nix"))
     (import (mylib.relativeToRoot "overlays/tiger-trade.nix"))
     (import (mylib.relativeToRoot "overlays/coinpoker.nix"))
@@ -633,7 +622,7 @@ in {
         # Terminals + Editors + Shells
         [
 					neovim
-					tree-sitter # needed by nvim-treesitter to compile parsers (temporary until 0.12 is in nixpkgs and we restore withAllGrammars)
+					tree-sitter-capped # needed by nvim-treesitter to compile parsers (temporary until 0.12 is in nixpkgs and we restore withAllGrammars)
 					luajitPackages.luarocks-nix # install some lua plugins as isolated packages
 					vimPlugins.nvim-dap-python
 					vimPlugins.luasnip

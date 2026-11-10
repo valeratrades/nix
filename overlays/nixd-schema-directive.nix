@@ -7,7 +7,7 @@
 # Drop this overlay if it lands upstream; RFC at nix-community/nixd#889.
 final: prev:
 {
-  nixd = prev.callPackage (prev.fetchFromGitHub {
+  nixd-schema-directive = prev.callPackage (prev.fetchFromGitHub { # own attr, so nixd consumers (devenv) stay on cache
     owner = "valeratrades";
     repo = "nixd";
     rev = "7fcdc56452ccfe2c37ca66b1b70fd440f6a473e5";
