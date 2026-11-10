@@ -124,7 +124,7 @@ let
 		chrome-devtools = {
 			type = "stdio";
 			command = "npx";
-			args = [ "-y" "chrome-devtools-mcp@latest" "--browserUrl=http://127.0.0.1:${toString myvars.ports.chromeDebug}" "--no-usage-statistics" ];
+			args = [ "-y" "chrome-devtools-mcp@latest" "--headless" "--isolated" "--executablePath=${pkgs.google-chrome}/bin/google-chrome-stable" "--no-usage-statistics" ]; # not the daily Chrome: driving it, `new_page` pops windows on my screen
 			env = { };
 		};
 		# never connects, so each session carries a 30s connect timeout; also dropped from ~/.claude.json by hand (this merge only adds)
