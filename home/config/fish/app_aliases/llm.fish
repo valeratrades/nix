@@ -32,6 +32,10 @@ function cl
         end
         return
     end
+    if [ "$argv[1]" = logout-all ]
+        node $__fish_scripts_dir/claude_logout_all.mjs $CHROME_DEBUG_PORT $argv[2..]
+        return
+    end
     if [ "$argv[1]" = rotate-acc ]
         set -l new
         if contains -- --new $argv
