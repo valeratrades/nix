@@ -1,0 +1,93 @@
+     wrote /home/v/s/ev/_sa/site_conductor/.claude/worktrees/trash/crates/gen/../../frontend/src/entities/alerts/model/generated.ts
+     wrote /home/v/s/ev/_sa/site_conductor/.claude/worktrees/trash/crates/gen/../../frontend/src/entities/assistant/model/generated.ts
+     … +2 lines
+  ⎿  Updated .claude/worktrees/trash/crates/gen/src/main.rs (+1 -2)
+      52                                  MapDto,
+      53                                  (TradesDto, GoogleCategoriesDto),
+      54                                  OnGoogle,
+      55 -                                ConnectionsDto,
+      56 -                                (TrashDto, SetSettingsDto),
+      55 +                                (ConnectionsDto, TrashDto, SetSettingsDto),
+      56                                  SetBrowser,
+      57                                  StartBrowser,
+      58                                  ViewerIn,
+  ⎿  Updated .claude/worktrees/trash/frontend/src/entities/session/model/generated.ts (+2 -2)
+      26   */
+      27  requested_at: string, };
+      28
+      29 -export const PERMISSIONS = ["sa:admin:sources:manage", "sa:admin:tokens:grant", "sa:placement:study:read", "sa:placement:study:spend", "sa:playbook:mcp:use", "sa:review_archive:archive:operate", "sa:review_archive:members:act_as", "sa:sites:analysis:experiments:edit", "sa:sites:analysis:read", "sa:site
+         -s:work:invoices:create", "sa:sites:work:leads:edit", "sa:sites:work:pii:see", "sa:sites:work:places:edit", "sa:sites:work:pricing:edit", "sa:sites:work:read"] as const;
+      29 +export const PERMISSIONS = ["sa:admin:sources:manage", "sa:admin:tokens:grant", "sa:admin:trash:keep", "sa:placement:study:read", "sa:placement:study:spend", "sa:playbook:mcp:use", "sa:review_archive:archive:operate", "sa:review_archive:members:act_as", "sa:sites:analysis:experiments:edit", "sa:sites:a
+         +nalysis:read", "sa:sites:work:invoices:create", "sa:sites:work:leads:edit", "sa:sites:work:pii:see", "sa:sites:work:places:edit", "sa:sites:work:pricing:edit", "sa:sites:work:read"] as const;
+      30  export type Permission = (typeof PERMISSIONS)[number];
+      31
+      32  export const ALIASES = {
+      33 -  "sa:admin": ["sa:admin:sources:manage", "sa:admin:tokens:grant", "sa:placement:study:read", "sa:placement:study:spend", "sa:playbook:mcp:use", "sa:review_archive:archive:operate", "sa:review_archive:members:act_as", "sa:sites:analysis:experiments:edit", "sa:sites:analysis:read", "sa:sites:work:invoic
+         -es:create", "sa:sites:work:leads:edit", "sa:sites:work:pii:see", "sa:sites:work:places:edit", "sa:sites:work:pricing:edit", "sa:sites:work:read"],
+      33 +  "sa:admin": ["sa:admin:sources:manage", "sa:admin:tokens:grant", "sa:admin:trash:keep", "sa:placement:study:read", "sa:placement:study:spend", "sa:playbook:mcp:use", "sa:review_archive:archive:operate", "sa:review_archive:members:act_as", "sa:sites:analysis:experiments:edit", "sa:sites:analysis:read"
+         +, "sa:sites:work:invoices:create", "sa:sites:work:leads:edit", "sa:sites:work:pii:see", "sa:sites:work:places:edit", "sa:sites:work:pricing:edit", "sa:sites:work:read"],
+      34    "sa:everyone": ["sa:playbook:mcp:use"],
+      35    "sa:operator": ["sa:placement:study:read", "sa:sites:analysis:read", "sa:sites:work:leads:edit", "sa:sites:work:pii:see", "sa:sites:work:read"],
+      36  } as const;
+  ⎿  Updated .claude/worktrees/trash/frontend/src/entities/gmb/model/generated.ts (+53 -0)
+      230   * `socks5://` or `http://`, `user:pass@host:port`.
+      231   */
+      232  proxy: string, };
+      233 +/**
+      234 + * `PUT /trash/settings`.
+      235 + */
+      236 +export type SetTrashSettings = { keep_days: number,
+      237 +/**
+      238 + * Absent: left as it is. Present: `sa:admin:trash:keep` only.
+      239 + */
+      240 +never_purge?: boolean, };
+      241  export type StartBrowser = {
+      242  /**
+      243   * At this GBP's point; none, the position blocked.
+     ...
+      285   * `GET /trades`.
+      286   */
+      287  export type Trades = { trades: Array<Trade>, };
+      288 +/**
+      289 + * `GET /trash`.
+      290 + */
+      291 +export type Trash = { settings: TrashSettings, gmails: Array<TrashedGmail>, gmbs: Array<TrashedGmb>, };
+      292 +export type TrashSettings = {
+      293 +/**
+      294 + * 1 to 90.
+      295 + */
+      296 +keep_days: number,
+      297 +/**
+      298 + * Nothing purged, ever.
+      299 + */
+      300 +never_purge: boolean, };
+      301 +/**
+      302 + * A gmail in the trash.
+      303 + */
+      304 +export type TrashedGmail = { id: number, gmail: string,
+      305 +/**
+      306 + * RFC 3339.
+      307 + */
+      308 +removed_at: string,
+      309 +/**
+      310 + * RFC 3339; `null`: kept until restored.
+     … 25 more lines
+
+  Ran 1 shell command
+
+● Background agent "Figma section 13 Trash" didn't finish before the previous session ended
+
+  8 tasks (4 done, 1 in progress, 3 open)
+  ◼ Server: routes, sa:admin:trash, hourly purge, 403 test
+  ◻ Figma section 13 · Trash
+  ◻ Frontend: TrashWindow, footer entry, copy en/ru
+  ◻ Checks + click-through + merge to main
+  ✔ Panel: trash integration test (failing first)
+   … +3 completed
+● full  $0.00  0s                                                                                                                                                                                                                                                                             Review  Audit  Board  Details [-]
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── gmail-gbp-trash-restore ─
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← 1 agent

@@ -700,25 +700,44 @@ enum Tail {
     Died,
 }
 
-/// Only the tail is read: transcripts reach tens of MB, but the last message is
-/// near the end. ponytail: 256KB window; a single message can't exceed it in
-/// practice (largest observed line ~35KB), and if it somehow does we return None.
-///
+/// Newest-first over the transcript's records until `pick` settles on one.
+/// Transcripts reach tens of MB but the answer sits near the end, so only a
+/// tail is read — widened until it holds a whole record `pick` takes, since a
+/// single screenshot tool_result alone can outweigh any fixed window.
+fn scan_tail<T>(session_file: &Path, mut pick: impl FnMut(&serde_json::Value) -> Option<T>) -> Option<T> {
+    let mut file = fs::File::open(session_file).ok()?;
+    let len = file.metadata().ok()?.len();
+    let mut tail: u64 = 256 * 1024;
+    loop {
+        let start = len.saturating_sub(tail);
+        file.seek(SeekFrom::Start(start)).ok()?;
+        let mut bytes = Vec::new();
+        file.read_to_end(&mut bytes).ok()?;
+        let buf = String::from_utf8_lossy(&bytes); // tail seek may split a char/line
+
+        let mut lines = buf.lines();
+        if start > 0 {
+            lines.next(); // likely-partial first record
+        }
+        let found = lines
+            .collect::<Vec<_>>()
+            .into_iter()
+            .rev()
+            .filter_map(|line| serde_json::from_str::<serde_json::Value>(line).ok())
+            .find_map(|v| pick(&v));
+        if found.is_some() || start == 0 {
+            return found;
+        }
+        tail *= 4;
+    }
+}
+
 /// `proc_start` is when the claude holding this pane began. A half-turn stamped
 /// before that is one the previous process took to the grave — a reboot mid-turn
 /// (`--continue` re-attaches to the same transcript and adds nothing), an OOM
 /// kill, a crash. Without it there is no way to tell a turn cut at shutdown from
 /// one in flight this instant: both end on a tool_result with no reply.
 fn transcript_tail(session_file: &Path, proc_start: Option<std::time::SystemTime>) -> Option<Tail> {
-    const TAIL_BYTES: u64 = 256 * 1024;
-    let mut file = fs::File::open(session_file).ok()?;
-    let len = file.metadata().ok()?.len();
-    let start = len.saturating_sub(TAIL_BYTES);
-    file.seek(SeekFrom::Start(start)).ok()?;
-    let mut bytes = Vec::new();
-    file.read_to_end(&mut bytes).ok()?;
-    let buf = String::from_utf8_lossy(&bytes); // tail seek may split a char/line
-
     // Second granularity both sides, and a
     // strict `<`, so the ambiguous same-second case reads as alive — a wrong
     // Active self-corrects on the next poll, a wrong Died never does.
@@ -731,18 +750,10 @@ fn transcript_tail(session_file: &Path, proc_start: Option<std::time::SystemTime
         ts < start as i64
     };
 
-    let mut lines = buf.lines();
-    if start > 0 {
-        lines.next(); // first line is likely a partial record
-    }
-    for line in lines.collect::<Vec<_>>().into_iter().rev() {
-        let v: serde_json::Value = match serde_json::from_str(line) {
-            Ok(v) => v,
-            Err(_) => continue,
-        };
+    scan_tail(session_file, |v| {
         let entry_type = v.get("type").and_then(|x| x.as_str()).unwrap_or("");
         if entry_type != "user" && entry_type != "assistant" {
-            continue;
+            return None;
         }
         let role = v
             .get("message")
@@ -750,13 +761,27 @@ fn transcript_tail(session_file: &Path, proc_start: Option<std::time::SystemTime
             .and_then(|x| x.as_str())
             .unwrap_or(entry_type);
         if role == "assistant" {
+            // Non-error synthetic turns are the harness's bookkeeping, not the model's: resume
+            // stamps "No response requested." over a turn the previous process died in.
+            if v.get("message").and_then(|m| m.get("model")).and_then(|x| x.as_str()) == Some("<synthetic>")
+                && v.get("isApiErrorMessage").and_then(|x| x.as_bool()) != Some(true)
+            {
+                return None;
+            }
             // A completed turn ends with a non-tool stop_reason; "tool_use" means
             // a tool call is outstanding, i.e. still working.
             let pending = v.get("message").and_then(|m| m.get("stop_reason")).and_then(|x| x.as_str()) == Some("tool_use");
             if !pending {
                 return Some(Tail::Idle);
             }
-            return Some(if outlived_by_process(&v) { Tail::Died } else { Tail::Working });
+            return Some(if outlived_by_process(v) { Tail::Died } else { Tail::Working });
+        }
+        // Transcript-only notices never wake the model, so no reply is coming.
+        // Resume's "didn't finish before the previous session ended" is one: a
+        // background shell (often a server left up on purpose) went down with the
+        // old process, the turn above it had already settled.
+        if v.get("queueTranscriptOnly").and_then(|x| x.as_bool()) == Some(true) {
+            return None;
         }
         // Last message is the user's — assistant reply is still pending,
         // EXCEPT Claude Code's synthetic "[Request interrupted by user …]"
@@ -764,13 +789,6 @@ fn transcript_tail(session_file: &Path, proc_start: Option<std::time::SystemTime
         // what an abandoned pre-/clear transcript ends on, and reading it as
         // working flips a Finished pane to Active.
         let content = v.get("message").and_then(|m| m.get("content"));
-        // Transcript-only notices never wake the model, so no reply is coming.
-        // Resume's "didn't finish before the previous session ended" is one: a
-        // background shell (often a server left up on purpose) went down with the
-        // old process, the turn above it had already settled.
-        if v.get("queueTranscriptOnly").and_then(|x| x.as_bool()) == Some(true) {
-            continue;
-        }
         if content.map(|c| c.to_string().contains("[Request interrupted by user")).unwrap_or(false) {
             return Some(Tail::Idle);
         }
@@ -783,87 +801,40 @@ fn transcript_tail(session_file: &Path, proc_start: Option<std::time::SystemTime
                 })
             })
             .unwrap_or(false);
-        return Some(if failed_tool || outlived_by_process(&v) { Tail::Died } else { Tail::Working });
-    }
-    None
+        Some(if failed_tool || outlived_by_process(v) { Tail::Died } else { Tail::Working })
+    })
 }
 
 /// Most recent model that produced an assistant turn, "claude-" prefix stripped
-/// ("claude-opus-4-8" -> "opus-4-8"). Reads only the tail, same rationale as
-/// transcript_tail. Synthetic messages carry model "<synthetic>" — skipped so
-/// the reported model is a real one the user actually ran.
+/// ("claude-opus-4-8" -> "opus-4-8"). Synthetic messages carry model "<synthetic>" —
+/// skipped so the reported model is a real one the user actually ran.
 fn latest_model(session_file: &Path) -> Option<String> {
-    const TAIL_BYTES: u64 = 256 * 1024;
-    let mut file = fs::File::open(session_file).ok()?;
-    let len = file.metadata().ok()?.len();
-    let start = len.saturating_sub(TAIL_BYTES);
-    file.seek(SeekFrom::Start(start)).ok()?;
-    let mut bytes = Vec::new();
-    file.read_to_end(&mut bytes).ok()?;
-    let buf = String::from_utf8_lossy(&bytes);
-
-    let mut lines = buf.lines();
-    if start > 0 {
-        lines.next(); // likely-partial first record
-    }
-    for line in lines.collect::<Vec<_>>().into_iter().rev() {
-        let v: serde_json::Value = match serde_json::from_str(line) {
-            Ok(v) => v,
-            Err(_) => continue,
-        };
-        let model = v.get("message").and_then(|m| m.get("model")).and_then(|x| x.as_str());
-        match model {
-            Some(m) if m != "<synthetic>" => {
-                return Some(m.strip_prefix("claude-").unwrap_or(m).to_string());
-            }
-            _ => continue,
-        }
-    }
-    None
+    scan_tail(session_file, |v| match v.get("message").and_then(|m| m.get("model")).and_then(|x| x.as_str()) {
+        Some(m) if m != "<synthetic>" => Some(m.strip_prefix("claude-").unwrap_or(m).to_string()),
+        _ => None,
+    })
 }
 
 /// Context the next request would carry: the last main-thread assistant turn's
 /// whole token bill (fresh input + both cache buckets + what it wrote). Sidechain
 /// turns are subagents with their own window and would read as the session's.
-/// Tail-only, same rationale as transcript_tail.
 fn context_tokens(session_file: &Path) -> Option<u64> {
-    const TAIL_BYTES: u64 = 256 * 1024;
-    let mut file = fs::File::open(session_file).ok()?;
-    let len = file.metadata().ok()?.len();
-    let start = len.saturating_sub(TAIL_BYTES);
-    file.seek(SeekFrom::Start(start)).ok()?;
-    let mut bytes = Vec::new();
-    file.read_to_end(&mut bytes).ok()?;
-    let buf = String::from_utf8_lossy(&bytes);
-
-    let mut lines = buf.lines();
-    if start > 0 {
-        lines.next(); // likely-partial first record
-    }
-    for line in lines.collect::<Vec<_>>().into_iter().rev() {
-        let v: serde_json::Value = match serde_json::from_str(line) {
-            Ok(v) => v,
-            Err(_) => continue,
-        };
+    scan_tail(session_file, |v| {
         if v.get("isSidechain").and_then(|x| x.as_bool()) == Some(true) {
-            continue;
+            return None;
         }
         if v.get("message").and_then(|m| m.get("model")).and_then(|x| x.as_str()) == Some("<synthetic>") {
-            continue; // never sent to the API, so billed at zero (e.g. the limit-hit notice)
+            return None; // never sent to the API, so billed at zero (e.g. the limit-hit notice)
         }
-        let usage = match v.get("message").and_then(|m| m.get("usage")) {
-            Some(u) => u,
-            None => continue,
-        };
+        let usage = v.get("message").and_then(|m| m.get("usage"))?;
         let field = |k: &str| usage.get(k).and_then(|x| x.as_u64()).unwrap_or(0);
-        return Some(
+        Some(
             field("input_tokens")
                 + field("cache_creation_input_tokens")
                 + field("cache_read_input_tokens")
                 + field("output_tokens"),
-        );
-    }
-    None
+        )
+    })
 }
 
 /// A settled session says how it went in its closing report — the last assistant
@@ -2753,6 +2724,21 @@ mod tests {
         let context = context_tokens(&path);
         fs::remove_file(&path).unwrap();
         assert_eq!(context, Some(900_000));
+    }
+
+    /// A screenshot tool_result runs to hundreds of KB; the record before it must still be reached.
+    #[test]
+    fn a_record_larger_than_the_tail_window_is_still_read() {
+        let path = std::env::temp_dir().join(format!("claude_sessions_huge_tail_{}.jsonl", std::process::id()));
+        let records = [
+            serde_json::json!({"type": "assistant", "timestamp": "2026-11-12T11:48:42Z", "message": {"model": "claude-opus-5-5", "role": "assistant", "stop_reason": "tool_use", "usage": {"input_tokens": 1000}}}),
+            serde_json::json!({"type": "user", "timestamp": "2026-11-12T11:48:43Z", "message": {"role": "user", "content": [{"type": "tool_result", "content": "x".repeat(1024 * 1024)}]}}),
+        ];
+        fs::write(&path, records.map(|r| r.to_string()).join("\n")).unwrap();
+        let restored_at = std::time::UNIX_EPOCH + std::time::Duration::from_secs(rfc3339_epoch("2026-11-12T12:05:48Z").unwrap() as u64);
+        let read = (transcript_tail(&path, Some(restored_at)), latest_model(&path), context_tokens(&path));
+        fs::remove_file(&path).unwrap();
+        assert_eq!(read, (Some(Tail::Died), Some("opus-5-5".to_string()), Some(1000)));
     }
 
     /// Walk every `*.txt` fixture, classify it, and assert two things:
