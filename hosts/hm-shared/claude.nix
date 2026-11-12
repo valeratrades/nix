@@ -328,6 +328,7 @@ in
 			(pkgs.formats.json { }).generate "claude_settings_ref.json" {
 				#HACK: hm doesn't set env correctly, - so have some associated ones in ../../os/nixos/desktop/environment.nix
 				alwaysThinkingEnabled = true;
+				autoMemoryEnabled = false;
 				skipDangerousModePermissionPrompt =  true;
 				crossSessionInbound = "accept"; # unset: peer messages into a bypass session are held for approval
 				# `[1m]` requests the context-1m beta -> 1M window; autoCompactWindow is min()'d against it.

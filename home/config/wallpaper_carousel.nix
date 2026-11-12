@@ -7,6 +7,8 @@
 
     { text = "iteration speed"; author = "Alex Hormozi"; }
 
+    "speed above all"
+
     { text = "fuck your mood\nfollow the plan"; author = "Leila Hormozi"; }
 
     { text = "when it gets easy\nis when you go hard"; author = "Alex Hormozi"; }
