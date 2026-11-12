@@ -314,7 +314,7 @@ vim.lsp.enable('taplo')
 
 -- nixd
 -- Replaces nil_ls: running both means duplicate diagnostics. Our fork
--- (overlays/nixd-schema-directive.nix) reads the same `#:schema <path>` first line taplo does
+-- (overlays/patched.nix, opt-in via user.optional_patches) reads the same `#:schema <path>` first line taplo does
 -- above, so a generated .nix config gets completion and hover from its own module with no
 -- `settings.nixd.options` entry here. Files without the directive keep the workspace option sets.
 vim.lsp.config('nixd', {
