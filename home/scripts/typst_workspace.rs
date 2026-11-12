@@ -48,6 +48,7 @@ const MARK: &str = "_typst_workspace";
 /// ponytail: hardcoded split ratios, add config knobs when one is actually wanted
 const DOCS_WIDTH_PPT: u32 = 40;
 
+const KILL_TIMEOUT: Duration = Duration::from_secs(5);
 const SPAWN_TIMEOUT: Duration = Duration::from_secs(15);
 /// A doc that does not compile means no viewer ever arrives.
 const PLACE_TIMEOUT: Duration = Duration::from_secs(120);
@@ -278,16 +279,16 @@ fn locate<'a>(node: &'a Value, ws: Option<&'a Value>, pids: &HashSet<i64>) -> Op
 	children(node).into_iter().find_map(|c| locate(c, ws, pids))
 }
 
-fn leaf_titles(node: &Value, out: &mut Vec<String>) {
+fn leaf_ids(node: &Value, out: &mut Vec<i64>) {
 	let kids = children(node);
 	if kids.is_empty() {
 		if node["type"] == "con" || node["type"] == "floating_con" {
-			out.push(node["name"].as_str().unwrap_or("<unnamed>").to_owned());
+			out.push(node["id"].as_i64().expect("sway gives every con an id"));
 		}
 		return;
 	}
 	for k in kids {
-		leaf_titles(k, out);
+		leaf_ids(k, out);
 	}
 }
 
@@ -387,16 +388,25 @@ fn build() -> Result<()> {
 		.ok_or_else(|| miette!("none of our parent processes owns a sway window"))?;
 	let ws_name = ws["name"].as_str().unwrap_or("?").to_owned();
 
-	let mut titles = Vec::new();
-	leaf_titles(ws, &mut titles);
-	let floating = ws["floating_nodes"].as_array().map_or(0, Vec::len);
-	if titles.len() != 1 || floating != 0 {
-		return Err(miette!(
-			help = "move to an empty workspace and re-run",
-			"workspace `{ws_name}` already holds {} windows:\n{}",
-			titles.len(),
-			titles.join("\n")
-		));
+	let mut others = Vec::new();
+	leaf_ids(ws, &mut others);
+	others.retain(|id| *id != term);
+	for id in &others {
+		cmd(&format!("[con_id={id}] kill"))?;
+	}
+	// `kill` only asks; laying out next to a window that is still closing would nest into its container
+	let deadline = Instant::now() + KILL_TIMEOUT;
+	loop {
+		let mut alive = Vec::new();
+		leaf_ids(&tree()?, &mut alive);
+		alive.retain(|id| others.contains(id));
+		if alive.is_empty() {
+			break;
+		}
+		if Instant::now() > deadline {
+			return Err(miette!("windows {alive:?} on `{ws_name}` ignored `kill` for {}s", KILL_TIMEOUT.as_secs()));
+		}
+		std::thread::sleep(Duration::from_millis(50));
 	}
 
 	let watch = Watch::start()?;
