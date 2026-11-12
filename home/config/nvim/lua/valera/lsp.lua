@@ -321,6 +321,7 @@ vim.lsp.config('nixd', {
 	settings = {
 		nixd = {
 			formatting = { command = { "nixpkgs-fmt" } },
+			schemaDirective = { enable = true }, -- off upstream (nix-community/nixd#917): evaluates code a merely-opened file names
 		},
 	},
 })
