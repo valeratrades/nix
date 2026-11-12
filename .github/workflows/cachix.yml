@@ -3,11 +3,12 @@ on:
   push:
     branches:
       - main
-    paths:
+    paths: # what overlays/patched.nix builds from; flake.lock also moves on every unrelated bump, the cache check below makes those runs a no-op
+      - overlays/patched.nix
+      - overlays/*.patch
       - flake.lock
-      - flake.nix
-      - overlays/**
-      - outputs/**
+      - outputs/default.nix
+      - .github/workflows/cachix.yml
   workflow_dispatch: {}
 concurrency:
   group: cachix
@@ -25,5 +26,10 @@ jobs:
       - name: build patched packages
         run: |
           for p in wtype baresip keepassxc tmux nix-direnv excalidraw_export nixd; do
+            out=$(nix eval --raw ".#legacyPackages.x86_64-linux.patched.$p.outPath")
+            if nix path-info --store https://valeratrades.cachix.org "$out" >/dev/null 2>&1; then
+              echo "$p: cached"
+              continue
+            fi
             nix build -L --no-link ".#legacyPackages.x86_64-linux.patched.$p"
           done
