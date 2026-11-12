@@ -1,10 +1,10 @@
 ---
-source: claude_sessions.rs
+source: main.rs
 expression: "(result, verdict)"
 ---
 (
     ActivityResult {
-        state: Error,
+        state: Interrupted,
         draft_content: None,
         question_content: None,
         plan_mode: false,

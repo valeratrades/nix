@@ -109,7 +109,7 @@ enum ClaudeState {
     Input,    // User has typed text into the live input box (not yet sent)
     Error,    // Claude hit an error (rate limit, panic, etc.)
     Limit,    // Session usage limit hit ("You've hit your session limit · resets ...")
-    Interrupted, // User aborted the turn (esc); dropped back to a live prompt
+    Interrupted, // Turn cut short — aborted by the user (esc), or its process died mid-turn
     Stuck,    // Finished, but its closing report says the work didn't land (see mod report)
     Answered, // Finished, but its closing report answers a question I now have to act on
     Partial,  // Finished, but its closing report says part of the work was skipped
@@ -123,7 +123,7 @@ impl ClaudeState {
     /// the exact production deliberation.
     fn refine_finished(tail: Option<Tail>, has_active_todos: bool, plan_mode: bool) -> ClaudeState {
         let working = match tail {
-            Some(Tail::Died) => return ClaudeState::Error,
+            Some(Tail::Died) => return ClaudeState::Interrupted,
             Some(Tail::Working) => true,
             Some(Tail::Idle) => false,
             None => has_active_todos,
@@ -2157,7 +2157,7 @@ fn classify_activity(
         .find(|l| tool_error_row.is_match(l) || assistant_row.is_match(l))
         .is_some_and(|l| tool_error_row.is_match(l))
     {
-        return ActivityResult { state: ClaudeState::Error, draft_content: None, question_content: None, plan_mode };
+        return ActivityResult { state: ClaudeState::Interrupted, draft_content: None, question_content: None, plan_mode };
     }
 
     // Check if there's an input prompt line - indicates Claude is waiting for

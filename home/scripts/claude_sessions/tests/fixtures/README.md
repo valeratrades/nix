@@ -32,7 +32,7 @@ both an `active__*` and a `finished__*` fixture with different transcript tails.
 A `.start` companion dates the process against the transcript's last word. A
 half-turn stamped before its own process started is one a reboot or a kill cut —
 so the same idle pane + pending-tool transcript is `active__*` with a start
-before it and `error__*` with a start after.
+before it and `interrupted__*` with a start after.
 
 **Fixtures are raw transcript/pane dumps — they contain whatever the session saw,
 including env dumps and tool outputs. `grep -iE 'sk-ant|token|secret'` every new
@@ -57,7 +57,7 @@ tail -n 15 ~/.claude/projects/<proj-dir>/<session-id>.jsonl > finished__idle.jso
 
 # ONLY when the turn's age against its process is the point:
 ps -o lstart= -p (pgrep -P (tmux display -pt <session>:<window> '#{pane_pid}')) \
-  | read -l s; date -ud "$s" +%Y-%m-%dT%H:%M:%SZ > error__cut_at_shutdown.start
+  | read -l s; date -ud "$s" +%Y-%m-%dT%H:%M:%SZ > interrupted__cut_at_shutdown.start
 ```
 
 Then record its snapshot and confirm it's green:
