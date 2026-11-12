@@ -30,7 +30,10 @@ in
     # Without systemd, panes are plain children of the server instead of tmux-spawn-*.scope units,
     # whose broken cgroup state made shutdown ride out the full stop timeout.
     # See ongoing_debug/2026-06-05_slow-shutdown.md.
-    tmux = base.tmux.override { withSystemd = false; };
+    #WAIT: https://github.com/tmux/tmux/issues/5728 — 3.8 segfaults killing the session/window choose-tree runs over; fix 0985de0 not in a release yet
+    tmux = (base.tmux.override { withSystemd = false; }).overrideAttrs (old: {
+      patches = (old.patches or [ ]) ++ [ ./tmux-choose-tree-kill-crash.patch ];
+    });
 
     # `{nix,flake}-profile*` also matches `flake-tmp-profile.*`, deleting the tmp profile before its GC root is made.
     #WAIT: https://github.com/nix-community/nix-direnv/issues/546
