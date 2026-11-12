@@ -18,6 +18,26 @@ function claude
 end
 
 function cl
+    if contains -- -h $argv; or contains -- --help $argv
+        command claude --help
+        echo '
+Ours:
+  -1..-9                                Resume the Nth most recent session here
+  -c, --continue                        Same as -1
+  -r, --resume [uuid]                   Resume that session, or pick one
+  -m <model>                            Model
+  -[ofstl]                              Model letters, bundle with other short
+                                        flags: o opus, f fable; s/t/l are
+                                        litellm groups (under clm/clc)
+  --no-verify                           Skip the AGENTS.md / .gitignore check
+  Projects in $utmost_importance_projects default to fable and refuse opus
+
+  auto on|off                           Toggle auto account rotation
+  rotate-acc [--new] [acc]              Switch account (fzf if none given)
+  review [-f] [args...]                 Start a review from a picked prompt
+  logout-all [--dry-run]                Sign every device out of claude.ai'
+        return
+    end
     if [ "$argv[1]" = auto ]
         # read by hosts/v-laptop/claude-accounts.mjs and the claude-first-account service in home.nix
         set -l off ~/.local/state/claude-auto-rotate-off
