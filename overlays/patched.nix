@@ -62,8 +62,8 @@ touch "$PWD/.envrc"' \
     nixd = base.callPackage (base.fetchFromGitHub {
       owner = "valeratrades";
       repo = "nixd";
-      rev = "7fcdc56452ccfe2c37ca66b1b70fd440f6a473e5";
-      hash = "sha256-cyvikKVDVvuwAjxDyXNEZF7vmbakHfET5at0fbwyEds=";
+      rev = "28852c6a11b1b1a7cbb0d109350cc3dc356b54c3"; # branch schema-directive-full: nix-community/nixd#917 + diagnostics
+      hash = "sha256-ixSsMERh8uVftoZ7l6cv9dfRz03lUZlfbVPUTKxXjI0=";
     }) {
       # the versions nixd's own flake builds against
       nixComponents = base.nixVersions.nixComponents_2_34;
