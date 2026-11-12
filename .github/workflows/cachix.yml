@@ -3,11 +3,8 @@ on:
   push:
     branches:
       - main
-    paths: # what overlays/patched.nix builds from; flake.lock also moves on every unrelated bump, the cache check below makes those runs a no-op
-      - overlays/patched.nix
-      - overlays/*.patch
-      - flake.lock
-      - outputs/default.nix
+    paths: # everything the patched packages build from, nixpkgs pin included
+      - overlays/patched/**
       - .github/workflows/cachix.yml
   workflow_dispatch: {}
 concurrency:

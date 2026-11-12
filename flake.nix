@@ -23,7 +23,6 @@
     v_flakes.url = "github:valeratrades/v_flakes?ref=v1.6";
 
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
-    nixpkgs-patched.url = "github:nixos/nixpkgs/nixos-unstable"; # overlays/patched.nix
     nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-24.11";
     nixpkgs-2405.url = "github:nixos/nixpkgs/nixos-24.05";
 

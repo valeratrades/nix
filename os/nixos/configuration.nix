@@ -403,7 +403,7 @@ in {
   };
 
   nixpkgs.overlays = [
-    (import (mylib.relativeToRoot "overlays/patched.nix") inputs)
+    (import (mylib.relativeToRoot "overlays/patched"))
     (import (mylib.relativeToRoot "overlays/sierra-chart.nix"))
     (import (mylib.relativeToRoot "overlays/tiger-trade.nix"))
     (import (mylib.relativeToRoot "overlays/coinpoker.nix"))

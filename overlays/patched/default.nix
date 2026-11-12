@@ -1,8 +1,13 @@
-# Packages we build from patched source. They sit on `nixpkgs-patched` rather than `nixpkgs`, so a
-# dependency bump leaves them untouched; `nixup --patches` is the one place that moves it.
-inputs: final: prev:
+# Packages we build from patched source, on their own nixpkgs pinned here rather than in flake.lock: a
+# dependency bump leaves them untouched, and everything they build from lives in this directory, which
+# is all the cachix workflow watches. `nixup --patches` rewrites the pin.
+final: prev:
 let
-  base = import inputs.nixpkgs-patched { localSystem = prev.stdenv.hostPlatform.system; };
+  nixpkgsRev = "22b3ccd8e6a37cf59337fbe39fbd8ca46b6e9a8a";
+  nixpkgsNarHash = "sha256-7+iyaCIsEvwy0xT8jgLgEOp2eM/aYP2+75wrINl4bog=";
+  base = import (builtins.fetchTree { type = "github"; owner = "NixOS"; repo = "nixpkgs"; rev = nixpkgsRev; narHash = nixpkgsNarHash; }) {
+    localSystem = prev.stdenv.hostPlatform.system;
+  };
 in
 {
   patched = {

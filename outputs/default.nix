@@ -67,7 +67,7 @@ in {
   };
 
   legacyPackages.x86_64-linux.patched =
-    (import ../overlays/patched.nix inputs null
+    (import ../overlays/patched null
       { stdenv.hostPlatform.system = "x86_64-linux"; }).patched;
 
   packages.x86_64-linux.wlr-gamma-service =

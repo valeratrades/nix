@@ -5306,22 +5306,6 @@
         "url": "https://channels.nixos.org/nixpkgs-unstable/nixexprs.tar.zst"
       }
     },
-    "nixpkgs-patched": {
-      "locked": {
-        "lastModified": 1793490984,
-        "narHash": "sha256-7+iyaCIsEvwy0xT8jgLgEOp2eM/aYP2+75wrINl4bog=",
-        "owner": "nixos",
-        "repo": "nixpkgs",
-        "rev": "22b3ccd8e6a37cf59337fbe39fbd8ca46b6e9a8a",
-        "type": "github"
-      },
-      "original": {
-        "owner": "nixos",
-        "ref": "nixos-unstable",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
     "nixpkgs-regression": {
       "locked": {
         "lastModified": 1643052045,
@@ -6789,7 +6773,6 @@
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs_24",
         "nixpkgs-2405": "nixpkgs-2405",
-        "nixpkgs-patched": "nixpkgs-patched",
         "nixpkgs-stable": "nixpkgs-stable_2",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "pin-nixpkgs-ollama": "pin-nixpkgs-ollama",

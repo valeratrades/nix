@@ -28,8 +28,12 @@ function flake-build --wraps 'sudo nixos-rebuild switch --flake .#myhost --show-
 #TODO!: make into a function and git-commit with $argv concatenation for message
 function nixup
 	argparse patches -- $argv; or return
-	set -l frozen nixpkgs-patched claude_code_nix # patched packages, see overlays/patched.nix; `--patches` moves them too
-	set -q _flag_patches; and set frozen
+	set -l frozen claude_code_nix # patched claude-code; `--patches` moves it, and the nixpkgs pin in overlays/patched
+	if set -q _flag_patches
+		set frozen
+		set -l j (nix flake prefetch github:NixOS/nixpkgs/nixos-unstable --json); or return
+		sed -i -E "s|(nixpkgsRev = \")[^\"]*|\1$(echo $j | jq -r .locked.rev)|; s|(nixpkgsNarHash = \")[^\"]*|\1$(echo $j | jq -r .hash)|" $NIXOS_CONFIG/overlays/patched/default.nix; or return
+	end
 	set -l inputs (for i in (jq -r '.nodes.root.inputs | keys[]' $NIXOS_CONFIG/flake.lock); contains -- $i $frozen; or echo $i; end)
 	git -C $NIXOS_CONFIG add -A && nix flake update --flake $NIXOS_CONFIG $inputs && sudo nixos-rebuild switch --show-trace -v --impure --fast && git_upload $NIXOS_CONFIG $argv
 end

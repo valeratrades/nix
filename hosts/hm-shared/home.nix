@@ -66,7 +66,7 @@
       keyMode = "vi";
       shortcut = "e";
       secureSocket = false; # its TMUX_TMPDIR reaches fish but not the boot-time restore unit that spawns the server, splitting them across sockets
-      package = let tmux = pkgs.patched.tmux; # see overlays/patched.nix
+      package = let tmux = pkgs.patched.tmux; # see overlays/patched
       in pkgs.symlinkJoin {
         inherit (tmux) name;
         meta = removeAttrs tmux.meta [ "outputsToInstall" ]; # the join is single-output; `man` is merged in below
