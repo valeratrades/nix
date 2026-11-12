@@ -26,9 +26,8 @@ Ours:
   -c, --continue                        Same as -1
   -r, --resume [uuid]                   Resume that session, or pick one
   -m <model>                            Model
-  -[ofstl]                              Model letters, bundle with other short
-                                        flags: o opus, f fable; s/t/l are
-                                        litellm groups (under clm/clc)
+  -[sof]                                Model letters, bundle with other short
+                                        flags: s sonnet, o opus, f fable
   --no-verify                           Skip the AGENTS.md / .gitignore check
   Projects in $utmost_importance_projects default to fable and refuse opus
 
@@ -117,10 +116,8 @@ Ours:
         else if [ "$arg" = -m ]
             set expect_model 1
         else if string match -qr '^-[a-z]+$' -- $arg
-            # bundled short flags: extract the model letters, pass the rest back to claude.
-            # s/t/l are litellm groups (mixed.yaml, openai.yaml) -- only resolve under clm/clc.
-            set -l oa "$CLM_OPENAI_PREFIX"
-            for pair in o:opus f:claude-fable-5-1 s:{$oa}sol t:{$oa}terra l:{$oa}luna
+            # bundled short flags: extract the model letters, pass the rest back to claude
+            for pair in s:sonnet o:opus f:claude-fable-5-1
                 set -l letter (string split -f1 : -- $pair)
                 if string match -q "*$letter*" -- $arg
                     set model (string split -f2 : -- $pair)
@@ -210,7 +207,6 @@ complete -c cl -w claude
 
 function clc
     # for `CLaude Cheap`
-    set -fx CLM_OPENAI_PREFIX ''
 
     function use_deepseek
         set -lx ANTHROPIC_BASE_URL 'https://api.deepseek.com/anthropic'
@@ -249,7 +245,6 @@ end
 
 function clm
     # for `CLaude Mixed` -- Claude and OpenAI models behind one proxy, each picked with `-m <group>`.
-    set -fx CLM_OPENAI_PREFIX token-
     # Claude Code resolves one ANTHROPIC_BASE_URL per process, so both providers have to sit behind
     # one litellm. The cost: Opus authenticates by API key here, off the Max subscription.
     # Own port and own config, so `clc` and openclaw keep their proxy to themselves.
