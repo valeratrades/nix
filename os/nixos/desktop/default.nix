@@ -163,7 +163,7 @@
           ])
           # nix
           [
-            (if lib.elem "nixd" user.optional_patches then patched.nixd else nixd) # nix lsp
+            patched.nixd # nix lsp
             niv # nix build dep management
             nix-diff
             statix # Lints and suggestions for the nix programming language

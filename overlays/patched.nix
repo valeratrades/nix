@@ -56,7 +56,7 @@ touch "$PWD/.envrc"' \
     # canvas npm package doesn't build with nodejs v24's V8 API changes
     excalidraw_export = base.excalidraw_export.override { buildNpmPackage = base.buildNpmPackage.override { nodejs = base.nodejs_22; }; };
 
-    # opt-in (user.optional_patches): a 10+ min C++ build.
+    # a 10+ min C++ build, hence the cachix workflow.
     # valeratrades/nixd@schema-directive reads a `#:schema <module>` first line and types that file
     # against the module's options. Drop once upstream has it; RFC at nix-community/nixd#889.
     nixd = base.callPackage (base.fetchFromGitHub {

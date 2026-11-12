@@ -66,6 +66,10 @@ in {
     allowInsecurePredicate = pkg: true;
   };
 
+  legacyPackages.x86_64-linux.patched =
+    (import ../overlays/patched.nix inputs null
+      { stdenv.hostPlatform.system = "x86_64-linux"; }).patched;
+
   packages.x86_64-linux.wlr-gamma-service =
     inputs.nixpkgs-2405.legacyPackages.x86_64-linux.callPackage
     (builtins.fetchGit {

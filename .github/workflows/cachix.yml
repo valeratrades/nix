@@ -1,0 +1,29 @@
+name: cachix
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - flake.lock
+      - flake.nix
+      - overlays/**
+      - outputs/**
+  workflow_dispatch: {}
+concurrency:
+  group: cachix
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: cachix/install-nix-action@v31
+      - uses: cachix/cachix-action@v17
+        with:
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          name: valeratrades
+      - name: build patched packages
+        run: |
+          for p in wtype baresip keepassxc tmux nix-direnv excalidraw_export nixd; do
+            nix build -L --no-link ".#legacyPackages.x86_64-linux.patched.$p"
+          done
