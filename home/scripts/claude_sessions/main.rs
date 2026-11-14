@@ -2102,8 +2102,10 @@ fn classify_activity(
     // welcome UNDER the previous session's rows, and a pane that still shows a
     // conversation is that conversation's state (usually Finished via the prompt
     // gate below), not an empty one.
-    if !content.contains('●')
-        && (content.contains("▐▛███▜▌")
+    let band_row = Regex::new(r"^● \S+  \$\d+\.\d\d\b").unwrap(); // "● full  $0.00  0s …" status band above the box
+    if !content.lines().any(|l| l.contains('●') && !band_row.is_match(l))
+        && (content.contains("▐▛███") // logo's right half differs across versions
+
             || content.contains("No recent activity")
             || content.contains("Tips for getting started"))
     {
