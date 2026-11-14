@@ -21,7 +21,7 @@ use std::cell::Cell;
 use std::collections::{BTreeMap, HashMap};
 use std::fmt::Display;
 use std::fs;
-use std::io::{self, Write};
+use std::io::{self, BufRead, IsTerminal, Write};
 use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
@@ -103,7 +103,57 @@ struct Ctx {
 }
 
 thread_local! {
-    static TASK: Cell<Option<&'static str>> = const { Cell::new(None) }; // what `report` files its lines under
+    static TASK: Cell<Option<&'static str>> = const { Cell::new(None) }; // what `report` and `doing` file their lines under
+}
+
+/// What each running task is at, drawn below the cursor and erased once it stops, like cargo's progress
+struct Status {
+    lines: BTreeMap<&'static str, String>,
+    shown: usize,
+    dirty: bool,
+    stop: bool,
+}
+
+static STATUS: Mutex<Status> = Mutex::new(Status { lines: BTreeMap::new(), shown: 0, dirty: false, stop: false });
+const STATUS_LOCK: &str = "held only by updates that do not panic";
+
+impl Status {
+    /// one write with autowrap off, so every line takes exactly one row and the next erase goes back exactly `shown` rows
+    fn redraw(&mut self) {
+        let mut frame = String::from("\x1b[?7l");
+        if self.shown > 0 {
+            frame += &format!("\x1b[{}A\r\x1b[J", self.shown);
+        }
+        self.shown = 0;
+        if !self.stop {
+            for (task, line) in &self.lines {
+                frame += &format!("\x1b[2m{task}:\x1b[0m {line}\n");
+            }
+            self.shown = self.lines.len();
+        }
+        frame += "\x1b[?7h";
+        io::stderr().write_all(frame.as_bytes()).expect("stderr is a terminal");
+        self.dirty = false;
+    }
+}
+
+fn doing(what: impl Display) {
+    let mut status = STATUS.lock().expect(STATUS_LOCK);
+    status.lines.insert(TASK.get().expect("every task sets it first"), what.to_string());
+    status.dirty = true;
+}
+
+fn render() {
+    loop {
+        std::thread::sleep(Duration::from_millis(80));
+        let mut status = STATUS.lock().expect(STATUS_LOCK);
+        if status.dirty || status.stop {
+            status.redraw();
+        }
+        if status.stop {
+            break;
+        }
+    }
 }
 
 struct Unit {
@@ -148,6 +198,17 @@ fn main() {
         tasks.retain(|t| *t != "rebuild");
     }
 
+    let panic_hook = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        if let Ok(mut status) = STATUS.try_lock() // Err: the panic is inside a redraw, whose rows are past erasing anyway
+            && status.shown > 0
+        {
+            status.stop = true;
+            status.redraw();
+        }
+        panic_hook(info);
+    }));
+
     let parallel: [(&'static str, &(dyn Fn() + Sync)); 6] = [
         ("clean", &|| {
             ctx.sweep(&ctx.home.join("tmp"), None); // before artefact cleaning, which also walks ~/tmp
@@ -165,62 +226,73 @@ fn main() {
         ("redirects", &|| ctx.sweep_redirects()),
     ];
     std::thread::scope(|s| {
-        for (name, task) in parallel.into_iter().filter(|(name, _)| tasks.contains(name)) {
-            s.spawn(move || {
-                TASK.set(Some(name));
-                task();
-            });
+        if args.verbosity == 1 && io::stderr().is_terminal() {
+            s.spawn(render); // above 1 subprocesses write to the terminal themselves
         }
+        std::thread::scope(|s| {
+            for (name, task) in parallel.into_iter().filter(|(name, _)| tasks.contains(name)) {
+                s.spawn(move || {
+                    TASK.set(Some(name));
+                    task();
+                    let mut status = STATUS.lock().expect(STATUS_LOCK);
+                    status.lines.remove(name);
+                    status.dirty = true;
+                });
+            }
+        });
+
+        if !args.dry_run {
+            let fish_state_dir = state.join("fish");
+            fs::create_dir_all(&fish_state_dir).expect("state dir is ours to create");
+            let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+            fs::write(fish_state_dir.join("maintenance_last_run"), now.to_string()).expect("dir created above");
+        }
+
+        if tasks.contains(&"rebuild") {
+            TASK.set(Some("rebuild"));
+            let nixos_config = env("NIXOS_CONFIG");
+            let hostname = String::from_utf8_lossy(&Command::new("hostname").output().expect("Failed to get hostname").stdout)
+                .trim()
+                .to_string();
+            let git = || {
+                let mut git = Command::new("git");
+                git.arg("-C").arg(&nixos_config);
+                git
+            };
+
+            let flake = format!("{nixos_config}#{hostname}");
+            let mut rebuild = Command::new("sudo");
+            rebuild.args(["nixos-rebuild", "switch", "--no-reexec", "--flake", &flake, "--show-trace"]);
+            if ctx.verbosity >= 2 {
+                rebuild.arg("-v");
+            }
+            if !args.pure {
+                rebuild.arg("--impure");
+            }
+            let rebuilt = ctx.run(&mut rebuild);
+            if rebuilt {
+                ctx.report(false, format_args!("switched to {flake}"));
+            }
+            if rebuilt && ctx.run(git().args(["add", "-A"])) {
+                match git().args(["diff", "--cached", "--quiet"]).status().map(|s| s.code()) {
+                    Ok(Some(0)) => {}
+                    Ok(Some(1)) => {
+                        if ctx.run(git().args(["commit", "-m", "_"])) {
+                            ctx.report(false, "committed config changes");
+                        }
+                    }
+                    other => ctx.report(true, format_args!("git diff --cached: {other:?}")),
+                }
+                if ctx.run(git().arg("push")) {
+                    ctx.report(false, "pushed");
+                }
+            }
+        }
+        STATUS.lock().expect(STATUS_LOCK).stop = true;
     });
 
     if args.dry_run {
         return ctx.print_report(&tasks);
-    }
-
-    let fish_state_dir = state.join("fish");
-    fs::create_dir_all(&fish_state_dir).expect("state dir is ours to create");
-    let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
-    fs::write(fish_state_dir.join("maintenance_last_run"), now.to_string()).expect("dir created above");
-
-    if tasks.contains(&"rebuild") {
-        TASK.set(Some("rebuild"));
-        let nixos_config = env("NIXOS_CONFIG");
-        let hostname = String::from_utf8_lossy(&Command::new("hostname").output().expect("Failed to get hostname").stdout)
-            .trim()
-            .to_string();
-        let git = || {
-            let mut git = Command::new("git");
-            git.arg("-C").arg(&nixos_config);
-            git
-        };
-
-        let flake = format!("{nixos_config}#{hostname}");
-        let mut rebuild = Command::new("sudo");
-        rebuild.args(["nixos-rebuild", "switch", "--no-reexec", "--flake", &flake, "--show-trace"]);
-        if ctx.verbosity >= 2 {
-            rebuild.arg("-v");
-        }
-        if !args.pure {
-            rebuild.arg("--impure");
-        }
-        let rebuilt = ctx.run(&mut rebuild);
-        if rebuilt {
-            ctx.report(false, format_args!("switched to {flake}"));
-        }
-        if rebuilt && ctx.run(git().args(["add", "-A"])) {
-            match git().args(["diff", "--cached", "--quiet"]).status().map(|s| s.code()) {
-                Ok(Some(0)) => {}
-                Ok(Some(1)) => {
-                    if ctx.run(git().args(["commit", "-m", "_"])) {
-                        ctx.report(false, "committed config changes");
-                    }
-                }
-                other => ctx.report(true, format_args!("git diff --cached: {other:?}")),
-            }
-            if ctx.run(git().arg("push")) {
-                ctx.report(false, "pushed");
-            }
-        }
     }
 
     println!("\n\x1b[34m═══ Shell Startup Profile ═══\x1b[0m\n");
@@ -271,10 +343,41 @@ impl Ctx {
         }
     }
 
-    /// below verbosity 2 the output is kept back, and shown only in the report of a failure
+    /// below verbosity 2 the output is kept back: its latest line is the task's status, and all of it shows only in the report of a failure
     fn run(&self, cmd: &mut Command) -> bool {
         let ran = match self.verbosity {
-            1 => cmd.output().map(|o| (o.status, [o.stdout, o.stderr].map(|out| String::from_utf8_lossy(&out).into_owned()).concat())),
+            1 => {
+                let args: Vec<_> = cmd.get_args().map(|a| a.to_string_lossy()).collect();
+                let mut what = format!("{} {}", cmd.get_program().to_string_lossy(), args.join(" "));
+                if let Some(dir) = cmd.get_current_dir() {
+                    what += &format!(" in {}", dir.display());
+                }
+                doing(&what);
+                cmd.stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped()).spawn().and_then(|mut child| {
+                    let output = Mutex::new(String::new());
+                    let pipes: [Box<dyn io::Read + Send>; 2] = [Box::new(child.stdout.take().expect("piped")), Box::new(child.stderr.take().expect("piped"))];
+                    let task = TASK.get();
+                    std::thread::scope(|s| {
+                        for pipe in pipes {
+                            let (output, what) = (&output, &what);
+                            s.spawn(move || {
+                                TASK.set(task);
+                                for line in io::BufReader::new(pipe).split(b'\n') {
+                                    let line = String::from_utf8_lossy(&line.expect("a child's pipe reads until it closes")).into_owned();
+                                    let last: String = line.trim_end_matches('\r').rsplit('\r').next().expect("rsplit yields at least once").chars().filter(|c| !c.is_control()).collect(); // `\r` redraws a progress line in place
+                                    if !last.trim().is_empty() {
+                                        doing(format_args!("{what} \x1b[2m│\x1b[0m {last}"));
+                                    }
+                                    let mut output = output.lock().expect("held only to append");
+                                    output.push_str(&line);
+                                    output.push('\n');
+                                }
+                            });
+                        }
+                    });
+                    Ok((child.wait()?, output.into_inner().expect("readers are joined")))
+                })
+            }
             _ => cmd.status().map(|s| (s, String::new())),
         };
         match ran {
@@ -300,6 +403,7 @@ impl Ctx {
         if self.dry_run {
             return self.report(false, format_args!("would remove {} ({why})", path.display()));
         }
+        doing(format_args!("removing {}", path.display()));
         let removed = fs::symlink_metadata(path).and_then(|m| if m.is_dir() { fs::remove_dir_all(path) } else { fs::remove_file(path) });
         match removed {
             Ok(()) => self.report(false, format_args!("removed {} ({why})", path.display())),
@@ -343,6 +447,7 @@ impl Ctx {
 
     /// Files and marker-holding dirs become units; other dirs are descended into, and recorded parents first.
     fn collect(&self, dir: &Path, units: &mut Vec<Unit>, dirs: &mut Vec<(PathBuf, SystemTime)>) {
+        doing(format_args!("scanning {}", dir.display()));
         let entries = match fs::read_dir(dir) {
             Ok(entries) => entries,
             Err(e) => return self.report(true, format_args!("keeping {}: {e}", dir.display())),
@@ -433,6 +538,9 @@ impl Ctx {
                 };
                 let project = entry.path().parent().unwrap();
                 let is_dir = entry.file_type().is_dir();
+                if is_dir {
+                    doing(format_args!("scanning {}", entry.path().display()));
+                }
 
                 match entry.file_name().to_str() {
                     Some("target" | "node_modules") if is_dir => walk.skip_current_dir(),
@@ -942,6 +1050,7 @@ impl Ctx {
             if !repo.is_dir() {
                 continue;
             }
+            doing(format_args!("checking {}", repo.display()));
             match fs::read_to_string(repo.join("flake.nix")) {
                 Ok(flake) if flake.contains("v_flakes") && repo.join(".git").exists() => {}
                 Ok(_) => continue,
