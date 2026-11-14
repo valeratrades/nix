@@ -43,6 +43,6 @@ daemons // {
   };
   purposes = {
     rolodex = import ./rolodex.nix; # `social_networks rolodex <cmd>`
-    reviews = import /home/v/s/ev/_service_arb/remote_reviews_automations/reviews.nix;
+    reviews = import /home/v/s/ev/_sa/remote_reviews_automations/reviews.nix;
   };
 }

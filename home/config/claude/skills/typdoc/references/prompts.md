@@ -16,9 +16,9 @@ https://typst.app/project/prgiNWvUa5lYrtSnKn28Fp
 ```
 
 ```
-read /home/v/s/ev_invest/trading_data/trading_data_dag/model.typ
+read /home/v/s/ev/_quant/trading_data/trading_data_dag/model.typ
 
-then study how Weaver operates in /home/v/s/ev_invest/trading_data/trading_data_persistence/,
+then study how Weaver operates in /home/v/s/ev/_quant/trading_data/trading_data_persistence/,
 and compile `weaver.typ`, - draw up its operation, including all the transitional data states
 and reasons for decisions. Draw it up in text first, do few iterations over to narrow down on
 the most explicative model, and then diagrams come at the very end. Focus on getting the
@@ -44,7 +44,7 @@ ok, let's have each graph drawn go under the section it's illustrating
 ## Numbers
 
 ```
-I absolutely hate /home/v/s/ev_invest/trading_data/trading_data_dag/model.typ:402 section. But
+I absolutely hate /home/v/s/ev/_quant/trading_data/trading_data_dag/model.typ:402 section. But
 it could be great, - remove all the opinions about the numbers from it, and switch it fully to
 just code that would procedurally pull the actual utilization numbers from `examples`. It
 shouldn't explain shit, just know to present the data it finds

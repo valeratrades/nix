@@ -352,7 +352,7 @@ in {
     Service = {
       Type = "simple";
       ExecStartPre = "${pkgs.networkmanager}/bin/nm-online -q -t 86400"; # user manager has no network-online.target
-      ExecStart = "/run/current-system/sw/bin/nix run %h/s/ev/_service_arb/accounting";
+      ExecStart = "/run/current-system/sw/bin/nix run %h/s/ev/_sa/accounting";
       TimeoutStartSec = "infinity";
       Restart = "on-failure";
       RestartSec = 30;

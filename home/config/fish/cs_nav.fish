@@ -8,7 +8,7 @@ set -l _cs_navs \
     css "$HOME/s/" \
     cse "$HOME/s/ev/" \
     csq "$HOME/s/ev/_quant/" \
-    csa "$HOME/s/ev/_service_arb/" \
+    csa "$HOME/s/ev/_sa/" \
     csre "$HOME/s/ev/_estate/" \
     csr "$HOME/trading/" \
     csh "$NIXOS_CONFIG/home/scripts/" \

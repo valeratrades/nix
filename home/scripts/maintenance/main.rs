@@ -1001,6 +1001,10 @@ impl Ctx {
                 }
                 continue;
             }
+            if fs::symlink_metadata(&front).is_err_and(|e| e.kind() == io::ErrorKind::NotFound) {
+                self.remove(hop, format_args!("orphaned, {} is gone", front.display()));
+                continue;
+            }
             let last_follow = (|| -> io::Result<(u64, bool)> {
                 if !entry.file_type().is_symlink() {
                     return Err(io::Error::other("hop is not a symlink"));
