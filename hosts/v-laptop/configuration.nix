@@ -20,6 +20,11 @@
   # reserve a thread whose sibling is still contended, which measures nothing.
   systemd.settings.Manager.CPUAffinity = "0-11 16-27";
 
+  # Water-damaged USB-A (2026-11-11): its USB2 lane re-enumerates a phantom device every ~20s. Delete once repaired.
+  services.udev.extraRules = ''
+    ACTION=="add", SUBSYSTEM=="usb", KERNEL=="1-0:1.0", KERNELS=="0000:06:00.3", ATTR{usb1-port1/disable}="1"
+  '';
+
   # Resolve *.local (mDNS), so `ssh admin@rpi5.local` works from here.
   services.avahi = {
     enable = true;
