@@ -31,6 +31,13 @@ return require "lazier" {
 			vim.notify(status, vim.log.levels.INFO)
 		end
 
+		local default_sort = { { "type", "asc" }, { "name", "asc" } }
+		local by_recency = false
+		vim.api.nvim_create_user_command("OilSort", function()
+			by_recency = not by_recency
+			oil.set_sort(by_recency and { { "mtime", "desc" } } or default_sort)
+		end, { desc = "Toggle oil sort: recency <-> type+name" })
+
 		oil.setup({
 			default_file_explorer = true,
 			-- Id is automatically added at the beginning, and name at the end
@@ -107,12 +114,7 @@ return require "lazier" {
 				is_always_hidden = function(name, bufnr)
 					return false
 				end,
-				sort = {
-					-- sort order can be "asc" or "desc"
-					-- see :help oil-columns to see which columns are sortable
-					{ "type", "asc" },
-					{ "name", "asc" },
-				},
+				sort = default_sort,
 			},
 			float = {
 				padding = 0,
