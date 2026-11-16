@@ -21,6 +21,14 @@ return require('lazy').setup({
 	{ import = "valera.plugins.blankline" },
 	{ import = "valera.plugins.copilot" },
 	{ import = "valera.plugins.treesitter" },
+	{ -- swaps siblings in any ts language; textobjects' swap only covers langs whose queries define `@parameter`
+		"Wansmer/sibling-swap.nvim",
+		opts = { use_default_keymaps = false },
+		keys = {
+			{ "g<", function() require('sibling-swap').swap_with_left() end,  desc = "Swap with left sibling" },
+			{ "g>", function() require('sibling-swap').swap_with_right() end, desc = "Swap with right sibling" },
+		},
+	},
 	{ import = "valera.plugins.telescope" },
 	{ import = "valera.plugins.lualine" },
 	"numToStr/Comment.nvim",

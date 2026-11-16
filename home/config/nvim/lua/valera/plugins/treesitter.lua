@@ -51,11 +51,17 @@ return {
 		-- textobjects
 		local select = require 'nvim-treesitter-textobjects.select'
 		local move = require 'nvim-treesitter-textobjects.move'
-		local swap = require 'nvim-treesitter-textobjects.swap'
 
 		require('nvim-treesitter-textobjects').setup {
 			select = {
 				lookahead = true, -- automatically jump forward to textobj, similar to targets.vim
+				selection_modes = function(opts)
+					-- markdown blocks end at col 0 of the next line; charwise would take that newline too
+					if vim.bo.filetype == 'markdown' and vim.list_contains({ '@function.outer', '@class.outer', '@class.inner' }, opts.query_string) then
+						return 'V'
+					end
+					return 'v'
+				end,
 			},
 			move = {
 				set_jumps = false, -- whether to set jumps in the jumplist
@@ -97,14 +103,6 @@ return {
 				move[mapping[2]](mapping[3], query_group)
 			end)
 		end
-
-		-- swap
-		vim.keymap.set("n", "g<", function()
-			swap.swap_previous("@parameter.inner")
-		end)
-		vim.keymap.set("n", "g>", function()
-			swap.swap_next("@parameter.inner")
-		end)
 
 		-- incremental selection: removed from nvim-treesitter main.
 		-- \\s / \\t bindings were: init/increment/decrement node selection.
