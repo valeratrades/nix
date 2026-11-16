@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Plan-accept dialog: add "clear context and implement as Sonnet" next to the clear-context approval.
+"""Plan-accept dialog: add "clear context and implement as Sonnet/Opus" next to the clear-context approval.
 
-1. Option builder. When the clear-context option is shown, a second clear-context option follows
-   it that also switches the model, then a single keep-context approval in the session's mode;
+1. Option builder. When the clear-context option is shown, two clear-context options follow
+   it that also switch the model (Sonnet, Opus), then a single keep-context approval in the session's mode;
    the default-mode keep-context approval survives only where no clear-context option exists
    (remote sessions, setting off). The bypass keep-context row gets a plain label instead of
    upstream's bolded "switch to Bypass Permissions" one.
 
-2. Accept handler. The new value is remapped to the first (clear-context) option before any
+2. Accept handler. The new values are remapped to the first (clear-context) option before any
    other branch reads it, after a session-only model switch through the same function `/model`
    uses. The ultraplan analytics call pays for the bytes.
 
@@ -36,7 +36,7 @@ PATCHES = [
 		b'let Ot=xt?null:HBe("default",{labelVariant:"plan-keep-context"});'
 		b'if(Ot!==null)Je["yes-default-keep-context"]=Ot,et["yes-default-keep-context"]="default",'
 		b'Ve.push({label:Ot.node,value:"yes-default-keep-context"})}',
-		b'if(!Oe&&h)Ve.push({label:`Yes, clear context${rt} and implement as Sonnet`,value:"yes-sonnet"});'
+		b'if(!Oe&&h)Ve.push(...["Sonnet","Opus"].map(m=>({label:`Yes, clear context${rt} and implement as ${m}`,value:"yes-"+m.toLowerCase()})));'
 		b'if(!Oe){let a="yes-accept-edits-keep-context",d="yes-default-keep-context";'
 		b'if(Pt){let Mt=HBe("bypassPermissions",{isBypassPermissionsModeAvailable:te});'
 		b'if(Mt!==null)Je[a]=Mt,et[a]="bypassPermissions",Ve.push({label:"Yes, implement without clearing context",value:a})}'
@@ -59,7 +59,7 @@ PATCHES = [
 		b'onStatusMessage:kr,storageV5:Oe,credentials:Fe}).then(kr).catch(a);return}'
 		b'let yi=zn==="yes-accept-edits-keep-context"||zn==="yes-default-keep-context"||zn==="yes-resume-auto-mode";',
 		b'async function Dr(zn){if(lr()||mr()){Mr();return}if(!D())return;'
-		b'if(zn==="yes-sonnet")zn=cn[0].value,edt(Ve,"sonnet",xe.getState,te,!1,"command").catch(a);'
+		b'{let m=/^yes-(sonnet|opus)$/.exec(zn)?.[1];if(m)zn=cn[0].value,edt(Ve,m,xe.getState,te,!1,"command").catch(a)}'
 		b'let fs=rt.trim(),_s=fs||void 0,Js=(ra)=>OSt(zn,{currentPlan:xo,planEditedLocally:On,acceptFeedback:_s,'
 		b'trimmedFeedback:fs,hasImages:Cr,imageBlocks:ra,showClearContext:Dt,keepContextRow:Yo.keepContextRows[zn]??null});'
 		b'if(zn==="ultraplan"&&to){M(Js()),'
