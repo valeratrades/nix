@@ -8,7 +8,7 @@ SCENES = "basic/scenes/Untitled.json"
 # MANUAL: set once in the GUI per machine: these (portal grant, restream chat token), the stream key (profile service.json) and the websocket password. Repo is public.
 LIVE_ONLY = {"pipewire-screen-capture-source": "RestoreToken", "browser_source": "url"}
 
-if any(open(c).read().strip() == "obs" for c in glob.glob("/proc/[0-9]*/comm") if os.path.exists(c)):
+if any(open(c).read().strip() in ("obs", ".obs-wrapped") for c in glob.glob("/proc/[0-9]*/comm") if os.path.exists(c)):
     print("\x1b[33mOBS is running and only saves its config on exit; close it and re-run\x1b[0m")
     sys.exit(mode == "capture")
 
