@@ -1,8 +1,9 @@
 let
   cfg = rec {
-    stale_after_days = 30; # shell nags to run `up` once the last run is older; not used (files: max(atime, mtime), dirs: mtime) for this long is stale
+    # v_utils::Timeframe: `M` is months, `m` minutes. Not used (files: max(atime, mtime), dirs: mtime) for a horizon is stale
+    horizon_long = "1M"; # shell nags to run `up` once overdue by it; default for what goes stale
+    horizon_fast = "1w"; # what piles up fast: ~/.cargo/build (a dir per script path, and every switch moves fish's scripts to a new /nix/store path), LLM worktrees
     warn_probability = 0.2; # chance a shell start nags, once due
-    stale_multipliers = { llm_worktrees = 0.2; redirects = 1.0; }; # of stale_after_days; floats, as v_utils::Percent reads an int as percents
 
     # a dir holding any of these is one unit, kept or removed whole; `*` prefix matches by suffix
     unit_markers = [

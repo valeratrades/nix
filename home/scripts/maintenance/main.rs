@@ -27,7 +27,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::Mutex;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use v_utils::Percent;
+use v_utils::Timeframe;
 use walkdir::WalkDir;
 
 /// System maintenance script
@@ -61,7 +61,7 @@ struct Args {
 
 #[derive(clap::Subcommand, Debug)]
 enum Cmd {
-    /// Move `from` to `to`, leaving `from` as a redirect the `redirects` task removes once unfollowed for stale_multipliers.redirects.
+    /// Move `from` to `to`, leaving `from` as a redirect the `redirects` task removes once unfollowed for horizon_long.
     /// Then re-roots what records the old path: git worktree links, tmux sessions, claude projects/history/config, direnv trust, zoxide. A `from` already redirecting to `to` gets just that.
     Mv { from: PathBuf, to: PathBuf },
 }
@@ -69,23 +69,10 @@ enum Cmd {
 /// written by home-manager from ./config.nix
 #[derive(Deserialize)]
 struct Config {
-    stale_after_days: u64,
-    stale_multipliers: StaleMultipliers,
+    horizon_long: Timeframe,
+    horizon_fast: Timeframe,
     unit_markers: Vec<String>,
     cache_limit_gb: u64,
-}
-
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct StaleMultipliers {
-    llm_worktrees: Percent,
-    redirects: Percent,
-}
-
-impl Config {
-    fn stale_days(&self, multiplier: Percent) -> u64 {
-        (self.stale_after_days as f64 * *multiplier).round() as u64
-    }
 }
 
 struct Ctx {
@@ -213,6 +200,7 @@ fn main() {
         ("clean", &|| {
             ctx.sweep(&ctx.home.join("tmp"), None); // before artefact cleaning, which also walks ~/tmp
             ctx.clean_old_build_artefacts();
+            ctx.sweep_script_builds();
         }),
         ("cache", &|| ctx.sweep(&ctx.home.join(".cache"), Some(ctx.cfg.cache_limit_gb << 30))),
         ("nightly", &|| {
@@ -244,8 +232,8 @@ fn main() {
         if !args.dry_run {
             let fish_state_dir = state.join("fish");
             fs::create_dir_all(&fish_state_dir).expect("state dir is ours to create");
-            let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
-            fs::write(fish_state_dir.join("maintenance_last_run"), now.to_string()).expect("dir created above");
+            let due = (SystemTime::now() + ctx.cfg.horizon_long.duration()).duration_since(UNIX_EPOCH).unwrap().as_secs();
+            fs::write(fish_state_dir.join("maintenance_due"), due.to_string()).expect("dir created above");
         }
 
         if tasks.contains(&"rebuild") {
@@ -393,9 +381,8 @@ impl Ctx {
         }
     }
 
-    fn unused_days(&self, last_use: SystemTime, stale_after_days: u64) -> Option<u64> {
-        let days = last_use.elapsed().map_or(0, |e| e.as_secs() / 86400); // Err: last use is in the future, so in use
-        (days >= stale_after_days).then_some(days)
+    fn unused_days(&self, last_use: SystemTime, horizon: Timeframe) -> Option<u64> {
+        (last_use.elapsed().unwrap_or_default() >= horizon.duration()).then(|| days_since(last_use)) // Err: last use is in the future, so in use
     }
 
     fn remove(&self, path: &Path, why: impl Display) {
@@ -414,14 +401,14 @@ impl Ctx {
     /// Removes outdated units under `root`, then with a `limit` (bytes) the least recently used ones until the rest fits.
     fn sweep(&self, root: &Path, limit: Option<u64>) {
         if self.verbosity >= 2 {
-            println!("\x1b[34mSweeping {} for units unused for {} days\x1b[0m", root.display(), self.cfg.stale_after_days);
+            println!("\x1b[34mSweeping {} for units unused for {}\x1b[0m", root.display(), self.cfg.horizon_long);
         }
         let (mut units, mut dirs) = (vec![], vec![]);
         self.collect(root, &mut units, &mut dirs);
         units.sort_by_key(|u| u.last_use);
         let mut kept: u64 = units.iter().map(|u| u.bytes).sum();
         for unit in &units {
-            let days = self.unused_days(unit.last_use, self.cfg.stale_after_days);
+            let days = self.unused_days(unit.last_use, self.cfg.horizon_long);
             let over_limit = limit.is_some_and(|limit| kept > limit);
             if days.is_none() && !over_limit {
                 break; // sorted: everything after is fresher
@@ -436,7 +423,7 @@ impl Ctx {
         for (dir, mtime) in dirs.iter().rev() {
             match fs::read_dir(dir) {
                 Ok(mut entries) => {
-                    if let (None, Some(days)) = (entries.next(), self.unused_days(*mtime, self.cfg.stale_after_days)) {
+                    if let (None, Some(days)) = (entries.next(), self.unused_days(*mtime, self.cfg.horizon_long)) {
                         self.remove(dir, format_args!("empty, unused {days}d"));
                     }
                 }
@@ -515,7 +502,7 @@ impl Ctx {
                 }
             }
         };
-        let sweep_days = self.cfg.stale_after_days.to_string();
+        let sweep_days = (self.cfg.horizon_long.duration().as_secs() / 86400).to_string();
 
         for dir in ["tmp", "s", "g", "leetcode", "uni"].map(|d| self.home.join(d)) {
             if !dir.exists() {
@@ -546,7 +533,7 @@ impl Ctx {
                     Some("target" | "node_modules") if is_dir => walk.skip_current_dir(),
                     Some("Cargo.toml") if project.join("target").exists() => {
                         let Some(last_use) = self.project_last_use(project) else { continue };
-                        match self.unused_days(last_use, self.cfg.stale_after_days) {
+                        match self.unused_days(last_use, self.cfg.horizon_long) {
                             Some(days) => cargo(project, &["clean"], format!("unused {days}d")),
                             None if last_use > last_clean => cargo(project, &["sweep", "--time", &sweep_days], "touched since last clean".into()),
                             None => {}
@@ -562,7 +549,7 @@ impl Ctx {
                         if artefacts.is_empty() {
                             continue;
                         }
-                        if let Some(days) = self.project_last_use(project).and_then(|t| self.unused_days(t, self.cfg.stale_after_days)) {
+                        if let Some(days) = self.project_last_use(project).and_then(|t| self.unused_days(t, self.cfg.horizon_long)) {
                             for artefact in &artefacts {
                                 self.remove(artefact, format_args!("project unused {days}d"));
                             }
@@ -579,10 +566,15 @@ impl Ctx {
         }
     }
 
-    /// plain `git worktree remove` refuses dirty or locked worktrees, so only uncommitted-nothing goes; the branch stays
+    /// Plain `git worktree remove` refuses dirty or locked worktrees, so only uncommitted-nothing goes.
+    /// A clean one whose HEAD another ref also holds goes at any age, with its branch, unless a process sits in it: all it can lose is ignored files.
+    /// Otherwise it goes once unused for horizon_fast, and the branch stays.
     fn remove_stale_worktrees(&self, worktrees: &Path) {
-        let stale_after_days = self.cfg.stale_days(self.cfg.stale_multipliers.llm_worktrees);
         let repo = worktrees.parent().and_then(Path::parent).expect("<repo>/.claude/worktrees");
+        let cwds: Vec<PathBuf> = fs::read_dir("/proc")
+            .expect("procfs is mounted")
+            .filter_map(|p| fs::read_link(p.expect("procfs lists its entries").path().join("cwd")).ok()) // Err: not a pid, another user's, or exited since listing
+            .collect();
         let entries = match fs::read_dir(worktrees) {
             Ok(entries) => entries,
             Err(e) => return self.report(true, format_args!("keeping {}: {e}", worktrees.display())),
@@ -595,11 +587,77 @@ impl Ctx {
                     continue;
                 }
             };
-            let Some(days) = self.project_last_use(&worktree).and_then(|t| self.unused_days(t, stale_after_days)) else { continue };
+            let git = |args: &[&str]| -> io::Result<String> {
+                let out = Command::new("git").arg("-C").arg(&worktree).args(args).output()?;
+                match out.status.success() {
+                    true => Ok(String::from_utf8(out.stdout).expect("refs, and porcelain quotes non-ASCII paths")),
+                    false => Err(io::Error::other(format!("git {}: {}: {}", args.join(" "), out.status, String::from_utf8_lossy(&out.stderr).trim()))),
+                }
+            };
+            let spent = (|| -> io::Result<Option<String>> {
+                if !git(&["status", "--porcelain"])?.is_empty() {
+                    return Ok(None);
+                }
+                let own = git(&["rev-parse", "--symbolic-full-name", "HEAD"])?.trim().to_owned(); // `HEAD` when detached
+                let elsewhere = git(&["for-each-ref", "--contains", "HEAD", "--format=%(refname)"])?.lines().any(|r| r != own && r != "refs/stash");
+                Ok(elsewhere.then_some(own))
+            })();
+            match spent {
+                Ok(Some(own)) if !cwds.iter().any(|cwd| cwd.starts_with(&worktree)) => {
+                    let branch = own.strip_prefix("refs/heads/");
+                    if self.dry_run {
+                        self.report(false, format_args!("would git worktree remove {} and {own} (nothing unpublished)", worktree.display()));
+                    } else if self.run(Command::new("git").arg("-C").arg(repo).args(["worktree", "remove"]).arg(&worktree)) {
+                        self.report(false, format_args!("git worktree remove {} (nothing unpublished)", worktree.display()));
+                        if let Some(branch) = branch
+                            && self.run(Command::new("git").arg("-C").arg(repo).args(["branch", "-D", branch]))
+                        {
+                            self.report(false, format_args!("git branch -D {branch} in {} (another ref holds its head)", repo.display()));
+                        }
+                    }
+                    continue;
+                }
+                Ok(_) => {}
+                Err(e) => self.report(true, format_args!("{}: {e}", worktree.display())),
+            }
+            let Some(days) = self.project_last_use(&worktree).and_then(|t| self.unused_days(t, self.cfg.horizon_fast)) else { continue };
             if self.dry_run {
                 self.report(false, format_args!("would git worktree remove {} (unused {days}d)", worktree.display()));
             } else if self.run(Command::new("git").arg("-C").arg(repo).args(["worktree", "remove"]).arg(&worktree)) {
                 self.report(false, format_args!("git worktree remove {} (unused {days}d)", worktree.display()));
+            }
+        }
+    }
+
+    /// `cargo -Zscript` builds, a dir per script path. A script whose build is gone still runs off ../nix-run-cached's content-addressed link, which shares the binary's inode, so a run counts as a use here.
+    fn sweep_script_builds(&self) {
+        let root = self.home.join(".cargo/build");
+        if self.verbosity >= 2 {
+            println!("\x1b[34mSweeping {} for builds unused for {}\x1b[0m", root.display(), self.cfg.horizon_fast);
+        }
+        let mut parents = vec![];
+        for entry in WalkDir::new(&root).min_depth(1).max_depth(2) {
+            let entry = match entry {
+                Ok(entry) => entry,
+                Err(e) if e.io_error().is_some_and(|e| e.kind() == io::ErrorKind::NotFound) && e.depth() == 0 => return,
+                Err(e) => {
+                    self.report(true, e);
+                    continue;
+                }
+            };
+            if entry.depth() == 1 {
+                parents.push(entry.into_path());
+                continue;
+            }
+            if let Some(days) = self.project_last_use(entry.path()).and_then(|t| self.unused_days(t, self.cfg.horizon_fast)) {
+                self.remove(entry.path(), format_args!("unused {days}d"));
+            }
+        }
+        for parent in parents {
+            match fs::read_dir(&parent).map(|mut entries| entries.next().is_none()) {
+                Ok(true) => self.remove(&parent, "empty"),
+                Ok(false) => {}
+                Err(e) => self.report(true, format_args!("{}: {e}", parent.display())),
             }
         }
     }
@@ -634,7 +692,7 @@ impl Ctx {
         }
         fs::rename(from, to).unwrap_or_else(|e| panic!("{} -> {}: {e}", from.display(), to.display()));
         self.redirect(from, to);
-        self.report(false, format_args!("moved {} -> {}, redirect lives until unfollowed {}d", from.display(), to.display(), self.cfg.stale_days(self.cfg.stale_multipliers.redirects)));
+        self.report(false, format_args!("moved {} -> {}, redirect lives until unfollowed {}", from.display(), to.display(), self.cfg.horizon_long));
     }
 
     /// `~/<p>` -> `$XDG_STATE_HOME/maintenance/redirects/<p>` -> new location: only traversals reach the hop, so its atime is the last follow (`ls -l` readlinks just the front)
@@ -967,7 +1025,7 @@ impl Ctx {
         let live = self.live_claudes();
         let claude_projects = self.claude_dir().join("projects");
         if self.verbosity >= 2 {
-            println!("\x1b[34mSweeping redirects in {} unfollowed for {} days\x1b[0m", hops.display(), self.cfg.stale_days(self.cfg.stale_multipliers.redirects));
+            println!("\x1b[34mSweeping redirects in {} unfollowed for {}\x1b[0m", hops.display(), self.cfg.horizon_long);
         }
         for entry in WalkDir::new(hops).min_depth(1) {
             let entry = match entry {
@@ -1005,7 +1063,7 @@ impl Ctx {
                 self.remove(hop, format_args!("orphaned, {} is gone", front.display()));
                 continue;
             }
-            let last_follow = (|| -> io::Result<(u64, bool)> {
+            let last_follow = (|| -> io::Result<(SystemTime, bool)> {
                 if !entry.file_type().is_symlink() {
                     return Err(io::Error::other("hop is not a symlink"));
                 }
@@ -1014,17 +1072,16 @@ impl Ctx {
                     return Err(io::Error::other(format!("{} points to {}, not the hop", front.display(), target.display())));
                 }
                 let meta = fs::symlink_metadata(hop)?;
-                let days = meta.accessed()?.elapsed().map_or(0, |e| e.as_secs() / 86400); // Err: followed in the future, so in use
-                Ok((days, meta.accessed()? > meta.modified()?)) // a symlink's mtime is its creation, the move
+                Ok((meta.accessed()?, meta.accessed()? > meta.modified()?)) // a symlink's mtime is its creation, the move
             })();
             match last_follow {
-                Ok((days, _)) if days >= self.cfg.stale_days(self.cfg.stale_multipliers.redirects) => {
+                Ok((followed, _)) if let Some(days) = self.unused_days(followed, self.cfg.horizon_long) => {
                     self.remove(&front, format_args!("redirect unfollowed {days}d"));
                     self.remove(hop, format_args!("hop of {}", front.display()));
                 }
-                Ok((days, true)) => match holders(false).as_slice() {
-                    [] => self.report(true, format_args!("{} was followed {days}d ago: something still points at the old path", front.display())),
-                    holders => self.report(true, format_args!("{} was followed {days}d ago, and {} still started under it", front.display(), holders.join(", "))),
+                Ok((followed, true)) => match holders(false).as_slice() {
+                    [] => self.report(true, format_args!("{} was followed {}d ago: something still points at the old path", front.display(), days_since(followed))),
+                    holders => self.report(true, format_args!("{} was followed {}d ago, and {} still started under it", front.display(), days_since(followed), holders.join(", "))),
                 },
                 Ok((_, false)) => {}
                 Err(e) => self.report(true, format_args!("keeping redirect {}: {e}", hop.display())),
@@ -1035,7 +1092,7 @@ impl Ctx {
     /// kache reuses a crate across repos only when its whole dependency closure resolved alike, so every active v_flakes repo updates in the same run
     fn align_lockfiles(&self) {
         if self.verbosity >= 2 {
-            println!("\x1b[34mAligning lockfiles of v_flakes repos used in the last {} days\x1b[0m", self.cfg.stale_after_days);
+            println!("\x1b[34mAligning lockfiles of v_flakes repos used in the last {}\x1b[0m", self.cfg.horizon_long);
         }
         let root = self.home.join("s");
         let entries = match fs::read_dir(&root) {
@@ -1064,7 +1121,7 @@ impl Ctx {
                     continue;
                 }
             }
-            if self.project_last_use(&repo).is_none_or(|t| self.unused_days(t, self.cfg.stale_after_days).is_some()) {
+            if self.project_last_use(&repo).is_none_or(|t| self.unused_days(t, self.cfg.horizon_long).is_some()) {
                 continue;
             }
             let name = repo.file_name().expect("read_dir entry").to_string_lossy().into_owned();
@@ -1233,6 +1290,10 @@ fn unit(path: PathBuf) -> io::Result<Unit> {
         bytes += meta.blocks() * 512;
     }
     Ok(Unit { path, last_use, bytes })
+}
+
+fn days_since(t: SystemTime) -> u64 {
+    t.elapsed().map_or(0, |e| e.as_secs() / 86400) // Err: in the future, so in use
 }
 
 /// the `projects/` dir name claude gives a cwd
