@@ -13,8 +13,8 @@
     wlr = {
       enable = true;
       settings.screencast = {
-        chooser_type = "dmenu";
-        chooser_cmd = "${pkgs.rofi}/bin/rofi -dmenu -p 'share output'"; # unit PATH lacks system bins
+        chooser_type = "simple"; # default chain skips slurp whenever the client also accepts windows (xdpw >=0.8)
+        chooser_cmd = "${pkgs.slurp}/bin/slurp -f 'Monitor: %o' -or";
       };
     };
   };
