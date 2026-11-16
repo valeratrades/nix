@@ -517,7 +517,17 @@
         anyrun # wayland-native rust alternative to rofi
         sshfs # mount remote dirs, edit with local nvim (only reads/writes cross the network)
         pdfgrep
-        xournalpp # draw on PDFs
+        (symlinkJoin { # draw on PDFs
+          inherit (xournalpp) name meta;
+          paths = [ xournalpp ];
+          nativeBuildInputs = [ makeWrapper ];
+          # no CLI flag to skip the post-crash restore/errorlog prompts; they key off these files
+          postBuild = ''
+            for b in xournalpp xournalpp-wrapper; do
+              wrapProgram $out/bin/$b --run 'rm -rf "$HOME/.config/xournalpp/emergencysave.xopp" "$HOME/.cache/xournalpp/errorlogs"'
+            done
+          '';
+        })
       ] ++ [
         inputs.auto_redshift.packages.${pkgs.stdenv.hostPlatform.system}.default # good idea for everyone
         (import ../../home/config/fish/with_fish_init.nix pkgs {
