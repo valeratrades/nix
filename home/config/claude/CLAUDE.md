@@ -142,6 +142,8 @@
 
 - when you're doing debugging, avoid editing actual tests, - prefer making standalone bins in [examples/]
 
+- if you noticed a failing test with nobody else working on it, you now own it.
+
 ## Development Principles
 - oftentimes I will request a change that will modify some key primitives used throughout the codebase. You must not attempt to minimize number of necessary changes by introducing a sneaky fallback function that replicates the old behavior in a slightly different way. Simplicity is measured in the correctness of the final interface, not how long it took you to rewrite to it. Semantic correctness of the architecture is most important.
 

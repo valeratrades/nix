@@ -170,7 +170,7 @@
 	(box
 		:class "warn"
 		:visible {github_poll != "" && github_poll != 0}
-		"${github_poll}"))
+		" ${github_poll}"))
 
 (deflisten notifications_listen :initial '{"show": "no", "content": ""}' "./modules/notifications.sh")
 (defwidget notifications []
@@ -186,9 +186,6 @@
 		" ${ping_poll == "None" ? "No WiFi" : ping_poll == "Some" ? "Some WiFi" : "${ping_poll}ms"}")) 
 
 ;; Volume ;;
-(defpoll speaker_poll :initial "{}" :interval "1s" "./modules/speaker.sh")
-(defwidget speaker [] "${speaker_poll.icon}${speaker_poll.content}")
-
 (defpoll microphone_poll :initial "{}" :interval "500ms" "./modules/microphone.sh")
 (defwidget microphone []
 	(box
@@ -196,6 +193,9 @@
 		"${microphone_poll.icon}${microphone_poll.content}"
 	)
 )
+
+(defpoll speaker_poll :initial "{}" :interval "1s" "./modules/speaker.sh")
+(defwidget speaker [] "${speaker_poll.icon} ${speaker_poll.content}")
 
 ; 5s, matching sensor-sampler: at 15s a thermal excursion could open and close between two reads,
 ; so the bar disagreed with the journal about whether anything had happened.
