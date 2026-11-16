@@ -431,6 +431,8 @@
               # identity that readlink -f does NOT resolve back to the default, so CDP
               # opens while we keep using the one real profile underneath.
               "--user-data-dir=${config.home.homeDirectory}/.config/google-chrome-cdp"
+              # xdpw has no restore tokens, so Chrome's picker preview and the capture each ran the portal chooser: 3 picks. Costs tab/tab-audio sharing.
+              "--auto-select-desktop-capture-source=Entire screen"
               "--enable-logging" # GUI launch has no usable stderr
               "--log-file=${config.home.homeDirectory}/.config/google-chrome-cdp/chrome_debug.log"
             ];
