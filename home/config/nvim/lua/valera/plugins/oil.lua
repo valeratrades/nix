@@ -1,5 +1,6 @@
 return require "lazier" {
 	"stevearc/oil.nvim",
+	lazy = false, -- lazier would turn :OilSort into a cmd trigger, leaving dirs to netrw
 	dependencies = { "echasnovski/mini.icons" },
 	config = function()
 		require("mini.icons").setup({
