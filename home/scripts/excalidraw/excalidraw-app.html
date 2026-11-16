@@ -12,15 +12,28 @@
       transition: opacity 0.3s; pointer-events: none; z-index: 9999;
     }
   </style>
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@excalidraw/excalidraw@0.17.6/dist/excalidraw.production.min.js"></script>
+  <link rel="stylesheet" href="https://esm.sh/@excalidraw/excalidraw@0.18.1/dist/prod/index.css" />
+  <script type="importmap">
+    { "imports": {
+      "react": "https://esm.sh/react@19.1.0",
+      "react/": "https://esm.sh/react@19.1.0/",
+      "react-dom": "https://esm.sh/react-dom@19.1.0",
+      "react-dom/": "https://esm.sh/react-dom@19.1.0/"
+    } }
+  </script>
 </head>
 <body>
   <div id="root"></div>
   <div id="save-indicator">saved</div>
-  <script>
-    var Excalidraw = ExcalidrawLib.Excalidraw;
+  <script type="module">
+    import React from 'react';
+    import { createRoot } from 'react-dom/client';
+    import {
+      Excalidraw, LiveCollaborationTrigger, CaptureUpdateAction, newElementWith,
+      restoreElements, reconcileElements, bumpVersion, getSceneVersion, isInvisiblySmallElement
+    } from 'https://esm.sh/@excalidraw/excalidraw@0.18.1/dist/prod/index.js?external=react,react-dom';
+    import { io } from 'https://esm.sh/socket.io-client@4.8.1';
+    var h = React.createElement;
     var excalidrawAPI = null;
     var indicator = document.getElementById('save-indicator');
     var indicatorTimer = null;
@@ -139,9 +152,9 @@
         if (typeof el.fontSize === 'number') u.fontSize = el.fontSize * factor;
         // Line/arrow/freedraw carry geometry as points relative to (x,y).
         if (el.points) u.points = el.points.map(function(p) { return [p[0] * factor, p[1] * factor]; });
-        return Object.assign({}, el, u);
+        return newElementWith(el, u);
       });
-      excalidrawAPI.updateScene({ elements: next });
+      excalidrawAPI.updateScene({ elements: next, captureUpdate: CaptureUpdateAction.IMMEDIATELY });
     }
 
     function inTextInput(t) {
@@ -294,6 +307,133 @@
       }, 0);
     }, true);
 
+    // Live collab against excalidraw.com rooms; protocol mirrors excalidraw-app/collab/{Collab,Portal}.tsx.
+    // The socket goes through our server, which relays it to oss-collab with an excalidraw.com Origin.
+    var USERNAME = '__USERNAME__';
+    var DELETED_ELEMENT_TIMEOUT = 24 * 60 * 60 * 1000;
+    var SYNC_FULL_SCENE_INTERVAL_MS = 20000;
+    var CURSOR_SYNC_TIMEOUT = 33;
+    var collab = null; // { socket, roomId, roomKey, cryptoKey, link, broadcasted: Map<id, version>, lastVersion, collaborators: Map }
+
+    async function startCollab() {
+      var idBytes = crypto.getRandomValues(new Uint8Array(10));
+      var roomId = Array.from(idBytes, function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+      var cryptoKey = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 128 }, true, ['encrypt', 'decrypt']);
+      var roomKey = (await crypto.subtle.exportKey('jwk', cryptoKey)).k;
+      var socket = io(location.origin, { transports: ['websocket'] });
+      collab = {
+        socket: socket, roomId: roomId, roomKey: roomKey, cryptoKey: cryptoKey,
+        link: 'https://excalidraw.com/#room=' + roomId + ',' + roomKey,
+        broadcasted: new Map(), lastVersion: -1, collaborators: new Map()
+      };
+      socket.on('init-room', function() { socket.emit('join-room', roomId); });
+      socket.on('new-user', function() {
+        var all = excalidrawAPI.getSceneElementsIncludingDeleted();
+        broadcastScene('SCENE_INIT', all, true);
+        // a peer whose 5s init fallback already fired (slow load) drops SCENE_INIT; we have no Firebase copy for it to find
+        broadcastScene('SCENE_UPDATE', all, true);
+      });
+      socket.on('room-user-change', setCollaborators);
+      socket.on('client-broadcast', onClientBroadcast);
+      socket.on('connect_error', function(e) { showIndicator('collab: ' + e.message); });
+      setInterval(function() { broadcastScene('SCENE_UPDATE', excalidrawAPI.getSceneElementsIncludingDeleted(), true); }, SYNC_FULL_SCENE_INTERVAL_MS);
+      console.log('collab link:', collab.link);
+    }
+
+    function copyCollabLink() {
+      navigator.clipboard.writeText(collab.link).then(
+        function() { showIndicator('share link copied'); },
+        function(e) { showIndicator('clipboard failed: ' + e.message); console.log('collab link:', collab.link); }
+      );
+    }
+
+    function isSyncable(el) {
+      if (el.isDeleted) return el.updated > Date.now() - DELETED_ELEMENT_TIMEOUT;
+      return !isInvisiblySmallElement(el);
+    }
+
+    async function broadcast(data, volatile) {
+      var iv = crypto.getRandomValues(new Uint8Array(12));
+      var buf = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, collab.cryptoKey, new TextEncoder().encode(JSON.stringify(data)));
+      collab.socket.emit(volatile ? 'server-volatile-broadcast' : 'server-broadcast', collab.roomId, buf, iv);
+    }
+
+    function broadcastScene(type, elements, syncAll) {
+      var picked = elements.filter(function(el) {
+        var prev = collab.broadcasted.get(el.id);
+        return (syncAll || prev === undefined || el.version > prev) && isSyncable(el);
+      });
+      picked.forEach(function(el) { collab.broadcasted.set(el.id, el.version); });
+      collab.lastVersion = Math.max(collab.lastVersion, getSceneVersion(elements));
+      return broadcast({ type: type, payload: { elements: picked } });
+    }
+
+    async function onClientBroadcast(encrypted, iv) {
+      var plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: new Uint8Array(iv) }, collab.cryptoKey, encrypted);
+      var data = JSON.parse(new TextDecoder().decode(plain));
+      switch (data.type) {
+        case 'SCENE_INIT':
+        case 'SCENE_UPDATE': {
+          var local = excalidrawAPI.getSceneElementsIncludingDeleted();
+          var localById = new Map(local.map(function(el) { return [el.id, el]; }));
+          var remote = restoreElements(data.payload.elements, local);
+          // bumpElementVersions from excalidraw-app: keep our version ahead so our next broadcast wins over the echo
+          var merged = reconcileElements(local, remote, excalidrawAPI.getAppState()).map(function(el) {
+            var l = localById.get(el.id);
+            return l && (l.version > el.version || (l.version === el.version && l.versionNonce !== el.versionNonce)) ? bumpVersion(el, l.version) : el;
+          });
+          collab.lastVersion = getSceneVersion(merged);
+          excalidrawAPI.updateScene({ elements: merged, captureUpdate: CaptureUpdateAction.NEVER });
+          break;
+        }
+        case 'MOUSE_LOCATION':
+          updateCollaborator(data.payload.socketId, {
+            pointer: data.payload.pointer, button: data.payload.button,
+            selectedElementIds: data.payload.selectedElementIds, username: data.payload.username
+          });
+          break;
+        case 'IDLE_STATUS':
+          updateCollaborator(data.payload.socketId, { userState: data.payload.userState, username: data.payload.username });
+          break;
+        case 'USER_VISIBLE_SCENE_BOUNDS': break; // shortcut: following others isn't wired, add if wanted
+        default: throw new Error('unknown collab message type ' + data.type);
+      }
+    }
+
+    function setCollaborators(socketIds) {
+      var next = new Map();
+      socketIds.forEach(function(id) {
+        var me = id === collab.socket.id;
+        next.set(id, Object.assign(me ? { username: USERNAME } : {}, collab.collaborators.get(id), { isCurrentUser: me }));
+      });
+      collab.collaborators = next;
+      excalidrawAPI.updateScene({ collaborators: next });
+    }
+
+    function updateCollaborator(id, updates) {
+      var next = new Map(collab.collaborators);
+      next.set(id, Object.assign({}, next.get(id), updates, { isCurrentUser: id === collab.socket.id }));
+      collab.collaborators = next;
+      excalidrawAPI.updateScene({ collaborators: next });
+    }
+
+    function onSceneChange(elements) {
+      if (!collab || getSceneVersion(elements) <= collab.lastVersion) return;
+      broadcastScene('SCENE_UPDATE', elements, false);
+    }
+
+    var lastPointerSent = 0;
+    function onPointerUpdate(p) {
+      if (!collab || !collab.socket.id || p.pointersMap.size >= 2) return;
+      var now = Date.now();
+      if (now - lastPointerSent < CURSOR_SYNC_TIMEOUT) return;
+      lastPointerSent = now;
+      broadcast({ type: 'MOUSE_LOCATION', payload: {
+        socketId: collab.socket.id, pointer: p.pointer, button: p.button || 'up',
+        selectedElementIds: excalidrawAPI.getAppState().selectedElementIds, username: USERNAME
+      } }, true);
+    }
+
     function sendHeartbeat() {
       fetch('/api/heartbeat', { method: 'POST' }).catch(function() {
         document.getElementById('root').style.display = 'none';
@@ -313,9 +453,22 @@
     fetch('/api/load')
       .then(function(r) { return r.json(); })
       .then(function(data) {
-        ReactDOM.render(
-          React.createElement(Excalidraw, {
+        function App() {
+          var [collabOn, setCollabOn] = React.useState(false);
+          return h(Excalidraw, {
             theme: '__THEME__',
+            isCollaborating: collabOn,
+            onChange: onSceneChange,
+            onPointerUpdate: onPointerUpdate,
+            renderTopRightUI: function() {
+              return h(LiveCollaborationTrigger, {
+                isCollaborating: collabOn,
+                onSelect: function() {
+                  if (collab) { copyCollabLink(); return; }
+                  startCollab().then(function() { setCollabOn(true); copyCollabLink(); });
+                }
+              });
+            },
             initialData: {
               elements: data.elements || [],
               appState: Object.assign({ currentItemFontFamily: 3, currentItemOpacity: 50, currentItemStrokeWidth: 1 }, data.appState || {}, { viewBackgroundColor: '__VIEW_BG_COLOR__' }),
@@ -361,9 +514,9 @@
                   }
                 });
             }
-          }),
-          document.getElementById('root')
-        );
+          });
+        }
+        createRoot(document.getElementById('root')).render(h(App));
       });
   </script>
 </body>

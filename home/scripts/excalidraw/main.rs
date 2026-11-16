@@ -7,6 +7,9 @@ edition = "2024"
 [dependencies]
 clap = { version = "4", features = ["derive"] }
 serde_json = "1"
+tokio = { version = "1", features = ["rt", "net", "io-util"] }
+tokio-rustls = { version = "0.26", default-features = false, features = ["ring", "tls12"] }
+webpki-roots = "1"
 ---
 
 use std::{
@@ -28,6 +31,9 @@ const PORT_BASE: u16 = 3741;
 const PORT_RETRIES: u16 = 64;
 const HEARTBEAT_TIMEOUT_MS: u64 = 8000;
 const ASSETS_DIR: &str = "/home/v/nix/home/scripts/excalidraw";
+const COLLAB_HOST: &str = "oss-collab.excalidraw.com";
+/// collab server only accepts the excalidraw.com origin; the share link points peers there
+const COLLAB_ORIGIN: &str = "https://excalidraw.com";
 
 #[derive(Parser)]
 #[command(name = "ex", bin_name = "ex", about = "Open an .excalidraw file in the browser editor")]
@@ -118,7 +124,8 @@ fn main() -> ExitCode {
 	let html = html_template
 		.replace("arch -- Excalidraw", &format!("{name} -- Excalidraw"))
 		.replace("__THEME__", theme)
-		.replace("__VIEW_BG_COLOR__", "#ffffff");
+		.replace("__VIEW_BG_COLOR__", "#ffffff")
+		.replace("__USERNAME__", &std::env::var("USER").expect("set by login"));
 
 	// Discover bundled libraries, then append any user-supplied ones.
 	let mut all_libs: Vec<PathBuf> = if libs_dir.is_dir() {
@@ -224,6 +231,7 @@ fn main() -> ExitCode {
 		let path = parts[1];
 
 		let mut content_length: usize = 0;
+		let mut headers: Vec<String> = Vec::new();
 		loop {
 			let mut line = String::new();
 			if reader.read_line(&mut line).is_err() || line.trim().is_empty() {
@@ -233,11 +241,21 @@ fn main() -> ExitCode {
 			if let Some(val) = lower.strip_prefix("content-length:") {
 				content_length = val.trim().parse().unwrap_or(0);
 			}
+			headers.push(line.trim_end().to_string());
 		}
 
 		let cors = "Access-Control-Allow-Origin: *\r\nAccess-Control-Allow-Methods: GET, POST, OPTIONS\r\nAccess-Control-Allow-Headers: Content-Type";
 
 		match (method, path) {
+			("GET", p) if p.starts_with("/socket.io/") => {
+				assert!(reader.buffer().is_empty(), "ws client sends nothing before the 101");
+				let path = p.to_string();
+				std::thread::spawn(move || {
+					if let Err(e) = proxy_collab(stream, &path, &headers) {
+						eprintln!("collab proxy: {e}");
+					}
+				});
+			}
 			("OPTIONS", _) => {
 				let _ = write!(stream, "HTTP/1.1 204 No Content\r\n{cors}\r\n\r\n");
 			}
@@ -298,4 +316,33 @@ fn main() -> ExitCode {
 	}
 
 	ExitCode::SUCCESS
+}
+
+/// Byte-level passthrough of the browser's websocket upgrade to the excalidraw collab server, with Host/Origin rewritten.
+fn proxy_collab(client: std::net::TcpStream, path: &str, headers: &[String]) -> std::io::Result<()> {
+	use tokio::io::AsyncWriteExt;
+	let mut req = format!("GET {path} HTTP/1.1\r\nHost: {COLLAB_HOST}\r\nOrigin: {COLLAB_ORIGIN}\r\n");
+	for h in headers {
+		let name = h.split(':').next().unwrap().trim().to_ascii_lowercase();
+		if name != "host" && name != "origin" {
+			req.push_str(h);
+			req.push_str("\r\n");
+		}
+	}
+	req.push_str("\r\n");
+
+	client.set_nonblocking(true)?;
+	tokio::runtime::Builder::new_current_thread().enable_io().build()?.block_on(async {
+		let mut client = tokio::net::TcpStream::from_std(client)?;
+		let roots = tokio_rustls::rustls::RootCertStore { roots: webpki_roots::TLS_SERVER_ROOTS.to_vec() };
+		let config = tokio_rustls::rustls::ClientConfig::builder_with_provider(tokio_rustls::rustls::crypto::ring::default_provider().into())
+			.with_safe_default_protocol_versions()
+			.unwrap()
+			.with_root_certificates(roots)
+			.with_no_client_auth();
+		let tcp = tokio::net::TcpStream::connect((COLLAB_HOST, 443)).await?;
+		let mut upstream = tokio_rustls::TlsConnector::from(Arc::new(config)).connect(COLLAB_HOST.try_into().unwrap(), tcp).await?;
+		upstream.write_all(req.as_bytes()).await?;
+		tokio::io::copy_bidirectional(&mut client, &mut upstream).await.map(|_| ())
+	})
 }
