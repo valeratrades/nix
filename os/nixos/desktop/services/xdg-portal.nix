@@ -10,6 +10,12 @@
       lxqt.xdg-desktop-portal-lxqt
       xdg-desktop-portal-termfilechooser
     ];
-    wlr.enable = true;
+    wlr = {
+      enable = true;
+      settings.screencast = {
+        chooser_type = "dmenu";
+        chooser_cmd = "${pkgs.rofi}/bin/rofi -dmenu -p 'share output'"; # unit PATH lacks system bins
+      };
+    };
   };
 }
