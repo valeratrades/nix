@@ -42,7 +42,10 @@ def on_line(line, now):
 			row = rows.get(pkg_key(msg['package_id']))
 			if row is not None:  # absent: fresh, never compiled this run
 				row[2] = now
-				row[3] |= 'custom-build' not in msg['target']['kind']
+				row[3] |= 'custom-build' not in msg['target']['kind'] and not msg['package_id'].startswith('path+')  # workspace members may still have bins to build
+		elif msg.get('reason') == 'build-finished':
+			for row in rows.values():
+				row[3] |= not row[4] and row[2] is not None
 		return
 	m = COMPILING.match(line)
 	if m:
