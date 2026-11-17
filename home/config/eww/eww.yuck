@@ -157,16 +157,20 @@
 		:class {"${round(EWW_CPU.avg, 0)}" > 90 ? "warn" : ""}
 		" ${round(EWW_CPU.avg, 0)}%"))
 ; / and /home live on separate disks; the fuller one is what matters
+
 (defwidget disk []
 	(box
 		:class {EWW_DISK["/"].used_perc > 90 || EWW_DISK["/home"].used_perc > 90 ? "warn" : ""}
 		" ${round(EWW_DISK["/"].used_perc > EWW_DISK["/home"].used_perc ? EWW_DISK["/"].used_perc : EWW_DISK["/home"].used_perc, 0)}%"))
 ; PSI "some": % of the last 10s some task sat waiting on IO. Device %util is meaningless on NVMe (parallel queues), so stall time is the saturation signal.
+; ~7 cpu ms/call (scripts/poll_cost.py)
 (defpoll io_pressure_poll :initial "0" :interval "5s" "sed -n '1s/.*avg10=\\([0-9]*\\).*/\\1/p' /proc/pressure/io")
+
 (defwidget io_pressure []
 	(box
 		:class {io_pressure_poll >= 20 ? "warn" : ""}
 		"io${io_pressure_poll}%"))
+
 (defwidget ram []
 	(box
 		:visible {EWW_RAM.used_mem_perc != ""}
@@ -212,21 +216,21 @@
 		:space-evenly false
 		(box
 			:class {temperature_poll.cpu >= 70 ? "warn" : ""}
-			"${temperature_poll.icon}C${temperature_poll.cpu}"
+			"${temperature_poll.icon}c${temperature_poll.cpu}"
 		)
 		(box
 			:class {temperature_poll.gpu >= 70 ? "warn" : ""}
-			",G${temperature_poll.gpu}"
+			",g${temperature_poll.gpu}"
 		)
 		; absent while the dGPU is runtime-suspended, which under PRIME offload is most of the time
 		(box
 			:visible {temperature_poll.dgpu >= 0}
 			:class {temperature_poll.dgpu >= 70 ? "warn" : ""}
-			",D${temperature_poll.dgpu}"
+			",d${temperature_poll.dgpu}"
 		)
 		(box
 			:class {temperature_poll.ssd_warn ? "warn" : ""}
-			",S${temperature_poll.ssd}"
+			",s${temperature_poll.ssd}"
 		)
 	)
 )
