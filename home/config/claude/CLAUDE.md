@@ -132,6 +132,7 @@
 
 - when you're finished, make sure to cut random shell commands you may have left running.
   Unless it's tests or watching a release's CI, - things where you will react if it fails. But oftentimes I see sessions with random commands stuck grepping something large, and my tooling is confused and thinks they're still active. So unless you must have a shell command running beyond the point at which you finish, please don't leave any random ones running.
+  `hooks/no_runaway.sh` blocks the shapes of runaway known so far. When a command of yours outlives its purpose anyway, stop it, then add its shape to that hook, so the next agent can't submit it.
 
 ## Testing
 - if a change is not trivial, always test.
