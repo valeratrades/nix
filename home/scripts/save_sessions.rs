@@ -25,7 +25,7 @@ struct Args {
     #[arg(long, value_name = "SESSION_ID")]
     interrupted: Option<String>,
     /// With `--interrupted`: a cut-off turn younger than this, that used only read-only tools, is replayed rather than continued
-    #[arg(long, default_value = "45s")]
+    #[arg(long, default_value = "45s", value_parser = <v_utils::Timeframe as std::str::FromStr>::from_str)] // clap would pick its panicking `From<&str>`
     replay_within: v_utils::Timeframe,
 }
 
@@ -355,7 +355,7 @@ fn interrupted(config_dir: &Path, id: &str, replay_within: std::time::Duration) 
         (Some(from), Some(to)) => secs(to) - secs(from),
         _ => panic!("{}: prompt or last entry lacks a timestamp", transcript.display()),
     };
-    // shortcut: wall time stands in for work done, and a sub-minute Bash is assumed side-effect free; upgrade if a replayed turn ever repeats an effect.
+    // shortcut: wall time stands in for work done, and Bash within `replay_within` is assumed side-effect free; upgrade if a replayed turn ever repeats an effect.
     match harmless && spent < replay_within.as_secs_f64() {
         true => Resume::Replay(p.clone()),
         false => Resume::Continue,

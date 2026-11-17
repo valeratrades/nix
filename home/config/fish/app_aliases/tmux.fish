@@ -167,6 +167,11 @@ end
 function restore_sessions
 	argparse 'n/dry-run' 'r/resume=?' -- $argv
 	or return 1
+	set -l within
+	if test -n "$_flag_resume" # bare `-r`: save_sessions' default
+		set within --replay-within $_flag_resume
+		save_sessions $within --help >/dev/null; or return 1
+	end
 	set -l state_home $XDG_STATE_HOME
 	test -n "$state_home"; or set state_home "$HOME/.local/state"
 	set -l sf "$state_home/tmux_sessions.tsv"
@@ -233,8 +238,6 @@ function restore_sessions
 		end
 		set -l resume
 		if set -q _flag_resume; and test -z "$rewind" # a rewound claude sat idle
-			set -l within
-			test -n "$_flag_resume"; and set within --replay-within $_flag_resume # bare `-r`: save_sessions' default
 			set -l verdict (save_sessions --interrupted $id $within)
 			if test $status != 0
 				echo "restore_sessions: $id — could not tell whether its turn was cut off, not resumed" >&2
