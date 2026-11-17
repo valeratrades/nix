@@ -7,6 +7,7 @@ edition = "2024"
 [dependencies]
 clap = { version = "4.5.49", features = ["derive"] }
 libc = "0.2"
+v_utils = { version = "2.25", default-features = false }
 ---
 
 use clap::Parser;
@@ -16,6 +17,8 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::thread::sleep;
 use std::time::Duration;
+
+use v_utils::chart::bar;
 
 const CGROUP_ROOT: &str = "/sys/fs/cgroup";
 const HWMON: &str = "/sys/class/hwmon";
@@ -340,15 +343,4 @@ fn report_polls() {
 	println!("  {:<32} {:>9} {:>10} {:>8.1}%", "total", "", "", total);
 	println!();
 	println!("  * has :run-while, so it costs this only while its condition holds");
-}
-
-/// `frac` of `width` cells, in eighths
-fn bar(frac: f64, width: usize) -> String {
-	assert!((0.0..=1.0 + 1e-9).contains(&frac), "bar fraction out of range: {frac}");
-	let eighths = (frac * (width * 8) as f64).round() as usize;
-	let mut s = "█".repeat(eighths / 8);
-	if eighths % 8 != 0 {
-		s.push([' ', '▏', '▎', '▍', '▌', '▋', '▊', '▉'][eighths % 8]);
-	}
-	s
 }

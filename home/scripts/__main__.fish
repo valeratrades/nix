@@ -19,6 +19,35 @@ function eww_open_on; $__fish_scripts_dir/eww_open_on.rs $argv; end
 function bluetooth; $__fish_scripts_dir/bluetooth.rs $argv; end
 function cnix_release; $__fish_scripts_dir/cnix_release.rs $argv; end
 function nb; $__fish_scripts_dir/nb.rs $argv; end
+function build_gantt; $__fish_scripts_dir/build_gantt.rs $argv; end
+# `-L` asks for nix's own streamed view; anything else that isn't an interactive build or run is untouched
+function nix
+	if not status is-interactive; or not test -t 1; or contains -- -L $argv; or contains -- --print-build-logs $argv
+		command nix $argv
+		return
+	end
+	switch "$argv[1]"
+		case build
+			build_gantt nix $argv
+		case run
+			set -l pre $argv[2..]
+			if set -l sep (contains -i -- -- $argv)
+				set pre $argv[2..(math $sep - 1)]
+				test $sep -gt 2; or set pre
+			end
+			set -l inst (string match -v -- '-*' $pre)[1]
+			set -q inst[1]; or set inst .
+			set -l flake (string split -m1 '#' -- $inst) default
+			test -n "$flake[2]"; or set flake[2] default
+			# apps aren't buildable; `nix run` prefers them over packages of the same name
+			if not command nix eval "$flake[1]#apps."(uname -m)"-linux.$flake[2].type" >/dev/null 2>&1
+				build_gantt nix build --no-link $pre; or return
+			end
+			command nix $argv
+		case '*'
+			command nix $argv
+	end
+end
 function gn; $__fish_scripts_dir/git_scripts.rs publish $argv; end
 function kbd; $__fish_scripts_dir/kbd.rs $argv; end
 function health; $__fish_scripts_dir/health.rs $argv; end
