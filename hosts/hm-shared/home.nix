@@ -704,6 +704,10 @@
         recursive = true;
       };
 
+      # agents' cargo leaves a unit per feature/lockfile/rustflags change several times a day; kache's 30d default let main's target reach 57 copies of one test binary
+      ".config/kache/config.toml".source = (pkgs.formats.toml { }).generate "kache-config.toml" {
+        cache.auto_clean_unused_units_days = 2; # relatime refreshes atime at most daily, so 1 could drop units still in use
+      };
       ".cargo/rustfmt.toml".source = "${self}/home/config/cargo/rustfmt.toml";
       ".cargo/config.toml".source = (pkgs.formats.toml { }).generate "cargo-config.toml" ({
         profile = {
