@@ -12,6 +12,9 @@ return {
 				examples = { glyph = "󰚝", hl = "MiniIconsAzure" },
 				crates = { glyph = "󰉓", hl = "MiniIconsOrange" },
 				scripts = { glyph = "󱧺", hl = "MiniIconsGreen" },
+				[".claude"] = { glyph = "󰚩", hl = "MiniIconsYellow" },
+				[".direnv"] = { glyph = "󰉋", hl = "MiniIconsGrey" },
+				[".cargo"] = { glyph = "󰏗", hl = "MiniIconsOrange" },
 			},
 		})
 		local oil = require("oil")

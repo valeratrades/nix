@@ -197,7 +197,7 @@
 		" ${ping_poll == "None" ? "No WiFi" : ping_poll == "Some" ? "Some WiFi" : "${ping_poll}ms"}")) 
 
 ;; Volume ;;
-(defpoll microphone_poll :initial "{}" :interval "500ms" "./modules/microphone.sh")
+(defpoll microphone_poll :initial "{}" :interval "750ms" "./modules/microphone.sh")
 (defwidget microphone []
 	(box
 		:class {microphone_poll.muted == "true" || microphone_poll.content < 10 ? "warn" : ""}
@@ -229,7 +229,7 @@
 			",d${temperature_poll.dgpu}"
 		)
 		(box
-			:class {temperature_poll.ssd_warn ? "warn" : ""}
+			:class {temperature_poll.ssd_warn || temperature_poll.ssd >= 80 ? "warn" : ""}
 			",s${temperature_poll.ssd}"
 		)
 	)
@@ -344,7 +344,7 @@
 (defvar claude_sessions_always_expand "false")
 ; The long view is only ever on screen while the reveal is open, and this script is
 ; the most expensive thing the bar polls — so it stops running when nothing shows it.
-(defpoll claude_sessions_compact_poll :initial "" :interval "1s" :run-while {bar_visible == "true"} "/home/v/nix/home/scripts/claude_sessions/main.rs -c --markup")
+(defpoll claude_sessions_compact_poll :initial "" :interval "3s" :run-while {bar_visible == "true"} "/home/v/nix/home/scripts/claude_sessions/main.rs -c --markup")
 (defpoll claude_sessions_full_poll :interval "3s" :run-while {bar_visible == "true" && (claude_sessions_always_expand == "true" || claude_sessions_hover_state)} "/home/v/nix/home/scripts/claude_sessions/main.rs --markup")
 (defwidget claude_sessions_widget[]
 	(box
