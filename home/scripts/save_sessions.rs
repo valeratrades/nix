@@ -120,7 +120,7 @@ fn main() -> miette::Result<()> {
     let ran = !unit.lines().any(|l| l == "ExecMainStartTimestampMonotonic=0");
     let completed = unit.lines().any(|l| l == "Result=success" || l == "Result=exit-code"); // exit-code: ran to the end, only some entries were stale
     if !(ran && completed) {
-        println!("claude-session-restore did not complete this boot ({}); keeping {path} and {sessions_path} untouched", unit.trim().replace('\n', ", "));
+        println!("- WARN claude-session-restore did not complete this boot ({}); keeping {path} and {sessions_path} untouched", unit.trim().replace('\n', ", "));
         return Ok(());
     }
 
@@ -137,7 +137,7 @@ fn main() -> miette::Result<()> {
         _ => {
             write(&sessions_path, "")?;
             write(&path, "")?;
-            println!("No tmux panes; saved empty inventory to {path} and {sessions_path}");
+            println!("- INFO No tmux panes; saved empty inventory to {path} and {sessions_path}");
             return Ok(());
         }
     };
@@ -145,7 +145,7 @@ fn main() -> miette::Result<()> {
         println!("Dry run - would record sessions to {sessions_path}:\n{sessions}");
     } else {
         write(&sessions_path, &sessions)?;
-        println!("Recorded {} session(s) to {sessions_path}", sessions.lines().count());
+        println!("- INFO Recorded {} session(s) to {sessions_path}", sessions.lines().count());
     }
     let panes: Vec<(String, String, usize, (usize, usize))> = out
         .lines()
@@ -188,18 +188,18 @@ fn main() -> miette::Result<()> {
                     Rewind::AtEnd => String::new(),
                     Rewind::To(p) => p,
                     Rewind::Unknown(why) => {
-                        println!("{session_name} ({pane_id}): {why}, so whether it sits rewound is not recorded");
+                        println!("- WARN {session_name} ({pane_id}): {why}, so whether it sits rewound is not recorded");
                         String::new() // restores onto the transcript's end, as before rewinds were tracked
                     }
                 };
                 let draft = draft(&rows, top, *width).unwrap_or_else(|| {
-                    println!("{session_name} ({pane_id}): prompt box runs off screen, its draft is not recorded");
+                    println!("- WARN {session_name} ({pane_id}): prompt box runs off screen, its draft is not recorded");
                     String::new() // its bottom border is out of view
                 });
                 (draft, rewind)
             }
             None => {
-                println!("{session_name} ({pane_id}): no prompt box on screen, its draft and rewind are not recorded");
+                println!("- WARN {session_name} ({pane_id}): no prompt box on screen, its draft and rewind are not recorded");
                 (String::new(), String::new()) // a dialog covers the box; nothing to read
             }
         };
@@ -215,7 +215,7 @@ fn main() -> miette::Result<()> {
         return Ok(());
     }
     write(&path, &content)?;
-    println!("Recorded {n} claude(s) to {path}");
+    println!("- INFO Recorded {n} claude(s) to {path}");
     Ok(())
 }
 
@@ -275,12 +275,15 @@ fn rewind(rows: &[&str], top: usize, transcript: &Path) -> Result<Rewind, Error>
     if shown[at + 1..].iter().any(|r| r.starts_with("❯ ")) {
         return Ok(Rewind::AtEnd); // a prompt went in after that footer
     }
-    let Some((_, footer)) = shown[at].split_once(" for ") else {
+    let row = shown[at].split('│').next().expect("split yields at least one piece").trim(); // the diff panel shares the row
+    let Some((verb, footer)) = row.split_once(" for ") else {
         return Ok(Rewind::AtEnd); // `✻ Cogitating…`: a turn still running
     };
-    let footer = footer.split('│').next().expect("split yields at least one piece"); // the diff panel shares the row
-    let mut parts = footer.split(" · ");
-    let took = parts.next().expect("split yields at least one piece").trim();
+    let took = footer.split(" · ").next().expect("split yields at least one piece").trim();
+    if verb.trim_start_matches("✻ ").contains([' ', '…']) || !took.chars().all(|c| c.is_ascii_digit() || "dhms ".contains(c)) {
+        return Ok(Rewind::AtEnd); // `✻ Photosynthesizing… (… thought for 2s)`, `✻ Waiting for 1 background agent to finish`: a turn still running
+    }
+    let mut parts = footer.split(" · ").skip(1);
     let done = match parts.find_map(|p| p.trim().strip_prefix("done ")) {
         Some(d) => match d.split([' ', ',']).rfind(|w| w.contains(':')) {
             Some(clock) => Some(clock.trim_start_matches('0')),
@@ -309,7 +312,7 @@ fn rewind(rows: &[&str], top: usize, transcript: &Path) -> Result<Rewind, Error>
         turns.push(i);
     }
     let [turn] = turns[..] else {
-        return Ok(Rewind::Unknown(format!("its last turn footer '{}' matches {} transcript turns", shown[at].trim(), turns.len())));
+        return Ok(Rewind::Unknown(format!("its last turn footer '{}' matches {} transcript turns", row, turns.len())));
     };
 
     let prompts: Vec<String> = chain[turn..].iter().filter_map(|e| prompt(e)).collect();
