@@ -6,6 +6,7 @@ local M = {}
 
 local ABORT_KEYS = { 'q', '<C-c>', '<A-;>' }
 local CONFIRM_KEYS = { '<CR>', '<M-a>' }
+local SELECTABLE = { file = true, directory = true, link = true }
 
 _G.filechooser_marks = {}
 _G.filechooser_ns = vim.api.nvim_create_namespace('filechooser')
@@ -61,7 +62,7 @@ function M.setup_open(tmpfile)
       -- 's' to mark/unmark files
       vim.keymap.set('n', 's', function()
         local entry = oil.get_cursor_entry()
-        if entry and (entry.type == 'file' or entry.type == 'directory') then
+        if entry and SELECTABLE[entry.type] then
           local path = oil.get_current_dir() .. entry.name
           local lnum = vim.fn.line('.')
           if _G.filechooser_marks[path] then
@@ -107,7 +108,7 @@ function M.setup_open(tmpfile)
         local paths = {}
         for lnum = start_line, end_line do
           local entry = oil.get_entry_on_line(0, lnum)
-          if entry and (entry.type == 'file' or entry.type == 'directory') then
+          if entry and SELECTABLE[entry.type] then
             table.insert(paths, dir .. entry.name)
           end
         end
@@ -126,7 +127,7 @@ function M.setup_open(tmpfile)
       vim.keymap.set('v', '<Tab>', confirm_visual_selection, { buffer = true })
       vim.keymap.set('v', '<CR>', confirm_visual_selection, { buffer = true })
 
-      -- Normal-mode <CR>: if buffer has unsaved edits with lines ending in ` .`,
+      -- Normal-mode <CR>: if buffer has unsaved edits with lines marked by ` .`,
       -- treat those as the selection; otherwise fall back to oil's default select.
       vim.keymap.set('n', '<CR>', function()
         if vim.bo.modified then
@@ -134,9 +135,9 @@ function M.setup_open(tmpfile)
           local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
           local paths = {}
           for lnum, line in ipairs(lines) do
-            if line:match(' %.$') then
+            if line:match(' %.$') or line:match(' %. %->') then -- links: either after the target or before `->`
               local entry = oil.get_entry_on_line(0, lnum)
-              if entry and (entry.type == 'file' or entry.type == 'directory') then
+              if entry and SELECTABLE[entry.type] then
                 table.insert(paths, dir .. entry.name)
               end
             end
