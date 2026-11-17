@@ -20,13 +20,25 @@ struct Args {
     /// Print what would be recorded without writing
     #[arg(short = 'n', long)]
     dry_run: bool,
+    /// Instead of recording, print how `restore_sessions -r` should pick this claude's turn back up: `continue`, `replay\t<prompt>`, or nothing when it was not cut off
+    #[arg(long, value_name = "SESSION_ID")]
+    interrupted: Option<String>,
 }
 
 /// `tmux_sessions.tsv`: `session_name\tsession_path` per tmux session; `claude_restore.tsv`: `session_name\tcwd\tsession_id\tdraft\trewind` per live tmux-hosted claude, `draft` being its unsubmitted input and `rewind` the prompt it sits rewound to, both with `\\`, `\n`, `\t` escaped.
 /// Both consumed by fish's `restore_sessions` on boot.
 fn main() {
-    let dry_run = Args::parse().dry_run;
+    let args = Args::parse();
+    let dry_run = args.dry_run;
     let home = std::env::var("HOME").expect("HOME not set");
+    if let Some(id) = args.interrupted {
+        match interrupted(&Path::new(&home).join(".claude"), &id) {
+            Resume::Idle => {}
+            Resume::Continue => println!("continue"),
+            Resume::Replay(p) => println!("replay\t{}", p.replace('\\', "\\\\").replace('\n', "\\n").replace('\t', "\\t")),
+        }
+        return;
+    }
     let state_dir = std::env::var("XDG_STATE_HOME").unwrap_or_else(|_| format!("{home}/.local/state"));
     let sessions_path = format!("{state_dir}/tmux_sessions.tsv");
     let path = format!("{state_dir}/claude_restore.tsv");
@@ -212,19 +224,7 @@ fn rewind(rows: &[&str], top: usize, transcript: &Path) -> Result<Option<String>
     if !transcript.exists() {
         return Ok(None); // nothing sent yet, nothing to rewind
     }
-    let raw = std::fs::read_to_string(transcript).map_err(|e| format!("{}: {e}", transcript.display()))?;
-    let entries: Vec<serde_json::Value> = raw
-        .lines()
-        .map(|l| serde_json::from_str(l).map_err(|e| format!("{}: unparseable line: {e}", transcript.display())))
-        .collect::<Result<_, _>>()?;
-    let by_uuid: std::collections::HashMap<&str, &serde_json::Value> = entries.iter().filter_map(|e| Some((e["uuid"].as_str()?, e))).collect();
-    let mut chain: Vec<&serde_json::Value> = Vec::new(); // what a resume loads: the last entry and its ancestors
-    let mut next = entries.iter().rev().find(|e| e["uuid"].is_string());
-    while let Some(e) = next {
-        chain.push(e);
-        next = e["parentUuid"].as_str().and_then(|p| by_uuid.get(p).copied()); // a compaction boundary has none
-    }
-    chain.reverse();
+    let chain = chain(transcript)?;
 
     let local = |ts: &str| -> [String; 2] {
         let out = Command::new("date").args(["-d", ts, "+%-I:%M %-H:%M"]).output().expect("date unreachable");
@@ -252,6 +252,123 @@ fn rewind(rows: &[&str], top: usize, transcript: &Path) -> Result<Option<String>
         return Err(format!("the prompt it sits rewound to repeats later, so the rewind dialog can't tell them apart: '{t}'"));
     }
     Ok(Some(target.clone()))
+}
+
+/// What a resume loads: the transcript's last entry and its ancestors, oldest first.
+fn chain(transcript: &Path) -> Result<Vec<serde_json::Value>, String> {
+    let raw = std::fs::read_to_string(transcript).map_err(|e| format!("{}: {e}", transcript.display()))?;
+    let entries = raw.lines().filter_map(|l| serde_json::from_str::<serde_json::Value>(l).ok()); // claude skips the lines its writers tear (killed mid-line, or two appends interleaved), so a resume never sees them either
+    let mut by_uuid: std::collections::HashMap<String, serde_json::Value> = std::collections::HashMap::new();
+    let mut last = None;
+    for e in entries {
+        if let Some(u) = e["uuid"].as_str() {
+            last = Some(u.to_owned());
+            by_uuid.insert(u.to_owned(), e);
+        }
+    }
+    let mut chain = Vec::new();
+    let mut next = last.and_then(|u| by_uuid.remove(&u));
+    while let Some(e) = next {
+        next = e["parentUuid"].as_str().and_then(|p| by_uuid.remove(p)); // a compaction boundary has none
+        chain.push(e);
+    }
+    chain.reverse();
+    Ok(chain)
+}
+
+enum Resume {
+    Idle,
+    Continue,
+    Replay(String),
+}
+
+/// Whether claude `id`'s last turn was cut off by its process dying, and if so whether that turn did enough to be worth continuing rather than sent again.
+/// A live claude is judged on what it wrote before it started, so one already resumed and still sitting on the dead turn counts, while one the user or a resume nudge already moved on does not.
+fn interrupted(config_dir: &Path, id: &str) -> Resume {
+    let projects = config_dir.join("projects");
+    let transcript = std::fs::read_dir(&projects)
+        .unwrap_or_else(|e| panic!("{}: {e}", projects.display()))
+        .map(|d| d.expect("projects entry unreadable").path().join(format!("{id}.jsonl")))
+        .find(|p| p.exists());
+    let Some(transcript) = transcript else {
+        return Resume::Idle; // nothing ever sent
+    };
+    let mut since: Option<String> = None; // when the live process resuming it started, as a transcript timestamp
+    let sessions = config_dir.join("sessions");
+    for f in std::fs::read_dir(&sessions).unwrap_or_else(|e| panic!("{}: {e}", sessions.display())) {
+        let f = f.expect("sessions entry unreadable").path();
+        if f.extension().is_none_or(|e| e != "json") {
+            continue;
+        }
+        let j: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(&f).expect("session file unreadable")).unwrap_or_else(|e| panic!("{}: {e}", f.display()));
+        let pid = j["pid"].as_u64().unwrap_or_else(|| panic!("{}: no pid", f.display()));
+        if j["sessionId"] != id || !Path::new(&format!("/proc/{pid}")).exists() {
+            continue;
+        }
+        if j["status"] != "idle" {
+            return Resume::Idle; // working, so already past the dead turn
+        }
+        let ms = j["startedAt"].as_u64().unwrap_or_else(|| panic!("{}: no startedAt", f.display()));
+        since = Some(iso(&format!("@{}.{:03}", ms / 1000, ms % 1000)));
+    }
+    let mut chain = chain(&transcript).unwrap_or_else(|e| panic!("{e}"));
+    chain.retain(|e| e["message"]["model"] != "<synthetic>"); // what a resume or an API failure writes in the model's place
+    let (before, after) = match &since {
+        Some(t) => chain.split_at(chain.partition_point(|e| e["timestamp"].as_str().is_none_or(|ts| ts < t.as_str()))), // `Z`-suffixed millis, so they order as strings
+        None => (&chain[..], &[][..]),
+    };
+    if after.iter().any(|e| e["type"] == "assistant" || prompt(e).is_some()) {
+        return Resume::Idle; // this process already took a turn, or has one coming
+    }
+    let ended = |e: &serde_json::Value| e["type"] == "assistant" && e["message"]["stop_reason"].as_str().is_some_and(|r| r != "tool_use"); // null: cut mid-stream
+    let turn = &before[before.iter().rposition(ended).map_or(0, |i| i + 1)..];
+    if !turn.iter().any(|e| e["type"] == "assistant" || (e["type"] == "user" && e["isMeta"] != true && e["isCompactSummary"] != true)) {
+        let mut pending: Vec<&str> = Vec::new(); // background tasks launched or revived, not yet notified or stopped; a resume notifies the ones the previous process died with
+        for e in before {
+            let notified = format!("{}{}", e["message"]["content"], e["attachment"]["prompt"]); // a user turn, or an attachment when queued mid-turn
+            let stops = e["message"]["content"].as_array().into_iter().flatten().filter(|b| b["type"] == "tool_use" && matches!(b["name"].as_str(), Some("TaskStop" | "KillShell")));
+            let stopped: Vec<&str> = stops.flat_map(|b| b["input"].as_object().into_iter().flatten().filter_map(|(_, v)| v.as_str())).collect();
+            pending.retain(|t| !notified.contains(&format!("<task-id>{t}</task-id>")) && !stopped.contains(t));
+            let r = &e["toolUseResult"];
+            pending.extend(r["backgroundTaskId"].as_str().into_iter().chain(r["resumedAgentId"].as_str()).chain((r["status"] == "async_launched").then(|| r["agentId"].as_str()).flatten()));
+        }
+        return match pending.is_empty() {
+            true => Resume::Idle,
+            false => Resume::Continue, // ended its turn to wait on tasks that died with it
+        };
+    }
+    if turn.iter().any(|e| e["type"] == "user" && e["message"]["content"].to_string().contains("[Request interrupted by user")) {
+        return Resume::Idle; // stopped by the user, not by the shutdown
+    }
+    let prompts: Vec<(usize, String)> = turn.iter().enumerate().filter_map(|(i, e)| Some((i, prompt(e)?))).collect();
+    let [(at, p)] = &prompts[..] else {
+        return Resume::Continue; // a task-notification turn, or prompts queued mid-turn that a replay of one would drop
+    };
+    let tools = turn.iter().filter(|e| e["type"] == "assistant").filter_map(|e| e["message"]["content"].as_array()).flatten().filter(|b| b["type"] == "tool_use");
+    // Sending the prompt again redoes the turn, so only one that changed nothing beyond what a rerun would see is replayed.
+    let harmless = tools.into_iter().all(|b| matches!(b["name"].as_str(), Some("Read" | "Grep" | "Glob" | "Bash" | "WebFetch" | "WebSearch" | "ToolSearch" | "Skill" | "TaskCreate" | "TaskUpdate" | "TaskList" | "TaskGet" | "ListAgents" | "LSP")));
+    let spent = match (turn[*at]["timestamp"].as_str(), turn.iter().rev().find_map(|e| e["timestamp"].as_str())) {
+        (Some(from), Some(to)) => secs(to) - secs(from),
+        _ => panic!("{}: prompt or last entry lacks a timestamp", transcript.display()),
+    };
+    // shortcut: wall time stands in for work done, and a sub-minute Bash is assumed side-effect free; upgrade if a replayed turn ever repeats an effect.
+    match harmless && spent < 60.0 {
+        true => Resume::Replay(p.clone()),
+        false => Resume::Continue,
+    }
+}
+
+/// `date -d` input as a transcript timestamp, which ordered as strings orders in time
+fn iso(when: &str) -> String {
+    let out = Command::new("date").args(["-u", "-d", when, "+%Y-%m-%dT%H:%M:%S.%3NZ"]).output().expect("date unreachable");
+    assert!(out.status.success(), "date -d {when}: {}", String::from_utf8_lossy(&out.stderr));
+    String::from_utf8(out.stdout).expect("date prints ASCII").trim().to_owned()
+}
+
+fn secs(iso: &str) -> f64 {
+    let out = Command::new("date").args(["-u", "-d", iso, "+%s.%3N"]).output().expect("date unreachable");
+    assert!(out.status.success(), "date -d {iso}: {}", String::from_utf8_lossy(&out.stderr));
+    String::from_utf8(out.stdout).expect("date prints ASCII").trim().parse().expect("date printed seconds")
 }
 
 /// Text of a prompt the user typed, as claude's rewind dialog lists them; `None` for tool results, hook/command injections and summaries.

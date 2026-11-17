@@ -163,8 +163,9 @@ end
 
 # Rebuilds the working set recorded by `save_sessions` (`tmux_sessions.tsv` + `claude_restore.tsv`).
 # Idempotent: sessions and claudes already live are skipped, so reruns (e.g. home-manager restarting the unit) are safe.
+# `-r`: claudes whose turn the shutdown cut off are nudged on, or sent that prompt again when the turn got nowhere (see `save_sessions --interrupted`); live ones too, so it works after the boot unit already restored them.
 function restore_sessions
-	argparse 'n/dry-run' -- $argv
+	argparse 'n/dry-run' 'r/resume' -- $argv
 	or return 1
 	set -l state_home $XDG_STATE_HOME
 	test -n "$state_home"; or set state_home "$HOME/.local/state"
@@ -214,12 +215,15 @@ function restore_sessions
 	end <$sf
 
 	set -l live
+	set -l live_panes
 	for s in $HOME/.claude/sessions/*.json
-		test -d /proc/(jq -r .pid $s); and set -a live (jq -r .sessionId $s)
+		test -d /proc/(jq -r .pid $s); or continue
+		set -a live (jq -r .sessionId $s)
+		set -a live_panes (jq -r '.tmux // "" | split(".") | last // ""' $s)
 	end
 
 	set -l done 0
-	set -l pending # pane, escaped draft, escaped rewind target; replayed once the claude there is up
+	set -l pending # pane, escaped draft, escaped rewind target, resume mode (`continue`/`replay`/empty); replayed once the claude there is up
 	set -l typed # ids whose `cl --resume` was typed; the pane's shell runs it only once its direnv load finishes
 	while read -l --delimiter \t session cwd id draft rewind
 		if not string match -qr '^[0-9a-f-]{36}$' -- "$id"
@@ -227,8 +231,28 @@ function restore_sessions
 			set failed 1
 			continue
 		end
-		if contains -- $id $live
-			echo "restore_sessions: $id already live, skipping"
+		set -l resume
+		if set -q _flag_resume; and test -z "$rewind" # a rewound claude sat idle
+			set -l verdict (save_sessions --interrupted $id)
+			if test $status != 0
+				echo "restore_sessions: $id — could not tell whether its turn was cut off, not resumed" >&2
+				set failed 1
+			end
+			set verdict (string split -m1 \t -- $verdict)
+			set resume $verdict[1]
+			test "$resume" = replay; and set rewind $verdict[2]
+		end
+		if set -l i (contains -i -- $id $live)
+			if test -z "$resume"
+				echo "restore_sessions: $id already live, skipping"
+			else if test -z "$live_panes[$i]"
+				echo "restore_sessions: $id — live outside tmux, not resumed" >&2
+				set failed 1
+			else if set -q _flag_dry_run
+				echo "restore_sessions: would $resume live $session ($live_panes[$i])"
+			else
+				set -a pending $live_panes[$i] "" "$rewind" $resume
+			end
 			continue
 		end
 		if not test -d $cwd
@@ -241,6 +265,7 @@ function restore_sessions
 		if set -q _flag_dry_run
 			echo "restore_sessions: would run in $session: $cmd"
 			test -n "$rewind"; and echo "restore_sessions: would rewind $session to: $rewind"
+			test -n "$resume"; and echo "restore_sessions: would $resume $session"
 			test -n "$draft"; and echo "restore_sessions: would type draft into $session: $draft"
 			continue
 		end
@@ -269,7 +294,7 @@ function restore_sessions
 		set done (math $done + 1)
 		set -a typed $id
 		echo "restore_sessions: $session ← $id ($cwd)"
-		test -n "$draft$rewind"; and set -a pending $target "$draft" "$rewind"
+		test -n "$draft$rewind$resume"; and set -a pending $target "$draft" "$rewind" "$resume"
 	end <$f
 
 	for pane in $nvims
@@ -293,10 +318,11 @@ function restore_sessions
 		echo "restore_sessions: $pane ← nvim session"
 	end
 
-	for i in (seq 1 3 (count $pending))
+	for i in (seq 1 4 (count $pending))
 		set -l pane $pending[$i]
 		set -l lines (printf %b $pending[(math $i + 1)])
 		set -l rewind (printf %b $pending[(math $i + 2)] | string collect)
+		set -l resume $pending[(math $i + 3)]
 		set -l waited 0
 		while not string match -qr '(?m)^─.*─\n❯\x{a0}$' -- (tmux capture-pane -p -t $pane | string collect) # empty prompt box: claude is up and takes input
 			test $waited -ge 120; and break
@@ -354,7 +380,11 @@ function restore_sessions
 				for step in (seq 20)
 					sleep 0.3
 					if string match -qr '(?m)^─.*─\n❯\x{a0}\S' -- (tmux capture-pane -p -t $pane | string collect)
-						tmux send-keys -t $pane C-c # drop the prompt claude refills; the saved draft is what was in the box
+						if test "$resume" = replay
+							tmux send-keys -t $pane Enter
+						else
+							tmux send-keys -t $pane C-c # drop the prompt claude refills; the saved draft is what was in the box
+						end
 						set stuck
 						break
 					end
@@ -368,6 +398,8 @@ function restore_sessions
 					tmux send-keys -t $pane Escape # the confirm step backs into the list, the list closes
 					sleep 0.6 # apart, or two read as Esc Esc and reopen it
 				end
+			else if test "$resume" = replay
+				echo "restore_sessions: $pane ← sent again: $rewind"
 			else
 				echo "restore_sessions: $pane ← rewound to: $rewind"
 			end
@@ -383,6 +415,15 @@ function restore_sessions
 				set failed 1
 				continue
 			end
+		end
+		if test "$resume" = continue
+			for chunk in "You were cut off at shutdown; recap where you are and continue. " "Background shells and agents you had running died with it." # one big write reads as a paste
+				tmux send-keys -t $pane -l -- $chunk
+				sleep 0.05
+			end
+			sleep 0.2
+			tmux send-keys -t $pane Enter
+			echo "restore_sessions: $pane ← told to continue"
 		end
 		test (count $lines) -gt 0; or continue
 		for j in (seq (count $lines))
