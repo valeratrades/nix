@@ -219,4 +219,13 @@ in {
 
   formatter =
     forAllSystems (system: nixpkgs.legacyPackages.${system}.alejandra);
+
+  apps.x86_64-linux = let pkgs = nixpkgs.legacyPackages.x86_64-linux; in {
+    health = {
+      type = "app";
+      meta.description = "idle cpu by cgroup, spawn rate, thermals; --polls adds cpu of every eww defpoll";
+      program = toString (pkgs.writeShellScript "health" ''exec ${self}/home/scripts/health.rs "$@"'');
+    };
+    help = inputs.v_flakes.utils.help { inherit pkgs self; system = "x86_64-linux"; };
+  };
 }
