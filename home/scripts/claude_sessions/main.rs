@@ -371,14 +371,14 @@ impl fmt::Display for Sessions {
                 //               prose instead of a selector.
                 //   error    -> COLOR_WARN: real, but errors here mostly surface
                 //               during hands-on interaction, so I'm already looking
-                //               — deliberately ranked below question. partial and
-                //               interrupted ride along: work left on the table, not blocked mid-flight.
+                //               — deliberately ranked below question. interrupted
+                //               rides along: work left on the table, not blocked mid-flight.
                 //   active/planning -> COLOR_INFO_ACTIVE: healthy "it's working" signal,
                 //               informational, lowest of the three. ongoing -> its
                 //               darker COLOR_INFO_ONGOING: turn over, a background shell still running.
                 //   limit    -> COLOR_INFO_NEGATIVE: wedged on the usage clock — nothing
                 //               to act on, but worth seeing at a glance.
-                //   finished -> COLOR_INFO_GOOD. answered -> COLOR_INFO_ANSWERED.
+                //   finished -> COLOR_INFO_GOOD. answered and partial -> COLOR_INFO_ANSWERED.
                 // Every other state stays uncolored — no span, no noise.
                 let state_cell = match entry.state {
                     ClaudeState::Question | ClaudeState::Stuck => {
@@ -387,7 +387,7 @@ impl fmt::Display for Sessions {
                     ClaudeState::Limit | ClaudeState::Input => {
                         format!("<span foreground=\"{COLOR_INFO_NEGATIVE}\">{}</span>", pango_escape(&padded_state))
                     }
-                    ClaudeState::Error | ClaudeState::Partial | ClaudeState::Interrupted => {
+                    ClaudeState::Error | ClaudeState::Interrupted => {
                         format!("<span foreground=\"{COLOR_WARN}\">{}</span>", pango_escape(&padded_state))
                     }
                     ClaudeState::Active | ClaudeState::Planning => {
@@ -399,7 +399,7 @@ impl fmt::Display for Sessions {
                     ClaudeState::Finished => {
                         format!("<span foreground=\"{COLOR_INFO_GOOD}\">{}</span>", pango_escape(&padded_state))
                     }
-                    ClaudeState::Answered => {
+                    ClaudeState::Answered | ClaudeState::Partial => {
                         format!("<span foreground=\"{COLOR_INFO_ANSWERED}\">{}</span>", pango_escape(&padded_state))
                     }
                     ClaudeState::Done => {
@@ -422,13 +422,13 @@ impl fmt::Display for Sessions {
                 let colored_state = match entry.state {
                     ClaudeState::Active | ClaudeState::Planning => padded_state.blue(),
                     ClaudeState::Finished => padded_state.green(),
-                    ClaudeState::Answered => padded_state.truecolor(0xd0, 0xbe, 0x79),
+                    ClaudeState::Answered | ClaudeState::Partial => padded_state.truecolor(0xd0, 0xbe, 0x79),
                     ClaudeState::Done => padded_state.bright_black(),
                     ClaudeState::Empty => padded_state.yellow(),
                     ClaudeState::Draft => padded_state.cyan(),
                     ClaudeState::Question | ClaudeState::Stuck => padded_state.magenta(),
                     ClaudeState::Ongoing => padded_state.truecolor(0x3f, 0x8a, 0xa8),
-                    ClaudeState::Error | ClaudeState::Partial | ClaudeState::Interrupted => padded_state.red(),
+                    ClaudeState::Error | ClaudeState::Interrupted => padded_state.red(),
                     ClaudeState::Limit | ClaudeState::Input => padded_state.white(),
                 };
                 write!(f, "{}  {}{}", padded_name, votes_prefix, colored_state)?;
@@ -783,6 +783,10 @@ fn transcript_tail(session_file: &Path, proc_start: Option<std::time::SystemTime
         if v.get("queueTranscriptOnly").and_then(|x| x.as_bool()) == Some(true) {
             return None;
         }
+        // Idle compaction stamps its summary after a settled turn; mid-turn compaction has the turn's own records around it.
+        if v.get("isCompactSummary").and_then(|x| x.as_bool()) == Some(true) {
+            return None;
+        }
         // Last message is the user's — assistant reply is still pending,
         // EXCEPT Claude Code's synthetic "[Request interrupted by user …]"
         // marker: the user aborted the turn, so no reply is coming. This is
@@ -980,14 +984,14 @@ Answer with exactly one word: finished, answered, stuck, or partial.";
             };
             match v.get("type").and_then(|x| x.as_str()) {
                 Some("user") => {
-                    // tool_result rows, and `isMeta` rows the harness injects (a safety-classifier
+                    // tool_result rows, and rows the harness injects (an `isMeta` safety-classifier
                     // interruption, a compact summary), are neither the opening prompt nor a closing.
-                    // An injected refusal notice lacks `origin.kind`, so without this it reads as the
-                    // human prompt and the real ask behind it is lost.
+                    // Both lack `origin.kind`, so without this they read as the human prompt and the
+                    // real ask behind them is lost.
                     let is_tool_result = v["message"]["content"]
                         .as_array()
                         .is_some_and(|c| c.iter().any(|b| b["type"] == "tool_result"));
-                    if is_tool_result || v["isMeta"].as_bool() == Some(true) {
+                    if is_tool_result || v["isMeta"].as_bool() == Some(true) || v["isCompactSummary"].as_bool() == Some(true) {
                         continue;
                     }
                     match v["origin"]["kind"].as_str() {

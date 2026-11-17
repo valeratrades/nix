@@ -1,0 +1,62 @@
+▝▜██████▀  Fable 5.2 · Claude Ultra
+ ▝▝   ▝▝   ~/s/ev/_sa/playbook
+
+
+✻ Conversation compacted (ctrl+o for the summary)
+  Earlier messages are saved in ~/.claude/projects/-home-v-s-ev--sa-playbook/1d181b1c-c2dc-4ff9-9f68-3cd8e73433e2.jsonl
+
+
+  Thought for 1s
+
+● Yes, it's in. Release v0.2.47 built and published from main (74efe32); the Errors workflow passes, and the Warnings workflow fails on the undigested recordings, as you asked.
+
+  references/  79 of 98 recordings have content.md      19 left: verification clips, verification/
+                                                         suspension course videos, the vimeo address video
+               call digests: ~500 citations now at the   434 still `gmbpp member`
+               paragraph, ~170 speakers named
+  structured/  market · site · calls · staff ·           every agent-written bullet is `(?)`, yours to vet
+               contractors · general ranking: manual
+               profile · reviews · infra · regions:      filed only; conclusions yours to write
+               your words under topical headings
+  resolved     60/40 = 60 contractor, 40 us, of profit   records in knowledge/log/resolved/
+               payment: contractor collects until
+               ~$3–4k/mo, then we do, through the VA
+  trust        derived at query time; Cole 0.7           nobody else clears your $50k/month rule
+  release      undigested = warning, not a refusal       Warnings workflow red until the 19 are done
+
+  Group and coaching calls were digested with points on operations only; chapters about verification, suspension or reviews have a header and no points.
+
+  What is left for you is in tmp/ongoing_debug/unresolved-manual.md:
+  - Contradictions not resolved: the 300-reviews-a-day suspension claim and the ones on the profile pages (naming, signage, SMS codes, street signs, reviewer proximity).
+  - Ranges kept as ranges: search-volume floor (700 vs 400) and competition ceiling (200 vs 300 reviews).
+  - Possibly one person: Art Khan / Artheme Chaykin, and PP / Prabh.
+  - Wrong speaker in the wording: a few digest bullets say "Eric says" where you or Cole is speaking.
+  - Your own "call them instantly": unclear whether it means a contractor or a customer.
+  - My picks, not data: the trust numbers and decay constants.
+
+  Not done:
+  - playbook eval: there is no CLAUDE_CODE_OAUTH_TOKEN here, and it cannot compare across the restructure anyway; it becomes meaningful from v0.2.46 on.
+  - Pre-commit hook: it still panics when .claude/settings.json is staged.
+
+  One thing to check before anyone commits from the main checkout: it shows .github/workflows/warnings.yml deleted and .gitignore and README.md modified. None of that is mine; it looks like a dev shell there regenerating files from a stale
+  flake evaluation. Committing it would remove the Warnings workflow.
+
+  I did not re-check the live server after v0.2.47 (it was unreachable from this session at the end); I confirmed it live on v0.2.46.
+
+✻ Brewed for 1m 21s · done 14:04
+
+※ recap: The playbook is restructured into one compiled manual with digests beside each recording, merged and released as v0.2.47; nothing is running. Next: open tmp/ongoing_debug/unresolved-manual.md and decide the open contradictions and
+  duplicate people rows. (disable recaps in /config)
+  ⎿  Referenced file playbook_web/src/corpus.rs
+  ⎿  Read playbook_web/build.rs (123 lines)
+  ⎿  Read plugin/skills/service-arb/SKILL.md (52 lines)
+  ⎿  Plan file referenced (~/.claude/plans/snappy-painting-turtle.md)
+
+● Compacted while idle, before the prompt cache expired · turn off with "idleCompaction": false in settings.json
+● full  $0.00  55m 12s                                                                                                                                                                                        Review  Audit  Board  Details [-]
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── playbook-manual-trust-restructure ─
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← 1 agent

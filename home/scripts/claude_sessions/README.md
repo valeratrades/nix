@@ -14,9 +14,9 @@ last human-prompted turn, plus the closings of any turns task notifications woke
 up after it, led by the human prompt that opened it — a closing that answers a
 question reads as a dead end without it) and has an LLM — via the `ask_llm` crate — judge it as
 `finished` / `answered` / `stuck` / `partial`, which become states of their own:
-`stuck` (no progress for any reason — blocked, lost, or refused) is colored like `question`, `partial` like `error`;
-`partial` just leaves work undone. `answered` (a reply I have to weigh or work with before anything
-moves — a comparison, a recommendation, a hint) is colored between `finished` and `partial`. A question
+`stuck` (no progress for any reason — blocked, lost, or refused) is colored like `question`;
+`partial` just leaves work undone, and shares its color with `answered` (a reply I have to weigh or work with
+before anything moves — a comparison, a recommendation, a hint), between `finished` and `error`. A question
 settled by a plain fact stays `finished`; so does a check on the agent's own work that came back clean
 ("yes, it's pushed"), while one that came back short ("no, only a local commit") is `partial`. A turn that ended with its own background shells or
 agents still live never reaches the judge: the pane footer lists them, and it reads
