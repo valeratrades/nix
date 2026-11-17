@@ -28,7 +28,7 @@ vim.api.nvim_create_autocmd("InsertEnter", {
 	end,
 })
 
-return require "lazier" {
+return {
 	"zbirenbaum/copilot.lua",
 	lazy = true,
 	cmd = { "Copilot" },

@@ -1,4 +1,4 @@
-return require "lazier" {
+return {
 	"mbbill/undotree",
 	config = function()
 		K("n", "<leader>ut", vim.cmd.UndotreeToggle, { desc = "undotree: open" })

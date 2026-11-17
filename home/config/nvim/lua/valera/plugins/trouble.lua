@@ -4,7 +4,7 @@ local function find(pred)
 	end
 end
 
-return require "lazier" {
+return {
 	"folke/trouble.nvim",
 	opts = {
 		modes = {

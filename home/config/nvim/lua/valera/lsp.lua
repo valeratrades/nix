@@ -463,7 +463,7 @@ vim.g.rustaceanvim = {
 		end,
 	},
 	dap = {
-		adapter = codelldb_adapter(),
+		adapter = codelldb_adapter, -- called on first debug; resolving it here would load rustaceanvim on every startup
 	},
 	server = {
 		-- Shim onto the shared lspmux instance, so a project open here plus any number of

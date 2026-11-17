@@ -36,20 +36,6 @@ end
 --	return original_deprecate(name, alternative, version, plugin, backtrace)
 --end
 --
-require("valera.shorthands")
-require("valera.utils")
--- above could be used from other internal modules too
-
-require("valera.remap")
-require("valera.lazy")
-require("valera.lsp")
-require("valera.log")
-require("valera.opts")
-require("valera.autocommands")
-require("valera.termfilechooser")
-require("valera.commit_view")
-require("valera.legacy")
-
 -- the vendored theme claims colors_name = catppuccin-mocha, and the catppuccin plugin ships a
 -- colorscheme of that name; every `background` change re-sources theirs over ours
 local theme = vim.api.nvim_get_runtime_file("lua/valera/themes/captuccin.lua", false)[1]
@@ -63,4 +49,5 @@ function SetThemeSystem()
 	vim.cmd.colorscheme(dark and "catppuccin-mocha" or "github_light_high_contrast")
 	vim.o.background = dark and "dark" or "light" -- vendored theme doesn't set it, so it'd stay "light" after a toggle back
 end
-SetThemeSystem()
+
+require("valera.lazy")

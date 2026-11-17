@@ -1,184 +1,34 @@
-local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
-if not vim.loop.fs_stat(lazypath) then
-	vim.fn.system({
-		"git",
-		"clone",
-		"--filter=blob:none",
-		"https://github.com/folke/lazy.nvim.git",
-		"--branch=stable",
-		lazypath,
-	})
+-- fork of jake-stewart/lazier.nvim: keeps url-only specs, and inferred triggers never override declared ones
+local lazierpath = vim.fn.stdpath("data") .. "/lazier/lazier.nvim"
+if not vim.uv.fs_stat(lazierpath) then
+	local out = vim.fn.system({ "git", "clone", "https://github.com/valeratrades/lazier.nvim.git", lazierpath })
+	assert(vim.v.shell_error == 0, "cloning lazier.nvim: " .. out)
 end
-vim.opt.rtp:prepend(lazypath)
-vim.g.mapleader = ' ' -- ensure mappings are correct
+vim.opt.rtp:prepend(lazierpath)
 
---return require('lazy').setup(vim.tbl_extend("force", {
-return require('lazy').setup({
-	"valeratrades/lazier.nvim",
-	-- Cornerstone
-	{ import = "valera.plugins.undotree" },
-	{ import = "valera.plugins.blankline" },
-	{ import = "valera.plugins.copilot" },
-	{ import = "valera.plugins.treesitter" },
-	{ -- swaps siblings in any ts language; textobjects' swap only covers langs whose queries define `@parameter`
-		"Wansmer/sibling-swap.nvim",
-		opts = { use_default_keymaps = false },
-		keys = {
-			{ "g<", function() require('sibling-swap').swap_with_left() end,  desc = "Swap with left sibling" },
-			{ "g>", function() require('sibling-swap').swap_with_right() end, desc = "Swap with right sibling" },
-		},
-	},
-	{ import = "valera.plugins.telescope" },
-	{ import = "valera.plugins.lualine" },
-	"numToStr/Comment.nvim",
-	{
-		"JoosepAlviste/nvim-ts-context-commentstring",
-		opts = { enable_autocmd = false },
-	},
-	{ import = "valera.plugins.signature" },
-	{ import = "valera.plugins.oil" },
-	{ import = "valera.plugins.webdevicons" },
-	{ -- Jake
-		{ import = "valera.plugins.recursive-macro" },
-		{ import = "valera.plugins.normon" },
-		{ import = "valera.plugins.shnip" },
-		{ import = "valera.plugins.multicursor" },
-	},
-	{ -- https://github.com/tpope/vim-abolish/blob/master/doc/abolish.txt
-		'tpope/vim-abolish',
-		keys = {
-			{ "<Space>cr" },
-		},
-		-- ex: :%S/facilit{y,ies}/building{,s}/g
-		cmd = { "S", "Subvert" },
-	},
-	{ import = "valera.plugins.wordmotion" },
-	-- similar to helix's match
-	"wellle/targets.vim",
-	{ import = "valera.plugins.cmp" },
-	{ import = "valera.plugins.dap" },
-	{ -- Lsp
-		'VonHeikemen/lsp-zero.nvim',
-		branch = 'v4.x',
-		dependencies = {
-			-- LSP Support
-			'neovim/nvim-lspconfig',          -- Cornerstone. lsp-zero is built on top of it.
-			'williamboman/mason.nvim',        -- lsp-servers file-manager
-			'williamboman/mason-lspconfig.nvim', -- lsp-servers file-manager
-			'lukas-reineke/lsp-format.nvim',  -- Auto-Formatting
-			'onsails/lspkind.nvim',
-		}
-	},
-	{ -- Rust
-		{ import = "valera.plugins.crates" },
-		{
-			'mrcjkb/rustaceanvim',
-			ft = 'rust',
-		},
-	},
-	{                            -- Math
-		dir = '/home/v/g/lean.nvim', --TODO: switch to 'Julian/lean.nvim', once [my pr](https://github.com/Julian/lean.nvim/pull/485) is accepted
-		event = { 'BufReadPre *.lean', 'BufNewFile *.lean' },
-		dependencies = {
-			'neovim/nvim-lspconfig',
-			'nvim-lua/plenary.nvim',
-		},
-		build = false,
-	},
-	{ -- Colorschemes
-		{ 'rose-pine/neovim',              name = 'rose-pine' },
-		{ "catppuccin/nvim",               name = "catppuccin" },
-		{ "folke/tokyonight.nvim",         name = "tokyonight" },
-		{ "jdsimcoe/panic.vim",            name = "panic" }, -- perfect colors, bad mapping of color to element
-		{ "projekt0n/github-nvim-theme",   lazy = true }, -- light mode; lazy's colorscheme handler loads it on `:colorscheme github_*`
-	},
-	{ -- Git
-		'tpope/vim-fugitive',
-		{ import = "valera.plugins.git" },
-	},
-	{ import = "valera.plugins.neotest" },
-	--
-
-	-- If something breaks, it's likely below here:
-
-	--{ 'akinsho/toggleterm.nvim', version = "*", config = true }, // deprecated. Nvim seems to already have all the things I want. Delete this fallback reminder in a month.
-
-	'vim-test/vim-test',
-	'lervag/vimtex',
-	{ import = "valera.plugins.sessions" },
-	'nvim-telescope/telescope-file-browser.nvim',
-	'nvim-telescope/telescope-media-files.nvim',
-	{
-		"nvim-telescope/telescope-ui-select.nvim",
-		deps = { "echasnovski/mini.icons" },
-	},
-	"nvim-lua/popup.nvim",
-	"folke/persistence.nvim",
-	"folke/todo-comments.nvim",
-	'jbyuki/instant.nvim',
-	{ import = "valera.plugins.presence" },
-	{ import = "valera.plugins.rainbow_csv" },
-	{ import = "valera.plugins.surround" },
-	"valeratrades/typst.vim",
-	{ import = "valera.plugins.leetcode" },
-	"nanotee/zoxide.vim",
-	{ import = "valera.plugins.color-picker" },
-	{ import = "valera.plugins.log-highlight" },
-	{ import = "valera.plugins.peek" },
-	--{
-	--	"iamcco/markdown-preview.nvim",
-	--	cmd = { "MarkdownPreviewToggle", "MarkdownPreview", "MarkdownPreviewStop" },
-	--	ft = { "markdown" },
-	--	build = function() vim.fn["mkdp#util#install"]() end,
-	--},
-
-	{ import = "valera.plugins.replacer" },
-	{ import = "valera.plugins.trouble" },
-	{ import = "valera.plugins.flash" },
-	{ import = "valera.plugins.compile" },
-	"echasnovski/mini.ai",
-
-	"nvim-neotest/nvim-nio",
-	'arnamak/stay-centered.nvim',
-	{ import = "valera.plugins.image" },
-	{ import = "valera.plugins.render-markdown" },
-	{ import = "valera.plugins.img-clip" },
-	"DreamMaoMao/yazi.nvim",
-	"norcalli/nvim-colorizer.lua",
-	{ import = "valera.plugins.nvim-highlight-colors" },
-	{
-		"hiphish/rainbow-delimiters.nvim",
-		pin = true, -- local nil-parser guard in lib.lua; unpin once upstream handles get_parser()==nil
-		config = function()
-			-- Register a typst query without math $ (we color those separately)
-			vim.treesitter.query.set('typst', 'rainbow-delimiters-nomathdollar', [[
-				(group "(" @delimiter ")" @delimiter @sentinel) @container
-				(block "{" @delimiter "}" @delimiter @sentinel) @container
-				(content "[" @delimiter "]" @delimiter @sentinel) @container
-				(call "(" @delimiter ")" @delimiter @sentinel) @container
-			]])
-			vim.g.rainbow_delimiters = {
-				query = {
-					typst = 'rainbow-delimiters-nomathdollar',
-				},
-			}
+-- lazy.nvim starts after the first frame (plain start when opening a dir); modules required in `before` get bundled
+-- and bytecode-compiled. Spec changes recompile on next launch, and plugins' keymaps/autocmds/commands are recorded
+-- into lazy triggers then, so plugin specs must not compute per-launch values in plain fields.
+require("lazier").setup("valera.plugins", {
+	lazier = {
+		before = function()
+			require("valera.shorthands")
+			require("valera.utils")
+			require("valera.remap")
+			require("valera.log")
+			require("valera.opts")
+			require("valera.lsp") -- sets vim.g.rustaceanvim, which must precede any plugin load
+			require("valera.autocommands")
+			require("valera.termfilechooser") -- `nvim file +TermFileChooserSave` runs its command before `after`
+		end,
+		after = function()
+			require("valera.commit_view")
+			require("valera.legacy")
+			SetThemeSystem()
 		end,
 	},
-	"Makaze/AnsiEsc",
-	{ import = "valera.plugins.speeddating" },
-	"stevearc/aerial.nvim",
-	{ import = "valera.plugins.guess-indent" },
-	{ import = "valera.plugins.wakatime" },
-	--{ "tjdevries/ocaml.nvim",  build = "make" }, -- requires 3.17 dune, but my nix only has 3.16
-	"folke/which-key.nvim",
-	--"pimalaya/himalaya-vim", --TODO: setup
-	"jecaro/fugitive-difftool.nvim",
-	--"Saghen/blink.cmp", -- potentially a better nvim-cmp, worth trying at some point
-	{ import = "valera.plugins.remote-nvim" },
-}, {
 	-- atm prefer to just install them through systemPackages, natively to nix
 	rocks = {
 		enabled = false,
 	},
 })
---}, plugin_specs))

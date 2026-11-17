@@ -1,4 +1,4 @@
-return require "lazier" {
+return {
 	"jake-stewart/normon.nvim",
 	config = function()
 		local normon = require("normon")

@@ -1,4 +1,4 @@
-return require "lazier" {
+return {
 	"ray-x/lsp_signature.nvim",
 	event = "VeryLazy",
 	config = function()

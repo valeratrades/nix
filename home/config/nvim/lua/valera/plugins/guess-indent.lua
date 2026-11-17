@@ -1,4 +1,4 @@
-return require "lazier" {
+return {
 	"NMAC427/guess-indent.nvim",
 	config = function()
 		-- This is the default configuration

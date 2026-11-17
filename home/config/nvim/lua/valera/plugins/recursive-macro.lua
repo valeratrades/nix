@@ -1,4 +1,4 @@
-return require "lazier" {
+return {
 	--https://github.com/jake-stewart/recursive-macro.nvim
 	"jake-stewart/recursive-macro.nvim",
 	config = function()

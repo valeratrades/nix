@@ -1,4 +1,4 @@
-return require "lazier" {
+return {
 	"Saecki/crates.nvim",
 	ft = "toml",
 	config = function()

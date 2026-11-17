@@ -1,4 +1,4 @@
-return require "lazier" {
+return {
 	"kylechui/nvim-surround",
 	version = "*",
 	event = "VeryLazy",

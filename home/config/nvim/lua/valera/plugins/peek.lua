@@ -1,4 +1,4 @@
-return require "lazier" {
+return {
 	"toppair/peek.nvim",
 	build = "deno task --quiet build:fast",
 	config = function()

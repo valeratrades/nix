@@ -1,4 +1,4 @@
-return require "lazier" {
+return {
 	"nvim-neotest/neotest",
 	-- Its config `require`s the rustaceanvim adapter, which snapshots `vim.g.rustaceanvim`.
 	-- At startup that snapshot would be taken before valera.lsp assigns the global.

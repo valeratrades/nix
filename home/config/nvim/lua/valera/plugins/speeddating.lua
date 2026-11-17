@@ -1,4 +1,4 @@
-return require "lazier" {
+return {
 	"tpope/vim-speeddating",
 	init = function()
 		vim.g.speeddating_no_mappings = 1

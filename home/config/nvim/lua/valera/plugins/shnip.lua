@@ -1,4 +1,4 @@
-return require "lazier" {
+return {
 	"jake-stewart/shnip.nvim",
 	config = function()
 		--https://github.com/jake-stewart/shnip.nvim/blob/main/lua/shnip.lua

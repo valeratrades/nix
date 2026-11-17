@@ -1,10 +1,9 @@
 --TODO!: setup when I have the time.Seems amazing
 -- https://github.com/kawre/leetcode.nvim
-return require "lazier" {
+return {
 	"kawre/leetcode.nvim",
 	build = ":TSUpdate html",
 	cmd = "Leet",
-	lazy = vim.fn.argv(0, -1) ~= "leetcode.nvim", -- `nvim leetcode.nvim` is its entrypoint
 	dependencies = {
 		"nvim-treesitter/nvim-treesitter",
 		"nvim-telescope/telescope.nvim",

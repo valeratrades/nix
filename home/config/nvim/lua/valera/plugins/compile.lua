@@ -1,4 +1,4 @@
-return require "lazier" {
+return {
 	'ej-shafran/compile-mode.nvim',
 	version = '^5.0.0',
 	lazy = false,

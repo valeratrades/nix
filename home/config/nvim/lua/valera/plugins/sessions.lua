@@ -1,4 +1,4 @@
-return require "lazier" {
+return {
 	"olimorris/persisted.nvim",
 	config = function()
 		-- "<space>sp" to search for session with Telescope

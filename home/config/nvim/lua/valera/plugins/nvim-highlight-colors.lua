@@ -1,6 +1,5 @@
-return require "lazier" {
+return {
 	"brenoprata10/nvim-highlight-colors",
-	lazy = false, -- monkey-patching modules is incompatible with lazier's recorder proxies
 	config = function()
 		-- Patch in oklch()/oklcha() color recognition: oklch(0.80, 0.08, 95), oklch(0.86 0.09 85), oklcha(0.45, 0.18, 25.0, 0.9)
 		do

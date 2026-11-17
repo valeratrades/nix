@@ -1,4 +1,4 @@
-return require "lazier" {
+return {
 	"https://github.com/amitds1997/remote-nvim.nvim",
 	version = "*",
 	cmd = { "RemoteStart", "RemoteStop", "RemoteInfo", "RemoteCleanup", "RemoteConfigDel", "RemoteLog" },

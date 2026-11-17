@@ -1,4 +1,4 @@
-return require "lazier" {
+return {
 	"folke/flash.nvim",
 	event = "VeryLazy",
 	---@type table

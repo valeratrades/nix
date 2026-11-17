@@ -1,4 +1,4 @@
-return require "lazier" {
+return {
 	"andweeb/presence.nvim",
 	event = "VeryLazy",
 	config = function()

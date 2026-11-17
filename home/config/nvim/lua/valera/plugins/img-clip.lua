@@ -1,4 +1,4 @@
-return require("lazier")({
+return {
 	"HakonHarnes/img-clip.nvim",
 	event = "VeryLazy",
 	opts = {
@@ -34,4 +34,4 @@ return require("lazier")({
 			desc = "Paste image from clipboard",
 		},
 	},
-})
+}
