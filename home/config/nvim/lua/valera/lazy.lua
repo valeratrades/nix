@@ -90,6 +90,7 @@ return require('lazy').setup({
 		{ "catppuccin/nvim",               name = "catppuccin" },
 		{ "folke/tokyonight.nvim",         name = "tokyonight" },
 		{ "jdsimcoe/panic.vim",            name = "panic" }, -- perfect colors, bad mapping of color to element
+		{ "projekt0n/github-nvim-theme",   lazy = true }, -- light mode; lazy's colorscheme handler loads it on `:colorscheme github_*`
 	},
 	{ -- Git
 		'tpope/vim-fugitive',

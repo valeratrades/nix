@@ -53,5 +53,14 @@ require("valera.legacy")
 -- the vendored theme claims colors_name = catppuccin-mocha, and the catppuccin plugin ships a
 -- colorscheme of that name; every `background` change re-sources theirs over ours
 local theme = vim.api.nvim_get_runtime_file("lua/valera/themes/captuccin.lua", false)[1]
-vim.api.nvim_create_autocmd("ColorScheme", { callback = function() dofile(theme) end })
-dofile(theme)
+vim.api.nvim_create_autocmd("ColorScheme", { pattern = "catppuccin-mocha", callback = function() dofile(theme) end })
+
+-- theme_toggle.rs calls this over every nvim socket
+function SetThemeSystem()
+	local scheme = vim.system({ "gsettings", "get", "org.gnome.desktop.interface", "color-scheme" }):wait()
+	assert(scheme.code == 0, scheme.stderr)
+	local dark = scheme.stdout:find("dark") ~= nil
+	vim.cmd.colorscheme(dark and "catppuccin-mocha" or "github_light_high_contrast")
+	vim.o.background = dark and "dark" or "light" -- vendored theme doesn't set it, so it'd stay "light" after a toggle back
+end
+SetThemeSystem()
