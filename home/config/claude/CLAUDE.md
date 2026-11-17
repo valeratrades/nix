@@ -127,6 +127,9 @@
   If there is no headless mode or ability to nicely see what's inside it, spawn an agent to make one.
   And if we don't control the app, play with it in a different sway workspace, - you claim an unused one and only render things there; never open windows in my face, (ie in whatever ws is currently open).
 
+- when you're finished, make sure to cut random shell commands you may have left running.
+  Unless it's tests or watching a release's CI, - things where you will react if it fails. But oftentimes I see sessions with random commands stuck grepping something large, and my tooling is confused and thinks they're still active. So unless you must have a shell command running beyond the point at which you finish, please don't leave any random ones running.
+
 ## Testing
 - if a change is not trivial, always test.
     And any time you write actual tests in code, - read https://matklad.github.io/2021/05/31/how-to-test.html
