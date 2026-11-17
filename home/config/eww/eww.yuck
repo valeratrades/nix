@@ -163,7 +163,7 @@
 		:class {EWW_DISK["/"].used_perc > 90 || EWW_DISK["/home"].used_perc > 90 ? "warn" : ""}
 		" ${round(EWW_DISK["/"].used_perc > EWW_DISK["/home"].used_perc ? EWW_DISK["/"].used_perc : EWW_DISK["/home"].used_perc, 0)}%"))
 ; PSI "some": % of the last 10s some task sat waiting on IO. Device %util is meaningless on NVMe (parallel queues), so stall time is the saturation signal.
-; ~7 cpu ms/call (scripts/poll_cost.py)
+; ~7 cpu ms/call (health.rs --polls)
 (defpoll io_pressure_poll :initial "0" :interval "5s" "sed -n '1s/.*avg10=\\([0-9]*\\).*/\\1/p' /proc/pressure/io")
 
 (defwidget io_pressure []

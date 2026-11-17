@@ -6,15 +6,16 @@ edition = "2024"
 
 [dependencies]
 clap = { version = "4.5.49", features = ["derive"] }
+libc = "0.2"
 ---
 
 use clap::Parser;
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Stdio};
 use std::thread::sleep;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 const CGROUP_ROOT: &str = "/sys/fs/cgroup";
 const HWMON: &str = "/sys/class/hwmon";
@@ -31,7 +32,7 @@ struct Args {
 	#[arg(short, long, default_value_t = 3.0)]
 	sample: f64,
 
-	/// Also time every eww defpoll. Spawns each poll's command once, so it is off by default.
+	/// Also measure cpu of every eww defpoll. Spawns each poll's command several times, so it is off by default.
 	#[arg(long)]
 	polls: bool,
 
@@ -248,8 +249,8 @@ fn report_dgpu() {
 
 // ---- eww polls ----
 
-/// name, interval seconds, shell command
-fn parse_polls() -> Vec<(String, f64, String)> {
+/// name, interval seconds, shell command, gated by :run-while
+fn parse_polls() -> Vec<(String, f64, String, bool)> {
 	let text = fs::read_to_string(EWW_YUCK).expect("eww.yuck is checked in next to this repo");
 	let mut out = Vec::new();
 	for line in text.lines() {
@@ -266,7 +267,7 @@ fn parse_polls() -> Vec<(String, f64, String)> {
 		// quotes internally (date +\"...\") is not truncated.
 		let after = &iv_body[iv_body.find('"').unwrap() + 1..];
 		let Some(cmd) = last_string_literal(after) else { continue };
-		out.push((name, secs, cmd));
+		out.push((name, secs, cmd, rest.contains(":run-while")));
 	}
 	out
 }
@@ -301,30 +302,53 @@ fn last_string_literal(s: &str) -> Option<String> {
 }
 
 fn report_polls() {
-	println!("EWW POLLS — cost of one run, and what that costs standing at its interval");
+	const RUNS: u32 = 5;
+	println!("EWW POLLS — cpu (user+sys of the whole process tree) of one run, mean of {RUNS}, and standing at its interval");
 	println!();
-	let mut rows: Vec<(String, f64, f64, f64)> = Vec::new();
-	for (name, interval, cmd) in parse_polls() {
-		let started = Instant::now();
-		let ran = Command::new("sh")
-			.arg("-c")
-			.arg(&cmd)
-			.current_dir("/home/v/nix/home/config/eww")
-			.output();
-		let elapsed = started.elapsed().as_secs_f64();
-		if ran.is_err() {
-			continue; // a poll whose binary is absent on this host is not a health signal
+	let mut rows: Vec<(String, f64, f64, f64, bool)> = Vec::new();
+	for (name, interval, cmd, gated) in parse_polls() {
+		let mut cpu = 0.0;
+		for _ in 0..RUNS {
+			let child = Command::new("sh")
+				.arg("-c")
+				.arg(&cmd)
+				.current_dir("/home/v/nix/home/config/eww")
+				.stdout(Stdio::null())
+				.stderr(Stdio::null())
+				.spawn()
+				.expect("sh is always present");
+			let mut status = 0;
+			let mut ru: libc::rusage = unsafe { std::mem::zeroed() };
+			let reaped = unsafe { libc::wait4(child.id() as libc::pid_t, &mut status, 0, &mut ru) };
+			assert_eq!(reaped, child.id() as libc::pid_t, "wait4 on our own child");
+			let tv = |t: libc::timeval| t.tv_sec as f64 + t.tv_usec as f64 * 1e-6;
+			cpu += tv(ru.ru_utime) + tv(ru.ru_stime);
 		}
-		rows.push((name, interval, elapsed, elapsed / interval * 100.0));
+		let per_run = cpu / RUNS as f64;
+		rows.push((name, interval, per_run, per_run / interval * 100.0, gated));
 	}
 	rows.sort_by(|a, b| b.3.total_cmp(&a.3));
+	let total: f64 = rows.iter().map(|r| r.3).sum();
 
-	println!("  {:<32} {:>9} {:>10} {:>9}", "POLL", "INTERVAL", "PER RUN", "OF-CORE");
-	for (name, interval, per_run, pct) in &rows {
-		println!("  {name:<32} {interval:>8.1}s {per_run:>9.3}s {pct:>8.1}%");
+	const W: usize = 30;
+	println!("  {:<32} {:>9} {:>10} {:>9}  SHARE", "POLL", "INTERVAL", "CPU/RUN", "OF-CORE");
+	for (name, interval, per_run, pct, gated) in &rows {
+		let name = if *gated { format!("{name}*") } else { name.clone() };
+		println!("  {name:<32} {interval:>8.1}s {:>8.1}ms {pct:>8.1}%  {}", per_run * 1e3, bar(pct / total, W));
 	}
 	println!("  {:-<32} {:->9} {:->10} {:->9}", "", "", "", "");
-	println!("  {:<32} {:>9} {:>10} {:>8.1}%", "total", "", "", rows.iter().map(|r| r.3).sum::<f64>());
+	println!("  {:<32} {:>9} {:>10} {:>8.1}%", "total", "", "", total);
 	println!();
-	println!("  (wall time, so a poll that waits on IPC reads higher than its CPU cost)");
+	println!("  * has :run-while, so it costs this only while its condition holds");
+}
+
+/// `frac` of `width` cells, in eighths
+fn bar(frac: f64, width: usize) -> String {
+	assert!((0.0..=1.0 + 1e-9).contains(&frac), "bar fraction out of range: {frac}");
+	let eighths = (frac * (width * 8) as f64).round() as usize;
+	let mut s = "█".repeat(eighths / 8);
+	if eighths % 8 != 0 {
+		s.push([' ', '▏', '▎', '▍', '▌', '▋', '▊', '▉'][eighths % 8]);
+	}
+	s
 }
