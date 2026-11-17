@@ -31,6 +31,9 @@ local function resolve_path(path)
 end
 
 function M.setup_open(tmpfile)
+  -- ` .` selection edits the buffer even in read-only dirs; write permission only matters on an actual `:w`
+  require('oil.adapters.files').is_modifiable = function() return true end
+
   -- When a regular file is opened, capture path and exit immediately
   -- Use BufReadCmd to completely intercept the file load
   vim.api.nvim_create_autocmd('BufReadCmd', {
