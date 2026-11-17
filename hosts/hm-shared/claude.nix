@@ -78,6 +78,11 @@ let
 			"hookify@claude-plugins-official" = true;
 			"firecrawl@claude-plugins-official" = true;
 		};
+		# parts of an enabled plugin left out of its cache copy
+		drop = {
+			"ponytail@ponytail".mods = user.claude_code_mode; # its band mod wraps every tool call, which Code Mode refuses to start next to; its rules come from the command hooks
+			"hookify@claude-plugins-official".hooks = user.claude_code_mode; # a python3 spawn per tool call stalls Code Mode's parallel calls until refused
+		};
 		# Overrides for `source: {source:"url", url, sha}` marketplace entries, whose plugin body
 		# lives in a *separate* repo rather than under `<marketplace>/<pluginsSubdir>/<plugin>`.
 		# The sync resolves those from marketplace.json on its own — an entry here is only needed
@@ -175,6 +180,7 @@ let
 		${lib.concatStringsSep "\n" (map (p: let
 			id = "${p.plugin}@${p.marketplace}";
 			mcfg = plugins.marketplaces.${p.marketplace};
+			drop = plugins.drop.${id} or { };
 			# A marketplace may pin an explicit `pluginSrc` (relative to the repo root) when its
 			# plugin body doesn't live at the conventional `<pluginsSubdir>/<plugin-name>` path.
 			pluginRelPath = if mcfg ? pluginSrc then mcfg.pluginSrc else "${mcfg.pluginsSubdir}/${p.plugin}";
@@ -223,7 +229,14 @@ let
 				rm -rf "$CACHE_DIR"
 				mkdir -p "$CACHE_DIR"
 				cp -r "$PLUGIN_SRC"/. "$CACHE_DIR"/
-				${lib.optionalString (mcfg.dropHooks or false) ''rm -f "$CACHE_DIR/hooks/hooks.json"''}
+				${lib.optionalString ((mcfg.dropHooks or false) || (drop.hooks or false)) ''rm -f "$CACHE_DIR/hooks/hooks.json"''}
+				${lib.optionalString (drop.mods or false) ''
+					for f in "$CACHE_DIR"/hooks/*.json; do
+						if ${pkgs.jq}/bin/jq -e 'has("modules")' "$f" >/dev/null; then
+							${pkgs.jq}/bin/jq 'del(.modules)' "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+						fi
+					done
+				''}
 				INSTALLED=$(echo "$INSTALLED" | ${pkgs.jq}/bin/jq \
 					--arg key "${p.plugin}@${p.marketplace}" \
 					--arg path "$CACHE_DIR" \
