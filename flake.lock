@@ -8060,11 +8060,11 @@
         "rust-overlay": "rust-overlay_20"
       },
       "locked": {
-        "lastModified": 1794310702,
-        "narHash": "sha256-fsVR6P+AkU6/WEtDwnXeqVwAznK5POIIIVTwJ/ab4xU=",
+        "lastModified": 1794917627,
+        "narHash": "sha256-mqFhftmRIAQFk8/IwTz6I8/T9N/K+y74waRQxJgT/4Q=",
         "owner": "valeratrades",
         "repo": "v_flakes",
-        "rev": "7561678d58ece59c653c9bc8837b2508af1a8ef9",
+        "rev": "8b585d7d226bb652e9f3da81e0c37362bef9023c",
         "type": "github"
       },
       "original": {

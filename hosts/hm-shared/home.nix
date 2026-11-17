@@ -708,6 +708,7 @@
       ".config/kache/config.toml".source = (pkgs.formats.toml { }).generate "kache-config.toml" {
         cache.auto_clean_unused_units_days = 2; # relatime refreshes atime at most daily, so 1 could drop units still in use
       };
+        cache.build_script_omit_cargo_source_dir_mtime = true; # each worktree's dirs have their own mtimes, which kept workspace build-script runs from being shared; no build script of ours reads them
       ".cargo/rustfmt.toml".source = "${self}/home/config/cargo/rustfmt.toml";
       ".cargo/config.toml".source = (pkgs.formats.toml { }).generate "cargo-config.toml" ({
         profile = {
