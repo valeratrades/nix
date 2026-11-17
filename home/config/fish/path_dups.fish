@@ -3,8 +3,8 @@
 function __path_dups_check --on-event fish_postexec
     set -l shown
     set -l real
-    # /nix/store and .direnv: devshells shadow on purpose. /run/wrappers: exists to shadow system-path.
-    for d in (path filter -d $PATH | string match -v -e /nix/store/ | string match -v -e /.direnv/ | string match -v /run/wrappers/bin)
+    # /nix/store, .direnv, v_flakes stamps (devshell shims): devshells shadow on purpose. /run/wrappers: exists to shadow system-path.
+    for d in (path filter -d $PATH | string match -v -e /nix/store/ | string match -v -e /.direnv/ | string match -v -e /v_flakes/stamps/ | string match -v /run/wrappers/bin)
         set -l r (path resolve $d)
         contains -- $r $real; and continue
         set -a shown $d
