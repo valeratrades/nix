@@ -17,7 +17,6 @@ return require('lazy').setup({
 	"valeratrades/lazier.nvim",
 	-- Cornerstone
 	{ import = "valera.plugins.undotree" },
-	'L3MON4D3/LuaSnip',
 	{ import = "valera.plugins.blankline" },
 	{ import = "valera.plugins.copilot" },
 	{ import = "valera.plugins.treesitter" },
@@ -43,6 +42,7 @@ return require('lazy').setup({
 		{ import = "valera.plugins.recursive-macro" },
 		{ import = "valera.plugins.normon" },
 		{ import = "valera.plugins.shnip" },
+		{ import = "valera.plugins.multicursor" },
 	},
 	{ -- https://github.com/tpope/vim-abolish/blob/master/doc/abolish.txt
 		'tpope/vim-abolish',
@@ -167,7 +167,6 @@ return require('lazy').setup({
 	"Makaze/AnsiEsc",
 	{ import = "valera.plugins.speeddating" },
 	"stevearc/aerial.nvim",
-	"valeratrades/cmp-async-path",
 	{ import = "valera.plugins.guess-indent" },
 	{ import = "valera.plugins.wakatime" },
 	--{ "tjdevries/ocaml.nvim",  build = "make" }, -- requires 3.17 dune, but my nix only has 3.16

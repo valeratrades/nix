@@ -1,5 +1,6 @@
 return {
 	"hrsh7th/nvim-cmp",
+	event = { "InsertEnter", "CmdlineEnter" },
 	dependencies = {
 		"hrsh7th/cmp-nvim-lsp",
 		"hrsh7th/cmp-buffer",
@@ -9,7 +10,6 @@ return {
 		"VonHeikemen/lsp-zero.nvim",
 		"onsails/lspkind.nvim",
 		"L3MON4D3/LuaSnip",
-		"Saecki/crates.nvim",
 		"valeratrades/cmp-async-path",
 	},
 	config = function()
@@ -197,7 +197,6 @@ return {
 				{ name = 'luasnip',   keyword_length = 1, max_item_count = 8 },
 				{ name = 'buffer',    keyword_length = 5, max_item_count = 8 },
 				--{ name = 'cmdline',   keyword_length = 3, max_item_count = 8 }, // does nothing here (why, nvim-cmp, whyy)
-				{ name = "crates" },
 				{ name = "async_path" },
 			}),
 			formatting = {
