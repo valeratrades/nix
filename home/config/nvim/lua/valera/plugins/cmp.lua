@@ -53,28 +53,12 @@ return {
 					return nil
 				end
 
-				local path1 = entry1:get_completion_item().label
-				local path2 = entry2:get_completion_item().label
-
-				-- Get the directory we're completing in
-				local cursor_before_line = vim.fn.getline('.'):sub(1, vim.fn.col('.') - 1)
-				local path_prefix = cursor_before_line:match('[%w%-%./~]+$') or ''
-				local dir = vim.fn.expand('%:p:h')
-				if path_prefix:match('^[/~]') then
-					dir = vim.fn.fnamemodify(path_prefix, ':h')
-				elseif path_prefix:match('/') then
-					dir = dir .. '/' .. vim.fn.fnamemodify(path_prefix, ':h')
-				end
-
-				local stat1 = vim.loop.fs_stat(dir .. '/' .. path1)
-				local stat2 = vim.loop.fs_stat(dir .. '/' .. path2)
-
-				if stat1 and stat2 then
-					local ctime1 = stat1.ctime and stat1.ctime.sec or 0
-					local ctime2 = stat2.ctime and stat2.ctime.sec or 0
-					if ctime1 ~= ctime2 then
-						return ctime1 > ctime2
-					end
+				local d1 = entry1:get_completion_item().data
+				local d2 = entry2:get_completion_item().data
+				local ctime1 = (d1.stat or d1.lstat).ctime.sec -- lstat: broken symlink
+				local ctime2 = (d2.stat or d2.lstat).ctime.sec
+				if ctime1 ~= ctime2 then
+					return ctime1 > ctime2
 				end
 
 				return nil
@@ -159,7 +143,7 @@ return {
 						cmp.complete()
 					end)
 				end
-			end, { "i", "s" }),
+			end, { "i", "s", "c" }),
 			['<C-a>'] = cmp.mapping(function()
 				if cmp.visible() then
 					async_path_sort_mode = "alpha"
@@ -168,7 +152,7 @@ return {
 						cmp.complete()
 					end)
 				end
-			end, { "i", "s" }),
+			end, { "i", "s", "c" }),
 		}
 
 
@@ -289,9 +273,11 @@ return {
 			mapping = {
 				['<C-y>'] = { c = cmp.mapping.confirm({ select = true }) },
 				['<C-e>'] = { c = cmp.mapping.abort() },
+				['<C-t>'] = mappings['<C-t>'],
+				['<C-a>'] = mappings['<C-a>'],
 			},
 			sources = cmp.config.sources({
-				{ name = 'path' }
+				{ name = 'async_path' }
 			}, {
 				{
 					name = 'cmdline',
