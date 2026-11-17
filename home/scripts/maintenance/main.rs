@@ -394,6 +394,12 @@ impl Ctx {
         let removed = fs::symlink_metadata(path).and_then(|m| if m.is_dir() { fs::remove_dir_all(path) } else { fs::remove_file(path) });
         match removed {
             Ok(()) => self.report(false, format_args!("removed {} ({why})", path.display())),
+            // root-owned leftovers of container builds that mounted $HOME
+            Err(e) if e.kind() == io::ErrorKind::PermissionDenied => {
+                if self.run(Command::new("sudo").args(["rm", "-rf", "--one-file-system", "--"]).arg(path)) {
+                    self.report(false, format_args!("removed {} with sudo ({why})", path.display()));
+                }
+            }
             Err(e) => self.report(true, format_args!("failed to remove {}: {e}", path.display())),
         }
     }
@@ -529,6 +535,24 @@ impl Ctx {
                     doing(format_args!("scanning {}", entry.path().display()));
                 }
 
+                // a target dir cargo tags, anywhere but `<project>/target` (whose project `cargo clean`s it): CARGO_TARGET_DIRs, container build outputs
+                let stray_target = is_dir
+                    && !(entry.file_name() == "target" && project.join("Cargo.toml").exists())
+                    && fs::read_to_string(entry.path().join("CACHEDIR.TAG")).is_ok_and(|tag| tag.contains("created by cargo"));
+                if stray_target {
+                    walk.skip_current_dir();
+                    // mtime only: only a build writes here, while every scan (this one's tag read included) refreshes atimes
+                    let last_build = WalkDir::new(entry.path()).into_iter().try_fold(UNIX_EPOCH, |t, e| io::Result::Ok(t.max(e?.metadata()?.modified()?)));
+                    match last_build {
+                        Ok(t) => {
+                            if let Some(days) = self.unused_days(t, self.cfg.horizon_long) {
+                                self.remove(entry.path(), format_args!("cargo target dir, not built for {days}d"));
+                            }
+                        }
+                        Err(e) => self.report(true, format_args!("keeping {}: {e}", entry.path().display())),
+                    }
+                    continue;
+                }
                 match entry.file_name().to_str() {
                     Some("target" | "node_modules") if is_dir => walk.skip_current_dir(),
                     Some("Cargo.toml") if project.join("target").exists() => {
