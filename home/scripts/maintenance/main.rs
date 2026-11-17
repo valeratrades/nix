@@ -73,6 +73,7 @@ struct Config {
     horizon_fast: Timeframe,
     unit_markers: Vec<String>,
     cache_limit_gb: u64,
+    cache_self_managed: Vec<String>,
 }
 
 struct Ctx {
@@ -453,13 +454,16 @@ impl Ctx {
                     continue;
                 }
             };
+            if self.cfg.cache_self_managed.iter().any(|name| path == self.home.join(".cache").join(name)) {
+                continue;
+            }
             let collected = (|| -> io::Result<()> {
                 let meta = fs::symlink_metadata(&path)?;
                 if meta.is_dir() && !self.is_unit(&path)? {
                     dirs.push((path.clone(), meta.modified()?));
                     self.collect(&path, units, dirs);
                 } else {
-                    units.push(unit(path.clone())?);
+                    units.push(unit(path.clone(), true)?);
                 }
                 Ok(())
             })();
@@ -480,8 +484,8 @@ impl Ctx {
         Ok(false)
     }
 
-    fn project_last_use(&self, project: &Path) -> Option<SystemTime> {
-        match unit(project.to_path_buf()) {
+    fn project_last_use(&self, project: &Path, reads: bool) -> Option<SystemTime> {
+        match unit(project.to_path_buf(), reads) {
             Ok(unit) => Some(unit.last_use),
             Err(e) => {
                 self.report(true, format_args!("keeping artefacts of {}: {e}", project.display()));
@@ -541,22 +545,15 @@ impl Ctx {
                     && fs::read_to_string(entry.path().join("CACHEDIR.TAG")).is_ok_and(|tag| tag.contains("created by cargo"));
                 if stray_target {
                     walk.skip_current_dir();
-                    // mtime only: only a build writes here, while every scan (this one's tag read included) refreshes atimes
-                    let last_build = WalkDir::new(entry.path()).into_iter().try_fold(UNIX_EPOCH, |t, e| io::Result::Ok(t.max(e?.metadata()?.modified()?)));
-                    match last_build {
-                        Ok(t) => {
-                            if let Some(days) = self.unused_days(t, self.cfg.horizon_long) {
-                                self.remove(entry.path(), format_args!("cargo target dir, not built for {days}d"));
-                            }
-                        }
-                        Err(e) => self.report(true, format_args!("keeping {}: {e}", entry.path().display())),
+                    if let Some(days) = self.project_last_use(entry.path(), false).and_then(|t| self.unused_days(t, self.cfg.horizon_long)) {
+                        self.remove(entry.path(), format_args!("cargo target dir, not built for {days}d"));
                     }
                     continue;
                 }
                 match entry.file_name().to_str() {
                     Some("target" | "node_modules") if is_dir => walk.skip_current_dir(),
                     Some("Cargo.toml") if project.join("target").exists() => {
-                        let Some(last_use) = self.project_last_use(project) else { continue };
+                        let Some(last_use) = self.project_last_use(project, false) else { continue };
                         match self.unused_days(last_use, self.cfg.horizon_long) {
                             Some(days) => cargo(project, &["clean"], format!("unused {days}d")),
                             None if last_use > last_clean => cargo(project, &["sweep", "--time", &sweep_days], "touched since last clean".into()),
@@ -573,7 +570,7 @@ impl Ctx {
                         if artefacts.is_empty() {
                             continue;
                         }
-                        if let Some(days) = self.project_last_use(project).and_then(|t| self.unused_days(t, self.cfg.horizon_long)) {
+                        if let Some(days) = self.project_last_use(project, false).and_then(|t| self.unused_days(t, self.cfg.horizon_long)) {
                             for artefact in &artefacts {
                                 self.remove(artefact, format_args!("project unused {days}d"));
                             }
@@ -611,6 +608,13 @@ impl Ctx {
                     continue;
                 }
             };
+            if let Ok(link) = fs::read_to_string(worktree.join(".git"))
+                && let Some(gitdir) = link.trim().strip_prefix("gitdir: ")
+                && !Path::new(gitdir).exists()
+            {
+                self.report(true, format_args!("orphaned worktree {}: {gitdir} is gone, so git can't tell what in it is unpublished. Check it by hand, then `rm -r` it", worktree.display()));
+                continue;
+            }
             let git = |args: &[&str]| -> io::Result<String> {
                 let out = Command::new("git").arg("-C").arg(&worktree).args(args).output()?;
                 match out.status.success() {
@@ -644,7 +648,7 @@ impl Ctx {
                 Ok(_) => {}
                 Err(e) => self.report(true, format_args!("{}: {e}", worktree.display())),
             }
-            let Some(days) = self.project_last_use(&worktree).and_then(|t| self.unused_days(t, self.cfg.horizon_fast)) else { continue };
+            let Some(days) = self.project_last_use(&worktree, false).and_then(|t| self.unused_days(t, self.cfg.horizon_fast)) else { continue };
             if self.dry_run {
                 self.report(false, format_args!("would git worktree remove {} (unused {days}d)", worktree.display()));
             } else if self.run(Command::new("git").arg("-C").arg(repo).args(["worktree", "remove"]).arg(&worktree)) {
@@ -673,7 +677,7 @@ impl Ctx {
                 parents.push(entry.into_path());
                 continue;
             }
-            if let Some(days) = self.project_last_use(entry.path()).and_then(|t| self.unused_days(t, self.cfg.horizon_fast)) {
+            if let Some(days) = self.project_last_use(entry.path(), true).and_then(|t| self.unused_days(t, self.cfg.horizon_fast)) {
                 self.remove(entry.path(), format_args!("unused {days}d"));
             }
         }
@@ -1145,7 +1149,7 @@ impl Ctx {
                     continue;
                 }
             }
-            if self.project_last_use(&repo).is_none_or(|t| self.unused_days(t, self.cfg.horizon_long).is_some()) {
+            if self.project_last_use(&repo, false).is_none_or(|t| self.unused_days(t, self.cfg.horizon_long).is_some()) {
                 continue;
             }
             let name = repo.file_name().expect("read_dir entry").to_string_lossy().into_owned();
@@ -1302,13 +1306,14 @@ impl Ctx {
 }
 
 /// `last_use` is the newest of files' max(atime, mtime) and dirs' mtime: readdir bumps dir atime, our own walks included.
-fn unit(path: PathBuf) -> io::Result<Unit> {
+/// `reads`: whether reading a file counts as using it. Any content scan (rg, an indexer, kache over targets) refreshes atimes, so only a cache, whose hits are reads, takes it.
+fn unit(path: PathBuf, reads: bool) -> io::Result<Unit> {
     let (mut last_use, mut bytes) = (UNIX_EPOCH, 0);
-    for entry in WalkDir::new(&path) {
+    for entry in WalkDir::new(&path).follow_root_links(false) {
         let meta = entry?.metadata()?;
-        let used = match meta.is_dir() {
-            true => meta.modified()?,
-            false => meta.modified()?.max(meta.accessed()?),
+        let used = match !meta.is_dir() && reads {
+            true => meta.modified()?.max(meta.accessed()?),
+            false => meta.modified()?,
         };
         last_use = last_use.max(used);
         bytes += meta.blocks() * 512;

@@ -12,6 +12,7 @@ let
     ];
 
     cache_limit_gb = 20; # past it after the outdated sweep, least recently used ~/.cache units go first
+    cache_self_managed = [ "kache" ]; # ~/.cache dirs whose tool bounds its own size; a file removed under one is a hole in its index
   };
 in
 assert cfg.warn_probability >= 0 && cfg.warn_probability <= 1;
