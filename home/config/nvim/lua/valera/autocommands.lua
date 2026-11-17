@@ -158,6 +158,23 @@ vim.cmd [[
 --	end,
 --})
 
+-- terminal growth all lands in the last window (sessions restored into detached tmux load at 80x24), and session restore crushes lean's fixed-width infoview
+vim.api.nvim_create_autocmd({ "VimResized", "SessionLoadPost" }, {
+	callback = function()
+		for _, tab in ipairs(vim.api.nvim_list_tabpages()) do
+			vim.api.nvim_win_call(vim.api.nvim_tabpage_get_win(tab), function()
+				for _, w in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+					if vim.bo[vim.api.nvim_win_get_buf(w)].filetype == "leaninfo" then
+						local width = require("lean.config")().infoview.width
+						vim.api.nvim_win_set_width(w, width < 1 and math.ceil(width * vim.o.columns) or width)
+					end
+				end
+				vim.cmd("wincmd =")
+			end)
+		end
+	end,
+})
+
 vim.api.nvim_create_autocmd({ "FileType" }, {
 	pattern = { "lean", "yaml", "yml" },
 	callback = function()
