@@ -419,6 +419,7 @@
               # Allow extensions (Vimium etc.) to inject into chrome:// pages and the NTP.
               # Chrome Web Store remains blocked (separate hardcoded restriction).
               "--extensions-on-chrome-urls"
+              "--test-type" # suppresses the "unsupported command-line flag" infobar the above triggers
               # Stop Google's server-side Finch/Variations from remote-toggling features
               # mid-day without our consent (UI redesigns, extension restrictions, etc.).
               "--disable-field-trial-config"
@@ -433,7 +434,7 @@
               # opens while we keep using the one real profile underneath.
               "--user-data-dir=${config.home.homeDirectory}/.config/google-chrome-cdp"
               # xdpw has no restore tokens, so Chrome's picker preview and the capture each ran the portal chooser: 3 picks. Costs tab/tab-audio sharing.
-              "--auto-select-desktop-capture-source=Entire screen"
+              (lib.escapeShellArg "--auto-select-desktop-capture-source=Entire screen") # nixpkgs joins these unquoted; bare, `screen` becomes a URL tab
               "--enable-logging" # GUI launch has no usable stderr
               "--log-file=${config.home.homeDirectory}/.config/google-chrome-cdp/chrome_debug.log"
             ];
