@@ -90,7 +90,6 @@ return require('lazy').setup({
 		{ "catppuccin/nvim",               name = "catppuccin" },
 		{ "folke/tokyonight.nvim",         name = "tokyonight" },
 		{ "jdsimcoe/panic.vim",            name = "panic" }, -- perfect colors, bad mapping of color to element
-		{ import = "valera.plugins.colors" },
 	},
 	{ -- Git
 		'tpope/vim-fugitive',
