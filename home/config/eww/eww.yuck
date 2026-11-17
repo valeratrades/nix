@@ -217,6 +217,10 @@
 			:class {temperature_poll.dgpu >= 70 ? "warn" : ""}
 			",${temperature_poll.dgpu}"
 		)
+		(box
+			:class {temperature_poll.ssd_warn ? "warn" : ""}
+			",${temperature_poll.ssd}"
+		)
 	)
 )
 

@@ -32,6 +32,23 @@ for dev in /sys/bus/pci/drivers/nvidia/0000:*; do
   fi
 done
 
+# Hottest raw sensor across all NVMe drives (the controller one runs well above Composite under builds).
+# Warn only when a drive's Composite reaches its own firmware warning threshold: the other sensors expose no limit.
+ssd_temp=0
+ssd_warn=false
+for hwmon in /sys/class/hwmon/hwmon*; do
+  read -r name < "$hwmon/name" 2>/dev/null || continue
+  [ "$name" = nvme ] || continue
+  for input in "$hwmon"/temp*_input; do
+    read -r val < "$input" || continue
+    val=$((val / 1000))
+    [ "$val" -gt "$ssd_temp" ] && ssd_temp=$val
+  done
+  read -r composite < "$hwmon/temp1_input"
+  read -r composite_max < "$hwmon/temp1_max"
+  [ "$composite" -ge "$composite_max" ] && ssd_warn=true
+done
+
 max_temp=$cpu_temp
 [ "$gpu_temp" -gt "$max_temp" ] 2>/dev/null && max_temp=$gpu_temp
 [ "$dgpu_temp" -gt "$max_temp" ] 2>/dev/null && max_temp=$dgpu_temp
@@ -48,4 +65,4 @@ else
 	icon=""
 fi
 
-printf '{"cpu": %d, "gpu": %d, "dgpu": %d, "icon": "%s"}\n' "$cpu_temp" "$gpu_temp" "$dgpu_temp" "$icon"
+printf '{"cpu": %d, "gpu": %d, "dgpu": %d, "ssd": %d, "ssd_warn": %s, "icon": "%s"}\n' "$cpu_temp" "$gpu_temp" "$dgpu_temp" "$ssd_temp" "$ssd_warn" "$icon"
