@@ -1,4 +1,4 @@
--- fork of jake-stewart/lazier.nvim: keeps url-only specs, and inferred triggers never override declared ones
+-- fork of jake-stewart/lazier.nvim until jake-stewart/lazier.nvim#12, #13, #14 land
 local lazierpath = vim.fn.stdpath("data") .. "/lazier/lazier.nvim"
 if not vim.uv.fs_stat(lazierpath) then
 	local out = vim.fn.system({ "git", "clone", "https://github.com/valeratrades/lazier.nvim.git", lazierpath })
@@ -11,6 +11,7 @@ vim.opt.rtp:prepend(lazierpath)
 -- into lazy triggers then, so plugin specs must not compute per-launch values in plain fields.
 require("lazier").setup("valera.plugins", {
 	lazier = {
+		infer_events = "fallback", -- plugins with mappings/commands load on those, as specs here were tuned for
 		before = function()
 			require("valera.shorthands")
 			require("valera.utils")
