@@ -25,7 +25,7 @@
 # can be symlinked in yet stay invisible (stale registry from the previous gen).
 # Fix without rebuilding: run `codium_refresh` (defined below in home.packages).
 { pkgs, inputs, ... }: {
-	programs.vscode = {
+	programs.vscodium = {
 		enable = true;
 		package = pkgs.vscodium;
 		profiles.default = {
@@ -101,7 +101,7 @@
 						name = "excalidraw-editor";
 						version = "3.9.3";
 					};
-					vsix = "${inputs.excalidraw-vscode.packages.${pkgs.system}.default}/excalidraw-editor-3.9.3.vsix";
+					vsix = "${inputs.excalidraw-vscode.packages.${pkgs.stdenv.hostPlatform.system}.default}/excalidraw-editor-3.9.3.vsix";
 				})
 				# Remote SSH (jajera): pure-Open-VSX remote-ssh, works on VSCodium
 				# (the MS remote-ssh above won't connect under VSCodium's licensing)

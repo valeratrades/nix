@@ -402,133 +402,113 @@ in {
     # # Good Practices
     # generally want:
     # - `identitiesOnly = true`: don't try other keys outside of the `identityFile` specified
-		matchBlocks = {
+		settings = {
       # password of connected hosts:
       # p-laptop: `Mija1234!`, - can just `ssh p@p-laptop.taila74a7d.ts.net` if tailscale's ssh is misbehaving
 			"*.ts.net" = {
-				extraOptions = {
 					StrictHostKeyChecking = "no";
 					UserKnownHostsFile = "/dev/null";
-				};
 			};
 			"github.com" = {
-				hostname = "github.com";
-				user = "git";
-				identitiesOnly = true;
-				identityFile = [ "~/.ssh/id_ed25519" ];
+				HostName = "github.com";
+				User = "git";
+				IdentitiesOnly = true;
+				IdentityFile = [ "~/.ssh/id_ed25519" ];
 			};
       "cloudzy_fedora" = {
-        hostname = "144.172.114.210";
-        user = "root";
+        HostName = "144.172.114.210";
+        User = "root";
       };
       "win_dima_tokyo" = {
-        hostname = "38.180.201.212";
-        user = "Administrator";
-        identitiesOnly = true;
-        identityFile = [ "~/.ssh/id_ed25519" ];
-        extraOptions = {
+        HostName = "38.180.201.212";
+        User = "Administrator";
+        IdentitiesOnly = true;
+        IdentityFile = [ "~/.ssh/id_ed25519" ];
           PreferredAuthentications = "publickey,keyboard-interactive,password";
           PubkeyAuthentication = "yes";
           StrictHostKeyChecking = "accept-new";
-        };
       };
       # inferno VPS (Tokyo) — main server, runs site/social_networks/server_upkeep
       "inferno_vps_tokyo" = {
-        hostname = "176.97.73.24";
-        user = "root";
-        identitiesOnly = true;
-        identityFile = [ "~/.ssh/id_ed25519" ];
-        extraOptions = {
+        HostName = "176.97.73.24";
+        User = "root";
+        IdentitiesOnly = true;
+        IdentityFile = [ "~/.ssh/id_ed25519" ];
           PreferredAuthentications = "publickey,keyboard-interactive,password";
           PubkeyAuthentication = "yes";
           StrictHostKeyChecking = "accept-new";
-        };
       };
       # inferno VPS (Singapore) — secondary server, mirrors Tokyo setup
       "inferno_vps_singapore" = {
-        hostname = "38.180.74.10";
-        user = "root";
-        identitiesOnly = true;
-        identityFile = [ "~/.ssh/id_ed25519" ];
-        extraOptions = {
+        HostName = "38.180.74.10";
+        User = "root";
+        IdentitiesOnly = true;
+        IdentityFile = [ "~/.ssh/id_ed25519" ];
           PreferredAuthentications = "publickey,keyboard-interactive,password";
           PubkeyAuthentication = "yes";
           StrictHostKeyChecking = "accept-new";
-        };
       };
       # rpi5 — home k3s box (site/rea via CF tunnel). LAN-only via mDNS; the box
       # re-probes and reclaims the bare rpi5.local on every deploy (see its
       # avahiReclaim activation script). Off-LAN: use the tailscale name instead.
       "rpi5" = {
-        hostname = "rpi5.local";
-        user = "admin";
-        identitiesOnly = true;
-        identityFile = [ "~/.ssh/id_ed25519" ];
-        extraOptions = {
+        HostName = "rpi5.local";
+        User = "admin";
+        IdentitiesOnly = true;
+        IdentityFile = [ "~/.ssh/id_ed25519" ];
           ForwardAgent = "yes"; # git auth on the box uses your forwarded key
           PreferredAuthentications = "publickey,keyboard-interactive,password";
           PubkeyAuthentication = "yes";
           StrictHostKeyChecking = "accept-new";
-        };
       };
       # rpi5 over tailscale (native node of the personal tailnet, shared into
       # ev-invest for coworkers). MagicDNS name — survives IP reassignment.
       "rpi5-ts" = {
-        hostname = "rpi5.taila74a7d.ts.net";
-        user = "admin";
-        identitiesOnly = true;
-        identityFile = [ "~/.ssh/id_ed25519" ];
-        extraOptions = {
+        HostName = "rpi5.taila74a7d.ts.net";
+        User = "admin";
+        IdentitiesOnly = true;
+        IdentityFile = [ "~/.ssh/id_ed25519" ];
           ForwardAgent = "yes";
           PreferredAuthentications = "publickey,keyboard-interactive,password";
           PubkeyAuthentication = "yes";
           StrictHostKeyChecking = "accept-new";
-        };
       };
       "p-laptop" = {
-        hostname = "p-laptop";
-        user = "p";
-				identitiesOnly = true;
-				identityFile = [ "~/.ssh/id_ed25519" ];
-				extraOptions = {
+        HostName = "p-laptop";
+        User = "p";
+				IdentitiesOnly = true;
+				IdentityFile = [ "~/.ssh/id_ed25519" ];
 					PreferredAuthentications = "publickey,keyboard-interactive,password";
 					PubkeyAuthentication = "yes";
 					StrictHostKeyChecking = "accept-new";
-				};
       };
 			"vincent" = {
-				hostname = "192.168.5.204";
-				user = "nixos";
-				identitiesOnly = true;
-				identityFile = [ "~/.ssh/id_ed25519" ];
-				extraOptions = {
+				HostName = "192.168.5.204";
+				User = "nixos";
+				IdentitiesOnly = true;
+				IdentityFile = [ "~/.ssh/id_ed25519" ];
 					PreferredAuthentications = "publickey,keyboard-interactive,password";
 					PubkeyAuthentication = "yes";
 					StrictHostKeyChecking = "accept-new";
           WarnWeakCrypto = "no"; # silences https://www.openssh.org/pq.html
-				};
 			};
 			"tima" = {
-				hostname = "100.103.90.12";
-				user = "t"; #Q: should I make shortcuts for `root@` ?
-				identitiesOnly = true;
-				identityFile = [ "~/.ssh/id_ed25519" ];
-				extraOptions = {
+				HostName = "100.103.90.12";
+				User = "t"; #Q: should I make shortcuts for `root@` ?
+				IdentitiesOnly = true;
+				IdentityFile = [ "~/.ssh/id_ed25519" ];
 					PreferredAuthentications = "publickey,keyboard-interactive,password";
 					PubkeyAuthentication = "yes";
 					StrictHostKeyChecking = "accept-new";
-				};
 			};
 			"masha" = {
-				hostname = "100.107.132.25";
-				user = "m"; #Q: should I make shortcuts for `root@` ?
-				identitiesOnly = true;
-				identityFile = [ "~/.ssh/id_ed25519" ];
-				extraOptions = {
+				HostName = "100.107.132.25";
+				User = "m"; #Q: should I make shortcuts for `root@` ?
+				IdentitiesOnly = true;
+				IdentityFile = [ "~/.ssh/id_ed25519" ];
 					PreferredAuthentications = "publickey,keyboard-interactive,password";
 					PubkeyAuthentication = "yes";
 					StrictHostKeyChecking = "accept-new";
-				};
 			};
 		};
 	};
@@ -639,7 +619,7 @@ in {
         })
         inputs.codex_nix.packages.${pkgs.stdenv.hostPlatform.system}.default
 
-        libreoffice-still
+        libreoffice-stable
         whatsie # C++ whatsapp client
 
         #vscode # bugged for me; `code` -> codium instead

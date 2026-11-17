@@ -55,6 +55,7 @@ in
   programs.nixcord = {
     enable = true; # also installs discord package
     discord.enable = true;
+    discord.silenceNoModClientWarning = true;
     vesktop.enable = false; # vencord builds from git on every nixcord bump, never cached
     discord.openASAR.enable = true;
 
