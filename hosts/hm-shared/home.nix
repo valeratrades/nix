@@ -372,7 +372,6 @@
     # INFO: arrays are always automatically merged, in host-specfic `home.nix`s it may seem like I'm overwriting this, but it only looks this way.
       lib.lists.flatten [
         inputs.v_flakes.packages.${pkgs.stdenv.hostPlatform.system}.kache # global rustc-wrapper; the same build v_flakes devShells use
-        sccache # for repos whose own cargo config names it
         [
           # funsies
           unimatrix

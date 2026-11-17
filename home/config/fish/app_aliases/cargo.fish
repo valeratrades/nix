@@ -207,45 +207,6 @@ function crt
 	rm -rf $temp_dir
 end
 
-function fucking_sccache
-	sccache -z
-	sccache --stop-server
-	sccache --start-server
-end
-
-# Wrapper that detects sccache temp dir failures and retries after fixing
-# Usage: sccache_retry cargo build
-#        sccache_retry nb
-function sccache_retry
-	set cmd $argv
-
-	# Run command and capture output
-	set tmpfile (mktemp)
-	$cmd 2>&1 | tee $tmpfile
-	set exit_code $pipestatus[1]
-
-	# Check if sccache failed with temp dir error
-	if test $exit_code -ne 0
-		if grep -q "sccache.*Failed to create temp dir\|No such file or directory.*sccache" $tmpfile
-			echo ""
-			echo "🔧 Detected sccache temp dir failure, restarting sccache and retrying..."
-			echo ""
-			fucking_sccache
-			rm -f $tmpfile
-			$cmd
-			return $status
-		end
-	end
-
-	rm -f $tmpfile
-	return $exit_code
-end
-
-# Aliases for common commands with sccache retry
-function scb --wraps 'cargo build'; sccache_retry cargo build $argv; end
-function scr --wraps 'cargo run'; sccache_retry cargo run $argv; end
-function scc --wraps 'cargo check'; sccache_retry cargo check $argv; end
-
 # `target/` only grows when cargo runs, so this arms off cargo invocations rather than every prompt.
 # The probe is a `du` over ~125k inodes — 0.4s warm, far too dear to pay per command; the 1-in-20
 # roll amortizes it to ~20ms. Reaching 50GiB takes days, so declining 19 of every 20 chances to
