@@ -1,12 +1,11 @@
 #!/bin/sh
-# Toggles the `*` favorite prefix on a session. `$1`: session name or choose-tree target (`=name:`); `$2`: pane to reopen choose-tree in, with the cursor on the session
-n=${1#=}
-n=${n%:}
+# Toggles the `*` favorite prefix on a session. `$1`: any session target (choose-tree hands over an id on tmux master); `$2`: pane to reopen choose-tree in, with the cursor on the session
+n=$(tmux display -p -t "$1" '#S') || exit 1
 case "$n" in
 \**) new=${n#?} ;;
 *) new="*$n" ;;
 esac
-tmux rename-session -t "=$n" "$new"
+tmux rename-session -t "$1" "$new"
 [ -z "$2" ] && exit 0
 rank=$(tmux list-sessions -F '#S' | LC_ALL=C sort | grep -nxF -- "$new" | cut -d: -f1) # choose-tree -O name is strcmp
 tmux run-shell -t "$2" -C favtree
