@@ -73,7 +73,7 @@ function et
        set ext $argv[1]
    end
    
-   nvim /tmp/a_temporary_note.$ext -c 'nnoremap q gg^vG^g_"+y:qa!<CR>' -c 'startinsert'
+   nvim /tmp/a_temporary_note.$ext -c 'nnoremap <buffer> q gg^vG^g_"+y:qa!<CR>' -c 'startinsert'
 end
 
 function ec; e $NIXOS_CONFIG/home/config/nvim $argv; end
