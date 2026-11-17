@@ -169,11 +169,13 @@ Ours:
     if [ $resume_pick -eq 1 ]
         set -a passthrough_args --resume $session_id
     else if set -q resume_n[1]
-        set -l sessions (command ls -t $proj_dir/*.jsonl 2>/dev/null)
+        set -l sessions $proj_dir/*.jsonl # in `set`, an unmatched glob is empty instead of an error
         if [ (count $sessions) -lt $resume_n ]
-            echo "cl: only "(count $sessions)" session(s) recorded for this directory" >&2
+            echo "cl: -$resume_n needs $resume_n recorded session(s) for "(pwd -P)", found "(count $sessions) >&2
+            echo "    looked in $proj_dir — if this dir was moved or renamed, its sessions are still under the old path's dir there" >&2
             return 1
         end
+        set sessions (command ls -t $sessions)
         set session_id (basename $sessions[$resume_n] .jsonl)
         set -a passthrough_args --resume $session_id
     else
