@@ -168,7 +168,7 @@
 
 (defwidget io_pressure []
 	(box
-		:class {io_pressure_poll >= 20 ? "warn" : ""}
+		:class {io_pressure_poll > 25 ? "warn" : ""}
 		"io${io_pressure_poll}%"))
 
 (defwidget ram []

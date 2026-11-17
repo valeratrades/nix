@@ -58,6 +58,8 @@ def on_nix(ev, now):
 	elif a == 'stop' and ('drv', ev['id']) in rows:
 		row = rows[('drv', ev['id'])]
 		row[2], row[3] = now, True
+	elif a == 'result' and ev.get('type') == 104 and ('drv', ev['id']) in rows:  # resSetPhase
+		rows[('drv', ev['id'])][0] = f'[{drv_of_activity[ev["id"]]}] {ev["fields"][0]}'
 	elif a == 'result' and ev.get('type') == 101:  # resBuildLogLine
 		log.write(ev['fields'][0] + '\n')
 		on_line(ev['fields'][0], now)
