@@ -18,7 +18,7 @@ minified internals it needs resolved to their chunk + export name, and splices i
 
 Same-length overwrites: each license header absorbs the growth, paid for in the menu by its own analytics calls and in
 the command list module by dead stub commands; take effect only through detach-claude-bytecode.py. Anchors are verbatim
-from claude-code 2.1.322; minified names churn every release.
+from claude-code 2.1.326; minified names churn every release.
 
 Usage: patch-claude-accounts.py <binary> <claude-accounts.mjs template> <output .mjs path>
 Invoked from: hosts/v-laptop/patched-claude-code.nix (overrideAttrs.postFixup).
@@ -35,36 +35,36 @@ NAME = rb"[\w$]+"
 MENU_SPLICES = [
 	(
 		"options",
-		b'let M=U,gr,hr;',
-		b'let[$ao,$as]=y([]),M=t.rotate?$ao:[...U,...$ao],gr,hr;',
+		b'let O=E,To,Oo;',
+		b'let[$ao,$as]=y([]),O=t.rotate?$ao:[...E,...$ao],To,Oo;',
 	),
 	(
 		"options load",
-		b'Ar.current=!0,l("tengu_rate_limit_options_menu_shown",{...TXn(i),...Eit(),entry:U1(t.submittedFromComposer)?b("typed"):b("not_typed"),rows:M.map(cs),blocked:bC(i)})}',
-		b'Ar.current=!0,$acc().then(m=>m.options()).then(r=>{$as(r);let a=!t.rotate&&!U1(t.submittedFromComposer)&&r.find(x=>x.auto&&!x.disabled);if(a)t.alone=1,Dt(a.value)},e=>$as([{label:`Account switch unavailable: ${e}`,value:"acct:",disabled:!0}]))}',
+		b'Eo.current=!0,l("tengu_rate_limit_options_menu_shown",{...Wyr(i),...Ryt(),entry:QH(t.submittedFromComposer)?b("typed"):b("not_typed"),rows:O.map(Us),blocked:zA(i)})}',
+		b'Eo.current=!0,$acc().then(m=>m.options()).then(r=>{$as(r);let a=!t.rotate&&!QH(t.submittedFromComposer)&&r.find(x=>x.auto&&!x.disabled);if(a)t.alone=1,Rt(a.value)},e=>$as([{label:`Account switch unavailable: ${e}`,value:"acct:",disabled:!0}]))}',
 	),
 	(
 		"dispatch",  # ahead of the row-change refusal, which the late account rows would trip on the auto-dispatch
-		b'Dt=function ci(W){',
-		b'Dt=function ci(W){if(W.startsWith("acct:"))return me(e(Ee,{title:"What do you want to do?",onCancel:fs,exitOnCtrlCD:!0,color:"suggestion",hideInputGuide:!0,children:e(n,{dimColor:!0,children:`Switching to account ${W.slice(5)}\\u2026`})})),$acc().then(m=>m.switchTo(W.slice(5),t,d)).catch(e=>d(`Account switch failed: ${e?.stack??e}`));',
+		b'Rt=function yi(H){',
+		b'Rt=function yi(H){if(H.startsWith("acct:"))return he(e(ke,{title:"What do you want to do?",onCancel:Ms,exitOnCtrlCD:!0,color:"suggestion",hideInputGuide:!0,children:e(n,{dimColor:!0,children:`Switching to account ${H.slice(5)}\\u2026`})})),$acc().then(m=>m.switchTo(H.slice(5),t,d)).catch(e=>d(`Account switch failed: ${e?.stack??e}`));',
 	),
 ]
 MENU_ANALYTICS = (rb'[\w$]+\("tengu_rate_limit_options_menu_\w+",(?:\{\}|[\w$]+\(\))\),', 8)
-COMMAND_LIST = (b'_st,kst,OSn,', b'_st,kst,$rot,OSn,')
+COMMAND_LIST = (b'T_t,E_t,UBn,', b'T_t,E_t,$rot,UBn,')
 DEAD_STUBS = [  # always-disabled internal-list placeholders
-	(b'var $Sn={isEnabled:()=>!1,isHidden:!0,name:"stub"};var HSn={isEnabled:()=>!1,isHidden:!0,name:"stub"};var BSn={isEnabled:()=>!1,isHidden:!0,name:"stub"};', b''),
-	(b'SSn,$Sn,HSn,BSn,Cst,', b'SSn,Cst,'),
+	(b'var KBn={isEnabled:()=>!1,isHidden:!0,name:"stub"};var VBn={isEnabled:()=>!1,isHidden:!0,name:"stub"};var YBn={isEnabled:()=>!1,isHidden:!0,name:"stub"};', b''),
+	(b'xBn,KBn,VBn,YBn,...tUn?', b'xBn,...tUn?'),
 ]
-LIMIT_NOTICE = (b'$e=(q||V)&&!z&&!te&&ce==="pending"&&le&&!fe&&d,', b'$e=!z&&!te&&ce==="pending"&&le&&!fe&&d,')
+LIMIT_NOTICE = (b'le=(pe?E&&Ott(N):K||Z)&&!z&&!me&&ue==="pending"&&ee&&d,', b'le=!z&&!me&&ue==="pending"&&ee&&d,')
 
 # each pattern matches exactly once across all modules; its groups name the minified internals
 INTERNALS = [
 	rb"function (?P<mle>" + NAME + rb")\(\{retryCount:\w=0,force:\w=!1,entryAccessToken:",
-	rb"function (?P<Nn>" + NAME + rb")\(\)\{if\(" + NAME + rb"\(\)\)return null;let (\w)=" + NAME + rb"\.of\(" + NAME + rb"\(\)\.host\);if\(\2\.value===void 0\)\2\.value=" + NAME + rb"\(\);return \2\.value\?\?",
-	rb"async function (?P<uVe>" + NAME + rb")\(\w,\{storageV5:\w,credentials:\w,clock:\w\}=\{\}\)\{let\{departingLoginMayRemain:[^;]*;if\((?P<DI>" + NAME + rb")\(\),process\.env\.CLAUDE_CODE_OAUTH_TOKEN\)",
+	rb"function (?P<Nn>" + NAME + rb")\(\)\{if\(" + NAME + rb"\(\)\|\|" + NAME + rb"\(\)\)return null;let (\w)=" + NAME + rb"\.of\(" + NAME + rb"\(\)\.host\);if\(\2\.value===void 0\)\{let\{tokens:\w,loginEnded:\w\}=" + NAME + rb"\(\);\2\.value=\w,\2\.loginEnded=\w\}return \2\.value\?\?",
+	rb"async function (?P<uVe>" + NAME + rb")\(\w,\{storageV5:\w,credentials:\w\}=\{\}\)\{let\{departingLoginMayRemain:[^;]*;if\((?P<DI>" + NAME + rb")\(\{ownWriteLanded:[^}]*\}\),process\.env\.CLAUDE_CODE_OAUTH_TOKEN\)",
 	rb"async function (?P<kAe>" + NAME + rb")\(\w,\w,\w\)\{if\(\w\.onChangeAPIKey\(\),!\w\)return\{bridgeDisconnected:!1,",
 	rb"function (?P<wn>" + NAME + rb")\(\)\{return " + NAME + rb"\(\)\?" + NAME + rb"\(\)\.oauthAccount:void 0\}",
-	rb"function (?P<Br>" + NAME + rb")\(\)\{return " + NAME + rb"\(\)\.host\.credentialSlots\.gatewayAuth\(\)\}",	rb"clientId:\w\}=\w,\w=(?P<Kn>" + NAME + rb")\(\),\w=" + NAME + rb"\(\);try\{let \w=" + NAME + rb"\.of\(" + NAME + rb"\(\)\.host\),\w,\w=await \w\.mutate\(",
+	rb"function (?P<Br>" + NAME + rb")\(\)\{return " + NAME + rb"\(\)\.host\.credentialSlots\.gatewayAuth\(\)\}",	rb"clientId:\w\}=\w,\w=(?P<Kn>" + NAME + rb")\(\),\w=" + NAME + rb"\(\);try\{let \w=" + NAME + rb"\.of\(" + NAME + rb"\(\)\.host\),\w=await \w\.mutate\(",
 ]
 # credential-storage dir; bundled into several modules, the hook goes into the one mle's module imports
 CREDENTIAL_DIR = rb"function (?P<jx>" + NAME + rb")\(\)\{let \w=process\.env\.CLAUDE_SECURESTORAGE_CONFIG_DIR;"
