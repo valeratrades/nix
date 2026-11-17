@@ -34,7 +34,7 @@ def pkg_key(package_id):
 
 def on_line(line, now):
 	line = re.sub(r'\x1b\[[0-9;]*[A-Za-z]', '', line)
-	if line.startswith('{'):
+	if line.startswith('{"reason":'):  # cargo's json messages; other build output can start with `{` too
 		msg = json.loads(line)
 		if msg.get('reason') == 'compiler-message':
 			log.write(msg['message']['rendered'])
@@ -68,6 +68,14 @@ def on_nix(ev, now):
 
 
 def reader(stream, nix_events):
+	try:
+		read(stream, nix_events)
+	except BaseException:
+		proc.kill()  # else nobody drains the pipe and the build blocks forever
+		raise
+
+
+def read(stream, nix_events):
 	for raw in stream:
 		now = time.monotonic() - t0
 		line = raw.decode(errors='replace').rstrip('\n')
