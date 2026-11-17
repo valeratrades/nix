@@ -12,9 +12,9 @@ import sys
 
 THIS_FILE = "hosts/v-laptop/patch-claude-linuxpaste.py (in your nix config)"
 
-# claude-code 2.1.322, paste handler `rAt`: U = paste is empty, ie/J = macOS/WSL, n = onImagePaste, H = debounced clipboard-image read
-ANCHOR = b'if(U&&(ie||J)&&n){H();return}'
-REPLACEMENT = b'if(U&&n){H();return}'.ljust(len(ANCHOR))
+# claude-code 2.1.326, paste handler `ye`: he = paste is empty, me/se = macOS/WSL, c = onImagePaste, ie = debounced clipboard-image read
+ANCHOR = b'if(he&&(me||se)&&c){m?.(),ie();return}'
+REPLACEMENT = b'if(he&&c){m?.(),ie();return}'.ljust(len(ANCHOR))
 
 
 def die(msg: str) -> None:

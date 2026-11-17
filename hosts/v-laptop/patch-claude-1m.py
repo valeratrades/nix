@@ -36,12 +36,12 @@ import sys
 
 THIS_FILE = "hosts/v-laptop/patch-claude-1m.py (in your nix config)"
 
-# The opus-1m unavailability predicate, verbatim from claude-code 2.1.322 (`jXo`; the
-# sibling `WXo` is the Sonnet one, deliberately left alone). True means "refuse".
+# The opus-1m unavailability predicate, verbatim from claude-code 2.1.326 (the
+# sibling Sonnet predicate is deliberately left alone). True means "refuse".
 # Anchored on the body only — the minified function name churns every release.
 # Must occur exactly once.
-ANCHOR = (b'let o=e.toLowerCase();if(!(o.includes("opus")&&o.includes("[1m]")))return!1;'
-          b'if(L(e).every((s)=>PA(s)))return!1;return!aY()&&!JSe()')
+ANCHOR = ((b'let o=e.toLowerCase();if(!(o.includes("opus")&&o.includes("[1m]")))return!1;if(A(e).every((r)=>lx(r)))return!1'
+  b';return!rY()&&!LRe()'))
 REPLACEMENT = b'return!1;'.ljust(len(ANCHOR))
 assert len(REPLACEMENT) == len(ANCHOR), "same-length overwrite required"
 

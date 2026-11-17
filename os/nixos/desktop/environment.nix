@@ -68,7 +68,6 @@
     __GL_LOG_MAX_ANISO = "0";    # disable anisotropic filtering
 
 # claude code (https://github.com/anthropics/claude-code/issues/42796#issuecomment-4194007103) {{{1
-    DISABLE_TELEMETRY = "1";
     # NB: CLAUDE_CODE_DISABLE_1M_CONTEXT would hard-zero the `[1m]` model suffix (cli's is1M() short-circuits
     # on it), collapsing the window to 200k and min()'ing autoCompactWindow down with it.
     # See ongoing_debug/2026-08-04_claude-1m-context-compacting-at-200k.md
@@ -79,7 +78,7 @@
 
     CLAUDE_CODE_DISABLE_AUTO_MEMORY = "1"; # `cl` re-enables it per-session
     CLAUDE_CODE_DISABLE_ORG_MEMORY = "1";
-    CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = "1"; # serveys and shit
+    CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY = "1";
 #,}}}1
     UV_MALWARE_CHECK = "1"; # may become default in the future, - deprecate when it is
 
@@ -90,7 +89,13 @@
     # software-decoding the same stream on the CPU, so gating this made the thin chassis *hotter*.
     LIBVA_DRIVER_NAME = "radeonsi";
     VDPAU_DRIVER = "radeonsi";
-  };
+  } // (if user.claude_code_mode then {
+    CLAUDE_CODE_EXPERIMENTAL_CODE_MODE = "1";
+  } else {
+    # both turn off feature-flag fetching, which Code Mode refuses to start without
+    DISABLE_TELEMETRY = "1";
+    CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = "1"; # serveys and shit
+  });
 
   systemd.services.hibernate-prepare = {
     description = "Prepare for hibernate by killing memory-heavy processes";

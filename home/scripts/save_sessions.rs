@@ -7,6 +7,7 @@ edition = "2024"
 [dependencies]
 clap = { version = "4.5.49", features = ["derive"] }
 serde_json = "1"
+v_utils = { version = "2.24", default-features = false }
 ---
 
 use clap::Parser;
@@ -23,6 +24,9 @@ struct Args {
     /// Instead of recording, print how `restore_sessions -r` should pick this claude's turn back up: `continue`, `replay\t<prompt>`, or nothing when it was not cut off
     #[arg(long, value_name = "SESSION_ID")]
     interrupted: Option<String>,
+    /// With `--interrupted`: a cut-off turn younger than this, that used only read-only tools, is replayed rather than continued
+    #[arg(long, default_value = "45s")]
+    replay_within: v_utils::Timeframe,
 }
 
 /// `tmux_sessions.tsv`: `session_name\tsession_path` per tmux session; `claude_restore.tsv`: `session_name\tcwd\tsession_id\tdraft\trewind` per live tmux-hosted claude, `draft` being its unsubmitted input and `rewind` the prompt it sits rewound to, both with `\\`, `\n`, `\t` escaped.
@@ -32,7 +36,7 @@ fn main() {
     let dry_run = args.dry_run;
     let home = std::env::var("HOME").expect("HOME not set");
     if let Some(id) = args.interrupted {
-        match interrupted(&Path::new(&home).join(".claude"), &id) {
+        match interrupted(&Path::new(&home).join(".claude"), &id, args.replay_within.duration()) {
             Resume::Idle => {}
             Resume::Continue => println!("continue"),
             Resume::Replay(p) => println!("replay\t{}", p.replace('\\', "\\\\").replace('\n', "\\n").replace('\t', "\\t")),
@@ -284,7 +288,7 @@ enum Resume {
 
 /// Whether claude `id`'s last turn was cut off by its process dying, and if so whether that turn did enough to be worth continuing rather than sent again.
 /// A live claude is judged on what it wrote before it started, so one already resumed and still sitting on the dead turn counts, while one the user or a resume nudge already moved on does not.
-fn interrupted(config_dir: &Path, id: &str) -> Resume {
+fn interrupted(config_dir: &Path, id: &str, replay_within: std::time::Duration) -> Resume {
     let projects = config_dir.join("projects");
     let transcript = std::fs::read_dir(&projects)
         .unwrap_or_else(|e| panic!("{}: {e}", projects.display()))
@@ -352,7 +356,7 @@ fn interrupted(config_dir: &Path, id: &str) -> Resume {
         _ => panic!("{}: prompt or last entry lacks a timestamp", transcript.display()),
     };
     // shortcut: wall time stands in for work done, and a sub-minute Bash is assumed side-effect free; upgrade if a replayed turn ever repeats an effect.
-    match harmless && spent < 60.0 {
+    match harmless && spent < replay_within.as_secs_f64() {
         true => Resume::Replay(p.clone()),
         false => Resume::Continue,
     }

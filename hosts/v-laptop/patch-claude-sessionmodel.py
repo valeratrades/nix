@@ -10,7 +10,7 @@
 
 Same-length overwrite (padded with spaces) so Bun's compiled-ELF trailer offsets stay valid;
 takes effect only through detach-claude-bytecode.py. Anchors are verbatim from claude-code
-2.1.322; minified names churn every release.
+2.1.326; minified names churn every release.
 
 Invoked from: hosts/v-laptop/patched-claude-code.nix (overrideAttrs.postFixup).
 """
@@ -22,20 +22,20 @@ PATCHES = [
 	(
 		"model picker enter",
 		"grep -ao 'if([A-Za-z0-9_$]*)[A-Za-z0-9_$]*([A-Za-z0-9_$]*===[A-Za-z0-9_$]*?null:[A-Za-z0-9_$]*);[A-Za-z0-9_$]*([A-Za-z0-9_$]*)}'",
-		b'if(H)H(rs===BR?null:rs);na(rs)}',
-		b'na(rs)}',
+		b'if(L)L(Xn===aP?null:Xn);wr(Xn)}',
+		b'wr(Xn)}',
 	),
 	(
 		"inline /model <name>",
 		"grep -ao '=([A-Za-z0-9_$]*,[A-Za-z0-9_$]*)=>{let [A-Za-z0-9_$]*=![A-Za-z0-9_$]*();[A-Za-z0-9_$]*(null);.\\{0,80\\}\"command\"'",
-		b'Re=(ie,Ye)=>{let _e=!vt();se(null);',
-		b'Re=(ie,Ye)=>{let _e=!1;se(null);',
+		b'Re=(le,_e)=>{let De=!bt();re(null);',
+		b'Re=(le,_e)=>{let De=!1;re(null);',
 	),
 	(
 		"effort writer",
 		"grep -ao 'let [A-Za-z0-9_$]*=[A-Za-z0-9_$]*!==void 0?[A-Za-z0-9_$]*([A-Za-z0-9_$]*):void 0;if([A-Za-z0-9_$]*&&([A-Za-z0-9_$]*===void 0||'",
-		b'let f=e!==void 0?LNe(e):void 0;if(r&&(e===void 0||f!==void 0)&&!or())',
-		b'let f=e!==void 0?LNe(e):void 0;if(0&&(e===void 0||f!==void 0)&&!or())',
+		b'let a=e!==void 0?FGe(e):void 0;if(r&&(e===void 0||a!==void 0)&&!sr())',
+		b'let a=e!==void 0?FGe(e):void 0;if(0&&(e===void 0||a!==void 0)&&!sr())',
 	),
 	(
 		"/effort persist flag",

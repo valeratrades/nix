@@ -42,6 +42,7 @@ in
 		clickhouse = false;
 		flatpak = false;
 		openclaw = true;
+		claude_code_mode = true; # experimental Code Mode (https://code.claude.com/docs/en/code-mode); needs telemetry + feature-flag fetching on
 		debug = false; # verbose systemd logging (boot + shutdown); flip on when something starts misbehaving
 		speed_over_safety = true; # e.g. login doesn't wait for home-manager activation, so a fresh generation's session can start on the previous one's files
 		default_s_inactive_to_retire = 1200; # idle LSP servers paged out to swap after this many seconds (20m)
@@ -66,6 +67,7 @@ in
 		clickhouse = true;
 		flatpak = false;
 		openclaw = false;
+		claude_code_mode = false;
 		debug = false;
 		speed_over_safety = false;
 		default_s_inactive_to_retire = 1200;
@@ -86,6 +88,7 @@ in
 		clickhouse = true;
 		flatpak = false;
 		openclaw = false;
+		claude_code_mode = false;
 		debug = false;
 		speed_over_safety = false;
 		default_s_inactive_to_retire = 1200;

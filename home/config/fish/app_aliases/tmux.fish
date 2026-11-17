@@ -163,9 +163,9 @@ end
 
 # Rebuilds the working set recorded by `save_sessions` (`tmux_sessions.tsv` + `claude_restore.tsv`).
 # Idempotent: sessions and claudes already live are skipped, so reruns (e.g. home-manager restarting the unit) are safe.
-# `-r`: claudes whose turn the shutdown cut off are nudged on, or sent that prompt again when the turn got nowhere (see `save_sessions --interrupted`); live ones too, so it works after the boot unit already restored them.
+# `-r[<timeframe>]`: claudes whose turn the shutdown cut off are nudged on, or sent that prompt again when the turn got nowhere within the timeframe (see `save_sessions --interrupted`); live ones too, so it works after the boot unit already restored them.
 function restore_sessions
-	argparse 'n/dry-run' 'r/resume' -- $argv
+	argparse 'n/dry-run' 'r/resume=?' -- $argv
 	or return 1
 	set -l state_home $XDG_STATE_HOME
 	test -n "$state_home"; or set state_home "$HOME/.local/state"
@@ -233,7 +233,9 @@ function restore_sessions
 		end
 		set -l resume
 		if set -q _flag_resume; and test -z "$rewind" # a rewound claude sat idle
-			set -l verdict (save_sessions --interrupted $id)
+			set -l within
+			test -n "$_flag_resume"; and set within --replay-within $_flag_resume # bare `-r`: save_sessions' default
+			set -l verdict (save_sessions --interrupted $id $within)
 			if test $status != 0
 				echo "restore_sessions: $id — could not tell whether its turn was cut off, not resumed" >&2
 				set failed 1

@@ -87,8 +87,6 @@
 
     "#40: despise the free lunch"
 
-    "#46: never appear too perfect"
-
     { text = ''
 󿾴󷛮󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󳵐󻡪
 󿿽󿿽󿷕󺍎󵦁󱶁󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧥󰧹󳩁󷴸󼻵󿿽󿿽

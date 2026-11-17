@@ -22,22 +22,22 @@ import sys
 
 THIS_FILE = "hosts/v-laptop/patch-claude-altexit.py (in your nix config)"
 
-# The stash callback, verbatim from claude-code 2.1.322. In `$Ze` (the chat-input
-# component) `D` is the draft and `wt` is the `onSubmit` prop — the same closure, so submit
-# is reachable from here. No longer memoized upstream, so it already sees a fresh `wt`.
+# The stash callback, verbatim from claude-code 2.1.326. In `cdt` (the chat-input
+# component) `N` is the draft and `Et` is the `onSubmit` prop — the same closure, so submit
+# is reachable from here. Not memoized, so it already sees a fresh `Et`.
 # Must occur exactly once.
-ANCHOR = (b'LD=()=>{if(D.value.trim()===""&&D.stashedPrompt!==void 0)D.popStash("input"),lg(),'
-          b'Dr("stash-saved"),g("input_stash");else if(D.value.trim()!==""){if(D.stash(),lg(),wA)'
-          b'{let OT=`stashed \\xB7 ${$b("chat:stash","Chat","ctrl+s")} to restore`;Or({key:"stash-saved",'
-          b'kind:"feedback",text:OT,row1Hint:OT,priority:"immediate",timeoutMs:3000})}Me(Sfo,ws),'
-          b'g("input_stash")}}')
+ANCHOR = (b'qY=()=>{if(N.value.trim()===""&&N.stashedPrompt!==void 0)N.popStash("input"),Gm(),'
+          b'gs("stash-saved"),p("input_stash");else if(N.value.trim()!==""){if(N.stash(),Gm(),ZC)'
+          b'{let jY=`stashed \\xB7 ${Vy("chat:stash","Chat","ctrl+s")} to restore`;ys({key:"stash-saved",'
+          b'kind:"feedback",text:jY,row1Hint:jY,priority:"immediate",timeoutMs:3000})}Ue(YRo,Zr),'
+          b'p("input_stash")}}')
 
 # NB: process.exit(0) directly after submit kills the process before the user turn is
 # flushed to the session transcript (the write happens on a later event-loop tick, after
 # React effects). Defer the exit so the append lands first — verified by pty test that a
 # synchronous exit drops the turn and a deferred one persists it. 800ms is comfortably
 # above the observed write latency; it's the visible "submitting…" delay before quit.
-REPLACEMENT = b'LD=()=>{wt(D.value);setTimeout(()=>process.exit(0),800)}'.ljust(len(ANCHOR))
+REPLACEMENT = b'qY=()=>{Et(N.value);setTimeout(()=>process.exit(0),800)}'.ljust(len(ANCHOR))
 
 
 def die(msg: str) -> None:

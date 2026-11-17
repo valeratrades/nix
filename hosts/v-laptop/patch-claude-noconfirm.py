@@ -17,7 +17,7 @@
 
 Same-length overwrite (padded with spaces) so Bun's compiled-ELF trailer offsets stay valid;
 takes effect only through detach-claude-bytecode.py. Anchors are verbatim from claude-code
-2.1.322; minified names churn every release.
+2.1.326; minified names churn every release.
 
 Invoked from: hosts/v-laptop/patched-claude-code.nix (overrideAttrs.postFixup).
 """
@@ -29,22 +29,22 @@ PATCHES = [
 	(
 		"bypass-immune predicate",
 		"grep -ao 'function [A-Za-z0-9_$]*(e){return [A-Za-z0-9_$]*(e).some(([a-z])=>[A-Za-z0-9_$]*\\[[a-z]\\]?.bypassImmune===!0)}'",
-		b'return d(e).some((o)=>kPe[o]?.bypassImmune===!0)',
+		b'return d(e).some((o)=>XNe[o]?.bypassImmune===!0)',
 		b'return!1',
 	),
 	(
 		"invisible-unicode submit review",
 		"grep -ao 'let [A-Za-z0-9_$]*=[A-Za-z0-9_$]*.input.trim()===\"\";let [A-Za-z0-9_$]*=[A-Za-z0-9_$]*([A-Za-z0-9_$]*.input,[A-Za-z0-9_$]*.removed,[A-Za-z0-9_$]*.mode);'",
-		b'let uG=df.input.trim()==="";let PB=Dxn(df.input,df.removed,te.mode);',
-		b'let uG=df.input.trim()==="";let PB=!1;',
+		b'let Gae=Gf.input.trim()==="";let xT=Szn(Gf.input,Gf.removed,ee.mode);',
+		b'let Gae=Gf.input.trim()==="";let xT=!1;',
 	),
 	(
 		"model-switch cache-miss dialog",
 		"grep -ao 'function [A-Za-z0-9_$]*(e,o,[a-z],[a-z],n){if(n===void 0)return!1;.\\{0,240\\}has([a-z])===!0))}'",
-		b'function LJr(e,o,s,a,n){if(n===void 0)return!1;let l=Ab();if(l===0||l===a)return!1;let r=Yn(eye(e));'
-		b'if(r===Yn(eye(Bce({mainLoopModel:o,mainLoopModelForSession:s}))))return!1;let u=n.response?.message.model;'
-		b'return!(typeof u==="string"&&(u===r||i6n(r)?.has(u)===!0))}',
-		b'function LJr(){return!1}',
+		(b'function zEo(e,o,r,a,n){if(n===void 0)return!1;let l=lb();if(l===0||l===a)return!1;let i=Kn(IZ(e));if(i===Kn(I'
+		  b'Z(P_e({mainLoopModel:o,mainLoopModelForSession:r}))))return!1;let u=n.response?.message.model;return!(typeof u'
+		  b'==="string"&&(u===i||pmr(i)?.has(u)===!0))}'),
+		b'function zEo(){return!1}',
 	),
 ]
 

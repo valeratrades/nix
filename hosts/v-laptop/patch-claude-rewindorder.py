@@ -5,7 +5,7 @@ A stray Enter on the rewind dialog should not also roll back files.
 
 Same-length overwrite (padded with spaces) so Bun's compiled-ELF trailer offsets stay valid;
 takes effect only through detach-claude-bytecode.py. Anchors are verbatim from claude-code
-2.1.322; minified names churn every release.
+2.1.326; minified names churn every release.
 
 Invoked from: hosts/v-laptop/patched-claude-code.nix (overrideAttrs.postFixup).
 """
@@ -17,17 +17,17 @@ PATCHES = [
 	(
 		"rewind options order",
 		"grep -ao '.\\{0,60\\}function [A-Za-z0-9_$]*([A-Za-z0-9_$]*){let [A-Za-z0-9_$]*=[A-Za-z0-9_$]*?\\[{value:\"both\".\\{0,200\\}'",
-		b'[dn,en]=y("both"),[qo,tr]=y(""),[Cn,On]=y("");function yo(mr){let Mr=mr?['
+		b'[No,Nn]=y("both"),[Zo,dn]=y(""),[Pn,cn]=y(""),or=gj($o),Fn=R(null);function Er(Ar){let ys=Ar?['
 		b'{value:"both",label:"Restore code and conversation"},{value:"conversation",label:"Restore conversation"},'
 		b'{value:"code",label:"Restore code"}]:[{value:"conversation",label:"Restore conversation"}],',
-		b'[dn,en]=y("conversation"),[qo,tr]=y(""),[Cn,On]=y("");function yo(mr){'
-		b'let rc={value:"conversation",label:"Restore conversation"},Mr=mr?['
+		b'[No,Nn]=y("conversation"),[Zo,dn]=y(""),[Pn,cn]=y(""),or=gj($o),Fn=R(null);function Er(Ar){'
+		b'let rc={value:"conversation",label:"Restore conversation"},ys=Ar?['
 		b'rc,{value:"both",label:"Restore code and conversation"},{value:"code",label:"Restore code"}]:[rc],',
 	),
 	(
 		"rewind default focus",
 		"grep -ao 'defaultFocusValue:[A-Za-z0-9_$]*?\"both\":\"conversation\"'",
-		b'defaultFocusValue:Zn?"both":"conversation"',
+		b'defaultFocusValue:Un?"both":"conversation"',
 		b'defaultFocusValue:"conversation"',
 	),
 ]
