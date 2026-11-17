@@ -30,6 +30,10 @@ function server
 	else if test "$argv[1]" = "vpn"
 		mkdir -p "$XDG_STATE_HOME/openvpn/"
 		sudo openvpn --config "$VINCENT_VPN_CONF" --auth-user-pass (echo -e "$VINCENT_VPN_USER\n$VINCENT_VPN_PASS" | psub) --auth-nocache > "$XDG_STATE_HOME/openvpn/$log_name.log" 2>&1 &
+		set -l vpn_pid $last_pid # sudo's, which lives exactly as long as openvpn
+		eww update openvpn_active=true
+		fish -c "waitpid $vpn_pid; eww update openvpn_active=false" &
+		disown
 	else if test "$argv[1]" = "disconnect"
 		sudo killall openvpn
 	else if test "$argv[1]" = "-h" -o "$argv[1]" = "--help" -o "$argv[1]" = "help"
