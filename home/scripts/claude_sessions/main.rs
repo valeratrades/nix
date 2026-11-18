@@ -2139,7 +2139,11 @@ fn classify_activity(
     // conversation is that conversation's state (usually Finished via the prompt
     // gate below), not an empty one.
     let band_row = Regex::new(r"^● \S+  \$\d+\.\d\d\b").unwrap(); // "● full  $0.00  0s …" status band above the box
-    if !content.lines().any(|l| l.contains('●') && !band_row.is_match(l))
+    let lines: Vec<&str> = content.lines().collect();
+    let input_box = lines.iter().rposition(|l| is_prompt_line(l));
+    let sent_prompt = lines.iter().enumerate().any(|(i, l)| Some(i) != input_box && l.starts_with("❯ ") && !l[4..].trim().is_empty()); // a turn cut before its first reply leaves no "●"
+    if !sent_prompt
+        && !content.lines().any(|l| l.contains('●') && !band_row.is_match(l))
         && (content.contains("▐▛███") // logo's right half differs across versions
 
             || content.contains("No recent activity")
