@@ -162,14 +162,13 @@
 	(box
 		:class {EWW_DISK["/"].used_perc > 90 || EWW_DISK["/home"].used_perc > 90 ? "warn" : ""}
 		" ${round(EWW_DISK["/"].used_perc > EWW_DISK["/home"].used_perc ? EWW_DISK["/"].used_perc : EWW_DISK["/home"].used_perc, 0)}%"))
-; PSI "some": % of the last 10s some task sat waiting on IO. Device %util is meaningless on NVMe (parallel queues), so stall time is the saturation signal.
-; ~7 cpu ms/call (health.rs --polls)
-(defpoll io_pressure_poll :initial "0" :interval "5s" "sed -n '1s/.*avg10=\\([0-9]*\\).*/\\1/p' /proc/pressure/io")
+; Mean ms per block IO (read+write+flush) over a 1s window, worst NVMe. PSI is unusable here: tasks parked in io_uring waits (ringboard) count as iowait. Flush is what fsync costs on top of the write.
+(defpoll io_latency_poll :initial "0" :interval "5s" "(grep -E ' nvme[0-9]+n[0-9]+ ' /proc/diskstats; sleep 1; grep -E ' nvme[0-9]+n[0-9]+ ' /proc/diskstats) | awk '{n=$4+$8+$19; ms=$7+$11+$20; if ($3 in pn) {d=n-pn[$3]; l=d>0?(ms-pm[$3])/d:0; if (l>m) m=l} else {pn[$3]=n; pm[$3]=ms}} END {printf \"%d\", m}'")
 
 (defwidget io_pressure []
 	(box
-		:class {io_pressure_poll > 25 ? "warn" : ""}
-		"io${io_pressure_poll}%"))
+		:class {io_latency_poll > 50 ? "warn" : ""}
+		"io${io_latency_poll}ms"))
 
 (defwidget ram []
 	(box

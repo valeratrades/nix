@@ -128,3 +128,7 @@ fexit:vmlinux:vfs_copy_file_range {
 }
 ```
 Other cheap sources: `/sys/fs/cgroup/**/io.stat` (per-device wbytes; not delegated below `user@1000.service`), `/proc/<pid>/io` write_bytes (includes reaped children), `kache stats --json`, `/proc/pressure/io`.
+
+## Phantom io% in eww (2026-11-17, post-reboot)
+`io48%` with an idle drive (diskstats io_ticks 40 ms/5 s, no D-state tasks) was **ringboard-server** parked in `io_cqring_wait`: io_uring waits count as iowait, so PSI `some` reads ~46% permanently. Proved by A/B: ringboard stopped → +2 ms stall/5 s; running → +2.3 s/5 s. Global `/proc/pressure/io` (the eww poll) cannot exclude one cgroup; `io%` is useless while ringboard runs. Real build-time saturation above is separate and still true.
+Open: use IORING_ENTER_NO_IOWAIT upstream (ringboard), or make the eww poll read per-cgroup/diskstats queue depth instead of global PSI.
