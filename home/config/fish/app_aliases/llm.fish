@@ -207,7 +207,21 @@ Ours:
 
     # not `command`: routes through the claude function above, for its account and slice
     # `string collect`: without it fish splits the file on newlines into one argument each
-    $base_cmd --append-system-prompt (cat $HOME/.claude/daneel.md | string collect) $passthrough_args
+    set -l sys (cat $HOME/.claude/daneel.md | string collect)
+    if not set -q resume_n[1]; and [ $resume_pick -eq 0 ]
+        $base_cmd --append-system-prompt $sys $passthrough_args
+        return
+    end
+    # Code Mode needs a fresh feature-flag fetch within 5s of start; under load (restore_sessions starting every claude at once) it misses, and a Code Mode session then refuses to resume with exit 1
+    for attempt in (seq 4)
+        set -l t0 (date +%s)
+        $base_cmd --append-system-prompt $sys $passthrough_args
+        set -l st $status
+        test $st -ne 1; or test (math (date +%s) - $t0) -ge 30; and return $st
+        test $attempt -lt 4; or return $st
+        echo "cl: resume exited 1 within 30s, retrying ($attempt/3)…" >&2
+        sleep (math 5 \* $attempt)
+    end
 end
 complete -c cl -w claude
 

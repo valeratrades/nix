@@ -310,12 +310,12 @@ function restore_sessions
 		set -l resume $pending[(math $i + 3)]
 		set -l waited 0
 		while not string match -qr '(?m)^─.*─\n❯\x{a0}$' -- (tmux capture-pane -p -t $pane | string collect) # empty prompt box: claude is up and takes input
-			test $waited -ge 120; and break
+			test $waited -ge 240; and break
 			test $waited = 10; and echo "restore_sessions: $pane — waiting for claude to show an empty prompt…"
 			sleep 0.5
 			set waited (math $waited + 1)
 		end
-		if test $waited -ge 120
+		if test $waited -ge 240
 			echo "restore_sessions: $pane — claude never showed an empty prompt, rewind not replayed, draft not typed:" >&2
 			printf '%s\n' $lines >&2
 			set failed 1
@@ -433,12 +433,12 @@ function restore_sessions
 			set -l server (test -n "$tui"; and pgrep -P $tui -x nvim)
 			set sock $XDG_RUNTIME_DIR/nvim.$server.0
 			test -n "$server"; and timeout 2 nvim --server $sock --remote-expr v:vim_did_enter 2>/dev/null | string match -q 1; and break # stderr: socket not up yet; timeout: a busy startup answers only once done, so it is polled again
-			test $waited -ge 120; and break
+			test $waited -ge 240; and break
 			test $waited = 10; and echo "restore_sessions: $pane — waiting for nvim to finish starting…"
 			sleep 0.5
 			set waited (math $waited + 1)
 		end
-		if test $waited -ge 120
+		if test $waited -ge 240
 			echo "restore_sessions: $pane — nvim never came up, its session not loaded" >&2
 			set failed 1
 			continue
