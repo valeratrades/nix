@@ -168,7 +168,7 @@
 (defwidget io_pressure []
 	(box
 		:class {io_latency_poll > 50 ? "warn" : ""}
-		"io${io_latency_poll}ms"))
+		" ${io_latency_poll}ms"))
 
 (defwidget ram []
 	(box
