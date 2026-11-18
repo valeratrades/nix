@@ -13,6 +13,9 @@ out="$5"
 case "$path" in /var/offload/*) path="/home/${path#/var/offload/}" ;; esac # apps resolve the ~/Downloads etc. symlinks
 
 logfile="$HOME/.local/state/termfilechooser.log"
+pidf=$(mktemp)
+# nvim survives its window being closed (seen spinning for an hour inside the portal's cgroup), so reap it once alacritty returns
+reap() { kill -KILL "$(cat "$pidf")" 2>/dev/null && echo "$(date): reaped nvim that outlived its window" >> "$logfile"; rm -f "$pidf"; } # kill fails when nvim already exited, the normal case
 echo "$(date): multiple=$multiple, directory=$directory, save=$save, path=$path, out=$out" >> "$logfile"
 
 if [ "$save" = "1" ]; then
@@ -21,7 +24,8 @@ if [ "$save" = "1" ]; then
   echo "0" > "$statusfile"
   [ -n "$path" ] && echo "$path" > "$tmpfile" || echo "$HOME/newfile" > "$tmpfile"
 
-  alacritty -e nvim "$tmpfile" "+TermFileChooserSave $statusfile"
+  alacritty -e sh -c 'echo $$ > "$0"; exec nvim "$@"' "$pidf" "$tmpfile" "+TermFileChooserSave $statusfile"
+  reap
 
   echo "$(date): After nvim exit, tmpfile contents: [$(cat "$tmpfile")]" >> "$logfile"
   if [ "$(cat "$statusfile")" = "1" ] && [ -f "$tmpfile" ] && [ -s "$tmpfile" ]; then
@@ -46,7 +50,8 @@ else
     startdir="$HOME"
   fi
 
-  alacritty -e nvim "$startdir" "+TermFileChooserOpen $tmpfile"
+  alacritty -e sh -c 'echo $$ > "$0"; exec nvim "$@"' "$pidf" "$startdir" "+TermFileChooserOpen $tmpfile"
+  reap
 
   if [ -f "$tmpfile" ] && [ -s "$tmpfile" ]; then
     cat "$tmpfile" > "$out"
