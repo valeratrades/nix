@@ -12,6 +12,7 @@ use clap::Parser;
 use std::process::{Command, Stdio};
 
 const SAVE_SESSIONS: &str = "/home/v/nix/home/scripts/save_sessions.rs";
+const SWAY_DEBUG_FLAG: &str = ".local/state/sway-debug-next-boot"; // consumed by home/config/fish/__main__.fish
 
 /// Smart shutdown with pre-shutdown cleanup
 #[derive(Parser, Debug)]
@@ -25,6 +26,10 @@ struct Args {
     /// Reboot instead of powering off
     #[arg(short = 'r', long)]
     reboot: bool,
+
+    /// Start sway with `-d` on the next boot only (`journalctl -b -t sway`); the flag file is consumed at login
+    #[arg(long)]
+    debug_next_boot: bool,
 
     /// Internal flag: run as detached process (used when inside tmux)
     #[arg(long, hide = true)]
@@ -62,6 +67,9 @@ fn main() {
         if args.reboot {
             cmd_args.push("--reboot".to_string());
         }
+        if args.debug_next_boot {
+            cmd_args.push("--debug-next-boot".to_string());
+        }
 
         // Use setsid to create a new session, detaching from the terminal
         let status = Command::new("setsid")
@@ -86,6 +94,17 @@ fn main() {
                 eprintln!("Failed to start detached process: {e}");
                 std::process::exit(1);
             }
+        }
+    }
+
+    if args.debug_next_boot {
+        let home = std::env::var("HOME").expect("HOME is set in a login session");
+        let flag = format!("{home}/{SWAY_DEBUG_FLAG}");
+        if args.dry_run {
+            println!("Dry run - would create {flag}");
+        } else {
+            std::fs::write(&flag, "").unwrap_or_else(|e| panic!("writing {flag}: {e}"));
+            println!("sway starts with -d on the next boot");
         }
     }
 

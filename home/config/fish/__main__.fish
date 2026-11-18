@@ -17,8 +17,13 @@ end
 # not in conf.d/: fish sources conf.d *before* this file, so sway and everything it spawns would
 # inherit an env without the credentials above.
 # journal, not a file: a file is truncated by the next boot, which is exactly the one you read it from
-# after a freeze. `journalctl -b -1 -t sway`. `-d` comes from vars `debug` (os/nixos/desktop/programs/sway.nix).
-string match -q /dev/tty1 -- (path resolve /proc/self/fd/0); and exec systemd-cat -t sway sway
+# after a freeze. `journalctl -b -1 -t sway`. `-d` comes from vars `debug` (os/nixos/desktop/programs/sway.nix),
+# or for one boot from `smart_shutdown --debug-next-boot`.
+if string match -q /dev/tty1 -- (path resolve /proc/self/fd/0)
+	set -l sway_debug
+	rm ~/.local/state/sway-debug-next-boot 2>/dev/null; and set sway_debug -d # rm fails when the flag is absent, the normal case
+	exec systemd-cat -t sway sway $sway_debug
+end
 
 source $__fish_config_main_dir/global.fish #NB: other things can rely on functions in it
 source $__fish_config_main_dir/other.fish
