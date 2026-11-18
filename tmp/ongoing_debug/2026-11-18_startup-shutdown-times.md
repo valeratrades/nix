@@ -29,13 +29,13 @@ so the stamp never matched at boot and it reran every boot, then again on the fi
 ## Shutdown, last 5 boots
 ```
 -1  3.5s
--2 23.4s  nix-daemon 2s cap · usb1-port1 "Cannot enable" retries ~4s · termfilechooser 15s  ✂ KillMode=mixed
+-2 23.4s  nix-daemon 2s cap · termfilechooser 15s (4153.7 → 4168.8)  ✂ KillMode=mixed + script reaps its nvim
 -4  2.3s
 -5  8.4s  /home unmount ~2.7s (writeback)
 ```
 termfilechooser: a file chooser's nvim (pid 154302) outlived its window inside the portal's cgroup for an hour (471M peak,
 16.5s CPU) and ignored SIGTERM at stop. KillMode=mixed SIGKILLs leftovers once the portal itself exits.
-Open: why that nvim outlived its alacritty at all (portal logged `failed to open '/tmp/termfilechooser-1000.portal'` then).
+Repro guess: chooser window closed 3s after opening (log: OPEN ABORTED 12:47:12), nvim kept running. termfilechooser.sh now SIGKILLs it when alacritty returns and logs "reaped nvim" to ~/.local/state/termfilechooser.log.
 
 Fixed alongside: nvidia-drm-late.path's implicit Before=paths.target made a stop-ordering cycle with logind
 (systemd deleted logind's stop job every shutdown).
@@ -43,7 +43,7 @@ Fixed alongside: nvidia-drm-late.path's implicit Before=paths.target made a stop
 ## Remaining levers
 - firmware 6.1s: Fast Boot already Enabled (hidden menu, see 2026-10-18 file). PXE Boot to LAN → Disabled is the one left.
 - sway init ~3.2s (sway → sway-session): see 2026-10-18 Sway section.
-- usb1-port1 "Cannot enable" at shutdown: which device sits on it is unknown.
+- usb1-port1 "Cannot enable" at shutdown is the Redmi Note 14 (RNDIS tethering) re-enumerating after its link drops. Kernel hub retries, nothing waits on them: not on the shutdown path.
 
 ## Not yet verified on a real boot (applied via `nixos-rebuild boot` 2026-11-18)
 configureOpenclaw boot skip, wait-online off, docker on demand, termfilechooser KillMode, nvidia path cycle,
