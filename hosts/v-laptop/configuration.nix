@@ -20,9 +20,10 @@
   # reserve a thread whose sibling is still contended, which measures nothing.
   systemd.settings.Manager.CPUAffinity = "0-11 16-27";
 
-  # Water-damaged USB-A (2026-11-11): its USB2 lane re-enumerates a phantom device every ~20s. Delete once repaired.
+  # Water-damaged USB-A (2026-11-11), the one below the USB-C ports: its lanes off. Both USB-C ports are usb1-port1/2 on 06:00.3 (the phone has enumerated on each). Delete once repaired.
   services.udev.extraRules = ''
-    ACTION=="add", SUBSYSTEM=="usb", KERNEL=="1-0:1.0", KERNELS=="0000:06:00.3", ATTR{usb1-port1/disable}="1"
+    ACTION=="add", SUBSYSTEM=="usb", KERNEL=="3-0:1.0", KERNELS=="0000:06:00.4", ATTR{usb3-port1/disable}="1"
+    ACTION=="add", SUBSYSTEM=="usb", KERNEL=="4-0:1.0", KERNELS=="0000:06:00.4", ATTR{usb4-port1/disable}="1"
   '';
 
   # Resolve *.local (mDNS), so `ssh admin@rpi5.local` works from here.
