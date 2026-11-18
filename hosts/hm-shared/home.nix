@@ -782,6 +782,12 @@
 		};
 	};
 
+	# Same derivation as v_flakes devShells, so builds outside a shell share their kache entries.
+	home.activation.rustupDefault = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+		${pkgs.rustup}/bin/rustup toolchain link v_flakes ${inputs.v_flakes.rs.default_nightly pkgs.stdenv.hostPlatform.system}
+		${pkgs.rustup}/bin/rustup default v_flakes
+	'';
+
 	# Force obs-websocket server enabled. OBS rewrites this file on shutdown,
 	# so we patch it on every home-manager generation rather than symlinking.
 	# Used by obs-cmd.
