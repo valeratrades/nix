@@ -17,7 +17,7 @@
       (defwidget disk []
       	(box
       		:class {EWW_DISK["/"].used_perc > 90 ? "warn" : ""}
-      		" ''${round(EWW_DISK["/"].used_perc, 0)}%"))
+      		" ''${round(EWW_DISK["/"].used_perc, 0)}%"))
     '';
     ".config/pipewire/pipewire.conf.d" = {
       source = "${self}/home/config/pipewire/pipewire.conf.d";
