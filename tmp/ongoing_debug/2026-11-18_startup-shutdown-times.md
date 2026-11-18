@@ -41,8 +41,8 @@ Fixed alongside: nvidia-drm-late.path's implicit Before=paths.target made a stop
 (systemd deleted logind's stop job every shutdown).
 
 ## Remaining levers
-- firmware 6.1s: Fast Boot already Enabled (hidden menu, see 2026-10-18 file). PXE Boot to LAN → Disabled is the one left.
-- sway init ~3.2s (sway → sway-session): see 2026-10-18 Sway section.
+- firmware 6.1s: Fast Boot already Enabled (hidden menu, see 2026-10-18 file). PXE Boot to LAN → Disabled is the one left: BIOS menu only (firmware rejects runtime `Setup` writes), steps in issue #21.
+- sway init ~3.2s (sway → sway-session): see 2026-10-18 Sway section. eDP seamless modeset: issue #30. One-boot sway timings: `smart_shutdown --debug-next-boot`.
 - usb1-port1 "Cannot enable" at shutdown is the Redmi Note 14 (RNDIS tethering) re-enumerating after its link drops. Kernel hub retries, nothing waits on them: not on the shutdown path.
 
 ## Not yet verified on a real boot (applied via `nixos-rebuild boot` 2026-11-18)
