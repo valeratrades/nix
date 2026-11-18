@@ -26,6 +26,23 @@
     ACTION=="add", SUBSYSTEM=="usb", KERNEL=="4-0:1.0", KERNELS=="0000:06:00.4", ATTR{usb4-port1/disable}="1"
   '';
 
+  # Phone's USB tether (random MAC per session, stable name). Metric between ethernet (100) and Wi-Fi (600); see netpick in home.nix
+  networking.networkmanager.ensureProfiles.profiles.phone-tether = {
+    connection = {
+      id = "phone-tether";
+      type = "ethernet";
+      interface-name = "enp6s0f3u1";
+    };
+    ipv4 = {
+      method = "auto";
+      route-metric = 200;
+    };
+    ipv6 = {
+      method = "auto";
+      route-metric = 200;
+    };
+  };
+
   # Resolve *.local (mDNS), so `ssh admin@rpi5.local` works from here.
   services.avahi = {
     enable = true;

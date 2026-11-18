@@ -34,6 +34,24 @@ in {
     alertsChannel = config.sops.secrets."social-networks/telegram_alerts_channel".path;
   };
 
+  # adb runs as v: its key is the one the phone authorized
+  systemd.user.services.netpick = {
+    Unit.Description = "Uplink ladder: rank known Wi-Fi, keep the phone's hotspot off while it tethers, revive the tether (nix#29)";
+    Install.WantedBy = [ "default.target" ];
+    Service = {
+      ExecStart = "${pkgs.python3}/bin/python3 ${self}/home/scripts/netpick.py";
+      ExecStopPost = toString (pkgs.writeShellScript "netpick-radio-restore" ''
+        f="$STATE_DIRECTORY/radio-off-by-netpick"
+        [ -e "$f" ] || exit 0
+        nmcli radio wifi on && rm "$f"
+      '');
+      Environment = [ "PATH=${lib.makeBinPath (with pkgs; [ networkmanager curl android-tools coreutils ])}" "NETPICK_DRY_RUN=0" ];
+      StateDirectory = "netpick";
+      Restart = "always";
+      RestartSec = 10;
+    };
+  };
+
   systemd.user.services.keepassxc = {
     Unit = {
       Description = "KeePassXC with the main database unlocked from sops";

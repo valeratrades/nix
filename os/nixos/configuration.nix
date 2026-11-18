@@ -750,6 +750,12 @@ in {
     networkmanager = {
 			dns = "none";
 			enable = true;
+			# a device failing it gets +20000 on its default route, so a dead link is outranked rather than torn down
+			settings.connectivity = {
+				uri = "http://nmcheck.gnome.org/check_network_status.txt";
+				response = "NetworkManager is online";
+				interval = 60;
+			};
 		};
   };
 

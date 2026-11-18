@@ -10,6 +10,8 @@ for dev in /sys/bus/usb/devices/1-1 /sys/bus/usb/devices/1-2; do
 		echo "tether off"
 	elif [ -z "$(ip -4 -o addr show dev "$iface")" ]; then
 		echo "tether: no lease"
+	elif [ "$(nmcli -g GENERAL.IP4-CONNECTIVITY dev show "$iface")" != "4 (full)" ]; then
+		echo "tether: no internet"
 	fi
 	exit 0
 done
