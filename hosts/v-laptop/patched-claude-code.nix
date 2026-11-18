@@ -20,7 +20,6 @@ claude-code.overrideAttrs (old: {
 		${pkgs.python3}/bin/python3 ${./patch-claude-sessionmodel.py} "$out/bin/.claude-unwrapped"
 		${pkgs.python3}/bin/python3 ${./patch-claude-linuxpaste.py} "$out/bin/.claude-unwrapped"
 		${pkgs.python3}/bin/python3 ${./patch-claude-rewindorder.py} "$out/bin/.claude-unwrapped"
-		${pkgs.python3}/bin/python3 ${./patch-claude-autobranch.py} "$out/bin/.claude-unwrapped"
 		${pkgs.python3}/bin/python3 ${./patch-claude-nocompactoffer.py} "$out/bin/.claude-unwrapped"
 		${pkgs.python3}/bin/python3 ${./patch-claude-codemodegate.py} "$out/bin/.claude-unwrapped"
 		${pkgs.python3}/bin/python3 ${./patch-claude-promptwait.py} "$out/bin/.claude-unwrapped"
