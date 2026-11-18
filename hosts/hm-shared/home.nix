@@ -642,6 +642,12 @@
         <Multi_key> <asterisk> <w> : "ω" U03C9
         <Multi_key> <asterisk> <W> : "Ω" U03A9
         <Multi_key> <asterisk> <j> : "ς" U03C2
+        <Multi_key> <asterisk> <asterisk> <e> : "ϵ" U03F5
+        <Multi_key> <asterisk> <asterisk> <h> : "ϑ" U03D1
+        <Multi_key> <asterisk> <asterisk> <k> : "ϰ" U03F0
+        <Multi_key> <asterisk> <asterisk> <p> : "ϖ" U03D6
+        <Multi_key> <asterisk> <asterisk> <r> : "ϱ" U03F1
+        <Multi_key> <asterisk> <asterisk> <f> : "ϕ" U03D5
       '';
       ".config/iamb/config.toml".source = (pkgs.formats.toml { }).generate "" {
         default_profile = "master";
