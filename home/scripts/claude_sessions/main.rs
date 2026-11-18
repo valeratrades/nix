@@ -54,6 +54,14 @@ struct Args {
     /// Judge closing reports with a 3-way majority vote instead of one LLM sample
     #[arg(long)]
     vote: bool,
+
+    /// Render the rows the last poll cached, without probing tmux (no header)
+    #[arg(long)]
+    cached: bool,
+
+    /// Prefix each row with its `$session_id:@window_id` and a tab (for fzf_session.sh)
+    #[arg(long, requires = "cached")]
+    targets: bool,
 }
 
 #[derive(Deserialize)]
@@ -96,7 +104,7 @@ const COLOR_INFO_ANSWERED: &str = "#d0be79";
 const COLOR_DEBUG: &str = "#000000";
 const COLOR_TRACE: &str = "#6b6b6b";
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 enum ClaudeState {
     Empty,    // No claude running (shell prompt)
@@ -171,6 +179,7 @@ impl From<report::Verdict> for ClaudeState {
 struct ClaudeWindow {
     session: String,
     window_index: u32,
+    target_id: String,
     state: ClaudeState,
     /// A claude process is live in the pane. Distinguishes a fresh-but-real
     /// session (Empty state, welcome screen) from a claude-NAMED window that's
@@ -187,10 +196,12 @@ struct ClaudeWindow {
     votes: Option<(usize, usize)>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct SessionEntry {
     name: String,
     window_index: u32,
+    /// `$session_id:@window_id`; survives renames and reindexing
+    target_id: String,
     state: ClaudeState,
     active_todo: Option<String>,
     draft_content: Option<String>,
@@ -1302,6 +1313,12 @@ fn get_session_summary(session_file: &Path) -> Option<String> {
 
     // Fall back to first user message
     if let Some(first_message) = first_user_message {
+        if first_message.starts_with("Implement the following plan:") {
+            if let Some(title) = first_message.lines().find_map(|l| l.strip_prefix("# ")) {
+                let max_len = 50;
+                return Some(if title.chars().count() > max_len { format!("{}...", title.chars().take(max_len).collect::<String>()) } else { title.to_string() });
+            }
+        }
         // Try to generate summary with LLM
         if let Some(summary) = generate_summary_with_llm(&first_message) {
             return Some(summary);
@@ -1597,6 +1614,7 @@ struct Pane {
     is_claude_pane: bool,
     pane_pid: u32,
     target: String,
+    target_id: String,
 }
 
 fn get_claude_windows(vote: bool) -> Vec<ClaudeWindow> {
@@ -1605,7 +1623,7 @@ fn get_claude_windows(vote: bool) -> Vec<ClaudeWindow> {
             "list-panes",
             "-a",
             "-F",
-            "#{session_name}\t#{window_index}\t#{window_name}\t#{pane_current_command}\t#{pane_pid}",
+            "#{session_name}\t#{window_index}\t#{window_name}\t#{pane_current_command}\t#{pane_pid}\t#{session_id}:#{window_id}",
         ])
         .output()
         .expect("Failed to execute tmux");
@@ -1619,7 +1637,7 @@ fn get_claude_windows(vote: bool) -> Vec<ClaudeWindow> {
         .lines()
         .filter_map(|line| {
             let parts: Vec<&str> = line.split('\t').collect();
-            if parts.len() < 5 {
+            if parts.len() < 6 {
                 return None;
             }
 
@@ -1642,6 +1660,7 @@ fn get_claude_windows(vote: bool) -> Vec<ClaudeWindow> {
                 is_claude_pane,
                 pane_pid,
                 target: format!("{}:{}", session, window_index),
+                target_id: parts[5].to_string(),
             })
         })
         .collect();
@@ -1761,6 +1780,7 @@ fn get_claude_windows(vote: bool) -> Vec<ClaudeWindow> {
         claude_windows.push(ClaudeWindow {
             session: session.to_string(),
             window_index,
+            target_id: pane.target_id.clone(),
             state,
             claude_running: is_claude_pane,
             active_todo,
@@ -2273,6 +2293,7 @@ struct CacheState {
     /// By account: unix epoch of the last fetch attempt (success or fail). Throttles retries
     /// so we don't hammer the endpoint when it's per-minute rate-limited.
     last_fetch_attempt_at: HashMap<String, i64>,
+    entries: Vec<SessionEntry>,
 }
 
 #[derive(Deserialize)]
@@ -2535,6 +2556,24 @@ fn main() {
         USE_LLM_SUMMARIES.store(true, std::sync::atomic::Ordering::Relaxed);
     }
 
+    if args.cached {
+        let mut sessions = Sessions::new(args.compact, args.markup);
+        sessions.entries = load_cache().entries;
+        assert!(!sessions.entries.is_empty(), "no cached rows: claude_sessions hasn't polled since the cache gained them");
+        if !args.targets {
+            println!("{sessions}");
+            return;
+        }
+        colored::control::set_override(true); // piped into fzf --ansi
+        let rendered = sessions.to_string();
+        let lines: Vec<&str> = rendered.lines().collect();
+        assert_eq!(lines.len(), sessions.entries.len(), "a row's trailing text spans lines");
+        for (e, line) in sessions.entries.iter().zip(lines) {
+            println!("{}\t{line}", e.target_id);
+        }
+        return;
+    }
+
     let windows = get_claude_windows(args.vote);
 
     // Group windows by session to find sessions with non-empty windows
@@ -2592,6 +2631,7 @@ fn main() {
         sessions.add(SessionEntry {
             name: window.session.clone(),
             window_index: window.window_index,
+            target_id: window.target_id.clone(),
             state: window.state,
             active_todo: window.active_todo.clone(),
             draft_content: window.draft_content.clone(),
@@ -2626,7 +2666,9 @@ fn main() {
     let live = read_statusline_limits(&account);
     let header = format_usage_header(&account, live.as_ref(), cache.fable.get(&account).copied(), args.compact);
     cache.window_states = current_state_map(&windows);
+    cache.entries = sessions.entries;
     save_cache(&cache);
+    sessions.entries = cache.entries;
 
     if args.json {
         println!("{}", serde_json::to_string(&sessions.entries).unwrap());

@@ -3,6 +3,8 @@
 - `main.rs` — cargo-script that reports the state of every Claude Code
   process running in a tmux window (used by the status line / eww widget). Run
   via `nix-run-cached`; aliased to `claude_sessions` in `../__main__.fish`.
+  Each poll caches its rows; `--cached [--targets]` re-renders them without probing
+  (`--targets` prefixes `$session_id:@window_id\t`), which `tmux/fzf_session.sh` lists.
 - `tests/` + `snapshots/` — snapshot tests for the `main.rs` terminal
   state classifier, plus `tests/reports/` for the closing-report judge (see below).
 
