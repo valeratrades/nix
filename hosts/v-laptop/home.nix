@@ -45,7 +45,7 @@ in {
         [ -e "$f" ] || exit 0
         nmcli radio wifi on && rm "$f"
       '');
-      Environment = [ "PATH=${lib.makeBinPath (with pkgs; [ networkmanager curl android-tools coreutils ])}" "NETPICK_DRY_RUN=0" ];
+      Environment = [ "PATH=${lib.makeBinPath (with pkgs; [ networkmanager curl iproute2 android-tools coreutils ])}" "NETPICK_DRY_RUN=0" ];
       StateDirectory = "netpick";
       Restart = "always";
       RestartSec = 10;

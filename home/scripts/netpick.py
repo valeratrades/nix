@@ -2,6 +2,7 @@
 import json
 import os
 import re
+import signal
 import subprocess
 import sys
 import time
@@ -13,6 +14,8 @@ PHONE_SSIDS = {"Valera", "Redmi Note 14"}  # the tethering phone's own hotspot, 
 PROBE = "http://1.1.1.1/"  # by IP: DNS goes through tailscale on every link, so it says nothing about this one
 TICK = 60
 DEAD_TICKS = 3
+GRACE = 5  # s the default-route device may go without internet before the next route takes over
+FAST = 1
 COOLDOWN = 300
 STATE = Path(os.environ["STATE_DIRECTORY"])
 HIST = STATE / "wifi.json"
@@ -40,10 +43,21 @@ def rows(*a):
     return [fields(line) for line in sh("nmcli", "-t", *a).splitlines() if line]
 
 
-def probe(iface):
+def probe(iface, timeout=5):
     """TCP connect time in ms over iface, None when it does not get through."""
-    r = subprocess.run(["curl", "-s", "-o", "/dev/null", "-m", "5", "--interface", iface, "-w", "%{time_connect}", PROBE], capture_output=True, text=True)
+    r = subprocess.run(["curl", "-s", "-o", "/dev/null", "-m", str(timeout), "--interface", iface, "-w", "%{time_connect}", PROBE], capture_output=True, text=True)
     return float(r.stdout) * 1000 if r.returncode == 0 else None
+
+
+def carrier():
+    """Device whose default route wins now."""
+    best = None
+    for line in sh("ip", "-4", "route", "show", "default").splitlines():
+        w = line.split()
+        dev, metric = w[w.index("dev") + 1], int(w[w.index("metric") + 1]) if "metric" in w else 0
+        if dev in (ETH, TETHER, WIFI) and (best is None or metric < best[1]):
+            best = (dev, metric)
+    return None if best is None else best[0]
 
 
 def ewma(old, new):
@@ -67,6 +81,36 @@ class Netpick:
         self.blocked = set()  # phone-hotspot uuids this process took off autoconnect
         self.dead = {WIFI: 0, TETHER: 0}
         self.cooldown = {}  # key -> time of the last action
+        self.failing = {}  # dev -> when its probes started failing
+        self.good = {}  # dev -> when its probes started passing
+        self.demoted = set()  # devices this process pushed below every other route
+
+    def failover(self):
+        """NM's own check runs every 60s and needs ~20s to time out; this catches a dead carrier within GRACE."""
+        c = carrier()
+        for d in self.demoted | ({c} - {None}):
+            start = time.monotonic()
+            if probe(d, 2) is None:
+                self.failing.setdefault(d, start)
+                self.good.pop(d, None)
+            else:
+                self.good.setdefault(d, start)
+                self.failing.pop(d, None)
+        now = time.monotonic()
+        if c is not None and c not in self.demoted and now - self.failing.get(c, now) >= GRACE:
+            print(f"{c} without internet for {now - self.failing[c]:.1f}s, demoting it", flush=True)
+            act("nmcli", "device", "modify", c, "ipv4.route-metric", "30000", "ipv6.route-metric", "30000")
+            self.demoted.add(c)
+            if RADIO_FLAG.exists():  # ethernet was the reason Wi-Fi went quiet
+                act("nmcli", "radio", "wifi", "on")
+                RADIO_FLAG.unlink()
+        for d in [d for d in self.demoted if now - self.good.get(d, now) >= 10]:
+            print(f"{d} back for 10s, restoring its route", flush=True)
+            self.restore(d)
+
+    def restore(self, d):
+        self.demoted.discard(d)
+        act("nmcli", "device", "reapply", d)
 
     def wifi_profiles(self):
         uuids = {u for u, t in rows("-f", "UUID,TYPE", "c") if t == "802-11-wireless"}
@@ -98,9 +142,9 @@ class Netpick:
 
         aps = rows("-f", "IN-USE,SSID,SIGNAL,RATE", "dev", "wifi", "list", "--rescan", "no") if radio else []
         visible = {}
-        for in_use, ssid, signal, rate in aps:
+        for in_use, ssid, sig, rate in aps:
             if ssid:
-                visible[ssid] = max(visible.get(ssid, 0), int(signal))
+                visible[ssid] = max(visible.get(ssid, 0), int(sig))
             if in_use == "*" and WIFI in up:
                 h = self.hist.setdefault(ssid, {"lat_ms": None, "rate": None, "up": 1.0})
                 h["up"] = ewma(h["up"], 1.0 if WIFI in ok else 0.0)
@@ -147,13 +191,22 @@ class Netpick:
 
 def main():
     print(f"netpick start, dry_run={DRY}", flush=True)
+    signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
     n = Netpick()
-    while True:
-        try:
-            n.tick()
-        except subprocess.CalledProcessError as e:  # one failed nmcli/adb call must not end the loop that keeps the uplink alive
-            print(f"{e.cmd} exited {e.returncode}: {e.stderr.strip()}", file=sys.stderr, flush=True)
-        time.sleep(TICK)
+    last_tick = 0.0
+    try:
+        while True:
+            try:
+                n.failover()
+                if time.monotonic() - last_tick >= TICK:
+                    last_tick = time.monotonic()
+                    n.tick()
+            except subprocess.CalledProcessError as e:  # one failed nmcli/adb call must not end the loop that keeps the uplink alive
+                print(f"{e.cmd} exited {e.returncode}: {e.stderr.strip()}", file=sys.stderr, flush=True)
+            time.sleep(FAST)
+    finally:
+        for d in list(n.demoted):  # a demotion must not outlive the process watching for the link's return
+            n.restore(d)
 
 
 main()
