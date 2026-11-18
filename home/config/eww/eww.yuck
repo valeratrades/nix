@@ -42,6 +42,7 @@
 		(ping)
 		(disk)
 		(io_pressure)
+		(kache)
 		(ram)
 		(cpu)
 		(temperature)
@@ -169,6 +170,12 @@
 	(box
 		:class {io_latency_poll > 50 ? "warn" : ""}
 		" ${io_latency_poll}ms"))
+
+(defpoll kache_poll :initial "{}" :interval "60s" "./modules/kache.sh")
+(defwidget kache []
+	(box
+		:visible {(kache_poll.n ?: 0) > 0} ; hidden while nothing compiled in the last hour
+		"k${kache_poll.hit}%"))
 
 (defwidget ram []
 	(box
