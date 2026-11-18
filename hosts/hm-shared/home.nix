@@ -566,6 +566,7 @@
         "${self}/home/config/obs-studio/scripts/filter_hotkeys_video.lua";
       ".config/obs-studio/scripts/filter_hotkeys_audio.lua".source =
         "${self}/home/config/obs-studio/scripts/filter_hotkeys_audio.lua";
+      ".config/obs-studio/brb.html".source = "${self}/home/config/obs-studio/brb.html";
 
       ".config/tg_admin.toml".source = "${self}/home/config/tg_admin.toml";
       ".config/auto_redshift.toml".source = (pkgs.formats.toml { }).generate "auto_redshift.toml" {

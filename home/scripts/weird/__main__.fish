@@ -98,7 +98,8 @@ end
 function brb
     set current_fontsize (fontsize)
 
-    # mute mic
+    set mic_was_muted 0
+    wpctl get-volume @DEFAULT_SOURCE@ | string match -q '*MUTED*'; and set mic_was_muted 1
     wpctl set-mute @DEFAULT_SOURCE@ 1
 
     # halt time tracker, remember if we should resume
@@ -108,26 +109,30 @@ function brb
         set should_resume true
     end
 
-    # switch OBS to stream-only scene if running
-    set obs_running false
-    if swaymsg -t get_tree | jq -e '.. | select(.app_id? == "com.obsproject.Studio")' >/dev/null 2>&1
-        set obs_running true
-        ~/.config/sway/send_keypress_to_window.rs com.obsproject.Studio s
+    set obs_scene
+    set -lx OBS_WEBSOCKET_URL obsws://localhost:4455/(jq -r .server_password ~/.config/obs-studio/plugin_config/obs-websocket/config.json)
+    if pgrep -x .obs-wrapped >/dev/null
+        set obs_scene (obs-cmd scene current | string replace -rf '^Current scene: ' '')
+        or return 1
+        # without the screen in frame, nothing shows the figlet below, so the camera is swapped for the brb card
+        if test "$obs_scene" = Camera
+            obs-cmd scene switch brb >/dev/null
+        else
+            obs-cmd scene switch Screen >/dev/null
+        end
     end
 
     fontsize 22
     printf 'Will be\nright back' | figlet | $PAGER
     fontsize "$current_fontsize"
 
-    # unmute mic
-    wpctl set-mute @DEFAULT_SOURCE@ 0
+    wpctl set-mute @DEFAULT_SOURCE@ $mic_was_muted
+    wpctl set-mute @DEFAULT_SINK@ 0
 
-    # switch OBS back to both scene
-    if test "$obs_running" = true
-        ~/.config/sway/send_keypress_to_window.rs com.obsproject.Studio b
+    if test -n "$obs_scene"
+        obs-cmd scene switch "$obs_scene" >/dev/null
     end
 
-    # resume time tracker if we halted it
     if test "$should_resume" = true
         tedi sprints selected resume
     end
