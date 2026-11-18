@@ -12,7 +12,7 @@ home/config/claude/skills/ra-shared/
 # Claude Code mirrors the account's claude.ai skills here, through the ~/.claude/skills dir symlink
 home/config/claude/skills/synced/
 
-# Linked by programs.skargo from home/config/skargo/skargo.lock, through the ~/.claude/skills dir symlink
+# Linked by programs.skargo (hosts/hm-shared/claude.nix), through the ~/.claude/skills dir symlink
 home/config/claude/skills/excalidraw
 home/config/claude/skills/skill-creation
 home/config/claude/skills/tracey

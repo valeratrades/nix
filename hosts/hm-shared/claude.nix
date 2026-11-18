@@ -309,7 +309,13 @@ in
 {
 	programs.skargo = {
 		enable = true;
-		lockFile = ../../home/config/skargo/skargo.lock; # `skargo lock` next to it, after editing skargo.toml
+		skills = { # `nup skargo` bumps them
+			excalidraw = "0.1";
+			skill-creation = "0.3.0-alpha";
+			trading-data = "0.1";
+			tracey = "0.1";
+			v-flakes.path = "/home/v/s/v_flakes/docs/skill";
+		};
 	};
 
 	#DEPRECATE: malware reminder has been stripped in later versions; keeping it here for posterity (or situations of them adding sth similar)
