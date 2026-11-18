@@ -4,3 +4,10 @@
 	(box
 		:class {disk_poll > 90 ? "warn" : ""}
 		" ${disk_poll}%"))
+
+(defpoll tether_poll :initial "" :interval "5s" "./modules/tether.sh")
+(defwidget val_specific []
+	(box
+		:space-evenly false
+		(box :class "warn" :visible {tether_poll != ""} "󰄜 ${tether_poll} ")
+		(disk)))

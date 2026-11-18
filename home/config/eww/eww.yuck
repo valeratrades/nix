@@ -41,7 +41,7 @@
 		(microphone)
 		(speaker)
 		(ping)
-		(disk)
+		(val_specific)
 		(io_pressure)
 		(kache)
 		(kache_toolchains)
