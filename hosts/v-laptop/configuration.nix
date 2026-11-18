@@ -1,6 +1,8 @@
 { inputs, ...
 }:
 {
+  imports = [ ./home-move.nix ];
+
   services.ringboard.wayland = {
     enable = true;
     package = inputs.pin-nixpkgs-ringboard.legacyPackages.x86_64-linux.ringboard-wayland;

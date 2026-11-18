@@ -19,9 +19,16 @@
     };
 
   fileSystems."/home" =
-    # previously main partition; 890GB on first disk
-    { device = "/dev/disk/by-uuid/271e936a-178b-4d50-96c8-16114b4022d3";
+    # nvme1p2 (Kingston), the former Windows partition; builds live on the other drive (nix#28)
+    { device = "/dev/disk/by-uuid/01557177-a418-4348-9646-795fd53521e6";
       fsType = "ext4";
+    };
+
+  fileSystems."/home/v/s" =
+    # nvme0p3 (UMIS) as XFS: ~/s, ~/.cargo and the kache store share one mount, so kache clones instead of copying
+    { device = "/dev/disk/by-uuid/6bed86da-29e5-41db-b87e-8c131e86a415";
+      fsType = "xfs";
+      options = [ "noatime" "nofail" "x-systemd.device-timeout=1s" ]; # nofail/timeout: absent until home-move.nix formats it on the first boot
     };
 
   fileSystems."/boot" =
