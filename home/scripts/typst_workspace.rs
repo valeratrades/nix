@@ -472,7 +472,8 @@ fn build() -> Result<()> {
 	let watches: String = srcs.files.iter().enumerate().filter(|(_, s)| is_typ(s)).map(|(i, _)| format!("tabnext {} | call typst#Watch() | ", i + 1)).collect();
 	let tab = srcs.focus + 1;
 	let srcs = srcs.files.iter().map(|s| sh_quote(s)).collect::<Vec<_>>().join(" ");
-	let e = Command::new("fish").arg("-c").arg(format!(r#"e -p {srcs} -c "'{watches}tabnext {tab}'""#)).exec(); // `e` evals its args, eating one layer of quotes
+	// lazier starts lazy.nvim after the first frame, so typst.vim isn't on rtp yet when `-c` runs
+	let e = Command::new("fish").arg("-c").arg(format!(r#"e -p {srcs} -c "'autocmd User VeryLazy ++once {watches}tabnext {tab}'""#)).exec(); // `e` evals its args, eating one layer of quotes
 	Err(miette!("exec fish: {e}"))
 }
 

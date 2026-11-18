@@ -1,6 +1,7 @@
+-- fork: upstream + re-edit of every buffer after the deferred start (non-current tabs missed FileType)
 local lazierpath = vim.fn.stdpath("data") .. "/lazier/lazier.nvim"
 if not vim.uv.fs_stat(lazierpath) then
-	local out = vim.fn.system({ "git", "clone", "--branch=stable-v2", "https://github.com/jake-stewart/lazier.nvim.git", lazierpath })
+	local out = vim.fn.system({ "git", "clone", "https://github.com/valeratrades/lazier.nvim.git", lazierpath })
 	assert(vim.v.shell_error == 0, "cloning lazier.nvim: " .. out)
 end
 vim.opt.rtp:prepend(lazierpath)
