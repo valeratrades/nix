@@ -240,3 +240,9 @@ When the user types `/graphify`, use the installed graphify skill or instruction
 ### `tkc`
 when I ask you to `tkc` after, - you run the command once you're finished with everything.
 Most often will be after I can see that you've done an implementation I'm happy with, and now just missing some trivial cleanup/changes after it. `tkc` will close out the tmux session you're in.
+
+### `sync`
+when I ask you to sync git, it means **both ways**. Usually it'll be when we ended up with some mismatch from remote, and half the time we'll have local uncommitted work. It must be committed and pushed after.
+
+### `codestyle`
+I have a lib that automatically rewrites parts of the code according to my best practices. If you see some code being moved automatically or rewritten slightly to follow better conventions underneath you, please pay it no heed, and ignore it completely. Unless it breaks your compilation (in that case you fix problem upstream at ~/s/codestyle), you just go along with it, and commit that as part of your changes. Please don't bother with doing separate commits or shit, just gobble it all together and do not waste time on this, as you wouldn't with cargo-style auto fixes.

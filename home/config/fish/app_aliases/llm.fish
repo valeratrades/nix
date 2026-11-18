@@ -201,6 +201,10 @@ Ours:
         end
     end
 
+    # trust dialog doesn't inherit from parent dirs; `jq` failing must abort the launch, not be swallowed
+    set -l tmp (mktemp); or return 1
+    jq --arg p $pwd '.projects[$p] = ((.projects[$p] // {}) + {hasTrustDialogAccepted: true})' ~/.claude.json >$tmp; and mv $tmp ~/.claude.json; or return 1
+
     # not `command`: routes through the claude function above, for its account and slice
     # `string collect`: without it fish splits the file on newlines into one argument each
     $base_cmd --append-system-prompt (cat $HOME/.claude/daneel.md | string collect) $passthrough_args
