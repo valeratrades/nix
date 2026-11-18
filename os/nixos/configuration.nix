@@ -775,7 +775,8 @@ in {
 		serviceConfig = {
 			Type = "oneshot";
 			RemainAfterExit = true;
-			ExecStart = "${pkgs.coreutils}/bin/true";
+			# the block outlives poweroff (ideapad_wlan keeps it, systemd-rfkill is masked) and NM records the radio as off, so undo both
+			ExecStart = [ "${pkgs.util-linux}/bin/rfkill unblock wifi" "${pkgs.networkmanager}/bin/nmcli radio wifi on" ];
 			ExecStop = "${pkgs.util-linux}/bin/rfkill block wifi";
 		};
 	};

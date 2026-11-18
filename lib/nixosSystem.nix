@@ -24,6 +24,7 @@ nixpkgs.lib.nixosSystem {
         home-manager.useGlobalPkgs = true;
         home-manager.useUserPackages = true;
         home-manager.backupFileExtension = "backup"; # delusional home-manager wants this exact file-extension for when I backup system-level files
+        home-manager.overwriteBackup = true; # apps rewrite some managed files (claude: known_marketplaces.json), so a .backup from the last activation is always there
 
         home-manager.extraSpecialArgs = specialArgs;
         home-manager.users."${myvars.username}".imports = home-modules;

@@ -101,6 +101,7 @@ in {
           home-manager.useUserPackages = true;
           home-manager.backupFileExtension =
             "backup"; # delusional home-manager wants this exact file-extension for when I backup system-level files
+          home-manager.overwriteBackup = true; # apps rewrite some managed files (claude: known_marketplaces.json), so a .backup from the last activation is always there
           home-manager.extraSpecialArgs = {
             inherit inputs self;
             inherit mylib myvars user;

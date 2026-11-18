@@ -28,7 +28,7 @@
     # nvme0p3 (UMIS) as XFS: ~/s, ~/.cargo and the kache store share one mount, so kache clones instead of copying
     { device = "/dev/disk/by-uuid/6bed86da-29e5-41db-b87e-8c131e86a415";
       fsType = "xfs";
-      options = [ "noatime" "nofail" "x-systemd.device-timeout=1s" ]; # nofail/timeout: absent until home-move.nix formats it on the first boot
+      options = [ "noatime" ];
     };
 
   fileSystems."/boot" =
