@@ -43,6 +43,8 @@
 		(disk)
 		(io_pressure)
 		(kache)
+		(kache_toolchains)
+		(kache_versions)
 		(ram)
 		(cpu)
 		(temperature)
@@ -174,17 +176,25 @@
 (defpoll kache_poll :initial "{}" :interval "60s" "./modules/kache.sh")
 (defwidget kache []
 	(box
-		:space-evenly false
-		(box
-			:visible {(kache_poll.n ?: 0) > 0} ; hidden while nothing compiled in the last hour
-			:class {kache_poll.hit < 30 ? "warn" : ""}
-			"󰃨 ${kache_poll.hit}%")
-		; each toolchain keys every dependency apart, so builds on two never share
-		(box
-			:visible {(kache_poll.toolchains ?: 0) > 1}
-			:class "warn"
-			:tooltip {kache_poll.toolchain_list}
-			"󱘗 ${kache_poll.toolchains}")))
+		:visible {(kache_poll.n ?: 0) > 0} ; hidden when nothing compiled in the last hour
+		:class {kache_poll.hit < 30 ? "warn" : ""}
+		"󰃨 ${kache_poll.hit}%"))
+
+; each toolchain keys every dependency apart, so builds on two never share
+(defwidget kache_toolchains []
+	(box
+		:visible {(kache_poll.toolchains ?: 0) > 1}
+		:class "warn"
+		:tooltip {kache_poll.toolchain_list}
+		"󱘗 ${kache_poll.toolchains}"))
+
+; kache versions with different key schemas never hit each other's entries
+(defwidget kache_versions []
+	(box
+		:visible {(kache_poll.kache_versions ?: 0) > 1}
+		:class "warn"
+		:tooltip {kache_poll.kache_version_list}
+		"󰚰 ${kache_poll.kache_versions}"))
 
 (defwidget ram []
 	(box
