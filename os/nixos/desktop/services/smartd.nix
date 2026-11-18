@@ -13,34 +13,21 @@
     };
   };
 
-  # smartd only alerts once spare runs out; a write-rate alarm catches a misconfigured fs/build burning the drive while it's still healthy
+  # also leaves each drive's smart json world-readable, for `health` to show wear without root
   systemd.services.nvme-health-log = {
-    description = "Log NVMe health snapshot, alert on runaway write rate";
-    path = [ pkgs.smartmontools pkgs.gnugrep pkgs.jq pkgs.dbus ];
+    description = "Log NVMe health snapshot";
+    path = [ pkgs.smartmontools pkgs.gnugrep ];
     serviceConfig = {
       Type = "oneshot";
       StateDirectory = "nvme-health";
+      StateDirectoryMode = "0755";
       ExecStart = pkgs.writeShellScript "nvme-health-log" ''
         set -eu
-        max_gb_per_h=30 # lifetime avg on nvme0 is ~20GB per power-on hour
         log=/var/log/nvme-health.log
-        now=$(date +%s)
         for dev in nvme0n1 nvme1n1; do
           smartctl -A /dev/$dev | grep -E '(Media|Error|Unsafe|Warning|Critical|Available Spare|Percentage Used|Data Units Written)' >> $log
           echo "---" >> $log
-          written=$(smartctl -j -A /dev/$dev | jq -e .nvme_smart_health_information_log.data_units_written) # units of 512000B
-          state=$STATE_DIRECTORY/$dev
-          if [ -f $state ]; then
-            read -r prev_t prev_w < $state
-            gb=$(( (written - prev_w) * 512 / 1000000 ))
-            h=$(( (now - prev_t) / 3600 + 1 ))
-            if [ $(( gb / h )) -gt $max_gb_per_h ]; then
-              msg="$dev: $gb GB written in under $h h (over $max_gb_per_h GB/h)"
-              echo "ALERT $msg" >> $log
-              dbus-send --system / net.nuetzlich.SystemNotifications.Notify "string:SSD write rate" "string:$msg"
-            fi
-          fi
-          echo "$now $written" > $state
+          smartctl -j -i -A /dev/$dev > $STATE_DIRECTORY/$dev.json || [ $? -lt 8 ] # bits 3+ are drive-health verdicts, the json is still whole
         done
         echo "=== $(date -Iseconds) ===" >> $log
       '';

@@ -7,6 +7,7 @@ edition = "2024"
 [dependencies]
 clap = { version = "4.5.49", features = ["derive"] }
 libc = "0.2"
+serde_json = "1"
 v_utils = { version = "2.25", default-features = false }
 ---
 
@@ -23,6 +24,7 @@ use v_utils::chart::bar;
 const CGROUP_ROOT: &str = "/sys/fs/cgroup";
 const HWMON: &str = "/sys/class/hwmon";
 const EWW_YUCK: &str = "/home/v/nix/home/config/eww/eww.yuck";
+const SMART_DIR: &str = "/var/lib/nvme-health"; // root-only to query live; nvme-health-log.service leaves it here
 
 /// Where idle power is going: CPU by cgroup, spawn rate, thermals.
 ///
@@ -63,6 +65,8 @@ fn main() {
 	println!("  {:<26} {:>10.0} /s", "context switches", (ctxt1 - ctxt0) as f64 / secs);
 	println!();
 	report_thermals();
+	println!();
+	report_disks();
 
 	if args.polls {
 		println!();
@@ -247,6 +251,35 @@ fn report_dgpu() {
 			}
 		}
 		println!("{line}");
+	}
+}
+
+// ---- disks ----
+
+fn report_disks() {
+	println!("DISK WEAR");
+	println!();
+	let mut files: Vec<PathBuf> = fs::read_dir(SMART_DIR)
+		.unwrap_or_else(|e| panic!("{SMART_DIR}: {e}; nvme-health-log.service writes it 5min after boot"))
+		.map(|e| e.expect("listing a local dir").path())
+		.filter(|p| p.extension().is_some_and(|x| x == "json"))
+		.collect();
+	assert!(!files.is_empty(), "{SMART_DIR} has no smart json yet");
+	files.sort();
+	let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).expect("clock after 1970").as_secs() as i64;
+	for f in files {
+		let j: serde_json::Value = serde_json::from_str(&fs::read_to_string(&f).expect("written by nvme-health-log")).unwrap_or_else(|e| panic!("{}: {e}", f.display()));
+		let log = &j["nvme_smart_health_information_log"];
+		let used = log["percentage_used"].as_u64().unwrap_or_else(|| panic!("{}: no percentage_used", f.display()));
+		let tb = log["data_units_written"].as_u64().expect("nvme log has data_units_written") as f64 * 512_000.0 / 1e12;
+		let hours = log["power_on_hours"].as_u64().expect("nvme log has power_on_hours");
+		let age_h = (now - j["local_time"]["time_t"].as_i64().expect("smartctl stamps local_time")) / 3600;
+		let dev = f.file_stem().expect("has .json").to_string_lossy();
+		println!(
+			"  {dev:<9} {:<26} {used:>3}% {:<20}  {tb:>6.1} TB in {hours} h  (sampled {age_h}h ago)",
+			j["model_name"].as_str().expect("smartctl -i gives model_name"),
+			bar(used as f64 / 100.0, 20)
+		);
 	}
 }
 
