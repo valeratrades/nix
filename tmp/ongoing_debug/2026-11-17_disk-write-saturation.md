@@ -65,18 +65,29 @@ Pitfalls hit:
 - a `fatrace` close-write + `st_size` tally counts SQLite/jsonl files at full size (made kache's index look like 1.1 GB/30 s)
 - `vfs_write` alone misses `copy_file_range` (all of kache's copies) and mmap writes (linker outputs)
 
-### kache (`kache stats --json`)
-- store 123 GB on disk (146 GB logical), over its 100 GiB cap
-- 24 h: hit rate 26% (weighted by compile time 19%), 15 227 hits / 37 111 misses, **time saved ≈ 8.9 h/day**
-- since Nov 6 (11 d): restored by hardlink 60 GB, **by byte copy 266 GB** (ext4: no reflink), pruned automatically 932 GB (~85 GB/day churn)
-- avg hit 5.4 s vs miss 19.2 s (hit_elapsed/hits) — slow for a restore; unclear if it includes permit wait
-- `total_permit_wait_ms` ≈ 36 h summed over 24 h: the scheduler pacing compilers
-- crosses filesystems silently: when hardlink fails with EXDEV, both ingest and restore become byte copies (`src/link_probe.rs`, `kache doctor` shows it). Store path: `cache.local_store`.
-- the lifetime `copied_bytes` counter covers **restores only**; ingest copies are not in it, so it understates kache's writes badly (see heavy window: ingest 570 MB/min).
-- ingest policy (`crates/kache-store/src/store.rs`, `link.rs`): reflink first; hardlink only for immutable kinds (`.rlib`, objects); **executables, dylibs, proc-macros, `.rmeta` are always byte-copied** on a non-CoW fs. Restores hardlink only for the first consumer of a blob; later consumers get private copies (#794, mtime stamping).
-- `kache doctor`: "hardlink build-tree → <store>/staging works (reflinks unsupported on this filesystem)" — same-fs layout is fine; the copies are policy, not EXDEV.
-- `cache.cache_executables` (bool) turns off caching bin/dylib/cdylib. On ext4, per binary of size N: miss = link N + ingest copy N, hit = restore copy N, uncached = link N. At 26% hit rate that's ~1.74N vs N → caching executables costs ~+74% writes on binaries to save link CPU on hits.
-
+### kache — from its own per-compile event log (`~/.cache/kache/events.jsonl` + `.archive/*.zst`)
+Never trust `kache stats` summaries: `time_saved` sums original compile times of restored units (overstates wall clock, cargo is parallel) and `copied_bytes` counts restores only. The event log has per-compile byte accounting (`store_copied_bytes`, `store_hardlinked_bytes`, `copied_bytes`, `hardlinked_bytes`, `restore_copy_exclusive_bytes`, `passthrough_reason`).
+Window 2026-11-17 15:42–18:54 UTC (the 364 GB block-write window):
+| | events | ingest copy | ingest link | restore copy | restore link |
+|---|---|---|---|---|---|
+| own bins/test binaries (≥40 MB) | 252 miss / 26 hit | **20.8 GB** | 1.4 | 1.8 | 0.8 |
+| external deps | **9 202 miss / 4 349 hit** | 11.9 | 11.5 | 9.1 | 3.6 |
+| own lib crates | 4 556 miss / 2 241 hit | 1.1 | 0.5 | 0.2 | 0.3 |
+| build scripts | 1 770 miss / 813 hit | 2.6 | 0 | 1.8 | 1.0 |
+→ kache copies 49.4 GB = **~14% of block writes** (ingest 36.4, restore 13.0). Heavy 60 s bursts: ~43%.
+Index (`index.db`, read with `sqlite3 -readonly`): **46 746 of 71 155 entries (109 GB, 69% of the store) were never hit once** — pure ingest writes.
+Why external deps miss: key splits across repos, not features alone. tokio: 107 entries; 26 with identical rustc + profile + feature set, different keys. cfg_if (no deps): 100 entries. Splitters found:
+- 7 distinct `.cargo/config.toml` shapes across 79 repos; **31 still had the legacy `target.x86_64-unknown-linux-gnu.rustflags` array beside the cfg string** → cargo joins both → doubled flags (+ `web_sys_unstable_apis` in some) → different keys. Fixed in v_flakes v1.6.249 (merge retracts it).
+- `split-debuginfo` present in some repos, not others (old v_flakes pins).
+- two nightlies in the store: 1.98 (142 GB) and 1.100 (14 GB).
+- per-repo `[profile]` overrides, different dep versions in each Cargo.lock.
+Next diagnostic: `explain_miss = true` briefly, then `kache explain <crate>` gives per-dependency digests.
+Policy facts (docs `deduplication.mdx`, source `crates/kache-store/src/{store,link}.rs`, `src/args.rs`):
+- `cache_executables` gates `is_user_facing_executable()` = `--test` or crate-type `bin` → own bins, test binaries **and build scripts** (crate-type bin). Measured with it off: dep build-script *runs* still hit (12/13 in a fresh target dir) — run cache keys the deterministic binary content.
+- ingest: reflink → hardlink for immutable kinds (`.rlib`, objects, Linux proc-macros/build-script bins) → byte copy (executables, `.rmeta`, C objects).
+- restore: only one target dir may hardlink a blob; later ones copy ("exclusive" copies: 7.1 GB in the window, ~2%). `shared_hardlink_restores = true` lifts it, but a restore re-stamps mtime on the shared inode → other trees' dependents look stale (#794). Not worth ~2% when XFS reflink removes the same bytes safely.
+- `build_script_hermetic`: shares a build script's OUT_DIR across target dirs (applies to all build scripts incl. deps). Not evaluated.
+- `kache doctor`: hardlink build-tree → store works on this layout; the copies are policy, not EXDEV.
 ### cargo
 `build.build-dir = "/abs/{workspace-path-hash}"` works on our nightly (tested): intermediates go there, only the final binary is copied into the repo's `target/`. Lets build I/O move without moving repos.
 
@@ -91,12 +102,20 @@ Pitfalls hit:
 - **kache store on its own btrfs partition shared across disks** — reflink/hardlink only work within one fs, so every ingest and restore becomes a copy.
 - **moving all of `~/s`** to nvme1p2 — ~800 GB doesn't fit 465 GB; and just relocates the whole load.
 
+## Done
+- **v_flakes v1.6.248**: generated `.cargo/config.toml` gets `[env] KACHE_CACHE_EXECUTABLES = "false"` (cargo passes `[env]` to the rustc wrapper; verified: `passthrough … user-facing executable (cache_executables=false)`). Rolled into gaussian_pivot (committed) and site_conductor (working tree only — commit blocked by another agent's broken `crates/placement_overlay` manifest). Expected: −20.8 GB ingest per 3.2 h window (~6% of writes).
+- **v_flakes v1.6.249**: merge retracts legacy `target.<triple>.rustflags` arrays → repos converge on one rustflags string as they bump.
+- eww: kache hit rate (last hour, events log tail, 0.09 s / 60 s).
+
 ## Promising
-1. **`cache.cache_executables = false`** (config only, `hosts/hm-shared/home.nix` kache block): removes the ingest copy of every linked binary/proc-macro and their restore copies; costs a relink on what would have been a hit. Not deployed: needs a home-manager switch, and the shared kache daemon must pick up the new config. Measure with the same bpf trace before/after.
-2. **Reflink-capable fs (XFS) for builds + kache store**: every kache copy (ingest 570 + restore 205 MB/min in the heavy window) becomes a clone. Candidate: nvme1p2 (Windows, 465 GB) as XFS holding `~/s/ev/_sa` (≈ 70% of Rust writes) **and** the kache store; the rest of `~/s` crosses the fs boundary → EXDEV → copies (today most of those are copies anyway, except rlib/object hardlinks).
-   - XFS: fastest on Phoronix Linux 7.0 and 6.15 geomean, metadata-only journal (crash = recent writes only, git covers).
-3. **Cut build bytes at the source**: linker outputs 27%, and each linked binary is also ingest-copied by kache (~2× its size in writes). One binary per *test target*, not per test fn. site_conductor per `cargo t` links ≈ 29 executables: 11 lib test harnesses (5 libs have zero unit tests: browsers, contracts, placement_overlay, sandbox, ui), 4 bin harnesses, 7 per-crate integration crates (already `tests/*/main.rs` style), 3 examples, 4 bins. Candidates: `[lib] test = false` where there are no unit tests (risk: a unit test added later is silently skipped — needs a lint), one workspace-level integration crate with a module per crate (7 → 1), not building examples in test runs. ≈ 29 → ~11 links. C build scripts 10% (onig_sys etc. rebuilt per target dir), `debug = false` for non-workspace deps. ev style guide (`~/s/ev/.github/code/STYLE.md` Testing) says nothing about this yet; ref: matklad "Delete Cargo Integration Tests" (Cargo's own: 3× faster test compile, 5× smaller artifacts).
-4. `build.build-dir` on nvme1 for the remaining workspaces if space allows (112 GB free on / — tight).
+1. **XFS (reflink) for builds + kache store** — every kache copy becomes a clone: ~14% of writes (49 GB / 3.2 h), more in bursts. XFS is per filesystem: it can't be enabled for a directory, so it needs its own partition.
+   Sizes (2026-11-18, idle `du`): /home used 582 GB = `~/s` 315 (of which target dirs ~200–250) + `.cache` 94 (kache store) + ~170 other. `~/s` without targets ≈ 65–100 GB.
+   - **B (preferred):** wipe Windows nvme1p2 (465 GB) → XFS, mount at `/home/v/s`, kache `local_store` inside it. Builds move to the Kingston (8× lower wait, 6% wear) beside nix; /home stays untouched on the UMIS with only the editor/notes load. No /home reformat or copy.
+   - A (user's first idea): move /home minus `~/s` (≈ 268 GB) to nvme1p2, reformat nvme0p3 as XFS for `~/s`. Same isolation, but reformats and copies all of /home, and keeps builds on the worn, slower UMIS.
+   Migration B: `rsync -aHAX --exclude target/` `~/s` → new fs (targets rebuild from kache) ; stop builds/agents; final rsync; `mv ~/s ~/s.old`; `fileSystems."/home/v/s"` (xfs, noatime) + kache `cache.local_store`; `nixos-rebuild switch`; verify; drop `~/s.old`. Kache starts empty (refills within a day). Windows boot entries (WINEFI nvme1p4) go too.
+2. **Unify kache keys across repos**: bump repos to v1.6.249 (one rustflags string, split-debuginfo everywhere), one nightly. Measure external-dep hit rate before/after with the eww widget + events log.
+3. **Cut build bytes at the source**: linker outputs 27% (test binary count — separate agent), aws-lc-sys (separate agent: codestyle `no-aws-lc` lint + ev_lib/panel/site_conductor PRs).
+4. `build.build-dir` on nvme1 — superseded by option B.
 
 ## Open
 - Which repos produced the heavy-window linker bytes: raw per-file trace wasn't kept (only aggregates). Active then: site_conductor (3 sessions + worktree code-mode), sites/panel worktree one-source, playbook, sites/debouchage, v_flakes, /tmp/btc_line_ganttdemo. Keep the raw `@w` map next time.
