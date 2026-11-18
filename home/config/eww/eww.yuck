@@ -175,7 +175,7 @@
 (defwidget kache []
 	(box
 		:visible {(kache_poll.n ?: 0) > 0} ; hidden while nothing compiled in the last hour
-		"k${kache_poll.hit}%"))
+		" 󰃨${kache_poll.hit}%"))
 
 (defwidget ram []
 	(box
