@@ -9,7 +9,7 @@ import time
 from pathlib import Path
 
 DRY = os.environ["NETPICK_DRY_RUN"] == "1"
-WIFI, ETH, TETHER = "wlp4s0", "enp5s0", "enp6s0f3u1"
+WIFI, ETH, TETHER_PREFIX = "wlp4s0", "enp5s0", "enp6s0f3u"  # u<usb1 port>: the phone shows up on either USB-C port
 PHONE_SSIDS = {"Valera", "Redmi Note 14"}  # the tethering phone's own hotspot, which drops once its USB tether starts
 PROBE = "http://1.1.1.1/"  # by IP: DNS goes through tailscale on every link, so it says nothing about this one
 TICK = 60
@@ -55,7 +55,7 @@ def carrier():
     for line in sh("ip", "-4", "route", "show", "default").splitlines():
         w = line.split()
         dev, metric = w[w.index("dev") + 1], int(w[w.index("metric") + 1]) if "metric" in w else 0
-        if dev in (ETH, TETHER, WIFI) and (best is None or metric < best[1]):
+        if (dev in (ETH, WIFI) or dev.startswith(TETHER_PREFIX)) and (best is None or metric < best[1]):
             best = (dev, metric)
     return None if best is None else best[0]
 
@@ -79,7 +79,7 @@ class Netpick:
         self.profiles = {}  # uuid -> ssid
         self.prio = {}  # uuid -> priority this process set
         self.blocked = set()  # phone-hotspot uuids this process took off autoconnect
-        self.dead = {WIFI: 0, TETHER: 0}
+        self.dead = {WIFI: 0, "tether": 0}
         self.cooldown = {}  # key -> time of the last action
         self.failing = {}  # dev -> when its probes started failing
         self.good = {}  # dev -> when its probes started passing
@@ -123,13 +123,14 @@ class Netpick:
 
     def tick(self):
         devs = {d: (st, c) for d, st, c in rows("-f", "DEVICE,STATE,CONNECTION", "dev")}
-        up = {d for d in (ETH, TETHER, WIFI) if devs.get(d, ("",))[0] == "connected"}
+        tether = next((d for d in devs if d.startswith(TETHER_PREFIX)), None)
+        up = {d for d in (ETH, tether, WIFI) if devs.get(d, ("",))[0] == "connected"}
         conn = {d: sh("nmcli", "-g", "GENERAL.IP4-CONNECTIVITY", "dev", "show", d).split()[1].strip("()") for d in up}  # "4 (full)"
         lat = {d: probe(d) for d in up}
         ok = {d for d in up if lat[d] is not None or conn[d] == "full"}  # both must fail: either one alone is blocked on some networks
         # a portal is waiting on a login, not dead; an offered tether without a lease is dead
         self.dead[WIFI] = self.dead[WIFI] + 1 if WIFI in up and WIFI not in ok and conn[WIFI] != "portal" else 0
-        self.dead[TETHER] = self.dead[TETHER] + 1 if TETHER in devs and TETHER not in ok and conn.get(TETHER) != "portal" else 0
+        self.dead["tether"] = self.dead["tether"] + 1 if tether is not None and tether not in ok and conn.get(tether) != "portal" else 0
 
         # ethernet healthy: no Wi-Fi scanning at all, unless Wi-Fi is already associated (then supplicant only bgscans on weak signal)
         radio = sh("nmcli", "radio", "wifi").strip() == "enabled"
@@ -153,7 +154,7 @@ class Netpick:
                 h["rate"] = ewma(h["rate"], float(rate.split()[0]))
                 HIST.write_text(json.dumps(self.hist, indent=1))
 
-        tethering = TETHER in devs
+        tethering = tether is not None
         profiles = self.wifi_profiles()
         for u, ssid in profiles.items():
             if ssid not in PHONE_SSIDS:
@@ -171,14 +172,14 @@ class Netpick:
                 act("nmcli", "c", "modify", "--temporary", u, "connection.autoconnect-priority", str(100 - rank))
                 self.prio[u] = 100 - rank
 
-        if self.dead[TETHER] >= DEAD_TICKS and self.cooled("revive"):
-            print(f"tether dead for {self.dead[TETHER]} ticks, cycling the phone's USB function", flush=True)
+        if self.dead["tether"] >= DEAD_TICKS and self.cooled("revive"):
+            print(f"tether dead for {self.dead["tether"]} ticks, cycling the phone's USB function", flush=True)
             self.cooldown["revive"] = time.time()
             act("adb", "shell", "svc", "usb", "setFunctions")
             act("timeout", "30", "adb", "wait-for-device")
             act("adb", "shell", "svc", "usb", "setFunctions", "rndis")
 
-        if self.dead[WIFI] >= DEAD_TICKS and not ok & {ETH, TETHER}:
+        if self.dead[WIFI] >= DEAD_TICKS and not ok & {ETH, tether}:
             current = devs[WIFI][1]
             options = [s for s in ranked if s != current and not (tethering and s in PHONE_SSIDS) and self.cooled(s)]
             if options:
