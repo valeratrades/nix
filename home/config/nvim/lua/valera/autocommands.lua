@@ -1,3 +1,8 @@
+-- registered ahead of syntax.vim's FileType handler, which then skips regex syntax (it checks b:ts_highlight)
+vim.api.nvim_create_autocmd("FileType", {
+	callback = function(args) pcall(vim.treesitter.start, args.buf) end, -- fails only when no parser exists for the filetype
+})
+
 -- Ctrl+Shift+T: reopen the last closed window in its old spot, or the whole tab if the tab is what got closed
 do
 	local closed = {} -- stack of {tab?, wins = old id -> snapshot, layout, sizes, cwd, focus}; no `tab` means a closed tab

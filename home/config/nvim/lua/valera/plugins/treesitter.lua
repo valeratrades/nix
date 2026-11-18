@@ -39,7 +39,7 @@ return {
 					end)
 					return
 				end
-				if not pcall(vim.treesitter.start, args.buf) then
+				if not vim.treesitter.highlighter.active[args.buf] then -- started in valera.autocommands
 					return
 				end
 				if pcall(vim.treesitter.query.get, lang, 'indents') and vim.treesitter.query.get(lang, 'indents') then
