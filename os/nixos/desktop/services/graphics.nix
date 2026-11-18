@@ -94,6 +94,7 @@ in
 		wantedBy = [ runtimeDir ];
 		after = [ runtimeDir ];
 		bindsTo = [ runtimeDir ];
+		unitConfig.DefaultDependencies = false; # the implicit Before=paths.target made a stop-ordering cycle with logind at every shutdown
 		pathConfig.PathExistsGlob = "/run/user/${uid}/wayland-*"; # sway binds its socket after wlr_backend_autocreate; a glob in a dir component is never inotify-watched
 	};
 	systemd.services.nvidia-drm-late = lib.mkIf (!disableNvidia) {

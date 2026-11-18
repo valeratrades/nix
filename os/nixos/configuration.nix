@@ -45,6 +45,7 @@ in {
     docker = {
       enable = true;
       package = pkgs.docker;
+      enableOnBoot = false; # socket-activated on first use
     };
   };
 
@@ -141,6 +142,7 @@ in {
 			"home-manager-${user.username}".before = lib.mkIf user.speed_over_safety (lib.mkForce [ ]); # HM runs alongside login instead of gating it (~5.7s)
 			# On the template, so it merges into NixOS's own getty@ drop-in. See the assertion on `foo@bar` units below.
 			"getty@".serviceConfig.Type = lib.mkForce "simple";
+			NetworkManager-wait-online.enable = false; # held network-online.target (tailscaled) ~20s every boot
 		};
   };
   boot = {

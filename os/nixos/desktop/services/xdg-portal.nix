@@ -1,4 +1,6 @@
 { pkgs, ... }: {
+  # a file chooser's nvim outlives its window inside this cgroup and ignores SIGTERM, holding shutdown 15s
+  systemd.user.services.xdg-desktop-portal-termfilechooser.serviceConfig.KillMode = "mixed";
   xdg.portal = {
     enable = true;
     extraPortals = with pkgs; [

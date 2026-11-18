@@ -113,14 +113,9 @@ in
       PATTERN='^(rust-analyzer|clangd|gopls|pyright|pylsp|jedi-language-server|lua-language-server|typescript-language-server|tsserver|nil|tinymist|marksman|bash-language-server|yaml-language-server|vscode-json-language|tailwindcss-language-server|ocamllsp|texlab|ty)$'
 
       live=" "
-      for pid in $(ps -eo pid= ); do
+      for pid in $(pgrep -- "$PATTERN") $(pgrep -f 'copilot/js/language-server\.js'); do # forking per pid over every process took 6-10s per run
         comm=$(cat /proc/$pid/comm 2>/dev/null) || continue
-        if [ "$comm" = node ]; then # copilot.lua's server is a node script
-          tr '\0' ' ' < /proc/$pid/cmdline 2>/dev/null | grep -q 'copilot/js/language-server\.js' || continue
-          comm=copilot
-        else
-          echo "$comm" | grep -qE "$PATTERN" || continue
-        fi
+        [ "$comm" = node ] && comm=copilot # copilot.lua's server is a node script
         live="$live$pid "
 
         rchar=$(awk '/^rchar:/{print $2}' /proc/$pid/io 2>/dev/null) || continue

@@ -49,6 +49,7 @@ const chromeExec = await (async () => { // the wrapper's pre-exec work (ext-sett
     ws.onmessage = m => { ws.close(); res(JSON.parse(m.data)); };
     ws.onerror = rej;
   });
+  if (msg.error) { console.error(`chrome_exec unobserved: ${msg.error.message}`); return undefined; } // Chrome stopped recording this histogram around Nov 2026
   const h = msg.result.histogram;
   assert.equal(h.count, 1, 'recorded once per browser process');
   return procStart(chromePid) + h.sum / 1000;
@@ -64,9 +65,11 @@ const points = {
   sway_session: userProp('ActiveEnterTimestampMonotonic', 'sway-session.target'),
   chrome_wrapper: procStart(chromePid), // ext-settings sync runs between this and chrome_exec
   chrome_exec: chromeExec,
+  terminal: (() => { try { return procStart(run('pgrep', '-o', '-x', 'alacritty')); } catch (e) { if (e.status === 1) return undefined; throw e; } })(), // pgrep exits 1 on no match
   tab_nav: tab?.nav,
   tab_load: tab?.load,
 };
 const fmt = Object.entries(points).map(([k, v]) => `${k}=${v === undefined ? 'unobserved' : v.toFixed(2)}`).join(' ');
 const total = tab ? (firmware + loader + tab.load).toFixed(1) : 'unobserved';
-console.log(`power→tab_load=${total}s firmware=${firmware.toFixed(2)} loader=${loader.toFixed(2)} | ${fmt} | ${tab?.url ?? 'no visible tab finished loading within 300s'}`);
+const terminalTotal = points.terminal === undefined ? 'unobserved' : (firmware + loader + points.terminal).toFixed(1);
+console.log(`power→terminal=${terminalTotal}s power→tab_load=${total}s firmware=${firmware.toFixed(2)} loader=${loader.toFixed(2)} | ${fmt} | ${tab?.url ?? 'no visible tab finished loading within 300s'}`);

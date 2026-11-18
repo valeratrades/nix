@@ -205,7 +205,9 @@ in {
     # skip the whole dance on unchanged boots/switches.
     stamp="${config.home.homeDirectory}/.openclaw/.hm-config-stamp"
     want="$( { printf '%s' '${cfgHash}'; cat "$tgTokenFile" 2>/dev/null || true; } | sha256sum | cut -d' ' -f1 )" # IGNORED_ERROR: at boot sops decrypts only once a user session starts; the unreadable token is handled below, and the stamp then differs so the next activation completes it
-    if [ -r "$stamp" ] && [ "$(cat "$stamp")" = "$want" ]; then
+    if [ "$(${pkgs.systemd}/bin/systemctl is-system-running || true)" = starting ]; then # nonzero exit just means "not running"; state is read from stdout
+      echo "configureOpenclaw: boot, skipping" # the token is unreadable until the user session decrypts it, so the stamp never matches here and the 70-90s rerun competed with login every boot
+    elif [ -r "$stamp" ] && [ "$(cat "$stamp")" = "$want" ]; then
       echo "configureOpenclaw: config unchanged, skipping"
     elif [ -d "$repo" ]; then
       # Gateway/workspace/mode only. `--auth-choice skip`: onboard's custom-provider flags refuse to
