@@ -9,6 +9,22 @@ function l --wraps 'ls -alh'; ls -alh $argv; end
 function sl
     if test -f "$argv[1]"
         bat $argv[1]
+        return
+    end
+    set -l dir (test (count $argv) -eq 1; and echo $argv[1]; or echo .)
+    set -l subdirs (path filter -d $dir/* $dir/.*)
+    if test (count $argv) -gt 1; or test (count $subdirs) -gt 256
+        exa -Ah $argv
+        return
+    end
+    set -l nodes
+    for d in $subdirs
+        test -e $d/.git; and continue
+        command fd -HI -d 4 -q -g .git $d; and set -a nodes (path basename $d) # shortcut: repos deeper than 3 levels miss, raise -d if a node shows as leaf
+    end
+    if test (count $nodes) -gt 0
+        EZA_COLORS="di=1;35" env -C $dir eza -dA $nodes
+        exa -Ah -I (string join '|' $nodes) $argv
     else
         exa -Ah $argv
     end
