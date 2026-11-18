@@ -111,8 +111,8 @@ try_fix_root_owned_dirs() {
 # Get rust toolchain store path (cached to avoid 2+ second nix eval overhead).
 # Keyed on the expression, so bumping the pin invalidates the cache instead of
 # silently keeping the old toolchain alive.
+RUST_STORE_PATH_CACHE="$STATE_DIR/.rust-store-path-$(printf '%s' "$NIX_EXPR" | md5sum | cut -c1-8)" # top level: get_rust_store_path runs in $(…), its assignments never reach the writer below
 get_rust_store_path() {
-	RUST_STORE_PATH_CACHE="$STATE_DIR/.rust-store-path-$(printf '%s' "$NIX_EXPR" | md5sum | cut -c1-8)"
 	if [ -f "$RUST_STORE_PATH_CACHE" ]; then
 		local cached_path
 		cached_path=$(<"$RUST_STORE_PATH_CACHE")
