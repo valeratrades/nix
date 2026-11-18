@@ -1339,6 +1339,36 @@ struct SessionMetadata {
     transcript_tail: Option<Tail>,
     /// How long the transcript has sat untouched; the Finished→Done clock.
     idle_for: Option<std::time::Duration>,
+    /// None: the session spawned no subagents. Some(live): whether any subagent's meta lacks `finished: true`.
+    subagents_live: Option<bool>,
+}
+
+#[derive(Deserialize)]
+struct SubagentMeta {
+    finished: Option<bool>, // absent while the subagent runs
+}
+
+fn subagents_live(session_file: &Path) -> Option<bool> {
+    let dir = session_file.with_extension("").join("subagents");
+    let entries = match fs::read_dir(&dir) {
+        Ok(entries) => entries,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return None,
+        Err(e) => panic!("read {dir:?}: {e}"),
+    };
+    let mut any = false;
+    let mut live = false;
+    for entry in entries {
+        let path = entry.expect("readdir entry").path();
+        if !path.file_name().expect("dir entry has a name").to_string_lossy().ends_with(".meta.json") {
+            continue;
+        }
+        let raw = fs::read_to_string(&path).unwrap_or_else(|e| panic!("read {path:?}: {e}"));
+        let meta: SubagentMeta = serde_json::from_str(&raw).unwrap_or_else(|e| panic!("subagent meta schema changed ({path:?}): {e}"));
+        any = true;
+        // #TEST: a subagent stopped on a question or limit may or may not be written `finished: true`; here `finished` means only "not active/ongoing".
+        live |= meta.finished != Some(true);
+    }
+    any.then_some(live)
 }
 
 /// Claude Code's own pid -> session registry, kept current across /clear and /resume.
@@ -1380,6 +1410,7 @@ fn get_session_info_for_pane(shell_pid: u32) -> Option<SessionMetadata> {
             .and_then(|m| m.modified())
             .ok()
             .and_then(|t| t.elapsed().ok()),
+        subagents_live: subagents_live(&session_file),
     })
 }
 
@@ -1637,13 +1668,13 @@ fn get_claude_windows(vote: bool) -> Vec<ClaudeWindow> {
             // calls when no spinner is captured. For that one reading we defer to
             // the transcript, which deterministically says whether a turn is still
             // in flight; active todos remain the fallback when it can't decide.
-            let activity = determine_claude_activity(caps);
+            let metadata = get_session_info_for_pane(pane_pid);
+            let activity = determine_claude_activity(caps, metadata.as_ref().and_then(|m| m.subagents_live));
 
             // A fresh pane has no transcript to deliberate over.
             if activity.state == ClaudeState::Empty {
                 (ClaudeState::Empty, None, None, None, None, None, None)
             } else {
-                let metadata = get_session_info_for_pane(pane_pid);
                 let summary = metadata.as_ref().and_then(|m| m.summary.clone());
                 let model = metadata.as_ref().and_then(|m| m.model.clone());
                 let context = metadata.as_ref().and_then(|m| m.context);
@@ -1707,7 +1738,7 @@ fn get_claude_windows(vote: bool) -> Vec<ClaudeWindow> {
                 .collect::<Vec<_>>()
                 .join("\n");
 
-            match dead_claude_resume_id(&tail).map(|id| (id, determine_claude_activity(caps).state)) {
+            match dead_claude_resume_id(&tail).map(|id| (id, determine_claude_activity(caps, None).state)) {
                 Some((id, state)) if state != ClaudeState::Empty => {
                     let file = get_process_cwd(pane_pid).and_then(|cwd| {
                         let home = std::env::var("HOME").ok()?;
@@ -1803,11 +1834,11 @@ fn input_box_text(content: &str) -> Option<String> {
     (!cleaned.is_empty()).then_some(cleaned)
 }
 
-fn determine_claude_activity(caps: &PaneCapture) -> ActivityResult {
+fn determine_claude_activity(caps: &PaneCapture, subagents_live: Option<bool>) -> ActivityResult {
     // The escaped capture stays behind a closure for the tests' sake — a fixture
     // without a `.esc` companion feeds `|| None`. It's no longer lazy in
     // production: batching made it a rendered pipe write, not a fork.
-    classify_activity(&caps.plain, || Some(caps.escaped.clone()))
+    classify_activity(&caps.plain, || Some(caps.escaped.clone()), subagents_live)
 }
 
 /// Pure terminal-state classifier: the heart of this script and the source of
@@ -1821,6 +1852,7 @@ fn determine_claude_activity(caps: &PaneCapture) -> ActivityResult {
 fn classify_activity(
     content: &str,
     capture_escaped: impl FnOnce() -> Option<String>,
+    subagents_live: Option<bool>,
 ) -> ActivityResult {
     // Look at the last portion for various indicators
     // Filter empty lines first, then take last 15 non-empty lines
@@ -2140,9 +2172,9 @@ fn classify_activity(
         return ActivityResult { state: ClaudeState::Ongoing, draft_content: None, question_content: None, plan_mode };
     }
     // Background agents get a row each under the box's bottom rule: "◯ <type>  <desc>  <elapsed> · ↓ <n> tokens".
-    // shortcut: a completed agent's row reads the same in plain text (only its color differs) until evicted; check the .esc capture if that window ever shows up as a false ongoing.
+    // A completed agent's row reads the same in plain text until evicted; the subagents' metas say whether any still runs (None: unknown, trust the row).
     let agent_row = Regex::new(r"^(❯ |  )[◯●] \S+ {2,}.*\d+[smh](\s·\s[↑↓] \S+ tokens)?\s*$").unwrap();
-    if content.lines().rev().take_while(|l| !l.trim_start().starts_with('─')).any(|l| agent_row.is_match(l)) {
+    if content.lines().rev().take_while(|l| !l.trim_start().starts_with('─')).any(|l| agent_row.is_match(l)) && subagents_live != Some(false) {
         return ActivityResult { state: ClaudeState::Ongoing, draft_content: None, question_content: None, plan_mode };
     }
 
@@ -2759,7 +2791,7 @@ mod tests {
 
             // Companion escaped capture, only present for draft fixtures.
             let esc = fs::read_to_string(txt.with_extension("esc")).ok();
-            let result = classify_activity(&plain, || esc.clone());
+            let result = classify_activity(&plain, || esc.clone(), None);
 
             // Companion transcript tail, only present for fixtures pinning the
             // active↔finished deliberation. Replayed through the same
