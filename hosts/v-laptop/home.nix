@@ -333,7 +333,10 @@ in {
     Service = {
       Type = "notify";
       Environment = [ "PATH=/run/wrappers/bin" ]; # fusermount3
-      ExecStartPre = "${pkgs.coreutils}/bin/mkdir -p %h/Documents/Cloud/onedrive";
+      ExecStartPre = [
+        "-/run/wrappers/bin/fusermount3 -uz %h/Documents/Cloud/onedrive" # `-`: normally nothing is mounted; after a crash the dead endpoint makes the mkdir below fail forever
+        "${pkgs.coreutils}/bin/mkdir -p %h/Documents/Cloud/onedrive"
+      ];
       ExecStart = lib.concatStringsSep " " [
         "${lib.getExe pkgs.rclone} mount onedrive: %h/Documents/Cloud/onedrive"
         "--vfs-cache-mode full --cache-dir %C/rclone"
