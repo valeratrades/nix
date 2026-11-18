@@ -108,11 +108,10 @@ Policy facts (docs `deduplication.mdx`, source `crates/kache-store/src/{store,li
 - eww: kache hit rate (last hour, events log tail, 0.09 s / 60 s).
 
 ## Promising
-1. **XFS (reflink) for builds + kache store** — every kache copy becomes a clone: ~14% of writes (49 GB / 3.2 h), more in bursts. XFS is per filesystem: it can't be enabled for a directory, so it needs its own partition.
-   Sizes (2026-11-18, idle `du`): /home used 582 GB = `~/s` 315 (of which target dirs ~200–250) + `.cache` 94 (kache store) + ~170 other. `~/s` without targets ≈ 65–100 GB.
-   - **B (preferred):** wipe Windows nvme1p2 (465 GB) → XFS, mount at `/home/v/s`, kache `local_store` inside it. Builds move to the Kingston (8× lower wait, 6% wear) beside nix; /home stays untouched on the UMIS with only the editor/notes load. No /home reformat or copy.
-   - A (user's first idea): move /home minus `~/s` (≈ 268 GB) to nvme1p2, reformat nvme0p3 as XFS for `~/s`. Same isolation, but reformats and copies all of /home, and keeps builds on the worn, slower UMIS.
-   Migration B: `rsync -aHAX --exclude target/` `~/s` → new fs (targets rebuild from kache) ; stop builds/agents; final rsync; `mv ~/s ~/s.old`; `fileSystems."/home/v/s"` (xfs, noatime) + kache `cache.local_store`; `nixos-rebuild switch`; verify; drop `~/s.old`. Kache starts empty (refills within a day). Windows boot entries (WINEFI nvme1p4) go too.
+1. **XFS (reflink) for builds + kache store** — every kache copy becomes a clone: ~14% of writes (49 GB / 3.2 h), more in bursts. XFS is per filesystem, so it needs its own partition. Plan and constraints: valeratrades/nix#28.
+   - leading plan: keep `~/s` + kache store on nvme0p3 reformatted XFS (mounted at `/home/v/s`); everything else of /home (171 GB: `dust -x -X ~/s -X ~/.cache/kache ~`) moves to nvme1p2 (Windows wiped) as ext4 `/home`.
+   - kache store must be inside the `/home/v/s` mount itself: FICLONE/link() give EXDEV across vfsmounts even on one fs → silent byte copies.
+   - Rust builds outside `~/s` (`~/.cargo/build` 24 GB, `~/.cargo/target`, `~/nix` scripts, `/tmp`) cross the fs boundary → copies.
 2. **Unify kache keys across repos**: bump repos to v1.6.249 (one rustflags string, split-debuginfo everywhere), one nightly. Measure external-dep hit rate before/after with the eww widget + events log.
 3. **Cut build bytes at the source**: linker outputs 27% (test binary count — separate agent), aws-lc-sys (separate agent: codestyle `no-aws-lc` lint + ev_lib/panel/site_conductor PRs).
 4. `build.build-dir` on nvme1 — superseded by option B.
