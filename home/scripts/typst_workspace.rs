@@ -469,7 +469,7 @@ fn build() -> Result<()> {
 		.map_err(|e| miette!("failed to spawn the placeholder swap: {e}"))?;
 
 	// vim tabs count from 1; `call` rather than `:Watch`, which lacks -bar and would swallow the `|`
-	let watches: String = srcs.files.iter().enumerate().filter(|(_, s)| is_typ(s)).map(|(i, _)| format!("tabnext {} | call typst#Watch() | ", i + 1)).collect();
+	let watches: String = srcs.files.iter().enumerate().filter(|(_, s)| is_typ(s)).map(|(i, _)| format!("noautocmd tabnext {} | call typst#Watch() | ", i + 1)).collect();
 	let tab = srcs.focus + 1;
 	let srcs = srcs.files.iter().map(|s| sh_quote(s)).collect::<Vec<_>>().join(" ");
 	// lazier starts lazy.nvim after the first frame, so typst.vim isn't on rtp yet when `-c` runs
