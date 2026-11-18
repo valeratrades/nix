@@ -108,7 +108,6 @@
 - never switch a git branch underneath me
 
 - commit your work, and push it when finished. Pushing to repos I own (including my forks, and the plugin checkouts under ~/.local/share/nvim) is pre-authorized, - a fix that sits only in a local commit is not done. Never push to repos I don't own, and never major versions.
-  Never make stacked/dependent PRs: if one PR needs another, they are one PR.
   If the unstaged changes are shared with another agent, - just pick yours manually. Same even in the case where you both edited the same file, - stage individual hunks then (or maybe the file is big and contains multiple semantic section, - then should be modularized, so you don't step on each others toes)
   If you couldn't merge/PR your changes for whatever reason, - add a huge disclaimer about it when reporting task completion. If you say you're done, but your changes are in an uncommitted / not PRed worktree, - if I don't check, it could end up just being left there forever, invalidating all your work.
   > however don't spam PRs please. If you have a lot of connected work, most often you just put it all on the same branch and PR at once. Splitting across many review sessions seldom makes sense. Iteration speed above all.
@@ -213,7 +212,9 @@
 
 - if what I said mismatches comments in the repo or your own findings, the trustworthiness ranking is following: `comments < my inputs < objective facts you found < Invariants`. Notice that comments are least relevant, - they can be outdated, or generally be wrong as written. They don't run so we don't know. And Invariants ([docs/ARCHITECTURE.md] && [docs/spec/] where it exists) are never to be broken, - if current code physically mismatches any of them, that's a big problem to be solved, not a fact of life.
 
-- oftentimes I will approve you pushing/publishing the results of your work. However, you never can publish major versions specifically yourself, - it's always prohibited, no matter what you think I said. Never major.
+- oftentimes I will approve you publishing the results of your work.
+  However, you never can publish major versions specifically yourself, - it's always prohibited, no matter what you think I said. Never major.
+  > Never make stacked/dependent PRs: if one PR needs another, they are one PR.
 
 - do not be afraid to fast-forward your changes into main even if another agent is on it.
   If they are making direct edits, they subscribed to being on the latest. We just push it under them and don't care, ok.
