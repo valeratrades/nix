@@ -44,12 +44,22 @@ in
         swap = swapPart;
       };
     } else if lib.length disks == 2 then {
+      # builds get a drive of their own, so their writes never queue in front of the editor's fsyncs (nix#28)
       system = disk (lib.elemAt disks 0) {
         ESP = esp;
-        root = ext4 { size = "100%"; } "/" [ ];
+        root = ext4 { size = "50%"; } "/" [ ];
+        home = ext4 { size = "100%"; } "/home" [ "-m" "1" ]; # root-reserve only matters on /, where the system writes
       };
       data = disk (lib.elemAt disks 1) {
-        home = ext4 { end = "-${swap}"; } "/home" [ "-m" "1" ]; # root-reserve only matters on /, where the system writes
+        s = {
+          end = "-${swap}";
+          content = {
+            type = "filesystem";
+            format = "xfs"; # reflink: kache's store and target dirs share blocks instead of copying; store must live inside this mount
+            mountpoint = "/home/v/s";
+            mountOptions = [ "noatime" ];
+          };
+        };
         swap = swapPart;
       };
     } else throw "disko.nix: no layout for ${toString (lib.length disks)} disks";
