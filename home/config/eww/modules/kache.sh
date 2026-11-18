@@ -3,10 +3,12 @@
 # `kache stats` would spawn a daemon and walk the index, which is what this bar must not cost.
 # Several kache versions: their key schemas differ, so nothing one stores is ever hit by the other.
 # Toolchains: entries used in the last hour, read-only from the index; two nightlies split every dependency's key.
+# The window starts no earlier than the last rustup default change, so a fix clears the split instead of aging out of the hour.
 log="$HOME/.cache/kache/events.jsonl"
 since=$(date -u -d '-1 hour' +%Y-%m-%dT%H:%M:%S)
+since_default=$(stat -c %Y "$HOME/.rustup/settings.toml")
 toolchains=$(sqlite3 -readonly "file:$HOME/.cache/kache/index.db?mode=ro" \
-	"select group_concat(v, ', ') from (select distinct rustc_version v from entries where last_accessed > datetime('now', '-1 hour') and rustc_version != '')")
+	"select group_concat(v, ', ') from (select distinct rustc_version v from entries where last_accessed > datetime(max(unixepoch('now') - 3600, $since_default), 'unixepoch') and rustc_version != '')")
 tail -c 16000000 "$log" | awk -v since="$since" -v tc="$toolchains" '
 	match($0, /"ts":"[^"]*"/) { ts = substr($0, RSTART + 6, 19) }
 	ts < since { next }
