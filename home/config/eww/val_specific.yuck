@@ -3,13 +3,13 @@
 (defwidget disk []
 	(box
 		:class {disk_poll > 90 ? "warn" : ""}
-		" ${disk_poll}%"))
+		" ${disk_poll}%"))
 
 (defpoll tether_poll :initial "" :interval "5s" "./modules/tether.sh")
 (defpoll uplink_poll :initial "" :interval "10s" "./modules/uplink.sh")
 (defwidget val_specific []
 	(box
 		:space-evenly false
-		(box :class "warn" :visible {tether_poll != ""} "󰄜 ${tether_poll} ")
-		(box :visible {uplink_poll != ""} "${uplink_poll} ")
+		(box :class "warn" :visible {tether_poll != ""} "󰄜${tether_poll} ")
+		(box :visible {uplink_poll != ""} "${uplink_poll}")
 		(disk)))

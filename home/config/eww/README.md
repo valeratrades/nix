@@ -12,4 +12,7 @@ Change of color on warn and urgent bells (like battery going below 10%).
 - "error"
 
 ## Widget text
-`"<glyph> <value>"`: glyph, one space, value. No leading or trailing spaces; the gap between widgets comes from the bar.
+Do not add whitespaces anywhere unless it's impossible to read the value without it.
+Normally it's `<glyph> <value>` if glyph is fat, or `<gliph><value>` if not that much.\
+Never ever `.*<value> ` - do not add spaces around just because. Space is precious.
+Widgets never add padding around themselves, - it's the job of whoever composes.
