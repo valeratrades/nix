@@ -1,0 +1,6 @@
+; / , /home and the builds' XFS on /home/v/s. df on these paths only: EWW_DISK statfs's every mount, so one stalled network mount (rclone) froze the whole bar
+(defpoll disk_poll :initial "0" :interval "10s" "df --output=pcent / /home /home/v/s | tail -n +2 | tr -d ' %' | sort -n | tail -n1")
+(defwidget disk []
+	(box
+		:class {disk_poll > 90 ? "warn" : ""}
+		" ${disk_poll}%"))

@@ -186,7 +186,7 @@ in {
     # to actually run when config inputs change. Stamp over the nix config + secret contents and
     # skip the whole dance on unchanged boots/switches.
     stamp="${config.home.homeDirectory}/.openclaw/.hm-config-stamp"
-    want="$( { printf '%s' '${cfgHash}'; cat "$tgTokenFile" 2>/dev/null; } | sha256sum | cut -d' ' -f1 )"
+    want="$( { printf '%s' '${cfgHash}'; cat "$tgTokenFile" 2>/dev/null || true; } | sha256sum | cut -d' ' -f1 )" # IGNORED_ERROR: at boot sops decrypts only once a user session starts; the unreadable token is handled below, and the stamp then differs so the next activation completes it
     if [ -r "$stamp" ] && [ "$(cat "$stamp")" = "$want" ]; then
       echo "configureOpenclaw: config unchanged, skipping"
     elif [ -d "$repo" ]; then
@@ -339,6 +339,7 @@ in {
         "--vfs-cache-mode full --cache-dir %C/rclone"
         "--dir-cache-time 5000h --poll-interval 15s" # server-side change polling keeps the long dir cache honest
         "--umask 077"
+        "--daemon-timeout 10s" # offline, a FUSE request otherwise waits forever: statfs asks OneDrive for its quota, and the caller hangs in D state
       ];
       Restart = "on-failure";
       RestartSec = 10;

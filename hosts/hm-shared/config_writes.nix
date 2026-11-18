@@ -7,9 +7,18 @@
       recursive = true;
     };
     ".config/eww" = {
-      source = "${self}/home/config/eww";
+      source = pkgs.lib.cleanSourceWith {
+        src = "${self}/home/config/eww";
+        filter = path: _: baseNameOf path != "val_specific.yuck"; # hardcodes my mount layout
+      };
       recursive = true;
     };
+    ".config/eww/val_specific.yuck".text = ''
+      (defwidget disk []
+      	(box
+      		:class {EWW_DISK["/"].used_perc > 90 ? "warn" : ""}
+      		" ''${round(EWW_DISK["/"].used_perc, 0)}%"))
+    '';
     ".config/pipewire/pipewire.conf.d" = {
       source = "${self}/home/config/pipewire/pipewire.conf.d";
       recursive = true;

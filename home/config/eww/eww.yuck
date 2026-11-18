@@ -1,6 +1,7 @@
 ; general docs are at https://elkowar.github.io/eww/configuration.html
 
 (include "revealer.yuck")
+(include "val_specific.yuck") ; this machine's layout; derived profiles get hosts/hm-shared/config_writes.nix's stand-in
 
 
 (defvar bar_visible "true")
@@ -159,12 +160,7 @@
 	(box
 		:class {"${round(EWW_CPU.avg, 0)}" > 90 ? "warn" : ""}
 		" ${round(EWW_CPU.avg, 0)}%"))
-; / and /home live on separate disks; the fuller one is what matters
 
-(defwidget disk []
-	(box
-		:class {EWW_DISK["/"].used_perc > 90 || EWW_DISK["/home"].used_perc > 90 ? "warn" : ""}
-		" ${round(EWW_DISK["/"].used_perc > EWW_DISK["/home"].used_perc ? EWW_DISK["/"].used_perc : EWW_DISK["/home"].used_perc, 0)}%"))
 ; Mean ms per block IO (read+write+flush) over a 1s window, worst NVMe. PSI is unusable here: tasks parked in io_uring waits (ringboard) count as iowait. Flush is what fsync costs on top of the write.
 (defpoll io_latency_poll :initial "0" :interval "5s" "(grep -E ' nvme[0-9]+n[0-9]+ ' /proc/diskstats; sleep 1; grep -E ' nvme[0-9]+n[0-9]+ ' /proc/diskstats) | awk '{n=$4+$8+$19; ms=$7+$11+$20; if ($3 in pn) {d=n-pn[$3]; l=d>0?(ms-pm[$3])/d:0; if (l>m) m=l} else {pn[$3]=n; pm[$3]=ms}} END {printf \"%d\", m}'")
 

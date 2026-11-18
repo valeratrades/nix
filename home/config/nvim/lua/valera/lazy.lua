@@ -1,7 +1,6 @@
--- fork of jake-stewart/lazier.nvim until jake-stewart/lazier.nvim#12, #13, #14 land
 local lazierpath = vim.fn.stdpath("data") .. "/lazier/lazier.nvim"
 if not vim.uv.fs_stat(lazierpath) then
-	local out = vim.fn.system({ "git", "clone", "https://github.com/valeratrades/lazier.nvim.git", lazierpath })
+	local out = vim.fn.system({ "git", "clone", "--branch=stable-v2", "https://github.com/jake-stewart/lazier.nvim.git", lazierpath })
 	assert(vim.v.shell_error == 0, "cloning lazier.nvim: " .. out)
 end
 vim.opt.rtp:prepend(lazierpath)
