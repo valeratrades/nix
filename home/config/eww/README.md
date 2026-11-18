@@ -10,3 +10,6 @@ Change of color on warn and urgent bells (like battery going below 10%).
 - "info" / ""
 - "warn"
 - "error"
+
+## Widget text
+`"<glyph> <value>"`: glyph, one space, value. No leading or trailing spaces; the gap between widgets comes from the bar.

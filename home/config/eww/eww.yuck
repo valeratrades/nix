@@ -184,7 +184,7 @@
 			:visible {(kache_poll.toolchains ?: 0) > 1}
 			:class "warn"
 			:tooltip {kache_poll.toolchain_list}
-			" 󱘗${kache_poll.toolchains}")))
+			"󱘗 ${kache_poll.toolchains}")))
 
 (defwidget ram []
 	(box
