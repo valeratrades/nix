@@ -13,25 +13,36 @@
     };
   };
 
-  # Desktop notification on smartd events
-  systemd.services.smartd-notify = {
-    description = "Forward smartd alerts to desktop notification";
-    serviceConfig = {
-      Type = "oneshot";
-      ExecStart = "${pkgs.libnotify}/bin/notify-send -u critical 'SMART Alert' 'Drive health warning — check smartctl'";
-    };
-  };
-
-  # Also log unsafe shutdown count so we can track the trend
+  # smartd only alerts once spare runs out; a write-rate alarm catches a misconfigured fs/build burning the drive while it's still healthy
   systemd.services.nvme-health-log = {
-    description = "Log NVMe health snapshot";
+    description = "Log NVMe health snapshot, alert on runaway write rate";
+    path = [ pkgs.smartmontools pkgs.gnugrep pkgs.jq pkgs.dbus ];
     serviceConfig = {
       Type = "oneshot";
+      StateDirectory = "nvme-health";
       ExecStart = pkgs.writeShellScript "nvme-health-log" ''
-        ${pkgs.smartmontools}/bin/smartctl -A /dev/nvme0n1 2>&1 | ${pkgs.gnugrep}/bin/grep -E '(Media|Error|Unsafe|Warning|Critical|Available Spare)' >> /var/log/nvme-health.log
-        echo "---" >> /var/log/nvme-health.log
-        ${pkgs.smartmontools}/bin/smartctl -A /dev/nvme1n1 2>&1 | ${pkgs.gnugrep}/bin/grep -E '(Media|Error|Unsafe|Warning|Critical|Available Spare)' >> /var/log/nvme-health.log
-        echo "=== $(date -Iseconds) ===" >> /var/log/nvme-health.log
+        set -eu
+        max_gb_per_h=30 # lifetime avg on nvme0 is ~20GB per power-on hour
+        log=/var/log/nvme-health.log
+        now=$(date +%s)
+        for dev in nvme0n1 nvme1n1; do
+          smartctl -A /dev/$dev | grep -E '(Media|Error|Unsafe|Warning|Critical|Available Spare|Percentage Used|Data Units Written)' >> $log
+          echo "---" >> $log
+          written=$(smartctl -j -A /dev/$dev | jq -e .nvme_smart_health_information_log.data_units_written) # units of 512000B
+          state=$STATE_DIRECTORY/$dev
+          if [ -f $state ]; then
+            read -r prev_t prev_w < $state
+            gb=$(( (written - prev_w) * 512 / 1000000 ))
+            h=$(( (now - prev_t) / 3600 + 1 ))
+            if [ $(( gb / h )) -gt $max_gb_per_h ]; then
+              msg="$dev: $gb GB written in under $h h (over $max_gb_per_h GB/h)"
+              echo "ALERT $msg" >> $log
+              dbus-send --system / net.nuetzlich.SystemNotifications.Notify "string:SSD write rate" "string:$msg"
+            fi
+          fi
+          echo "$now $written" > $state
+        done
+        echo "=== $(date -Iseconds) ===" >> $log
       '';
     };
   };
