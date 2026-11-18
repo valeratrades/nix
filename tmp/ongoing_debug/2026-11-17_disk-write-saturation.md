@@ -112,7 +112,8 @@ Policy facts (docs `deduplication.mdx`, source `crates/kache-store/src/{store,li
    - leading plan: keep `~/s` + kache store on nvme0p3 reformatted XFS (mounted at `/home/v/s`); everything else of /home (171 GB: `dust -x -X ~/s -X ~/.cache/kache ~`) moves to nvme1p2 (Windows wiped) as ext4 `/home`.
    - kache store must be inside the `/home/v/s` mount itself: FICLONE/link() give EXDEV across vfsmounts even on one fs → silent byte copies.
    - Rust builds outside `~/s` (`~/.cargo/build` 24 GB, `~/.cargo/target`, `~/nix` scripts, `/tmp`) cross the fs boundary → copies.
-2. **Unify kache keys across repos**: bump repos to v1.6.249 (one rustflags string, split-debuginfo everywhere), one nightly. Measure external-dep hit rate before/after with the eww widget + events log.
+2. **Two kache versions** (2.0.0 schema 33 vs 2.1.1 schema 34) ran side by side: 39% of events on 2.0.0, from repos pinning v_flakes older than "devshell uses the machine's kache" (codestyle, ev/skills, panel + its worktrees). Their keys never match; 81 GB of the store is schema 33. Bumped codestyle, ev/skills (committed), panel (working tree; pre-commit stash restore failed on its dirty tree, restored by hand). eww warns when >1 kache version ran in the last hour.
+3. **Unify kache keys across repos** — details: `2026-11-18_dep-version-convergence.md`: bump repos to v1.6.249 (one rustflags string, split-debuginfo everywhere), one nightly. Measure external-dep hit rate before/after with the eww widget + events log.
 3. **Cut build bytes at the source**: linker outputs 27% (test binary count — separate agent), aws-lc-sys (separate agent: codestyle `no-aws-lc` lint + ev_lib/panel/site_conductor PRs).
 4. `build.build-dir` on nvme1 — superseded by option B.
 
