@@ -92,8 +92,8 @@ return {
 	"DreamMaoMao/yazi.nvim",
 	"norcalli/nvim-colorizer.lua",
 	{
-		"hiphish/rainbow-delimiters.nvim",
-		pin = true, -- local nil-parser guard in lib.lua; unpin once upstream handles get_parser()==nil
+		"valeratrades/rainbow-delimiters.nvim", -- fork until HiPhish/rainbow-delimiters.nvim#223 (nil-parser guard) lands
+		branch = "guard-nil-parser-on-reattach",
 		config = function()
 			-- Register a typst query without math $ (we color those separately)
 			vim.treesitter.query.set('typst', 'rainbow-delimiters-nomathdollar', [[
