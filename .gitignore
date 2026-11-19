@@ -11,6 +11,8 @@ home/config/eww/location
 home/config/claude/skills/ra-shared/
 # Claude Code mirrors the account's claude.ai skills here, through the ~/.claude/skills dir symlink
 home/config/claude/skills/synced/
+# Claude Code's trash for deleted skills, through the ~/.claude/skills dir symlink
+home/config/claude/skills/.trash/
 
 # Linked by programs.skargo (hosts/hm-shared/claude.nix), through the ~/.claude/skills dir symlink
 home/config/claude/skills/excalidraw
