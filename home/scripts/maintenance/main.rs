@@ -1306,14 +1306,24 @@ impl Ctx {
 }
 
 /// `last_use` is the newest of files' max(atime, mtime) and dirs' mtime: readdir bumps dir atime, our own walks included.
+/// Dirs under a CACHEDIR.TAG don't count: entries leave a cache by eviction (`cargo sweep`), which isn't use.
 /// `reads`: whether reading a file counts as using it. Any content scan (rg, an indexer, kache over targets) refreshes atimes, so only a cache, whose hits are reads, takes it.
 fn unit(path: PathBuf, reads: bool) -> io::Result<Unit> {
     let (mut last_use, mut bytes) = (UNIX_EPOCH, 0);
+    let mut caches: Vec<PathBuf> = Vec::new(); // a stack: the walk is depth-first
     for entry in WalkDir::new(&path).follow_root_links(false) {
-        let meta = entry?.metadata()?;
-        let used = match !meta.is_dir() && reads {
-            true => meta.modified()?.max(meta.accessed()?),
-            false => meta.modified()?,
+        let entry = entry?;
+        let meta = entry.metadata()?;
+        while caches.last().is_some_and(|c| !entry.path().starts_with(c)) {
+            caches.pop();
+        }
+        if meta.is_dir() && entry.path().join("CACHEDIR.TAG").try_exists()? {
+            caches.push(entry.path().to_owned());
+        }
+        let used = match (meta.is_dir(), reads) {
+            (true, _) if !caches.is_empty() => UNIX_EPOCH,
+            (false, true) => meta.modified()?.max(meta.accessed()?),
+            _ => meta.modified()?,
         };
         last_use = last_use.max(used);
         bytes += meta.blocks() * 512;
