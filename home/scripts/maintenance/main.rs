@@ -66,6 +66,8 @@ enum Cmd {
     Mv { from: PathBuf, to: PathBuf },
 }
 
+const PROJECT_ROOTS: [&str; 5] = ["tmp", "s", "g", "leetcode", "uni"]; // under $HOME
+
 /// written by home-manager from ./config.nix
 #[derive(Deserialize)]
 struct Config {
@@ -514,7 +516,7 @@ impl Ctx {
         };
         let sweep_days = (self.cfg.horizon_long.duration().as_secs() / 86400).to_string();
 
-        for dir in ["tmp", "s", "g", "leetcode", "uni"].map(|d| self.home.join(d)) {
+        for dir in PROJECT_ROOTS.map(|d| self.home.join(d)) {
             if !dir.exists() {
                 self.report(true, format_args!("Directory {} does not exist", dir.display()));
                 continue;
@@ -1122,26 +1124,36 @@ impl Ctx {
         if self.verbosity >= 2 {
             println!("\x1b[34mAligning lockfiles of v_flakes repos used in the last {}\x1b[0m", self.cfg.horizon_long);
         }
-        let root = self.home.join("s");
-        let entries = match fs::read_dir(&root) {
-            Ok(entries) => entries,
-            Err(e) => return self.report(true, format_args!("{}: {e}", root.display())),
-        };
-        let mut features: BTreeMap<(String, String), BTreeMap<Vec<String>, Vec<String>>> = BTreeMap::new();
-        for entry in entries {
-            let repo = match entry {
-                Ok(entry) => entry.path(),
-                Err(e) => {
-                    self.report(true, format_args!("an entry of {}: {e}", root.display()));
+        let mut repos = vec![];
+        for root in PROJECT_ROOTS.map(|d| self.home.join(d)) {
+            let mut walk = WalkDir::new(&root).into_iter();
+            while let Some(entry) = walk.next() {
+                let entry = match entry {
+                    Ok(entry) => entry,
+                    Err(e) if e.io_error().is_some_and(|e| e.kind() == io::ErrorKind::NotFound) && e.depth() == 0 => break, // `clean` reports a missing root
+                    Err(e) => {
+                        self.report(true, e);
+                        continue;
+                    }
+                };
+                if !entry.file_type().is_dir() {
                     continue;
                 }
-            };
-            if !repo.is_dir() {
-                continue;
+                if entry.file_name().to_str().is_some_and(|n| n.starts_with('.') || n == "target" || n == "node_modules") {
+                    walk.skip_current_dir(); // dot-dirs hold others' checkouts: CARGO_HOME's git deps, agents' worktrees
+                    continue;
+                }
+                if entry.path().join(".git").exists() {
+                    walk.skip_current_dir();
+                    repos.push(entry.into_path());
+                }
             }
+        }
+        let mut features: BTreeMap<(String, String), BTreeMap<Vec<String>, Vec<String>>> = BTreeMap::new();
+        for repo in repos {
             doing(format_args!("checking {}", repo.display()));
             match fs::read_to_string(repo.join("flake.nix")) {
-                Ok(flake) if flake.contains("v_flakes") && repo.join(".git").exists() => {}
+                Ok(flake) if flake.contains("v_flakes") => {}
                 Ok(_) => continue,
                 Err(e) if e.kind() == io::ErrorKind::NotFound => continue,
                 Err(e) => {
@@ -1152,7 +1164,7 @@ impl Ctx {
             if self.project_last_use(&repo, false).is_none_or(|t| self.unused_days(t, self.cfg.horizon_long).is_some()) {
                 continue;
             }
-            let name = repo.file_name().expect("read_dir entry").to_string_lossy().into_owned();
+            let name = repo.strip_prefix(&self.home).expect("walked from under $HOME").display().to_string();
             let git = || {
                 let mut git = Command::new("git");
                 git.arg("-C").arg(&repo);
