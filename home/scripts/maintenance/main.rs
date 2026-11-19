@@ -1306,7 +1306,7 @@ impl Ctx {
 }
 
 /// `last_use` is the newest of files' max(atime, mtime) and dirs' mtime: readdir bumps dir atime, our own walks included.
-/// Dirs under a CACHEDIR.TAG don't count: entries leave a cache by eviction (`cargo sweep`), which isn't use.
+/// Dirs under a CACHEDIR.TAG don't count: entries leave a cache by eviction (`cargo sweep`), which isn't use. Nor does the root: `cargo clean` and our own removals of artefacts bump it.
 /// `reads`: whether reading a file counts as using it. Any content scan (rg, an indexer, kache over targets) refreshes atimes, so only a cache, whose hits are reads, takes it.
 fn unit(path: PathBuf, reads: bool) -> io::Result<Unit> {
     let (mut last_use, mut bytes) = (UNIX_EPOCH, 0);
@@ -1321,7 +1321,7 @@ fn unit(path: PathBuf, reads: bool) -> io::Result<Unit> {
             caches.push(entry.path().to_owned());
         }
         let used = match (meta.is_dir(), reads) {
-            (true, _) if !caches.is_empty() => UNIX_EPOCH,
+            (true, _) if entry.depth() == 0 || !caches.is_empty() => UNIX_EPOCH,
             (false, true) => meta.modified()?.max(meta.accessed()?),
             _ => meta.modified()?,
         };
