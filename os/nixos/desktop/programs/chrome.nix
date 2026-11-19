@@ -101,6 +101,14 @@ in
     "3rdparty".extensions."oboonakemofpalcgghocfoadofidjkkk".settings = { # KeePassXC-Browser
       passkeys = true;
       showLoginNotifications = false; # the "Username or password changed! Save it?" banner
+      # only here for the Google passkey/TOTP: no in-page UI, Alt+Shift+O still fills TOTP
+      showLoginFormIcon = false;
+      showOTPIcon = false;
+      usePasswordGeneratorIcons = false;
+      autoCompleteUsernames = false;
+      showNotifications = false;
+      showGettingStartedGuideAlert = false;
+      showTroubleshootingGuideAlert = false;
     };
     ExtensionInstallForcelist = lib.mapAttrsToList (name: e: "${e.id};file://${packDir name}/updates.xml") selfPacked ++ map (id: "${id};https://clients2.google.com/service/update2/crx") [
       "abocjojdmemdpiffeadpdnicnlhcndcg" # SocialFocus
