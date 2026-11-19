@@ -820,12 +820,18 @@ fn transcript_tail(session_file: &Path, proc_start: Option<std::time::SystemTime
     })
 }
 
-/// Most recent model that produced an assistant turn, "claude-" prefix stripped
-/// ("claude-opus-4-8" -> "opus-4-8"). Synthetic messages carry model "<synthetic>" —
-/// skipped so the reported model is a real one the user actually ran.
+/// Most recent model that produced an assistant turn, "claude-" prefix stripped, with the
+/// effort that turn ran at ("claude-opus-5-5" -> "opus-5-5 (low)"). Synthetic messages carry
+/// model "<synthetic>" — skipped so the reported model is a real one the user actually ran.
 fn latest_model(session_file: &Path) -> Option<String> {
     scan_tail(session_file, |v| match v.get("message").and_then(|m| m.get("model")).and_then(|x| x.as_str()) {
-        Some(m) if m != "<synthetic>" => Some(m.strip_prefix("claude-").unwrap_or(m).to_string()),
+        Some(m) if m != "<synthetic>" => {
+            let m = m.strip_prefix("claude-").unwrap_or(m);
+            Some(match v.get("effort").and_then(|x| x.as_str()) {
+                Some(effort) => format!("{m} ({effort})"),
+                None => m.to_string(), // older transcripts carry no effort
+            })
+        }
         _ => None,
     })
 }
