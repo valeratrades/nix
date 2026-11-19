@@ -4,7 +4,7 @@ description: "Render a site's current pages into Figma as editable auto-layout f
 license: "BlueOak-1.0.0"
 compatibility: "a repo whose flake has `apps.figma` over `@evinvest/figma-render` (sites_tools' mkLanding, site_conductor); Figma MCP `create_new_file` only to create a render board"
 metadata:
-  version: "0.5.0"
+  version: "0.6.0"
 ---
 
 # figma-render
@@ -17,21 +17,20 @@ alternative.
 
 The whole render is one command, run from the repo root:
 
-- `nix run .#figma -- frames` prints `{ "file": <fileKey> | null, "frames": ["<project> <page>", …] }`.
-- `nix run .#figma` builds the site and renders every frame onto a new page `<short sha> <YYYY-MM-DD>[ dirty]`
+- `nix run .#figma` builds the site and renders every page it crawls onto a new page `<short sha> <YYYY-MM-DD>[ dirty]`
   of `file`, named `<project> <page>`, a row per page and a column per project. Its stdout is the page's link.
 
 - `nix run .#figma -- --folder <figma folder URL> --name <file>` renders into the file `<file>` of that folder
   instead (created if missing, left holding only the new page); it needs `FIGMA_TOKEN`, a Figma personal access token
-  with `folders:read`. This is what CI runs: v_flakes `github.figma = { };` adds `figma.yml`, which renders on a `v*`
-  tag or a `[figma]` comment into the file named after the repo in the org variable `FIGMA_FOLDER`.
+  with `folders:read`. v_flakes `github.figma = { on = "gha" | "publish"; }` runs exactly that into the file named after
+  the repo in the org variable `FIGMA_FOLDER`: "gha", `figma.yml` on a `v*` tag or a `[figma]` comment; "publish",
+  `nix run .#publish` (`github.publish`) after pushing the tag, for a render that needs this machine's data.
 
-What gets rendered is the repo's SECTIONS: `defineFigmaSuite({ test }, sections, { hide? })`, each section
-`{ name, url, selector }`, a state worth seeing reached by its own URL. A frame is a page: the URL without its `#`,
-so the sections of one page share a frame and a query is a page of its own (`/?assistant=sidebar`); it is captured
-once every one of its sections' selector is in the DOM. A state only a click reaches has no frame: to get one, put
-the state in the URL (site_conductor keeps its UI state in query keys, `frontend/src/shared/lib/query.ts`) and add a
-section for it.
+What gets rendered is what a crawl reaches from the repo's SECTIONS: `defineFigmaSuite({ test }, sections, { hide?, exclude? })`,
+each section `{ name, url, selector }` a page to start from. Every same-origin `<a href>` is followed; pages differing
+only in numbers (ids, coordinates) are one frame; `exclude` keeps links that act (sign-out) or lead to another app out.
+A state no link reaches has no frame: put it in the URL (site_conductor keeps its UI state in query keys) and add a
+section for it. Missing pages mean missing links, or a stack without the data that draws them.
 
 Both are `evinvest-figma-render`, the bin of `@evinvest/figma-render` (EV-Main/web_std `ts/figma-render`,
 `~/s/ev/web_std`), over the repo's `defineFigmaSuite` specs. It is its own client of Figma's MCP server and
@@ -42,7 +41,7 @@ sections; `defineFigmaSuite` re-exported) and `nix/mk-landing.nix` (`~/s/ev/_sa/
 
 ## The loop
 
-1. `frames`. If `file` is null, the repo has no render board yet: load `figma-create-new-file`, create a design
+1. If the flake has no `figmaFile`, the repo has no render board yet: load `figma-create-new-file`, create a design
    file `<pname> — renders` (separate from the brand's design file, which stays hand-made) in the plan the
    other render boards live in ("EV Invest's team"), then set `figmaFile = "<key>";` in the repo's flake
    (`mkLanding`'s argument, or the `figmaFile` binding) and commit it.
