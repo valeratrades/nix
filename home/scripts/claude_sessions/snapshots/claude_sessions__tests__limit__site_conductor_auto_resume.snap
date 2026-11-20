@@ -1,13 +1,11 @@
 ---
-source: claude_sessions.rs
-assertion_line: 2741
+source: main.rs
 expression: "(result, verdict)"
 ---
 (
     ActivityResult {
         state: Limit,
         draft_content: None,
-        question_content: None,
         plan_mode: false,
     },
     Some(

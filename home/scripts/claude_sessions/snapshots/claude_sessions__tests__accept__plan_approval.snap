@@ -1,0 +1,9 @@
+---
+source: main.rs
+expression: result
+---
+ActivityResult {
+    state: Accept,
+    draft_content: None,
+    plan_mode: false,
+}

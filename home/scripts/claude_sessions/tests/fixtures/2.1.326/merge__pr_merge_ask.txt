@@ -1,0 +1,10 @@
+● Opened PR #57 with the session picker changes.
+
+╭─────────────────────────────────────────────────────────╮
+│ PR #57 is green. Merge it into main?                      │
+╰─────────────────────────────────────────────────────────╯
+
+  ❯ 1. Merge
+    2. Not yet
+
+  Enter to select · ↑/↓ to navigate · esc to cancel

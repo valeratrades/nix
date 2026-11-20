@@ -99,7 +99,7 @@ nix-pinned nightly the runner already cached.)
 Only the part that actually regresses: `classify_activity` — the pure function
 that turns a captured tmux pane (plain text, plus an escape-coded capture for the
 draft case) into a `ClaudeState` (`empty / active / planning / finished / draft /
-question / input / error / limit`). Everything else in the script is live-environment I/O (`tmux
+question / accept / merge / input / error / limit`). Everything else in the script is live-environment I/O (`tmux
 list-panes`, `/proc`, `pgrep`, the OAuth usage endpoint, ollama) and is **not**
 unit-tested — it can't be exercised honestly without mocks or a full e2e tmux
 harness.
@@ -131,7 +131,7 @@ claude_sessions_test                        # confirm green
 one, and cases older than `OLDEST_CLAUDE_VERSION` (in `mod tests`) are skipped,
 so bumping it retires fixtures of UIs no longer seen. Same for `tests/reports/`.
 
-`<state>` is one of `empty active planning finished draft question error`. For draft cases
+`<state>` is one of `empty active planning finished draft question accept merge error`. For draft cases
 also capture the escape-coded pane to `tests/fixtures/<version>/<state>__<desc>.esc`
 (`tmux capture-pane -p -e -S -10`) — it's how typed input is told apart from grey
 ghost suggestions.

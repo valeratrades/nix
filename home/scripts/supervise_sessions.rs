@@ -175,7 +175,7 @@ fn poll_until_settled(idle_reads: u8, logout: bool, dry_run: bool) {
                         None
                     }
                     // Deterministic: the session is blocked and won't resume on its own.
-                    "question" | "limit" => Some((name.clone(), state.to_string())),
+                    "question" | "accept" | "merge" | "limit" => Some((name.clone(), state.to_string())),
                     // Only *looks* idle — finished/empty/error can flip back to active
                     // between tool calls, so require enough consecutive idle reads first.
                     _ => {

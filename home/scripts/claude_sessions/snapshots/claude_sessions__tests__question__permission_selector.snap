@@ -1,12 +1,9 @@
 ---
-source: claude_sessions.rs
+source: main.rs
 expression: result
 ---
 ActivityResult {
     state: Question,
     draft_content: None,
-    question_content: Some(
-        "Do you want to allow this command?",
-    ),
     plan_mode: false,
 }

@@ -23,7 +23,7 @@ in `main.rs` are skipped — bump it to retire fixtures of UIs no longer seen.
 <state>__<description>.start      # OPTIONAL: one RFC3339 line, when the pane's claude started
 ```
 
-`<state>` ∈ `empty active planning finished draft question input error limit interrupted`.
+`<state>` ∈ `empty active planning finished draft question accept merge input error limit interrupted`.
 
 A `.jsonl` companion means the pane text alone reads Finished and the transcript
 arbitrates; `<state>` then names the FINAL verdict. The same pane dump can back

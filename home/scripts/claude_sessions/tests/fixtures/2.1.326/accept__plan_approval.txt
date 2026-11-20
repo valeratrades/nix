@@ -1,0 +1,45 @@
+   Proof: gmaps_optimal_placement, site_conductor, review_archive (~/s/ev/_sa/) opt in, build, and end with identical requirements for every pinned crate.
+
+   v_flakes/pins/Cargo.toml ── [workspace.dependencies] name = "req"   ◄── crates.nvim / cargo upgrade bump here
+           │  (store path, rs module)
+           ▼
+   rs { pinDeps = true; } shellHook ── cargo -Zscript langs/rs/cargo-pins.rs <root Cargo.toml> <pins>
+           │  cargo metadata --no-deps → root + every member manifest
+           ▼
+   each [dependencies] / [dev-] / [build-] / [target.*.…] / [workspace.dependencies] entry
+      registry dep, name (or `package =`) pinned ─► version := pin   (features, default-features, optional, comments kept)
+      workspace = true / path / git / registry = … ─► untouched
+
+   Changes in v_flakes
+
+   1. pins/Cargo.toml — [workspace] + [workspace.dependencies], plain name = "requirement" strings only (the script asserts a string: no tables, so features can't sneak in). Verify first that cargo accepts a member-less virtual workspace
+      (cargo metadata --manifest-path pins/Cargo.toml --no-deps); if not, [package] with publish = false + [lib] path to an empty file.
+      Seed: every third-party registry crate the three repos depend on directly, at the highest version any of them currently resolves (from cargo metadata of each lock), caret (e.g. tokio = "1.54.1", tower-http = "0.7.0", clap =
+      "4.6.8"). Exact where a repo already requires exact for a reason: wasm-bindgen = "=0.2.129" (= pinned nixpkgs' wasm-bindgen-cli, checked: 0.2.129), playwright-rs = "=0.19.0" (browser_manipulation's).
+      Excluded: our own crates (v_utils, ev_lib, ev_lib_classes, concierge_iam, browser_manipulation, tg_types, tilers_dioxus). They release constantly; pinning them would revert every local bump on shell entry until a v_flakes release,
+      and sa_ui deliberately holds ev_lib = "0.25.0" against the workspace's 0.34.
+   2. langs/rs/cargo-pins.rs (new, -Zscript, toml_edit + serde_json + clap like cargo-merge.rs): args <root manifest> <pins>. Member manifests from cargo metadata --no-deps --format-version 1 (handles globs/exclude). For each dep table
+      above: key by package if present; string → pin string; table with version and none of workspace/path/git/registry → version := pin, decor kept. Writes only changed files; one stderr line per changed entry (v_flakes pins:
+      crates/x/Cargo.toml tokio 1 → 1.54.1) so a rewritten manifest isn't a mystery. Panics on unparsable manifests/pins (no fallbacks).
+   3. langs/rs/module.nix: pinDeps ? false; pinsHook beside lintsHook, gated by _vf_fresh cargo-pins "<script> <pins>" $(git ls-files -- '*Cargo.toml') (any tracked manifest change reruns; outside git, runs every entry). Description
+      block gets one line for pinDeps.
+   4. Integration test first cli/tests/it/cargo_pins.rs (+ mod in main.rs), same harness as cargo_merge.rs: fixture workspace (root [workspace.dependencies] + one member with a direct dep, a renamed dep, a workspace = true dep, a path
+      dep, a target-specific dep) → pinned versions written, features/comments untouched, inherited/path/git untouched; a table-valued pin panics.
+   5. Docs: docs/ARCHITECTURE.md pins/ line + one line under langs/rs; CHANGELOG.md Unreleased entry.
+   6. Commit, cnix_release --ignore-cargo --patch --fast (cli/src untouched).
+
+   Consumers (each: check for other agents — site_conductor has worktree kit-scope — edit main in place)
+
+   1. flake.nix: rs = v_flakes.rs { …; pinDeps = true; }; nix flake update v_flakes; enter shell → manifests rewritten.
+   2. Drop now-redundant per-member exact pins only where the pin covers them (review_archive_web's wasm-bindgen = "=0.2.129" stays as written-by-pin; gmaps' =0.8.9/=1.53.1/=0.7.0 become the pins).                                         ↓
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   Claude has written up a plan and is ready to execute. Would you like to proceed?
+
+   ❯ 1. Yes, clear context (12% used) and bypass permissions
+     2. Yes, clear context (12% used) and implement as Sonnet
+     3. Yes, clear context (12% used) and implement as Opus
+     4. Yes, implement without clearing context
+     5. Tell Claude what to change
+        shift+tab to approve with this feedback
+
+   ctrl+g to edit in Nvim · ~/.claude/plans/we-will-expand-what-foamy-sprout.md

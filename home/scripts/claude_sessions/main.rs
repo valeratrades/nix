@@ -101,6 +101,8 @@ enum ClaudeState {
     Done,     // Finished, but untouched for over DONE_AFTER — a stale wait, not a fresh one
     Draft,    // User is typing a message (bypass permissions prompt visible)
     Question, // Claude is asking a question (numbered options visible)
+    Accept,   // Question asking to approve a written plan
+    Merge,    // Question asking to merge a PR
     Input,    // User has typed text into the live input box (not yet sent)
     Error,    // Claude hit an error (rate limit, panic, etc.)
     Limit,    // Session usage limit hit ("You've hit your session limit · resets ...")
@@ -139,6 +141,8 @@ impl ClaudeState {
             ClaudeState::Done => "done",
             ClaudeState::Draft => "draft",
             ClaudeState::Question => "question",
+            ClaudeState::Accept => "accept?",
+            ClaudeState::Merge => "merge?",
             ClaudeState::Input => "input",
             ClaudeState::Error => "error",
             ClaudeState::Limit => "limit",
@@ -174,7 +178,6 @@ struct ClaudeWindow {
     claude_running: bool,
     active_todo: Option<String>,
     draft_content: Option<String>,
-    question_content: Option<String>,
     summary: Option<String>,
     model: Option<String>,
     /// Context size of the last turn, in tokens (see context_tokens)
@@ -192,7 +195,6 @@ struct SessionEntry {
     state: ClaudeState,
     active_todo: Option<String>,
     draft_content: Option<String>,
-    question_content: Option<String>,
     summary: Option<String>,
     model: Option<String>,
     /// Context size of the last turn, in tokens (see context_tokens)
@@ -368,10 +370,9 @@ impl fmt::Display for Sessions {
                         Some(draft) => format!("> {}", draft),
                         None => "> ".to_string(),
                     }),
-                    ClaudeState::Question => Some(match &entry.question_content {
-                        Some(q) => format!("? {}", q),
-                        None => "?".to_string(),
-                    }),
+                    ClaudeState::Question => Some("?".to_string()),
+                    ClaudeState::Accept => Some("p".to_string()),
+                    ClaudeState::Merge => Some("m".to_string()),
                     _ => None,
                 }
             };
@@ -396,7 +397,7 @@ impl fmt::Display for Sessions {
                 //   finished -> COLOR_INFO_GOOD. answered and partial -> COLOR_INFO_ANSWERED.
                 // Every other state stays uncolored — no span, no noise.
                 let state_cell = match entry.state {
-                    ClaudeState::Question | ClaudeState::Stuck => {
+                    ClaudeState::Question | ClaudeState::Accept | ClaudeState::Merge | ClaudeState::Stuck => {
                         format!("<span foreground=\"{COLOR_ERROR}\">{}</span>", pango_escape(&padded_state))
                     }
                     ClaudeState::Limit | ClaudeState::Input => {
@@ -441,7 +442,7 @@ impl fmt::Display for Sessions {
                     ClaudeState::Done => padded_state.bright_black(),
                     ClaudeState::Empty => padded_state.yellow(),
                     ClaudeState::Draft => padded_state.cyan(),
-                    ClaudeState::Question | ClaudeState::Stuck => padded_state.magenta(),
+                    ClaudeState::Question | ClaudeState::Accept | ClaudeState::Merge | ClaudeState::Stuck => padded_state.magenta(),
                     ClaudeState::Ongoing => padded_state.truecolor(0x3f, 0x8a, 0xa8),
                     ClaudeState::Error | ClaudeState::Interrupted => padded_state.red(),
                     ClaudeState::Limit | ClaudeState::Input => padded_state.white(),
@@ -1529,7 +1530,7 @@ fn get_claude_windows(vote: bool) -> Vec<ClaudeWindow> {
         let caps = captures.get(&pane.target).unwrap_or(&missing);
         let mut votes = None;
 
-        let (state, active_todo, draft_content, question_content, summary, model, context) = if is_claude_pane {
+        let (state, active_todo, draft_content, summary, model, context) = if is_claude_pane {
             // Terminal parsing decides the blocking states (Question/Draft/Error)
             // and the working state, but active↔finished flip-flops between tool
             // calls when no spinner is captured. For that one reading we defer to
@@ -1540,7 +1541,7 @@ fn get_claude_windows(vote: bool) -> Vec<ClaudeWindow> {
 
             // A fresh pane has no transcript to deliberate over.
             if activity.state == ClaudeState::Empty {
-                (ClaudeState::Empty, None, None, None, None, None, None)
+                (ClaudeState::Empty, None, None, None, None, None)
             } else {
                 let summary = metadata.as_ref().and_then(|m| m.summary.clone());
                 let model = metadata.as_ref().and_then(|m| m.model.clone());
@@ -1555,9 +1556,9 @@ fn get_claude_windows(vote: bool) -> Vec<ClaudeWindow> {
                         );
                         if refined == ClaudeState::Active || refined == ClaudeState::Planning {
                             let todo = metadata.as_ref().and_then(|m| m.display_todo.clone());
-                            (refined, todo, None, None, summary, model, context)
+                            (refined, todo, None, summary, model, context)
                         } else if refined != ClaudeState::Finished {
-                            (refined, None, None, None, summary, model, context)
+                            (refined, None, None, summary, model, context)
                         } else {
                             let stale = matches!(&metadata, Some(m) if m.idle_for.is_some_and(|d| d >= DONE_AFTER));
                             // Done is a decayed signal — I've had 45 minutes to see
@@ -1569,20 +1570,19 @@ fn get_claude_windows(vote: bool) -> Vec<ClaudeWindow> {
                                 votes = tally.filter(|t| t.of > 1).map(|t| (t.votes, t.of));
                                 tally.map_or(ClaudeState::Finished, |t| t.verdict.into())
                             };
-                            (state, None, None, None, summary, model, context)
+                            (state, None, None, summary, model, context)
                         }
                     }
                     // A `---` hand-off outranks live background work: that work may itself be waiting on the user.
                     ClaudeState::Ongoing => {
                         let tally = metadata.as_ref().and_then(|m| report::classify(&m.file, vote, true));
                         votes = tally.filter(|t| t.of > 1).map(|t| (t.votes, t.of));
-                        (tally.map_or(ClaudeState::Ongoing, |t| t.verdict.into()), None, None, None, summary, model, context)
+                        (tally.map_or(ClaudeState::Ongoing, |t| t.verdict.into()), None, None, summary, model, context)
                     }
                     _ => (
                         activity.state,
                         None,
                         activity.draft_content,
-                        activity.question_content,
                         summary,
                         model,
                         context,
@@ -1619,9 +1619,9 @@ fn get_claude_windows(vote: bool) -> Vec<ClaudeWindow> {
                     let summary = file.as_deref().and_then(get_session_summary);
                     let model = file.as_deref().and_then(latest_model);
                     let context = file.as_deref().and_then(context_tokens);
-                    (state, None, None, None, summary, model, context)
+                    (state, None, None, summary, model, context)
                 }
-                _ => (ClaudeState::Empty, None, None, None, None, None, None),
+                _ => (ClaudeState::Empty, None, None, None, None, None),
             }
         };
 
@@ -1633,7 +1633,6 @@ fn get_claude_windows(vote: bool) -> Vec<ClaudeWindow> {
             claude_running: is_claude_pane,
             active_todo,
             draft_content,
-            question_content,
             summary,
             model,
             context,
@@ -1644,12 +1643,11 @@ fn get_claude_windows(vote: bool) -> Vec<ClaudeWindow> {
     claude_windows
 }
 
-/// Result of activity detection including state and optional draft/question content
+/// Result of activity detection including state and optional draft content
 #[derive(Debug)]
 struct ActivityResult {
     state: ClaudeState,
     draft_content: Option<String>,
-    question_content: Option<String>,
     /// Plan mode footer visible. Doesn't change WHETHER Claude is working, only
     /// what the work is — so it recolors Active as Planning and nothing else.
     /// Carried out of the classifier because the transcript-arbitrated
@@ -1772,7 +1770,7 @@ fn classify_activity(
     // still catches the missed Active.
     let spinner_pattern = Regex::new(r"(?m)^\s*[·✢✳✶✻✽∗*]\s+[^…\n]*[\p{L}\p{N}]… \(").unwrap();
     if spinner_pattern.is_match(&last_portion) {
-        return ActivityResult { state: working, draft_content: None, question_content: None, plan_mode };
+        return ActivityResult { state: working, draft_content: None, plan_mode };
     }
 
     // Blocked on a background agent: the TUI parks on
@@ -1804,9 +1802,9 @@ fn classify_activity(
     let limit = limit_pattern.find(&last_portion).map(|m| m.start());
     let wait = bg_agent_pattern.find(&last_portion).map(|m| m.start());
     match (limit, wait) {
-        (Some(l), Some(w)) if w < l => return ActivityResult { state: working, draft_content: None, question_content: None, plan_mode },
-        (Some(_), _) => return ActivityResult { state: ClaudeState::Limit, draft_content: None, question_content: None, plan_mode },
-        (None, Some(_)) => return ActivityResult { state: working, draft_content: None, question_content: None, plan_mode },
+        (Some(l), Some(w)) if w < l => return ActivityResult { state: working, draft_content: None, plan_mode },
+        (Some(_), _) => return ActivityResult { state: ClaudeState::Limit, draft_content: None, plan_mode },
+        (None, Some(_)) => return ActivityResult { state: working, draft_content: None, plan_mode },
         (None, None) => {}
     }
 
@@ -1846,29 +1844,18 @@ fn classify_activity(
         .lines()
         .any(|l| l.trim_start().starts_with("Enter to select") && l.contains("↑/↓ to navigate"));
     if (is_selector || is_askquestion) && !input_box_live {
-        // Extract the question text - the nearest line ending with "?" searching
-        // upward from the bottom (skip prompt lines and option rows).
-        let question_text = content
-            .lines()
-            .rev()
-            .take(30)
-            .find(|line| {
-                let trimmed = line.trim();
-                trimmed.ends_with('?') && !trimmed.starts_with('>') && !trimmed.contains('❯')
-            })
-            .map(|s| {
-                let trimmed = s.trim().to_string();
-                if trimmed.len() > 60 {
-                    format!("{}...", &trimmed[..60])
-                } else {
-                    trimmed
-                }
-            });
-
+        // The prompt block: bottom lines up to Claude's last narration bullet.
+        let prompt = content.lines().rev().take(30).take_while(|l| !l.starts_with('●')).collect::<Vec<_>>().join("\n");
+        let state = if prompt.contains("ready to execute") {
+            ClaudeState::Accept
+        } else if prompt.to_lowercase().contains("merge") && Regex::new(r"#\d+").unwrap().is_match(&prompt) {
+            ClaudeState::Merge
+        } else {
+            ClaudeState::Question
+        };
         return ActivityResult {
-            state: ClaudeState::Question,
+            state,
             draft_content: None,
-            question_content: question_text,
             plan_mode,
         };
     }
@@ -1898,7 +1885,6 @@ fn classify_activity(
         return ActivityResult {
             state: ClaudeState::Draft,
             draft_content,
-            question_content: None,
             plan_mode,
         };
     }
@@ -1943,7 +1929,6 @@ fn classify_activity(
                         return ActivityResult {
                             state: ClaudeState::Draft,
                             draft_content: if draft_display.is_empty() { None } else { Some(draft_display) },
-                            question_content: None,
                             plan_mode,
                         };
                     }
@@ -1963,7 +1948,7 @@ fn classify_activity(
     // start composing the "what to do instead" reply, the pane is Input, not a
     // bare interruption — same suppression the question branch uses.
     if shows_interruption(&last_portion) && typed_input.is_none() {
-        return ActivityResult { state: ClaudeState::Interrupted, draft_content: None, question_content: None, plan_mode };
+        return ActivityResult { state: ClaudeState::Interrupted, draft_content: None, plan_mode };
     }
 
     // API errors render as Claude Code's own chrome, under either of two glyphs:
@@ -1985,7 +1970,7 @@ fn classify_activity(
     //      row's own first token and the anchored match rejects it.
     let api_error_pattern = Regex::new(r"(?m)^\s*[⎿●]\s+API Error:").unwrap();
     if api_error_pattern.is_match(&last_portion) {
-        return ActivityResult { state: ClaudeState::Error, draft_content: None, question_content: None, plan_mode };
+        return ActivityResult { state: ClaudeState::Error, draft_content: None, plan_mode };
     }
 
 
@@ -1995,7 +1980,7 @@ fn classify_activity(
     // a genuinely working or errored session still wins — but BEFORE the fresh
     // welcome check: typing on the welcome screen is input, not an empty pane.
     if typed_input.is_some() {
-        return ActivityResult { state: ClaudeState::Input, draft_content: None, question_content: None, plan_mode };
+        return ActivityResult { state: ClaudeState::Input, draft_content: None, plan_mode };
     }
 
     // Check for fresh session (welcome screen) - after the draft/typed branches.
@@ -2017,7 +2002,7 @@ fn classify_activity(
             || content.contains("No recent activity")
             || content.contains("Tips for getting started"))
     {
-        return ActivityResult { state: ClaudeState::Empty, draft_content: None, question_content: None, plan_mode };
+        return ActivityResult { state: ClaudeState::Empty, draft_content: None, plan_mode };
     }
 
     // A dead claude: on exit the TUI prints "Resume this session with:" and the
@@ -2034,20 +2019,20 @@ fn classify_activity(
             .take(3)
             .any(|l| l.trim_start().starts_with('─'));
         let state = if ui_above_hint { ClaudeState::Finished } else { ClaudeState::Empty };
-        return ActivityResult { state, draft_content: None, question_content: None, plan_mode };
+        return ActivityResult { state, draft_content: None, plan_mode };
     }
 
     // The footer under the input box counts live background shells ("· 1 shell ·");
     // the recap line above the box keeps its count after the shell is gone.
     let below_input_box: String = content.lines().rev().take_while(|l| !is_prompt_line(l)).collect::<Vec<_>>().join("\n");
     if Regex::new(r"\b\d+ shells?\b").unwrap().is_match(&below_input_box) {
-        return ActivityResult { state: ClaudeState::Ongoing, draft_content: None, question_content: None, plan_mode };
+        return ActivityResult { state: ClaudeState::Ongoing, draft_content: None, plan_mode };
     }
     // Background agents get a row each under the box's bottom rule: "◯ <type>  <desc>  <elapsed> · ↓ <n> tokens".
     // A completed agent's row reads the same in plain text until evicted; the subagents' metas say whether any still runs (None: unknown, trust the row).
     let agent_row = Regex::new(r"^(❯ |  )[◯●] \S+ {2,}.*\d+[smh](\s·\s[↑↓] \S+ tokens)?\s*$").unwrap();
     if content.lines().rev().take_while(|l| !l.trim_start().starts_with('─')).any(|l| agent_row.is_match(l)) && subagents_live != Some(false) {
-        return ActivityResult { state: ClaudeState::Ongoing, draft_content: None, question_content: None, plan_mode };
+        return ActivityResult { state: ClaudeState::Ongoing, draft_content: None, plan_mode };
     }
 
     // A failed tool result the turn never answered: the chrome row
@@ -2067,7 +2052,7 @@ fn classify_activity(
         .find(|l| tool_error_row.is_match(l) || assistant_row.is_match(l))
         .is_some_and(|l| tool_error_row.is_match(l))
     {
-        return ActivityResult { state: ClaudeState::Interrupted, draft_content: None, question_content: None, plan_mode };
+        return ActivityResult { state: ClaudeState::Interrupted, draft_content: None, plan_mode };
     }
 
     // Check if there's an input prompt line - indicates Claude is waiting for
@@ -2075,7 +2060,7 @@ fn classify_activity(
     // builds used "> ". Either one means Finished.
     let has_prompt = content.lines().any(is_prompt_line);
     if has_prompt {
-        return ActivityResult { state: ClaudeState::Finished, draft_content: None, question_content: None, plan_mode };
+        return ActivityResult { state: ClaudeState::Finished, draft_content: None, plan_mode };
     }
 
     // Error state is reserved for Claude actually being WEDGED — chiefly running
@@ -2091,10 +2076,10 @@ fn classify_activity(
             .unwrap();
 
     if error_pattern.is_match(&last_portion) {
-        return ActivityResult { state: ClaudeState::Error, draft_content: None, question_content: None, plan_mode };
+        return ActivityResult { state: ClaudeState::Error, draft_content: None, plan_mode };
     }
 
-    ActivityResult { state: ClaudeState::Finished, draft_content: None, question_content: None, plan_mode }
+    ActivityResult { state: ClaudeState::Finished, draft_content: None, plan_mode }
 }
 
 // ----- usage limits -----
@@ -2478,7 +2463,6 @@ fn main() {
             state: window.state,
             active_todo: window.active_todo.clone(),
             draft_content: window.draft_content.clone(),
-            question_content: window.question_content.clone(),
             summary: window.summary.clone(),
             model: window.model.clone(),
             context: window.context,
@@ -2617,6 +2601,8 @@ mod tests {
             "finished" => ClaudeState::Finished,
             "draft" => ClaudeState::Draft,
             "question" => ClaudeState::Question,
+            "accept" => ClaudeState::Accept,
+            "merge" => ClaudeState::Merge,
             "input" => ClaudeState::Input,
             "error" => ClaudeState::Error,
             "limit" => ClaudeState::Limit,
