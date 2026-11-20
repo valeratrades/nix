@@ -37,6 +37,10 @@ struct Args {
     #[arg(short, long)]
     compact: bool,
 
+    /// fzf picker rows: `name:window <title>` and state only
+    #[arg(long, conflicts_with = "compact")]
+    fzf: bool,
+
     /// JSON output for eww integration
     #[arg(short, long)]
     json: bool,
@@ -197,18 +201,35 @@ struct SessionEntry {
     votes: Option<(usize, usize)>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum View {
+    Compact,
+    Full,
+    Fzf,
+}
+
+impl From<&Args> for View {
+    fn from(args: &Args) -> Self {
+        match (args.compact, args.fzf) {
+            (true, _) => View::Compact,
+            (_, true) => View::Fzf,
+            _ => View::Full,
+        }
+    }
+}
+
 #[derive(Debug)]
 struct Sessions {
     entries: Vec<SessionEntry>,
-    compact: bool,
+    view: View,
     markup: bool,
 }
 
 impl Sessions {
-    fn new(compact: bool, markup: bool) -> Self {
+    fn new(view: View, markup: bool) -> Self {
         Self {
             entries: Vec::new(),
-            compact,
+            view,
             markup,
         }
     }
@@ -234,12 +255,12 @@ impl fmt::Display for Sessions {
             .iter()
             .map(|e| {
                 // In non-compact mode, name includes ":window_index"
-                let base_name_len = if self.compact {
+                let base_name_len = if self.view == View::Compact {
                     e.name.len()
                 } else {
                     e.name.len() + 1 + e.window_index.to_string().len() // +1 for ":"
                 };
-                if self.compact {
+                if self.view == View::Compact {
                     base_name_len
                 } else {
                     // Include summary in length calculation
@@ -258,7 +279,7 @@ impl fmt::Display for Sessions {
             .unwrap_or(0);
 
         // Model column width (full view only); 0 when nothing carries a model.
-        let max_model_len = if self.compact {
+        let max_model_len = if self.view != View::Full {
             0
         } else {
             self.entries
@@ -268,7 +289,7 @@ impl fmt::Display for Sessions {
                 .unwrap_or(0)
         };
 
-        let max_context_len = if self.compact {
+        let max_context_len = if self.view != View::Full {
             0
         } else {
             self.entries
@@ -278,7 +299,7 @@ impl fmt::Display for Sessions {
                 .unwrap_or(0)
         };
 
-        let max_votes_len = if self.compact {
+        let max_votes_len = if self.view != View::Full {
             0
         } else {
             self.entries
@@ -294,7 +315,7 @@ impl fmt::Display for Sessions {
             }
 
             // Build the name with window index (non-compact) and optional summary
-            let display_name = if self.compact {
+            let display_name = if self.view == View::Compact {
                 entry.name.clone()
             } else {
                 let name_with_index = format!("{}:{}", entry.name, entry.window_index);
@@ -335,7 +356,7 @@ impl fmt::Display for Sessions {
             let padded_name = format!("{:width$}", display_name, width = max_name_len);
 
             // Trailing per-state content (todo / draft / question), if any.
-            let trailing = if self.compact {
+            let trailing = if self.view != View::Full {
                 None
             } else {
                 match entry.state {
@@ -2379,7 +2400,7 @@ fn main() {
     let args = Args::parse();
 
     if args.cached {
-        let mut sessions = Sessions::new(args.compact, args.markup);
+        let mut sessions = Sessions::new(View::from(&args), args.markup);
         sessions.entries = load_cache().entries;
         assert!(!sessions.entries.is_empty(), "no cached rows: claude_sessions hasn't polled since the cache gained them");
         if !args.targets {
@@ -2448,7 +2469,7 @@ fn main() {
     });
 
     // Build Sessions struct
-    let mut sessions = Sessions::new(args.compact, args.markup);
+    let mut sessions = Sessions::new(View::from(&args), args.markup);
     for window in results {
         sessions.add(SessionEntry {
             name: window.session.clone(),

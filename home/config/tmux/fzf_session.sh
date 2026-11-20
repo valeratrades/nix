@@ -1,7 +1,6 @@
 #!/bin/sh
 # fzf session picker. `$1`: client to switch; `$2`: choose-tree pane to quit, or empty; `$3`: initial query
-[ "$(eww --no-daemonize get claude_sessions_always_expand 2>/dev/null)" = true ] || compact=-c
-rows=$(~/nix/home/scripts/claude_sessions/main.rs --cached --targets $compact 2>/dev/null |
+rows=$(~/nix/home/scripts/claude_sessions/main.rs --cached --targets --fzf 2>/dev/null |
 	awk -F '\t' -v live="$(tmux list-windows -a -F '#{session_id}:#{window_id}')" 'BEGIN { n = split(live, a, "\n"); for (i = 1; i <= n; i++) l[a[i]] } $1 in l')
 s=$({
 	[ -n "$rows" ] && printf '%s\n' "$rows"
