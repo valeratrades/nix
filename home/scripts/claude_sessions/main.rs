@@ -47,10 +47,6 @@ struct Args {
     #[arg(long)]
     markup: bool,
 
-    /// Generate LLM summaries (slow, uses ollama)
-    #[arg(long)]
-    llm_summaries: bool,
-
     /// Judge closing reports with a 3-way majority vote instead of one LLM sample
     #[arg(long)]
     vote: bool,
@@ -69,19 +65,6 @@ struct Args {
 struct TodoItem {
     status: String,
     active_form: String,
-}
-
-#[derive(Deserialize)]
-struct SessionMessage {
-    #[serde(rename = "type")]
-    msg_type: String,
-    message: Option<MessageContent>,
-}
-
-#[derive(Deserialize)]
-struct MessageContent {
-    role: String,
-    content: String,
 }
 
 /// A Finished pane whose transcript hasn't been touched in this long is Done.
@@ -604,92 +587,6 @@ fn read_active_todo(path: &Path) -> TodoResult {
         .map(|t| t.active_form.clone());
 
     TodoResult { has_active_todos, display_todo }
-}
-
-// Track if the summariser backend failed (for warning message)
-static OLLAMA_UNAVAILABLE: std::sync::atomic::AtomicBool =
-    std::sync::atomic::AtomicBool::new(false);
-
-// Only use ollama when --llm-summaries is passed
-static USE_LLM_SUMMARIES: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
-
-/// Generate a short summary via the local ollama tier.
-fn generate_summary_with_llm(first_message: &str) -> Option<String> {
-    // Only run if --llm-summaries was passed
-    if !USE_LLM_SUMMARIES.load(std::sync::atomic::Ordering::Relaxed) {
-        return None;
-    }
-
-    // Get first line and truncate if too long
-    let first_line = first_message.lines().next().unwrap_or(first_message).trim();
-
-    // Skip if too short or empty - not worth asking the model
-    if first_line.len() < 5 {
-        return None;
-    }
-
-    let truncated = if first_line.len() > 200 {
-        &first_line[..200]
-    } else {
-        first_line
-    };
-
-    let mut conv = ask_llm::Conversation::new_with_system(
-        "Output ONLY a 3-5 word label. No explanations, no markdown, no extra text.",
-    );
-    conv.add_exchange("add dark mode to settings", "dark mode settings");
-    conv.add_exchange("fix the memory leak in worker", "fix worker memory leak");
-    conv.add(ask_llm::Role::User, truncated.replace('\n', " "));
-
-    let client = ask_llm::Client::default().model(ask_llm::Model::Cheap).max_tokens(32);
-    let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build().ok()?;
-    let response = match runtime.block_on(async { client.conversation(&conv).await }) {
-        Ok(r) => r,
-        Err(_) => {
-            OLLAMA_UNAVAILABLE.store(true, std::sync::atomic::Ordering::Relaxed);
-            return None;
-        }
-    };
-
-    // Clean up: get first line, strip markdown/code blocks
-    let summary = response
-        .text
-        .lines()
-        .next()
-        .unwrap_or(&response.text)
-        .trim()
-        .trim_start_matches(['`', '#', '*', '-'])
-        .trim()
-        .to_string();
-
-    // Reject bad outputs: empty, meta-commentary, conversational, too short, or too long (>5 words)
-    let lower = summary.to_lowercase();
-    let word_count = summary.split_whitespace().count();
-    let is_bad = summary.is_empty()
-        || summary.len() < 3
-        || word_count > 5
-        || summary.starts_with('(')
-        || summary.contains("```")
-        || lower.contains("request")
-        || lower.contains("complex")
-        || lower.contains("here's")
-        || lower.starts_with("yes")
-        || lower.starts_with("no")
-        || lower.starts_with("i ")
-        || lower.starts_with("this ")
-        || lower.starts_with("the ")
-        || lower.contains("already");
-    if is_bad {
-        None
-    } else {
-        // Limit length to 35 chars for display
-        let max_len = 35;
-        if summary.len() > max_len {
-            Some(format!("{}...", &summary[..max_len]))
-        } else {
-            Some(summary)
-        }
-    }
 }
 
 /// What the transcript's last message says about the turn — the deterministic
@@ -1256,91 +1153,15 @@ Answer with exactly one word: finished, answered, stuck, or partial.";
     }
 }
 
-/// Deserialize summary entries from session file
-#[derive(Deserialize)]
-struct SummaryEntry {
-    #[serde(rename = "type")]
-    entry_type: String,
-    summary: Option<String>,
-}
-
-/// Get a short summary from the session file
-/// Priority: 1. Summary entries (Claude-generated), 2. LLM summary of first message, 3. First user message
+/// The session's own title: the latest `/rename`, else the latest one Claude Code generated.
 fn get_session_summary(session_file: &Path) -> Option<String> {
-    use std::io::{BufRead, BufReader};
-
-    let file = fs::File::open(session_file).ok()?;
-    let reader = BufReader::new(file);
-
-    let mut last_summary: Option<String> = None;
-    let mut first_user_message: Option<String> = None;
-
-    // Read ALL lines to find the last summary entry and first user message
-    for line in reader.lines() {
-        let line = match line {
-            Ok(l) => l,
-            Err(_) => continue,
-        };
-
-        // Track summary entries - we want the LAST one (most recent)
-        if line.contains("\"type\":\"summary\"") {
-            if let Ok(entry) = serde_json::from_str::<SummaryEntry>(&line) {
-                if entry.entry_type == "summary" {
-                    if let Some(s) = entry.summary {
-                        last_summary = Some(s);
-                    }
-                }
-            }
-        }
-
-        // Track first user message as fallback (only need the first one)
-        if first_user_message.is_none() && line.contains("\"type\":\"user\"") {
-            if let Ok(msg) = serde_json::from_str::<SessionMessage>(&line) {
-                if msg.msg_type == "user" {
-                    if let Some(content) = msg.message {
-                        if content.role == "user" {
-                            first_user_message = Some(content.content.trim().to_string());
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // Prefer summary entries (Claude-generated)
-    if let Some(s) = last_summary {
-        let max_len = 50;
-        return if s.len() > max_len {
-            Some(format!("{}...", &s[..max_len]))
-        } else {
-            Some(s)
-        };
-    }
-
-    // Fall back to first user message
-    if let Some(first_message) = first_user_message {
-        if first_message.starts_with("Implement the following plan:") {
-            if let Some(title) = first_message.lines().find_map(|l| l.strip_prefix("# ")) {
-                let max_len = 50;
-                return Some(if title.chars().count() > max_len { format!("{}...", title.chars().take(max_len).collect::<String>()) } else { title.to_string() });
-            }
-        }
-        // Try to generate summary with LLM
-        if let Some(summary) = generate_summary_with_llm(&first_message) {
-            return Some(summary);
-        }
-
-        // Fallback: use truncated first line of message with ". " prefix
-        let first_line = first_message.lines().next().unwrap_or(&first_message);
-        let max_len = 47; // 50 - 3 for ". " prefix
-        return if first_line.len() > max_len {
-            Some(format!(". {}...", &first_line[..max_len]))
-        } else {
-            Some(format!(". {}", first_line))
-        };
-    }
-
-    None
+    let field = |kind: &'static str, key: &'static str| move |v: &serde_json::Value| match v.get("type")?.as_str()? {
+        t if t == kind => Some(v[key].as_str().unwrap_or_else(|| panic!("{kind} record without {key}: {v}")).to_string()),
+        _ => None,
+    };
+    let title = scan_tail(session_file, field("custom-title", "customTitle")).or_else(|| scan_tail(session_file, field("ai-title", "aiTitle")))?;
+    let max_len = 50;
+    Some(if title.chars().count() > max_len { format!("{}...", title.chars().take(max_len).collect::<String>()) } else { title })
 }
 
 /// Check if a session file has actual conversation content (not just file-history-snapshot)
@@ -2557,11 +2378,6 @@ fn should_recompute(prev: &CacheState, windows: &[ClaudeWindow], account: &str) 
 fn main() {
     let args = Args::parse();
 
-    // Set LLM summaries flag
-    if args.llm_summaries {
-        USE_LLM_SUMMARIES.store(true, std::sync::atomic::Ordering::Relaxed);
-    }
-
     if args.cached {
         let mut sessions = Sessions::new(args.compact, args.markup);
         sessions.entries = load_cache().entries;
@@ -2649,15 +2465,6 @@ fn main() {
         });
     }
     sessions.sort();
-
-    // Show warning if ollama was unavailable (only in non-compact mode with summaries)
-    if !args.compact && !args.json && OLLAMA_UNAVAILABLE.load(std::sync::atomic::Ordering::Relaxed)
-    {
-        eprintln!(
-            "{}",
-            "warn: ollama unavailable, using fallback summaries".yellow()
-        );
-    }
 
     let account_dir = ask_llm::providers::claude::accounts::Accounts::home().current().expect("every claude runs on an account, which `cl rotate-acc` sets");
     let account = account_dir.file_name().expect("an account is a dir").to_str().expect("account names are utf-8").to_string();
