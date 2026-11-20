@@ -248,3 +248,6 @@ when I ask you to sync git, it means **both ways**. Usually it'll be when we end
 
 ### `codestyle`
 I have a lib that automatically rewrites parts of the code according to my best practices. If you see some code being moved automatically or rewritten slightly to follow better conventions underneath you, please pay it no heed, and ignore it completely. Unless it breaks your compilation (in that case you fix problem upstream at ~/s/codestyle), you just go along with it, and commit that as part of your changes. Please don't bother with doing separate commits or shit, just gobble it all together and do not waste time on this, as you wouldn't with cargo-style auto fixes.
+
+### `new issues`
+if you opened a new issue, always `xdg-open` it. Nothing else is needed, - this will be enough for me to take notice of it (otherwise it's likely to slip my attention).
