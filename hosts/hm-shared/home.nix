@@ -380,7 +380,7 @@
           wlrctl # wayland mouse/keyboard emulation for sway
           patched.wtype # wl-clipboard-compatible xdotool type for Wayland (used by speech-to-text)
           playerctl # MPRIS CLI; drives XF86AudioPlay / $mod+F5 media bindings in sway
-          whisper-cpp # local STT via whisper-cli (speech mode driver "w")
+          whisper-cpp-vulkan # local STT via whisper-cli (speech mode driver "w"); ggml takes Vulkan device 0 unless GGML_VK_VISIBLE_DEVICES says otherwise
         ]
         [
           # messengers
