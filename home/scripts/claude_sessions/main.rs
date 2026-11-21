@@ -1701,23 +1701,20 @@ fn input_box_text(content: &str) -> Option<String> {
 }
 
 fn determine_claude_activity(caps: &PaneCapture, subagents_live: Option<bool>) -> ActivityResult {
-    // The escaped capture stays behind a closure for the tests' sake — a fixture
-    // without a `.esc` companion feeds `|| None`. It's no longer lazy in
-    // production: batching made it a rendered pipe write, not a fork.
-    classify_activity(&caps.plain, || Some(caps.escaped.clone()), subagents_live)
+    classify_activity(&caps.plain, Some(&caps.escaped), subagents_live)
 }
 
 /// Pure terminal-state classifier: the heart of this script and the source of
 /// every historical regression. Given a plain `capture-pane -p` dump (`content`)
-/// and a lazy provider for the escape-coded capture (`capture_escaped`, only
-/// invoked in the draft branch), decide which `ClaudeState` the pane is in.
+/// and the escape-coded one (`escaped`; None for a fixture without a `.esc`
+/// companion), decide which `ClaudeState` the pane is in.
 ///
 /// Kept free of tmux/process/fs I/O specifically so it can be exercised by
 /// snapshot fixtures — see the `tests` module. Add a new captured pane dump
 /// under `tests/fixtures/` and it's covered here with no mocking.
 fn classify_activity(
     content: &str,
-    capture_escaped: impl FnOnce() -> Option<String>,
+    escaped: Option<&str>,
     subagents_live: Option<bool>,
 ) -> ActivityResult {
     // Look at the last portion for various indicators
@@ -1836,7 +1833,13 @@ fn classify_activity(
     // input_box_text's own rev() would cancel out and pick the TOPMOST
     // ">"-looking line — e.g. quoted npm output ("> playwright …") in a tool
     // result — instead of the live input box at the bottom.
-    let typed_input = input_box_live.then(|| input_box_text(content)).flatten();
+    // An empty box can show a dim ghost suggestion (the cursor cell, reverse video, may lead it); plain text can't tell it from typed.
+    let ghost = Regex::new(r"[❯>][ \u{00A0}](?:\x1b\[[0-9;]*m)*(?:\x1b\[7m[^\x1b]\x1b\[[0-9;]*m(?:\x1b\[[0-9;]*m)*)?\x1b\[(?:\d+;)*2(?:;\d+)*m").unwrap();
+    let sgr = Regex::new(r"\x1b\[[0-9;]*m").unwrap();
+    let ghost_in_box = escaped
+        .and_then(|e| e.lines().rev().find(|l| is_prompt_line(&sgr.replace_all(l, ""))))
+        .is_some_and(|l| ghost.is_match(l));
+    let typed_input = input_box_live.then(|| input_box_text(content)).flatten().filter(|_| !ghost_in_box);
 
     let question_selector_pattern = Regex::new(r"(?m)^\s*❯\s*\d+\.\s+.+$").unwrap();
     let is_selector = question_selector_pattern.is_match(&last_portion);
@@ -1895,7 +1898,7 @@ fn classify_activity(
     // This must come BEFORE the fresh session check, as user may type on welcome screen
     if last_portion.contains("bypass permissions") {
         // Re-capture with escape codes to detect dim text (suggestions)
-        if let Some(content_esc) = capture_escaped() {
+        if let Some(content_esc) = escaped {
             // Find the current prompt line - it has "[0m>" pattern (reset then prompt)
             // The prompt may be followed by regular space or NBSP
             if let Some(prompt_line) = content_esc.lines().find(|l| l.contains("\x1b[0m>"))
@@ -2657,7 +2660,7 @@ mod tests {
 
             // Companion escaped capture, only present for draft fixtures.
             let esc = fs::read_to_string(txt.with_extension("esc")).ok();
-            let result = classify_activity(&plain, || esc.clone(), None);
+            let result = classify_activity(&plain, esc.as_deref(), None);
 
             // Companion transcript tail, only present for fixtures pinning the
             // active↔finished deliberation. Replayed through the same

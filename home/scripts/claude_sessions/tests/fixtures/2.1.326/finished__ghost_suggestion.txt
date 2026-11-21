@@ -1,0 +1,63 @@
+0 ❯                                                ~/nix main [!]   + 16:07:15
+● Running the rebuild in the background. Meanwhile I'll collect a few minutes of daemon-served events from the agents' live builds to compare overhead
+  before and after.                                                                                                                                    1 file changed +1 -1                                                                   ✕
+
+  Thought for 9s, read 2 files, ran 1 shell command · 1 failed                                                                                         home/config/claude/skills/figma-render/SKILL.md                                    +1 -1
+
+● The overhead per hit dropped about 5×. The rebuild finished; checking the daemon survived the config switch.                                         ────────────────────────────────────────────────────────────────────────────────────────
+                                                                                                                                                       home/config/claude/skills/figma-render/SKILL.md
+  Thought for 11s, ran 3 shell commands                                                                                                                ────────────────────────────────────────────────────────────────────────────────────────
+                                                                                                                                                        43
+● Works from config alone. Committing.                                                                                                                  44  1. If the flake has no `figmaFile`, the repo has no render board yet: load `figma-c
+                                                                                                                                                            reate-new-file`, create a design
+  Thought for 8s, ran 2 shell commands                                                                                                                  45     file `<pname> — renders` (separate from the brand's design file, which stays han
+                                                                                                                                                            d-made) in the plan the
+● Yes, it was a configuration problem: kache's background daemon hadn't run since Nov 18. It's fixed and pushed, and per-hit overhead is about 5×       46 -   other render boards live in ("EV Invest's team"), then set `figmaFile = "<key>";
+  lower.                                                                                                                                                   -` in the repo's flake
+                                                                                                                                                        46 +   other render boards live in: the Pro team "EV Invest" (`team::163648758982923773
+  ~/.cache/kache ──symlink──► ~/s/.kache   (moved to xfs for reflinks, 11-18 04:08)                                                                        +4`; "EV Invest's team" is Starter, 3 pages and a spent `use_figma` quota), then set
+          │                                                                                                                                                + `figmaFile = "<key>";` in the repo's flake
+          └─ daemon socket = <runtime_dir>/daemon.sock, and runtime_dir defaults to the cache dir                                                       47     (`mkLanding`'s argument, or the `figmaFile` binding) and commit it.
+                kunobi-daemon refuses to bind a socket in a directory that is a symlink                                                                 48  2. Run `nix run .#figma` in the background; the build is most of its time. The firs
+                → "acquiring daemon socket: PermissionDenied" (6,576× in daemon.log)                                                                        t run on a machine prints a
+                                                                                                                                                        49     Figma login URL and opens it in the browser: relay it to the user and wait.
+  each rustc:  kache → daemon? ✗ → starts a daemon (it dies) → runs kache-engine standalone
+               (startup, config, index, hashing paid in every process; worse under load)
+
+  Fix: cache.runtime_dir = "~/s/.kache" in hosts/hm-shared/home.nix. That's the same physical directory, so locks, events and the store stay where
+  they are, and cache keys don't change. I rebuilt the system and confirmed that a daemon started from the config alone, without the env override,
+  runs. Committed as 033a2083.
+
+  Measured on live agent builds (local hits, 3 h before vs ~4 min after):
+
+  ┌─────────────┬──────────┬────────┐
+  │   per hit   │  before  │ after  │
+  ├─────────────┼──────────┼────────┤
+  │ elapsed p50 │ 437 ms   │ 93 ms  │
+  ├─────────────┼──────────┼────────┤
+  │ elapsed p90 │ 1,963 ms │ 186 ms │
+  ├─────────────┼──────────┼────────┤
+  │ startup p90 │ 1,877 ms │ 118 ms │
+  ├─────────────┼──────────┼────────┤
+  │ mean        │ 800 ms   │ 170 ms │
+  └─────────────┴──────────┴────────┘
+
+  The eww bar now shows 92% hit rate over the last hour (n = 4,358).
+
+  - Cost: the "after" window is only ~4 minutes. Before the fix, hits cost 15.9 h a day against 20.9 h saved; at these numbers that falls to roughly
+    3.4 h.
+  - Hit rate: the daemon keeps warm state across compiles, so it should also cut the duplicate compiles and the "seen-key" misses. Not measured yet.
+
+  Trade-off: runtime_dir is set in hm-shared, so m-laptop and t-laptop get it too. If ~/.cache/kache is a plain directory on those machines, their
+  socket, events and locks move to ~/s/.kache while the store stays in ~/.cache/kache. That works, but their eww bar would then read a stale
+  events.jsonl. I didn't check those machines.
+
+  Nothing alerts when the daemon is down. This failure was silent for three days and only showed up as slow hits.
+
+✻ Sautéed for 9m 38s · done 4:03
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ add a daemon-down alert to the eww kache widget
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← 1 agent
