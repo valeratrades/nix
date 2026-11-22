@@ -300,6 +300,26 @@ fn locate<'a>(node: &'a Value, ws: Option<&'a Value>, pids: &HashSet<i64>) -> Op
 	children(node).into_iter().find_map(|c| locate(c, ws, pids))
 }
 
+/// The tab holding `term`, when the workspace's top level (past single-child wrappers) is tabbed or stacked;
+/// the other tabs and floating windows are then not ours to clear.
+fn own_tab(ws: &Value, term: i64) -> Option<&Value> {
+	let mut node = ws;
+	loop {
+		let kids = node["nodes"].as_array().expect("sway gives every node a nodes list");
+		if node["layout"] == "tabbed" || node["layout"] == "stacked" {
+			return Some(kids.iter().find(|k| {
+				let mut ids = Vec::new();
+				leaf_ids(k, &mut ids);
+				ids.contains(&term)
+			}).expect("term was located under this workspace"));
+		}
+		match kids.as_slice() {
+			[only] => node = only,
+			_ => return None,
+		}
+	}
+}
+
 fn leaf_ids(node: &Value, out: &mut Vec<i64>) {
 	let kids = children(node);
 	if kids.is_empty() {
@@ -429,8 +449,9 @@ fn build() -> Result<()> {
 		.ok_or_else(|| miette!("none of our parent processes owns a sway window"))?;
 	let ws_name = ws["name"].as_str().unwrap_or("?").to_owned();
 
+	let own = own_tab(ws, term);
 	let mut others = Vec::new();
-	leaf_ids(ws, &mut others);
+	leaf_ids(own.unwrap_or(ws), &mut others);
 	others.retain(|id| *id != term);
 	for id in &others {
 		cmd(&format!("[con_id={id}] kill"))?;
@@ -452,8 +473,10 @@ fn build() -> Result<()> {
 
 	let watch = Watch::start()?;
 
-	// normalises a workspace left in splitv by whatever was there before
-	cmd(&format!("[con_id={term}] layout splith"))?;
+	// normalises a workspace left in splitv by whatever was there before; inside a tab, `layout` on a term
+	// that is the tab itself would untab its parent, while `splith` wraps it instead
+	let split = if own.is_some() { "splith" } else { "layout splith" };
+	cmd(&format!("[con_id={term}] {split}"))?;
 
 	let light = zathura_light_dir()?;
 	let doc_cmd = |d: &Path| format!("zathura -c {} {}", sh_quote(&light), sh_quote(d));
