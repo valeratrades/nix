@@ -22,7 +22,7 @@ serde_json = "1.0"
 //! ```
 //!
 //! `srcs.focus` / `docs.focus` (0-based, as nix's `elemAt`) pick the tab each lands on;
-//! with grouped docs, `docs.focus` names the group and each group has its own `focus`.
+//! with sectioned docs, `docs.focus` names the section and each section has its own `focus`.
 //!
 //! Every step anchors on a leaf con_id, never on a container: `move to mark` inserts
 //! as a sibling of the marked container, and on a container the insert-as-child vs
@@ -61,10 +61,11 @@ const EXAMPLE: &str = r#"{
     files = [ ../refs/stoch_1.pdf /abs/path/other.pdf ];
     focus = 1;  # 0-based; omitted means the first
   };
-  # or, one nested tab per group (sway orders them by name, as nix does):
+  # or, one nested tab per section (sway orders them by name, as nix does):
   # docs = {
-  #   files = { tds = [ ./td1.pdf ./td2.pdf ]; course = { files = [ ./cm.pdf ./chap3.pdf ]; focus = 1; }; };
-  #   focus = "course";  # omitted means the first
+  #   tds = [ ./td1.pdf ./td2.pdf ];
+  #   course = { files = [ ./cm.pdf ./chap3.pdf ]; focus = 1; };
+  #   focus = "course";  # the section on top; omitted means the first
   # };
 }"#;
 
@@ -345,7 +346,7 @@ fn read_config(cwd: &Path) -> Result<(Scope, Docs)> {
 		.args(["eval", "--json", "--file"])
 		.arg(&path)
 		// `toString` of a path literal is its absolute path, no store copy
-		.args(["--apply", "let norm = s: if builtins.isList s then { files = map toString s; } else s // { files = if builtins.isAttrs s.files then builtins.mapAttrs (_: norm) s.files else map toString s.files; }; in builtins.mapAttrs (_: norm)"])
+		.args(["--apply", "let scope = s: if builtins.isList s then { files = map toString s; } else s // { files = map toString s.files; }; in builtins.mapAttrs (k: s: if k == \"docs\" && builtins.isAttrs s && !(s ? files) then builtins.mapAttrs (n: g: if n == \"focus\" then g else scope g) s else scope s)"])
 		.output()
 		.map_err(|e| miette!("failed to run nix: {e}"))?;
 	if !out.status.success() {
@@ -383,26 +384,23 @@ fn read_config(cwd: &Path) -> Result<(Scope, Docs)> {
 		Ok(Scope { files, focus })
 	};
 	let srcs = scope("srcs", obj.get("srcs"))?;
-	let docs = match obj.get("docs").and_then(|d| d.get("files")) {
-		Some(Value::Object(groups)) => {
-			let d = &obj["docs"];
-			if let Some(k) = d.as_object().expect("has .files").keys().find(|k| *k != "files" && *k != "focus") {
-				return Err(miette!(help = EXAMPLE, "unknown key `docs.{k}` in {CONFIG}"));
-			}
+	let docs = match obj.get("docs") {
+		Some(Value::Object(d)) if !d.contains_key("files") => {
+			let groups: Vec<_> = d.iter().filter(|(k, _)| *k != "focus").collect();
 			if groups.is_empty() {
-				return Err(miette!(help = EXAMPLE, "{CONFIG}: `docs.files` has no groups"));
+				return Err(miette!(help = EXAMPLE, "{CONFIG}: `docs` has no sections"));
 			}
 			let focus = match d.get("focus") {
 				None => 0,
 				Some(v) => v
 					.as_str()
-					.and_then(|name| groups.keys().position(|g| g == name))
-					.ok_or_else(|| miette!("{CONFIG}: `docs.focus` = {v} names none of the groups {:?}", groups.keys().collect::<Vec<_>>()))?,
+					.and_then(|name| groups.iter().position(|(g, _)| *g == name))
+					.ok_or_else(|| miette!("{CONFIG}: `docs.focus` = {v} names none of the sections {:?}", groups.iter().map(|(g, _)| g).collect::<Vec<_>>()))?,
 			};
-			let groups = groups.iter().map(|(g, v)| scope(&format!("docs.files.{g}"), Some(v))).collect::<Result<Vec<_>>>()?;
+			let groups = groups.into_iter().map(|(g, v)| scope(&format!("docs.{g}"), Some(v))).collect::<Result<Vec<_>>>()?;
 			Docs::Grouped { groups, focus }
 		}
-		_ => Docs::Flat(scope("docs", obj.get("docs"))?),
+		d => Docs::Flat(scope("docs", d)?),
 	};
 
 	if !srcs.files.iter().any(|s| is_typ(s)) {
@@ -504,16 +502,19 @@ fn build() -> Result<()> {
 		Ok(ids)
 	};
 	let rest = |s: &Scope| s.files[1..].iter().map(|d| doc_cmd(d)).collect();
-	let doc = match &docs {
-		Docs::Flat(s) => tab(z1, rest(s))?[s.focus],
+	// one pick per section, the section to land on last
+	let picks = match &docs {
+		Docs::Flat(s) => vec![tab(z1, rest(s))?[s.focus]],
 		Docs::Grouped { groups, focus } => {
 			// heads first, so each group's tabbed con wraps a leaf already inside C1; one group collapses to Flat's shape
 			let heads = tab(z1, groups[1..].iter().map(|g| doc_cmd(&g.files[0])).collect())?;
-			let mut docs = Vec::new();
+			let mut picks = Vec::new();
 			for (head, g) in heads.into_iter().zip(groups) {
-				docs.push(tab(head, rest(g))?[g.focus]);
+				picks.push(tab(head, rest(g))?[g.focus]);
 			}
-			docs[*focus]
+			let on_top = picks.remove(*focus);
+			picks.push(on_top);
+			picks
 		}
 	};
 	let typs: Vec<&PathBuf> = srcs.files.iter().filter(|s| is_typ(s)).collect();
@@ -524,7 +525,9 @@ fn build() -> Result<()> {
 	cmd(&format!("unmark {MARK}"))?;
 	// focusing is the only way to pick a tab, and it would drag us onto a workspace the user left
 	if focused_workspace()? == ws_name {
-		cmd(&format!("[con_id={doc}] focus"))?;
+		for doc in &picks {
+			cmd(&format!("[con_id={doc}] focus"))?;
+		}
 		cmd(&format!("[con_id={viewer}] focus"))?;
 		cmd(&format!("[con_id={term}] focus"))?;
 	}
