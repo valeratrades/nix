@@ -185,6 +185,7 @@ function age_key
 	end
 end
 
+function sway_mv; $NIXOS_CONFIG/home/config/sway/sway_mv.sh $argv; end
 function sway_rect
 	if string match -qr '^[0-9]+$' $argv[1]
 		swaymsg -t get_tree | jq '.. | select(.pid?=='$argv[1]') | .rect'

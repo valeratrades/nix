@@ -411,6 +411,8 @@ bindsym $mod+$up focus up
 bindsym $mod+$right focus right
 bindsym $mod+h exec $sway_root/top_tab.sh 1
 bindsym $mod+l exec $sway_root/top_tab.sh -1
+bindsym $mod+Shift+h exec $sway_root/sway_mv.sh --dir 1
+bindsym $mod+Shift+l exec $sway_root/sway_mv.sh --dir -1
 bindsym $mod+Shift+$left move left
 bindsym $mod+Shift+$down move down
 bindsym $mod+Shift+$up move up
