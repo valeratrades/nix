@@ -1,6 +1,6 @@
 keybinding:
   universal:
-    quit: 'o'
+    quit: 'q'
     quitAlt1: '<c-c>'
     quitAlt2: '<a-;>'
 
