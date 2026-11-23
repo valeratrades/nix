@@ -1141,19 +1141,30 @@ fn reword(commit_str: String, new_message: String) {
         std::process::exit(1);
     }
 
-    // Collect descendants oldest-first (target excluded).
-    // rev_walk from HEAD yields newest-first; stop when we reach target.
+    // first-parent only: commits merged in from side branches are not descendants of target and must keep their parents
     let descendants: Vec<gix::ObjectId> = {
-        let walk = repo.rev_walk([head_id]).all().unwrap_or_else(|e| {
+        let walk = repo.rev_walk([head_id]).first_parent_only().all().unwrap_or_else(|e| {
             eprintln!("ERROR: rev_walk failed: {e}");
             std::process::exit(1);
         });
-        let mut v: Vec<gix::ObjectId> = walk
-            .filter_map(|r| r.ok())
-            .map(|info| info.id().detach())
-            .take_while(|id| *id != target_id)
-            .collect();
-        v.reverse(); // oldest-first
+        let mut v = Vec::new();
+        let mut reached = false;
+        for info in walk {
+            let id = info.unwrap_or_else(|e| {
+                eprintln!("ERROR: rev_walk: {e}");
+                std::process::exit(1);
+            }).id;
+            if id == target_id {
+                reached = true;
+                break;
+            }
+            v.push(id);
+        }
+        if !reached {
+            eprintln!("ERROR: {commit_str} is not on the first-parent chain of HEAD");
+            std::process::exit(1);
+        }
+        v.reverse();
         v
     };
 
@@ -1212,7 +1223,7 @@ fn reword(commit_str: String, new_message: String) {
         }).detach()
     };
 
-    // 1. Rewrite target with new message
+    let new_message = if new_message.is_empty() || new_message.ends_with('\n') { new_message } else { new_message + "\n" };
     let mut prev = rewrite(target_id, &new_message, None);
     println!("reworded: {target_id} -> {prev}");
 

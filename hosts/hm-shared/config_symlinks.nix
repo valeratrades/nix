@@ -27,6 +27,7 @@ in
     eww = mkSymlink { target_path_postfix = "eww"; };
     site = mkSymlink { target_path_postfix = "site.nix"; };
     sway = mkSymlink { target_path_postfix = "sway"; };
+    lazygit = mkSymlink { target_path_postfix = "lazygit/config.yml"; };
     btc_line = mkSymlink { target_path_postfix = "btc_line.nix"; };
     social_networks = mkSymlink { target_path_postfix = "social_networks"; };
     claude_code_global_CLAUDE_md = mkSymlink {

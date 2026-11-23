@@ -5,6 +5,22 @@ keybinding:
     quitAlt2: '<a-;>'
 
 customCommands:
+  # built-in reword runs an interactive rebase for any non-HEAD commit; git_scripts rewrites the chain in-place
+  - key: 'r'
+    context: 'commits'
+    description: 'Reword subject (no rebase)'
+    prompts:
+      - type: 'input'
+        title: 'Subject'
+        key: 'Subject'
+        initialValue: '{{.SelectedCommit.Name}}'
+    command: 'b=$(git log -1 --format=%b {{.SelectedCommit.Hash}}); m={{.Form.Subject | quote}}; [ -n "$b" ] && m=$(printf "%s\n\n%s" "$m" "$b"); ~/nix/home/scripts/git_scripts.rs reword {{.SelectedCommit.Hash}} "$m"'
+    output: log
+  - key: 'R'
+    context: 'commits'
+    description: 'Reword in editor (no rebase)'
+    command: 'f=$(mktemp) && git log -1 --format=%B {{.SelectedCommit.Hash}} > "$f" && $(git var GIT_EDITOR) "$f" && ~/nix/home/scripts/git_scripts.rs reword {{.SelectedCommit.Hash}} "$(git stripspace --strip-comments < "$f")"; rm -f "$f"'
+    output: terminal
   - key: 'e'
     context: 'commitFiles'
     description: 'Open file in nvim scoped to this commit'
