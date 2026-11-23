@@ -173,8 +173,33 @@ fn shift_series(api: &Api, cal: &str, id: &str, first: &Value, off: SignedDurati
         .collect::<Result<_>>()?;
     let mut shifted_rec = shift_recurrence(&rec, off, &tz)?;
 
+    let len = match (ms, me) {
+        (When::At(a), When::At(b)) => b.duration_since(a),
+        (When::Day(a), When::Day(b)) => SignedDuration::from_hours(24 * i64::from((b - a).get_days())),
+        _ => bail!("series {id}: start and end are of different kinds"),
+    };
+    let copy_from = |at: When, rec: &[String]| {
+        let mut copy = master.clone();
+        let obj = copy.as_object_mut().expect("an event is an object");
+        for k in ["id", "iCalUID", "etag", "htmlLink", "created", "updated", "sequence", "creator", "organizer", "recurringEventId", "originalStartTime"] {
+            obj.remove(k);
+        }
+        obj.insert("start".into(), at.shift(off).expect("checked on the series start").json(&master["start"]));
+        obj.insert("end".into(), at.shift(off + len).expect("checked on the series start").json(&master["end"]));
+        obj.insert("recurrence".into(), json!(rec));
+        copy
+    };
+    // insert before cutting the old one short: a failure between the two leaves a duplicate, not a gap
+    let insert = |copy: &Value| api.write(Method::POST, &["calendars", cal, "events"], copy).and_then(|new| new.map(|n| str_of(&n["id"]).map(str::to_owned)).transpose());
+
     if window.holds(ms) {
         println!("series {name}: {ms} -> {shifted_start}");
+        // Google answers "Invalid start time" to moving a series it split off itself (`<id>_R<start>`), so it is replaced
+        if id.contains("_R") {
+            let new = insert(&copy_from(ms, &shifted_rec))?;
+            api.write(Method::DELETE, &["calendars", cal, "events", id], &Value::Null)?;
+            return Ok(new);
+        }
         let shifted_end = me.shift(off).expect("start shifted, so the offset fits its kind");
         api.write(Method::PATCH, &["calendars", cal, "events", id], &json!({
             "start": shifted_start.json(&master["start"]),
@@ -200,26 +225,10 @@ fn shift_series(api: &Api, cal: &str, id: &str, first: &Value, off: SignedDurati
     };
     let old_rec: Vec<String> = rec.iter().map(|l| set_rrule_param(&set_rrule_param(l, "COUNT", None), "UNTIL", Some(&until))).collect();
 
-    let len = match (ms, me) {
-        (When::At(a), When::At(b)) => b.duration_since(a),
-        (When::Day(a), When::Day(b)) => SignedDuration::from_hours(24 * i64::from((b - a).get_days())),
-        _ => bail!("series {id}: start and end are of different kinds"),
-    };
-    let (new_start, new_end) = (split.shift(off).expect("checked on the series start"), split.shift(off + len).expect("checked on the series start"));
-    let mut copy = master.clone();
-    let obj = copy.as_object_mut().expect("an event is an object");
-    for k in ["id", "iCalUID", "etag", "htmlLink", "created", "updated", "sequence", "creator", "organizer", "recurringEventId", "originalStartTime"] {
-        obj.remove(k);
-    }
-    obj.insert("start".into(), new_start.json(&master["start"]));
-    obj.insert("end".into(), new_end.json(&master["end"]));
-    obj.insert("recurrence".into(), json!(shifted_rec));
-
-    println!("series {name}: split at {split}, continues from {new_start}");
-    // insert first: a failure between the two leaves a duplicate, not a gap
-    let new = api.write(Method::POST, &["calendars", cal, "events"], &copy)?;
+    println!("series {name}: split at {split}, continues from {}", split.shift(off).expect("checked on the series start"));
+    let new = insert(&copy_from(split, &shifted_rec))?;
     api.write(Method::PATCH, &["calendars", cal, "events", id], &json!({ "recurrence": old_rec }))?;
-    new.map(|n| str_of(&n["id"]).map(str::to_owned)).transpose()
+    Ok(new)
 }
 
 /// Moves the absolute times of RRULE UNTIL, EXDATE and RDATE with the series.
@@ -348,7 +357,7 @@ impl Api {
         let mut url = Url::parse(API).into_diagnostic()?;
         url.path_segments_mut().expect("API is a base url").extend(path);
         let mut req = self.http.request(method.clone(), url).bearer_auth(&self.token).query(query);
-        if let Some(b) = body {
+        if let Some(b) = body.filter(|b| !b.is_null()) {
             req = req.json(b);
         }
         let resp = req.send().into_diagnostic()?;
@@ -357,7 +366,10 @@ impl Api {
         if !status.is_success() {
             bail!("{method} {}: {status}: {text}", path.join("/"));
         }
-        Ok(serde_json::from_str(&text).into_diagnostic()?)
+        match text.is_empty() {
+            true => Ok(Value::Null), // DELETE answers 204
+            false => serde_json::from_str(&text).into_diagnostic(),
+        }
     }
 
     fn get_all(&self, path: &[&str], query: &[(&str, &str)]) -> Result<Vec<Value>> {
