@@ -398,7 +398,7 @@ impl Api {
     fn write(&self, method: Method, path: &[&str], body: &Value) -> Result<Option<Value>> {
         match self.dry_run {
             true => Ok(None),
-            false => self.call(method, path, &[], Some(body)).map(Some),
+            false => self.call(method, path, &[("eventLabelVersion", "1")], Some(body)).map(Some), // without it `eventLabelId` (the event's color label) is dropped
         }
     }
 }
