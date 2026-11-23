@@ -18,12 +18,13 @@ use std::{
     collections::BTreeMap,
     io::{BufRead, BufReader, Write},
     net::TcpListener,
-    process::Command,
+    path::PathBuf,
+    process::{Command, Stdio},
     str::FromStr,
     time::Duration,
 };
 
-use clap::Parser;
+use clap::{Parser, Subcommand};
 use miette::{Diagnostic, IntoDiagnostic, Result, bail, miette};
 use jiff::{
     SignedDuration, Span, Timestamp,
@@ -51,42 +52,105 @@ enum CalendarLookup {
     Ambiguous { query: String, n: usize, ids: String },
 }
 
-/// Shift a Google Calendar's own events starting in [today, today + forward) by an offset.
-/// A recurring series moves from its first instance in that window on, wherever its later instances land.
+/// Google Calendar, through its API
 #[derive(Parser)]
-struct Args {
-    /// calendar name, as in the sidebar, or its id
-    calendar: String,
-    /// e.g. +1h, -30m
-    #[arg(short, long, allow_hyphen_values = true, value_parser = SignedTimeframe::from_str)]
-    offset: SignedTimeframe,
-    #[arg(short, long, default_value = "1w", value_parser = Timeframe::from_str)]
-    forward: Timeframe,
-    /// print the changes, write nothing
-    #[arg(short = 'n', long)]
-    dry_run: bool,
+struct Cli {
+    #[command(subcommand)]
+    cmd: Cmd,
+}
+#[derive(Subcommand)]
+enum Cmd {
+    /// List this account's calendars
+    List,
+    /// Shift a calendar's own events starting in [today, today + forward) by an offset
+    ///
+    /// A recurring series moves from its first instance in that window on, wherever its later instances land.
+    Shift {
+        /// name, as in the sidebar, or id; picked with fzf when left out
+        calendar: Option<String>,
+        /// e.g. +1h, -30m
+        #[arg(short, long, allow_hyphen_values = true, value_parser = SignedTimeframe::from_str)]
+        offset: SignedTimeframe,
+        #[arg(short, long, default_value = "1w", value_parser = Timeframe::from_str)]
+        forward: Timeframe,
+        /// print the changes, write nothing
+        #[arg(short = 'n', long)]
+        dry_run: bool,
+    },
+    /// Open an .ics as a pre-filled event in the open Google Calendar tab
+    Add { ics: PathBuf },
 }
 
 fn main() -> Result<()> {
-    let args = Args::parse();
+    let cmd = Cli::parse().cmd;
+    if let Cmd::Add { ics } = &cmd {
+        let script = format!("{}/home/scripts/calendar_add.py", std::env::var("NIXOS_CONFIG").map_err(|_| miette!("NIXOS_CONFIG is not set"))?);
+        let status = Command::new("python3").arg(script).arg(ics).status().into_diagnostic()?;
+        return match status.success() {
+            true => Ok(()),
+            false => Err(miette!("calendar_add.py: {status}")),
+        };
+    }
     let http = Client::new();
-    let api = Api { token: access_token(&http)?, http, dry_run: args.dry_run };
-
+    let dry_run = matches!(cmd, Cmd::Shift { dry_run: true, .. });
+    let api = Api { token: access_token(&http)?, http, dry_run };
     let all = api.get_all(&["users", "me", "calendarList"], &[])?;
+    match cmd {
+        Cmd::List => {
+            for c in &all {
+                println!("{}", str_of(&c["summary"])?);
+            }
+            Ok(())
+        }
+        Cmd::Shift { calendar, offset, forward, .. } => {
+            let cal = match calendar {
+                Some(q) => lookup(&all, &q)?,
+                None => pick(&all)?,
+            };
+            shift(&api, cal, offset, forward)
+        }
+        Cmd::Add { .. } => unreachable!("ran above, before any auth"),
+    }
+}
+
+fn lookup<'a>(all: &'a [Value], query: &str) -> Result<&'a Value> {
     let listed = |cals: &[&Value]| cals.iter().map(|c| format!("  {}  ({})", c["summary"].as_str().unwrap_or("?"), c["id"].as_str().unwrap_or("?"))).collect::<Vec<_>>().join("\n"); // display only
-    let cals: Vec<&Value> = all.iter().filter(|c| c["summary"] == args.calendar.as_str() || c["id"] == args.calendar.as_str()).collect();
-    let cal = match cals.as_slice() {
-        [cal] => *cal,
-        [] => Err(CalendarLookup::Missing { query: args.calendar.clone(), available: all.iter().map(|c| format!("  {}", c["summary"].as_str().unwrap_or("?"))).collect::<Vec<_>>().join("\n") })?, // display only
-        _ => Err(CalendarLookup::Ambiguous { query: args.calendar.clone(), n: cals.len(), ids: listed(&cals) })?,
-    };
+    let cals: Vec<&Value> = all.iter().filter(|c| c["summary"] == query || c["id"] == query).collect();
+    match cals.as_slice() {
+        [cal] => Ok(*cal),
+        [] => Err(CalendarLookup::Missing { query: query.to_owned(), available: all.iter().map(|c| format!("  {}", c["summary"].as_str().unwrap_or("?"))).collect::<Vec<_>>().join("\n") })?, // display only
+        _ => Err(CalendarLookup::Ambiguous { query: query.to_owned(), n: cals.len(), ids: listed(&cals) })?,
+    }
+}
+
+/// fzf over the calendars this account can write to.
+fn pick(all: &[Value]) -> Result<&Value> {
+    let writable: Vec<&Value> = all.iter().filter(|c| c["accessRole"] == "owner" || c["accessRole"] == "writer").collect();
+    let lines: Vec<String> = writable.iter().map(|c| Ok(format!("{}\t{}", str_of(&c["summary"])?, str_of(&c["id"])?))).collect::<Result<_>>()?;
+    let mut fzf = Command::new("fzf")
+        .args(["--delimiter=\t", "--with-nth=1", "--prompt=calendar> "])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()
+        .into_diagnostic()?;
+    fzf.stdin.take().expect("piped").write_all(lines.join("\n").as_bytes()).into_diagnostic()?;
+    let out = fzf.wait_with_output().into_diagnostic()?;
+    if !out.status.success() {
+        bail!("no calendar picked");
+    }
+    let picked = String::from_utf8(out.stdout).into_diagnostic()?;
+    let id = picked.trim_end().split_once('\t').ok_or_else(|| miette!("fzf returned {picked:?}"))?.1;
+    Ok(*writable.iter().find(|c| c["id"] == id).expect("fzf picks from these lines"))
+}
+
+fn shift(api: &Api, cal: &Value, offset: SignedTimeframe, forward: Timeframe) -> Result<()> {
     let cal_id = str_of(&cal["id"])?;
     let tz = TimeZone::get(str_of(&cal["timeZone"])?).into_diagnostic()?;
 
     let today = Timestamp::now().to_zoned(tz.clone()).start_of_day().into_diagnostic()?;
     let from = today.timestamp();
-    let to = from + SignedDuration::try_from(args.forward.duration()).into_diagnostic()?;
-    let off = SignedDuration::from_millis(args.offset.0);
+    let to = from + SignedDuration::try_from(forward.duration()).into_diagnostic()?;
+    let off = SignedDuration::from_millis(offset.0);
     let window = Window { from, day: today.date() };
 
     let items = api.get_all(&["calendars", cal_id, "events"], &[
@@ -112,11 +176,11 @@ fn main() -> Result<()> {
         }
         match ev["recurringEventId"].as_str() {
             Some(master) => series.entry(master.to_owned()).or_default().push(ev),
-            None => shift_single(&api, cal_id, &ev, off)?,
+            None => shift_single(api, cal_id, &ev, off)?,
         }
     }
     for (master, instances) in series {
-        let Some(id) = shift_series(&api, cal_id, &master, &instances[0], off, &window, &tz)? else { continue };
+        let Some(id) = shift_series(api, cal_id, &master, &instances[0], off, &window, &tz)? else { continue };
         // the series write re-generates instances at their slots; one moved by hand is moved again
         for ev in instances.iter().filter(|ev| ev["start"] != ev["originalStartTime"]) {
             let slot = When::of(&ev["originalStartTime"])?.shift(off).expect("its series shifted");
@@ -127,7 +191,7 @@ fn main() -> Result<()> {
                     .and_then(|i| i.first().cloned()),
             };
             match new {
-                Some(new) => shift_single(&api, cal_id, &json!({ "id": new["id"], "summary": ev["summary"], "start": ev["start"], "end": ev["end"] }), off)?,
+                Some(new) => shift_single(api, cal_id, &json!({ "id": new["id"], "summary": ev["summary"], "start": ev["start"], "end": ev["end"] }), off)?,
                 None if api.dry_run => println!("{}: moved instance @ {} keeps its own time", ev["summary"].as_str().unwrap_or("(no title)"), When::of(&ev["start"])?), // the API omits an empty title
                 None => bail!("series {id} has no instance at {slot} after the shift"),
             }
@@ -472,7 +536,7 @@ fn consent(http: &Client, id: &str, secret: &str) -> Result<String> {
             stream.write_all(b"HTTP/1.1 404 Not Found\r\ncontent-length: 0\r\n\r\n").into_diagnostic()?;
             continue;
         }
-        stream.write_all(b"HTTP/1.1 200 OK\r\ncontent-type: text/plain\r\n\r\ncalendar_shift: done, this tab can close\n").into_diagnostic()?;
+        stream.write_all(b"HTTP/1.1 200 OK\r\ncontent-type: text/plain\r\n\r\ncalendar: done, this tab can close\n").into_diagnostic()?;
         break params;
     };
     let code = params.get("code").ok_or_else(|| miette!("consent refused: {params:?}"))?;

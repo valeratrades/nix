@@ -12,7 +12,7 @@ function 2fa; $__fish_scripts_dir/2fa.rs $argv; end
 function timer; $__fish_scripts_dir/timer.rs $argv; end
 function theme; $__fish_scripts_dir/theme_toggle.rs $argv; end
 function mvd; $__fish_scripts_dir/mvd.rs $argv; end
-function calendar_shift; $__fish_scripts_dir/calendar_shift.rs $argv; end
+function calendar; $__fish_scripts_dir/calendar.rs $argv; end
 function cargo_clean; $__fish_scripts_dir/cargo_clean.rs $argv; end
 function translate_book; $__fish_scripts_dir/translate_book.rs $argv; end
 function clipboard_to_keystrokes; $__fish_scripts_dir/clipboard_to_keystrokes.rs $argv; end
