@@ -8,9 +8,11 @@ edition = "2024"
 clap = { version = "4.5.49", features = ["derive"] }
 jiff = "0.2"
 miette = { version = "7", features = ["fancy"] }
-reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls"] }
+futures = "0.3"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 serde_json = "1"
 thiserror = "2"
+tokio = { version = "1", features = ["macros", "rt"] }
 v_utils = { version = "2.26", default-features = false }
 ---
 
@@ -31,7 +33,8 @@ use jiff::{
     civil::{Date, DateTime},
     tz::TimeZone,
 };
-use reqwest::{Method, Url, blocking::Client};
+use futures::{FutureExt, StreamExt, stream};
+use reqwest::{Client, Method, Url};
 use serde_json::{Value, json};
 use v_utils::{SignedTimeframe, Timeframe};
 
@@ -41,6 +44,8 @@ const TOKEN_URL: &str = "https://oauth2.googleapis.com/token";
 const SCOPE: &str = "https://www.googleapis.com/auth/calendar";
 const DAY_MS: i64 = 86_400_000;
 const TOKEN_VAR: &str = "GOOGLE_CALENDAR_REFRESH_TOKEN";
+/// changes in flight at once; well under Google's per-user rate limit
+const CONCURRENCY: usize = 8;
 
 #[derive(Debug, thiserror::Error, Diagnostic)]
 enum CalendarLookup {
@@ -81,7 +86,8 @@ enum Cmd {
     Add { ics: PathBuf },
 }
 
-fn main() -> Result<()> {
+#[tokio::main(flavor = "current_thread")]
+async fn main() -> Result<()> {
     let cmd = Cli::parse().cmd;
     if let Cmd::Add { ics } = &cmd {
         let script = format!("{}/home/scripts/calendar_add.py", std::env::var("NIXOS_CONFIG").map_err(|_| miette!("NIXOS_CONFIG is not set"))?);
@@ -93,8 +99,8 @@ fn main() -> Result<()> {
     }
     let http = Client::new();
     let dry_run = matches!(cmd, Cmd::Shift { dry_run: true, .. });
-    let api = Api { token: access_token(&http)?, http, dry_run };
-    let all = api.get_all(&["users", "me", "calendarList"], &[])?;
+    let api = Api { token: access_token(&http).await?, http, dry_run };
+    let all = api.get_all(&["users", "me", "calendarList"], &[]).await?;
     match cmd {
         Cmd::List => {
             for c in &all {
@@ -107,7 +113,7 @@ fn main() -> Result<()> {
                 Some(q) => lookup(&all, &q)?,
                 None => pick(&all)?,
             };
-            shift(&api, cal, offset, forward)
+            shift(&api, cal, offset, forward).await
         }
         Cmd::Add { .. } => unreachable!("ran above, before any auth"),
     }
@@ -143,7 +149,7 @@ fn pick(all: &[Value]) -> Result<&Value> {
     Ok(*writable.iter().find(|c| c["id"] == id).expect("fzf picks from these lines"))
 }
 
-fn shift(api: &Api, cal: &Value, offset: SignedTimeframe, forward: Timeframe) -> Result<()> {
+async fn shift(api: &Api, cal: &Value, offset: SignedTimeframe, forward: Timeframe) -> Result<()> {
     let cal_id = str_of(&cal["id"])?;
     let tz = TimeZone::get(str_of(&cal["timeZone"])?).into_diagnostic()?;
 
@@ -158,7 +164,8 @@ fn shift(api: &Api, cal: &Value, offset: SignedTimeframe, forward: Timeframe) ->
         ("orderBy", "startTime"),
         ("timeMin", &from.to_string()),
         ("timeMax", &to.to_string()),
-    ])?;
+    ]).await?;
+    let mut singles = Vec::new();
     let mut series: BTreeMap<String, Vec<Value>> = BTreeMap::new();
     for ev in items {
         let name = ev["summary"].as_str().unwrap_or("(no title)"); // the API omits an empty title
@@ -176,31 +183,26 @@ fn shift(api: &Api, cal: &Value, offset: SignedTimeframe, forward: Timeframe) ->
         }
         match ev["recurringEventId"].as_str() {
             Some(master) => series.entry(master.to_owned()).or_default().push(ev),
-            None => shift_single(api, cal_id, &ev, off)?,
+            None => singles.push(ev),
         }
     }
-    for (master, instances) in series {
-        let Some(id) = shift_series(api, cal_id, &master, &instances[0], off, &window, &tz)? else { continue };
-        // the series write re-generates instances at their slots; one moved by hand is moved again
-        for ev in instances.iter().filter(|ev| ev["start"] != ev["originalStartTime"]) {
-            let slot = When::of(&ev["originalStartTime"])?.shift(off).expect("its series shifted");
-            let new = match api.dry_run {
-                true => None,
-                false => api.call(Method::GET, &["calendars", cal_id, "events", &id, "instances"], &[("originalStart", &slot.json(&json!({}))["dateTime"].as_str().ok_or_else(|| miette!("an all-day exception moved by hand"))?.to_owned())], None)?["items"]
-                    .as_array()
-                    .and_then(|i| i.first().cloned()),
-            };
-            match new {
-                Some(new) => shift_single(api, cal_id, &json!({ "id": new["id"], "summary": ev["summary"], "start": ev["start"], "end": ev["end"] }), off)?,
-                None if api.dry_run => println!("{}: moved instance @ {} keeps its own time", ev["summary"].as_str().unwrap_or("(no title)"), When::of(&ev["start"])?), // the API omits an empty title
-                None => bail!("series {id} has no instance at {slot} after the shift"),
-            }
-        }
+    let total = singles.len() + series.len();
+    let (window, tz) = (&window, &tz);
+    let jobs = singles
+        .into_iter()
+        .map(|ev| async move { shift_single(api, cal_id, &ev, off).await }.boxed_local())
+        .chain(series.into_iter().map(|(master, instances)| async move { shift_series(api, cal_id, &master, &instances, off, window, tz).await }.boxed_local()));
+    let failed: Vec<miette::Report> = stream::iter(jobs).buffer_unordered(CONCURRENCY).filter_map(async |r| r.err()).collect().await;
+    for e in &failed {
+        eprintln!("{e:?}");
+    }
+    if !failed.is_empty() {
+        bail!("{} of {total} changes failed, the rest went through", failed.len());
     }
     Ok(())
 }
 
-fn shift_single(api: &Api, cal: &str, ev: &Value, off: SignedDuration) -> Result<()> {
+async fn shift_single(api: &Api, cal: &str, ev: &Value, off: SignedDuration) -> Result<()> {
     let name = ev["summary"].as_str().unwrap_or("(no title)"); // the API omits an empty title
     let (s, e) = (When::of(&ev["start"])?, When::of(&ev["end"])?);
     let (Some(ns), Some(ne)) = (s.shift(off), e.shift(off)) else {
@@ -211,14 +213,35 @@ fn shift_single(api: &Api, cal: &str, ev: &Value, off: SignedDuration) -> Result
     api.write(Method::PATCH, &["calendars", cal, "events", str_of(&ev["id"])?], &json!({
         "start": ns.json(&ev["start"]),
         "end": ne.json(&ev["end"]),
-    }))?;
+    })).await?;
+    Ok(())
+}
+
+/// `instances`: the series' in the window, by start.
+async fn shift_series(api: &Api, cal: &str, master: &str, instances: &[Value], off: SignedDuration, window: &Window, tz: &TimeZone) -> Result<()> {
+    let Some(id) = move_series(api, cal, master, &instances[0], off, window, tz).await? else { return Ok(()) };
+    // the series write re-generates instances at their slots; one moved by hand is moved again
+    for ev in instances.iter().filter(|ev| ev["start"] != ev["originalStartTime"]) {
+        let slot = When::of(&ev["originalStartTime"])?.shift(off).expect("its series shifted");
+        let new = match api.dry_run {
+            true => None,
+            false => api.call(Method::GET, &["calendars", cal, "events", &id, "instances"], &[("originalStart", &slot.json(&json!({}))["dateTime"].as_str().ok_or_else(|| miette!("an all-day exception moved by hand"))?.to_owned())], None).await?["items"]
+                .as_array()
+                .and_then(|i| i.first().cloned()),
+        };
+        match new {
+            Some(new) => shift_single(api, cal, &json!({ "id": new["id"], "summary": ev["summary"], "start": ev["start"], "end": ev["end"] }), off).await?,
+            None if api.dry_run => println!("{}: moved instance @ {} keeps its own time", ev["summary"].as_str().unwrap_or("(no title)"), When::of(&ev["start"])?), // the API omits an empty title
+            None => bail!("series {id} has no instance at {slot} after the shift"),
+        }
+    }
     Ok(())
 }
 
 /// Starts in the window: the whole series moves. Else it is split at `first`: the old one ends before it, a shifted copy carries on.
 /// Returns the id of the series that carries on; `None` when skipped, or split in a dry run.
-fn shift_series(api: &Api, cal: &str, id: &str, first: &Value, off: SignedDuration, window: &Window, cal_tz: &TimeZone) -> Result<Option<String>> {
-    let master = api.call(Method::GET, &["calendars", cal, "events", id], &[], None)?;
+async fn move_series(api: &Api, cal: &str, id: &str, first: &Value, off: SignedDuration, window: &Window, cal_tz: &TimeZone) -> Result<Option<String>> {
+    let master = api.call(Method::GET, &["calendars", cal, "events", id], &[], None).await?;
     let name = master["summary"].as_str().unwrap_or("(no title)"); // the API omits an empty title
     let (ms, me) = (When::of(&master["start"])?, When::of(&master["end"])?);
     let Some(shifted_start) = ms.shift(off) else {
@@ -254,14 +277,14 @@ fn shift_series(api: &Api, cal: &str, id: &str, first: &Value, off: SignedDurati
         copy
     };
     // insert before cutting the old one short: a failure between the two leaves a duplicate, not a gap
-    let insert = |copy: &Value| api.write(Method::POST, &["calendars", cal, "events"], copy).and_then(|new| new.map(|n| str_of(&n["id"]).map(str::to_owned)).transpose());
+    let insert = async |copy: Value| api.write(Method::POST, &["calendars", cal, "events"], &copy).await?.map(|n| str_of(&n["id"]).map(str::to_owned)).transpose();
 
     if window.holds(ms) {
         println!("series {name}: {ms} -> {shifted_start}");
         // Google answers "Invalid start time" to moving a series it split off itself (`<id>_R<start>`), so it is replaced
         if id.contains("_R") {
-            let new = insert(&copy_from(ms, &shifted_rec))?;
-            api.write(Method::DELETE, &["calendars", cal, "events", id], &Value::Null)?;
+            let new = insert(copy_from(ms, &shifted_rec)).await?;
+            api.write(Method::DELETE, &["calendars", cal, "events", id], &Value::Null).await?;
             return Ok(new);
         }
         let shifted_end = me.shift(off).expect("start shifted, so the offset fits its kind");
@@ -269,7 +292,7 @@ fn shift_series(api: &Api, cal: &str, id: &str, first: &Value, off: SignedDurati
             "start": shifted_start.json(&master["start"]),
             "end": shifted_end.json(&master["end"]),
             "recurrence": shifted_rec,
-        }))?;
+        })).await?;
         return Ok(Some(id.to_owned()));
     }
 
@@ -279,7 +302,7 @@ fn shift_series(api: &Api, cal: &str, id: &str, first: &Value, off: SignedDurati
         When::Day(d) => d.to_zoned(tz.clone()).into_diagnostic()?.timestamp(),
     };
     if let Some(count) = rrule_param(&rec, "COUNT") {
-        let before = api.get_all(&["calendars", cal, "events", id, "instances"], &[("timeMax", &split_ts.to_string()), ("showDeleted", "true")])?.len();
+        let before = api.get_all(&["calendars", cal, "events", id, "instances"], &[("timeMax", &split_ts.to_string()), ("showDeleted", "true")]).await?.len();
         let left = count.parse::<usize>().into_diagnostic()?.checked_sub(before).ok_or_else(|| miette!("series {id}: {before} instances before the split, COUNT={count}"))?;
         shifted_rec = shifted_rec.into_iter().map(|l| set_rrule_param(&l, "COUNT", Some(&left.to_string()))).collect();
     }
@@ -290,8 +313,8 @@ fn shift_series(api: &Api, cal: &str, id: &str, first: &Value, off: SignedDurati
     let old_rec: Vec<String> = rec.iter().map(|l| set_rrule_param(&set_rrule_param(l, "COUNT", None), "UNTIL", Some(&until))).collect();
 
     println!("series {name}: split at {split}, continues from {}", split.shift(off).expect("checked on the series start"));
-    let new = insert(&copy_from(split, &shifted_rec))?;
-    api.write(Method::PATCH, &["calendars", cal, "events", id], &json!({ "recurrence": old_rec }))?;
+    let new = insert(copy_from(split, &shifted_rec)).await?;
+    api.write(Method::PATCH, &["calendars", cal, "events", id], &json!({ "recurrence": old_rec })).await?;
     Ok(new)
 }
 
@@ -417,16 +440,16 @@ struct Api {
     dry_run: bool,
 }
 impl Api {
-    fn call(&self, method: Method, path: &[&str], query: &[(&str, &str)], body: Option<&Value>) -> Result<Value> {
+    async fn call(&self, method: Method, path: &[&str], query: &[(&str, &str)], body: Option<&Value>) -> Result<Value> {
         let mut url = Url::parse(API).into_diagnostic()?;
         url.path_segments_mut().expect("API is a base url").extend(path);
         let mut req = self.http.request(method.clone(), url).bearer_auth(&self.token).query(query);
         if let Some(b) = body.filter(|b| !b.is_null()) {
             req = req.json(b);
         }
-        let resp = req.send().into_diagnostic()?;
+        let resp = req.send().await.into_diagnostic()?;
         let status = resp.status();
-        let text = resp.text().into_diagnostic()?;
+        let text = resp.text().await.into_diagnostic()?;
         if !status.is_success() {
             bail!("{method} {}: {status}: {text}", path.join("/"));
         }
@@ -436,7 +459,7 @@ impl Api {
         }
     }
 
-    fn get_all(&self, path: &[&str], query: &[(&str, &str)]) -> Result<Vec<Value>> {
+    async fn get_all(&self, path: &[&str], query: &[(&str, &str)]) -> Result<Vec<Value>> {
         let mut out = Vec::new();
         let mut page: Option<String> = None;
         loop {
@@ -445,7 +468,7 @@ impl Api {
             if let Some(p) = &page {
                 q.push(("pageToken", p));
             }
-            let mut resp = self.call(Method::GET, path, &q, None)?;
+            let mut resp = self.call(Method::GET, path, &q, None).await?;
             match resp["items"].take() {
                 Value::Array(items) => out.extend(items),
                 Value::Null => {}
@@ -459,22 +482,22 @@ impl Api {
     }
 
     /// `None` in a dry run.
-    fn write(&self, method: Method, path: &[&str], body: &Value) -> Result<Option<Value>> {
+    async fn write(&self, method: Method, path: &[&str], body: &Value) -> Result<Option<Value>> {
         match self.dry_run {
             true => Ok(None),
-            false => self.call(method, path, &[("eventLabelVersion", "1")], Some(body)).map(Some), // without it `eventLabelId` (the event's color label) is dropped
+            false => self.call(method, path, &[("eventLabelVersion", "1")], Some(body)).await.map(Some), // without it `eventLabelId` (the event's color label) is dropped
         }
     }
 }
 
 /// Shared with other tools reading the env var; re-consent writes it back where fish sources it from.
-fn access_token(http: &Client) -> Result<String> {
+async fn access_token(http: &Client) -> Result<String> {
     let id = std::env::var("GOOGLE_CLIENT_ID").map_err(|_| miette!("GOOGLE_CLIENT_ID is not set"))?;
     let secret = std::env::var("GOOGLE_CLIENT_SECRET").map_err(|_| miette!("GOOGLE_CLIENT_SECRET is not set"))?;
     let mut refresh = std::env::var(TOKEN_VAR).ok(); // unset: asked for below
     loop {
         let Some(token) = &refresh else {
-            let token = consent(http, &id, &secret)?;
+            let token = consent(http, &id, &secret).await?;
             persist_refresh_token(&token)?;
             refresh = Some(token);
             continue;
@@ -483,8 +506,10 @@ fn access_token(http: &Client) -> Result<String> {
             .post(TOKEN_URL)
             .form(&[("client_id", id.as_str()), ("client_secret", &secret), ("refresh_token", token), ("grant_type", "refresh_token")])
             .send()
+            .await
             .into_diagnostic()?
             .json()
+            .await
             .into_diagnostic()?;
         if resp["error"] == "invalid_grant" {
             eprintln!("{TOKEN_VAR} was revoked or expired, asking Google again");
@@ -510,7 +535,8 @@ fn persist_refresh_token(token: &str) -> Result<()> {
 }
 
 /// OAuth loopback flow: the browser comes back to a one-shot listener with the code.
-fn consent(http: &Client, id: &str, secret: &str) -> Result<String> {
+/// Blocks on the listener: nothing else runs before there is a token.
+async fn consent(http: &Client, id: &str, secret: &str) -> Result<String> {
     let listener = TcpListener::bind("127.0.0.1:0").into_diagnostic()?;
     let redirect = format!("http://127.0.0.1:{}", listener.local_addr().into_diagnostic()?.port());
     let url = Url::parse_with_params(AUTH_URL, &[
@@ -543,8 +569,12 @@ fn consent(http: &Client, id: &str, secret: &str) -> Result<String> {
     let resp: Value = http
         .post(TOKEN_URL)
         .form(&[("code", code.as_str()), ("client_id", id), ("client_secret", secret), ("redirect_uri", &redirect), ("grant_type", "authorization_code")])
-        .send().into_diagnostic()?
-        .json().into_diagnostic()?;
+        .send()
+        .await
+        .into_diagnostic()?
+        .json()
+        .await
+        .into_diagnostic()?;
     Ok(str_of(&resp["refresh_token"]).map_err(|_| miette!("code exchange: {resp}"))?.to_owned())
 }
 
