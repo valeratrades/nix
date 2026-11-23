@@ -1,10 +1,10 @@
-; sys: fullest of / and /home (same nvme); s: the XFS nvme on /home/v/s. df on these paths only: EWW_DISK statfs's every mount, so one stalled network mount (rclone) froze the whole bar
-(defpoll disk_poll :initial "{\"sys\":0,\"s\":0}" :interval "10s" "df --output=pcent / /home /home/v/s | tail -n +2 | tr -d ' %' | paste -sd' ' | awk -v q='\"' '{printf \"{\" q \"sys\" q \":%d,\" q \"s\" q \":%d}\", ($1>$2?$1:$2), $3}'")
+; h: fullest of / and /home (same nvme); s: the XFS nvme on /home/v/s. df on these paths only: EWW_DISK statfs's every mount, so one stalled network mount (rclone) froze the whole bar
+(defpoll disk_poll :initial "{\"h\":0,\"s\":0}" :interval "10s" "df --output=pcent / /home /home/v/s | tail -n +2 | tr -d ' %' | paste -sd' ' | awk -v q='\"' '{printf \"{\" q \"h\" q \":%d,\" q \"s\" q \":%d}\", ($1>$2?$1:$2), $3}'")
 (defwidget disk []
 	(box
 		:space-evenly false
-		(box :class {disk_poll.sys > 90 ? "warn" : ""} " ${disk_poll.sys}%")
-		(box :class {disk_poll.s > 90 ? "warn" : ""} " ~/s ${disk_poll.s}%")))
+		(box :class {disk_poll.h > 90 ? "warn" : ""} " h${disk_poll.h}%")
+		(box :class {disk_poll.s > 90 ? "warn" : ""} ",s${disk_poll.s}%")))
 
 (defpoll tether_poll :initial "" :interval "5s" "./modules/tether.sh")
 (defpoll uplink_poll :initial "" :interval "10s" "./modules/uplink.sh")
