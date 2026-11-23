@@ -4,6 +4,8 @@ function exa --wraps eza; eza $argv; end
 function ls; command ls --color=tty $argv; end
 function ll --wraps 'ls -l'; ls -l $argv; end
 function l --wraps 'ls -alh'; ls -alh $argv; end
+function dust_h --wraps dust; sudo dust -x / /home $argv; end # the system nvme; sudo for root-owned dirs under /
+function dust_s --wraps dust; dust -x /home/v/s $argv; end
 
 # for super ls
 function sl
