@@ -56,10 +56,9 @@ enum CalendarLookup {
 #[derive(Parser)]
 struct Args {
     /// calendar name, as in the sidebar, or its id
-    #[arg(short, long)]
     calendar: String,
     /// e.g. +1h, -30m
-    #[arg(allow_hyphen_values = true, value_parser = SignedTimeframe::from_str)]
+    #[arg(short, long, allow_hyphen_values = true, value_parser = SignedTimeframe::from_str)]
     offset: SignedTimeframe,
     #[arg(short, long, default_value = "1w", value_parser = Timeframe::from_str)]
     forward: Timeframe,
