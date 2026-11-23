@@ -205,6 +205,7 @@ bindsym $mod+Shift+9    move container to workspace 9
 bindsym $mod+Shift+0    $scratch_forget, move container to workspace 0
 
 assign [class="discord"] 4
+assign [app_id="discord"] 4
 assign [app_id="vesktop"] 4
 assign [class="Zulip"] 4
 assign [app_id="google-chrome"] 2
