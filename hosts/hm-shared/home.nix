@@ -482,7 +482,7 @@
           # dev
           lspmux # one language server shared across nvim + every Claude Code session
         ]
-        zathura # plugins: overlays/zathura-svg
+        zathura # plugins: overlays/zathura
         [
           # RDP clients (linux-to-linux doesn't really work)
           remmina

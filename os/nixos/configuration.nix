@@ -417,7 +417,7 @@ in {
     (import (mylib.relativeToRoot "overlays/graphify.nix"))
     (import (mylib.relativeToRoot "overlays/tree-sitter-memcap.nix"))
     (import (mylib.relativeToRoot "overlays/pandoc.nix"))
-    (import (mylib.relativeToRoot "overlays/zathura-svg"))
+    (import (mylib.relativeToRoot "overlays/zathura"))
   ];
 
   nix.settings.download-buffer-size = "50G";
