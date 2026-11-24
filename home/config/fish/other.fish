@@ -113,7 +113,7 @@ function t # `t -N`: Nth newest, 1-indexed like `cl -N`
     end
     eza --no-quotes -snew -r | sed -n {$n}p  # --no-quotes: else eza wraps space-containing names in '' when piped, breaking `unzip (t)` etc.
 end
-function mongodb --wraps mongosh; mongosh "mongodb+srv://test.di2kklr.mongodb.net/" --apiVersion 1 --username valeratrades --password qOcydRtmgFfJnnpd $argv; end
+function mongodb --wraps mongosh; mongosh "mongodb+srv://test.di2kklr.mongodb.net/" --apiVersion 1 --username valeratrades --password $MONGODB_PASSWORD $argv; end
 function sql --wraps sqlite3; sqlite3 $argv; end
 function poetry; POETRY_KEYRING_DISABLED=true command poetry $argv; end
 function dk --wraps 'sudo docker'; sudo docker $argv; end
