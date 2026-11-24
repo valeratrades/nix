@@ -59,8 +59,8 @@ function M.setup_open(tmpfile)
     callback = function(ev)
       local oil = require('oil')
 
-      -- 's' to mark/unmark files
-      vim.keymap.set('n', 's', function()
+      -- 'm' to mark/unmark files
+      vim.keymap.set('n', 'm', function()
         local entry = oil.get_cursor_entry()
         if entry and SELECTABLE[entry.type] then
           local path = oil.get_current_dir() .. entry.name
@@ -71,8 +71,7 @@ function M.setup_open(tmpfile)
           else
             _G.filechooser_marks[path] = true
             vim.api.nvim_buf_set_extmark(ev.buf, _G.filechooser_ns, lnum - 1, 0, {
-              sign_text = '*',
-              sign_hl_group = 'DiagnosticSignWarn'
+              line_hl_group = 'Visual' -- a sign would be invisible: oil sets signcolumn=no
             })
           end
         end
