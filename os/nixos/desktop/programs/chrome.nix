@@ -90,8 +90,45 @@ in
 
   # Machine-wide, so every profile gets the same set regardless of account.
   environment.etc."opt/chrome/policies/managed/extensions.json".text = builtins.toJSON {
-    # Content scripts otherwise inject into every page; runtime_allowed_hosts beats runtime_blocked_hosts.
-    ExtensionSettings = {
+    ExtensionSettings = let
+      install = update_url: { inherit update_url; installation_mode = "normal_installed"; };
+    in lib.recursiveUpdate (
+      lib.mapAttrs' (name: e: lib.nameValuePair e.id (install "file://${packDir name}/updates.xml")) selfPacked
+      // lib.genAttrs [
+        "abocjojdmemdpiffeadpdnicnlhcndcg" # SocialFocus
+        "ajlhmclpjddfebgfpahnlodliljdnbie" # Moss
+        "bolmmhkapeekgcjopdmnbmnhgaapbpdb" # FocusTube
+        "ccnnhhnmpoffieppjjkhdakcoejcpbga" # Rearrange Tabs
+        "ckagfhpboagdopichicnebandlofghbc" # Shorts Blocker
+        "dbepggeogbaibhgnhhndojpepiihcmeb" # Vimium
+        "ddkjiahejlhfcafbddmgiahcphecmpfh" # uBlock Origin Lite
+        "dhdgffkkebhmkfjojejmpbldmpobfkfo" # Tampermonkey
+        "dodmmooeoklaejobgleioelladacbeki" # Ona
+        "egjidjbpglichdcondbcbdnbeeppgdph" # Trust Wallet
+        "eimadpbcbfnmbkopoojfekhnkhdbieeh" # Dark Reader
+        "enboaomnljigfhfjfoalacienlhjlfil" # UnTrap for YouTube
+        "ghbdjeckopemkoomopmpgjifafpcjhga" # TabPilot
+        "gppongmhjkpfnbhagpmjfkannfbllamg" # Wappalyzer
+        "hijfnlgdhfpmnckieikhinolopcolofe" # GMBspy
+        "hmbdemoadbcdfmdjiokhcnoaoepgbhbn" # Block Notifications
+        "jgibaoklabopileepldnlkbbcibhbgmd" # Youtube Transcript
+        "jnbbnacmeggbgdjgaoojpmhdlkkpblgi" # WakaTime
+        "jplgfhpmjnbigmhklmmbgecoobifkmpa" # Proton VPN
+        "kfhkeghcignojkdcnemgcggojlmneema" # LockedIn AI
+        "kogfodpcilmconphbpldnipakepicaia" # Better Muted Words
+        "linlakoepnjkdiphemdpbphnjlppjedm" # X Mute
+        "mnjggcdmjocbbbhaepdhchncahnbgone" # SponsorBlock
+        "nhocmlminaplaendbabmoemehbpgdemn" # Fathom AI Note Taker
+        "nkbihfbeogaeaoehlefnkodbefgpgknn" # MetaMask
+        "oboonakemofpalcgghocfoadofidjkkk" # KeePassXC-Browser
+        "ofpnikijgfhlmmjlpkfaifhhdonchhoi" # Accept all cookies
+        #"ogcgkffhplmphkaahpmffcafajaocjbd" # ZenHub
+        "omghfjlpggmjjaagoclmmobgdodcjboh" # Browsec VPN
+        "pbanhockgagggenencehbnadejlgchfc" # Simplify Copilot
+        "pmjeegjhjdlccodhacdgbgfagbpmccpe" # Clockify
+      ] (_: install "https://clients2.google.com/service/update2/crx")
+    ) {
+      # Content scripts otherwise inject into every page; runtime_allowed_hosts beats runtime_blocked_hosts.
       "ajlhmclpjddfebgfpahnlodliljdnbie" = { # Moss: 5.4MB per page
         runtime_blocked_hosts = [ "*://*" ];
         runtime_allowed_hosts = [ "*://*.x.com" "*://*.twitter.com" ];
@@ -110,40 +147,19 @@ in
       showGettingStartedGuideAlert = false;
       showTroubleshootingGuideAlert = false;
     };
-    ExtensionInstallForcelist = lib.mapAttrsToList (name: e: "${e.id};file://${packDir name}/updates.xml") selfPacked ++ map (id: "${id};https://clients2.google.com/service/update2/crx") [
-      "abocjojdmemdpiffeadpdnicnlhcndcg" # SocialFocus
-      "ajlhmclpjddfebgfpahnlodliljdnbie" # Moss
-      "bolmmhkapeekgcjopdmnbmnhgaapbpdb" # FocusTube
-      "ccnnhhnmpoffieppjjkhdakcoejcpbga" # Rearrange Tabs
-      "ckagfhpboagdopichicnebandlofghbc" # Shorts Blocker
-      "dbepggeogbaibhgnhhndojpepiihcmeb" # Vimium
-      "ddkjiahejlhfcafbddmgiahcphecmpfh" # uBlock Origin Lite
-      "dhdgffkkebhmkfjojejmpbldmpobfkfo" # Tampermonkey
-      "dodmmooeoklaejobgleioelladacbeki" # Ona
-      "egjidjbpglichdcondbcbdnbeeppgdph" # Trust Wallet
-      "eimadpbcbfnmbkopoojfekhnkhdbieeh" # Dark Reader
-      "enboaomnljigfhfjfoalacienlhjlfil" # UnTrap for YouTube
-      "ghbdjeckopemkoomopmpgjifafpcjhga" # TabPilot
-      "gppongmhjkpfnbhagpmjfkannfbllamg" # Wappalyzer
-      "hijfnlgdhfpmnckieikhinolopcolofe" # GMBspy
-      "hmbdemoadbcdfmdjiokhcnoaoepgbhbn" # Block Notifications
-      "jgibaoklabopileepldnlkbbcibhbgmd" # Youtube Transcript
-      "jnbbnacmeggbgdjgaoojpmhdlkkpblgi" # WakaTime
-      "jplgfhpmjnbigmhklmmbgecoobifkmpa" # Proton VPN
-      "kfhkeghcignojkdcnemgcggojlmneema" # LockedIn AI
-      "kogfodpcilmconphbpldnipakepicaia" # Better Muted Words
-      "linlakoepnjkdiphemdpbphnjlppjedm" # X Mute
-      "mnjggcdmjocbbbhaepdhchncahnbgone" # SponsorBlock
-      "nhocmlminaplaendbabmoemehbpgdemn" # Fathom AI Note Taker
-      "nkbihfbeogaeaoehlefnkodbefgpgknn" # MetaMask
-      "oboonakemofpalcgghocfoadofidjkkk" # KeePassXC-Browser
-      "ofpnikijgfhlmmjlpkfaifhhdonchhoi" # Accept all cookies
-      "ogcgkffhplmphkaahpmffcafajaocjbd" # ZenHub
-      "omghfjlpggmjjaagoclmmobgdodcjboh" # Browsec VPN
-      "pbanhockgagggenencehbnadejlgchfc" # Simplify Copilot
-      "pmjeegjhjdlccodhacdgbgfagbpmccpe" # Clockify
-    ];
   };
+
+  # Chrome uninstalls every force_installed (location 7) extension, storage included, the moment it reads the policy above.
+  # chrome_sync_ext_settings.sh moves them to location 6 on cold start, so Chrome must not be running for the switch.
+  system.preSwitchChecks.chromeForcedExtensions = ''
+    data=${config.users.users.${user.username}.home}/.config/google-chrome
+    if [[ $2 == switch || $2 == test ]] \
+      && kill -0 "$(${pkgs.coreutils}/bin/readlink "$data/SingletonLock" | ${pkgs.gnused}/bin/sed 's/.*-//')" 2>/dev/null \
+      && ${pkgs.gnugrep}/bin/grep -q '"location":7' "$data"/*/Preferences; then
+      echo "Chrome is running with force-installed extensions: switching now would wipe their storage (wallet vaults included)" >&2
+      exit 1
+    fi
+  '';
 
   # home-manager installs native hosts for chromium only, not proprietary Chrome
   environment.etc."opt/chrome/native-messaging-hosts/org.keepassxc.keepassxc_browser.json".text = builtins.toJSON {
