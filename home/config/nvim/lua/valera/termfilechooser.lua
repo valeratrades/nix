@@ -112,7 +112,7 @@ function M.setup_open(tmpfile)
       end, { buffer = true })
 
       vim.keymap.set('x', 'M', function()
-        vim.notify('M clears all marks, not a range: m toggles the range, M in normal mode clears all', vim.log.levels.ERROR)
+        vim.notify('M clears all marks, not just the selected: run it in normal mode', vim.log.levels.ERROR)
       end, { buffer = true })
 
       local function accept()
