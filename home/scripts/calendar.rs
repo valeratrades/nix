@@ -82,6 +82,8 @@ enum Cmd {
         #[arg(short = 'n', long)]
         dry_run: bool,
     },
+    /// Add a yearly birthday to the primary calendar
+    Birthday { name: String, born: Date },
     /// Open an .ics as a pre-filled event in the open Google Calendar tab
     Add { ics: PathBuf },
 }
@@ -115,6 +117,7 @@ async fn main() -> Result<()> {
             };
             shift(&api, cal, offset, forward).await
         }
+        Cmd::Birthday { name, born } => birthday(&api, &name, born).await,
         Cmd::Add { .. } => unreachable!("ran above, before any auth"),
     }
 }
@@ -147,6 +150,28 @@ fn pick(all: &[Value]) -> Result<&Value> {
     let picked = String::from_utf8(out.stdout).into_diagnostic()?;
     let id = picked.trim_end().split_once('\t').ok_or_else(|| miette!("fzf returned {picked:?}"))?.1;
     Ok(*writable.iter().find(|c| c["id"] == id).expect("fzf picks from these lines"))
+}
+
+async fn birthday(api: &Api, name: &str, born: Date) -> Result<()> {
+    let rule = match (born.month(), born.day()) {
+        (2, 29) => "RRULE:FREQ=YEARLY;BYMONTH=2;BYMONTHDAY=-1", // Google's own rule for a leap-day birthday
+        _ => "RRULE:FREQ=YEARLY",
+    };
+    let event = api
+        .write(Method::POST, &["calendars", "primary", "events"], &json!({
+            "eventType": "birthday",
+            "birthdayProperties": { "type": "birthday" },
+            "summary": format!("{name}'s birthday"),
+            "start": { "date": born.to_string() },
+            "end": { "date": born.tomorrow().into_diagnostic()?.to_string() },
+            "recurrence": [rule],
+            "visibility": "private",
+            "transparency": "transparent",
+        }))
+        .await?
+        .expect("only `shift` has a dry run");
+    println!("{}: {}", str_of(&event["summary"])?, str_of(&event["htmlLink"])?);
+    Ok(())
 }
 
 async fn shift(api: &Api, cal: &Value, offset: SignedTimeframe, forward: Timeframe) -> Result<()> {
