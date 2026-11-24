@@ -282,10 +282,10 @@
 
   xdg.configFile."lspmux/config.toml".text = ''
     # rust-analyzer shells out to cargo/rustc and the project's native build inputs, none of
-    # which exist in the daemon's login env, so the client's PATH has to come along. Cost:
-    # PATH is part of the instance key, so clients whose PATH drifted apart (different direnv
-    # evaluation) split into separate instances rather than sharing. Correct either way.
-    pass_environment = ["PATH"]
+    # which exist in the daemon's login env, so the client's env has to come along. Cost:
+    # these are part of the instance key, so clients whose values drifted apart (different
+    # direnv evaluation) split into separate instances rather than sharing.
+    pass_environment = ["PATH", "PKG_CONFIG_PATH"]
     instance_timeout = 3600
   '';
 

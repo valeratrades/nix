@@ -6,7 +6,7 @@
 notified=""
 journalctl --user --unit lspmux --follow --lines 0 --output cat |
 	sed --unbuffered 's/\x1b\[[0-9;]*m//g' | # lspmux colours its log even into the journal
-	grep --line-buffered -F 'panicked at' |
+	grep --line-buffered "stderr line=thread '.* panicked at" | # a build script's panic comes through cargo, indented
 	while read -r line; do
 		pid="${line##*instance\{pid=}"
 		pid="${pid%%\}*}"
