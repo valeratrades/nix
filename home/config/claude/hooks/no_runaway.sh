@@ -13,6 +13,11 @@ if grep -qE '\b(until|while)\b' <<<"$cmd" && grep -qE '\bsleep\b' <<<"$cmd" && !
 	echo "Blocked: a polling loop with no bound. Wrap it: \`timeout <secs> bash -c 'until …; do sleep …; done'\`. Better: wait on what the waited command itself writes (\`cmd; echo DONE >> log\`), on its PID (\`tail --pid=<pid> -f /dev/null\`), or on run_in_background's notification." >&2
 	exit 2
 fi
+# a dev server mid-build accepts the connection and answers nothing
+if grep -qE '\bcurl\b[^|;&]*(localhost|127\.0\.0\.1)' <<<"$cmd" && ! grep -qE '(^|[[:space:]])(-[a-zA-Z]*m[[:space:]]*[0-9]|--max-time)|\btimeout[[:space:]]+[0-9]' <<<"$cmd"; then
+	echo "Blocked: \`curl\` to a local server with no \`-m <secs>\`: one mid-build accepts and never answers." >&2
+	exit 2
+fi
 # a multi-line command's stdin is an open socket, and `rg` with no path reads stdin whenever it is neither a tty nor /dev/null
 if [[ $cmd == *$'\n'* ]] && grep -qE '\brg\b' <<<"$cmd" && ! python3 -c '
 import shlex, sys
