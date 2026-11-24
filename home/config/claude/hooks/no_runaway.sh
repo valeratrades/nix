@@ -13,6 +13,11 @@ if grep -qE '\b(until|while)\b' <<<"$cmd" && grep -qE '\bsleep\b' <<<"$cmd" && !
 	echo "Blocked: a polling loop with no bound. Wrap it: \`timeout <secs> bash -c 'until …; do sleep …; done'\`. Better: wait on what the waited command itself writes (\`cmd; echo DONE >> log\`), on its PID (\`tail --pid=<pid> -f /dev/null\`), or on run_in_background's notification." >&2
 	exit 2
 fi
+# walks every filesystem on the disk; behind ssh it also outlives the local kill
+if grep -qE '\bfind[[:space:]]+(-[HLP]+[[:space:]]+)*/([[:space:]]|$)' <<<"$cmd" && ! grep -qE '\btimeout[[:space:]]+[0-9]' <<<"$cmd"; then
+	echo "Blocked: \`find /\`. Start it at the directory the file can be in, or bound it: \`timeout <secs> find …\` on the side that runs it, with -maxdepth." >&2
+	exit 2
+fi
 # a dev server mid-build accepts the connection and answers nothing
 if grep -qE '\bcurl\b[^|;&]*(localhost|127\.0\.0\.1)' <<<"$cmd" && ! grep -qE '(^|[[:space:]])(-[a-zA-Z]*m[[:space:]]*[0-9]|--max-time)|\btimeout[[:space:]]+[0-9]' <<<"$cmd"; then
 	echo "Blocked: \`curl\` to a local server with no \`-m <secs>\`: one mid-build accepts and never answers." >&2
