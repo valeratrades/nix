@@ -74,30 +74,48 @@ function M.setup_open(tmpfile)
     callback = function()
       local oil = require('oil')
 
-      vim.keymap.set('n', 'm', function()
-        local entry = oil.get_cursor_entry()
-        if not (entry and SELECTABLE[entry.type]) then return end
-        local path = oil.get_current_dir() .. entry.name
-        marks[path] = not marks[path] or nil
+      local function in_visual() return vim.fn.mode():match('[vV\22]') ~= nil end
 
+      local function paths_in_range() -- outside visual mode line('v') is the cursor line
+        local a, b = vim.fn.line('v'), vim.fn.line('.')
+        local paths = {}
+        for lnum = math.min(a, b), math.max(a, b) do
+          local entry = oil.get_entry_on_line(0, lnum)
+          if entry and SELECTABLE[entry.type] then
+            table.insert(paths, oil.get_current_dir() .. entry.name)
+          end
+        end
+        return paths
+      end
+
+      local function show_marks()
+        if in_visual() then vim.cmd.normal({ '\27', bang = true }) end
         local names = vim.tbl_map(vim.fs.basename, vim.tbl_keys(marks))
         table.sort(names)
         vim.go.winbar = #names == 0 and ''
           or ('%%#CurSearch# %d marked: %s'):format(#names, table.concat(names, ', '):gsub('%%', '%%%%'))
         vim.cmd('redraw!')
+      end
+
+      vim.keymap.set({ 'n', 'x' }, 'm', function()
+        local paths = paths_in_range()
+        local all_marked = vim.iter(paths):all(function(p) return marks[p] end)
+        for _, p in ipairs(paths) do
+          marks[p] = not all_marked or nil
+        end
+        show_marks()
       end, { buffer = true })
 
-      local function in_visual() return vim.fn.mode():match('[vV\22]') ~= nil end
+      vim.keymap.set({ 'n', 'x' }, 'M', function()
+        marks = {}
+        show_marks()
+      end, { buffer = true })
 
       local function accept()
         local selected = vim.deepcopy(marks)
         if in_visual() then
-          local a, b = vim.fn.line('v'), vim.fn.line('.')
-          for lnum = math.min(a, b), math.max(a, b) do
-            local entry = oil.get_entry_on_line(0, lnum)
-            if entry and SELECTABLE[entry.type] then
-              selected[oil.get_current_dir() .. entry.name] = true
-            end
+          for _, p in ipairs(paths_in_range()) do
+            selected[p] = true
           end
         end
         if vim.tbl_isempty(selected) then
