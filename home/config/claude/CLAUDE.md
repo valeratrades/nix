@@ -135,15 +135,13 @@
   `hooks/no_runaway.sh` blocks the shapes of runaway known so far. When a command of yours outlives its purpose anyway, stop it, then add its shape to that hook, so the next agent can't submit it.
 
 ## Testing
-- if a change is not trivial, always test.
-    And any time you write actual tests in code, - read https://matklad.github.io/2021/05/31/how-to-test.html
-    Actually pull and read it every single time you get to the point of writing tests.
+<!--- if a change is not trivial, always test.-->
+<!--    And any time you write actual tests in code, - read https://matklad.github.io/2021/05/31/how-to-test.html-->
+<!--    Actually pull and read it every single time you get to the point of writing tests.-->
 
 - if you're called to change logic of how a feature/app works, you start by capturing the problematic behavior in a failing integration test.
 
 - when using `insta` crate for snapshots, - avoid modifying them manually; prefer adding an empty string, then running `cargo insta accept` and seeing what gets written.
-
-- if a test is failing due to underlying logic being incorrect, don't try to fix it, unless you're in charge of the implementation concerning that part of the logic. What you can do is tell me what you found, after you finished your own implementation, and then we decide if you can be assigned to fixing that too.
 
 - never change actual code logic if something broke mocks or integration tests. Tests are ALWAYS inferior to actual code, we do not care for ease of testing when thinking through logic. Correct logic is much more important than ability to easily test it, and if tests infra breaks, - it wasn't good in the first place.
 

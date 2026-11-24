@@ -55,6 +55,8 @@
 
     "momento mori"
 
+		"Speed."
+
     "what is measured\ngets improved"
 
     "rich people think in \"boths\""
