@@ -32,9 +32,6 @@ local function resolve_path(path)
 end
 
 function M.setup_open(tmpfile)
-  -- ` .` selection edits the buffer even in read-only dirs; write permission only matters on an actual `:w`
-  require('oil.adapters.files').is_modifiable = function() return true end
-
   -- When a regular file is opened, capture path and exit immediately
   -- Use BufReadCmd to completely intercept the file load
   vim.api.nvim_create_autocmd('BufReadCmd', {
@@ -90,36 +87,20 @@ function M.setup_open(tmpfile)
         vim.cmd('redraw!')
       end, { buffer = true })
 
-      local function confirm()
-        local dir = oil.get_current_dir()
-        local selected = vim.deepcopy(marks)
-        local function select_line(lnum)
-          local entry = oil.get_entry_on_line(0, lnum)
-          if entry and SELECTABLE[entry.type] then
-            selected[dir .. entry.name] = true
-          end
-        end
+      local function in_visual() return vim.fn.mode():match('[vV\22]') ~= nil end
 
-        local visual = vim.fn.mode():match('[vV\22]')
-        if visual then
+      local function accept()
+        local selected = vim.deepcopy(marks)
+        if in_visual() then
           local a, b = vim.fn.line('v'), vim.fn.line('.')
           for lnum = math.min(a, b), math.max(a, b) do
-            select_line(lnum)
-          end
-        end
-        if vim.bo.modified then
-          for lnum, line in ipairs(vim.api.nvim_buf_get_lines(0, 0, -1, false)) do
-            if line:match(' %.$') or line:match(' %. %->') then -- links: either after the target or before `->`
-              select_line(lnum)
+            local entry = oil.get_entry_on_line(0, lnum)
+            if entry and SELECTABLE[entry.type] then
+              selected[oil.get_current_dir() .. entry.name] = true
             end
           end
         end
-
-        -- marks outlive their directory, so an unmarked directory is still entered, to mark more inside
-        local here = oil.get_cursor_entry()
-        local enters = here and not visual and not vim.bo.modified
-          and not selected[dir .. here.name] and vim.fn.isdirectory(dir .. here.name) == 1
-        if enters or vim.tbl_isempty(selected) then
+        if vim.tbl_isempty(selected) then
           oil.select()
           return
         end
@@ -129,9 +110,21 @@ function M.setup_open(tmpfile)
         vim.fn.writefile(vim.tbl_map(resolve_path, paths), tmpfile, 'b') -- 'b': no trailing newline
         vim.cmd('qa!')
       end
-      for _, key in ipairs({ '<CR>', '<Tab>' }) do
-        vim.keymap.set({ 'n', 'x' }, key, confirm, { buffer = true })
-      end
+      vim.keymap.set({ 'n', 'x' }, '<Tab>', accept, { buffer = true })
+
+      vim.keymap.set({ 'n', 'x' }, '<CR>', function()
+        if vim.tbl_isempty(marks) then
+          accept()
+          return
+        end
+        local entry = oil.get_cursor_entry()
+        if not in_visual() and entry and vim.fn.isdirectory(oil.get_current_dir() .. entry.name) == 1 then
+          oil.select()
+          return
+        end
+        vim.notify(('<CR> picks without marks, but %d marked: <Tab> accepts those, m unmarks'):format(vim.tbl_count(marks)),
+          vim.log.levels.ERROR)
+      end, { buffer = true })
 
       -- S to jump to Screenshots
       vim.keymap.set('n', 'S', function()
