@@ -6,14 +6,6 @@ if [ -L "$lock" ] && kill -0 "$(readlink "$lock" | sed 's/.*-//')" 2>/dev/null; 
   exit 0
 fi
 
-# policy force_installed (7) -> normal_installed (6): left at 7, Chrome uninstalls the extension and deletes its storage
-for prefs in "$data"/*/Preferences; do
-  grep -q '"location":7' "$prefs" || continue
-  jq -c '(.extensions.settings[] | select(.location == 7) | .location) = 6' "$prefs" > "$prefs.migrated"
-  chmod --reference="$prefs" "$prefs.migrated"
-  mv "$prefs.migrated" "$prefs"
-done
-
 # Wallet vaults stay per-profile.
 blacklist=" egjidjbpglichdcondbcbdnbeeppgdph nkbihfbeogaeaoehlefnkodbefgpgknn " # Trust Wallet, MetaMask
 

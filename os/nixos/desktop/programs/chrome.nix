@@ -149,18 +149,6 @@ in
     };
   };
 
-  # Chrome uninstalls every force_installed (location 7) extension, storage included, the moment it reads the policy above.
-  # chrome_sync_ext_settings.sh moves them to location 6 on cold start, so Chrome must not be running for the switch.
-  system.preSwitchChecks.chromeForcedExtensions = ''
-    data=${config.users.users.${user.username}.home}/.config/google-chrome
-    if [[ $2 == switch || $2 == test ]] \
-      && kill -0 "$(${pkgs.coreutils}/bin/readlink "$data/SingletonLock" | ${pkgs.gnused}/bin/sed 's/.*-//')" 2>/dev/null \
-      && ${pkgs.gnugrep}/bin/grep -q '"location":7' "$data"/*/Preferences; then
-      echo "Chrome is running with force-installed extensions: switching now would wipe their storage (wallet vaults included)" >&2
-      exit 1
-    fi
-  '';
-
   # home-manager installs native hosts for chromium only, not proprietary Chrome
   environment.etc."opt/chrome/native-messaging-hosts/org.keepassxc.keepassxc_browser.json".text = builtins.toJSON {
     name = "org.keepassxc.keepassxc_browser";
