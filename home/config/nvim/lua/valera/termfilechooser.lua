@@ -8,8 +8,8 @@ local ABORT_KEYS = { 'q', '<C-c>', '<A-;>' }
 local CONFIRM_KEYS = { '<CR>', '<M-a>' }
 local SELECTABLE = { file = true, directory = true, link = true }
 
-_G.filechooser_marks = {}
-_G.filechooser_ns = vim.api.nvim_create_namespace('filechooser')
+local marks = {}
+local ns = vim.api.nvim_create_namespace('filechooser')
 
 local function resolve_path(path)
   if vim.fn.isdirectory(path) == 1 then
@@ -53,109 +53,85 @@ function M.setup_open(tmpfile)
     end
   })
 
+  -- drawn from `marks` on every redraw: oil rewrites its buffer on refresh and wipes hidden ones, taking extmarks along
+  vim.api.nvim_set_decoration_provider(ns, {
+    on_win = function(_, _, buf) return vim.bo[buf].filetype == 'oil' end,
+    on_line = function(_, _, buf, row)
+      local oil = require('oil')
+      local entry = oil.get_entry_on_line(buf, row + 1)
+      if entry and marks[oil.get_current_dir(buf) .. entry.name] then
+        vim.api.nvim_buf_set_extmark(buf, ns, row, 0, {
+          end_row = row + 1,
+          hl_group = 'CurSearch',
+          hl_eol = true,
+          priority = 10000, -- over oil's own column colors
+          ephemeral = true,
+        })
+      end
+    end,
+  })
+
   -- Oil.nvim keybindings
   vim.api.nvim_create_autocmd('FileType', {
     pattern = 'oil',
-    callback = function(ev)
+    callback = function()
       local oil = require('oil')
 
-      -- 'm' to mark/unmark files
       vim.keymap.set('n', 'm', function()
         local entry = oil.get_cursor_entry()
-        if entry and SELECTABLE[entry.type] then
-          local path = oil.get_current_dir() .. entry.name
-          local lnum = vim.fn.line('.')
-          if _G.filechooser_marks[path] then
-            _G.filechooser_marks[path] = nil
-            vim.api.nvim_buf_clear_namespace(ev.buf, _G.filechooser_ns, lnum - 1, lnum)
-          else
-            _G.filechooser_marks[path] = true
-            vim.api.nvim_buf_set_extmark(ev.buf, _G.filechooser_ns, lnum - 1, 0, {
-              line_hl_group = 'Visual' -- a sign would be invisible: oil sets signcolumn=no
-            })
-          end
-        end
+        if not (entry and SELECTABLE[entry.type]) then return end
+        local path = oil.get_current_dir() .. entry.name
+        marks[path] = not marks[path] or nil
+
+        local names = vim.tbl_map(vim.fs.basename, vim.tbl_keys(marks))
+        table.sort(names)
+        vim.go.winbar = #names == 0 and ''
+          or ('%%#CurSearch# %d marked: %s'):format(#names, table.concat(names, ', '):gsub('%%', '%%%%'))
+        vim.cmd('redraw!')
       end, { buffer = true })
 
-      -- Tab to confirm marked files
-      vim.keymap.set('n', '<Tab>', function()
-        local paths = {}
-        for p in pairs(_G.filechooser_marks) do
-          table.insert(paths, p)
-        end
-        if #paths > 0 then
-          local f = io.open(tmpfile, 'w')
-          if f then
-            for i, p in ipairs(paths) do
-              f:write(resolve_path(p))
-              if i < #paths then f:write('\n') end
-            end
-            f:close()
-          end
-          vim.cmd('qa!')
-        end
-      end, { buffer = true })
-
-      -- Visual selection confirm (Tab or CR)
-      local function confirm_visual_selection()
+      local function confirm()
         local dir = oil.get_current_dir()
-        local start_line = vim.fn.line('v')
-        local end_line = vim.fn.line('.')
-        if start_line > end_line then
-          start_line, end_line = end_line, start_line
-        end
-        local paths = {}
-        for lnum = start_line, end_line do
+        local selected = vim.deepcopy(marks)
+        local function select_line(lnum)
           local entry = oil.get_entry_on_line(0, lnum)
           if entry and SELECTABLE[entry.type] then
-            table.insert(paths, dir .. entry.name)
+            selected[dir .. entry.name] = true
           end
         end
-        if #paths > 0 then
-          local f = io.open(tmpfile, 'w')
-          if f then
-            for i, p in ipairs(paths) do
-              f:write(resolve_path(p))
-              if i < #paths then f:write('\n') end
-            end
-            f:close()
-          end
-          vim.cmd('qa!')
-        end
-      end
-      vim.keymap.set('v', '<Tab>', confirm_visual_selection, { buffer = true })
-      vim.keymap.set('v', '<CR>', confirm_visual_selection, { buffer = true })
 
-      -- Normal-mode <CR>: if buffer has unsaved edits with lines marked by ` .`,
-      -- treat those as the selection; otherwise fall back to oil's default select.
-      vim.keymap.set('n', '<CR>', function()
-        if vim.bo.modified then
-          local dir = oil.get_current_dir()
-          local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
-          local paths = {}
-          for lnum, line in ipairs(lines) do
-            if line:match(' %.$') or line:match(' %. %->') then -- links: either after the target or before `->`
-              local entry = oil.get_entry_on_line(0, lnum)
-              if entry and SELECTABLE[entry.type] then
-                table.insert(paths, dir .. entry.name)
-              end
-            end
-          end
-          if #paths > 0 then
-            local f = io.open(tmpfile, 'w')
-            if f then
-              for i, p in ipairs(paths) do
-                f:write(resolve_path(p))
-                if i < #paths then f:write('\n') end
-              end
-              f:close()
-            end
-            vim.cmd('qa!')
-            return
+        local visual = vim.fn.mode():match('[vV\22]')
+        if visual then
+          local a, b = vim.fn.line('v'), vim.fn.line('.')
+          for lnum = math.min(a, b), math.max(a, b) do
+            select_line(lnum)
           end
         end
-        require('oil').select()
-      end, { buffer = true })
+        if vim.bo.modified then
+          for lnum, line in ipairs(vim.api.nvim_buf_get_lines(0, 0, -1, false)) do
+            if line:match(' %.$') or line:match(' %. %->') then -- links: either after the target or before `->`
+              select_line(lnum)
+            end
+          end
+        end
+
+        -- marks outlive their directory, so an unmarked directory is still entered, to mark more inside
+        local here = oil.get_cursor_entry()
+        local enters = here and not visual and not vim.bo.modified
+          and not selected[dir .. here.name] and vim.fn.isdirectory(dir .. here.name) == 1
+        if enters or vim.tbl_isempty(selected) then
+          oil.select()
+          return
+        end
+
+        local paths = vim.tbl_keys(selected)
+        table.sort(paths)
+        vim.fn.writefile(vim.tbl_map(resolve_path, paths), tmpfile, 'b') -- 'b': no trailing newline
+        vim.cmd('qa!')
+      end
+      for _, key in ipairs({ '<CR>', '<Tab>' }) do
+        vim.keymap.set({ 'n', 'x' }, key, confirm, { buffer = true })
+      end
 
       -- S to jump to Screenshots
       vim.keymap.set('n', 'S', function()
@@ -165,10 +141,7 @@ function M.setup_open(tmpfile)
       -- <M-b> to open a buffer for manual path entry
       vim.keymap.set('n', '<M-b>', function()
         -- Collect current marks or current directory
-        local prefill = {}
-        for p in pairs(_G.filechooser_marks) do
-          table.insert(prefill, p)
-        end
+        local prefill = vim.tbl_keys(marks)
         if #prefill == 0 then
           table.insert(prefill, oil.get_current_dir())
         end
