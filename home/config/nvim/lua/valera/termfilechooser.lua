@@ -106,9 +106,13 @@ function M.setup_open(tmpfile)
         show_marks()
       end, { buffer = true })
 
-      vim.keymap.set({ 'n', 'x' }, 'M', function()
+      vim.keymap.set('n', 'M', function()
         marks = {}
         show_marks()
+      end, { buffer = true })
+
+      vim.keymap.set('x', 'M', function()
+        vim.notify('M clears all marks, not a range: m toggles the range, <Esc>M clears all', vim.log.levels.ERROR)
       end, { buffer = true })
 
       local function accept()
