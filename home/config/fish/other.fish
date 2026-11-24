@@ -90,6 +90,19 @@ function book --wraps 'booktyping run --myopia'; booktyping run --myopia $argv; 
 function tokio-console; command tokio-console --lang en_US.UTF-8 $argv; end
 function tokio_console --wraps tokio-console; tokio-console $argv; end
 function fm --wraps yazi; yazi $argv; end # File manager
+function dragon-drop
+	if set -q argv[1]
+		command dragon-drop $argv
+		return
+	end
+	set -l picked (mktemp)
+	nvim . "+TermFileChooserOpen $picked"
+	and test -s $picked
+	and command dragon-drop --all (cat $picked)
+	set -l ret $status
+	rm $picked
+	return $ret
+end
 function t # `t -N`: Nth newest, 1-indexed like `cl -N`
     set -l n 1
     if string match -qr '^-[1-9]$' -- $argv[1]
