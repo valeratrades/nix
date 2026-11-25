@@ -9,12 +9,17 @@ every Claude Code session in a project onto one rust-analyzer.
 """
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
 import threading
 from pathlib import Path
 from urllib.parse import unquote, urlparse
+
+
+# claude's nix wrapper puts these on its PATH, at a spot depending on when direnv loaded; PATH is in lspmux's instance key
+CLAUDE_WRAPPER_DIR = re.compile(r"/nix/store/[a-z0-9]{32}-(procps|ripgrep|bubblewrap|socat)-[^/]*/bin")
 
 
 def cargo_root(start: Path) -> Path:
@@ -147,6 +152,7 @@ def main() -> int:
 	if "rustup" in server:
 		server = rustup_binary(server, root, env, req_id)
 
+	env["PATH"] = os.pathsep.join(d for d in env["PATH"].split(os.pathsep) if not CLAUDE_WRAPPER_DIR.fullmatch(d))
 	child = subprocess.Popen(
 		["lspmux", "client", "--server-path", server], env=env,
 		stdin=subprocess.PIPE, stdout=subprocess.PIPE)

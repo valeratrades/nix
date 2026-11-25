@@ -710,6 +710,7 @@
         cache.auto_clean_idle_targets_days = 7; # agents leave whole CARGO_TARGET_DIRs behind (target-uikit-compare, target/check); unit pruning keeps the dirs
         cache.local_max_size = "100GiB"; # the 5%-of-disk default (45GiB) evicted entries other worktrees would hit
         cache.build_script_omit_cargo_source_dir_mtime = true; # each worktree's dirs have their own mtimes, which kept workspace build-script runs from being shared; no build script of ours reads them
+        cache.local_store = "${config.home.homeDirectory}/.cache/kache"; # the default follows XDG_CACHE_HOME, which test harnesses point at throwaway dirs, so their builds started from an empty store
         cache.runtime_dir = "${config.home.homeDirectory}/s/.kache"; # the real dir behind the ~/.cache/kache symlink: kunobi-daemon refuses to bind its socket in a symlinked dir, so without this the daemon never starts and every rustc runs the engine standalone
       };
       ".cargo/rustfmt.toml".source = "${self}/home/config/cargo/rustfmt.toml";

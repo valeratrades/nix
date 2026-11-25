@@ -129,7 +129,7 @@ let
 		chrome-devtools = {
 			type = "stdio";
 			command = "npx";
-			args = [ "-y" "chrome-devtools-mcp@latest" "--headless" "--isolated" "--executablePath=${pkgs.google-chrome}/bin/google-chrome-stable" "--no-usage-statistics" ]; # not the daily Chrome: driving it, `new_page` pops windows on my screen
+			args = [ "-y" "--prefer-offline" "chrome-devtools-mcp@1.14.0" "--headless" "--isolated" "--executablePath=${pkgs.google-chrome}/bin/google-chrome-stable" "--no-usage-statistics" ]; # not the daily Chrome: driving it, `new_page` pops windows on my screen. Not `@latest`: resolving it took 20 s of cpu per session start, of the 30 s connect timeout
 			env = { };
 		};
 		# never connects, so each session carries a 30s connect timeout; also dropped from ~/.claude.json by hand (this merge only adds)
