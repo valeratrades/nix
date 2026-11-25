@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Prints the unread GitHub notification count. Issue/PR threads whose activity since our last read is all by us or any bot get marked done.
+# Prints the unread GitHub notification count. Issue/PR threads whose activity since our last read is all by us or any bot get marked done, as do releases of our own repos.
 set -uo pipefail
 
 state="${XDG_STATE_HOME:-$HOME/.local/state}/eww/github_watermark"
@@ -25,17 +25,19 @@ only_ours() {
 
 removed=0
 complete=1
-while IFS=$'\t' read -r id url last_read; do
-	verdict=$(only_ours "$url" "$last_read") || { complete=0; continue; }
-	[ "$verdict" = true ] || continue
+while IFS=$'\t' read -r id type url last_read; do
+	if [ "$type" != Release ]; then
+		verdict=$(only_ours "$url" "$last_read") || { complete=0; continue; }
+		[ "$verdict" = true ] || continue
+	fi
 	if gh api -X DELETE "notifications/threads/$id" >/dev/null; then
 		removed=$((removed + 1))
 	else
 		complete=0
 	fi
 done < <(jq -r --arg w "$watermark" '.[]
-	| select(.updated_at > $w and (.subject.type == "Issue" or .subject.type == "PullRequest"))
-	| [.id, .subject.url, (.last_read_at // "")] | @tsv' <<<"$notifications")
+	| select(.updated_at > $w and (.subject.type == "Issue" or .subject.type == "PullRequest" or (.subject.type == "Release" and .repository.owner.login == "valeratrades")))
+	| [.id, .subject.type, .subject.url, (.last_read_at // "")] | @tsv' <<<"$notifications")
 
 if [ "$complete" = 1 ] && [ "$(jq length <<<"$notifications")" -gt 0 ]; then # a failed check gets retried next poll
 	mkdir -p "$(dirname "$state")"
