@@ -1,0 +1,61 @@
+ ▐▛███▛█   Claude Code v2.1.326
+▝▜██████▀  Haiku 5.5 · Claude Ultra
+ ▝▝   ▝▝   ~/nix/home/scripts/claude_sessions
+
+⚠ Code Mode (experimental) is on · this session can be resumed only with Code Mode on
+
+❯ just say hi
+
+  Thought for 2s
+
+● Hi. What do you want to work on?
+
+✻ Crunched for 2s · done 0:01
+
+❯ Run the shell command: sleep 60   (foreground, nothing else)
+  ⎿  Interrupted · What should Claude do instead?
+
+❯ just say hi again
+
+● Hi.
+
+✻ Cogitated for 1s · done 0:01
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← 1 agent

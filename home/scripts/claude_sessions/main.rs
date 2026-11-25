@@ -1666,15 +1666,19 @@ fn dead_claude_resume_id(tail: &str) -> Option<String> {
         .map(|c| c[1].to_string())
 }
 
-/// True if the recent tail shows Claude's interrupted-turn chrome — a result row
-/// "⎿  Interrupted · What should Claude do instead?". Anchored so the trimmed line
-/// STARTS with "⎿" and "Interrupted" is its immediate body; quoted narration
-/// doesn't fire. Shared by the live classifier and the dead-shell branch: a
-/// session killed right after an esc-abort exits with this row still at the
-/// bottom, so it's Interrupted, not Finished.
+/// True if the turn now at the bottom of `tail` (bottom-up rows) was cut short: its result row
+/// "⎿  Interrupted · What should Claude do instead?" has no reply below it.
+/// Anchored, so narration quoting the row doesn't fire.
 fn shows_interruption(tail: &str) -> bool {
-    Regex::new(r"(?m)^\s*⎿\s+Interrupted").unwrap().is_match(tail)
+    let interruption = Regex::new(r"^\s*⎿\s+Interrupted").unwrap();
+    let band_row = Regex::new(BAND_ROW).unwrap();
+    tail.lines()
+        .find(|l| interruption.is_match(l) || l.starts_with('●') && !band_row.is_match(l))
+        .is_some_and(|l| interruption.is_match(l))
 }
+
+/// The "● full  $0.00  0s …" status band above the input box.
+const BAND_ROW: &str = r"^● \S+  \$\d+\.\d\d\b";
 
 /// True if a captured line is Claude's "waiting for input" prompt. Modern
 /// Claude Code prints "❯ " (U+276F); older builds printed "> ". The glyph sits
@@ -1717,6 +1721,27 @@ fn classify_activity(
     escaped: Option<&str>,
     subagents_live: Option<bool>,
 ) -> ActivityResult {
+    // The diff panel shares its rows with the conversation, down to the input box's full-width rule.
+    // shortcut: wide chars left of the panel let that many of its chars through, upgrade to display columns if a row misreads
+    let panel_header = Regex::new(r"^(.{60,}\s)\d+ files? changed( [+-]\d+)*\s+✕\s*$").unwrap();
+    let mut panel: Option<usize> = None;
+    let content = content
+        .lines()
+        .map(|l| {
+            if let Some(header) = panel_header.captures(l) {
+                panel = Some(header[1].chars().count());
+            } else if l.starts_with('─') && panel.is_some_and(|col| l.chars().nth(col - 1) == Some('─')) {
+                panel = None;
+            }
+            match panel {
+                Some(col) => l.chars().take(col).collect(),
+                None => l.to_string(),
+            }
+        })
+        .collect::<Vec<String>>()
+        .join("\n");
+    let content = content.as_str();
+
     // Look at the last portion for various indicators
     // Filter empty lines first, then take last 15 non-empty lines
     let last_portion: String = content
@@ -1994,7 +2019,7 @@ fn classify_activity(
     // welcome UNDER the previous session's rows, and a pane that still shows a
     // conversation is that conversation's state (usually Finished via the prompt
     // gate below), not an empty one.
-    let band_row = Regex::new(r"^● \S+  \$\d+\.\d\d\b").unwrap(); // "● full  $0.00  0s …" status band above the box
+    let band_row = Regex::new(BAND_ROW).unwrap();
     let lines: Vec<&str> = content.lines().collect();
     let input_box = lines.iter().rposition(|l| is_prompt_line(l));
     let sent_prompt = lines.iter().enumerate().any(|(i, l)| Some(i) != input_box && l.starts_with("❯ ") && !l[4..].trim().is_empty()); // a turn cut before its first reply leaves no "●"
