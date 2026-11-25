@@ -42,6 +42,15 @@
             "command": "$HOME/.claude/hooks/no_runaway.sh"
           }
         ]
+      },
+      {
+        "matcher": "^(Bash|Monitor|Write|Edit)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/no_tmp_target.py"
+          }
+        ]
       }
     ],
     "PermissionRequest": [
