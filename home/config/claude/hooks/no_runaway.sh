@@ -18,6 +18,11 @@ if grep -qE '\bfind[[:space:]]+(-[HLP]+[[:space:]]+)*/([[:space:]]|$)' <<<"$cmd"
 	echo "Blocked: \`find /\`. Start it at the directory the file can be in, or bound it: \`timeout <secs> find …\` on the side that runs it, with -maxdepth." >&2
 	exit 2
 fi
+# in a worktree's first commit or push the hooks leave a `tracey daemon` behind, which holds the pipe open
+if grep -qE '\bgit (-C [^ ]+ )?(commit|push)\b[^;&|]*(2>&1[[:space:]]*)?\|[[:space:]]*(tail|head|grep|cat)\b' <<<"$cmd" && [[ $cmd == *worktrees/* ]]; then
+	echo "Blocked: \`git commit|push\` piped in a worktree: the tracey daemon its hooks start holds the pipe. Redirect: \`> log 2>&1 </dev/null; tail log\`." >&2
+	exit 2
+fi
 # a dev server mid-build accepts the connection and answers nothing
 if grep -qE '\bcurl\b[^|;&]*(localhost|127\.0\.0\.1)' <<<"$cmd" && ! grep -qE '(^|[[:space:]])(-[a-zA-Z]*m[[:space:]]*[0-9]|--max-time)|\btimeout[[:space:]]+[0-9]' <<<"$cmd"; then
 	echo "Blocked: \`curl\` to a local server with no \`-m <secs>\`: one mid-build accepts and never answers." >&2
