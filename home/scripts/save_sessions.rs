@@ -129,15 +129,9 @@ fn main() -> miette::Result<()> {
         run(Command::new("tmux").args(["list-sessions", "-F", "#{session_name}\t#{session_path}"])),
     ) {
         (Ok(out), Ok(sessions)) => (out, sessions),
-        // No tmux server still records an empty layout, so the previous shutdown cannot linger.
-        _ if dry_run => {
-            println!("Dry run - no tmux panes; would save an empty inventory to {path} and {sessions_path}");
-            return Ok(());
-        }
-        _ => {
-            write(&sessions_path, "")?;
-            write(&path, "")?;
-            println!("- INFO No tmux panes; saved empty inventory to {path} and {sessions_path}");
+        // a dead server most often died before the shutdown, so recording it would erase the working set
+        (Err(e), _) | (_, Err(e)) => {
+            println!("- WARN tmux unreachable ({e}); keeping {path} and {sessions_path} untouched");
             return Ok(());
         }
     };
